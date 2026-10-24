@@ -1,0 +1,23 @@
+// Written by isemon's install.sh (1.10.173).
+//
+// The isemon service account may RESTART a PostgreSQL that runs on this
+// machine - restart it, and nothing else: not stop it, not start it, not
+// touch any other service. Settings -> The database tunes the server for
+// its machine, and some of PostgreSQL's settings (shared_buffers, the one
+// that matters most) take effect only when it is next started; this is what
+// lets the dashboard finish the job when a full admin asks it to.
+//
+// Take it away with  install.sh --no-db-restart  (or delete this file and
+// /etc/isemon/may-restart-database): the dashboard then shows the command to
+// run instead.
+polkit.addRule(function (action, subject) {
+    if (action.id === "org.freedesktop.systemd1.manage-units" &&
+        subject.user === "isemon") {
+        var unit = action.lookup("unit") || "";
+        var verb = action.lookup("verb") || "";
+        if (verb === "restart" &&
+            /^postgresql(-[0-9]+)?(@[A-Za-z0-9_.-]+)?\.service$/.test(unit)) {
+            return polkit.Result.YES;
+        }
+    }
+});
