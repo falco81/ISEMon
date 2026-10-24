@@ -1,0 +1,15 @@
+# /etc/systemd/system/isemon-upgrade.path (1.10.222)
+#
+# Watches for a new version asked for on the pages: the isemon service lays
+# a signed package and request.json down in /var/lib/isemon/upgrade/, and
+# this starts isemon-upgrade.service, which checks the package as root and
+# runs its install.sh --upgrade. Nothing else can be asked for this way.
+[Unit]
+Description=isemon - a new version asked for on the pages
+
+[Path]
+PathExists=/var/lib/isemon/upgrade/request.json
+Unit=isemon-upgrade.service
+
+[Install]
+WantedBy=multi-user.target
