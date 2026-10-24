@@ -1,0 +1,72 @@
+--- index.cgi.orig	2026-09-26 14:29:59.607452280 +0200
++++ index.cgi	2026-09-26 14:48:42.717003656 +0200
+@@ -77,6 +77,23 @@
+     token = form.getfirst('token')
+     mode  = form.getfirst('mode')
+ 
++    # Whoever called may name this request. It is written on both of the
++    # lines below and nowhere else, so that a log reader can put this
++    # attempt and the RADIUS packet that caused it side by side without
++    # having to guess from the account and the clock.
++    #
++    # Behind a try, and deliberately: this is a convenience for whoever
++    # reads the logs afterwards, and nothing a convenience does may ever be
++    # the reason somebody cannot sign in.
++    said = ''
++    try:
++        rid = form.getfirst('rid') or ''
++        rid = ''.join([c for c in rid if c.isalnum() or c in '.:-_'])[:64]
++        if rid:
++            said = 'rid=' + rid + ', '
++    except Exception:
++        said = ''
++
+     remote_host = os.environ['REMOTE_ADDR']
+ 
+     if mode != 'PAM_SM_AUTH':
+@@ -88,20 +105,39 @@
+         status = ga.verify_user_token(user, token)
+     except Exception, ex:
+         syslog.syslog(syslog.LOG_NOTICE,
+-            'Failure: user=%s, mode=%s, host=%s, message=%s' % (user, mode, 
+-                remote_host, str(ex)))
++            'Failure: user=%s, mode=%s, host=%s, %smessage=%s' % (user, mode, 
++                remote_host, said, str(ex)))
+         bad_request(str(ex))
+ 
+     syslog.syslog(syslog.LOG_NOTICE, 
+-        'Success: user=%s, mode=%s, host=%s, message=%s' % (user, mode, 
+-            remote_host, status))
++        'Success: user=%s, mode=%s, host=%s, %smessage=%s' % (user, mode, 
++            remote_host, said, status))
++
++    # The first line is what the caller has always been given, byte for
++    # byte, and what it tests for. The second says which kind of success
++    # this was - a token used inside its window, one a step out of time, a
++    # one-off recovery code - which is knowledge this program alone has.
++    #
++    # Made into bytes before anything is written: on Python 2 a unicode
++    # object handed to sys.stdout is encoded as ASCII and raises on the
++    # first character that is not, and the answer to that is a 500 with an
++    # empty body. Behind a try for the same reason: a sign-in must not turn
++    # on a line meant for a log reader.
++    output = success_string
++    try:
++        more = status
++        if isinstance(more, unicode):
++            more = more.encode('utf-8', 'replace')
++        output = '%s\n%s\n' % (success_string, more)
++    except Exception:
++        output = success_string
+ 
+     sys.stdout.write('Status: 200 OK\n')
+     sys.stdout.write('Content-type: text/plain\n')
+-    sys.stdout.write('Content-Length: %s\n' % len(success_string))
++    sys.stdout.write('Content-Length: %s\n' % len(output))
+     sys.stdout.write('\n')
+ 
+-    sys.stdout.write(success_string)
++    sys.stdout.write(output)
+ 
+ 
+ if __name__ == '__main__':
