@@ -1,0 +1,38 @@
+# /etc/logrotate.d/isemon
+#
+# The daemon writes its own log alongside the journal. Rotated daily or at
+# 200 MB, whichever comes first, and two weeks kept. A quiet machine
+# produces a few kilobytes a day; one with the debug switch on produced
+# 2.4 MB in two minutes while doing almost nothing, which is why the size is
+# here as well as the day - "daily" is no guard against somebody turning
+# that switch on at four in the afternoon and going home.
+
+/var/log/isemon/*.log {
+    daily
+    maxsize 200M
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    dateext
+    # ...with the second in it: rotated for its size as well as for the day,
+    # a file can be rotated twice in one day, and the second would find the
+    # first's name taken.
+    dateformat -%Y%m%d-%s
+
+    # Rotation runs as root, but the files belong to the daemon's own user;
+    # su tells logrotate to work as that user so ownership stays correct.
+    su isemon isemon
+    create 0640 isemon isemon
+
+    # The daemon holds the file open, so after logrotate renames it every
+    # further line would go to the renamed file. SIGHUP makes it reopen — and
+    # re-read the config file while it is at it.
+    postrotate
+        # To the daemon itself (ExecReload), not to every process of the
+        # service: `systemctl kill` also reached a nightly pg_dump or
+        # mariadb-dump and the shared ssh connection, and HUP ends both.
+        /usr/bin/systemctl reload isemon.service 2>/dev/null || true
+    endscript
+}
