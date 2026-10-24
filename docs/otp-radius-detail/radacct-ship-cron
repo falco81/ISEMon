@@ -1,0 +1,21 @@
+# /etc/cron.d/radacct-ship
+#
+# Sends the new records from every file under /var/log/radius/radacct to
+# syslog (facility local5).
+#
+# Cron's finest interval is a minute, and a record written a moment after a
+# run would then wait nearly a whole one before it reached the collector -
+# which is what makes a token attempt sit there with nothing beside it. So
+# the one run a minute sweeps the minute: every five seconds, and gone at
+# fifty-five so the next run finds the way clear. The run is behind a lock,
+# so it can never start twice whatever happens.
+#
+# For the old behaviour - one sweep a minute - take the two flags off.
+
+MAILTO=root
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+* * * * * root /usr/local/sbin/radacct-syslog-ship.py --every 5 --seconds 55
+
+# tidy away the offset files of detail files that are gone
+17 4 * * * root find /var/lib/radacct-ship -name '*.offset' -mtime +35 -delete >/dev/null 2>&1
