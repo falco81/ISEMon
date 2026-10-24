@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A shield, because that is what this is: the list of who may not in. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#1f6feb"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#161b22"/>
+  <path d="M32 9l19 7v15c0 12-8 20-19 24-11-4-19-12-19-24V16z"
+        fill="url(#g)" opacity=".18" stroke="url(#g)" stroke-width="2.5"
+        stroke-linejoin="round"/>
+  <!-- the bar of a "no entry" sign, which is the whole of what it does -->
+  <circle cx="32" cy="32" r="11" fill="none" stroke="#f85149" stroke-width="4"/>
+  <path d="M24.2 39.8L39.8 24.2" stroke="#f85149" stroke-width="4" stroke-linecap="round"/>
+</svg>
