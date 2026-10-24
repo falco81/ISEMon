@@ -1,0 +1,15 @@
+# /etc/systemd/system/isemon-upgrade.service (1.10.222)
+#
+# Started by isemon-upgrade.path, never by hand: it puts in the package the
+# pages asked for - only one signed by a release key in
+# /usr/local/lib/isemon/release-keys/, and only after checking every file in
+# it. It runs apart from isemon.service, which the upgrade restarts.
+[Unit]
+Description=isemon - putting in a new version asked for on the pages
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I /usr/local/lib/isemon/isemon_upgrade.py
+TimeoutStartSec=25min
+PrivateTmp=no
