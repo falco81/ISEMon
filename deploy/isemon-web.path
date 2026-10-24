@@ -1,0 +1,16 @@
+# /etc/systemd/system/isemon-web.path (1.10.222)
+#
+# Watches for what Settings asked of root: the daemon lays request.json (a
+# change to nginx or the firewall) or look.ask (a look at how things are)
+# down in /var/lib/isemon/web/, and this starts isemon-web.service, which
+# checks it as root and puts it in. Nothing else can be asked for this way.
+[Unit]
+Description=isemon - the firewall, who may reach which page and TLS, asked for on the pages
+
+[Path]
+PathExists=/var/lib/isemon/web/request.json
+PathExists=/var/lib/isemon/web/look.ask
+Unit=isemon-web.service
+
+[Install]
+WantedBy=multi-user.target
