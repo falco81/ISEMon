@@ -1,0 +1,77 @@
+{
+  "_comment": [
+    "/etc/isemon/config.json — an example, with the settings worth thinking",
+    "about before the first run. This file is read, and written only for",
+    "the database settings (db_*), which cannot live in the database they",
+    "point at; anything else saved on the dashboard or with",
+    "`isemon --set key=value` goes into the database, and wins over what is",
+    "here. Put a setting back to exactly what",
+    "this file says and it stops being saved at all, so this file means",
+    "something again rather than being shadowed by a copy of itself.",
+    "",
+    "It is here for the things a machine needs before anybody signs in, and",
+    "for a fleet configured from somewhere else. Anything not named here",
+    "takes its default. `isemon --settings` prints every setting with the",
+    "value in force and which of the three layers it came from."
+  ],
+
+  "_comment_logs": "Both ISE nodes, always. One of the pair is quiet at any moment and which one changes without warning, so both are read and what comes out is one timeline. Set \"ise\" to 0 on an installation that has no ISE at all - a token server on its own, eduroam on its own: no ISE file is then opened, and everything already written down stays exactly where it is.",
+  "ise": 1,
+  "ise_paths": ["/var/log/remote/ise1", "/var/log/remote/ise2"],
+
+  "_comment_devices": "Only failures from these devices may earn a ban, by the name the log calls NetworkDeviceName. Leaving it empty would let a mistyped switch password ban an administrator's desk.",
+  "watch_devices": "FTD-VPN",
+
+  "_comment_ladder": "Five failures in ten minutes earns ten minutes; then an hour, then a day, then for good. An address that behaves for a month starts at the bottom again.",
+  "block_tries": 5,
+  "block_window_min": 10,
+  "block_ladder": "10, 60, 1440, forever",
+  "block_ladder_forget_days": 30,
+
+  "_comment_whitelist": "A second whitelist for machines configured by something else; the dashboard's Whitelist page means the same thing. Put your own networks in one or the other BEFORE the first run.",
+  "never_block": "",
+
+  "_comment_router": "The Mikrotik. Only the one address list named here is ever touched, and only entries carrying this daemon's own comment. Put a drop rule on the router pointed at that list.",
+  "mikrotik_host": "",
+  "mikrotik_user": "isemon",
+  "mikrotik_auth": "key",
+  "mikrotik_list": "isemon",
+  "mikrotik_sync": 1,
+
+  "_comment_geo": "The country database gives every address a flag, and fills the country address list on the router when that is switched on.",
+  "geo": 1,
+  "geolist": 0,
+  "geolist_name": "isemon-geo",
+  "geolist_countries": "",
+
+  "_comment_feeds": "Public blocklists. FireHOL level 1 is chosen to have no false positives and is the one to start with; an address on one of them is banned the first time it fails a login here.",
+  "feeds": "firehol1",
+  "feeds_ban": 1,
+
+  "_comment_db": [
+    "Which database everything is kept in. Left out, it is one file on this",
+    "machine and nothing else is installed - which is the faster of the two",
+    "and what most installations should stay on. These are the ONLY settings",
+    "kept in this file rather than in the database: a database cannot hold",
+    "the address of itself, and a machine whose database will not open has",
+    "to be able to be put right from here.",
+    "",
+    "Do not set db_engine here on a machine that already has data in the",
+    "file: that would start a second, empty installation rather than moving",
+    "the first. Moving is Settings -> The database, or:",
+    "  isemon --database setup --to mariadb",
+    "  isemon --database move  --to mariadb",
+    "  isemon --set db_engine=mariadb && systemctl restart isemon",
+    "See docs/the-database.md.",
+    "",
+    "  \"db_engine\":    \"sqlite\" (default), \"mariadb\" or \"postgres\"",
+    "  \"db_host\":      where that server is",
+    "  \"db_port\":      0 means the usual one: 3306, or 5432",
+    "  \"db_name\":      the database on it",
+    "  \"db_user\":      the account this program signs in as",
+    "  \"db_password\":  its password - which is why this file is 0640",
+    "  \"db_timeout_s\": how long to wait for it, in seconds"
+  ],
+
+  "site_name": "blacklistmt"
+}
