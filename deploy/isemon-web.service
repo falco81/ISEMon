@@ -1,0 +1,16 @@
+# /etc/systemd/system/isemon-web.service (1.10.222)
+#
+# Started by isemon-web.path, never by hand: it puts in what the pages asked
+# for about nginx (who may reach which page, TLS) and the firewall (the chain
+# ISEMON-IN), checking every value again as root, asking nginx -t and
+# iptables-restore --test first, and putting everything back when either says
+# no. What it did is in /var/lib/isemon/web/status.json.
+[Unit]
+Description=isemon - nginx and the firewall, as asked on the pages
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I /usr/local/lib/isemon/isemon_web.py
+# Making DH parameters of 4096 bits takes up to ten minutes.
+TimeoutStartSec=30min
