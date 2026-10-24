@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="flag-icons-zz" viewBox="0 0 640 480">
+  <defs>
+    <clipPath id="private-a">
+      <path clip-rule="evenodd" d="M-100-100h840v680h-840zM440 520 337 365a128 128 0 1 1 206 0z"/>
+    </clipPath>
+  </defs>
+  <g transform="translate(320 240)scale(1.03)translate(-299 -246.5)">
+    <g fill="none" stroke="#ffa31a" stroke-width="24" clip-path="url(#private-a)">
+      <circle cx="265" cy="230" r="195"/>
+      <ellipse cx="265" cy="230" rx="85" ry="195"/>
+      <path d="M265 35v390M70 230h390M95 135h340M95 325h340"/>
+    </g>
+    <path fill="#2b5ca8" d="M440 470 360 350a100 100 0 1 1 160 0z"/>
+    <circle cx="440" cy="290" r="72" fill="#fff"/>
+    <g fill="#333">
+      <path d="M393 252h22v76h-22z"/>
+      <path d="M428 252h36a26 26 0 0 1 0 52h-14v24h-22zm22 20v12h12a6 6 0 0 0 0-12z"/>
+    </g>
+  </g>
+</svg>
