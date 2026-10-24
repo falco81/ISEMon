@@ -1,0 +1,37 @@
+# /etc/logrotate.d/remote-logs
+#
+# Rotace logů ze vzdálených zdrojů mimo AD řadiče.
+#
+# Adresáře jsou vyjmenované explicitně místo původního /var/log/remote/*/*.log:
+# DC logy mají vlastní config (/etc/logrotate.dc.conf) s hodinovou rotací
+# a kdyby je matchoval i tento vzor, rotovaly by je dva nezávislé běhy.
+#
+# PŘI PŘIDÁNÍ NOVÉHO ZDROJE do /var/log/remote/ je nutné doplnit řádek sem
+# (nebo do logrotate.dc.conf, jde-li o další AD řadič).
+
+/var/log/remote/blacklistmt/*.log
+/var/log/remote/edurad1/*.log
+/var/log/remote/ise1/*.log
+/var/log/remote/ise2/*.log
+/var/log/remote/otp1/*.log
+/var/log/remote/otp2/*.log
+{
+    daily
+    dateext
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root isemon
+
+    sharedscripts
+    postrotate
+        # Oproti původní verzi bez "|| true" a bez > /dev/null 2>&1.
+        # Ta kombinace spolkla jakoukoli chybu reloadu včetně situace,
+        # kdy rsyslog nikdy nezavřel deskriptor na přejmenovaný soubor.
+        # Debian's rsyslog has no reload: HUP straight to it there (1.10.197).
+        /usr/bin/systemctl reload rsyslog > /dev/null 2>&1 || \
+            /usr/bin/systemctl kill -s HUP --kill-who=main rsyslog.service > /dev/null 2>&1 || true
+    endscript
+}
