@@ -1,0 +1,55 @@
+# /etc/logrotate.d/remote-logs
+#
+# The logs that arrive here over syslog: the ISE nodes' two files per node,
+# the token servers', the eduroam server's. This is not the daemon's own log
+# - that one is /etc/logrotate.d/isemon and rotates as the isemon user.
+#
+# Two things in here matter and both are easy to get wrong.
+#
+# `create 0640 root isemon`
+#     logrotate makes the new file itself, and whatever it makes it with is
+#     what the daemon has to live with until the next rotation. Left as
+#     `root root` the daemon cannot read it: the logs go on arriving, the
+#     page goes on drawing yesterday, and nothing anywhere says so until
+#     somebody looks at `isemon --status`. The group must be the account the
+#     daemon runs as - `systemctl show isemon -p User --value`.
+#
+# ONE stanza for the whole tree
+#     logrotate refuses two stanzas that match the same file:
+#     `error: duplicate log entry for /var/log/remote/.../radius.log`. So
+#     this cannot be split into "the folders isemon reads" and "everything
+#     else"; it is one rule, and the group is on all of it. That is also
+#     what makes it universal - a folder rsyslog creates tomorrow for a
+#     sender nobody has thought of yet is covered without anybody editing
+#     this file.
+#
+# `delaycompress` is not decoration: without it logrotate compresses a file
+# rsyslog still has open.
+#
+# What it does NOT cover, on purpose:
+#   * the FreeRADIUS accounting files, `detail-20260925`. They have no .log
+#     on the end, they are already one file per day, and logrotate cannot be
+#     told "only throw the old ones away" - it rotates the live one first,
+#     which is the day being written. /etc/cron.daily/isemon-logs-tidy
+#     handles those.
+#   * anything a level deeper than <folder>/<file>.log.
+#
+# See docs/log-rotation-and-permissions.md for the whole procedure, both the
+# first setup and the machine that is already running.
+
+/var/log/remote/*/*.log {
+    daily
+    dateext
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root isemon
+    sharedscripts
+    postrotate
+        # Debian's rsyslog has no reload: HUP straight to it there (1.10.197).
+        /usr/bin/systemctl reload rsyslog > /dev/null 2>&1 || \
+            /usr/bin/systemctl kill -s HUP --kill-who=main rsyslog.service > /dev/null 2>&1 || true
+    endscript
+}
