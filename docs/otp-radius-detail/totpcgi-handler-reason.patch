@@ -1,0 +1,97 @@
+--- totpcgi-handler.pl.orig	2026-09-26 14:29:59.609136341 +0200
++++ totpcgi-handler.pl	2026-09-26 15:09:03.163301860 +0200
+@@ -328,6 +328,39 @@
+ 	# default to rejecting (with no message)
+ 	my $retcode = RLM_MODULE_REJECT;
+ 
++	# A name for this request that both logs can carry.
++	#
++	# The pair the client sent from is what makes one RADIUS packet
++	# different from every other: the detail log writes it as
++	# Packet-Src-IP-Address and Packet-Src-Port, and the reply to it goes
++	# back to that same pair. Sending it on to the token server means its
++	# own log line carries it too - so the two logs can be put side by side
++	# exactly, rather than joined by the account and the clock and hoped
++	# over.
++	#
++	# Those two are not RADIUS attributes, though: they are values the
++	# server can expand in its own configuration and they are not in the
++	# list this module is handed. So the configuration is asked to put them
++	# somewhere this can read - see Totp-Request-Id in the notes beside this
++	# file - and what is here is only the reading of it, with the two names
++	# tried directly in case a server does offer them.
++	#
++	# Where none of that yields anything, no id is sent at all. An empty one
++	# would be written on the token server's log line as a fact about
++	# nothing, and something that says nothing is worse than a field that is
++	# not there: the reader can tell "no id" from "an id that means
++	# nothing" only in the first case.
++	my $rid = $RAD_REQUEST{'Totp-Request-Id'};
++	if (!defined($rid) || $rid !~ /\S/) {
++		my $host = $RAD_REQUEST{'Packet-Src-IP-Address'};
++		my $port = $RAD_REQUEST{'Packet-Src-Port'};
++		$port = $RAD_REQUEST{'Packet-Src-IP-Port'}
++			unless defined($port) && $port =~ /\S/;
++		$rid = (defined($host) && $host =~ /\S/ && defined($port) && $port =~ /\S/)
++			? $host . ':' . $port : '';
++	}
++	$rid =~ s/[^A-Za-z0-9.:_-]//g;
++
+ 	# New web object to post to totp-cgi
+ 	my $ua = LWP::UserAgent->new;
+ 	my %form = (
+@@ -335,6 +368,7 @@
+ 		'user'  => $RAD_REQUEST{'User-Name'},
+ 		'token' => unbackslash($RAD_REQUEST{'User-Password'}),
+ 	);
++	$form{'rid'} = $rid if length $rid;
+ 
+ 	my $response = $ua->post($$config{'totpurl'}, \%form);
+ 
+@@ -352,7 +386,45 @@
+ 			}
+ 		}
+ 	} else {
+-		$RAD_REPLY{'Reply-Message'} = 'Denied access by rlm_perl authenticate function. ERROR: ' . $response->status_line;
++		# What the token server actually said, rather than the HTTP status
++		# it said it under. Its body on a refusal is the word ERR and then
++		# the reason - not a valid token, that token has been used already,
++		# the rate limit has been reached - and every one of those arrived
++		# here as the same "400 BAD REQUEST" until this was written. The
++		# reason is the whole of what anybody wants from a refusal, and
++		# putting it in the reply means it reaches the RADIUS log, where
++		# everything else about the attempt already is.
++		#
++		# Only the CGI's own answer, though. When the token server is
++		# broken rather than refusing, what comes back is the web server's
++		# HTML error page, and a page of HTML in a RADIUS attribute is
++		# worse than useless: it is truncated at the far end and it hides
++		# the one thing worth knowing, which is that the token server is
++		# down. So the body is used when it begins with ERR, as the CGI's
++		# does, and the status line is used when it does not.
++		my $why = $response->decoded_content;
++		$why = '' unless defined $why;
++		if ($why =~ /^\s*ERR\b/) {
++			$why =~ s/^\s*ERR\s*//;
++			$why =~ s/\s+/ /g;
++			$why =~ s/^\s+|\s+$//g;
++		} else {
++			$why = '';
++		}
++		$why = 'the token server answered ' . $response->status_line
++			unless length $why;
++		# One Reply-Message holds 253 bytes at the outside, header and
++		# all, so the WHOLE line is cut to fit rather than the reason
++		# alone - cutting the reason to a fixed length and then adding
++		# words in front of it is how a message ends up over the limit
++		# and split in two by the server.
++		#
++		# 180 was the first guess and it was too short by exactly the
++		# part that matters: an SSL failure names the trouble at the
++		# END of the line, so `...SSL routines:SSL3_GET_SERVER_CERTIFI`
++		# arrived without the words `certificate verify failed` on it.
++		my $line = 'Denied by the token server: ' . $why;
++		$RAD_REPLY{'Reply-Message'} = substr($line, 0, 250);
+ 	}
+ 
+ 	# Make sure a REJECT has some sort of message
