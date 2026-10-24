@@ -1,0 +1,122 @@
+diff -ruN raddb/modules/detail raddb.new/modules/detail
+--- a/modules/detail	2017-07-18 14:13:46.000000000 +0200
++++ b/modules/detail	2026-09-26 10:56:32.772587022 +0200
+@@ -76,7 +76,7 @@
+ 	#  Log the Packet src/dst IP/port.  This is disabled by
+ 	#  default, as that information isn't used by many people.
+ 	#
+-#	log_packet_header = yes
++	log_packet_header = yes
+ 
+ 	#
+ 	# Certain attributes such as User-Password may be
+diff -ruN raddb/modules/detail.log raddb.new/modules/detail.log
+--- a/modules/detail.log	2017-07-18 14:13:46.000000000 +0200
++++ b/modules/detail.log	2026-09-26 10:56:32.772660051 +0200
+@@ -17,6 +17,9 @@
+ detail auth_log {
+ 	detailfile = ${radacctdir}/%{%{Packet-Src-IP-Address}:-%{Packet-Src-IPv6-Address}}/auth-detail-%Y%m%d
+ 
++	#  Log packet src/dst IP + port of the request
++	log_packet_header = yes
++
+ 	#
+ 	#  This MUST be 0600, otherwise anyone can read
+ 	#  the users passwords!
+@@ -39,6 +42,8 @@
+ detail reply_log {
+ 	detailfile = ${radacctdir}/%{%{Packet-Src-IP-Address}:-%{Packet-Src-IPv6-Address}}/reply-detail-%Y%m%d
+ 
++	log_packet_header = yes
++
+ 	detailperm = 0600
+ }
+ 
+diff -ruN raddb/modules/linelog raddb.new/modules/linelog
+--- a/modules/linelog	2017-07-18 14:13:48.000000000 +0200
++++ b/modules/linelog	2026-09-26 10:56:56.275147688 +0200
+@@ -103,3 +103,32 @@
+ 	}
+ 
+ }
++
++#
++#  Second instance: one-line accounting log.
++#  NOTE: for accounting the "reference" MUST point at the
++#  Accounting-Request sub-section, otherwise nothing is logged.
++#
++linelog linelog_acct {
++	filename = ${logdir}/acct-linelog
++	permissions = 0600
++
++	format = "%t : acct %{%{Acct-Status-Type}:-unknown} user=%{User-Name}"
++
++	reference = "Accounting-Request.%{%{Acct-Status-Type}:-unknown}"
++
++	Accounting-Request {
++		Start = "%t : START user=[%{User-Name}] nas=%{Packet-Src-IP-Address} nas-id=%{NAS-Identifier} port=%{NAS-Port} porttype=%{NAS-Port-Type} cli=%{Calling-Station-Id} did=%{Called-Station-Id} fip=%{Framed-IP-Address} session=%{Acct-Session-Id} mcid=%{Acct-Multi-Session-Id}"
++
++		Interim-Update = "%t : ALIVE user=[%{User-Name}] nas=%{Packet-Src-IP-Address} session=%{Acct-Session-Id} time=%{Acct-Session-Time}s in=%{Acct-Input-Octets} out=%{Acct-Output-Octets}"
++
++		Alive = "%t : ALIVE user=[%{User-Name}] nas=%{Packet-Src-IP-Address} session=%{Acct-Session-Id} time=%{Acct-Session-Time}s in=%{Acct-Input-Octets} out=%{Acct-Output-Octets}"
++
++		Stop = "%t : STOP  user=[%{User-Name}] nas=%{Packet-Src-IP-Address} port=%{NAS-Port} cli=%{Calling-Station-Id} fip=%{Framed-IP-Address} session=%{Acct-Session-Id} time=%{Acct-Session-Time}s in=%{Acct-Input-Octets} out=%{Acct-Output-Octets} cause=%{Acct-Terminate-Cause}"
++
++		Accounting-On  = "%t : NAS-ON  nas=%{Packet-Src-IP-Address} nas-ip=%{NAS-IP-Address} nas-id=%{NAS-Identifier}"
++		Accounting-Off = "%t : NAS-OFF nas=%{Packet-Src-IP-Address} nas-ip=%{NAS-IP-Address} nas-id=%{NAS-Identifier}"
++
++		unknown = "%t : acct-UNKNOWN type=%{Acct-Status-Type} user=[%{User-Name}] nas=%{Packet-Src-IP-Address} session=%{Acct-Session-Id}"
++	}
++}
+diff -ruN raddb/radiusd.conf raddb.new/radiusd.conf
+--- a/radiusd.conf	2017-07-18 14:13:54.000000000 +0200
++++ b/radiusd.conf	2026-09-26 10:56:32.772308313 +0200
+@@ -473,7 +473,7 @@
+ 	#
+ 	#  allowed values: {no, yes}
+ 	#
+-	auth = no
++	auth = yes
+ 
+ 	#  Log passwords with the authentication requests.
+ 	#  auth_badpass  - logs password if it's rejected
+diff -ruN raddb/sites-enabled/default raddb.new/sites-enabled/default
+--- a/sites-enabled/default	2018-09-20 18:41:46.000000000 +0200
++++ b/sites-enabled/default	2026-09-26 10:56:32.772493450 +0200
+@@ -91,7 +91,7 @@
+ 	#  If you want to have a log of authentication requests,
+ 	#  un-comment the following line, and the 'detail auth_log'
+ 	#  section, above.
+-#	auth_log
++	auth_log
+ 
+ 	#
+ 	#  The chap module will set 'Auth-Type := CHAP' if we are
+@@ -436,6 +436,10 @@
+ 	#  Cisco VoIP specific bulk accounting
+ #	pgsql-voip
+ 
++	#  Human readable one-line accounting log
++	#  (/var/log/radius/acct-linelog)
++	linelog_acct
++
+ 	# For Exec-Program and Exec-Program-Wait
+ 	exec
+ 
+@@ -477,7 +481,7 @@
+ 	#  If you want to have a log of authentication replies,
+ 	#  un-comment the following line, and the 'detail reply_log'
+ 	#  section, above.
+-#	reply_log
++	reply_log
+ 
+ 	#
+ 	#  After authenticating the user, do another SQL query.
+@@ -572,6 +576,7 @@
+ 	Post-Auth-Type REJECT {
+ 		# log failed authentications in SQL, too.
+ #		sql
++		reply_log
+ 		attr_filter.access_reject
+ 	}
+ }
