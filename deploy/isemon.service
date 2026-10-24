@@ -1,0 +1,87 @@
+[Unit]
+Description=isemon — Cisco ISE VPN banning daemon (reads the ISE syslog, carries bans to a Mikrotik)
+Documentation=file:/usr/local/lib/isemon/INSTALL.md
+After=network-online.target rsyslog.service
+Wants=network-online.target
+# Never give up restarting: the ISE nodes may be down for a long time, and a
+# daemon that gave up would silently stop banning anybody.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/lib/isemon/isemon.py
+# Reloading reopens the log file after logrotate and reads the config again;
+# the daemon handles SIGHUP.
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+User=isemon
+Group=isemon
+
+# /run/isemon is recreated on every boot, and holds the API token. 0750 plus
+# nginx being a member of the isemon group is what lets PHP read it.
+# Nothing it makes is anybody else's to read: its database, its copies and
+# its configuration are the daemon's own. The one thing the web server reads,
+# the API token, is given to the web group by the daemon itself.
+UMask=0027
+RuntimeDirectory=isemon
+RuntimeDirectoryMode=0750
+StateDirectory=isemon
+StateDirectoryMode=0750
+LogsDirectory=isemon
+LogsDirectoryMode=0750
+# /etc/isemon is here for one file and one reason: which database everything
+# is kept in, and how to reach it, cannot be saved in the database it is the
+# address of. Those seven settings live in config.json and the dashboard has
+# to be able to change them - including on a machine whose database will not
+# open, which is exactly when somebody needs to. Everything else it saves is
+# still in the database under /var/lib/isemon. The directory has to be
+# writable by this account as well: install.sh makes it 2770 root:isemon.
+ReadWritePaths=/var/lib/isemon /var/log/isemon /etc/isemon
+
+# The ISE logs themselves are only ever read. They are listed here rather than
+# left to ProtectSystem, because on most machines they are under /var/log and
+# written by rsyslog as root with no group: the installer sets an ACL so this
+# user may read them, and nothing here may write to them.
+ReadOnlyPaths=-/var/log/remote
+
+# The daemon is what turns a failed login into a rule on the router, so it
+# gets the CPU when it asks. The memory cap is a backstop only, and is half of
+# the machine (1.10.181): it was 768 MB, and a firewall's log of a busy site
+# - the VPN of a week put together, the public lists held in memory, the
+# files it reads kept in the page cache, which the kernel charges to this
+# unit too - took the daemon up against it. A unit at its cap is not killed
+# at once: every thread of it waits while the kernel finds memory, which on
+# one site was the whole program standing still for half a minute at a time
+# and the dashboard saying the daemon was not answering.
+MemoryMax=50%
+# Every dashboard request is answered on a thread of its own, and glibc gives
+# each thread that allocates its own malloc arena; over a day that looks like
+# a slow leak though nothing is actually held.
+Environment=MALLOC_ARENA_MAX=2
+Nice=-5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=2
+
+# It reads some log files, writes two directories, and talks ssh to one
+# router. Everything else is closed, /etc included except for the one
+# directory named in ReadWritePaths above.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+# NOT MemoryDenyWriteExecute: ssh is started as a child process to reach the
+# router, and OpenSSH's crypto refuses to run under it on some builds.
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target
