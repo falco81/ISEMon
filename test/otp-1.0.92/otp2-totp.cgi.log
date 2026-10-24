@@ -1,0 +1,8 @@
+Oct 23 13:15:42 otp2 totp.cgi[4263]: Failure: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:50268, message=Not a valid token
+Oct 23 18:14:11 otp2 totp.cgi[21710]: Failure: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:55569, message=Token has already been used once
+Oct 23 18:14:32 otp2 totp.cgi[21710]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:46360, message=Valid token used
+Oct 23 18:14:33 otp2 totp.cgi[21710]: Failure: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:41322, message=Token has already been used once
+Oct 23 18:15:50 otp2 totp.cgi[21710]: Failure: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:46955, message=Not a valid token
+Oct 23 18:15:55 otp2 totp.cgi[21710]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:57233, message=Valid token used
+Oct 23 18:16:32 otp2 totp.cgi[21710]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:49376, message=Valid token used
+Oct 24 13:13:48 otp2 totp.cgi[330655]: Success: user=jnovak@example.local, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:57441, message=Code sent by SMS accepted
