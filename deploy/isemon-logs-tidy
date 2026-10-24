@@ -1,0 +1,47 @@
+#!/bin/sh
+# /etc/cron.daily/isemon-logs-tidy
+#
+# The two things logrotate cannot do for /var/log/remote.
+#
+# 1. The FreeRADIUS accounting files. They are named for the day they cover
+#    - detail-20260925 - so logrotate would rotate the day still being
+#    written; `rotate 0` deletes it outright. They are simply aged out here
+#    instead. Compressing them is safe: the daemon deliberately follows the
+#    newest UNCOMPRESSED one, so a .gz beside it is skipped rather than
+#    followed and read as empty. Today's and yesterday's are left alone.
+#
+# 2. Rotated copies left behind by a change of naming. logrotate prunes only
+#    the series it is currently using, so the day somebody adds or removes
+#    `dateext` the other series stops being counted and sits there for ever.
+#    Anything of the form x.log.1 / x.log.2.gz older than a month goes.
+#
+# 3. Rotated copies that were left uncompressed - the ones from before
+#    `compress` was put in the logrotate file, and any left by a rotation
+#    that does not compress. ISE syslog gzips about twenty-three to one, so
+#    this is the difference between a gigabyte and fifty megabytes. Only
+#    copies, never the live file: the pattern ends in .N or -YYYYMMDD, and a
+#    plain x.log can never match it. Three days old at the least, so that
+#    logrotate's own `delaycompress` has always had its turn first and the
+#    two never reach for the same file.
+#
+# Nothing here touches a live file, and nothing here touches the database.
+# The daemon reads .gz, .bz2 and .xz copies wherever it reads copies at all.
+
+KEEP_DAYS=30
+PACK_AFTER=3
+
+find /var/log/remote -type f -name 'detail-*' ! -name '*.gz' -mtime +2 \
+     -exec gzip -9 {} + 2>/dev/null
+
+find /var/log/remote -type f -name 'detail-*' -mtime +"$KEEP_DAYS" \
+     -delete 2>/dev/null
+
+find /var/log/remote -regextype posix-extended \
+     -regex '.*\.log\.[0-9]+(\.gz)?$' -mtime +"$KEEP_DAYS" \
+     -delete 2>/dev/null
+
+find /var/log/remote -type f -regextype posix-extended \
+     -regex '.*\.log(\.[0-9]+|-[0-9]{8})$' -mtime +"$PACK_AFTER" \
+     -exec gzip -9 {} + 2>/dev/null
+
+exit 0
