@@ -1,0 +1,12 @@
+Oct 23 16:54:27 otp1 totp.cgi[3890]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:46465, message=Valid token used
+Oct 23 16:55:04 otp1 totp.cgi[3890]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:35818, message=Valid token used
+Oct 23 18:14:05 otp1 totp.cgi[23031]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:38212, message=Valid token used
+Oct 23 22:41:38 otp1 totp.cgi[95652]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:59910, message=Valid token used
+Oct 24 12:16:48 otp1 totp.cgi[316606]: Failure: user=jnovak@example.local, mode=PROVISION, host=127.0.0.1, message=Not a valid token
+Oct 24 12:35:51 otp1 totp.cgi[321220]: Success: user=jnovak@example.local, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:33033, message=Code sent by SMS accepted
+Oct 24 12:36:57 otp1 totp.cgi[321220]: Failure: user=jnovak@example.local, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:41029, message=Not a valid token
+Oct 24 12:37:08 otp1 totp.cgi[321220]: Success: user=jnovak@example.local, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:34418, message=Code sent by SMS accepted
+Oct 24 12:48:15 otp1 totp.cgi[324420]: Success: user=jnovak@example.int, mode=PAM_SM_AUTH, host=127.0.0.1, rid=192.0.2.32:53234, message=Valid token used
+Oct 24 12:53:00 otp1 totp.cgi[327437]: Success: user=jnovak@example.local, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:50130, message=Code sent by SMS accepted
+Oct 24 13:06:48 otp1 totp.cgi[331260]: Failure: user=jnovak@example.local, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:45026, message=No token is enrolled for this account
+Oct 24 13:10:50 otp1 totp.cgi[331260]: Success: user=jnovak@example.local, mode=PAM_SM_AUTH, host=127.0.0.1, rid=127.0.0.1:52188, message=Code sent by SMS accepted
