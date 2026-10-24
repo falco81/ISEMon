@@ -1,0 +1,264 @@
+"""fw_vpn_fold as it was in 1.10.170, before the sessions were looked up by
+person and by address: what fixes171.py checks the quicker one gives the
+same answer as. Run inside the namespace of isemon.py."""
+
+
+def fw_vpn_fold(rows, now=None):
+    """Who is connected and which tunnels are up, out of the VPN lines of the
+    window, oldest first. Each row is a line with its `fields` unpacked.
+    FortiGate and FTD alike: FortiGate says so outright every few minutes
+    (`tunnel-stats`), FTD by its sessions beginning and ending and its SAs
+    being made, rekeyed and deleted."""
+    now = float(now or time.time())
+    clients, open_by, tunnels, pending = {}, {}, {}, {}
+    handles, by_handle = {}, {}
+
+    def client_for(r, f, start):
+        fw, user, ip = r.get('fw') or '', str(r.get('user') or ''), r.get('srcip') or ''
+        tid = f.get('tunnelid') if str(f.get('tunnelid') or '0') not in ('0', '') else ''
+        key = ('fg', fw, tid) if tid else ('ftd', fw, user.lower(), ip)
+        one = open_by.get(key)
+        if one is None:
+            if not start or not user or user.strip('*') == '' or user == 'N/A':
+                return None
+            ident = fw_vpn_key(*(key + (int(r['ts']),)))
+            one = {'id': ident, 'fw': fw, 'dev': r.get('dev') or '', 'user': user,
+                   'srcip': ip, 'started': float(r['ts']), 'since_known': False,
+                   'last': float(r['ts']), 'inner': '', 'group': '', 'client': '',
+                   'kind': '', 'drops': 0, 'connections': 0, 'mtu': '', 'why_last': '',
+                   'sent': 0, 'rcvd': 0, 'duration': 0, 'tunnelid': tid, 'ended': 0,
+                   'end_reason': '', 'lines': 0}
+            one.update(pending.pop((fw, user.lower()), {}))
+            if one.get('handle'):
+                handles[one['handle']] = one
+            clients[ident] = one
+            open_by[key] = one
+        return one
+
+    closed_at = {}
+
+    def close(one, ts, why):
+        one['ended'], one['end_reason'] = float(ts), why or ''
+        closed_at[(one['fw'], one['user'].lower(), one['srcip'])] = float(ts)
+        for k in [k for k, v in open_by.items() if v is one]:
+            del open_by[k]
+
+    for r in rows:
+        f = r.get('fields') or {}
+        ts = float(r.get('ts') or 0)
+        msgid = str(f.get('msgid') or '')
+        action = str(r.get('action') or '')
+        area = r.get('area') or ''
+        if area == 'client-vpn':
+            if r.get('verdict') == 'fail':
+                continue
+            if msgid in FTD_VPN_FREED or (not msgid and action == 'address-freed'):
+                gone = str(f.get('assigned') or '')
+                for one in list(open_by.values()):
+                    if gone and one['inner'] == gone:
+                        close(one, ts, 'its address inside the VPN was given back')
+                continue
+            # The address pools speak of a session by its handle, without a
+            # name: what they say waits for the line that names it.
+            handle = str(f.get('handle') or '')
+            if handle and not r.get('user'):
+                said = {}
+                if f.get('pool'):
+                    said['pool'] = str(f['pool'])
+                if f.get('assigned') and msgid != '737016':
+                    said['inner'] = str(f['assigned'])
+                if handle in handles:
+                    handles[handle].update(said)
+                else:
+                    by_handle.setdefault(handle, {}).update(said)
+                if msgid not in FTD_VPN_FREED:
+                    continue
+            said_first = {k: str(f[k]) for k in ('group_policy', 'dap') if f.get(k)}
+            if handle and r.get('user'):
+                said_first.update(by_handle.pop(handle, {}))
+                said_first['handle'] = handle
+            if msgid and (said_first or not r.get('srcip')) and r.get('user'):
+                # An address given out, said without where the person is,
+                # belongs to the newest session of theirs still open. The
+                # group policy and the DAP records are said before the
+                # session begins: they wait for it.
+                mine = [o for o in open_by.values() if o['fw'] == (r.get('fw') or '')
+                        and o['user'].lower() == str(r['user']).lower()]
+                if mine and f.get('assigned'):
+                    max(mine, key=lambda o: o['last'])['inner'] = str(f['assigned'])
+                elif f.get('assigned') and msgid not in FTD_VPN_FREED:
+                    said_first['inner'] = str(f['assigned'])
+                if said_first:
+                    pending.setdefault(((r.get('fw') or ''), str(r['user']).lower()),
+                                       {}).update(said_first)
+                    if mine:
+                        newest = max(mine, key=lambda o: o['last'])
+                        newest.update(said_first)
+                        if said_first.get('handle'):
+                            handles[said_first['handle']] = newest
+                if msgid not in FTD_VPN_FREED:
+                    continue
+            ftd_start = msgid in FTD_VPN_START or (not msgid and action == 'tunnel-up')
+            # Lines of one moment come back in any order: a session's last
+            # lines written in the same second as its end are not a new one.
+            tkey = (r.get('fw') or '', str(r.get('user') or '').lower(), r.get('srcip') or '')
+            if tkey in closed_at and ts - closed_at[tkey] <= 5 and msgid not in (
+                    '722022', '113039', '716001') and not (not msgid and action == 'tunnel-up'):
+                continue
+            fg_alive = not msgid and action == 'tunnel-stats'
+            one = client_for(r, f, ftd_start or fg_alive or msgid in ('722037', '716058',
+                                                                     '716059', '722035'))
+            if one is None:
+                continue
+            one['last'] = max(one['last'], ts)
+            one['lines'] += 1
+            if f.get('group') and f['group'] != 'N/A':
+                one['group'] = f['group']
+            one['kind'] = one['kind'] or str(f.get('tunneltype') or '')
+            if f.get('assigned'):
+                one['inner'] = str(f['assigned'])
+            if f.get('tunnelip') and f['tunnelip'] != 'N/A':
+                one['inner'] = str(f['tunnelip'])
+            if f.get('client'):
+                one['client'] = str(f['client'])
+            if f.get('group_policy'):
+                one['group_policy'] = str(f['group_policy'])
+            if f.get('dap'):
+                one['dap'] = str(f['dap'])
+            if one['lines'] == 1 and (ftd_start or (not msgid and action == 'tunnel-up')):
+                one['started'], one['since_known'] = ts, True
+            if msgid in ('722022', '113039', '716001') or (not msgid and action == 'tunnel-up'):
+                one['connections'] += 1
+            if fg_alive or (not msgid and action in ('tunnel-up', 'tunnel-down')):
+                if r.get('duration'):
+                    one['started'] = min(one['started'], ts - float(r['duration']))
+                    one['since_known'] = True
+                    one['duration'] = int(r['duration'])
+                one['sent'], one['rcvd'] = int(r.get('sent') or 0), int(r.get('rcvd') or 0)
+                one['nextstat'] = int(fg_number(f.get('nextstat') or 0) or 0)
+            if msgid in ('722037', '716058'):
+                one['drops'] += 1
+                one['why_last'] = str(f.get('reason') or f.get('logdesc') or '')
+            if f.get('dtls'):
+                one['dtls'] = True
+            if f.get('group_policy'):
+                one['group_policy'] = str(f['group_policy'])
+            if msgid == '722035':
+                one['mtu'] = '%s > %s' % (f.get('packet') or '?', f.get('threshold') or '?')
+            if msgid in FTD_VPN_END or (not msgid and action == 'tunnel-down'):
+                if msgid == '113019':
+                    one['duration'] = int(r.get('duration') or 0)
+                    one['sent'], one['rcvd'] = int(r.get('sent') or 0), int(r.get('rcvd') or 0)
+                    if one['duration'] and not one['since_known']:
+                        one['started'], one['since_known'] = ts - one['duration'], True
+                close(one, ts, str(f.get('reason') or f.get('logdesc') or 'ended'))
+        elif area == 's2s-vpn':
+            peer = r.get('srcip') or ''
+            if not peer:
+                continue
+            key = (r.get('fw') or '', peer)
+            t = tunnels.get(key)
+            msg = str(r.get('msg') or '')
+            if action == 'negotiate':
+                if f.get('local_ts') or f.get('remote_ts'):
+                    if t is None:
+                        tunnels[key] = t = fw_vpn_tunnel(r, f, ts, up=False)
+                    t['local_ts'] = str(f.get('local_ts') or t.get('local_ts') or '')
+                    t['remote_ts'] = str(f.get('remote_ts') or t.get('remote_ts') or '')
+                    # A peer often has a child SA for each pair of networks.
+                    pair = {'local': t['local_ts'], 'remote': t['remote_ts'], 'ts': ts}
+                    t['selectors'] = [x for x in t['selectors']
+                                      if (x['local'], x['remote']) != (pair['local'],
+                                                                       pair['remote'])]
+                    t['selectors'] = ([pair] + t['selectors'])[:24]
+                continue
+            if action not in ('tunnel-up', 'tunnel-down', 'tunnel-stats', 'phase2-up',
+                              'phase2-down', 'install_sa', 'tunnel-reset'):
+                continue
+            if t is None:
+                tunnels[key] = t = fw_vpn_tunnel(r, f, ts, up=False)
+            t['lines'] += 1
+            t['last'] = max(t['last'], ts)
+            if f.get('group') and f['group'] not in ('N/A', peer):
+                t['group'] = f['group']
+            if f.get('vpntunnel') and f['vpntunnel'] != 'N/A':
+                t['name'] = f['vpntunnel']
+            if str(f.get('tunneltype') or '').startswith('IKE'):
+                t['ike'] = f['tunneltype']
+            elif f.get('tunneltype') and f['tunneltype'] != 'N/A' and not t['kind']:
+                t['kind'] = f['tunneltype']
+            if f.get('locip'):
+                t['local'] = f['locip']
+            elif r.get('dstip'):
+                t['local'] = r['dstip']
+            said = re.search(r'Reason: (.+?)\.?\s*$', msg)
+            why = said.group(1) if said else str(f.get('reason') or '')
+            rekey = 'rekey' in why.lower()
+            if msgid == '602303' or action == 'install_sa':
+                spi = str(f.get('spi') or '')
+                if spi:
+                    t['sas'][spi] = {'dir': f.get('direction') or '', 'ts': ts,
+                                     'kind': f.get('sa') or ''}
+                t['sa_made'] += 1
+                t['last_rekey'] = ts if t['up'] else t['last_rekey']
+                fw_vpn_up(t, ts, known=False)
+            elif msgid == '602304':
+                t['sas'].pop(str(f.get('spi') or ''), None)
+                t['sa_gone'] += 1
+                if not t['sas']:
+                    t['empty_at'] = ts
+            elif action == 'tunnel-reset':
+                # The peer started over: what was up is gone, a new one follows.
+                t['resets'] += 1
+                t['last_reset'] = ts
+                fw_vpn_said(t, ts, 'started over by the peer', why)
+            elif action in ('tunnel-up', 'phase2-up'):
+                if rekey:
+                    t['last_rekey'] = ts
+                    t['rekeys'] += 1
+                    fw_vpn_up(t, ts, known=False)
+                    fw_vpn_said(t, ts, 'rekeyed', why)
+                else:
+                    fw_vpn_up(t, ts, known=True)
+                    # Up anew, whatever it was before: this is when it began.
+                    t['since'], t['since_known'] = ts, True
+                    fw_vpn_said(t, ts, 'came up', why)
+            elif action == 'tunnel-stats':
+                fw_vpn_up(t, ts, known=False)
+                if r.get('duration'):
+                    t['since'] = min(t['since'] or ts, ts - float(r['duration']))
+                    t['since_known'] = True
+                t['sent'], t['rcvd'] = int(r.get('sent') or 0), int(r.get('rcvd') or 0)
+            elif action in ('tunnel-down', 'phase2-down'):
+                if rekey:
+                    t['last_rekey'] = ts
+                else:
+                    t['up'], t['down_at'], t['down_reason'] = False, ts, why or 'went down'
+                    t['sas'] = {}
+                    fw_vpn_said(t, ts, 'went down', why)
+    out_clients, out_tunnels = [], []
+    for one in clients.values():
+        if one['ended']:
+            continue
+        quiet = now - one['last']
+        limit = (3 * one['nextstat'] + 60) if one.get('nextstat') else FW_VPN_CLIENT_QUIET_S
+        one['quiet'] = quiet > limit
+        one['for_s'] = int(now - one['started'])
+        out_clients.append(one)
+    for t in tunnels.values():
+        if not t['up']:
+            continue
+        if t.get('empty_at') and not t['sas'] and now - t['empty_at'] > FW_VPN_SA_GAP_S \
+                and t['empty_at'] >= t['last'] - FW_VPN_SA_GAP_S:
+            continue
+        if now - t['last'] > FW_VPN_TUNNEL_QUIET_S:
+            continue
+        t['sas'] = [dict(spi=k, **v) for k, v in sorted(t['sas'].items(),
+                                                        key=lambda kv: -kv[1]['ts'])]
+        t['for_s'] = int(now - (t['since'] or t['last']))
+        out_tunnels.append(t)
+    out_clients.sort(key=lambda c: (c['quiet'], -c['started']))
+    out_tunnels.sort(key=lambda t: (t['fw'], t.get('name') or t.get('group') or t['peer']))
+    return {'clients': out_clients, 'tunnels': out_tunnels,
+            'ended_clients': sum(1 for c in clients.values() if c['ended']),
+            'down_tunnels': sum(1 for t in tunnels.values() if not t['up'] and t['lines'])}
