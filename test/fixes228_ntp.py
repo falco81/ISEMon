@@ -72,8 +72,8 @@ TRACK_BAD = ('00000000,,0,0.000000000,0.000000000,0.000000000,0.000000000,0.000,
 chronyc = stub / 'chronyc'
 chronyc.write_text('#!/bin/sh\necho "chronyc $*" >> %s\n'
                    'case "$*" in\n'
-                   '  "-c tracking") cat %s;;\n'
-                   '  "-c sources") cat %s;;\n'
+                   '  "-c tracking"|"-n -c tracking") cat %s;;\n'
+                   '  "-c sources"|"-n -c sources") cat %s;;\n'
                    '  makestep) echo "200 OK";;\n'
                    '  *) echo "200 OK";;\n'
                    'esac\n' % (CALLS, stub / 'tracking', stub / 'sources'))
@@ -481,7 +481,7 @@ try:
         'ensure_packages fresh' in inst, 'chrony_check upgrade' in inst,
         'chrony_check fresh' in inst), (True, True, True, True, True))
     ok('...chronyd started only where nothing else keeps the time',
-       'systemd-timesyncd ntpd ntp openntpd' in fn and 'enable --now chronyd' in fn
+       'systemd-timesyncd ntpd ntp ntpsec openntpd' in inst and 'enable --now chronyd' in fn
        and 'set-ntp' not in fn and '/etc/chrony.conf' not in fn)
     doc = (ROOT / 'docs' / 'time.md').read_text()
     ok('docs/time.md', all(x in doc for x in ('#isemon#', '/etc/chrony.conf.isemon-before',

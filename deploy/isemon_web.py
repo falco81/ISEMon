@@ -133,7 +133,7 @@ def write_root(path, text, mode):
     os.makedirs(folder, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix='.isemon-', dir=folder)
     try:
-        with os.fdopen(fd, 'w') as f:
+        with os.fdopen(fd, 'w', encoding='utf-8', errors='surrogateescape') as f:
             f.write(text)
         os.chmod(tmp, mode)
         os.replace(tmp, path)
@@ -804,8 +804,11 @@ def fw_into(text, lines, on):
     end = next((i for i in range(start + 1, len(rows)) if rows[i].strip() == 'COMMIT'), None)
     if end is None:
         raise Refused('the saved firewall has a *filter table without COMMIT')
-    last_decl = max([i for i in range(start, end) if rows[i].startswith(':')] or [start])
     first_input = next((i for i in range(start, end) if rows[i].startswith('-A INPUT')), end)
+    # The last declaration BEFORE the first rule of INPUT (1.10.238): one of
+    # a hand-written file that came after it had the rows between written
+    # twice.
+    last_decl = max([i for i in range(start, first_input) if rows[i].startswith(':')] or [start])
     block = ['%s isemon opens what its functions need here (Settings - Firewall and access); '
              'changed only there' % FW_MARK] + lines + ['%s end' % FW_MARK]
     rows = (rows[:last_decl + 1] + [':%s - [0:0]' % FW_CHAIN] +
@@ -1053,11 +1056,32 @@ def look():
     return out
 
 
-def look_part():
+def drop_entry(name):
+    """An entry of the request folder taken away, whatever the isemon account
+    made of it (1.10.238): a file, a link, an empty folder - or a folder with
+    something in it, moved aside and never read. True when one was there."""
     d = web_fd()
     try:
-        os.unlink(LOOK_ASK, dir_fd=d)
+        os.unlink(name, dir_fd=d)
+        return True
     except FileNotFoundError:
+        return False
+    except OSError:
+        pass
+    try:
+        os.rmdir(name, dir_fd=d)
+        return True
+    except OSError:
+        pass
+    try:
+        os.rename(name, '.refused-%s-%d' % (name, int(time.time())), src_dir_fd=d, dst_dir_fd=d)
+    except OSError:
+        pass
+    return True
+
+
+def look_part():
+    if not drop_entry(LOOK_ASK):
         return
     try:
         out = look()
@@ -1084,14 +1108,14 @@ NTP_END = '# ---- isemon: end ----'
 NTP_OFF = '#isemon# '
 NTP_KEYS = ('server', 'pool', 'peer', 'makestep', 'allow', 'minsources', 'maxdistance',
             'sourcedir')
-NTP_NAME_RE = re.compile(r'^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
-                         r'(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$')
+NTP_NAME_RE = re.compile(r'^(?=.{1,253}\Z)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
+                         r'(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\Z')
 TZ_RE = re.compile(r'^[A-Za-z][A-Za-z0-9_+-]{0,39}(/[A-Za-z0-9_+-]{1,40}){0,3}\Z')
 
 
-def ntp_run(cmd, what, ok=(0,)):
+def ntp_run(cmd, what, ok=(0,), timeout=60):
     try:
-        got = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        got = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     except (OSError, subprocess.TimeoutExpired) as e:
         raise Refused('%s: %s' % (what, str(e)[:200]))
     if got.returncode not in ok:
@@ -1116,7 +1140,7 @@ def ntp_read():
     if not out['chrony']:
         return out
     try:
-        f = ntp_run([CHRONYC, '-c', 'tracking'], 'chronyc tracking').strip().split(',')
+        f = ntp_run([CHRONYC, '-n', '-c', 'tracking'], 'chronyc tracking').strip().split(',')
         if len(f) >= 14:
             out['tracking'] = {'ref_id': f[0][:40], 'ref': f[1][:120], 'stratum': int(f[2] or 0),
                                'ref_time': float(f[3] or 0), 'offset': float(f[4] or 0),
@@ -1131,7 +1155,7 @@ def ntp_read():
         if '506' in str(e) or 'Cannot talk to daemon' in str(e):
             out['down'] = True
     try:
-        for line in ntp_run([CHRONYC, '-c', 'sources'], 'chronyc sources').splitlines()[:40]:
+        for line in ntp_run([CHRONYC, '-n', '-c', 'sources'], 'chronyc sources').splitlines()[:40]:
             f = line.split(',')
             if len(f) < 10:
                 continue
@@ -1147,11 +1171,10 @@ def ntp_read():
     except (Refused, OSError):
         pass
     try:
-        with open(CHRONY_CONF) as f:
-            text = f.read()
+        text = chrony_read()
         out['managed'] = NTP_BEGIN in text
-        out['own'] = [l.strip()[:200] for l in text.splitlines()
-                      if (l.split() or [''])[0] in ('server', 'pool', 'peer')][:20]
+        out['own'] = [l.strip()[:200] for l in text.split('\n')
+                      if (l.split() or [''])[0].lower() in ('server', 'pool', 'peer')][:20]
     except OSError:
         out['managed'] = False
     out['conf'] = CHRONY_CONF
@@ -1169,6 +1192,8 @@ def ntp_checked(r):
         if not isinstance(x, dict):
             raise Refused('a server is an object')
         host = str(x.get('host') or '').strip().lower().rstrip('.')
+        if re.search(r'[\s\x00-\x1f\x7f]', host):
+            raise Refused('%r is not a host name or an address' % host[:80])
         try:
             host = str(plain(host, 'address'))
         except ValueError:
@@ -1188,14 +1213,14 @@ def ntp_checked(r):
     try:
         th = float((r.get('makestep') or [1.0, 3])[0])
         lim = int((r.get('makestep') or [1.0, 3])[1])
-    except (TypeError, ValueError, IndexError, KeyError):
+    except (TypeError, ValueError, IndexError, KeyError, OverflowError):
         raise Refused('makestep is a threshold in seconds and a number of updates')
     if not (0.001 <= th <= 3600) or not (-1 <= lim <= 1000):
         raise Refused('makestep: 0.001 - 3600 s, and -1 (always) to 1000 updates')
     out['makestep'] = [th, lim]
     try:
         out['minsources'] = max(1, min(10, int(r.get('minsources') or 1)))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         out['minsources'] = 1
     tz = str(r.get('timezone') or '').strip()
     if tz and not TZ_RE.match(tz):
@@ -1206,10 +1231,25 @@ def ntp_checked(r):
     return out
 
 
+def chrony_read():
+    """chrony.conf as it is, whatever its letters (1.10.238): a comment in
+    Latin-2 stopped every reading of the clock."""
+    with open(CHRONY_CONF, encoding='utf-8', errors='surrogateescape') as f:
+        return f.read()
+
+
 def ntp_conf_text(text, n):
     """chrony.conf with isemon's block (or without it, put back as it was)."""
+    # Not set by isemon, and not to be: the file exactly as it is - never
+    # rewritten for a final newline (1.10.238).
+    if not n['manage'] and NTP_BEGIN not in text and NTP_OFF not in text:
+        return text
+    lines = text.split('\n')
+    if NTP_BEGIN in [l.strip() for l in lines] and NTP_END not in [l.strip() for l in lines]:
+        raise Refused('%s has isemon\'s beginning mark and not its end: put it right by hand '
+                      '(nothing after the mark is taken away)' % CHRONY_CONF)
     out, inside = [], False
-    for l in text.splitlines():
+    for l in lines:
         if l.strip() == NTP_BEGIN:
             inside = True
             continue
@@ -1223,7 +1263,7 @@ def ntp_conf_text(text, n):
         out.append(l)
     if not n['manage']:
         return '\n'.join(out).rstrip('\n') + '\n'
-    kept = [NTP_OFF + l if (l.split() or [''])[0] in NTP_KEYS else l for l in out]
+    kept = [NTP_OFF + l if (l.split() or [''])[0].lower() in NTP_KEYS else l for l in out]
     block = [NTP_BEGIN]
     for x in n['servers']:
         opts = [o for o, on in (('iburst', x['iburst']), ('prefer', x['prefer']),
@@ -1236,6 +1276,8 @@ def ntp_conf_text(text, n):
     if n['minsources'] > 1:
         block.append('minsources %d' % n['minsources'])
     block.append(NTP_END)
+    if any('\n' in l or '\r' in l for l in block):
+        raise Refused('a line of the time servers is not one line')
     return '\n'.join([l.rstrip() for l in kept]).rstrip('\n') + '\n\n' + '\n'.join(block) + '\n'
 
 
@@ -1243,17 +1285,31 @@ def ntp_apply(n):
     said = []
     if n['manage'] and not shutil.which(CHRONYC) and not NO_SERVICES:
         if shutil.which('dnf'):
-            ntp_run(['dnf', '-y', 'install', 'chrony'], 'dnf install chrony')
+            ntp_run(['dnf', '-y', 'install', 'chrony'], 'dnf install chrony', timeout=240)
             said.append('chrony installed')
         else:
             raise Refused('chrony is not on this machine')
     try:
-        with open(CHRONY_CONF) as f:
-            had = f.read()
+        had = chrony_read()
     except FileNotFoundError:
         had = 'driftfile /var/lib/chrony/drift\nrtcsync\nlogdir /var/log/chrony\n'
     new = ntp_conf_text(had, n)
     if new != had:
+        live = not NO_SERVICES and not NTP_NO_SERVICE
+        # chronyd's own word on the file before it is put in (1.10.238): one
+        # it refuses stops chronyd, and nothing keeps the clock.
+        chronyd = shutil.which('chronyd') if live else None
+        if chronyd:
+            fd, tmp = tempfile.mkstemp(prefix='.isemon-chrony-', dir=os.path.dirname(CHRONY_CONF))
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8', errors='surrogateescape') as f:
+                    f.write(new)
+                ntp_run([chronyd, '-p', '-f', tmp], 'chronyd -p (the new chrony.conf)')
+            finally:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
         if NTP_BEGIN not in had:
             try:
                 write_root(CHRONY_CONF + '.isemon-before', had, 0o644)
@@ -1262,9 +1318,18 @@ def ntp_apply(n):
         write_root(CHRONY_CONF, new, 0o644)
         said.append('%s: %s' % (CHRONY_CONF, ', '.join(x['host'] for x in n['servers'])
                                 if n['manage'] else 'its own servers again'))
-        if not NO_SERVICES and not NTP_NO_SERVICE:
-            ntp_run(['systemctl', 'enable', '--now', 'chronyd'], 'systemctl enable chronyd')
-            ntp_run(['systemctl', 'restart', 'chronyd'], 'systemctl restart chronyd')
+        if live:
+            try:
+                ntp_run(['systemctl', 'enable', '--now', 'chronyd'], 'systemctl enable chronyd')
+                ntp_run(['systemctl', 'restart', 'chronyd'], 'systemctl restart chronyd')
+            except Refused as e:
+                # Put back as it was, and chronyd started with that.
+                write_root(CHRONY_CONF, had, 0o644)
+                try:
+                    ntp_run(['systemctl', 'restart', 'chronyd'], 'systemctl restart chronyd')
+                except Refused:
+                    pass
+                raise Refused('%s - chrony.conf put back as it was' % e)
             said.append('chronyd restarted')
     if n['timezone']:
         try:
@@ -1273,8 +1338,12 @@ def ntp_apply(n):
         except Refused:
             cur = ''
         if cur != n['timezone']:
-            ntp_run([TIMEDATECTL, 'set-timezone', n['timezone']], 'timedatectl set-timezone')
-            said.append('time zone: %s' % n['timezone'])
+            # Said on its own (1.10.238): the time servers were set all the same.
+            try:
+                ntp_run([TIMEDATECTL, 'set-timezone', n['timezone']], 'timedatectl set-timezone')
+                said.append('time zone: %s' % n['timezone'])
+            except Refused as e:
+                said.append('the time zone was NOT set: %s' % e)
     if n['manage'] and not NO_SERVICES and not NTP_NO_SERVICE and shutil.which(TIMEDATECTL):
         ntp_run([TIMEDATECTL, 'set-ntp', 'true'], 'timedatectl set-ntp', ok=(0, 1))
     return {'said': said}
@@ -1292,7 +1361,13 @@ def ntp_drop(d):
         try:
             os.rmdir(NTP_ASK, dir_fd=d)
         except OSError:
-            pass
+            # A folder with something in it (1.10.238): moved aside, never
+            # read, so the path unit is not started again and again.
+            try:
+                os.rename(NTP_ASK, '.refused-%s-%d' % (NTP_ASK, int(time.time())),
+                          src_dir_fd=d, dst_dir_fd=d)
+            except OSError:
+                pass
 
 
 def ntp_part():
@@ -1330,8 +1405,8 @@ def ntp_part():
             words = []
             # chronyd not running - installed, never started: started first
             # (1.10.237), or there is nothing to step the clock with.
-            if not NO_SERVICES and subprocess.run(
-                    ['systemctl', 'is-active', '--quiet', 'chronyd']).returncode != 0:
+            if not NO_SERVICES and not NTP_NO_SERVICE and subprocess.run(
+                    ['systemctl', 'is-active', '--quiet', 'chronyd'], timeout=30).returncode != 0:
                 ntp_run(['systemctl', 'enable', '--now', 'chronyd'], 'systemctl enable chronyd')
                 words.append('chronyd started')
                 time.sleep(3)
@@ -1863,9 +1938,20 @@ def serve():
         net_part()
     except Exception as e:                              # noqa: BLE001
         print('isemon_web.py: the network: %s' % e, file=sys.stderr)
+    # One left by a run that was stopped half way (1.10.238) - a reboot, a
+    # timeout during DH: taken away and said, or the daemon would wait on it
+    # for ever and never ask again.
+    if drop_entry('request.taken'):
+        write_here('status.json', json.dumps(dict(status_read(), at=time.time(), state='failed',
+                                                  said=['it was stopped half way (the machine '
+                                                        'or the service restarted): asked '
+                                                        'again'])))
     try:
         os.replace('request.json', 'request.taken', src_dir_fd=d, dst_dir_fd=d)
     except FileNotFoundError:
+        return 0
+    except OSError:
+        drop_entry('request.json')              # a folder in its place
         return 0
     last = status_read()
     out = {'at': time.time(), 'dh': last.get('dh') or 'none'}
@@ -1897,10 +1983,7 @@ def serve():
         out.update(state='failed', said=['it broke: %s' % e])
     finally:
         for name in ('request.taken', 'progress.json'):
-            try:
-                os.unlink(name, dir_fd=d)
-            except OSError:
-                pass
+            drop_entry(name)
     write_here('status.json', json.dumps(out))
     try:
         write_here(LOOK_FILE, json.dumps(look()))

@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.237",
+  "version": "1.10.238",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -4843,6 +4843,10 @@
   "s.config-vpn-ssl-settings.d9abe761": {
    "source": "config vpn ssl settings",
    "text": "config vpn ssl settings"
+  },
+  "s.config.dfba7aad": {
+   "source": "config",
+   "text": "config"
   },
   "s.configuration-only.1b8bea7a": {
    "source": "configuration only",
@@ -32374,9 +32378,9 @@
    "source": "The columns of {0}",
    "text": "Sloupce uživatele {0}"
   },
-  "p.the-configuration-is-back-the-logs.d3ce30ad": {
-   "source": "the configuration is back ({0}); the logs here were left as they are",
-   "text": "konfigurace je obnovena ({0}); logy zde zůstaly, jak byly"
+  "p.the-configuration-is-back-the-logs.64e58ff0": {
+   "source": "the configuration is back ({0}); the logs here were left as they are{1}",
+   "text": "konfigurace je obnovena ({0}); logy zde zůstaly, jak byly{1}"
   },
   "p.the-controllers-are-not-marked-anywhere.40d989fa": {
    "source": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}",
@@ -34749,6 +34753,10 @@
   "p.the-certificate-click-it-to-copy.d3e0a9be": {
    "source": "The certificate{0}. Click it to copy.",
    "text": "Certifikát{0}. Kliknutím ho zkopírujete."
+  },
+  "p.the-configuration-is-back-the-logs.d3ce30ad": {
+   "source": "the configuration is back ({0}); the logs here were left as they are",
+   "text": "konfigurace je obnovena ({0}); logy zde zůstaly, jak byly"
   },
   "p.the-oldest-from.f426c3da": {
    "source": ", the oldest from {0}",

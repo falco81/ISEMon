@@ -371,9 +371,52 @@ working.
 
 ## Version
 
+1.10.238
+
+- **Settings - Time:** a time server's name with a line end hidden in it (it
+  passed both checks and put a line of its own into chrony.conf, which stops
+  chronyd) is refused; chrony.conf is checked by chronyd before it is put in,
+  and put back as it was when chronyd will not start with it; while isemon
+  does not set the time servers the file is never rewritten (a missing final
+  newline, a blank line at the end and Save on the page rewrote it and
+  restarted chronyd); a file whose end mark is missing is refused instead of
+  everything after the beginning mark being taken away; `Server` and `POOL`
+  are commented out like `server` and `pool`; a chrony.conf with Latin-2
+  letters is read; a time zone that cannot be set is said and the time
+  servers are set all the same; "Step it now" or Save asked while the clock
+  was being read are no longer lost; the machine's own time zone for *Its
+  time*; chronyc asked without reverse DNS. An upgrade starts chronyd only
+  where it is enabled (or was installed just now), never one an admin
+  switched off; ntpsec, ptp4l and phc2sys count as keeping the time.
+- **Firewall and access:** the trial running out, *Keep it* and a save are
+  under one lock - Keep pressed in that moment answered "kept" of rules put
+  back, and a save could lose its trial; who may reach which page is never
+  changed on trial where nginx's lists could not be put back exactly (they
+  were left open to everybody); an `allow` of nginx's that is no address no
+  longer stops the page; the requests to root (which carry the pages' key)
+  are the isemon account's alone (0600); a request root never finished is
+  not waited on for ever; folders put in place of the asking files are moved
+  aside; a chain declared after INPUT's first rule no longer has rules
+  written twice.
+- **Backups of the configuration:** put back on another machine, its own
+  settings.key stays - what the backup's key sealed is opened with it and
+  sealed again with this machine's, so every password still opens after a
+  restart; a configuration this machine refuses changes nothing; *How to put
+  it back* is the guide of the kind made now; full backups and backups of the
+  configuration are kept each on their own (the configuration's, every day,
+  took away every full one); what could not be brought back is said on the
+  page too.
+- **Backups:** a backup is not made while one is put back, nor the other way
+  round; a second restore asked meanwhile is refused, not joined to the first;
+  a saved password is never handed to another server typed over a destination;
+  SCP's folder holds nothing a shell reads as more; IPv6 servers work for SCP,
+  SFTP and SMB; going back looks through 40 versions at the address, not 10.
+- A request refused (401/403) while its body was still on the way reads it
+  first: the sender sees the refusal, not a reset connection.
+
 1.10.237
 
-- **chronyd installed but not running is started.** 1.10.236 put chrony in
+- **chronyd installed but not running is started.** The version before put chrony in
   where it was missing, but its package marks chronyd enabled without starting
   it, and the installer then left it so - Settings - Time said `chronyc
   tracking: 506 Cannot talk to daemon`. The installer now starts chronyd

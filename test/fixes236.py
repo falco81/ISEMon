@@ -67,6 +67,7 @@ case "$*" in
   *"is-active --quiet ntpd"*) [ -f %(work)s/ntpd-on ] && exit 0; exit 3;;
   *"is-active --quiet chronyd"*) [ -f %(work)s/chronyd-on ] && exit 0; exit 3;;
   *"enable --now chronyd"*) touch %(work)s/chronyd-on; exit 0;;
+  *"is-enabled chronyd"*) [ -f %(work)s/chronyd-disabled ] && { echo disabled; exit 1; }; echo enabled; exit 0;;
   *) exit 3;;
 esac
 ''' % {'log': LOG, 'work': work})
@@ -85,7 +86,7 @@ def run(mode, web=False, have=(), pre=''):
     for p in have:
         (bin_ / p).write_text('#!/bin/sh\nexit 0\n')
         (bin_ / p).chmod(0o755)
-    for f in ('chronyd-on', 'ntpd-on'):
+    for f in ('chronyd-on', 'ntpd-on', 'chronyd-disabled'):
         try:
             (work / f).unlink()
         except OSError:
@@ -146,6 +147,13 @@ print('\nchrony there, its service marked enabled but never started (as dnf leav
 rc, out, calls = run('upgrade', have=('ssh', 'ssh-keygen', 'setfacl', 'openssl', 'smbclient',
                                       'chronyc', 'chronyd'))
 ok('chronyd started', ('enable --now chronyd' in calls, 'chronyd started' in out), (True, True))
+
+print('\n1.10.238: chronyd an admin disabled, on an upgrade: left so')
+rc, out, calls = run('upgrade', have=('ssh', 'ssh-keygen', 'setfacl', 'openssl', 'smbclient',
+                                      'chronyc', 'chronyd'), pre='touch %s/chronyd-disabled' % work)
+ok('not started, and said', ('enable --now chronyd' in calls, 'chronyd is disabled here' in out),
+   (False, True))
+(work / 'chronyd-disabled').unlink()
 
 print('\nThe time kept by something else')
 rc, out, calls = run('upgrade', have=('ssh', 'ssh-keygen', 'setfacl', 'openssl', 'smbclient'),

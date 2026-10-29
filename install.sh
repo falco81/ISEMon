@@ -238,7 +238,12 @@ ensure_packages() {     # ensure_packages fresh|upgrade
     tool_add setfacl    acl acl "the rights on the logs"
     tool_add openssl    openssl openssl "signed packages, locked backups, certificates"
     tool_add smbclient  "$smb_pkg" "$smb_pkg" "backups to a Windows or Samba share"
-    tool_add chronyc    chrony chrony "Settings -> Time reads the clock through chrony"
+    # chrony put in now is started below; one an admin switched off is not.
+    command -v chronyc >/dev/null 2>&1 || CHRONY_NEW=1
+    # On Debian chrony takes the place of timesyncd or ntp: not where one runs.
+    if [[ "$PKG" != "apt" ]] || ! time_kept_by >/dev/null; then
+        tool_add chronyc    chrony chrony "Settings -> Time reads the clock through chrony"
+    fi
     if [[ -f "$WEB_DIR/index.php" || ( "$1" == "fresh" && -n "$WITH_WEB" ) ]]; then
         tool_add nginx nginx nginx "the web server of the pages"
         command -v php-fpm >/dev/null 2>&1 || php-fpm -v >/dev/null 2>&1 \
@@ -273,17 +278,28 @@ ensure_packages() {     # ensure_packages fresh|upgrade
 # way AlmaLinux has it out of the box - unless something else keeps the time
 # (systemd-timesyncd, ntpd, openntpd): a machine that keeps its time some
 # other way keeps it so.
+CHRONY_NEW=""
+time_kept_by() {    # prints the service that keeps the time, if any but chronyd
+    local u
+    for u in systemd-timesyncd ntpd ntp ntpsec openntpd ptp4l phc2sys; do
+        if systemctl is-active --quiet "$u" 2>/dev/null; then echo "$u"; return 0; fi
+    done
+    return 1
+}
+
 chrony_check() {    # chrony_check fresh|upgrade
     [[ -n "$DRY_RUN" ]] && return 0
     command -v chronyd >/dev/null 2>&1 || return 0
     # Not running - installed just now (its package marks it enabled, and
-    # starts nothing), or never started: started.
+    # starts nothing), or enabled and never started: started. One an admin
+    # disabled or masked is left so (1.10.238), and said.
     if ! systemctl is-active --quiet chronyd 2>/dev/null; then
-        local other=""
-        for u in systemd-timesyncd ntpd ntp openntpd; do
-            systemctl is-active --quiet "$u" 2>/dev/null && other="$u"
-        done
-        if [[ -z "$other" ]]; then
+        local other="" state
+        other="$(time_kept_by)"
+        state="$(systemctl is-enabled chronyd 2>/dev/null)"
+        if [[ -z "$CHRONY_NEW" && "$1" == "upgrade" && "$state" != "enabled" ]]; then
+            note "chronyd is $state here - left so; Settings -> Time can start it"
+        elif [[ -z "$other" ]]; then
             run systemctl enable --now chronyd >/dev/null 2>&1 || true
             systemctl is-active --quiet chronyd 2>/dev/null && good "chronyd started - the clock is kept by chrony"
         else

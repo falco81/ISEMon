@@ -55,7 +55,10 @@ ones sent to the destinations, and the one made to download:
   No record of any log, no counts, nothing fetched (GeoIP, public lists - they
   are fetched again), and never where a log was read up to.
 
-It is locked, checked and kept exactly as a full backup is.
+It is locked and checked exactly as a full backup is, and kept on its own:
+*Backups kept at each destination* and *And none older than* count the full
+backups and the backups of the configuration each apart, so a backup of the
+configuration made every day never takes the last full one away (1.10.238).
 
 ## Locked with a password
 
@@ -225,8 +228,13 @@ The old machine's config.json is in the backup to read (in the
 `isemon_carried` table of `isemon-full.db`).
 
 **A backup of the configuration only** is put back the same three ways, and
-replaces nothing: its keys are put in place (the ones there before kept beside
-them), then the configuration is put back as `isemon --import` puts one back -
+replaces nothing. The machine's own `settings.key` stays its own (1.10.238):
+what the backup's key sealed - the passwords of the destinations, the pages'
+private key - is opened with it and sealed again with this machine's; only a
+machine with no key at all takes the backup's. `banfeed.key` and `known_hosts`
+are put in place (the ones there before kept beside them). A configuration
+this machine refuses (two settings that may not go together) changes nothing.
+Then the configuration is put back as `isemon --import` puts one back -
 the settings, the accounts, the whitelist and the bans written into the
 database the machine has - and the pages' own settings after it. Every log
 record the machine has stays exactly as it is, and no copy of the database is

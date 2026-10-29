@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.237'
+__version__ = '1.10.238'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2284,13 +2284,14 @@ def seal_secret(text):
     return SEALED + base64.urlsafe_b64encode(nonce + body + tag).decode('ascii')
 
 
-def unseal_secret(value):
+def unseal_secret(value, key=None):
     """The password back - or None where this machine's key is not the one
     it was sealed with. A value that was never sealed is given back as it
-    is: a database written before sealing existed still works."""
+    is: a database written before sealing existed still works. `key`: another
+    machine's (a backup of its configuration put back here, 1.10.238)."""
     if not isinstance(value, str) or not value.startswith(SEALED):
         return value
-    key = sealing_key()
+    key = key if key is not None else sealing_key()
     try:
         raw = base64.urlsafe_b64decode(value[len(SEALED):].encode('ascii'))
     except (ValueError, TypeError):
@@ -2308,6 +2309,26 @@ def unseal_secret(value):
                      zip(body, _seal_stream(hide, nonce, len(body)))).decode('utf-8')
     except UnicodeDecodeError:
         return None
+
+
+def reseal_all(value, their_key):
+    """Every sealed string in `value` (a JSON value, nested as it likes) that
+    another machine's key opens, sealed again with this machine's own
+    (1.10.238). One that does not open is left as it is."""
+    if isinstance(value, str):
+        if value.startswith(SEALED):
+            plain = unseal_secret(value, their_key)
+            if plain is not None:
+                try:
+                    return seal_secret(plain)
+                except OSError:
+                    return value
+        return value
+    if isinstance(value, list):
+        return [reseal_all(x, their_key) for x in value]
+    if isinstance(value, dict):
+        return {k: reseal_all(v, their_key) for k, v in value.items()}
+    return value
 
 
 def write_file_settings(changes, path=None):
@@ -63625,11 +63646,20 @@ class WebRoot(object):
     def write(self, name, data):
         folder = self.folder()
         folder.mkdir(mode=0o750, parents=True, exist_ok=True)
-        write_replacing(folder / name, json.dumps(data), 0o640)
+        # The isemon account's alone (1.10.238): a request carries the
+        # pages' private key unsealed, and root reads it whatever its mode.
+        write_replacing(folder / name, json.dumps(data), 0o600)
 
     def pending(self):
-        return (self.folder() / 'request.json').exists() or \
-            (self.folder() / 'request.taken').exists()
+        if (self.folder() / 'request.json').exists():
+            return True
+        # Taken by root and never finished - a run stopped half way leaves
+        # it (1.10.238): past root's own deadline (25 min), not waited on, so
+        # the next request is written and root takes the old one away.
+        try:
+            return time.time() - (self.folder() / 'request.taken').stat().st_mtime < 35 * 60
+        except OSError:
+            return False
 
     def look(self, fresh_s=20):
         """What root saw last of how things are here (look.json), and asked
@@ -63780,7 +63810,10 @@ class WebRoot(object):
         def both(proto, port, src, note):
             fams = [4, 6]
             if src:
-                fams = [ipaddress.ip_network(src, strict=False).version]
+                try:
+                    fams = [ipaddress.ip_network(src, strict=False).version]
+                except ValueError:
+                    return []           # an allow of nginx's that is no address (1.10.238)
             return [{'family': f, 'proto': proto, 'port': port, 'source': src,
                      'action': 'accept', 'note': note} for f in fams]
         items = []
@@ -63982,10 +64015,40 @@ class WebRoot(object):
                                    'anywhere')
         said = []
         acc = self.access_checked(data['access']) if data.get('access') is not None else None
+        np = getattr(self.daemon, 'netpower', None)
+        lock = np.fw_lock if np is not None else threading.RLock()
+        with lock:
+            return self._firewall_save(fw, acc, said, np, by)
+
+    def access_exact(self):
+        """Who may reach which page as nginx has it now, never set on these
+        pages - when it can be said exactly; None when it cannot (an allow
+        that is no address, a look not there yet). (1.10.238)"""
+        look = self.look(fresh_s=3600)
+        if not (look or {}).get('access'):
+            return None
+        try:
+            return self.access_checked(self.access_from_nginx(look))
+        except WebRootError:
+            return None
+
+    def _firewall_save(self, fw, acc, said, np, by):
+        trial = None
+        open_ = np._get('fw:trial') if np is not None else {}
+        open_ = open_ if open_ and not open_.get('done') else {}
+        if np is not None and acc is not None and not self.access_conf() and \
+                np.fw_trial_min() and WebRoot.helper_there() and (
+                    (open_ and not open_.get('access_nginx')) or
+                    (not open_ and self.access_exact() is None)):
+            # Put back, it could not be what nginx has now: never on trial
+            # (1.10.238) - "put back" left the pages open to everybody.
+            raise WebRootError('who may reach which page cannot be changed on trial here: the '
+                               'lists nginx has now cannot be read back exactly (an allow that '
+                               'is not an address, or root has not looked yet) - set '
+                               'fw_confirm_min to 0 for this one change, or set them by hand')
         # On trial (1.10.228): what was there before the first change of a
         # trial is kept, to go back to unless it is kept in time.
-        trial = self.daemon.netpower.fw_trial_begin(by) \
-            if getattr(self.daemon, 'netpower', None) else None
+        trial = np.fw_trial_begin(by) if np is not None else None
         if acc is not None:
             self._put('web_access', acc)
             said.append('who may reach which page')
@@ -64268,6 +64331,10 @@ def ntp_checked(b):
         host = str(x.get('host') or '').strip().lower().rstrip('.')
         if not host:
             continue
+        # One word, nothing in it a line of chrony.conf would end at (1.10.238):
+        # "name\n." stripped to "name\n" and "$" let it through.
+        if re.search(r'[\s\x00-\x1f\x7f]', host):
+            raise WebRootError('%r is not a host name or an address' % host[:80])
         try:
             host = str(ipaddress.ip_address(host))
             if '%' in host:
@@ -64275,8 +64342,8 @@ def ntp_checked(b):
         except ValueError as e:
             if isinstance(e, WebRootError):
                 raise
-            if not re.match(r'^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
-                            r'(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$', host):
+            if not re.match(r'^(?=.{1,253}\Z)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
+                            r'(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\Z', host):
                 raise WebRootError('%r is not a host name or an address' % host[:80])
         servers.append({'host': host, 'pool': bool(x.get('pool')),
                         'iburst': bool(x.get('iburst', True)), 'prefer': bool(x.get('prefer')),
@@ -64300,17 +64367,18 @@ def ntp_checked(b):
     try:
         th = float(b.get('step_s', 1.0))
         lim = int(b.get('step_n', 3))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise WebRootError('the step: seconds, and how many updates')
     if not (0.001 <= th <= 3600) or not (-1 <= lim <= 1000):
         raise WebRootError('the step: 0.001 to 3600 s; -1 (always) to 1000 updates')
     out['makestep'] = [th, lim]
     try:
         out['minsources'] = max(1, min(10, int(b.get('minsources') or 1)))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise WebRootError('how many sources have to agree is a number')
     tz = str(b.get('timezone') or '').strip()
-    if tz and not re.match(r'^[A-Za-z0-9_+-]{1,40}(/[A-Za-z0-9_+-]{1,40}){0,3}\Z', tz):
+    # As root's helper has it: a zone begins with a letter.
+    if tz and not re.match(r'^[A-Za-z][A-Za-z0-9_+-]{0,39}(/[A-Za-z0-9_+-]{1,40}){0,3}\Z', tz):
         raise WebRootError('%r is not a time zone' % tz[:60])
     out['timezone'] = tz
     return out
@@ -64414,12 +64482,18 @@ def ntp_tick(wr):
         done = wr._meta('ntp_applied', {})
         if NTP_WORK['apply_now'] or (done.get('hash') != h and
                                      time.time() - float(done.get('at') or 0) > 30):
+            was = NTP_WORK['apply_now']
             NTP_WORK['apply_now'] = False
-            _ntp_thread(wr, ntp_apply)
+            # Another tick took it in the meantime (1.10.238): asked again
+            # when that one is done, not lost.
+            if not _ntp_thread(wr, ntp_apply):
+                NTP_WORK['apply_now'] = was
             return
     if NTP_WORK['want_sync'] > NTP_WORK['synced']:
+        was = NTP_WORK['synced']
         NTP_WORK['synced'] = NTP_WORK['want_sync']
-        _ntp_thread(wr, ntp_sync)
+        if not _ntp_thread(wr, ntp_sync):
+            NTP_WORK['synced'] = was
         return
     wanted = NTP_WORK['want_read'] > NTP_WORK['read_at']
     # A helper that does not answer (one from before 1.10.228) is asked again
@@ -64602,7 +64676,7 @@ def quote_path(p):
     return quote(p)
 
 
-def carried_put(found, by=''):
+def carried_put(found, by='', what='full backup'):
     """The keys of a full backup that was put back, put in place - the ones
     there before kept beside them, so that the copy of what was replaced can
     still be opened. Returns what was put in place."""
@@ -64627,8 +64701,8 @@ def carried_put(found, by=''):
         hand_to_folder_owner(path)              # never through a link
         put.append(name)
     if put:
-        log('a full backup was put back: %s put in place (the ones before kept beside them as '
-            '*.before-restore-%s)' % (', '.join(put), stamp_), 'warn')
+        log('a %s was put back: %s put in place (the ones before kept beside them as '
+            '*.before-restore-%s)' % (what, ', '.join(put), stamp_), 'warn')
     return put
 
 
@@ -64924,9 +64998,21 @@ def rb_checked(data, old=None):
             raise ValueError('the folder has no ; or " in it, and does not begin with -')
         if kind != 'smb' and re.search(r'(^|/)\.\.(/|$)', t['path']):
             raise ValueError('the folder has no .. in it')
+        # scp hands the folder to the server's shell on the way (its older
+        # protocol): only what no shell reads as more (1.10.238).
+        if kind == 'scp' and not re.match(r'^[A-Za-z0-9._/@+=,~-]*\Z', t['path']):
+            raise ValueError('for SCP the folder is letters, digits and . _ / @ + = , ~ - only')
     pw = data.get('password')
     if pw is None or rb_masked(pw):
         t['password'] = old.get('password') or ''
+        # Kept only for the server it was typed for (1.10.238): a host
+        # typed over a saved destination - Try it, or Save - would otherwise
+        # be handed that server's password.
+        if t['password'] and kind != 'folder' and (
+                str(old.get('host') or '').lower() != str(t.get('host') or '').lower()
+                or old.get('kind') != kind):
+            raise ValueError('the server is another one now: type its password again (the one '
+                             'kept is for %s)' % (old.get('host') or 'the server before'))
     else:
         pw = str(pw)
         if len(pw) > 512 or '\n' in pw or '\r' in pw or '\x00' in pw:
@@ -65452,6 +65538,10 @@ class RbSsh(object):
             # first value given wins, and this comes first.
             self.opts += ['-o', 'BatchMode=no']
         self.dest = '%s@%s' % (t.get('user') or 'root', t['host'])
+        # scp and sftp read user@host:path, so an IPv6 address goes in
+        # brackets for them (1.10.238); ssh takes it as it is.
+        self.sdest = '%s@[%s]' % (t.get('user') or 'root', t['host']) if ':' in t['host'] \
+            else self.dest
         self.dir = (t.get('path') or '').rstrip('/') or '.'
         # Signed in and the folder made, at once - the errors said here.
         if t['kind'] == 'sftp':
@@ -65491,7 +65581,7 @@ class RbSsh(object):
         with open(batch, 'w') as f:
             f.write('\n'.join(cmds) + '\n')
         return self._run([rb_bin('sftp')] + self.opts + ['-P', str(int(self.t['port'])),
-                                                         '-b', batch, '--', self.dest], 'sftp')
+                                                         '-b', batch, '--', self.sdest], 'sftp')
 
     def put(self, local, name):
         name = rb_safe_name(name)
@@ -65501,7 +65591,7 @@ class RbSsh(object):
         else:
             self._run([rb_bin('scp')] + self.opts + ['-P', str(int(self.t['port'])), '-q', '--',
                                                      local, '%s:%s/.%s.part' % (
-                                                         self.dest, self.dir, name)], 'scp')
+                                                         self.sdest, self.dir, name)], 'scp')
             self._ssh('mv -f -- %s %s' % (shlex_quote('%s/.%s.part' % (self.dir, name)),
                                           shlex_quote('%s/%s' % (self.dir, name))))
 
@@ -65511,7 +65601,7 @@ class RbSsh(object):
             self._sftp(['cd "%s"' % self.dir, 'get "%s" "%s"' % (name, local)])
         else:
             self._run([rb_bin('scp')] + self.opts + ['-P', str(int(self.t['port'])), '-q', '--',
-                                                     '%s:%s/%s' % (self.dest, self.dir, name),
+                                                     '%s:%s/%s' % (self.sdest, self.dir, name),
                                                      local], 'scp')
 
     def list(self):
@@ -65561,9 +65651,13 @@ class RbSmb(object):
                                                        rb_secret(t, 'password')))
             if t.get('domain'):
                 f.write('domain = %s\n' % t['domain'])
-        self.args = [rb_bin('smbclient'), '//%s/%s' % (t['host'], t['share']), '-A', auth,
+        # An IPv6 address is no name for \\server\share: its literal form
+        # there, and the address itself given with -I (1.10.238).
+        six = ':' in t['host']
+        unc = t['host'].replace(':', '-') + '.ipv6-literal.net' if six else t['host']
+        self.args = [rb_bin('smbclient'), '//%s/%s' % (unc, t['share']), '-A', auth,
                      '-p', str(int(t['port'])), '--option=client min protocol=SMB2',
-                     '-t', str(RB_TIMEOUT)]
+                     '-t', str(RB_TIMEOUT)] + (['-I', t['host']] if six else [])
         if t.get('smb_encrypt'):
             self.args += ['--client-protection=encrypt']
         self.dir = (t.get('path') or '').replace('/', '\\').strip('\\')
@@ -65806,7 +65900,10 @@ def rb_base(what='all'):
 def rb_restore_guide(store):
     """RESTORE.md as a backup made now would carry it - for reading on the
     pages before anything is lost. No secret is in it."""
-    m = rb_about(store, rb_base())
+    w = rb_what()
+    m = rb_about(store, rb_base(w))
+    if w == 'config':
+        m['what'] = 'config'            # the guide for the kind made now (1.10.238)
     return {'md': rb_restore_md(m), 'name': 'RESTORE-%s-%s.md' % (rb_site(), rb_host()),
             'file': m['file']}
 
@@ -66083,20 +66180,25 @@ def rb_retain(tr, keep, days, now=None, just=None, sent=None):
                 when = datetime.strptime(m.group('stamp'), '%Y%m%d-%H%M%S').timestamp()
             except ValueError:
                 continue
-            ours.append((when, x['name']))
-    ours.sort(reverse=True)
-    ours.sort(key=lambda w: w[1] != just)       # the one just sent counts as the newest
+            ours.append((when, x['name'], bool(m.group('conf'))))
     gone = []
-    for i, (when, name) in enumerate(ours):
-        if i == 0:
-            continue
-        if (keep and i >= keep) or (days and now - when > days * 86400):
-            for n in [name] + [c for c in rb_companions(name) if c in names]:
-                try:
-                    tr.delete(n)
-                except Exception:
-                    pass
-            gone.append(name)
+    # Each kind kept on its own (1.10.238): backups of the configuration
+    # only, made every day, took away every whole one - the only copies
+    # of the logs there were.
+    for conf in (False, True):
+        kind = [(w, n) for w, n, c in ours if c == conf]
+        kind.sort(reverse=True)
+        kind.sort(key=lambda w: w[1] != just)   # the one just sent counts as the newest
+        for i, (when, name) in enumerate(kind):
+            if i == 0:
+                continue
+            if (keep and i >= keep) or (days and now - when > days * 86400):
+                for n in [name] + [c for c in rb_companions(name) if c in names]:
+                    try:
+                        tr.delete(n)
+                    except Exception:
+                        pass
+                gone.append(name)
     return gone
 
 
@@ -66233,8 +66335,19 @@ def rb_job_view(job):
             'ended': job.get('finished'), 'by': job.get('by') or ''}
 
 
+def rb_not_while(daemon, kind, words):
+    """Refused while a job of the other kind runs (1.10.238): a backup made
+    while one is put back copied a database half replaced, and wrote its
+    history into the one coming back."""
+    going = rb_job_of(daemon, kind)
+    if going and not going['done']:
+        raise ValueError(words)
+
+
 def rb_job_start(daemon, by, only=None):
     """A backup sent, on a thread of its own; the page follows the job."""
+    rb_not_while(daemon, 'rbackup-restore', 'a backup is being put back: a new one can be made '
+                                            'when it is done')
     def work(progress):
         run = rb_run(daemon.store, by, only, progress, daemon)
         if run.get('error'):
@@ -66267,6 +66380,8 @@ def rb_here_start(daemon, by):
         progress(1000, 1000, 'ready to download')
         return {'message': 'the backup is ready: the download starts', 'made': m['file'],
                 'bytes': m['bytes']}
+    rb_not_while(daemon, 'rbackup-restore', 'a backup is being put back: a new one can be made '
+                                            'when it is done')
     return daemon.job_start('rbackup', work, by=by, key='here',
                             label='A backup to download')
 
@@ -66339,6 +66454,9 @@ def rb_tick(daemon):
     going = rb_job_of(daemon)
     if going and not going['done']:
         return
+    putting = rb_job_of(daemon, 'rbackup-restore')
+    if putting and not putting['done']:
+        return                  # a backup being put back: the next minute
     if not any(t.get('enabled') for t in rb_targets(store)):
         return
     if not daemon.working():
@@ -66574,20 +66692,43 @@ def rb_restore_config(store, top, m, by, daemon, say, path):
         raise RbError('its configuration is not one of isemon')
     carried = {k: str(v) for k, v in (payload.get('carried') or {}).items()
                if k in ('settings.key', 'banfeed.key', 'known_hosts') and isinstance(v, str)}
-    say(600, 'the keys put in place')
-    # The keys first: the settings and the pages' certificate are sealed
-    # with the settings.key that came with them.
-    put = carried_put(carried, by) if carried else []
-    say(700, 'the configuration is put back - the logs here are left as they are')
+    # This machine's settings.key stays its own (1.10.238): put in its place,
+    # every password here that the backup does not carry - or carries the
+    # same - was left sealed with a key that was gone, and could not be
+    # opened after the next restart. What the backup's key sealed is opened
+    # with it and sealed again with this machine's. Only a machine with no
+    # key at all takes the backup's.
+    theirs = b''
+    try:
+        theirs = bytes.fromhex(carried.get('settings.key', '').strip())
+    except ValueError:
+        theirs = b''
+    if sealing_key():
+        carried.pop('settings.key', None)
+    else:
+        theirs = b''                            # it becomes this machine's own
+    say(600, 'the configuration is put back - the logs here are left as they are')
     d = daemon or Daemon(store)
+    # The settings first, and nothing else before them: a configuration
+    # this machine refuses (two settings that may not go together) is said,
+    # and nothing - no key, no file - was changed.
+    if 'settings.key' in carried:
+        carried_put({'settings.key': carried.pop('settings.key')}, by, what='configuration')
     try:
         said = d.import_config(payload['export'], by=by)
     except ValueError as e:
-        raise RbError(str(e))
+        raise RbError('nothing was put back: %s' % e)
+    put = carried_put(carried, by, what='configuration') if carried else []
+    say(800, 'the pages\u2019 own settings and the destinations of the backups')
     meta = payload.get('meta') if isinstance(payload.get('meta'), dict) else {}
     back = 0
     for key, value in sorted(meta.items()):
         if rb_conf_meta_ok(key) and isinstance(value, str) and len(value) < (4 << 20):
+            if theirs and SEALED in value:
+                try:
+                    value = json.dumps(reseal_all(json.loads(value), theirs), sort_keys=True)
+                except ValueError:
+                    value = reseal_all(value, theirs)
             store.set_meta(key, value)
             back += 1
     if daemon is not None:
@@ -66596,19 +66737,23 @@ def rb_restore_config(store, top, m, by, daemon, say, path):
         except Exception as e:                          # noqa: BLE001
             log('the pages\u2019 own settings after putting a configuration back: %s' % e, 'warn')
     words = '; '.join(said.get('done') or [])
+    missing = said.get('missing') or []
     store.add_event('backup', '%s put back the configuration from %s (made %s on %s, isemon %s): '
                               '%s; %d of the pages\u2019 and the backups\u2019 own; the logs '
-                              'were left as they are' % (
+                              'were left as they are%s' % (
                                   by, os.path.basename(str(path)), m.get('made_words'),
-                                  m.get('host'), m.get('isemon'), words, back), 'warn', who=by)
+                                  m.get('host'), m.get('isemon'), words, back,
+                                  ('; to be set by hand: %s' % ', '.join(missing))
+                                  if missing else ''), 'warn', who=by)
     log('a backup of the configuration was put back by %s: %s' % (by, os.path.basename(str(path))),
         'warn')
     say(1000, 'put back')
     return {'manifest': {k: v for k, v in m.items() if k != 'files'}, 'safety': '',
             'carried': put, 'what': 'config', 'done': said.get('done') or [],
             'missing': said.get('missing') or [],
-            'message': 'the configuration is back (%s); the logs here were left as they are'
-                       % (words or 'nothing in it')}
+            'message': 'the configuration is back (%s); the logs here were left as they are%s'
+                       % (words or 'nothing in it',
+                          ('; to be set by hand: %s' % ', '.join(missing)) if missing else '')}
 
 
 def rb_restore_start(daemon, by, password, upload=None, tid=None, name=None):
@@ -66652,7 +66797,12 @@ def rb_restore_start(daemon, by, password, upload=None, tid=None, name=None):
                     src.unlink()
                 except OSError:
                     pass
-    return daemon.job_start('rbackup-restore', work, by=by, label='Putting a backup back')
+    rb_not_while(daemon, 'rbackup', 'a backup is being made or fetched: put one back when it '
+                                    'is done')
+    # Keyed by what is put back (1.10.238): another one asked meanwhile was
+    # handed the first one's job and told it was being put back.
+    return daemon.job_start('rbackup-restore', work, by=by, label='Putting a backup back',
+                            key=str(upload or '%s/%s' % (tid, name)))
 
 
 def rb_fetch(store, tid, name, dst):
@@ -67552,7 +67702,9 @@ class Upgrades(object):
         row = {'at': time.time(), 'url': url, 'by': by, 'here': __version__}
         try:
             got = self.online_list(url)
-            row['packages'] = got[:10]
+            # Forty, not ten (1.10.238): going back looks through these, and
+            # a safe older version below the tenth was never offered.
+            row['packages'] = got[:40]
             newest = got[0] if got else None
             row['newest'] = newest
             row['newer'] = bool(newest and self.ver_tuple(newest['version']) >
@@ -67907,6 +68059,7 @@ class NetPower(object):
         self.lock = threading.Lock()
         self.ask_lock = threading.Lock()       # one question of root at a time
         self.trial_lock = threading.Lock()     # Keep against the trial running out
+        self.fw_lock = threading.RLock()       # the same, for the firewall's (1.10.238)
         self.busy = False
         self.read_at = 0.0
 
@@ -68494,13 +68647,19 @@ class NetPower(object):
                 {'on': False, 'off': [], 'rules': [], 'logs': {'any': True, 'from': []}}
             acc = wr.access_conf()
             trial = {'id': secrets.token_hex(6), 'was': was, 'access': acc,
-                     'access_nginx': None if acc else wr.access_from_nginx(wr.look(fresh_s=3600)),
+                     'access_nginx': None if acc else wr.access_exact(),
                      'at': t, 'by': by}
         trial.update(until=t + n * 60, last_by=by, min=n)
         self._put('fw:trial', trial)
         return trial
 
     def fw_answer(self, act, by):
+        # Under the lock the trial running out and a save take too (1.10.238):
+        # Keep pressed as it ran out answered "kept" of rules put back.
+        with self.fw_lock:
+            return self._fw_answer(act, by)
+
+    def _fw_answer(self, act, by):
         trial = self._get('fw:trial')
         if not trial or trial.get('done'):
             raise WebRootError('no change of the firewall waits to be kept')
@@ -68544,7 +68703,13 @@ class NetPower(object):
         trial = self._get('fw:trial')
         if not trial or trial.get('done') or time.time() <= float(trial.get('until') or 0):
             return
-        self.fw_put_back(trial, 'not kept within %d min' % int(trial.get('min') or 0))
+        with self.fw_lock:
+            # Read again under the lock: a save that moved the deadline on,
+            # or a Keep, came first.
+            trial = self._get('fw:trial')
+            if not trial or trial.get('done') or time.time() <= float(trial.get('until') or 0):
+                return
+            self.fw_put_back(trial, 'not kept within %d min' % int(trial.get('min') or 0))
 
     def trials(self):
         """What waits to be kept, for the banner of every page and --status."""
@@ -69197,6 +69362,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             length = 0
         if length <= 0 or length > 32 * 1024 * 1024:
             return {}
+        self._body_taken = True
         raw = self.rfile.read(length)
         try:
             got = json.loads(raw.decode('utf-8'))
@@ -69250,18 +69416,46 @@ class ApiHandler(BaseHTTPRequestHandler):
             return '', None, str(e)
         return got.words, ((got.sql, got.args) if got.sql else None), ''
 
+    def spare_body(self):
+        """A body nobody read, read and let go before a refusal (1.10.238):
+        answered while a file was still on its way, the connection was closed
+        under the sender, who saw it reset rather than the 403 - "the server
+        did not answer" in place of "this account may not". Up to 64 MB and
+        ten seconds; beyond that the connection is closed, as before."""
+        if getattr(self, '_body_taken', False):
+            return
+        self._body_taken = True
+        try:
+            left = int(self.headers.get('Content-Length') or 0)
+        except (TypeError, ValueError):
+            return
+        if left <= 0 or left > 64 * 1024 * 1024:
+            return
+        try:
+            self.connection.settimeout(10)
+            end = time.time() + 10
+            while left > 0 and time.time() < end:
+                got = self.rfile.read(min(left, 1 << 20))
+                if not got:
+                    break
+                left -= len(got)
+        except OSError:
+            pass
+
     # ---- the two questions asked of every request -------------------------
     def need_login(self):
         """Somebody signed in, whatever their role. Returns them, or answers
         401 and returns None."""
         me = self.who()
         if not me:
+            self.spare_body()
             self.fail('sign in first', 401)
             return None
         # An account that has to change its password first may do that and
         # nothing else. The page already sends it there; this is what makes
         # that so for anything that is not the page.
         if me.get('must_change') and not self.path.startswith(('/api/auth/', '/api/health')):
+            self.spare_body()
             self.fail('change the password first', 403)
             return None
         return me
@@ -69272,6 +69466,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         if not me:
             return None
         if me['role'] != 'fulladmin':
+            self.spare_body()
             self.fail('this account may look but not change', 403)
             return None
         return me
@@ -69283,6 +69478,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         if not me:
             return None
         if me['role'] not in ('fulladmin', 'banadmin'):
+            self.spare_body()
             self.fail('this account may look but not change', 403)
             return None
         return me
@@ -75402,11 +75598,18 @@ def cmd_upgrade_check(args, pal, store):
     if o.get('error'):
         pal.bad('  it did not answer: %s' % o['error'])
         return 1
+    older = 0
     for p in o.get('packages') or []:
         newer = Upgrades.ver_tuple(p['version']) > Upgrades.ver_tuple(__version__)
+        if not newer and p['version'] != __version__:
+            older += 1
+            if older > 3:
+                continue        # the rest under --downgrade-check
         pal.kv(p['version'], ('newer' if newer else ('this one' if p['version'] == __version__
                                                      else 'older')) +
                (' - %s' % human_size(p['bytes']) if p.get('bytes') else ''))
+    if older > 3:
+        pal.note('  ...and %d older (isemon --downgrade-check)' % (older - 3))
     if o.get('newer'):
         pal.good('isemon %s is there; this server runs %s - isemon --upgrade-online puts it in'
                  % (o['newest']['version'], __version__))

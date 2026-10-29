@@ -38030,9 +38030,12 @@ function rbRestoreWatch(jid) {
         said.appendChild(el('div', '', 'Put back.'));
         if ((r.carried || []).length) said.appendChild(noI18n(el('div', 'small', (r.carried || []).join(', '))));
         if (r.safety) said.appendChild(noI18n(el('div', 'small muted', r.safety)));
+        /* A configuration put back says what it could not bring (1.10.238),
+           and the page stays until it is read. */
+        if (r.what === 'config') said.appendChild(el('div', 'small', r.message || ''));
       }
       toast('the backup is back', 'good');
-      setTimeout(function () { location.reload(); }, 4000);
+      if (!(r.missing || []).length) setTimeout(function () { location.reload(); }, 4000);
     }).catch(function () {
       /* Who was signed in is what the backup says now: api() takes the page
          to the sign-in when the session is gone. */
@@ -38059,7 +38062,8 @@ function rbPutBackFile() {
           return d;
         });
       }).then(function (d) {
-        rbPutBackConfirm({upload: d.upload, encrypted: d.locked, manifest: d.manifest, said: d.said});
+        rbPutBackConfirm({upload: d.upload, encrypted: d.locked, manifest: d.manifest, said: d.said,
+                          what: /-config\.tar\.gz/.test(fl.name) ? 'config' : ''});
       }).catch(oops);
   };
   file.click();
@@ -39483,7 +39487,10 @@ function ntpCard(d) {
   var clock = '';
   if (nd.time) {
     var at = (d.now || {}).at || d.t;
-    clock = new Date((nd.time + ((d.t || at) - at)) * 1000).toLocaleString(numLang());
+    var when = new Date((nd.time + ((d.t || at) - at)) * 1000);
+    /* In the machine's own zone, beside which it is shown (1.10.238). */
+    try { clock = when.toLocaleString(numLang(), nd.timezone ? {timeZone: nd.timezone} : {}); }
+    catch (e) { clock = when.toLocaleString(numLang()); }
   }
   card.appendChild(netFacts([
     ['Follows', t.ref || t.ref_id || '–', true],
