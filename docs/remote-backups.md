@@ -34,6 +34,29 @@ disk is checked: the copy and the packed file beside it need about one and a
 half times the size of the database in `/var/lib/isemon/backups`. Not enough
 room is said, in numbers, and nothing is made.
 
+### Everything, or the configuration only
+
+*What is backed up* (`rbackup_what`) chooses what every backup holds - the
+ones sent to the destinations, and the one made to download:
+
+- **Everything, the logs too** (`all`, as it comes and as it always was): the
+  full backup above. Put back, it replaces the whole database.
+- **The configuration only, without the logs** (`config`): no copy of the
+  database at all, so it is small and quick however big the logs are. Its
+  name ends in `-config` (`isemon-backup-SITE-HOST-YYYYMMDD-HHMMSS-config.tar.gz.enc`),
+  and the lists on the page mark it *configuration only*. Inside, instead of
+  `isemon-full.db`, is `isemon-config.json`: what a complete export
+  (`isemon --export FILE --secrets`) carries - every setting saved on the
+  pages with its passwords, the accounts with theirs, the whitelist, who is
+  banned now, the routers' keys and the directory's certificate - and the
+  pages' own settings (their certificate, the firewall and who may reach
+  which page), the destinations of the backups, the names of the VLANs and
+  the routers' API keys, with `settings.key`, `banfeed.key` and `known_hosts`.
+  No record of any log, no counts, nothing fetched (GeoIP, public lists - they
+  are fetched again), and never where a log was read up to.
+
+It is locked, checked and kept exactly as a full backup is.
+
 ## Locked with a password
 
 *The password of the backups* (on the same page) locks every backup:
@@ -199,6 +222,15 @@ machine keeps its own `/etc/isemon/config.json` - which database it opens, its
 port - so the backup goes into whichever engine the new machine is set to use.
 The old machine's config.json is in the backup to read (in the
 `isemon_carried` table of `isemon-full.db`).
+
+**A backup of the configuration only** is put back the same three ways, and
+replaces nothing: its keys are put in place (the ones there before kept beside
+them), then the configuration is put back as `isemon --import` puts one back -
+the settings, the accounts, the whitelist and the bans written into the
+database the machine has - and the pages' own settings after it. Every log
+record the machine has stays exactly as it is, and no copy of the database is
+made first, because nothing in it is replaced. What it could not bring is said
+(as an import says it).
 
 Every backup's own `RESTORE.md` has these steps with its own names and version
 in them. *How to put it back* at the top of *Settings → Backups* shows the same

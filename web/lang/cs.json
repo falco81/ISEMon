@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.234",
+  "version": "1.10.235",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -4832,6 +4832,10 @@
    "source": "config vpn ssl settings",
    "text": "config vpn ssl settings"
   },
+  "s.configuration-only.1b8bea7a": {
+   "source": "configuration only",
+   "text": "jen konfigurace"
+  },
   "s.confirmed-by-an-administrator.52247b4f": {
    "source": "confirmed by an administrator",
    "text": "potvrzeno správcem"
@@ -7412,6 +7416,10 @@
    "source": "Everything the firewall wrote about itself: the VPN, its administrators and its own health, together.",
    "text": "Vše, co firewall zapsal sám o sobě: VPN, jeho správce a jeho vlastní stav, dohromady."
   },
+  "s.everything-the-logs-too.64aaab28": {
+   "source": "Everything, the logs too",
+   "text": "Vše, včetně logů"
+  },
   "s.everything-the-router-is-being-told.9c8c9894": {
    "source": "Everything the router is being told to drop. Press one for its whole story: what it tried, which public lists name it, and when it comes back in.",
    "text": "Vše, co má router nařízeno zahazovat. Klikněte na položku pro její celou historii: co zkoušela, které veřejné seznamy ji uvádějí a kdy se zase dostane dovnitř."
@@ -7419,6 +7427,10 @@
   "s.everything-the-router-is-being-told.d12e0145": {
    "source": "Everything the router is being told to drop, listed.",
    "text": "Vše, co má router nařízeno zahazovat, jako seznam."
+  },
+  "s.everything-the-whole-database-with-every.2b869b9b": {
+   "source": "Everything: the whole database with every log - put back, it replaces it. The configuration only: small, and put back without touching the logs the machine has.",
+   "text": "Vše: celá databáze se všemi logy - obnovená ji nahradí. Jen konfigurace: malá, a obnoví se, aniž by se dotkla logů, které stroj má."
   },
   "s.everything-this-downloads-and-when-each.33853aae": {
    "source": "Everything this downloads and when each is due again. A machine with no way out simply never fetches and says so, rather than failing quietly.",
@@ -18428,6 +18440,10 @@
    "source": "Running on",
    "text": "Běží na"
   },
+  "s.running-since.180dbfb4": {
+   "source": "Running since",
+   "text": "Běží od"
+  },
   "s.running.3c49d9cc": {
    "source": "running",
    "text": "běží"
@@ -21667,6 +21683,10 @@
   "s.the-configuration-is-in.3eba127f": {
    "source": "The configuration is in",
    "text": "Konfigurace je načtena"
+  },
+  "s.the-configuration-only-without-the-logs.47c0ac06": {
+   "source": "The configuration only, without the logs",
+   "text": "Jen konfigurace, bez logů"
   },
   "s.the-configuration-saved.cb4eb8f6": {
    "source": "the configuration saved",
@@ -25288,6 +25308,10 @@
    "source": "this, and stop",
    "text": "toto, a skončit"
   },
+  "s.this-backup-holds-the-configuration-only.060de64e": {
+   "source": "This backup holds the configuration only. Its keys are put in place and the configuration is put back - the settings, the accounts, the whitelist and the bans, the certificate and the firewall of the pages, the destinations of the backups. Every log record here stays as it is.",
+   "text": "Tato záloha obsahuje jen konfiguraci. Její klíče se uloží na místo a konfigurace se obnoví - nastavení, účty, whitelist a bany, certifikát a firewall stránek, cíle záloh. Každý záznam logů zde zůstane, jak je."
+  },
   "s.this-ban-has-not-ended-either.359afd38": {
    "source": "This ban has not ended: either it is for good, or its clock has not run out.",
    "text": "Tato blokace neskončila: buď je natrvalo, nebo její čas ještě nevypršel."
@@ -25639,6 +25663,10 @@
   "s.this-server.086b51a0": {
    "source": "this server",
    "text": "tento server"
+  },
+  "s.this-server.d75b2349": {
+   "source": "This server",
+   "text": "Tento server"
   },
   "s.this-session-in-the-list.a5d2cc0c": {
    "source": "This session in the list",
@@ -26592,6 +26620,10 @@
    "source": "Upgrades",
    "text": "Aktualizace"
   },
+  "s.upgrading.501d5804": {
+   "source": "upgrading",
+   "text": "probíhá upgrade"
+  },
   "s.upload-the-certificate.f0f5d1c9": {
    "source": "Upload the certificate…",
    "text": "Nahrát certifikát…"
@@ -27215,6 +27247,10 @@
   "s.what-is-at-upgrade-url-now.3d36e2c7": {
    "source": "what is at upgrade_url now, and whether it is newer",
    "text": "co je teď na upgrade_url a zda je to novější"
+  },
+  "s.what-is-backed-up.8ac7a49b": {
+   "source": "What is backed up",
+   "text": "Co se zálohuje"
   },
   "s.what-is-fetched-and-when-it.b79bf18f": {
    "source": "What is fetched, and when it is next due",
@@ -32314,6 +32350,10 @@
    "source": "The columns of {0}",
    "text": "Sloupce uživatele {0}"
   },
+  "p.the-configuration-is-back-the-logs.d3ce30ad": {
+   "source": "the configuration is back ({0}); the logs here were left as they are",
+   "text": "konfigurace je obnovena ({0}); logy zde zůstaly, jak byly"
+  },
   "p.the-controllers-are-not-marked-anywhere.40d989fa": {
    "source": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}",
    "text": "Řadiče domény nejsou na této stránce nikde označeny. Tento program označuje za řadič to, co za něj považuje DOMÉNA — účet počítače, jehož primární skupinou je Domain Controllers — a Active Directory zde není zapnuto, takže se nikdo nikoho nezeptal.{0}"
@@ -34986,6 +35026,10 @@
    "source": "Everything the directories say about their accounts, in one place.",
    "text": "Vše, co adresáře říkají o svých účtech, na jednom místě."
   },
+  "s.everything-the-whole-database-every-log.d6f17533": {
+   "source": "Everything: the whole database, every log with it - put back, it replaces the whole database. The configuration only: the settings, the accounts, the whitelist and the bans, the keys, the pages’ certificate and firewall, and the destinations of the backups - small, and put back without touching the logs the machine has.",
+   "text": "Vše: celá databáze a s ní každý log - obnovená nahradí celou databázi. Jen konfigurace: nastavení, účty, whitelist a bany, klíče, certifikát a firewall stránek a cíle záloh - malá, a obnoví se, aniž by se dotkla logů, které stroj má."
+  },
   "s.everything-this-page-put-in-goes.14245ac7": {
    "source": "Everything this page put in goes back to what was there before the first time it was used. Settings anybody changed otherwise are left as they are.",
    "text": "Vše, co tato stránka nastavila, se vrátí do stavu před jejím prvním použitím. Nastavení, která kdokoli změnil jinak, zůstanou, jak jsou."
@@ -35309,10 +35353,6 @@
   "s.this-browser-will-not-let-go.a4beccfa": {
    "source": "this browser will not let go of the clipboard",
    "text": "tento prohlížeč nepovoluje přístup ke schránce"
-  },
-  "s.this-server.d75b2349": {
-   "source": "This server",
-   "text": "Tento server"
   },
   "s.this-signs-in-over-ssh-and.c2cbee74": {
    "source": "This signs in over ssh and touches two address lists and nothing else. Give it an account that may write",

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.234'
+__version__ = '1.10.235'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -893,6 +893,11 @@ DEFAULTS = {
     'rbackup_keep': 30,
     'rbackup_keep_days': 0,
     'rbackup_password': '',
+    # What a backup holds (1.10.235): 'all' - the whole database, every log
+    # with it - or 'config', the configuration alone (what Export and import
+    # carries, with the keys and the pages' own settings), put back without
+    # touching the logs a machine has.
+    'rbackup_what': 'all',
     # On PostgreSQL, the firewall's lines, their counts and the domain's
     # events split into a part a day, so that a day that has aged goes in
     # one step. See `Storage.SPLIT`. Nothing on the other two engines.
@@ -27636,6 +27641,11 @@ class Storage(object):
         return short
 
     # ---- meta -------------------------------------------------------------
+    def meta_keys_from(self, start):
+        """The keys that begin with `start` (a word of letters and _)."""
+        rows = self.db.execute('SELECT key FROM meta WHERE key LIKE ?', (start + '%',)).fetchall()
+        return sorted(str(r['key']) for r in rows if str(r['key']).startswith(start))
+
     def get_meta(self, key, fallback=''):
         # Held for a lot of records, as `counting_from` is: an address
         # banned and still trying asked for what it was charged with on
@@ -56260,6 +56270,7 @@ class Daemon(object):
         'backup_daily': (0, 1), 'backup_keep': (1, 365), 'backup_at': 'str',
         'upgrade_check': (0, 1), 'upgrade_url': 'str', 'downgrade_offered': (0, 1),
         'rbackup': (0, 1), 'rbackup_at': 'str', 'rbackup_every': ('daily', 'weekly'),
+        'rbackup_what': ('all', 'config'),
         'rbackup_day': (1, 7), 'rbackup_keep': (1, 1000), 'rbackup_keep_days': (0, 3650),
         'rbackup_password': 'str',
         'db_split': (0, 1), 'db_split_whole_days': (0, 1),
@@ -56525,6 +56536,7 @@ class Daemon(object):
         'rbackup': 'Backups to the destinations on a schedule',
         'rbackup_at': 'At',
         'rbackup_every': 'How often',
+        'rbackup_what': 'What is backed up',
         'rbackup_day': 'On (1 Monday - 7 Sunday)',
         'rbackup_keep': 'Backups kept at each destination',
         'rbackup_keep_days': 'And none older than (days)',
@@ -57618,6 +57630,9 @@ class Daemon(object):
                    'at the time below. Without it, only Back up now sends one.',
         'rbackup_at': 'When, as <code>HH:MM</code> on this machine’s clock.',
         'rbackup_every': 'daily, or weekly on the day below.',
+        'rbackup_what': 'Everything: the whole database with every log - put back, it replaces '
+                        'it. The configuration only: small, and put back without touching the '
+                        'logs the machine has.',
         'rbackup_day': 'The day of a weekly backup: 1 is Monday, 7 Sunday.',
         'rbackup_keep': 'How many of this machine’s backups each destination keeps; the oldest '
                         'go first, the newest never.',
@@ -57697,6 +57712,8 @@ class Daemon(object):
         'mikrotik_kind': FW_KIND_WORDS,
         'mikrotik2_kind': FW_KIND_WORDS,
         'rbackup_every': {'daily': 'Daily', 'weekly': 'Weekly'},
+        'rbackup_what': {'all': 'Everything, the logs too',
+                         'config': 'The configuration only, without the logs'},
     }
 
     def settings_state(self, may_change=True):
@@ -64646,11 +64663,47 @@ RB_LOCK = threading.Lock()
 RB_ITER = 600000
 RB_MOST = 20
 RB_NAME_RE = re.compile(r'^isemon-backup-(?P<site>[A-Za-z0-9_.]+?)-(?P<host>[A-Za-z0-9_.]+)-'
-                        r'(?P<stamp>\d{8}-\d{6})\.tar\.gz(?P<enc>\.enc)?\Z')
+                        r'(?P<stamp>\d{8}-\d{6})(?P<conf>-config)?\.tar\.gz(?P<enc>\.enc)?\Z')
 RB_TIMEOUT = 60
 # What is inside, by name - and nothing else is taken out of one.
 RB_DB = 'isemon-full.db'
-RB_INSIDE = ('about.json', 'RESTORE.md', RB_DB, 'manifest.json')
+RB_CONF = 'isemon-config.json'            # a backup of the configuration only (1.10.235)
+RB_INSIDE = ('about.json', 'RESTORE.md', RB_DB, RB_CONF, 'manifest.json')
+# What of the database's own keys a backup of the configuration carries:
+# the pages' certificate, firewall and lists, the destinations of the
+# backups, the names of the VLANs and the routers' API keys. Never where a
+# log was read up to, nor anything counted or fetched.
+RB_CONF_META = ('web_tls', 'web_fw', 'web_access', 'rbackup:targets', 'vlan_names')
+RB_CONF_META_RE = re.compile(r'^rosapi_(ca|cert|certkey|pin|sshkey|sshpub)_[A-Za-z0-9_]{1,40}\Z')
+
+
+def rb_what():
+    return 'config' if str(CONFIG.get('rbackup_what') or 'all') == 'config' else 'all'
+
+
+def rb_conf_meta_ok(key):
+    return key in RB_CONF_META or bool(RB_CONF_META_RE.match(str(key)))
+
+
+def rb_config_payload(store, daemon=None):
+    """The configuration, whole, for a backup of it alone: what a complete
+    export carries, the database's own keys of the pages and the backups,
+    and the key files."""
+    daemon = daemon or Daemon(store)
+    meta = {}
+    for key in store.meta_keys_from('rosapi_'):
+        if rb_conf_meta_ok(key):
+            v = store.get_meta(key, None)
+            if isinstance(v, str):
+                meta[key] = v
+    for key in RB_CONF_META:
+        if key not in meta:
+            v = store.get_meta(key, None)
+            if isinstance(v, str) and v:
+                meta[key] = v
+    return {'_what': 'isemon configuration backup', '_version': __version__,
+            'export': daemon.export_config(secrets_too=True), 'meta': meta,
+            'carried': {k: v for k, v in carried_files().items() if k != 'config.json'}}
 
 
 class RbError(Exception):
@@ -65643,6 +65696,7 @@ def rb_restore_md(m):
     name = m['file']
     tar = name[:-4] if name.endswith('.enc') else name
     ver = m.get('isemon') or '?'
+    conf = m.get('what') == 'config'
     lines = [
         '# Restoring isemon from %s' % name, '',
         '| | |', '|---|---|',
@@ -65652,11 +65706,19 @@ def rb_restore_md(m):
         '| isemon | %s |' % ver,
         '| Database | %s |' % m.get('engine_words'),
         '| Locked | yes - AES-256-CBC, PBKDF2-SHA256, %d rounds (openssl enc) |' % RB_ITER,
-        '', 'Everything is in it: the whole database (every record, the bans, the accounts, every',
-        'setting saved on the pages, the certificate of the pages, the firewall and who may reach',
-        'which page), the key that opens the passwords kept in it (`settings.key`), the ban',
-        'feed\'s key, the routers\' host keys, and this machine\'s `/etc/isemon/config.json` to',
-        'read.', '',
+        '| What | %s |' % ('the configuration only, without the logs' if conf else
+                           'everything: the whole database, the logs too'),
+        ''] + ([
+            'The configuration is in it, without the logs: every setting saved on the pages, the',
+            'accounts, the whitelist and the bans, the certificate of the pages, the firewall and',
+            'who may reach which page, the destinations of the backups, the routers\' API keys,',
+            'the key that opens the passwords kept in it (`settings.key`), the ban feed\'s key and',
+            'the routers\' host keys. No record of any log is in it.', ''] if conf else [
+            'Everything is in it: the whole database (every record, the bans, the accounts, every',
+            'setting saved on the pages, the certificate of the pages, the firewall and who may',
+            'reach which page), the key that opens the passwords kept in it (`settings.key`), the',
+            'ban feed\'s key, the routers\' host keys, and this machine\'s',
+            '`/etc/isemon/config.json` to read.', '']) + [
         'Keep the password of the backups apart from the backups (a password vault): without it',
         'the file cannot be opened - by anybody.', '',
         '## 0. Check the file', '', '```bash',
@@ -65668,9 +65730,12 @@ def rb_restore_md(m):
         % (RB_ITER, name, tar),
         '# it asks for the password of the backups',
         'tar tzf %s                    # what is inside' % tar, '```', '',
-        'Inside: `%s` (the full backup: the database as a file any of the three engines' % RB_DB,
-        'takes, with the keys in it), `about.json`, `manifest.json` (a checksum of each file)',
-        'and this file.', '',
+        ('Inside: `%s` (the configuration, as JSON, with the keys in it), `about.json`,' % RB_CONF
+         if conf else
+         'Inside: `%s` (the full backup: the database as a file any of the three engines' % RB_DB),
+        ('`manifest.json` (a checksum of each file) and this file.' if conf else
+         'takes, with the keys in it), `about.json`, `manifest.json` (a checksum of each file)'),
+        ] + ([] if conf else ['and this file.']) + ['',
         '## 2. A machine to put it on', '',
         'AlmaLinux / Rocky / RHEL 9 (or the machine it came from). Install isemon **%s or' % ver,
         'newer** from its package - the same way as the first time:', '', '```bash',
@@ -65686,24 +65751,32 @@ def rb_restore_md(m):
         'systemctl start isemon', '```', '',
         'The password may come from a file instead (`--passphrase-file FILE`, one line) or from',
         'the environment (`ISEMON_BACKUP_PASSWORD`).', '',
-        'What it does: a copy of what the new machine has is made first (in',
-        '/var/lib/isemon/backups); then the database is replaced with the one in the backup, and',
-        '`settings.key`, `banfeed.key` and `known_hosts` are put in place (the ones there before',
-        'are kept beside them as `*.before-restore-*`). The new machine\'s own',
-        '`/etc/isemon/config.json` stays as it is - it belongs to the new machine; the old one is',
-        'inside the backup to read (`isemon --backup-info` is not needed: it is plain JSON in the',
-        '`isemon_carried` table of `%s`).' % RB_DB, '',
+        ] + ([
+            'What it does: `settings.key`, `banfeed.key` and `known_hosts` are put in place (the',
+            'ones there before are kept beside them as `*.before-restore-*`), then the',
+            'configuration is put back as `isemon --import` puts one back - the settings, the',
+            'accounts, the whitelist and the bans written into the database the machine has -',
+            'and the pages\' own settings after it. **Every log record the machine has stays as',
+            'it is.**', ''] if conf else [
+            'What it does: a copy of what the new machine has is made first (in',
+            '/var/lib/isemon/backups); then the database is replaced with the one in the backup,',
+            'and `settings.key`, `banfeed.key` and `known_hosts` are put in place (the ones there',
+            'before are kept beside them as `*.before-restore-*`). The new machine\'s own',
+            '`/etc/isemon/config.json` stays as it is - it belongs to the new machine; the old one',
+            'is inside the backup to read (`isemon --backup-info` is not needed: it is plain JSON',
+            'in the `isemon_carried` table of `%s`).' % RB_DB, '']) + [
         '## 4. Check it', '', '```bash',
         'isemon --status                  # the logs read, the database, the bans',
         'isemon --web-status              # nginx, TLS and the firewall put in by root', '```', '',
         'Then sign in to the pages with an account from the backup. Point the syslog of ISE, the',
         'firewalls and the RADIUS servers at the new machine if it has another address.', '',
-        '## By hand, without --restore-bundle', '', '```bash',
-        'openssl enc -d -aes-256-cbc -pbkdf2 -iter %d -md sha256 -in %s | tar xz'
-        % (RB_ITER, name),
-        'systemctl stop isemon',
-        'isemon --restore %s/%s --yes' % (m.get('base') or 'isemon-backup-...', RB_DB),
-        'systemctl start isemon', '```', '',
+        ] + ([] if conf else [
+            '## By hand, without --restore-bundle', '', '```bash',
+            'openssl enc -d -aes-256-cbc -pbkdf2 -iter %d -md sha256 -in %s | tar xz'
+            % (RB_ITER, name),
+            'systemctl stop isemon',
+            'isemon --restore %s/%s --yes' % (m.get('base') or 'isemon-backup-...', RB_DB),
+            'systemctl start isemon', '```', '']) + [
         '---', 'Made by isemon %s on %s. The whole subject: docs/remote-backups.md in the '
         'package.' % (__version__, m.get('host') or '?'), '']
     return '\n'.join(lines)
@@ -65720,9 +65793,10 @@ def rb_about(store, base, copy_bytes=0):
             'copy_bytes': int(copy_bytes or 0)}
 
 
-def rb_base():
-    return 'isemon-backup-%s-%s-%s' % (rb_site(), rb_host(),
-                                        datetime.now().strftime('%Y%m%d-%H%M%S'))
+def rb_base(what='all'):
+    return 'isemon-backup-%s-%s-%s%s' % (rb_site(), rb_host(),
+                                          datetime.now().strftime('%Y%m%d-%H%M%S'),
+                                          '-config' if what == 'config' else '')
 
 
 def rb_restore_guide(store):
@@ -65859,9 +65933,11 @@ def _rb_follow_copy(progress, began, low, high):
     return stop
 
 
-def rb_build(store, work, progress=None):
+def rb_build(store, work, progress=None, daemon=None, what=None):
     """The backup, built in `work`: (path of the file, its about/manifest,
-    RESTORE.md text). Its .sha256 and -RESTORE.md are left beside it."""
+    RESTORE.md text). Its .sha256 and -RESTORE.md are left beside it. `what`
+    (rbackup_what when not given): 'all', or 'config' - the configuration
+    alone (1.10.235)."""
     def say(n, words):
         if progress:
             progress(n, 1000, words)
@@ -65877,7 +65953,10 @@ def rb_build(store, work, progress=None):
         raise RbError('the database this is set to use will not open: a backup of the empty one '
                       'standing in for it would be worse than none')
     work = Path(work)
-    base = rb_base()
+    what = what or rb_what()
+    base = rb_base(what)
+    if what == 'config':
+        return _rb_build_config(store, work, base, pw, say, daemon)
     # The copy, and the packed file beside it: room for both, or nothing begun.
     est = int(store.size() or 0)
     rb_room(work, est + est // 2 + (512 << 20), 'making a backup')
@@ -65923,6 +66002,32 @@ def rb_build(store, work, progress=None):
     (work / (m['file'] + '.sha256')).write_text('%s  %s\n' % (sha, m['file']))
     (work / (base + '-RESTORE.md')).write_text(md)
     say(800, 'packed and locked: %s' % human_size(m['bytes']))
+    return out, m, md
+
+
+def _rb_build_config(store, work, base, pw, say, daemon=None):
+    """A backup of the configuration alone: no copy of the database, so it
+    is small, and every log stays where it is when it is put back."""
+    say(100, 'the configuration is read')
+    payload = rb_config_payload(store, daemon)
+    body = json.dumps(payload, indent=1, ensure_ascii=False, default=str).encode('utf-8')
+    m = rb_about(store, base, 0)
+    m.update(what='config', carried=sorted(payload['carried']),
+             config_bytes=len(body))
+    md = rb_restore_md(m)
+    out = work / m['file']
+    say(400, 'packed and locked')
+    about = json.dumps(m, indent=1, default=str).encode()
+    sums, sha = rb_pack([('about.json', about), ('RESTORE.md', md.encode()), (RB_CONF, body),
+                         ('manifest.json', lambda got: json.dumps(
+                             dict(m, files=got), indent=1, default=str).encode())],
+                        out, pw)
+    m['sha256'] = sha
+    m['bytes'] = out.stat().st_size
+    m['files'] = sums
+    (work / (m['file'] + '.sha256')).write_text('%s  %s\n' % (sha, m['file']))
+    (work / (base + '-RESTORE.md')).write_text(md)
+    say(800, 'packed and locked: %s (the configuration only)' % human_size(m['bytes']))
     return out, m, md
 
 
@@ -65991,7 +66096,7 @@ def rb_retain(tr, keep, days, now=None, just=None, sent=None):
     return gone
 
 
-def rb_run(store, by, only=None, progress=None):
+def rb_run(store, by, only=None, progress=None, daemon=None):
     """Made once, sent to every destination switched on (or the ones asked):
     the result of each, kept in the history."""
     targets = [t for t in rb_targets(store)
@@ -66009,8 +66114,8 @@ def rb_run(store, by, only=None, progress=None):
     began = time.time()
     run = {'at': began, 'by': by, 'host': rb_host(), 'targets': [], 'ok': False}
     try:
-        path, m, _md = rb_build(store, work, progress)
-        run.update(file=m['file'], bytes=m['bytes'], encrypted=True)
+        path, m, _md = rb_build(store, work, progress, daemon)
+        run.update(file=m['file'], bytes=m['bytes'], encrypted=True, what=m.get('what') or 'all')
         sha = work / (m['file'] + '.sha256')
         md = work / (m['base'] + '-RESTORE.md')
         for i, t in enumerate(targets):
@@ -66127,7 +66232,7 @@ def rb_job_view(job):
 def rb_job_start(daemon, by, only=None):
     """A backup sent, on a thread of its own; the page follows the job."""
     def work(progress):
-        run = rb_run(daemon.store, by, only, progress)
+        run = rb_run(daemon.store, by, only, progress, daemon)
         if run.get('error'):
             raise RbError(run['error'])
         run['message'] = ('the backup went to every destination' if run['ok'] else
@@ -66149,7 +66254,7 @@ def rb_here_start(daemon, by):
         made = rb_folder('rbackup-made')
         work_ = Path(tempfile.mkdtemp(prefix='isemon-rbhere-', dir=scratch_dir()))
         try:
-            path, m, _md = rb_build(daemon.store, work_, progress)
+            path, m, _md = rb_build(daemon.store, work_, progress, daemon)
             shutil.move(str(path), str(made / m['file']))
         finally:
             shutil.rmtree(str(work_), ignore_errors=True)
@@ -66364,7 +66469,8 @@ def rb_open(path, password, work, room_for=0, progress=None):
                 free = shutil.disk_usage(str(out)).free
             except OSError:
                 free = None
-            if free is not None and mb.size + room_for + (256 << 20) > free:
+            if free is not None and mb.size + (room_for if name == RB_DB else 0) + \
+                    (256 << 20) > free:
                 raise RbError('unpacked it is %s, and with the copy of what it replaces that is '
                               'more than there is room for in %s (%s free)'
                               % (human_size(mb.size), out, human_size(max(0, free))))
@@ -66392,7 +66498,8 @@ def rb_open(path, password, work, room_for=0, progress=None):
         o.close()
     if not isinstance(manifest, dict):
         raise RbError('there is no manifest in it')
-    for name in ('about.json', 'RESTORE.md', RB_DB):
+    for name in ('about.json', 'RESTORE.md',
+                 RB_CONF if manifest.get('what') == 'config' else RB_DB):
         want = ((manifest.get('files') or {}).get(name) or {}).get('sha256')
         if name not in sums:
             raise RbError('%s is missing from it' % name)
@@ -66416,6 +66523,8 @@ def rb_restore(store, path, password, by, daemon=None, progress=None):
                          progress=(lambda n, of: say(150 + int(400 * n / of),
                                                      'opened and checked: %d%%'
                                                      % int(100 * n / of))) if progress else None)
+        if m.get('what') == 'config':
+            return rb_restore_config(store, top, m, by, daemon, say, path)
         db = top / RB_DB
         said, why = store.dump_peek(db)
         if said is None:
@@ -66445,6 +66554,57 @@ def rb_restore(store, path, password, by, daemon=None, progress=None):
                 'message': 'the backup is back; what it replaced is kept as %s' % done['safety']}
     finally:
         shutil.rmtree(str(work), ignore_errors=True)
+
+
+def rb_restore_config(store, top, m, by, daemon, say, path):
+    """A backup of the configuration alone, put back the way Export and import
+    puts a configuration back: settings, accounts, the whitelist and the bans
+    written into the database there is - its logs left exactly as they are -
+    then the pages' own settings and the keys."""
+    try:
+        payload = json.loads((top / RB_CONF).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        raise RbError('its configuration is not readable')
+    if not isinstance(payload, dict) or payload.get('_what') != 'isemon configuration backup' or \
+            not isinstance(payload.get('export'), dict):
+        raise RbError('its configuration is not one of isemon')
+    carried = {k: str(v) for k, v in (payload.get('carried') or {}).items()
+               if k in ('settings.key', 'banfeed.key', 'known_hosts') and isinstance(v, str)}
+    say(600, 'the keys put in place')
+    # The keys first: the settings and the pages' certificate are sealed
+    # with the settings.key that came with them.
+    put = carried_put(carried, by) if carried else []
+    say(700, 'the configuration is put back - the logs here are left as they are')
+    d = daemon or Daemon(store)
+    try:
+        said = d.import_config(payload['export'], by=by)
+    except ValueError as e:
+        raise RbError(str(e))
+    meta = payload.get('meta') if isinstance(payload.get('meta'), dict) else {}
+    back = 0
+    for key, value in sorted(meta.items()):
+        if rb_conf_meta_ok(key) and isinstance(value, str) and len(value) < (4 << 20):
+            store.set_meta(key, value)
+            back += 1
+    if daemon is not None:
+        try:
+            daemon.webroot_again('a backup of the configuration was put back')
+        except Exception as e:                          # noqa: BLE001
+            log('the pages\u2019 own settings after putting a configuration back: %s' % e, 'warn')
+    words = '; '.join(said.get('done') or [])
+    store.add_event('backup', '%s put back the configuration from %s (made %s on %s, isemon %s): '
+                              '%s; %d of the pages\u2019 and the backups\u2019 own; the logs '
+                              'were left as they are' % (
+                                  by, os.path.basename(str(path)), m.get('made_words'),
+                                  m.get('host'), m.get('isemon'), words, back), 'warn', who=by)
+    log('a backup of the configuration was put back by %s: %s' % (by, os.path.basename(str(path))),
+        'warn')
+    say(1000, 'put back')
+    return {'manifest': {k: v for k, v in m.items() if k != 'files'}, 'safety': '',
+            'carried': put, 'what': 'config', 'done': said.get('done') or [],
+            'missing': said.get('missing') or [],
+            'message': 'the configuration is back (%s); the logs here were left as they are'
+                       % (words or 'nothing in it')}
 
 
 def rb_restore_start(daemon, by, password, upload=None, tid=None, name=None):
@@ -66532,6 +66692,7 @@ def rb_remote_list(store, tid):
         out.append({'name': x['name'], 'bytes': x['size'], 'when': when,
                     'host': m.group('host'), 'site': m.group('site'),
                     'encrypted': bool(m.group('enc')), 'mine': rb_mine(m),
+                    'what': 'config' if m.group('conf') else 'all',
                     'sha256': (x['name'] + '.sha256') in names})
     out.sort(key=lambda x: -x['when'])
     return out
@@ -66952,9 +67113,16 @@ def cmd_restore_bundle(args, pal, store):
             if k == 'copy_bytes' and v:
                 v = human_size(v)
             pal.kv(words, v if v not in (None, '') else '-')
-        pal.note('it would replace everything in %s and put its keys (settings.key, banfeed.key, '
-                 'known_hosts) in place; a copy of what is there now is made first.'
-                 % store.dialect.where())
+        if about.get('what') == 'config':
+            pal.kv('what', 'the configuration only, without the logs')
+            pal.note('it would put its keys (settings.key, banfeed.key, known_hosts) in place and '
+                     'the configuration back into %s - the settings, the accounts, the whitelist '
+                     'and the bans, the pages\u2019 own settings; every log record there stays as '
+                     'it is.' % store.dialect.where())
+        else:
+            pal.note('it would replace everything in %s and put its keys (settings.key, '
+                     'banfeed.key, known_hosts) in place; a copy of what is there now is made '
+                     'first.' % store.dialect.where())
         pal.note('  again with --yes to put it back (the daemon stopped first):')
         pal.note('      systemctl stop isemon')
         pal.note('      isemon --restore-bundle %s --yes' % path)
@@ -66981,7 +67149,15 @@ def cmd_restore_bundle(args, pal, store):
     if got['carried']:
         pal.good('%s put in place (the ones before are kept beside them in %s)'
                  % (', '.join(got['carried']), STATE_DIR))
-    pal.good('what this machine had is kept as %s/%s' % (BACKUP_DIR, got['safety']))
+    if got.get('what') == 'config':
+        for one in got.get('done') or []:
+            pal.note('  %s' % one)
+        if got.get('missing'):
+            pal.warn('it could not bring these, and they have to be set by hand: %s'
+                     % ', '.join(got['missing']))
+        pal.good('the logs this machine has were left as they are')
+    else:
+        pal.good('what this machine had is kept as %s/%s' % (BACKUP_DIR, got['safety']))
     pal.note('  now:  systemctl start isemon')
     return 0
 
@@ -67197,6 +67373,8 @@ class Upgrades(object):
         if st.get('state') == 'running' and time.time() - float(st.get('at') or 0) > 30 * 60:
             st['state'] = 'stuck'
         return {'ok': True, 'may': may, 'version': __version__, 'package': self.package(),
+                'host': socket.gethostname().split('.')[0], 'now': time.time(),
+                'started': getattr(self.daemon, 'started', 0),
                 'unit': self.unit_there(), 'helper': bool(self.helper()),
                 'keys': sorted(p.name[:-4] for p in Path(os.environ.get(
                     'ISEMON_RELEASE_KEYS', '/usr/local/lib/isemon/release-keys')).glob('*.pub'))

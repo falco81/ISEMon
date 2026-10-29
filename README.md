@@ -371,6 +371,20 @@ working.
 
 ## Version
 
+1.10.235
+
+- **Backups: everything, or the configuration only.** *What is backed up*
+  (`rbackup_what`, Settings - Backups): *Everything, the logs too* (as it comes,
+  and as until now) or *The configuration only, without the logs* - no copy of
+  the database, so it is small however big the logs are: every setting with
+  its passwords, the accounts, the whitelist and the bans, the keys, the pages'
+  certificate and firewall, the destinations of the backups. Its name ends in
+  `-config`, and the page marks it. Put back - on the page, from a destination,
+  or `isemon --restore-bundle` - it is imported into the database there is:
+  every log record stays. See [docs/remote-backups.md](docs/remote-backups.md).
+- **Upgrades: a card *This server* at the top** - the machine, the version it
+  runs, since when, and whether it is running, being upgraded or restarting.
+
 1.10.234
 
 - **A new network on trial goes back exactly as it was.** Going back puts every

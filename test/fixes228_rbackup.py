@@ -748,7 +748,7 @@ try:
     page = (ROOT / 'web' / 'index.php').read_text(encoding='utf-8')
     ok('the pane is drawn by loadRbackup', 'function loadRbackup()' in page and
        'id="rb-top"' in page and 'id="sect-backup"' in page)
-    ok('its settings are in its pane', "backup:  ['rbackup', 'rbackup_at'" in page)
+    ok('its settings are in its pane', "backup:  ['rbackup', 'rbackup_what', 'rbackup_at'" in page)
     ok('a backup is sent as the file itself with a header of ours, never multipart',
        "'X-Isemon-Rbackup': '1', 'Content-Type': 'application/octet-stream'" in page and
        "$what === 'rbackup-upload' && strpos($kind, 'application/octet-stream') === 0" in page)

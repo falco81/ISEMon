@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.234",
+  "version": "1.10.235",
   "made": "2026-10-29",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -4832,6 +4832,10 @@
    "source": "config vpn ssl settings",
    "text": "config vpn ssl settings"
   },
+  "s.configuration-only.1b8bea7a": {
+   "source": "configuration only",
+   "text": "configuration only"
+  },
   "s.confirmed-by-an-administrator.52247b4f": {
    "source": "confirmed by an administrator",
    "text": "confirmed by an administrator"
@@ -7412,6 +7416,10 @@
    "source": "Everything the firewall wrote about itself: the VPN, its administrators and its own health, together.",
    "text": "Everything the firewall wrote about itself: the VPN, its administrators and its own health, together."
   },
+  "s.everything-the-logs-too.64aaab28": {
+   "source": "Everything, the logs too",
+   "text": "Everything, the logs too"
+  },
   "s.everything-the-router-is-being-told.9c8c9894": {
    "source": "Everything the router is being told to drop. Press one for its whole story: what it tried, which public lists name it, and when it comes back in.",
    "text": "Everything the router is being told to drop. Press one for its whole story: what it tried, which public lists name it, and when it comes back in."
@@ -7419,6 +7427,10 @@
   "s.everything-the-router-is-being-told.d12e0145": {
    "source": "Everything the router is being told to drop, listed.",
    "text": "Everything the router is being told to drop, listed."
+  },
+  "s.everything-the-whole-database-with-every.2b869b9b": {
+   "source": "Everything: the whole database with every log - put back, it replaces it. The configuration only: small, and put back without touching the logs the machine has.",
+   "text": "Everything: the whole database with every log - put back, it replaces it. The configuration only: small, and put back without touching the logs the machine has."
   },
   "s.everything-this-downloads-and-when-each.33853aae": {
    "source": "Everything this downloads and when each is due again. A machine with no way out simply never fetches and says so, rather than failing quietly.",
@@ -18428,6 +18440,10 @@
    "source": "Running on",
    "text": "Running on"
   },
+  "s.running-since.180dbfb4": {
+   "source": "Running since",
+   "text": "Running since"
+  },
   "s.running.3c49d9cc": {
    "source": "running",
    "text": "running"
@@ -21667,6 +21683,10 @@
   "s.the-configuration-is-in.3eba127f": {
    "source": "The configuration is in",
    "text": "The configuration is in"
+  },
+  "s.the-configuration-only-without-the-logs.47c0ac06": {
+   "source": "The configuration only, without the logs",
+   "text": "The configuration only, without the logs"
   },
   "s.the-configuration-saved.cb4eb8f6": {
    "source": "the configuration saved",
@@ -25288,6 +25308,10 @@
    "source": "this, and stop",
    "text": "this, and stop"
   },
+  "s.this-backup-holds-the-configuration-only.060de64e": {
+   "source": "This backup holds the configuration only. Its keys are put in place and the configuration is put back - the settings, the accounts, the whitelist and the bans, the certificate and the firewall of the pages, the destinations of the backups. Every log record here stays as it is.",
+   "text": "This backup holds the configuration only. Its keys are put in place and the configuration is put back - the settings, the accounts, the whitelist and the bans, the certificate and the firewall of the pages, the destinations of the backups. Every log record here stays as it is."
+  },
   "s.this-ban-has-not-ended-either.359afd38": {
    "source": "This ban has not ended: either it is for good, or its clock has not run out.",
    "text": "This ban has not ended: either it is for good, or its clock has not run out."
@@ -25639,6 +25663,10 @@
   "s.this-server.086b51a0": {
    "source": "this server",
    "text": "this server"
+  },
+  "s.this-server.d75b2349": {
+   "source": "This server",
+   "text": "This server"
   },
   "s.this-session-in-the-list.a5d2cc0c": {
    "source": "This session in the list",
@@ -26592,6 +26620,10 @@
    "source": "Upgrades",
    "text": "Upgrades"
   },
+  "s.upgrading.501d5804": {
+   "source": "upgrading",
+   "text": "upgrading"
+  },
   "s.upload-the-certificate.f0f5d1c9": {
    "source": "Upload the certificate…",
    "text": "Upload the certificate…"
@@ -27215,6 +27247,10 @@
   "s.what-is-at-upgrade-url-now.3d36e2c7": {
    "source": "what is at upgrade_url now, and whether it is newer",
    "text": "what is at upgrade_url now, and whether it is newer"
+  },
+  "s.what-is-backed-up.8ac7a49b": {
+   "source": "What is backed up",
+   "text": "What is backed up"
   },
   "s.what-is-fetched-and-when-it.b79bf18f": {
    "source": "What is fetched, and when it is next due",
@@ -32313,6 +32349,10 @@
   "p.the-columns-of.9e1ac5ee": {
    "source": "The columns of {0}",
    "text": "The columns of {0}"
+  },
+  "p.the-configuration-is-back-the-logs.d3ce30ad": {
+   "source": "the configuration is back ({0}); the logs here were left as they are",
+   "text": "the configuration is back ({0}); the logs here were left as they are"
   },
   "p.the-controllers-are-not-marked-anywhere.40d989fa": {
    "source": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}",

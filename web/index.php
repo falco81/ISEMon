@@ -5884,6 +5884,10 @@ function srcText(el) {
         released, press Upgrade, and root checks it and runs its own install.sh --upgrade - exactly as
         on the command line, which stays the other way to do it.</p>
     </div>
+    <div class="card full" id="up-me-card">
+      <h2>This server</h2>
+      <div id="up-me"></div>
+    </div>
     <div class="card full" id="up-web-card">
       <h2>From the web</h2>
       <p class="note">Where new versions are published - the address below - is looked at once a
@@ -25611,7 +25615,7 @@ var PANES = {
             'tidy_daily', 'tidy_at', 'backup_daily',
             'backup_keep', 'backup_at'],
   /* Backups to another machine (1.10.228), drawn into Settings -> Backups. */
-  backup:  ['rbackup', 'rbackup_at', 'rbackup_every', 'rbackup_day', 'rbackup_keep',
+  backup:  ['rbackup', 'rbackup_what', 'rbackup_at', 'rbackup_every', 'rbackup_day', 'rbackup_keep',
             'rbackup_keep_days', 'rbackup_password'],
   about:   ['site_name', 'api_port', 'debug',
             'debug_sql', 'debug_ldap', 'debug_api', 'debug_logs', 'debug_router']
@@ -37447,6 +37451,7 @@ function drawRbRuns() {
     tr.appendChild(noI18n(el('td', 'muted', stamp(r.at))));
     var f = el('td', 'mono small');
     f.appendChild(noI18n(el('span', '', r.file || '–')));
+    if (r.what === 'config') { f.appendChild(document.createTextNode(' ')); f.appendChild(el('span', 'tag info', 'configuration only')); }
     tr.appendChild(f);
     tr.appendChild(noI18n(el('td', 'num', r.bytes ? rbBytes(r.bytes) : '–')));
     var w = el('td');
@@ -37936,6 +37941,7 @@ function rbListThere(t) {
         var sz = el('td', 'num');
         sz.appendChild(noI18n(el('span', '', rbBytes(fl.bytes))));
         if (!fl.encrypted) { sz.appendChild(document.createTextNode(' ')); sz.appendChild(el('span', 'tag crit', 'not locked')); }
+        if (fl.what === 'config') { sz.appendChild(document.createTextNode(' ')); sz.appendChild(el('span', 'tag info', 'configuration only')); }
         tr.appendChild(sz);
         var a = el('td', 'rowtools');
         var dl = iconButton('download', 'Download it');
@@ -37950,7 +37956,7 @@ function rbListThere(t) {
         };
         a.appendChild(dl);
         var pb = iconButton('undo', 'Put this back…');
-        pb.onclick = function () { rbPutBackConfirm({id: t.id, name: fl.name, encrypted: fl.encrypted, when: fl.when, host: fl.host}); };
+        pb.onclick = function () { rbPutBackConfirm({id: t.id, name: fl.name, encrypted: fl.encrypted, when: fl.when, host: fl.host, what: fl.what}); };
         a.appendChild(pb);
         var del = iconButton('trash', 'Delete it there');
         del.onclick = function () {
@@ -37976,14 +37982,17 @@ function rbPutBackConfirm(what) {
     if (what.manifest) {
       var m = what.manifest;
       facts = [['Made', m.made_words], ['On', m.host + ' (' + (m.fqdn || '') + ')'], ['isemon', m.isemon], ['Database', m.engine_words || m.engine], ['The copy in it', rbBytes(m.copy_bytes)]];
+      if (m.what === 'config') facts[4] = ['The copy in it', rbBytes(m.config_bytes)];
     }
+    var conf = what.what === 'config' || (what.manifest && what.manifest.what === 'config');
     if (facts.length) {
       var dl = el('dl', 'cert-kv');
       facts.forEach(function (f) { dl.appendChild(el('dt', '', f[0])); dl.appendChild(noI18n(el('dd', '', f[1] || '–'))); });
       body.appendChild(dl);
     }
     if (what.said) body.appendChild(noI18n(el('p', 'note warn', what.said)));
-    body.appendChild(el('p', 'note warn', 'Everything in the database is replaced with what the backup holds - every record, the bans, the accounts, every setting, the certificate of the pages - and its keys are put in place. You sign in again afterwards, with an account the backup has. A copy of what is here now is made first (Settings → The database).'));
+    if (conf) body.appendChild(el('p', 'note', 'This backup holds the configuration only. Its keys are put in place and the configuration is put back - the settings, the accounts, the whitelist and the bans, the certificate and the firewall of the pages, the destinations of the backups. Every log record here stays as it is.'));
+    else body.appendChild(el('p', 'note warn', 'Everything in the database is replaced with what the backup holds - every record, the bans, the accounts, every setting, the certificate of the pages - and its keys are put in place. You sign in again afterwards, with an account the backup has. A copy of what is here now is made first (Settings → The database).'));
     pw = rbMask('', what.encrypted === false ? '(not locked)' : 'empty: the password of the backups set here');
     body.appendChild(wrField('Its password', pw, 'Only when it was locked with another password than the one set here now.'));
   }, [{words: 'No, leave it', close: true},
@@ -39014,6 +39023,7 @@ function loadUpgrade(quiet) {
     /* The daemon answering these pages is the one being restarted. */
     if (UP.last && UP.last.running && UP.misses++ < 200) {
       UP.restarting = true;
+      drawUpMe(UP.last);
       drawUpgradeRun(UP.last);
       upgradeAgain(2000);
       return;
@@ -39243,8 +39253,35 @@ function upGoBack(p, button) {
         }).catch(oops).then(function () { busy(button, false); });
       }}], true);
 }
+/* This server, as the other pages of the same author have it at the top of
+   Upgrades (1.10.235): which machine, the version it runs, since when, and
+   whether it is running, being upgraded or restarting. */
+function drawUpMe(d) {
+  var host = $('up-me');
+  if (!host) return;
+  clear(host);
+  var state = UP.restarting ? ['restarting', 'warn'] : (d.running ? ['upgrading', 'info'] : ['running', 'ok']);
+  host.appendChild(listTable(['Machine', 'Version', 'Running since', 'State'], [d], function () {
+    var tr = el('tr');
+    var m = el('td');
+    m.appendChild(noI18n(el('b', '', d.host || location.hostname)));
+    m.appendChild(document.createTextNode(' '));
+    m.appendChild(el('span', 'tag info', 'this page'));
+    tr.appendChild(m);
+    tr.appendChild(noI18n(el('td', 'mono', d.version || '–')));
+    var since = el('td', 'muted');
+    since.textContent = d.started ? span((d.now || Date.now() / 1000) - d.started) : '–';
+    if (d.started) since.title = new Date(d.started * 1000).toLocaleString();
+    tr.appendChild(since);
+    var st = el('td');
+    st.appendChild(el('span', 'tag ' + state[1], state[0]));
+    tr.appendChild(st);
+    return tr;
+  }, 'plain'));
+}
 function drawUpgrade(d) {
   UP.last = d;
+  drawUpMe(d);
   drawUpWeb(d);
   drawUpBack(d);
   var facts = $('up-facts');
