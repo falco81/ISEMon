@@ -196,26 +196,102 @@ root_helpers() {
     good "packages from the pages must be signed by: $(ls "$LIB_DIR/release-keys" 2>/dev/null | sed 's/\.pub$//' | paste -sd, -)"
 }
 
-# The clock (1.10.228): Settings -> Time reads it through chrony. A fresh
-# install puts chrony in when it is missing (and starts it, the way
-# AlmaLinux has it out of the box); an upgrade does nothing at all to it -
-# the machine's time is the site's own - and only says so when chronyd is
-# not running.
+# A package put in when it is missing (1.10.236): on an install and on
+# every upgrade alike. Only ever adds - nothing already installed is changed,
+# upgraded or taken away - and a package that cannot be had (no repository,
+# no network) is said and the rest goes on.
+PKG_UPDATED=""
+PKG_UNTIL=""        # all of it within ten minutes: an upgrade has a deadline
+pkg_add() {         # pkg_add <rpm> <deb>
+    if [[ -n "$DRY_RUN" ]]; then note "[would install] ${1}"; return 0; fi
+    if [[ -n "$PKG_UNTIL" ]] && (( SECONDS > PKG_UNTIL )); then return 0; fi
+    if [[ "$PKG" == "dnf" ]]; then
+        timeout 300 dnf install -y "$1" >/dev/null 2>&1 || true
+    elif [[ "$PKG" == "apt" ]]; then
+        if [[ -z "$PKG_UPDATED" ]]; then
+            timeout 300 apt-get update >/dev/null 2>&1 || true
+            PKG_UPDATED=1
+        fi
+        DEBIAN_FRONTEND=noninteractive timeout 300 apt-get install -y "$2" >/dev/null 2>&1 || true
+    fi
+}
+
+tool_add() {        # tool_add <program> <rpm> <deb> "what it is for"
+    if command -v "$1" >/dev/null 2>&1; then return 0; fi
+    [[ -n "$PKG" ]] || { warn "$1 is missing ($4) - install $2 by hand"; return 0; }
+    pkg_add "$2" "$3"
+    if [[ -n "$DRY_RUN" ]] || command -v "$1" >/dev/null 2>&1; then
+        good "$([[ "$PKG" == "apt" ]] && echo "$3" || echo "$2") installed - $4"
+    else
+        warn "$([[ "$PKG" == "apt" ]] && echo "$3" || echo "$2") could not be installed - $4 ($PKG install it by hand)"
+    fi
+}
+
+# What isemon uses beside Python, put in whenever it is missing. The
+# database's driver and client too, for the engine config.json names.
+ensure_packages() {     # ensure_packages fresh|upgrade
+    local ssh_pkg="openssh-clients" smb_pkg="samba-client"
+    PKG_UNTIL=$((SECONDS + 600))
+    [[ "$PKG" == "apt" ]] && { ssh_pkg="openssh-client"; smb_pkg="smbclient"; }
+    tool_add ssh        "$ssh_pkg" "$ssh_pkg" "the ssh client (routers, backups over SFTP and SCP)"
+    tool_add ssh-keygen "$ssh_pkg" "$ssh_pkg" "ssh keys"
+    tool_add setfacl    acl acl "the rights on the logs"
+    tool_add openssl    openssl openssl "signed packages, locked backups, certificates"
+    tool_add smbclient  "$smb_pkg" "$smb_pkg" "backups to a Windows or Samba share"
+    tool_add chronyc    chrony chrony "Settings -> Time reads the clock through chrony"
+    if [[ -f "$WEB_DIR/index.php" || ( "$1" == "fresh" && -n "$WITH_WEB" ) ]]; then
+        tool_add nginx nginx nginx "the web server of the pages"
+        command -v php-fpm >/dev/null 2>&1 || php-fpm -v >/dev/null 2>&1 \
+            || ls /usr/sbin/php*-fpm* >/dev/null 2>&1 || tool_add php-fpm php-fpm php-fpm "the pages' PHP"
+        tool_add php php-cli php-cli "the pages' PHP on the command line"
+    fi
+    # colorama makes the colours of the command line right everywhere;
+    # nothing needs it - without it isemon writes the escapes itself.
+    if ! python3 -c 'import colorama' 2>/dev/null && [[ -n "$PKG" ]]; then
+        pkg_add python3-colorama python3-colorama
+        python3 -c 'import colorama' 2>/dev/null && good "python3-colorama installed - the command line in colour"
+    fi
+    # The engine this machine is set to use (an upgrade): its driver and its
+    # dump program, when they went missing.
+    if [[ "$1" == "upgrade" && -z "${WITH_DB:-}" && -f "$CONFIG_FILE" ]]; then
+        local engine
+        engine="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("db_engine") or "")' "$CONFIG_FILE" 2>/dev/null)"
+        case "$engine" in
+            mariadb|mysql)
+                python3 -c 'import pymysql' 2>/dev/null || db_driver "MariaDB" pymysql python3-PyMySQL PyMySQL
+                command -v mariadb-dump >/dev/null 2>&1 || db_client "MariaDB" mariadb-dump mariadb default-mysql-client;;
+            postgres|postgresql)
+                python3 -c 'import psycopg2' 2>/dev/null || db_driver "PostgreSQL" psycopg2 python3-psycopg2 psycopg2-binary
+                command -v pg_dump >/dev/null 2>&1 || db_client "PostgreSQL" pg_dump postgresql postgresql-client;;
+        esac
+    fi
+    return 0
+}
+
+# The clock (1.10.228): Settings -> Time reads it through chrony, put in
+# above when it was missing. chronyd is started - the way AlmaLinux has it
+# out of the box - only when it was never set up here and nothing else keeps
+# the time (systemd-timesyncd, ntpd, openntpd): a machine that keeps its
+# time some other way keeps it so.
 chrony_check() {    # chrony_check fresh|upgrade
-    if [[ "$1" == "fresh" ]] && ! command -v chronyd >/dev/null 2>&1 && [[ "$PKG" == "dnf" ]]; then
-        if run dnf install -y chrony >/dev/null 2>&1; then
-            good "chrony installed (Settings -> Time reads the clock through it)"
-            if ! systemctl is-active --quiet systemd-timesyncd 2>/dev/null; then
-                run systemctl enable --now chronyd >/dev/null 2>&1 || true
-            fi
+    [[ -n "$DRY_RUN" ]] && return 0
+    command -v chronyd >/dev/null 2>&1 || return 0
+    if ! systemctl is-active --quiet chronyd 2>/dev/null && \
+            ! systemctl is-enabled --quiet chronyd 2>/dev/null; then
+        local other=""
+        for u in systemd-timesyncd ntpd ntp openntpd; do
+            systemctl is-active --quiet "$u" 2>/dev/null && other="$u"
+        done
+        if [[ -z "$other" ]]; then
+            run systemctl enable --now chronyd >/dev/null 2>&1 || true
+            systemctl is-active --quiet chronyd 2>/dev/null && good "chronyd started - the clock is kept by chrony"
         else
-            warn "dnf could not install chrony; Settings -> Time shows the clock without it"
+            note "the time is kept by $other here: chronyd is left off, Settings -> Time says so"
         fi
     fi
-    [[ -n "$DRY_RUN" ]] && return 0
     if ! systemctl is-active --quiet chronyd 2>/dev/null; then
         note "chronyd is not running here: Settings -> Time shows the clock as chrony sees it,"
-        note "  and says what it can without it (dnf install chrony; systemctl enable --now chronyd)"
+        note "  and says what it can without it (systemctl enable --now chronyd)"
     fi
     return 0
 }
@@ -1162,6 +1238,10 @@ if [[ -n "$DO_UPGRADE" ]]; then
     if [[ -z "${ISEMON_UPGRADE_FROM_PAGES:-}" ]] && systemctl is-active --quiet isemon-upgrade.service 2>/dev/null; then
         fail "an upgrade from the pages is running (isemon-upgrade.service); wait for it, then run this again"
     fi
+    [[ -d "$LIB_DIR" ]] || fail "$LIB_DIR does not exist — this looks like a first install, so run it without --upgrade"
+    # What isemon uses and this machine lacks, put in first (1.10.236).
+    progress 1 "the packages isemon uses"
+    ensure_packages upgrade
     progress 1 "copying the program"
     [[ -d "$LIB_DIR" ]] || fail "$LIB_DIR does not exist — this looks like a first install, so run it without --upgrade"
     was="$(python3 "$LIB_DIR/isemon.py" --version 2>/dev/null || echo unknown)"
@@ -1392,46 +1472,11 @@ else
     good "everything needed is already here"
 fi
 
-# colorama makes the command line's colours correct everywhere rather than
-# only on a Linux terminal. Nothing needs it: without it isemon writes the
-# same escape sequences itself. So it is offered and never insisted on, and a
-# machine with no package for it is a machine that carries on.
 install_db_drivers
 
-if python3 -c 'import colorama' 2>/dev/null; then
-    good "python3-colorama is here — the command line will be in colour"
-else
-    if [[ "$PKG" == "dnf" ]]; then
-        dnf install -y python3-colorama >/dev/null 2>&1 || true
-    elif [[ "$PKG" == "apt" ]]; then
-        apt-get install -y python3-colorama >/dev/null 2>&1 || true
-    fi
-    if python3 -c 'import colorama' 2>/dev/null; then
-        good "python3-colorama installed — the command line will be in colour"
-    else
-        note "python3-colorama is not available; colour is written by hand instead,"
-        note "which works on this terminal and is the only difference."
-    fi
-fi
-
-# Backups to another machine (1.10.228): an SMB destination goes through
-# smbclient (SFTP and SCP through the OpenSSH above). Offered on a fresh
-# install and never insisted on; an upgrade never gets this far, so it
-# installs nothing for it - Settings -> Backups says when one is missing.
-if ! command -v smbclient >/dev/null 2>&1; then
-    smb_pkg="samba-client"
-    [[ "$PKG" == "apt" ]] && smb_pkg="smbclient"
-    if [[ "$PKG" == "dnf" ]]; then
-        dnf install -y "$smb_pkg" >/dev/null 2>&1 || true
-    elif [[ "$PKG" == "apt" ]]; then
-        apt-get install -y "$smb_pkg" >/dev/null 2>&1 || true
-    fi
-    if command -v smbclient >/dev/null 2>&1; then
-        good "$smb_pkg installed — backups can go to a Windows or Samba share"
-    else
-        note "$smb_pkg is not available; backups to a Windows share need it (the others do not)."
-    fi
-fi
+# What else isemon uses (ssh, openssl, smbclient, chrony, colorama...): put in
+# when it is missing, never insisted on - see ensure_packages.
+ensure_packages fresh
 
 # ---- the account it runs as ------------------------------------------------
 step "The service account"

@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.236
+
+- **The installer puts in what is missing, on every upgrade too.** `install.sh`
+  and `install.sh --upgrade` (also an upgrade from the pages) install whatever
+  isemon uses and the machine lacks: the ssh client, `acl`, `openssl`,
+  `smbclient`, `chrony`, python3-colorama, nginx and PHP where the pages are,
+  and the driver and dump program of the database engine config.json names.
+  Only ever adds - nothing installed is changed, upgraded or taken away; a
+  package that cannot be had is said and the rest goes on (ten minutes at
+  most). chronyd is started only where it was never set up and nothing else
+  keeps the time.
+
 1.10.235
 
 - **Backups: everything, or the configuration only.** *What is backed up*

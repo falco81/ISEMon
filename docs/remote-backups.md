@@ -95,9 +95,10 @@ gets every backup.
 | SMB | server, port 445, share, folder in it | account, password, domain | SMB2 at least; SMB3 encryption required (on by default) |
 
 SFTP and SCP use OpenSSH's own `sftp`, `scp` and `ssh` (`openssh-clients`), SMB
-`smbclient` (`samba-client`). A fresh install puts both in where the
-distribution has them; an upgrade installs nothing for them. The page says when
-one is missing: `dnf install openssh-clients` or `dnf install samba-client`.
+`smbclient` (`samba-client`). `install.sh` puts both in whenever they are
+missing - on an install and on every upgrade (1.10.236). The page says when one
+is missing still (no repository reachable): `dnf install openssh-clients` or
+`dnf install samba-client`.
 
 A file is written under a temporary name and renamed when it is whole, so a
 half-sent backup is never taken for one. Every password, key and passphrase of

@@ -84,8 +84,10 @@ Both ask the running daemon, which asks root; `--json` gives the whole answer.
 
 ## install.sh
 
-A fresh install puts chrony in when it is missing, and starts it (unless
-systemd-timesyncd is running). An upgrade does nothing at all to chrony or to
-`/etc/chrony.conf`: it only says so when chronyd is not running. Root's helper
+`install.sh` puts chrony in whenever it is missing - on an install and on
+every upgrade (1.10.236) - and starts chronyd, the way AlmaLinux has it out of
+the box, only when it was never set up on the machine and nothing else keeps
+the time (systemd-timesyncd, ntpd, openntpd). `/etc/chrony.conf` is never
+touched by it; when chronyd is still not running, it says so. Root's helper
 of 1.10.228 or later (put in by `./install.sh --upgrade`) is what answers the
 page; before it, the page says that root did not answer.

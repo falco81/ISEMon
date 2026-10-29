@@ -473,11 +473,16 @@ try:
                                          isemon.ntp_ms(0.0123)), ('-0.012 ms', '+2.50 s', '+12.3 ms'))
     inst = (ROOT / 'install.sh').read_text()
     fn = inst[inst.index('chrony_check() {'):inst.index('not_a_link() {')]
-    ok('install.sh: chrony only installed on a fresh install',
-       ('[[ "$1" == "fresh" ]]' in fn, 'chrony_check upgrade' in inst,
-        'chrony_check fresh' in inst), (True, True, True))
-    ok('...an upgrade only says so when chronyd is not running',
-       fn.count('run dnf install') == 1 and 'set-ntp' not in fn and '/etc/chrony.conf' not in fn)
+    # 1.10.236: chrony put in whenever it is missing (ensure_packages, on an
+    # install and on an upgrade); chronyd started only where nothing else
+    # keeps the time and it was never set up.
+    ok('install.sh: chrony put in when missing, on an install and an upgrade',
+       ('tool_add chronyc    chrony chrony' in inst, 'ensure_packages upgrade' in inst,
+        'ensure_packages fresh' in inst, 'chrony_check upgrade' in inst,
+        'chrony_check fresh' in inst), (True, True, True, True, True))
+    ok('...chronyd started only where nothing else keeps the time',
+       'systemd-timesyncd ntpd ntp openntpd' in fn and 'is-enabled --quiet chronyd' in fn
+       and 'set-ntp' not in fn and '/etc/chrony.conf' not in fn)
     doc = (ROOT / 'docs' / 'time.md').read_text()
     ok('docs/time.md', all(x in doc for x in ('#isemon#', '/etc/chrony.conf.isemon-before',
                                               'isemon --time', 'NTP (time served)')))
