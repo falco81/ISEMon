@@ -119,12 +119,16 @@ It is checked three times:
   is higher;
 - **root** (`isemon_upgrade.py`) refuses below the floor written in root's own
   copy of the installed program, and below the one the daemon passed: the isemon
-  account can raise it, never lower it. The package is checked exactly as an
-  upgrade is - signed by a release key this server trusts.
+  account can raise it, never lower it. Root also keeps the highest floor any
+  installed version has named, in `/usr/local/lib/isemon/downgrade-floor`
+  (1.10.234), so going back twice - each step above the floor of the version
+  installed then - never gets below what the database has seen. The package
+  is checked exactly as an upgrade is - signed by a release key this server
+  trusts.
 
 Going back to a version without the console (before 1.10.228) takes the
-console's login script (`/etc/profile.d/zz-isemon-console.sh`) away, so root's
-login is not told the option is unknown. The page asks for the version to be
+console's login script (`/etc/profile.d/zz-isemon-console.sh`) away once its
+`install.sh` went through, so root's login is not told the option is unknown. The page asks for the version to be
 typed before it goes; `isemon --downgrade VERSION` asks the same unless
 `--yes`.
 

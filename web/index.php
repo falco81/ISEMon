@@ -3747,6 +3747,7 @@ function srcText(el) {
   /* ---- what it runs on (1.10.229) ---- */
   .up-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}
   .up-pick select{max-width:260px}
+  #about-console .arow.changed .arow-k{color:var(--info)}
   #up-back td.right{white-space:nowrap}
   .modal .up-lines{white-space:pre-wrap;max-height:60vh}
   #up-back td.right .btn{margin-left:6px}
@@ -3785,6 +3786,77 @@ function srcText(el) {
   .net-steps li.good .mark{color:var(--ok)} .net-steps li.bad .mark{color:var(--crit)}
   .net-job .cert-prog-bar{margin:6px 0 10px}
   .net-plan{margin-top:12px}
+  /* ---- Network, Time, Restart and power off, Backups, About and Upgrades as
+     otp 1.0.146 draws them (1.10.234) ---- */
+  /* Cards one under another are spaced wherever they are drawn into a holder
+     of their own (#net-job, #net-now, #net-form, #ntp-live...), not only
+     when they are siblings: a margin does not reach across the holder. */
+  .ctl-pane > :not(.ctl-head):not(:empty) + .card,
+  .ctl-pane > div > div:not(:empty) + div:not([class]) > .card:first-child{margin-top:14px}
+  .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px 18px;align-items:start}
+  .formgrid .wide{grid-column:1/-1}
+  .formgrid > .wr-field{margin:0;min-width:0}
+  .wr-field > .wr-in{width:100%;box-sizing:border-box}
+  .wr-field > .sw{align-self:flex-start;margin:2px 0}
+  .msect{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px 16px;
+    display:flex;flex-direction:column;gap:8px;min-width:0}
+  .msect.wide{grid-column:1 / -1}
+  .msect > h4{margin:0;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--tx-dim);font-weight:700}
+  .msect-lede{margin:0;color:var(--tx-mut);font-size:12.5px;line-height:1.5}
+  .msect-body{display:flex;flex-direction:column;gap:10px}
+  .msect-body .btnrow{margin:0}
+  #net-body .msect{margin-top:14px}
+  #net-body .formgrid + .formgrid{margin-top:4px}
+  .net-plan h4{margin:16px 0 4px;font-size:13.5px}
+  .net-facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 22px;margin:4px 0 2px}
+  .net-fact{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .net-fact .k{font-size:11.5px;color:var(--tx-mut);text-transform:uppercase;letter-spacing:.3px}
+  .net-fact .v{font-size:13.5px;word-break:break-word}
+  .net-fact .v.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+  .net-job{margin-bottom:16px}
+  .net-job.failed{border-color:rgba(248,81,73,.5)}
+  .net-job.done{border-color:rgba(63,185,80,.45)}
+  .pw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:16px}
+  .pw-grid > .card{margin:0}
+  .pw-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:15px}
+  .pw-node .btnrow{margin-top:14px}
+  #ntp-body .pw-grid{grid-template-columns:repeat(auto-fill,minmax(520px,1fr));margin-bottom:12px}
+  #ntp-body .ntp-node .btnrow{margin-top:12px}
+  #ntp-body .ntp-big{margin:4px 0 12px}
+  .ntp-node .net-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #ntp-form .formgrid > .wr-field:only-child{max-width:460px}
+  #ntp-form .formgrid + div > .ntp-servers{margin-top:14px}
+  /* The buttons as otp's: the one to press filled, the one that cannot be
+     taken back red. */
+  #pane-network .btn.primary,#pane-time .btn.primary,#pane-power .btn.primary,#pane-backup .btn.primary,
+  #pane-about .btn.primary,#pane-upgrade .btn.primary,.save-bar .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  #pane-network .btn.primary:hover:not(:disabled),#pane-time .btn.primary:hover:not(:disabled),
+  #pane-power .btn.primary:hover:not(:disabled),#pane-backup .btn.primary:hover:not(:disabled),
+  #pane-about .btn.primary:hover:not(:disabled),#pane-upgrade .btn.primary:hover:not(:disabled),
+  .save-bar .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
+  #pane-network .btn.primary svg,#pane-time .btn.primary svg,#pane-power .btn.primary svg,#pane-backup .btn.primary svg,
+  #pane-about .btn.primary svg,#pane-upgrade .btn.primary svg,.save-bar .btn.primary svg{opacity:1}
+  #pane-network .btn.danger,#pane-time .btn.danger,#pane-power .btn.danger,#pane-backup .btn.danger,
+  #pane-about .btn.danger,#pane-upgrade .btn.danger{color:var(--crit);border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
+  #pane-network .btn.danger:hover:not(:disabled),#pane-time .btn.danger:hover:not(:disabled),
+  #pane-power .btn.danger:hover:not(:disabled),#pane-backup .btn.danger:hover:not(:disabled),
+  #pane-about .btn.danger:hover:not(:disabled),#pane-upgrade .btn.danger:hover:not(:disabled){background:rgba(248,81,73,.22);color:#ff7b72;border-color:var(--crit)}
+  /* About: what it runs on, across the card as otp has it. */
+  #pane-about .sw-box{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+  #pane-about .sw-box > .sw-h:first-child{margin-top:0}
+  #pane-about .sw-h{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--tx-dim);
+    margin:16px 0 10px;padding-bottom:0;border-bottom:0}
+  #pane-about .sw-table{width:100%;min-width:0}
+  #pane-about .sw-table td{padding:7px 12px}
+  #pane-about .sw-table td.k{color:var(--tx-dim);white-space:nowrap;width:220px}
+  #pane-about .sw-table tr.sw-group{background:transparent}
+  #pane-about .sw-table tr.sw-group td{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--tx-mut);padding-top:14px;background:transparent}
+  #about .facts{margin:0 0 4px}
+  .con-row{display:flex;align-items:center;gap:10px;margin:8px 0 4px;flex-wrap:wrap}
+  .con-row.changed b{color:var(--info)}
+  .con-says{margin:0;color:var(--tx-mut);font-size:12.5px}
+  #up-web-card #sect-upgrade{padding-top:14px;border-top:1px solid var(--line)}
   @media (max-width:760px){.fw-acc-row{grid-template-columns:1fr}.tls-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
     .cert-grid{grid-template-columns:1fr}}
 </style>
@@ -26898,6 +26970,21 @@ function markDirtyCount() {
   $('set-said').textContent = n ? n + ' change(s) not saved yet' : '';
   var bar = document.querySelector('.save-bar');
   if (bar) bar.classList.toggle('dirty', n > 0);
+  if (bar) bar.style.display = saveBarHere() ? '' : 'none';
+}
+/* The save bar on a pane where something is saved by it - a setting of the
+   daemon's own, the firewall, the time servers, the console at login - and
+   on no other, as otp 1.0.146 has it (1.10.234): Restart and power off does
+   what it does at once and has nothing to save. A change waiting, from
+   wherever it was made, keeps it there. */
+var SAVE_PANES = ['fw', 'time', 'about'];
+function saveBarHere() {
+  if (typeof TAB !== 'undefined' && TAB !== 'settings') return true;
+  var pane = $('pane-' + PANE);
+  if (!pane) return true;
+  if (SAVE_PANES.indexOf(PANE) >= 0 || pane.querySelector('.set-item[data-key]')) return true;
+  if (Object.keys(DIRTY).length) return true;
+  return typeof EXTRA_SAVES === 'object' && Object.keys(EXTRA_SAVES).length > 0;
 }
 
 $('set-save').onclick = function () {
@@ -28544,6 +28631,7 @@ function showPane(name, quietly) {
   if (name === 'backup' && typeof loadRbackup === 'function') loadRbackup();
   if (name === 'winsec') drawRollup();
   if (name === 'about') drawAbout();
+  markDirtyCount();
   if (!quietly) window.scrollTo({top: 0, behavior: 'smooth'});
 }
 Array.prototype.forEach.call(document.querySelectorAll('#ctl-nav button[data-pane]'),
@@ -34560,26 +34648,24 @@ function drawAbout() {
   var host = $('about');
   clear(host);
   var s = STATUS || {};
-  function kv(k, v) {
-    var line = el('div', 'kv');
-    line.appendChild(el('span', 'k', k));
-    var value = el('span', 'v');
-    if (v instanceof Node) value.appendChild(v); else value.textContent = v;
-    line.appendChild(value);
-    host.appendChild(line);
-  }
-  kv('Version', 'isemon ' + (s.version || '?'));
-  kv('Running on', s.host || '–');
-  kv('Up for', span(s.uptime));
-  kv('Reading', (s.logs || []).length + ' log file(s) every '
-     + ((SETTINGS && (settingByKey('read_every_s') || {}).value) || '?') + ' s');
-  kv('Last read', (s.read_at ? ago(s.read_at) : 'not yet')
-     + (s.read_ms ? ' · took ' + s.read_ms + ' ms' : ''));
-  kv('Newest record', s.last_record ? stamp(s.last_record) : 'none yet');
-  kv('Signed in as', (ME && ME.name) + ' · '
-     + roleWords(ME && ME.role)
-     + (ME && ME.from_dir ? ' · out of the directory, where the password and the groups '
-        + 'that decide this live' : ''));
+  /* As otp's About (1.10.234): the version as the card's heading, and what
+     it is doing as tiles side by side. */
+  var h = noI18n(el('h2', '', 'isemon ' + (s.version || '?')));
+  h.title = 'Version';
+  host.appendChild(h);
+  host.appendChild(peekFacts([
+    ['Running on', s.host || '–'],
+    ['Up for', span(s.uptime)],
+    ['Reading', (s.logs || []).length + ' log file(s) every '
+      + ((SETTINGS && (settingByKey('read_every_s') || {}).value) || '?') + ' s'],
+    ['Last read', (s.read_at ? ago(s.read_at) : 'not yet')
+      + (s.read_ms ? ' · took ' + s.read_ms + ' ms' : '')],
+    ['Newest record', s.last_record ? stamp(s.last_record) : 'none yet'],
+    ['Signed in as', (ME && ME.name) + ' · '
+      + roleWords(ME && ME.role)
+      + (ME && ME.from_dir ? ' · out of the directory, where the password and the groups '
+         + 'that decide this live' : '')]
+  ]));
   drawSoftware(host);
   drawConsoleLogin();
   var cli = el('p', 'btnhelp');
@@ -34598,16 +34684,34 @@ function drawConsoleLogin() {
   if (!host) return;
   api('console-login', undefined, {quiet: true}).then(function (d) {
     clear(host);
+    if (typeof extraDone === 'function') extraDone('console');
+    /* Changed here, put in by the save bar as every setting is (1.10.234) -
+       not the moment the switch is pressed. */
+    var row = null;
     var sw = wrSwitch(d.on, function (on) {
-      sw._input.disabled = true;
-      api('console-login', {on: on}).then(function (x) {
-        toast(x.message, 'good');
-        (x.said || []).slice(1).forEach(function (w) { toast(w, 'warn'); });
-        drawConsoleLogin();
-      }).catch(function (e) { oops(e); drawConsoleLogin(); });
+      if (row) row.classList.toggle('changed', on !== !!d.on);
+      if (on === !!d.on) { extraDone('console'); return; }
+      extraPending('console', {
+        save: function () {
+          return api('console-login', {on: on}).then(function (x) {
+            toast(x.message, 'good');
+            (x.said || []).slice(1).forEach(function (w) { toast(w, 'warn'); });
+            extraDone('console');
+            drawConsoleLogin();
+            return true;
+          }).catch(function (e) { oops(e); return false; });
+        },
+        reset: function () { drawConsoleLogin(); }
+      });
     }, !d.may || !d.helper);
-    host.appendChild(wrRow('Open the console when root signs in',
-      'At the server\u2019s own screen or over SSH. The same as isemon --console-at-login on|off.', sw));
+    /* The switch at the left of its words, as otp's (1.10.234). */
+    row = el('div', 'con-row');
+    row.appendChild(sw);
+    row.appendChild(el('b', '', 'Open the console when root signs in'));
+    row.appendChild(el('span', 'muted small', d.on ? 'on' : 'off'));
+    host.appendChild(row);
+    host.appendChild(el('p', 'muted small con-says',
+      'At the server\u2019s own screen or over SSH. The same as isemon --console-at-login on|off.'));
     if (!d.helper) host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade once.'));
     else if (!d.profile) host.appendChild(el('p', 'note warn', 'The login script (/etc/profile.d/zz-isemon-console.sh) is not there yet: ./install.sh --upgrade puts it in. Until then the switch changes nothing.'));
     if (!d.may) host.appendChild(el('p', 'note', 'Only a full administrator may switch it.'));
@@ -36494,17 +36598,33 @@ function drawNetLive() {
   if (netJobActive(j)) clear(fb);
   else if (fb && (!fb.firstChild || fb.firstChild.dataset.empty)) { clear(fb); fb.appendChild(netFormCard()); }
 }
+/* Facts side by side, as otp draws them (1.10.234): a small label over each
+   value, as many to a row as fit - not a list down the left of the card. */
 function netFacts(rows) {
-  var dl = el('dl', 'cert-kv net-facts');
+  var dl = el('div', 'net-facts');
   rows.forEach(function (r) {
     if (r[1] === undefined) return;
-    dl.appendChild(el('dt', '', r[0]));
-    var v = el('dd', r[2] ? 'mono' : '');
-    v.textContent = r[1] === '' || r[1] === null ? '–' : String(r[1]);
+    var one = el('div', 'net-fact');
+    one.appendChild(el('span', 'k', r[0]));
+    var v = el('span', 'v' + (r[2] ? ' mono' : ''));
+    if (r[1] instanceof Node) v.appendChild(r[1]);
+    else v.textContent = r[1] === '' || r[1] === null ? '–' : String(r[1]);
     if (r[2]) noI18n(v);
-    dl.appendChild(v);
+    one.appendChild(v);
+    dl.appendChild(one);
   });
   return dl;
+}
+/* A boxed part of a card, as otp's msect: a small heading, a line saying
+   what it is for, and what goes in it (box._body). */
+function msect(title, lede, wide) {
+  var box = el('section', 'msect' + (wide ? ' wide' : ''));
+  box.appendChild(el('h4', '', title));
+  if (lede) box.appendChild(el('p', 'msect-lede', lede));
+  var body = el('div', 'msect-body');
+  box.appendChild(body);
+  box._body = body;
+  return box;
 }
 function netNowCard() {
   var d = NET.d;
@@ -36571,27 +36691,31 @@ function netFormCard() {
   var dns6 = wrText((conf.ipv6_dns || []).join(', '), '2001:db8::53', 'mono');
   var cons = (data.devices || []).filter(function (x) { return x.con; });
   var con = wrSelect(cons.map(function (x) { return [x.con, x.con + ' (' + x.dev + ')']; }), data.con);
-  var g1 = el('div', 'wr-grid');
+  var g1 = el('div', 'formgrid');
   g1.appendChild(wrField('Host name (FQDN)', host, 'The machine’s whole name.'));
   if (cons.length > 1) g1.appendChild(wrField('Connection', con));
   card.appendChild(g1);
-  card.appendChild(el('h3', 'tls-h', 'IPv4'));
-  var g2 = el('div', 'wr-grid');
+  var s1 = msect('IPv4', '');
+  var g2 = el('div', 'formgrid');
   g2.appendChild(wrField('Address with its prefix', a4, 'e.g. 192.0.2.10/24 - /24 is the mask 255.255.255.0.'));
   g2.appendChild(wrField('Gateway', gw));
   g2.appendChild(wrField('DNS servers', dns, 'Separated by commas.'));
   g2.appendChild(wrField('Search domains', search));
-  card.appendChild(g2);
-  card.appendChild(el('h3', 'tls-h', 'IPv6 (dual stack)'));
-  card.appendChild(wrRow('IPv6', 'Switched on, the server takes IPv6 beside IPv4; Firewall and access covers both.', s6));
-  var g6 = el('div', 'wr-grid');
+  s1._body.appendChild(g2);
+  card.appendChild(s1);
+  var s2 = msect('IPv6 (dual stack)', 'Switched on, the server takes IPv6 beside IPv4; Firewall and access covers both.');
+  var r6 = el('div', 'formgrid');
+  r6.appendChild(wrField('IPv6', s6));
+  var g6 = el('div', 'formgrid');
   var f6a = wrField('Address with its prefix', a6, 'e.g. 2001:db8::10/64');
   var f6g = wrField('Gateway', gw6);
   g6.appendChild(wrField('How', mode6));
   g6.appendChild(f6a);
   g6.appendChild(f6g);
   g6.appendChild(wrField('DNS servers', dns6));
-  card.appendChild(g6);
+  s2._body.appendChild(r6);
+  s2._body.appendChild(g6);
+  card.appendChild(s2);
   var paint6 = function () {
     g6.hidden = !s6._get();
     var manual = mode6.value === 'manual';
@@ -36620,7 +36744,7 @@ function netFormCard() {
     busy(check, true);
     api('net', {action: 'check', want: want()}).then(function (x) {
       clear(planBox);
-      planBox.appendChild(el('h3', 'tls-h', 'What happens'));
+      planBox.appendChild(el('h4', '', 'What happens'));
       planBox.appendChild(steps(x.plan));
     }).catch(function (e) { clear(planBox); planBox.appendChild(el('p', 'note bad', String(e.message || e))); })
       .then(function () { busy(check, false); });
@@ -36787,11 +36911,12 @@ function drawPower() {
   var d = PW.d;
   if (d.plan && d.plan.id) host.appendChild(pwProgress(d));
   var me = d.me || {};
-  var c = el('div', 'card full pw-node');
-  var h = el('h2', '');
+  /* A card of the size of one of otp's nodes, in its grid (1.10.234). */
+  var grid = el('div', 'pw-grid');
+  var c = el('div', 'card pw-node');
+  var h = el('div', 'pw-head');
   h.appendChild(el('span', 'dot ok'));
-  h.appendChild(document.createTextNode(' '));
-  h.appendChild(noI18n(el('span', '', me.name || 'this server')));
+  h.appendChild(noI18n(el('b', '', me.name || 'this server')));
   h.appendChild(el('span', 'tag info', 'this page'));
   c.appendChild(h);
   c.appendChild(netFacts([
@@ -36803,7 +36928,6 @@ function drawPower() {
   ]));
   if (d.may) {
     var row = el('div', 'btnrow');
-    row.style.marginTop = '12px';
     var rb = cmdButton('Restart', 'refresh', '');
     var off = cmdButton('Power off', 'power', 'danger');
     rb.disabled = off.disabled = !!d.busy;
@@ -36815,7 +36939,8 @@ function drawPower() {
   } else {
     c.appendChild(el('p', 'note', 'Only a full administrator may restart this server or switch it off.'));
   }
-  host.appendChild(c);
+  grid.appendChild(c);
+  host.appendChild(grid);
   explainWhatWasDrawn(host);
 }
 function pwAsk(how) {
@@ -38005,7 +38130,8 @@ function wrRow(words, says, control) {
   return row;
 }
 function wrField(words, control, help) {
-  var f = el('label', 'wr-field');
+  /* A switch is a label of its own: one label inside another is not HTML. */
+  var f = el(control && control.tagName === 'LABEL' ? 'div' : 'label', 'wr-field');
   f.appendChild(el('span', '', words));
   f.appendChild(control);
   if (help) f.appendChild(el('span', 'wr-help', help));
@@ -39302,13 +39428,14 @@ function ntpCard(d) {
   var nd = (d.now || {}).data || {};
   var t = nd.tracking || {};
   var h = ntpHealth(d);
-  var grid = el('div', 'cert-grid');
-  var card = el('section', 'cert-card ntp-node');
-  var head = el('header', 'cert-h');
-  var title = el('div', 'cert-title');
-  title.appendChild(el('span', 'cert-target', 'This server'));
-  title.appendChild(noI18n(el('b', '', location.hostname || 'this machine')));
-  head.appendChild(title);
+  /* As otp draws a node's clock (1.10.234): a card in its grid, the facts
+     side by side under the offset. */
+  var grid = el('div', 'pw-grid');
+  var card = el('div', 'card ntp-node');
+  var head = el('div', 'pw-head');
+  head.appendChild(el('span', 'dot ' + h.k));
+  head.appendChild(noI18n(el('b', '', location.hostname || 'this machine')));
+  head.appendChild(el('span', 'tag info', 'this page'));
   head.appendChild(el('span', 'tag ' + h.k, h.w));
   card.appendChild(head);
   var big = el('div', 'ntp-big');
@@ -39320,7 +39447,7 @@ function ntpCard(d) {
     var at = (d.now || {}).at || d.t;
     clock = new Date((nd.time + ((d.t || at) - at)) * 1000).toLocaleString(numLang());
   }
-  var facts = [
+  card.appendChild(netFacts([
     ['Follows', t.ref || t.ref_id || '–', true],
     ['Stratum', t.stratum !== undefined ? String(t.stratum) : '–', true],
     ['Last correction', ntpMs(t.last_offset), true],
@@ -39331,15 +39458,7 @@ function ntpCard(d) {
     ['Time zone', nd.timezone || '–', true],
     ['Its time', clock || '–', true],
     ['Read', d.now && d.now.at ? ago(d.now.at) : '–']
-  ];
-  var kv = el('dl', 'cert-kv');
-  facts.forEach(function (f) {
-    kv.appendChild(el('dt', '', f[0]));
-    var dd = el('dd', '', f[1]);
-    if (f[2]) noI18n(dd);
-    kv.appendChild(dd);
-  });
-  card.appendChild(kv);
+  ]));
   if (d.said) {
     var bad = el('div', 'note bad');
     bad.appendChild(el('b', '', 'Root did not answer:'));
@@ -39448,9 +39567,11 @@ function ntpForm(d) {
     if (e.target.closest && e.target.closest('button')) ntpDirty();
   });
   card.appendChild(el('h2', '', 'The time servers'));
-  card.appendChild(wrRow('isemon sets the time servers',
-    'Off: the machine keeps its own /etc/chrony.conf (AlmaLinux’s pool, or what you set by hand) - shown and checked here, not changed. On: the servers below; the file’s own server and pool lines are commented out, and put back when switched off again.',
-    wrSwitch(dr.manage, function (v) { dr.manage = v; draw(); }, !d.may)));
+  var g0 = el('div', 'formgrid');
+  g0.appendChild(wrField('isemon sets the time servers',
+    wrSwitch(dr.manage, function (v) { dr.manage = v; draw(); }, !d.may),
+    'Off: the machine keeps its own /etc/chrony.conf (AlmaLinux’s pool, or what you set by hand) - shown and checked here, not changed. On: the servers below; the file’s own server and pool lines are commented out, and put back when switched off again.'));
+  card.appendChild(g0);
   var body = el('div');
   card.appendChild(body);
   var draw = function () {
@@ -39497,7 +39618,7 @@ function ntpForm(d) {
       adds.appendChild(b);
     });
     body.appendChild(adds);
-    var g = el('div', 'wr-grid');
+    var g = el('div', 'formgrid');
     g.style.marginTop = '14px';
     var ms = dr.makestep || [1, 3];
     var stepS = wrText(String(ms[0]), '1', 'mono');
@@ -39525,7 +39646,7 @@ function ntpForm(d) {
   var tz = wrSelect([['', '- as the machine has it -']].concat(zones.map(function (z) { return [z, z]; })),
                     dr.timezone || '');
   tz.onchange = function () { dr.timezone = tz.value; };
-  var g2 = el('div', 'wr-grid');
+  var g2 = el('div', 'formgrid');
   g2.style.marginTop = '14px';
   g2.appendChild(wrField('Time zone', tz,
     'Of the machine: the logs and the times on these pages (timedatectl set-timezone).'));

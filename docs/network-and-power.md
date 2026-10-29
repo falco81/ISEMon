@@ -41,8 +41,12 @@ Anybody signed in may look; only a full administrator may change it.
    made (whose key only nginx has), is not changed: the job says what it
    names, and you get a new one.
 4. **NetworkManager** (`nmcli connection modify`), the host name
-   (`hostnamectl`) and this machine's lines in `/etc/hosts` (the old file is
-   kept as `/etc/hosts.isemon-before`) - then a **reboot** 8 seconds later.
+   (`hostnamectl`) and this machine's lines in `/etc/hosts` - those at its old
+   or new address, those that name it in full and those isemon wrote: its old
+   and new names are taken out of them, other names on them stay, and other
+   machines' lines are left alone. The file as it was before isemon's first
+   change is kept as `/etc/hosts.isemon-before` (never written over) - then a
+   **reboot** 8 seconds later.
 5. **Back up**, the server checks that it has the new address - and waits to
    be kept.
 
@@ -75,7 +79,17 @@ back to its old network by itself - and at once when it comes up without its
 new address at all. Going back is the same job the other way round: the old
 settings are put in as an ordinary change (its own settings and its
 certificate swap back too), and the server restarts. It is not put on trial
-again.
+again. Every NetworkManager setting the change touched goes back exactly as it
+was - all its addresses, the search domains, `ignore-auto-dns`, the IPv6
+method - and an old host name of one word stays one word. When IPv6 goes back
+to off, isemon's own `/etc/sysctl.d/90-isemon-ipv6.conf` is taken away again.
+
+While a change waits to be kept, no other change of the network and no
+restart is taken: keep it or put the old one back first. *Keep it* pressed
+just as the time runs out is either kept, or told the network is already
+going back - never both. Should the server not restart at all after a change
+on trial (15 minutes), the old settings are put back in rather than left
+waiting for the next restart.
 
 **Only a network set by hand (`ipv4.method manual`) can be put back by
 itself.** One from DHCP is said so in the plan and in the job, and the new one

@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.233",
+  "version": "1.10.234",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -4915,6 +4915,10 @@
   "s.connectionstate.03d50429": {
    "source": "connectionstate",
    "text": "connectionstate"
+  },
+  "s.console.e2346381": {
+   "source": "console",
+   "text": "console"
   },
   "s.content.2459603b": {
    "source": "Content:",
@@ -25636,10 +25640,6 @@
    "source": "this server",
    "text": "tento server"
   },
-  "s.this-server.d75b2349": {
-   "source": "This server",
-   "text": "Tento server"
-  },
   "s.this-session-in-the-list.a5d2cc0c": {
    "source": "This session in the list",
    "text": "Tato relace v seznamu"
@@ -35309,6 +35309,10 @@
   "s.this-browser-will-not-let-go.a4beccfa": {
    "source": "this browser will not let go of the clipboard",
    "text": "tento prohlížeč nepovoluje přístup ke schránce"
+  },
+  "s.this-server.d75b2349": {
+   "source": "This server",
+   "text": "Tento server"
   },
   "s.this-signs-in-over-ssh-and.c2cbee74": {
    "source": "This signs in over ssh and touches two address lists and nothing else. Give it an account that may write",

@@ -371,6 +371,46 @@ working.
 
 ## Version
 
+1.10.234
+
+- **A new network on trial goes back exactly as it was.** Going back puts every
+  NetworkManager setting the change touched back as it was (all addresses,
+  search domains, `ignore-auto-dns`, the IPv6 method), also with the
+  connection down and with an old host name of one word; isemon's IPv6 sysctl
+  file goes away again when IPv6 goes back off. While a change waits to be
+  kept, no other change of the network and no restart is taken; *Keep it*
+  pressed as the time runs out is never told "kept" for a network that goes
+  back; a server that never restarted after a change on trial gets its old
+  settings back. `/etc/hosts`: only this machine's names are taken out of its
+  lines (other names and other machines' lines stay), and
+  `/etc/hosts.isemon-before` is written once. A time zone never begins with
+  `-`; chrony.conf lines with tabs are read.
+- **Going back to an older version, twice, never gets below the floor.** Root
+  keeps the highest floor it has seen (`/usr/local/lib/isemon/downgrade-floor`);
+  the page offers only what root takes. The console's login script is taken
+  away only once the older version's `install.sh` went through.
+- **Upgrades online:** every redirect must be https (not only the last one);
+  four-part versions (`isemon-1.10.233.1.tar.gz`) are found; a listing's size
+  that is not a number no longer stops `--upgrade-check`; a whole answer has a
+  deadline; `--upgrade-follow` says when root never took the upgrade up. A
+  damaged package is refused with what is wrong, not a traceback, and an nginx
+  that took a change but did not reload is said.
+- **The console reads its log safely as root:** a link is not followed, a FIFO
+  does not hold the login up, lines are cut at 64 kB, and no escape sequence
+  from a file (or from a log far away) reaches root's terminal.
+- **Remote backups:** retention takes away only backups this installation sent
+  itself - never another machine's with a name that looks the same, never the
+  one just sent; a file missing from the server's list after it was sent is a
+  failure; a damaged or cut-short backup is said (`--restore-bundle` no longer
+  ends in a traceback); a key's passphrase and a password both work; a wrong
+  password on the page keeps the file sent for another try; a backup's work
+  folder (a whole database, unlocked) left by a stopped service is taken away
+  after a day; a scheduled backup that met a job of the page runs the next
+  minute instead of being skipped; `--passphrase-file` with Windows line ends.
+  About: systemd's and MariaDB's versions read right.
+- **The console at login waits for Save** (Settings - About): the switch is a
+  change like any other, put in by *Save the changes*.
+
 1.10.233
 
 - **Going back to an older version is off until it is switched on.** *Offer

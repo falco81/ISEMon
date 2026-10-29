@@ -447,11 +447,19 @@ try:
                   'isemon-backup-Test_site-%s-%s-RESTORE.md' % (host, stamp_),
                   'isemon-backup-Test_site-other-%s.tar.gz.enc' % stamp_):
             (dest / n).write_text('x')
+        # Sent by this installation (1.10.234: retention takes away only those).
+        isemon.rb_sent_add(store, 'isemon-backup-Test_site-%s-%s.tar.gz.enc' % (host, stamp_))
+    # One of the same name that this installation never sent: another machine
+    # of the same short name - left alone.
+    twin = dest / ('isemon-backup-Test_site-%s-20250104-010101.tar.gz.enc' % host)
+    twin.write_text('x')
     isemon.CONFIG.update({'rbackup_keep': 2, 'rbackup_keep_days': 0})
     time.sleep(1.1)                 # a name a second: not the same name as the first
     run2 = isemon.rb_run(store, 'boss')
     left = sorted(x['name'] for x in isemon.rb_remote_list(store, t['id']) if x['mine'])
-    ok('kept: the newest two of this machine', len(left), 2)
+    ok('kept: the newest two of this machine (and the twin it never sent)', len(left), 3)
+    ok('...the twin of the same name left alone', twin.exists(), True)
+    twin.unlink()
     ok('...the older ones taken away with their .sha256 and RESTORE.md',
        [n for n in os.listdir(str(dest)) if '2025010' in n and host in n], [])
     ok('...another machine\'s left alone',

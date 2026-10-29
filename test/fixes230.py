@@ -143,6 +143,8 @@ try:
     page = (ROOT / 'web' / 'index.php').read_text(encoding='utf-8')
     ok('About has the switch', all(w in page for w in (
         'id="about-console"', "'Open the console when root signs in'", "'console-login'")))
+    ok('...put in by the save bar, not the moment it is pressed (1.10.234)', all(
+        w in page for w in ("extraPending('console', {", "api('console-login', {on: on})")))
 finally:
     stop.append(1)
     shutil.rmtree(str(work), ignore_errors=True)

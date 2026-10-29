@@ -43,6 +43,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import zlib
 
 STATE_DIR = os.environ.get('ISEMON_STATE', '/var/lib/isemon')
 UPGRADE_DIR = os.path.join(STATE_DIR, 'upgrade')
@@ -127,6 +128,38 @@ def installed_floor():
     return ''
 
 
+# The highest floor any installed version has named, kept by root beside the
+# installed copy (1.10.234): going back twice - each step safe by the floor of
+# the version installed then - would otherwise get below what the database
+# has seen.
+FLOOR_FILE = os.environ.get('ISEMON_FLOOR_FILE', os.path.join(LIB_DIR, 'downgrade-floor'))
+FLOOR_RE = re.compile(r'^[0-9]+(?:\.[0-9]+){2,3}$')
+
+
+def seen_floor():
+    try:
+        with open(FLOOR_FILE, encoding='utf-8') as f:
+            v = f.read(64).strip()
+    except OSError:
+        return ''
+    return v if FLOOR_RE.match(v) else ''
+
+
+def note_floor(*floors):
+    """The kept floor raised to the highest of these - never lowered."""
+    best = seen_floor()
+    for v in floors:
+        if v and FLOOR_RE.match(v) and (not best or version_tuple(v) > version_tuple(best)):
+            best = v
+    if best and best != seen_floor():
+        tmp = FLOOR_FILE + '.new'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            f.write(best + '\n')
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, FLOOR_FILE)
+    return best
+
+
 # Where the console at login is wired in. Going back to a version that has no
 # console (before 1.10.228), the profile script would run `isemon --console`
 # on every root login and be told the option is not known.
@@ -156,6 +189,19 @@ def signed_by(manifest, signature):
 
 
 def inspect(path, extract_to=None):
+    """See _inspect - with whatever a damaged package makes the reading
+    raise said as a refusal, not as a traceback (1.10.234): a MANIFEST that is
+    not UTF-8, a member that cannot be unpacked, a version that is not one."""
+    try:
+        return _inspect(path, extract_to)
+    except Refused:
+        raise
+    except (ValueError, UnicodeError, tarfile.TarError, EOFError, OSError,
+            zlib.error) as e:
+        raise Refused('the package could not be read: %s' % str(e)[:200])
+
+
+def _inspect(path, extract_to=None):
     """Everything about a package that can be said without trusting it - and
     with extract_to, the package unpacked there once it has passed."""
     try:
@@ -367,11 +413,12 @@ def may_go_back(info, want_floor=''):
     if not floor:
         raise Refused('isemon %s does not say how far back is safe; going back is done on the '
                       'command line' % (info.get('installed') or '?'))
-    try:
-        if want_floor and version_tuple(want_floor) > version_tuple(floor):
-            floor = want_floor
-    except ValueError:
-        pass
+    for other in (seen_floor(), want_floor):
+        try:
+            if other and version_tuple(other) > version_tuple(floor):
+                floor = other
+        except ValueError:
+            pass
     if version_tuple(info['version']) < version_tuple(floor):
         raise Refused('isemon %s is older than %s, the oldest version that can run on this '
                       'database - going back that far would need the database put back too'
@@ -424,14 +471,18 @@ def put_in(package, ident='', want_sha='', by='the command line', log_to=None,
         say('isemon %s, signed by %s, %d files - checked' % (info['version'], info['signed_by'],
                                                          info['files']))
         src = os.path.join(unpacked, info['top'])
+        try:
+            note_floor(installed_floor())
+        except OSError as e:
+            say('the floor could not be kept in %s: %s' % (FLOOR_FILE, e))
+        console_away = False
         if info['older']:
             floor = may_go_back(info, want_floor)
             say('going back from %s to %s - safe down to %s; the database is left as it is'
                 % (info['installed'], info['version'], floor))
             if not os.path.exists(os.path.join(src, 'deploy', 'isemon-console-login.sh')) and \
                     os.path.isfile(CONSOLE_PROFILE) and not os.path.islink(CONSOLE_PROFILE):
-                os.unlink(CONSOLE_PROFILE)
-                say('%s taken away: %s has no console' % (CONSOLE_PROFILE, info['version']))
+                console_away = True             # once install.sh went through
         env = {'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
                'LANG': 'C.UTF-8', 'ISEMON_UPGRADE_FROM_PAGES': '1', 'TERM': 'dumb',
                'ISEMON_UPGRADE_BY': str(by)[:100]}
@@ -476,6 +527,12 @@ def put_in(package, ident='', want_sha='', by='the command line', log_to=None,
             raise Refused('install.sh did not finish in %d min and was stopped'
                           % (INSTALL_LIMIT_S // 60))
         say('install.sh ended with %d' % rc)
+        if rc == 0 and console_away:
+            try:
+                os.unlink(CONSOLE_PROFILE)
+                say('%s taken away: %s has no console' % (CONSOLE_PROFILE, info['version']))
+            except OSError:
+                pass
         return rc, info, lines
     finally:
         shutil.rmtree(work, ignore_errors=True)

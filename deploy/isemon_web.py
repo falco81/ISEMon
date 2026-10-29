@@ -677,7 +677,13 @@ def nginx_part(r, last):
             if got.returncode != 0:
                 raise Refused('nginx does not take it, so it is as it was: %s'
                               % ((got.stderr or '').strip().splitlines() or ['?'])[-1][:300])
-            subprocess.run(['systemctl', 'reload', 'nginx'], capture_output=True)
+            got = subprocess.run(['systemctl', 'reload', 'nginx'], capture_output=True,
+                                 text=True)
+            if got.returncode != 0:
+                # Said, not claimed (1.10.234): a reload that failed left
+                # nginx answering with what it had, and the page said reloaded.
+                raise Refused('nginx took it, but did not reload: %s'
+                              % ((got.stderr or '').strip().splitlines() or ['?'])[-1][:300])
             said.append('nginx reloaded')
     except BaseException:
         put_back(snap)
@@ -1080,7 +1086,7 @@ NTP_KEYS = ('server', 'pool', 'peer', 'makestep', 'allow', 'minsources', 'maxdis
             'sourcedir')
 NTP_NAME_RE = re.compile(r'^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
                          r'(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$')
-TZ_RE = re.compile(r'^[A-Za-z0-9_+-]{1,40}(/[A-Za-z0-9_+-]{1,40}){0,3}\Z')
+TZ_RE = re.compile(r'^[A-Za-z][A-Za-z0-9_+-]{0,39}(/[A-Za-z0-9_+-]{1,40}){0,3}\Z')
 
 
 def ntp_run(cmd, what, ok=(0,)):
@@ -1141,7 +1147,7 @@ def ntp_read():
             text = f.read()
         out['managed'] = NTP_BEGIN in text
         out['own'] = [l.strip()[:200] for l in text.splitlines()
-                      if l.strip().split(' ')[0] in ('server', 'pool', 'peer')][:20]
+                      if (l.split() or [''])[0] in ('server', 'pool', 'peer')][:20]
     except OSError:
         out['managed'] = False
     out['conf'] = CHRONY_CONF
@@ -1213,7 +1219,7 @@ def ntp_conf_text(text, n):
         out.append(l)
     if not n['manage']:
         return '\n'.join(out).rstrip('\n') + '\n'
-    kept = [NTP_OFF + l if l.strip().split(' ')[0] in NTP_KEYS else l for l in out]
+    kept = [NTP_OFF + l if (l.split() or [''])[0] in NTP_KEYS else l for l in out]
     block = [NTP_BEGIN]
     for x in n['servers']:
         opts = [o for o, on in (('iburst', x['iburst']), ('prefer', x['prefer']),
@@ -1379,6 +1385,12 @@ NET_NAME_RE = re.compile(r'^(?=.{1,253}$)([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0
                          r'(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$')
 NM_FIELDS = ['ipv4.method', 'ipv4.addresses', 'ipv4.gateway', 'ipv4.dns', 'ipv4.dns-search',
              'ipv6.method', 'ipv6.addresses', 'ipv6.gateway', 'ipv6.dns']
+# All that a change sets, read before it and put back as it was when the
+# change is not kept (1.10.234).
+NM_BEFORE = NM_FIELDS + ['ipv4.ignore-auto-dns', 'ipv6.dns-search', 'ipv6.ignore-auto-dns']
+NM_METHODS = {'ipv4.method': ('auto', 'manual', 'disabled', 'link-local', 'shared'),
+              'ipv6.method': ('auto', 'dhcp', 'manual', 'ignore', 'disabled', 'link-local',
+                              'shared')}
 
 
 def net_run(cmd, what, ok=(0,)):
@@ -1555,7 +1567,8 @@ def net_checked(r):
         else:
             out['gw6'] = ''
     host = str(r.get('hostname') or '').strip().rstrip('.').lower()
-    if host and (not NET_NAME_RE.match(host) or '.' not in host):
+    # Going back, the old name may be one word, as it may have been.
+    if host and (not NET_NAME_RE.match(host) or ('.' not in host and r.get('rollback') is not True)):
         raise Refused('the host name is the whole name: isemon.example.cz')
     out['hostname'] = host
     olds = []
@@ -1567,6 +1580,7 @@ def net_checked(r):
     out['old'] = olds
     old_host = str(r.get('old_hostname') or '').strip().lower()
     out['old_hostname'] = old_host if NET_NAME_RE.match(old_host or 'x') else ''
+    out['exact'] = nm_exact(r.get('exact')) if r.get('exact') else {}
     try:
         out['reboot_in'] = max(0, min(600, int(r.get('reboot_in') or 0)))
     except (TypeError, ValueError):
@@ -1574,19 +1588,76 @@ def net_checked(r):
     return out
 
 
+def nm_exact(e):
+    """What NetworkManager had before a change (NM_BEFORE), to be put back
+    as it was: each value checked for what it is."""
+    if not isinstance(e, dict):
+        raise Refused('what is put back is a list of settings')
+    out = {}
+    for k in NM_BEFORE:
+        if k not in e and k not in NM_METHODS:
+            continue                    # not read before the change: left as it is
+        v = str(e.get(k) if e.get(k) is not None else '').strip()
+        if v == '--':
+            v = ''
+        if len(v) > 600 or any(c in v for c in '\n\r\x00'):
+            raise Refused('%s is not one line' % k)
+        if k in NM_METHODS:
+            if v not in NM_METHODS[k]:
+                raise Refused('%s cannot be %r' % (k, v[:40]))
+        elif k.endswith('.addresses'):
+            try:
+                items = [net_iface(x) for x in nm_list(v)]
+            except ValueError:
+                raise Refused('%s are addresses with their prefix' % k)
+            if any(x.version != (4 if k.startswith('ipv4') else 6) for x in items):
+                raise Refused('%s are addresses with their prefix' % k)
+            v = ','.join(str(x) for x in items)
+        elif k.endswith('.gateway') or k.endswith('.dns'):
+            try:
+                items = [plain(x, 'address') for x in nm_list(v)]
+            except ValueError:
+                raise Refused('%s is not addresses' % k)
+            if k.endswith('.gateway') and len(items) > 1:
+                raise Refused('%s is one address' % k)
+            v = ','.join(str(x) for x in items)
+        elif k.endswith('.dns-search'):
+            items = nm_list(v)
+            if any(not NET_NAME_RE.match(x) for x in items):
+                raise Refused('%s is not domains' % k)
+            v = ','.join(items)
+        elif k.endswith('.ignore-auto-dns'):
+            if v not in ('', 'yes', 'no'):
+                raise Refused('%s is yes or no' % k)
+        out[k] = v
+    return out
+
+
 def hosts_lines(text, n):
-    """/etc/hosts with this machine's lines for its old addresses and names
-    taken out and its new ones put in; localhost lines kept as they are."""
+    """/etc/hosts with this machine's old and new names taken out of the lines
+    that are this machine's - those at its old or new addresses, those that
+    name it in full, those isemon wrote - and its new ones put in. Other names
+    on those lines stay; localhost lines, and other machines' lines, as they are."""
     short = n['hostname'].split('.')[0] if n['hostname'] else ''
+    full = set(x for x in (n['hostname'], n['old_hostname']) if x)
     drop_names = set(x for x in (n['hostname'], short, n['old_hostname'],
                                  n['old_hostname'].split('.')[0]) if x)
+    mine = set(n['old']) | {n['addr4'].split('/')[0]}
+    if n.get('addr6'):
+        mine.add(n['addr6'].split('/')[0])
     out = []
     for line in text.splitlines():
-        f = line.split('#', 1)[0].split()
+        body, hash_, note = line.partition('#')
+        f = body.split()
         if f and not f[0].startswith(('127.', '::1')):
-            if f[0] in n['old'] or f[0] == n['addr4'].split('/')[0] or \
-                    any(x.lower() in drop_names for x in f[1:]):
+            if 'written by isemon' in note:
                 continue
+            if f[0] in mine or any(x.lower() in full for x in f[1:]):
+                names = [x for x in f[1:] if x.lower() not in drop_names]
+                if not names:
+                    continue
+                if len(names) != len(f) - 1:
+                    line = ' '.join([f[0]] + names) + ((' ' + hash_ + note) if hash_ else '')
         out.append(line)
     if n['hostname']:
         out.append('%s %s %s    # this machine - written by isemon' % (
@@ -1625,30 +1696,52 @@ def net_apply(n):
     said = []
     # What NetworkManager had, handed back: kept by the daemon, so that the
     # old network can be asked for again.
-    before = nm_fields(n['con'], NM_FIELDS)
-    args = [NMCLI, 'connection', 'modify', n['con'],
-            'ipv4.method', 'manual', 'ipv4.addresses', n['addr4'],
-            'ipv4.gateway', n['gw4'], 'ipv4.dns', ','.join(n['dns4']),
-            'ipv4.dns-search', ','.join(n['search']), 'ipv4.ignore-auto-dns', 'yes']
-    if n['mode6'] == 'off':
-        args += ['ipv6.method', 'disabled', 'ipv6.addresses', '', 'ipv6.gateway', '',
-                 'ipv6.dns', '']
-    elif n['mode6'] == 'auto':
-        args += ['ipv6.method', 'auto', 'ipv6.addresses', '', 'ipv6.gateway', '',
-                 'ipv6.dns', ','.join(n['dns6'])]
-    elif n['mode6'] == 'manual':
-        args += ['ipv6.method', 'manual', 'ipv6.addresses', n['addr6'],
-                 'ipv6.gateway', n['gw6'], 'ipv6.dns', ','.join(n['dns6'])]
+    before = nm_fields(n['con'], NM_BEFORE)
+    ex = n.get('exact') or {}
+    if ex:
+        # Going back: every setting the change set, as it was before it.
+        args = [NMCLI, 'connection', 'modify', n['con']]
+        for k in NM_BEFORE:
+            if k in ex:
+                args += [k, ex[k]]
+    else:
+        args = [NMCLI, 'connection', 'modify', n['con'],
+                'ipv4.method', 'manual', 'ipv4.addresses', n['addr4'],
+                'ipv4.gateway', n['gw4'], 'ipv4.dns', ','.join(n['dns4']),
+                'ipv4.dns-search', ','.join(n['search']), 'ipv4.ignore-auto-dns', 'yes']
+        if n['mode6'] == 'off':
+            args += ['ipv6.method', 'disabled', 'ipv6.addresses', '', 'ipv6.gateway', '',
+                     'ipv6.dns', '']
+        elif n['mode6'] == 'auto':
+            args += ['ipv6.method', 'auto', 'ipv6.addresses', '', 'ipv6.gateway', '',
+                     'ipv6.dns', ','.join(n['dns6'])]
+        elif n['mode6'] == 'manual':
+            args += ['ipv6.method', 'manual', 'ipv6.addresses', n['addr6'],
+                     'ipv6.gateway', n['gw6'], 'ipv6.dns', ','.join(n['dns6'])]
     net_run(args, 'nmcli connection modify')
     said.append('NetworkManager: %s - %s via %s, DNS %s%s' % (
         n['con'], n['addr4'], n['gw4'] or 'no gateway', ', '.join(n['dns4']) or 'none',
         {'off': ', IPv6 off', 'auto': ', IPv6 automatic',
          'manual': ', IPv6 %s' % n.get('addr6'), 'keep': ''}[n['mode6']]))
-    if n['mode6'] in ('auto', 'manual'):
+    if ex:
+        on6 = ex['ipv6.method'] not in ('disabled', 'ignore')
+    else:
+        on6 = {'off': False, 'auto': True, 'manual': True}.get(n['mode6'])
+    if on6:
         # IPv6 switched off in the kernel by an earlier hand: on again.
         write_root(SYSCTL_IPV6, '# written by isemon (isemon_web.py) - Settings, Network\n'
                    'net.ipv6.conf.all.disable_ipv6 = 0\nnet.ipv6.conf.default.'
                    'disable_ipv6 = 0\n', 0o644)
+    elif on6 is False:
+        # Off again: isemon's own file away, so the kernel is as it was
+        # before IPv6 was switched on here.
+        try:
+            with open(SYSCTL_IPV6) as f:
+                ours = f.read(200).startswith('# written by isemon')
+        except OSError:
+            ours = False
+        if ours:
+            os.unlink(SYSCTL_IPV6)
     if n['hostname']:
         net_run([HOSTNAMECTL, 'set-hostname', n['hostname']], 'hostnamectl set-hostname')
         said.append('host name: %s' % n['hostname'])
@@ -1659,10 +1752,13 @@ def net_apply(n):
         had = '127.0.0.1 localhost localhost.localdomain\n::1 localhost localhost.localdomain\n'
     new = hosts_lines(had, n)
     if new != had:
-        try:
-            write_root(HOSTS_FILE + '.isemon-before', had, 0o644)
-        except OSError:
-            pass
+        # What it was before isemon's first change, kept: a later change - or
+        # going back - never writes over it.
+        if not os.path.lexists(HOSTS_FILE + '.isemon-before'):
+            try:
+                write_root(HOSTS_FILE + '.isemon-before', had, 0o644)
+            except OSError:
+                pass
         write_root(HOSTS_FILE, new, 0o644)
         said.append('%s: this machine\'s lines' % HOSTS_FILE)
     if n['reboot_in']:

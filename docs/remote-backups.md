@@ -147,7 +147,7 @@ was reinstalled on purpose, *Forget it* and trust the new one.
 | *Backups to the destinations on a schedule* (`rbackup`) | on: a backup is made and sent at the time below. Off by default |
 | *At* (`rbackup_at`) | `HH:MM`, this machine's clock (04:15) |
 | *How often* (`rbackup_every`) | daily, or weekly on *On (1 Monday - 7 Sunday)* (`rbackup_day`) |
-| *Backups kept at each destination* (`rbackup_keep`) | this machine's newest N stay at each destination (30); older ones are taken away after each backup (with their .sha256 and RESTORE.md). The newest is never taken away, and another machine's never |
+| *Backups kept at each destination* (`rbackup_keep`) | this machine's newest N stay at each destination (30); older ones are taken away after each backup (with their .sha256 and RESTORE.md). The newest and the one just sent are never taken away, and only backups this installation sent itself are: another machine's - even one whose name looks the same - never |
 | *And none older than (days)* (`rbackup_keep_days`) | older ones go too; 0: only the count |
 | *The password of the backups* (`rbackup_password`) | a secret setting, kept sealed |
 

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.233'
+__version__ = '1.10.234'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -66,6 +66,7 @@ import copy
 import queue
 import csv
 import errno
+import stat
 import fnmatch
 import atexit
 import getpass
@@ -64702,8 +64703,39 @@ def rb_folder(name):
     return p
 
 
+RB_WORK_PREFIXES = ('isemon-rbackup-', 'isemon-rbhere-', 'isemon-putback-', 'isemon-fetch-')
+
+
+def rb_tidy_work(idle=86400):
+    """A backup's or a restore's own folder that a stopped service left behind
+    (1.10.234) - a whole database in it, unlocked - taken away once nothing in
+    it has moved for a day."""
+    try:
+        here = Path(scratch_dir())
+        ones = [x for x in here.iterdir() if x.name.startswith(RB_WORK_PREFIXES) and
+                x.is_dir() and not x.is_symlink()]
+    except OSError:
+        return
+    now = time.time()
+    for one in ones:
+        try:
+            newest = one.lstat().st_mtime
+            for top, _dirs, files in os.walk(str(one)):
+                for f in files:
+                    try:
+                        newest = max(newest, os.lstat(os.path.join(top, f)).st_mtime)
+                    except OSError:
+                        pass
+        except OSError:
+            continue
+        if now - newest > idle:
+            shutil.rmtree(str(one), ignore_errors=True)
+            log('a backup\'s folder left behind was taken away: %s' % one, 'warn')
+
+
 def rb_tidy_folders(most=3600):
     """What waited there longer than an hour, taken away."""
+    rb_tidy_work()
     now = time.time()
     for name in ('rbackup-made', 'rbackup-uploads'):
         p = Path(STATE_DIR) / name
@@ -64964,7 +64996,11 @@ def rb_askpass(folder):
     it, nor in a file."""
     ask = os.path.join(folder, 'ask')
     with open(ask, 'w') as f:
-        f.write('#!/bin/sh\nprintf "%s\\n" "$ISEMON_RB_SECRET"\n')
+        # A key's passphrase and a password both set (1.10.234): ssh says
+        # which it asks for.
+        f.write('#!/bin/sh\ncase "$1" in\n  *assphrase*) printf "%s\\n" '
+                '"${ISEMON_RB_KEYPASS:-$ISEMON_RB_SECRET}" ;;\n'
+                '  *) printf "%s\\n" "$ISEMON_RB_SECRET" ;;\nesac\n')
     os.chmod(ask, 0o700)
     return ask
 
@@ -65345,7 +65381,8 @@ class RbSsh(object):
         # a command line, never in a file.
         self.env = dict(os.environ, DISPLAY=':0', SSH_ASKPASS_REQUIRE='force')
         secret = rb_secret(t, 'password') or rb_secret(t, 'key_pass')
-        self.env.update(SSH_ASKPASS=rb_askpass(self.d), ISEMON_RB_SECRET=secret)
+        self.env.update(SSH_ASKPASS=rb_askpass(self.d), ISEMON_RB_SECRET=secret,
+                        ISEMON_RB_KEYPASS=rb_secret(t, 'key_pass') or secret)
         auths = ['publickey'] if key else []
         if rb_secret(t, 'password'):
             auths += ['password', 'keyboard-interactive']
@@ -65901,22 +65938,45 @@ def rb_mine(m):
     return bool(m) and m.group('site') == rb_site() and m.group('host') == rb_host()
 
 
-def rb_retain(tr, keep, days, now=None):
+def rb_sent(store):
+    """The backups this installation sent (1.10.234): what retention may take
+    away. Two machines of the same short name, at one destination, look
+    alike by name - only these are its own."""
+    try:
+        got = json.loads(store.get_meta('rbackup:sent', '') or 'null')
+    except ValueError:
+        got = None
+    if not isinstance(got, list):
+        # Before 1.10.234: the files its history says it made.
+        got = [str(r.get('file')) for r in rb_history(store) if r.get('file')]
+    return [str(x) for x in got if isinstance(x, str)]
+
+
+def rb_sent_add(store, name):
+    with RB_LOCK:
+        got = [x for x in rb_sent(store) if x != name] + [name]
+        store.set_meta('rbackup:sent', json.dumps(got[-3000:]))
+
+
+def rb_retain(tr, keep, days, now=None, just=None, sent=None):
     """This machine's backups at a destination beyond what is kept, taken
-    away - never the newest."""
+    away - never the newest, nor `just` (the one just sent: a clock that was
+    once ahead names an older one newer); with `sent`, only those it sent."""
     now = now or time.time()
     files = tr.list()
     names = set(x['name'] for x in files)
+    sent = set(sent) if sent is not None else None
     ours = []
     for x in files:
         m = RB_NAME_RE.match(x['name'])
-        if rb_mine(m):
+        if rb_mine(m) and (sent is None or x['name'] in sent or x['name'] == just):
             try:
                 when = datetime.strptime(m.group('stamp'), '%Y%m%d-%H%M%S').timestamp()
             except ValueError:
                 continue
             ours.append((when, x['name']))
     ours.sort(reverse=True)
+    ours.sort(key=lambda w: w[1] != just)       # the one just sent counts as the newest
     gone = []
     for i, (when, name) in enumerate(ours):
         if i == 0:
@@ -65966,13 +66026,20 @@ def rb_run(store, by, only=None, progress=None):
                 tr.put(str(sha), sha.name)
                 tr.put(str(md), md.name)
                 got = {x['name']: x['size'] for x in tr.list()}
+                if m['file'] not in got:
+                    raise RbError('it is not in what the server lists after it was sent')
                 if got.get(m['file']) not in (None, m['bytes']):
                     raise RbError('the server holds %s bytes of it, not %s' % (
                         got.get(m['file']), m['bytes']))
                 one['ok'] = True
                 try:
+                    rb_sent_add(store, m['file'])
+                except (StorageError, sqlite3.Error, ValueError):
+                    pass
+                try:
                     one['taken_away'] = rb_retain(tr, int(CONFIG.get('rbackup_keep') or 0),
-                                                  int(CONFIG.get('rbackup_keep_days') or 0))
+                                                  int(CONFIG.get('rbackup_keep_days') or 0),
+                                                  just=m['file'], sent=rb_sent(store))
                 except Exception as e:
                     one['retain_error'] = rb_said(e)[:200]
             except Exception as e:
@@ -66167,8 +66234,11 @@ def rb_tick(daemon):
         return
     if not daemon.working():
         return
+    try:
+        rb_job_start(daemon, 'isemon (scheduled)')
+    except ValueError:
+        return                  # a job of the page's just began: the next minute
     store.set_meta('rbackup_day', day)
-    rb_job_start(daemon, 'isemon (scheduled)')
 
 
 # ---- putting one back -----------------------------------------------------------------
@@ -66261,16 +66331,22 @@ def rb_peek(path, password):
     without unpacking the rest. Also proves the password opens it."""
     o = _Opened(path, password)
     try:
-        for name, mb in o.members():
-            if name != 'about.json' or mb.size > 1 << 20:
-                raise RbError('there is no about.json at the start of it: not a backup of isemon')
-            try:
-                return json.loads(o.tf.extractfile(mb).read().decode('utf-8'))
-            except ValueError:
-                raise RbError('its about.json is not readable')
-        raise o.wrong()
+        return _rb_peek(o)
+    except (tarfile.TarError, EOFError, zlib.error) as e:
+        raise RbError('the file is damaged or cut short: %s' % e)
     finally:
         o.close()
+
+
+def _rb_peek(o):
+    for name, mb in o.members():
+        if name != 'about.json' or mb.size > 1 << 20:
+            raise RbError('there is no about.json at the start of it: not a backup of isemon')
+        try:
+            return json.loads(o.tf.extractfile(mb).read().decode('utf-8'))
+        except ValueError:
+            raise RbError('its about.json is not readable')
+    raise o.wrong()
 
 
 def rb_open(path, password, work, room_for=0, progress=None):
@@ -66310,6 +66386,8 @@ def rb_open(path, password, work, room_for=0, progress=None):
                 except ValueError:
                     raise RbError('its manifest is not readable')
         o.finish()
+    except (tarfile.TarError, EOFError, zlib.error) as e:
+        raise RbError('the file is damaged or cut short: %s' % e)
     finally:
         o.close()
     if not isinstance(manifest, dict):
@@ -66387,6 +66465,7 @@ def rb_restore_start(daemon, by, password, upload=None, tid=None, name=None):
 
     def work(progress):
         tmp = None
+        kept = False
         try:
             path = src
             if path is None:
@@ -66396,10 +66475,15 @@ def rb_restore_start(daemon, by, password, upload=None, tid=None, name=None):
                 path = tmp / name
                 rb_fetch(daemon.store, t['id'], name, str(path))
             return rb_restore(daemon.store, str(path), password, by, daemon, progress)
+        except RbError:
+            # A wrong password, nothing changed: the file sent stays for
+            # another try within the hour (1.10.234).
+            kept = True
+            raise
         finally:
             if tmp:
                 shutil.rmtree(str(tmp), ignore_errors=True)
-            if src is not None:
+            if src is not None and not kept:
                 try:
                     src.unlink()
                 except OSError:
@@ -66841,7 +66925,7 @@ def cmd_restore_bundle(args, pal, store):
     password = os.environ.get('ISEMON_BACKUP_PASSWORD', '')
     if args.passphrase_file:
         try:
-            password = Path(args.passphrase_file).expanduser().read_text().split('\n')[0]
+            password = Path(args.passphrase_file).expanduser().read_text().split('\n')[0].rstrip('\r')
         except OSError as e:
             pal.bad(str(e))
             return 1
@@ -67130,7 +67214,7 @@ class Upgrades(object):
     # and it goes the road of a package sent by hand - checked by root's own
     # isemon_upgrade.py, signed by a release key this server trusts - and,
     # when asked, the upgrade is begun. Nothing is put in by itself.
-    ONLINE_PKG_RE = re.compile(r'(?:^|/)(isemon-(\d+)\.(\d+)\.(\d+)\.tar\.gz)(?:\?|#|$)')
+    ONLINE_PKG_RE = re.compile(r'(?:^|/)(isemon-(\d+(?:\.\d+){2,3})\.tar\.gz)(?:\?|#|$)')
     ONLINE_EVERY_S = 86400
     ONLINE_MOST = 64 * 1024 * 1024
     ONLINE_META = 'upgrade:online'
@@ -67145,12 +67229,36 @@ class Upgrades(object):
             raise ValueError('only https:// addresses are asked: %s' % url)
         req = urllib.request.Request(url, headers={
             'User-Agent': 'isemon/%s (+upgrade check)' % __version__, 'Accept': accept})
-        with urllib.request.urlopen(req, timeout=timeout,
-                                    context=ssl.create_default_context()) as r:
+
+        class HttpsOnly(urllib.request.HTTPRedirectHandler):
+            # Every step of a redirect checked, not only the last one
+            # (1.10.234): https - http - https asked over plain http between.
+            def redirect_request(self, req_, fp, code, msg, headers, newurl):
+                if not str(newurl).startswith('https://'):
+                    raise ValueError('it was sent on to an address that is not https: %s'
+                                     % newurl)
+                return urllib.request.HTTPRedirectHandler.redirect_request(
+                    self, req_, fp, code, msg, headers, newurl)
+        opener = urllib.request.build_opener(
+            HttpsOnly, urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+        with opener.open(req, timeout=timeout) as r:
             final = r.geturl()
             if not str(final).startswith('https://'):
                 raise ValueError('it was sent on to an address that is not https: %s' % final)
-            data = r.read(limit + 1)
+            # A whole answer within a deadline of its own: a server that
+            # sends a byte now and then does not hold the page for ever.
+            end = time.time() + max(60, timeout * 10)
+            parts, got = [], 0
+            while got <= limit:
+                lump = r.read(min(1 << 20, limit + 1 - got))
+                if not lump:
+                    break
+                parts.append(lump)
+                got += len(lump)
+                if time.time() > end:
+                    raise ValueError('%s did not send its answer in %d s' % (
+                        url, int(max(60, timeout * 10))))
+            data = b''.join(parts)
             if len(data) > limit:
                 raise ValueError('the answer from %s is bigger than %d MB' % (url, limit >> 20))
             return data, r.headers.get('Content-Type') or '', final
@@ -67180,8 +67288,10 @@ class Upgrades(object):
             m = self.ONLINE_PKG_RE.search('/' + str(name))
             if not m or not str(link).startswith('https://'):
                 return
-            v = tuple(int(x) for x in m.group(2, 3, 4))
-            found[m.group(1)] = {'name': m.group(1), 'version': '%d.%d.%d' % v, 'v': v,
+            v = tuple(int(x) for x in m.group(2).split('.'))
+            if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+                size = None                     # a listing's word, not a number
+            found[m.group(1)] = {'name': m.group(1), 'version': '.'.join(map(str, v)), 'v': v,
                                  'url': link, 'bytes': size}
 
         gh = re.match(r'^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)'
@@ -67215,7 +67325,7 @@ class Upgrades(object):
                 items = []
                 base = 'https://raw.githubusercontent.com/%s/%s/%s/%s' % (
                     owner, repo, ref or 'HEAD', (sub.strip('/') + '/') if sub.strip('/') else '')
-                for name in set(re.findall(r'isemon-\d+\.\d+\.\d+\.tar\.gz',
+                for name in set(re.findall(r'isemon-\d+(?:\.\d+){2,3}\.tar\.gz',
                                            data.decode('utf-8', 'replace'))):
                     items.append({'type': 'file', 'name': name, 'download_url': base + name})
             if isinstance(items, dict):
@@ -67368,12 +67478,20 @@ class Upgrades(object):
         a higher one any version that ran on this database has written down."""
         floor = DOWNGRADE_FLOOR
         try:
-            seen = str(self.daemon.store.get_meta(self.FLOOR_META, '') or '')
-            if re.fullmatch(r'[0-9]+(\.[0-9]+){2,3}', seen) and \
-                    self.ver_tuple(seen) > self.ver_tuple(floor):
-                floor = seen
+            seen = [str(self.daemon.store.get_meta(self.FLOOR_META, '') or '')]
         except Exception:                               # noqa: BLE001
+            seen = []
+        # And the one root keeps beside the installed copy (1.10.234): root
+        # goes by it, so what it would refuse is not offered.
+        try:
+            seen.append(Path(os.environ.get('ISEMON_FLOOR_FILE') or
+                             '/usr/local/lib/isemon/downgrade-floor').read_text()[:64].strip())
+        except OSError:
             pass
+        for v in seen:
+            if re.fullmatch(r'[0-9]+(\.[0-9]+){2,3}', v) and \
+                    self.ver_tuple(v) > self.ver_tuple(floor):
+                floor = v
         return floor
 
     def note_floor(self):
@@ -67538,6 +67656,26 @@ def boot_time():
     return 0.0
 
 
+def boot_id():
+    """This boot's own id - unlike btime, never moved by the clock being set."""
+    if os.environ.get('ISEMON_BTIME_FILE'):
+        return ''                                   # tests: btime is the reboot
+    try:
+        return Path('/proc/sys/kernel/random/boot_id').read_text().strip()[:64]
+    except OSError:
+        return ''
+
+
+def rebooted(since):
+    """Whether the machine started again since `since` (a job or a plan with
+    'boot' and 'boot_id')."""
+    was = str((since or {}).get('boot_id') or '')
+    now = boot_id()
+    if was and now:
+        return was != now
+    return boot_time() > float((since or {}).get('boot') or 0) + 1
+
+
 def _net_list(v, most=4):
     if isinstance(v, str):
         v = re.split(r'[\s,;]+', v)
@@ -67586,6 +67724,7 @@ class NetPower(object):
         self.daemon = daemon
         self.lock = threading.Lock()
         self.ask_lock = threading.Lock()       # one question of root at a time
+        self.trial_lock = threading.Lock()     # Keep against the trial running out
         self.busy = False
         self.read_at = 0.0
 
@@ -67776,7 +67915,9 @@ class NetPower(object):
             raise WebRootError('NetworkManager (nmcli) is not on this server: its network is set '
                                'by hand here')
         con = str(want.get('con') or d.get('con') or '')
-        if not con or con not in [x.get('con') for x in d.get('devices') or []]:
+        # Going back, the connection may be down just now (that is why it
+        # goes back): root finds it among all it has.
+        if not con or (not rollback and con not in [x.get('con') for x in d.get('devices') or []]):
             raise WebRootError('which connection? There are: %s' % (', '.join(
                 '%s (%s)' % (x.get('con'), x.get('dev')) for x in d.get('devices') or []
                 if x.get('con')) or 'none'))
@@ -67854,7 +67995,8 @@ class NetPower(object):
              'ipv6': {'on': on6, 'mode': mode6, 'addr': str(a6) if a6 else '',
                       'gw': str(v6.get('gw') or '').strip() if on6 else '', 'dns': dns6},
              'hostname': host, 'old_ip': old_ip, 'new_ip': new_ip, 'old_hostname': host_old,
-             'ip_changed': ip_changed, 'was6': was6}
+             'ip_changed': ip_changed, 'was6': was6,
+             'old6': [str(a).split('/')[0] for a in conf.get('ipv6_addresses') or []][:4]}
         plan = []
         changes = self.own_changes(w)
         if changes:
@@ -67893,19 +68035,25 @@ class NetPower(object):
 
     @staticmethod
     def job_active(job):
+        if job and job.get('state') == 'trial':
+            return True                         # kept or put back first
         return bool(job) and job.get('state') in ('asked', 'running', 'rebooting',
                                                   'going back') and \
             time.time() - float(job.get('moved') or job.get('at') or 0) < NET_JOB_LIVE_S
 
     def ask(self, want, by, rollback=False, checked=None):
         """A change asked for: the job written, and started behind."""
-        if self.job_active(self._get('net:job')):
+        was = self._get('net:job')
+        if was.get('state') == 'trial':
+            raise WebRootError('the new network waits to be kept: keep it, or put the old one '
+                               'back, first')
+        if self.job_active(was):
             raise WebRootError('the network is being changed already')
         if self.power_busy():
             raise WebRootError('a restart or a power-off is under way')
         w = checked or self.check(want)
         job = {'id': secrets.token_hex(6), 'state': 'asked', 'at': time.time(), 'pct': 0,
-               'by': by, 'want': w, 'steps': [], 'boot': boot_time(),
+               'by': by, 'want': w, 'steps': [], 'boot': boot_time(), 'boot_id': boot_id(),
                'rollback': bool(rollback), 'moved': time.time()}
         self._put('net:job', job)
         if not rollback:
@@ -67978,8 +68126,10 @@ class NetPower(object):
                                       'addr': w['ipv6']['addr'], 'gw': w['ipv6']['gw'],
                                       'dns': w['ipv6']['dns']},
                              'hostname': w['hostname'],
-                             'old': [w['old_ip']] if w['old_ip'] else [],
-                             'old_hostname': w['old_hostname'], 'reboot_in': 8}, 90)
+                             'old': ([w['old_ip']] if w['old_ip'] else []) + list(w.get('old6') or []),
+                             'old_hostname': w['old_hostname'], 'reboot_in': 8,
+                             'rollback': bool(job.get('rollback')),
+                             'exact': job.get('exact') or {}}, 90)
             job['before'] = got.get('before') or {}
             job['down_at'] = time.time() + 8
             self._job_put(job, '; '.join(got.get('said') or []) or 'set', 80)
@@ -68065,6 +68215,20 @@ class NetPower(object):
 
     def go_back(self, job, why):
         """The old network asked for - the same job the other way."""
+        with self.trial_lock:
+            cur = self._get('net:job')
+            if cur.get('id') == job.get('id'):
+                job = cur
+            # Keep pressed while this was on its way: kept, not put back.
+            keep = self._get('net:keep')
+            if keep.get('id') == job.get('id') and job.get('state') == 'trial':
+                job['kept'] = keep.get('by')
+                self._job_put(job, 'kept by %s' % keep.get('by'), 100, state='done')
+                self.store.add_event('control', '%s kept the new network' % keep.get('by'),
+                                     who=keep.get('by'))
+                return
+            if job.get('back'):
+                self._job_put(job, None, state='going back')
         back = job.get('back')
         job['back_asked'] = time.time()
         if not back:
@@ -68087,7 +68251,8 @@ class NetPower(object):
             w = self.check(back, rollback=True)
             nxt = {'id': secrets.token_hex(6), 'state': 'asked', 'at': time.time(), 'pct': 0,
                    'by': 'isemon (%s)' % why, 'want': w, 'steps': [], 'boot': boot_time(),
-                   'rollback': True, 'moved': time.time(), 'from': job.get('id')}
+                   'boot_id': boot_id(), 'rollback': True, 'moved': time.time(),
+                   'from': job.get('id'), 'exact': job.get('before') or {}}
             self._put('net:job', nxt)
             self.job_run(nxt)
         except Exception as e:                          # noqa: BLE001
@@ -68114,11 +68279,12 @@ class NetPower(object):
 
     def net_answer(self, act, by):
         """The page or the command line: keep it, or go back."""
-        job = self._get('net:job')
-        if job.get('state') != 'trial':
-            raise WebRootError('the network is not waiting to be kept')
-        self._put('net:%s' % ('keep' if act == 'keep' else 'back'),
-                  {'id': job.get('id'), 'by': by, 'at': time.time()})
+        with self.trial_lock:
+            job = self._get('net:job')
+            if job.get('state') != 'trial':
+                raise WebRootError('the network is not waiting to be kept')
+            self._put('net:%s' % ('keep' if act == 'keep' else 'back'),
+                      {'id': job.get('id'), 'by': by, 'at': time.time()})
         self._thread(self.trial_tick, job)
         return ('kept' if act == 'keep' else
                 'the old network comes back - the server restarts with it')
@@ -68250,7 +68416,8 @@ class NetPower(object):
         if self.job_active(self._get('net:job')):
             raise WebRootError('the network is being changed')
         plan = {'id': secrets.token_hex(6), 'how': how, 'by': by, 'at': time.time(),
-                'boot': boot_time(), 'state': 'asked', 'moved': time.time()}
+                'boot': boot_time(), 'boot_id': boot_id(), 'state': 'asked',
+                'moved': time.time()}
         self._put('power:plan', plan)
         self.store.add_event('control', '%s asked for a %s of this server' % (
             by, 'restart' if how == 'reboot' else 'power-off'), 'warn', who=by)
@@ -68280,7 +68447,7 @@ class NetPower(object):
         plan = self.power_plan()
         if plan.get('state') != 'going':
             return
-        if boot_time() > float(plan.get('boot') or 0) + 1:
+        if rebooted(plan):
             self._power_put(plan, 'back', 'up again' if plan.get('how') == 'reboot'
                             else 'switched on again')
             self.store.add_event('control', 'this server is up again after the %s' % (
@@ -68351,9 +68518,16 @@ class NetPower(object):
             self._thread(self.trial_tick, job)
             return
         if state == 'rebooting':
-            if boot_time() > float(job.get('boot') or 0) + 1:
+            if rebooted(job):
                 self._thread(self.job_after, job)
             elif not self.busy and time.time() - float(job.get('moved') or 0) > 900:
+                if job.get('trial_min') and job.get('back') and job.get('before') and \
+                        not job.get('rollback'):
+                    # On trial, but never restarted: what it had goes back in,
+                    # rather than a change nobody saw work waiting for the
+                    # next restart.
+                    self._thread(self.go_back, job, 'the machine did not restart in 15 minutes')
+                    return
                 self._job_put(job, 'the machine did not restart in 15 minutes - restart it by '
                               'hand; the network starts as set', job.get('pct'), ok=False,
                               state='failed')
@@ -68448,6 +68622,12 @@ def software_info(store=None):
                 m = re.search(r'OpenSSH_([0-9][^\s,]*)', line or '')
             elif name == 'rsyslog':
                 m = re.search(r'rsyslogd\s+(\d+\.\d+(?:\.\d+)?)', line or '')
+            elif name == 'systemd':
+                # systemd 252 (252-46.el9_5.2): 252, not the build's 5.2
+                m = re.search(r'^systemd\s+(\d+)', line or '')
+            elif name == 'mariadb-dump' and 'Distrib' in (line or ''):
+                # The server's version it came with, not the tool's own 10.19
+                m = re.search(r'Distrib\s+(\d+\.\d+(?:\.\d+)?)', line or '')
             else:
                 m = re.search(r'(\d+\.\d+(?:\.\d+)?[^\s,()]*)', line or '')
             if m and not re.search(r'(?i)denied|not found|error', line):
@@ -75101,8 +75281,12 @@ def cmd_upgrade_follow(args, pal, store, began=None):
             if state == 'done':
                 pal.good('isemon %s is running' % data.get('version'))
                 return 0
-            pal.bad('the upgrade failed: %s' % (run.get('said') or 'install.sh ended with %s'
-                                                 % run.get('rc')))
+            if run.get('rc') is None and not run.get('said'):
+                pal.bad('root did not take the upgrade up - is isemon-upgrade.path running?  '
+                        'systemctl status isemon-upgrade.path')
+            else:
+                pal.bad('the upgrade failed: %s' % (run.get('said') or 'install.sh ended with %s'
+                                                     % run.get('rc')))
             for line in (data.get('log') or [])[-15:]:
                 pal.note('    ' + line)
             return 1
@@ -76200,7 +76384,8 @@ class Console(object):
         return ''.join(out) + ('\x1b[0m' if '\x1b[' in line else '')
 
     def page(self, title, text):
-        lines = [ln.expandtabs(8).replace('\r', '') for ln in text.rstrip('\n').split('\n')] or ['']
+        lines = [self._term_safe(ln.expandtabs(8), sgr=True)
+                 for ln in text.rstrip('\n').split('\n')] or ['']
         if not self.pal.on:
             lines = [self._plain_text(ln) for ln in lines]
         if self._raw() is None or not sys.stdout.isatty():
@@ -76317,13 +76502,24 @@ class Console(object):
     def m_live_log(self):
         return self.live_log('')
 
+    @staticmethod
+    def _log_open(path):
+        """The log, opened as root opens a file of the isemon account's
+        (1.10.234): a link is not followed, a FIFO does not hold the login up,
+        and anything but a plain file is not read."""
+        fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            os.close(fd)
+            raise OSError('it is not a plain file')
+        return os.fdopen(fd, 'r', encoding='utf-8', errors='replace')
+
     def live_log(self, what=''):
         path = self.log_path()
         st = {'f': None, 'ino': None}
 
         def first():
             try:
-                f = open(str(path), 'r', encoding='utf-8', errors='replace')
+                f = self._log_open(path)
             except OSError as e:
                 return ['%s cannot be read: %s' % (path, e)]
             st['f'] = f
@@ -76332,7 +76528,7 @@ class Console(object):
             f.seek(0, 2)
             start = max(0, f.tell() - 2 * 1024 * 1024)
             f.seek(start)
-            got = f.read().splitlines()
+            got = f.read(2 * 1024 * 1024).splitlines()
             # A line cut in two by where the reading began is left out.
             return (got[1:] if start and len(got) > 1 else got)[-self.LIVE_KEEP:]
 
@@ -76342,7 +76538,7 @@ class Console(object):
                 return []
             out = []
             while len(out) < 5000:
-                ln = f.readline()
+                ln = f.readline(65536)
                 if not ln:
                     break
                 out.append(ln.rstrip('\n'))
@@ -76350,7 +76546,8 @@ class Console(object):
                 try:
                     if os.stat(str(path)).st_ino != st['ino']:      # rotated
                         f.close()
-                        st['f'] = open(str(path), 'r', encoding='utf-8', errors='replace')
+                        st['f'] = None
+                        st['f'] = self._log_open(path)
                         st['ino'] = os.fstat(st['f'].fileno()).st_ino
                 except OSError:
                     pass
@@ -76462,7 +76659,7 @@ class Console(object):
 
         def add(raw):
             for ln in raw:
-                ln = ln.expandtabs(8).replace('\r', '')
+                ln = self._term_safe(ln.expandtabs(8))
                 col = (paint(ln) if paint else ln) if p.on else self._plain_text(ln)
                 lines.append((self._plain_text(col), col))
         add(first())
@@ -77498,6 +77695,22 @@ class Console(object):
     @staticmethod
     def _plain_text(text):
         return re.sub(r'\x1b\[[0-9;?]*[A-Za-z]', '', str(text or ''))
+
+    _ESC_RE = re.compile(r'\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)?|'
+                         r'[PX^_][^\x1b]*(?:\x1b\\)?|[ -/]*[0-~]?)')
+    _CTL_RE = re.compile(r'[\x00-\x08\x0a-\x1f\x7f-\x9f]')
+
+    @classmethod
+    def _term_safe(cls, text, sgr=False):
+        """A line from a file or from far away made safe for root's terminal
+        (1.10.234): every escape and control character taken out - colours
+        (SGR) kept only where `sgr`, for isemon's own words."""
+        text = str(text or '')
+        if sgr:
+            parts = re.split(r'(\x1b\[[0-9;]*m)', text)
+            return ''.join(x if i % 2 else cls._CTL_RE.sub('', cls._ESC_RE.sub('', x))
+                           for i, x in enumerate(parts))
+        return cls._CTL_RE.sub('', cls._ESC_RE.sub('', text))
 
     def note(self, title, text, tone=''):
         """Words in a window; any of Enter, Esc, q or Space closes it."""
