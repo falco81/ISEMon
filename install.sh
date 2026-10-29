@@ -269,15 +269,16 @@ ensure_packages() {     # ensure_packages fresh|upgrade
 }
 
 # The clock (1.10.228): Settings -> Time reads it through chrony, put in
-# above when it was missing. chronyd is started - the way AlmaLinux has it
-# out of the box - only when it was never set up here and nothing else keeps
-# the time (systemd-timesyncd, ntpd, openntpd): a machine that keeps its
-# time some other way keeps it so.
+# above when it was missing. chronyd is started when it is not running - the
+# way AlmaLinux has it out of the box - unless something else keeps the time
+# (systemd-timesyncd, ntpd, openntpd): a machine that keeps its time some
+# other way keeps it so.
 chrony_check() {    # chrony_check fresh|upgrade
     [[ -n "$DRY_RUN" ]] && return 0
     command -v chronyd >/dev/null 2>&1 || return 0
-    if ! systemctl is-active --quiet chronyd 2>/dev/null && \
-            ! systemctl is-enabled --quiet chronyd 2>/dev/null; then
+    # Not running - installed just now (its package marks it enabled, and
+    # starts nothing), or never started: started.
+    if ! systemctl is-active --quiet chronyd 2>/dev/null; then
         local other=""
         for u in systemd-timesyncd ntpd ntp openntpd; do
             systemctl is-active --quiet "$u" 2>/dev/null && other="$u"

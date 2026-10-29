@@ -481,7 +481,7 @@ try:
         'ensure_packages fresh' in inst, 'chrony_check upgrade' in inst,
         'chrony_check fresh' in inst), (True, True, True, True, True))
     ok('...chronyd started only where nothing else keeps the time',
-       'systemd-timesyncd ntpd ntp openntpd' in fn and 'is-enabled --quiet chronyd' in fn
+       'systemd-timesyncd ntpd ntp openntpd' in fn and 'enable --now chronyd' in fn
        and 'set-ntp' not in fn and '/etc/chrony.conf' not in fn)
     doc = (ROOT / 'docs' / 'time.md').read_text()
     ok('docs/time.md', all(x in doc for x in ('#isemon#', '/etc/chrony.conf.isemon-before',

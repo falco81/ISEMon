@@ -142,6 +142,11 @@ rc, out, calls = run('upgrade', web=True, have=('ssh', 'ssh-keygen', 'setfacl', 
 ok('nginx, php-fpm and php-cli', all('dnf install -y %s' % p in calls
                                      for p in ('nginx', 'php-fpm', 'php-cli')))
 
+print('\nchrony there, its service marked enabled but never started (as dnf leaves it)')
+rc, out, calls = run('upgrade', have=('ssh', 'ssh-keygen', 'setfacl', 'openssl', 'smbclient',
+                                      'chronyc', 'chronyd'))
+ok('chronyd started', ('enable --now chronyd' in calls, 'chronyd started' in out), (True, True))
+
 print('\nThe time kept by something else')
 rc, out, calls = run('upgrade', have=('ssh', 'ssh-keygen', 'setfacl', 'openssl', 'smbclient'),
                      pre='touch %s/ntpd-on' % work)
@@ -167,6 +172,28 @@ ok('within a deadline (an upgrade from the pages has one)', 'PKG_UNTIL=$((SECOND
 ok('only ever adds: never an upgrade, a remove or a swap of a package',
    not any(x in funcs for x in ('dnf upgrade', 'dnf remove', 'apt-get upgrade',
                                 'apt-get remove', 'dnf swap', '--allowerasing')))
+
+print('\n1.10.237: chronyd not running, said on the page')
+import importlib.util                                   # noqa: E402
+spec = importlib.util.spec_from_file_location('isemon_web_237', str(ROOT / 'deploy' / 'isemon_web.py'))
+W = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(W)
+fc = work / 'chronyc'
+fc.write_text('#!/bin/sh\necho "506 Cannot talk to daemon" >&2\nexit 1\n')
+fc.chmod(0o755)
+W.CHRONYC = str(fc)
+W.TIMEDATECTL = '/bin/true'
+got = W.ntp_read()
+ok('chronyc cannot reach chronyd: "down"', (got.get('chrony'), got.get('down')), (True, True))
+fc.write_text('#!/bin/sh\nexit 0\n')
+ok('...and not when it answers', bool(W.ntp_read().get('down')), False)
+page = (ROOT / 'web' / 'index.php').read_text()
+ok('the page says so and offers Start chronyd', ("w: 'chronyd is not running'" in page,
+                                                "cmdButton('Start chronyd'" in page), (True, True))
+helper = (ROOT / 'deploy' / 'isemon_web.py').read_text()
+ok('Step it now starts chronyd first when it is not running',
+   "ntp_run(['systemctl', 'enable', '--now', 'chronyd'], 'systemctl enable chronyd')\n"
+   "                words.append('chronyd started')" in helper)
 
 shutil.rmtree(str(work), ignore_errors=True)
 print('\n%d ok, %d failed' % (PASS, FAIL))

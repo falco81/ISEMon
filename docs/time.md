@@ -85,9 +85,12 @@ Both ask the running daemon, which asks root; `--json` gives the whole answer.
 ## install.sh
 
 `install.sh` puts chrony in whenever it is missing - on an install and on
-every upgrade (1.10.236) - and starts chronyd, the way AlmaLinux has it out of
-the box, only when it was never set up on the machine and nothing else keeps
-the time (systemd-timesyncd, ntpd, openntpd). `/etc/chrony.conf` is never
+every upgrade (1.10.236) - and starts chronyd when it is not running (a
+package installed just now is marked enabled but not started), the way
+AlmaLinux has it out of the box, unless something else keeps the time
+(systemd-timesyncd, ntpd, openntpd). When chronyd is not running, the page
+says *chronyd is not running*, and *Start chronyd* (in place of *Step it now*)
+starts it and sets the clock (1.10.237). `/etc/chrony.conf` is never
 touched by it; when chronyd is still not running, it says so. Root's helper
 of 1.10.228 or later (put in by `./install.sh --upgrade`) is what answers the
 page; before it, the page says that root did not answer.

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.236'
+__version__ = '1.10.237'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -64454,6 +64454,10 @@ def ntp_problem(short=False):
     if not d or time.time() - float(now.get('at') or 0) > 600:
         return ''
     t = d.get('tracking') or {}
+    if d.get('chrony') and d.get('down'):
+        return 'chronyd is not running' if short else (
+            'chronyd is not running: the clock is kept by nothing - Settings → Time, Start '
+            'chronyd')
     if d.get('chrony') and t:
         if t.get('leap') == 'Not synchronised' or not t.get('stratum'):
             return 'the clock is not synchronised' if short else (

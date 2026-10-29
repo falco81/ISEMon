@@ -1126,6 +1126,10 @@ def ntp_read():
                                'interval': float(f[12] or 0), 'leap': f[13][:40]}
     except (Refused, ValueError, OSError) as e:
         out['said'] = str(e)[:200]
+        # chrony there, chronyd not running (1.10.237): said as such, and
+        # Step it now starts it.
+        if '506' in str(e) or 'Cannot talk to daemon' in str(e):
+            out['down'] = True
     try:
         for line in ntp_run([CHRONYC, '-c', 'sources'], 'chronyc sources').splitlines()[:40]:
             f = line.split(',')
@@ -1323,9 +1327,17 @@ def ntp_part():
         elif what == 'apply':
             out['data'] = ntp_apply(ntp_checked(r))
         elif what == 'sync':
+            words = []
+            # chronyd not running - installed, never started: started first
+            # (1.10.237), or there is nothing to step the clock with.
+            if not NO_SERVICES and subprocess.run(
+                    ['systemctl', 'is-active', '--quiet', 'chronyd']).returncode != 0:
+                ntp_run(['systemctl', 'enable', '--now', 'chronyd'], 'systemctl enable chronyd')
+                words.append('chronyd started')
+                time.sleep(3)
             said = ntp_run([CHRONYC, 'makestep'], 'chronyc makestep').strip()
             ntp_run([CHRONYC, 'burst', '4/4'], 'chronyc burst', ok=(0, 1))
-            out['data'] = {'said': [said[:200] or 'stepped']}
+            out['data'] = {'said': words + [said[:200] or 'stepped']}
         else:
             raise Refused('read, apply or sync')
         out['ok'] = True

@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.235",
+  "version": "1.10.237",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -4584,6 +4584,10 @@
    "source": "Christmas Island",
    "text": "Vánoční ostrov"
   },
+  "s.chrony-is-installed-but-its-service.c7480870": {
+   "source": "chrony is installed, but its service is not running: started (systemctl enable --now chronyd), then the clock is set to the time servers.",
+   "text": "chrony je nainstalované, ale jeho služba neběží: spustí se (systemctl enable --now chronyd) a hodiny se pak nastaví podle časových serverů."
+  },
   "s.chrony-is-not-installed.e714b868": {
    "source": "chrony is not installed",
    "text": "chrony není nainstalované"
@@ -4591,6 +4595,14 @@
   "s.chrony.3799daf7": {
    "source": "chrony",
    "text": "chrony"
+  },
+  "s.chronyd-is-not-running.59d67374": {
+   "source": "chronyd is not running",
+   "text": "chronyd neběží"
+  },
+  "s.chronyd-is-started-and-kept-on.69628db6": {
+   "source": "chronyd is started and kept on at every boot; the clock then jumps to the time servers’ time at once. Records read in that moment may look out of order.",
+   "text": "chronyd se spustí a bude zapnutý při každém startu; hodiny pak hned skočí na čas časových serverů. Záznamy načtené v tu chvíli mohou vypadat mimo pořadí."
   },
   "s.cipher.ef062bd7": {
    "source": "cipher",
@@ -19955,6 +19967,18 @@
   "s.start-again.b6fffc5a": {
    "source": "Start again",
    "text": "Začít znovu"
+  },
+  "s.start-chronyd-and-set-the-clock.f14def21": {
+   "source": "Start chronyd and set the clock now?",
+   "text": "Spustit chronyd a nastavit hodiny hned?"
+  },
+  "s.start-chronyd.d3723c09": {
+   "source": "Start chronyd",
+   "text": "Spustit chronyd"
+  },
+  "s.start-it.8962ca4a": {
+   "source": "Start it",
+   "text": "Spustit"
   },
   "s.start-the-counting-again.6c9a6da7": {
    "source": "Start the counting again?",

@@ -39426,6 +39426,7 @@ function ntpHealth(d) {
   if (!nd.time) return {k: 'crit', w: 'not read yet'};
   if (!nd.chrony) return nd.ntpsynchronized === 'yes' ? {k: 'ok', w: 'synchronised (not chrony)'}
     : {k: 'crit', w: 'chrony is not installed'};
+  if (nd.down) return {k: 'crit', w: 'chronyd is not running'};
   if (t.leap === 'Not synchronised' || !t.stratum) return {k: 'crit', w: 'not synchronised'};
   var off = Math.abs(t.offset || 0);
   if (off > 1) return {k: 'crit', w: 'synchronised, but off'};
@@ -39520,12 +39521,15 @@ function ntpCard(d) {
         toast(r.message, 'good'); setTimeout(loadNtp, 4000);
       }).catch(oops);
     };
-    var sy = cmdButton('Step it now', 'clock', 'small');
-    explain(sy, 'The clock set to the time servers at once (chronyc makestep), not slewed slowly - for a clock that is far off.');
+    var down = !!nd.down;
+    var sy = down ? cmdButton('Start chronyd', 'play', 'small primary') : cmdButton('Step it now', 'clock', 'small');
+    explain(sy, down ? 'chrony is installed, but its service is not running: started (systemctl enable --now chronyd), then the clock is set to the time servers.'
+      : 'The clock set to the time servers at once (chronyc makestep), not slewed slowly - for a clock that is far off.');
     sy.onclick = function () {
-      confirmThen('Step the clock of this server now?',
-        'The clock jumps to the time servers’ time at once. Records read in that moment may look out of order.',
-        'Step it', function () {
+      confirmThen(down ? 'Start chronyd and set the clock now?' : 'Step the clock of this server now?',
+        down ? 'chronyd is started and kept on at every boot; the clock then jumps to the time servers’ time at once. Records read in that moment may look out of order.'
+          : 'The clock jumps to the time servers’ time at once. Records read in that moment may look out of order.',
+        down ? 'Start it' : 'Step it', function () {
           api('ntp', {action: 'sync'}).then(function (r) {
             toast(r.message, 'good'); setTimeout(loadNtp, 6000);
           }).catch(oops);

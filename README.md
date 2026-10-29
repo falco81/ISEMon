@@ -371,6 +371,16 @@ working.
 
 ## Version
 
+1.10.237
+
+- **chronyd installed but not running is started.** 1.10.236 put chrony in
+  where it was missing, but its package marks chronyd enabled without starting
+  it, and the installer then left it so - Settings - Time said `chronyc
+  tracking: 506 Cannot talk to daemon`. The installer now starts chronyd
+  whenever it is not running (unless something else keeps the time); the page
+  says *chronyd is not running*, and its button *Start chronyd* starts it and
+  sets the clock.
+
 1.10.236
 
 - **The installer puts in what is missing, on every upgrade too.** `install.sh`
@@ -380,7 +390,7 @@ working.
   and the driver and dump program of the database engine config.json names.
   Only ever adds - nothing installed is changed, upgraded or taken away; a
   package that cannot be had is said and the rest goes on (ten minutes at
-  most). chronyd is started only where it was never set up and nothing else
+  most). chronyd is started when it is not running, unless something else
   keeps the time.
 
 1.10.235
