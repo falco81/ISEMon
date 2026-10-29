@@ -2,7 +2,8 @@
 #
 # Watches for what Settings asked of root: the daemon lays request.json (a
 # change to nginx or the firewall) or look.ask (a look at how things are)
-# down in /var/lib/isemon/web/, and this starts isemon-web.service, which
+# down in /var/lib/isemon/web/ - or net.ask / ntp.ask (1.10.228: this server's
+# network, a restart, its clock) - and this starts isemon-web.service, which
 # checks it as root and puts it in. Nothing else can be asked for this way.
 [Unit]
 Description=isemon - the firewall, who may reach which page and TLS, asked for on the pages
@@ -10,6 +11,8 @@ Description=isemon - the firewall, who may reach which page and TLS, asked for o
 [Path]
 PathExists=/var/lib/isemon/web/request.json
 PathExists=/var/lib/isemon/web/look.ask
+PathExists=/var/lib/isemon/web/net.ask
+PathExists=/var/lib/isemon/web/ntp.ask
 Unit=isemon-web.service
 
 [Install]

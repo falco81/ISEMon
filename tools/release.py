@@ -27,6 +27,12 @@ def manifest(folder):
     lines = []
     for top, dirs, files in os.walk(folder):
         dirs[:] = sorted(d for d in dirs if d != '__pycache__')
+        for name in dirs:
+            # A linked folder is not walked into, and tar packed the link:
+            # signed here, refused by every machine it was sent to.
+            if os.path.islink(os.path.join(top, name)):
+                rel = os.path.relpath(os.path.join(top, name), folder).replace(os.sep, '/')
+                raise SystemExit('%s is a link - a package holds plain files only' % rel)
         for name in sorted(files):
             path = os.path.join(top, name)
             rel = os.path.relpath(path, folder).replace(os.sep, '/')

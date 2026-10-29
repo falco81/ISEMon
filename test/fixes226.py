@@ -178,7 +178,7 @@ ok('a code from the app with no second window has nothing of the kind',
 
 title('What has no token line at all')
 moved = daemon.apply_radius_refusals(since=0)
-moved += daemon.apply_unanswered_codes(NOW + 3600, {})
+moved += daemon.apply_unanswered_codes(NOW, {})
 alone = db.execute("SELECT reason, code, asked_as FROM failed WHERE kind = 'otp' AND session "
                    "LIKE 'otp/radius/%' ORDER BY ts").fetchall()
 ok('the refusals before any code and the code mailed and never typed are written down',
@@ -192,7 +192,7 @@ ok('...a refusal that has a token line is not written twice',
    .fetchone()[0], 1)
 ok('...nor is the code by SMS that was typed, right or wrong',
    db.execute("SELECT COUNT(*) FROM failed WHERE code = 'code-unused'").fetchone()[0], 1)
-again = daemon.apply_radius_refusals(since=0) + daemon.apply_unanswered_codes(NOW + 3600, {})
+again = daemon.apply_radius_refusals(since=0) + daemon.apply_unanswered_codes(NOW, {})
 ok('...and read again, nothing more', again, 0)
 ok('none of it is ever judged: no address on any of them',
    db.execute("SELECT COUNT(*) FROM failed WHERE kind = 'otp' AND ip <> ''").fetchone()[0], 0)

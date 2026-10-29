@@ -5,7 +5,7 @@ whichever suits you.
 
 | | Command line | The page |
 |---|---|---|
-| Where | on the machine, as root | *Settings → This server → Upgrades*, as a full administrator |
+| Where | on the machine, as root | *Settings → Monitoring and updates → Upgrades*, as a full administrator |
 | How | `./install.sh --upgrade` | send the `.tar.gz`, press *Upgrade* |
 | What it checks | nothing - root trusts what it runs | the package is signed by a release key this machine trusts |
 | How far it is | install.sh's own words | a bar, the step install.sh is at, and its words |
@@ -38,7 +38,99 @@ sudo ./install.sh --upgrade
    the whole of it (`/var/lib/isemon/upgrade/last.log`). The program that was
    there stays, or is put back by install.sh itself.
 
-`isemon --web-status` shows the same on the command line.
+`isemon --web-status` and `isemon --upgrade-status` show the same on the
+command line.
+
+### From the web (1.10.228)
+
+*Settings → Upgrades → From the web* looks once a day (and when *Look now* is
+pressed) at `upgrade_url` for `isemon-X.Y.Z.tar.gz` packages:
+
+| `upgrade_url` | how it is read |
+|---|---|
+| `https://github.com/OWNER/REPO/tree/BRANCH/FOLDER` (the default: `https://github.com/falco81/ISEMon/tree/main/release`) | GitHub's API lists the folder; the packages come from `raw.githubusercontent.com`. When the API refuses (sixty questions an hour without an account), the folder's own page is read for the names. |
+| a web page or a folder listing (nginx, Apache autoindex) | every link to an `isemon-X.Y.Z.tar.gz` |
+| one package's address | that package |
+
+HTTPS only, and never followed on to anything that is not HTTPS. A proxy, if
+the server needs one, comes from `https_proxy` in the service's environment
+(`systemctl edit isemon`: `Environment=https_proxy=…`). The server needs to
+reach the address (and `api.github.com`, `raw.githubusercontent.com` for
+GitHub); isemon's own firewall chain only ever filters what comes in.
+
+The newest one newer than what runs here is offered: **Upgrade to X now**
+fetches it, has it checked exactly as a package sent by hand (below - the
+signature of a release key this server trusts, every file in it) and begins
+the upgrade; **Only fetch it** stops before the upgrade and leaves it waiting.
+When more than one version newer than this one is there (1.10.231), a list
+above the buttons picks which - the newest unless another is chosen; with
+only one, there is no list. Nothing is ever put in by itself. `upgrade_check`
+off stops the daily look;
+*Look now* still asks. A new version found is said once in Events.
+
+On the command line:
+
+```bash
+isemon --upgrade-check              # what is at upgrade_url, and whether it is newer
+isemon --upgrade-online             # the newest: fetched, checked, put in, followed
+isemon --upgrade-online 1.10.230 --yes
+isemon --upgrade-follow             # follow one going on, with its progress bar
+isemon --upgrade-status             # the last one, what waits, what the web has
+```
+
+Ctrl+C in `--upgrade-follow` stops the following, not the upgrade.
+
+### Going back to an older version (1.10.232)
+
+Off as it comes (1.10.233): *Offer going back to an older version*
+(`downgrade_offered`, Settings → Upgrades) shows the card and lets it be done;
+off, the card is not there and going back is refused on the page, by `isemon
+--downgrade` and in the console alike. Every older version on the card has
+*What changed* - its entry out of this version's own README, which keeps every
+version's; `isemon --downgrade-check --changes` prints them, and the console
+offers it before it goes back.
+
+*Settings → Upgrades → Going back to an older version*, `isemon
+--downgrade-check` / `isemon --downgrade VERSION`, and the console's
+*Upgrades → Go back to an older version*: back to a version published at
+`upgrade_url`, **only as far back as can still run on the database as it is**.
+
+Nothing is copied or put back - on a database of a terabyte that is the only
+way going back can be done at all. The older version opens the database as it
+is; the settings of later versions wait in it (they are not deleted) and are
+there again after the next upgrade.
+
+How far back is safe is `DOWNGRADE_FLOOR` in `isemon.py`: the oldest version
+that can still run on a database this one has used - the same tables, the same
+columns added later, the same indexes, the same split tables. It is 1.10.226 in
+1.10.232: the database has had exactly that shape from 1.10.226 on. It is
+raised whenever a version changes that shape (test/fixes232.py holds the shape
+and fails when it changes, so it is never forgotten), and every version writes
+its floor into the database it runs on, where it only ever rises - so a version
+gone back to still knows how far back the newest one that ran here allowed.
+
+It is checked three times:
+
+- **the page and the command line** list every older version at the address as
+  *safe* or *not safe* (and why), and refuse while anything is half done - an
+  upgrade, a change of the network or of the firewall waiting to be kept, a
+  restart, a backup or another long job over the database;
+- **the daemon** refuses below the floor - its own or the database's, whichever
+  is higher;
+- **root** (`isemon_upgrade.py`) refuses below the floor written in root's own
+  copy of the installed program, and below the one the daemon passed: the isemon
+  account can raise it, never lower it. The package is checked exactly as an
+  upgrade is - signed by a release key this server trusts.
+
+Going back to a version without the console (before 1.10.228) takes the
+console's login script (`/etc/profile.d/zz-isemon-console.sh`) away, so root's
+login is not told the option is unknown. The page asks for the version to be
+typed before it goes; `isemon --downgrade VERSION` asks the same unless
+`--yes`.
+
+Below the floor, going back is done by hand: the older package's `install.sh
+--upgrade`, with a dump or copy of the database from before the version that
+changed its shape put back - see *The database*.
 
 ### What makes it safe
 

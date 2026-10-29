@@ -223,8 +223,8 @@ fields = {'Started': ['1791964800'], 'Stopped': ['1791972000'], 'Lasted': ['7200
 ok('a session’s end is filed when it ended', isemon.tacplus_when('', fields)[0],
    1791972000.0)
 ok('the firewall’s own stamp beats a relay’s ISO one',
-   isemon._ftd_when('2026-10-14T10:05:00+02:00 relay1 Oct 14 2026 09:58:00 fw1 :')
-   < isemon._ftd_when('2026-10-14T10:05:00+02:00 relay1 :'), True)
+   isemon._ftd_when('2026-10-14T23:05:00+00:00 relay1 Oct 14 2026 09:58:00 fw1 :')
+   < isemon._ftd_when('2026-10-14T23:05:00+00:00 relay1 :'), True)
 ok('an RFC 5424 line is from its host, not from `-`',
    isemon.ftd_host('<166>1 2026-10-14T10:00:00Z fw1 - - - '), 'fw1')
 said = isemon.fg_fields('Oct  1 07:56:02 fgt.example.cz logver=700 devname="FG-1" '

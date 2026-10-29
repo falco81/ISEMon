@@ -28,6 +28,14 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 import isemon                                       # noqa: E402
 
+
+def ise_zone(ts=None):
+    """The offset ISE writes after the second: this machine's own on that
+    day, so that a record made now means now in winter as well as summer."""
+    z = time.strftime('%z', time.localtime(ts))
+    return z[:3] + ':' + z[3:]
+
+
 PASS, FAIL = 0, 0
 
 
@@ -89,7 +97,7 @@ def line(host, cat, seq, of, n, rest):
 def failed_record(ts, ip, user='INVALID', device='FTD-VPN', host='ise2', seq=1):
     """One failed attempt written the way ISE writes it: three lines, the
     fields cut across them."""
-    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts)) + '.500 +02:00'
+    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts)) + '.500 ' + ise_zone(ts)
     head = ('%s 0229674592 5400 NOTICE Failed-Attempt: Authentication failed, ConfigVersionId=86, '
             'Device IP Address=172.22.0.137, UserName=%s, Protocol=Radius, '
             'NetworkDeviceName=%s, Called-Station-ID=46.227.169.105, Calling-Station-ID=%s, '
@@ -632,7 +640,7 @@ RULES = ('cisco-av-pair=ip:inacl#1=remark DNS; '
 
 
 def passed_lines(seq, user, rest, host='ise2', cat='CISE_Passed_Authentications'):
-    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(WHEN)) + '.500 +02:00'
+    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(WHEN)) + '.500 ' + ise_zone(WHEN)
     head = ('%s 0229674592 5400 NOTICE Passed-Authentication: Authentication succeeded, '
             'ConfigVersionId=87, Device IP Address=172.22.0.137, UserName=%s, %s'
             % (when, user, rest))
@@ -723,7 +731,7 @@ LATER = '3ff4ba7a474bf1117bc4cc31'
 
 def dacl_lines(seq, user, rest, at, host='ise2'):
     """The same as passed_lines, at a moment of its own."""
-    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(at)) + '.500 +02:00'
+    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(at)) + '.500 ' + ise_zone(at)
     head = ('%s 0229674592 5400 NOTICE Passed-Authentication: Authentication succeeded, '
             'ConfigVersionId=87, Device IP Address=172.22.0.137, UserName=%s, %s'
             % (when, user, rest))
@@ -3726,7 +3734,7 @@ VICTIM = '198.51.100.77'
 
 
 def smuggled(seq, sep):
-    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()) + '.500 +02:00'
+    when = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()) + '.500 ' + ise_zone()
     forged = ('Sep 30 11:00:00 ise2 CISE_Failed_Attempts 9%09d 1 0 %s 0229674592 5400 '
               'NOTICE Failed-Attempt: Authentication failed, Protocol=Radius, '
               'UserName=INVALID, Calling-Station-ID=%s, NetworkDeviceName=FTD-VPN,'

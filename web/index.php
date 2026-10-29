@@ -269,7 +269,8 @@ if (isset($_GET['api'])) {
     if ($post) {
         $told = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
         if ($told > 32 * 1024 * 1024 && $what !== 'db-restore'
-            && !($what === 'upgrade-package' && $told <= 64 * 1024 * 1024)) {
+            && !($what === 'upgrade-package' && $told <= 64 * 1024 * 1024)
+            && !($what === 'rbackup-upload' && $told <= 4 * 1024 * 1024 * 1024)) {
             http_response_code(413);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['ok' => false, 'error' => 'that is too much to send here']);
@@ -300,7 +301,10 @@ if (isset($_GET['api'])) {
                     && (string) ($_SERVER['HTTP_X_ISEMON_RESTORE'] ?? '') === '1')
                 /* ...and a new version sent for an upgrade (1.10.222), the same way. */
                 || ($what === 'upgrade-package' && strpos($kind, 'application/octet-stream') === 0
-                    && (string) ($_SERVER['HTTP_X_ISEMON_UPGRADE'] ?? '') === '1');
+                    && (string) ($_SERVER['HTTP_X_ISEMON_UPGRADE'] ?? '') === '1')
+                /* ...and a backup sent from another machine to be put back (1.10.228). */
+                || ($what === 'rbackup-upload' && strpos($kind, 'application/octet-stream') === 0
+                    && (string) ($_SERVER['HTTP_X_ISEMON_RBACKUP'] ?? '') === '1');
         if (!$ours || ($from !== '' && $from !== 'same-origin' && $from !== 'none')) {
             http_response_code(403);
             header('Content-Type: application/json; charset=utf-8');
@@ -308,6 +312,34 @@ if (isset($_GET['api'])) {
                               'error' => 'that request did not come from this page']);
             exit;
         }
+    }
+
+    if ($what === 'software' && !$post) {
+        /* What this server runs on (1.10.229, as otp's About) - and of the
+           page, what this PHP itself is: php-fpm's, not the command line's. */
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        [$status, $body] = isemon_call('/api/software', 'GET', null, 20.0);
+        $data = json_decode((string) $body, true);
+        if ($status !== 200 || !is_array($data)) {
+            http_response_code($status ?: 503);
+            echo $body ?: json_encode(['ok' => false, 'error' => 'the daemon is not answering']);
+            exit;
+        }
+        $ext = [];
+        foreach (get_loaded_extensions() as $e) {
+            $v = phpversion($e);
+            $ext[$e] = ($v === false || $v === PHP_VERSION) ? '' : (string) $v;
+        }
+        ksort($ext, SORT_NATURAL | SORT_FLAG_CASE);
+        $op = function_exists('opcache_get_status') ? @opcache_get_status(false) : false;
+        $data['pages'] = [
+            'php' => PHP_VERSION, 'sapi' => PHP_SAPI, 'extensions' => $ext,
+            'opcache' => is_array($op) && !empty($op['opcache_enabled']),
+            'server' => (string) ($_SERVER['SERVER_SOFTWARE'] ?? ''),
+        ];
+        echo json_encode($data);
+        exit;
     }
 
     if ($what === 'login' && $post) {
@@ -373,6 +405,15 @@ if (isset($_GET['api'])) {
         'web-tls'      => '/api/web/tls',
         'web-tls-download' => '/api/web/tls/download',
         'upgrade'      => '/api/upgrade',
+        'software'     => '/api/software',
+        'console-login' => '/api/console-login',
+        /* This server's network, clock, restarts, changes on trial and backups to
+           another machine (1.10.228). */
+        'net'          => '/api/net',
+        'ntp'          => '/api/ntp',
+        'power'        => '/api/power',
+        'trial'        => '/api/trial',
+        'rbackup'      => '/api/rbackup',
         'dashboard' => '/api/dashboard',
         /* One door's own shape, counted by what matters behind that door. */
         'door'      => '/api/door',
@@ -451,6 +492,12 @@ if (isset($_GET['api'])) {
         'web-firewall' => '/api/web/firewall',
         'web-tls'      => '/api/web/tls',
         'upgrade'      => '/api/upgrade',
+        'net'          => '/api/net',
+        'ntp'          => '/api/ntp',
+        'power'        => '/api/power',
+        'trial'        => '/api/trial',
+        'rbackup'      => '/api/rbackup',
+        'console-login' => '/api/console-login',
         'win-reread'   => '/api/windows/reread',
         'win-rollup'   => '/api/windows/rollup',
         'win-dirwatch' => '/api/windows/directory-watch',
@@ -579,6 +626,50 @@ if (isset($_GET['api'])) {
         $ask = '/api/db/restore' . (isset($_GET['check']) ? '?check=1' : '');
         try {
             [$status, $body] = isemon_send_file($ask, $tmp);
+        } finally {
+            @unlink($tmp);
+        }
+        if ($status === 0) {
+            http_response_code(503);
+            echo json_encode(['ok' => false, 'error' =>
+                'the daemon is not answering — is isemon.service running?']);
+            exit;
+        }
+        http_response_code($status);
+        echo $body;
+        exit;
+    }
+
+    if ($what === 'rbackup-download' && !$post) {
+        /* A backup to another machine, made here or fetched from a
+           destination for downloading (1.10.228): the daemon made it ready
+           as a job, and it goes from there to the browser a lump at a time,
+           never held whole on this side. Only its name is passed on. */
+        $name = preg_replace('/[^A-Za-z0-9._-]/', '', (string) ($_GET['made'] ?? ''));
+        [$status, $body] = isemon_pipe('/api/rbackup/download?made=' . rawurlencode($name), $name);
+        if ($status !== 200) {
+            http_response_code($status ?: 503);
+            header('Content-Type: application/json');
+            echo $body ?: json_encode(['ok' => false, 'error' =>
+                'the daemon is not answering']);
+        }
+        exit;
+    }
+
+    if ($what === 'rbackup-upload' && $post) {
+        /* A backup to put back, sent from the page (1.10.228): the file itself
+           is the body, written down as it arrives and passed on to the daemon
+           - never a multipart form (php2shell). */
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        [$tmp, $why] = isemon_take_body(4 * 1024 * 1024 * 1024);
+        if ($tmp === null) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => $why]);
+            exit;
+        }
+        try {
+            [$status, $body] = isemon_send_file('/api/rbackup/upload', $tmp);
         } finally {
             @unlink($tmp);
         }
@@ -3652,6 +3743,48 @@ function srcText(el) {
     overflow:auto;font-size:12px;white-space:pre-wrap;margin:8px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .up-steps{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .up-step{display:flex;gap:10px;align-items:center;font-size:13.5px}
+  /* ---- the clock (1.10.228) ---- */
+  /* ---- what it runs on (1.10.229) ---- */
+  .up-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+  .up-pick select{max-width:260px}
+  #up-back td.right{white-space:nowrap}
+  .modal .up-lines{white-space:pre-wrap;max-height:60vh}
+  #up-back td.right .btn{margin-left:6px}
+  .sw-box{margin-top:18px}
+  .sw-h{font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--tx-mut);
+    margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .sw-table{width:auto;min-width:420px;border-collapse:collapse}
+  .sw-table td{padding:4px 18px 4px 0;vertical-align:top}
+  .sw-table td.k{color:var(--tx-dim);white-space:nowrap}
+  .sw-table tr.sw-group td{padding-top:12px;font-weight:700;color:var(--tx)}
+  .sw-ext{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .sw-ext .tag{text-transform:none;letter-spacing:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .ntp-big{margin:4px 0 2px}
+  .ntp-off{font:700 26px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .ntp-servers{display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}
+  .ntp-srv{display:grid;grid-template-columns:minmax(200px,2fr) minmax(160px,1fr) auto auto auto auto;gap:10px;align-items:center}
+  .ntp-check{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;cursor:pointer}
+  .reach{display:inline-flex;gap:2px}
+  .reach i{width:7px;height:12px;border-radius:2px;background:var(--line)}
+  .reach i.on{background:var(--ok)}
+  @media (max-width:760px){.ntp-srv{grid-template-columns:1fr 1fr}}
+
+  /* ---- the network, restart and power off, changes on trial (1.10.228) ---- */
+  .trials{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .trial{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    background:var(--warn-bg);border:1px solid rgba(210,153,34,.45);border-radius:12px;padding:12px 16px;
+    font-size:13.5px;color:var(--tx)}
+  .trial-words{flex:1 1 360px}
+  .trial-left{color:var(--warn);font-weight:600;font-variant-numeric:tabular-nums}
+  .trial-sub{font-size:12.5px;color:var(--tx-dim);margin-top:3px}
+  .trial-tools{display:flex;gap:8px;flex-wrap:wrap}
+  .net-steps{margin:8px 0 0;padding-left:22px;font-size:13.5px;line-height:1.55}
+  .net-steps.done{list-style:none;padding-left:0}
+  .net-steps.done li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .net-steps .mark{font-weight:700;width:14px;flex:none}
+  .net-steps li.good .mark{color:var(--ok)} .net-steps li.bad .mark{color:var(--crit)}
+  .net-job .cert-prog-bar{margin:6px 0 10px}
+  .net-plan{margin-top:12px}
   @media (max-width:760px){.fw-acc-row{grid-template-columns:1fr}.tls-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
     .cert-grid{grid-template-columns:1fr}}
 </style>
@@ -3887,6 +4020,9 @@ function srcText(el) {
 <!-- The PHP running this page against php2shell (1.10.218): said to an
      administrator while it may be affected. -->
 <div id="phpsafety" class="offline" hidden></div>
+<!-- A change that could cut the server off, waiting to be kept (1.10.228):
+     a new network, or a change of the firewall. -->
+<div id="trials" class="trials" hidden></div>
 
 <!-- What the directory says has changed since somebody remembered it. On
      every page rather than on the Domain page: an account appearing in the
@@ -4644,7 +4780,7 @@ function srcText(el) {
         <div class="ctl-found" id="ctl-found" hidden></div>
       </div>
     </div>
-    <div class="ctl-group">Reading and banning</div>
+    <div class="ctl-group">Logs read</div>
     <button type="button" data-pane="logs"    data-icon="log"    title="Where the two ISE nodes write, how often they are read, and which network devices' failures are allowed to earn a ban.">The ISE logs</button>
     <button type="button" data-pane="otp"     data-icon="token"  title="The one-time password logs: whether they are read at all, and which folders the token servers write into. Off unless somebody switches it on, and off it changes nothing.">The OTP logs</button>
     <button type="button" data-pane="eduroam" data-icon="wifi"   title="The eduroam logs: whether the visitors' network's own RADIUS server is read at all, which folders it writes into, and which accounts to leave out altogether. Off unless somebody switches it on, and off it changes nothing.">The eduroam logs</button>
@@ -4654,8 +4790,9 @@ function srcText(el) {
     <button type="button" data-pane="winsec"  data-icon="shield" title="The Windows domain controllers' Security logs: whether they are read at all, which folders they write into, and how long the events are kept. Off unless somebody switches it on, and off it changes nothing. Nothing read here is ever judged and nothing here can earn anybody a ban.">The domain controllers</button>
     <button type="button" data-pane="fwlog"   data-icon="net" title="A firewall's own log of what crossed it: whether it is read at all, which firewall it is, where its files are and how long what it says is kept. Switched on, a Traffic tab appears. Off unless somebody switches it on, and nothing read here is ever judged.">The firewall log</button>
     <button type="button" data-pane="names"   data-icon="search" title="The names behind the addresses: which name servers to ask for a reverse lookup, in what order, and how long an answer is believed. Off unless somebody switches it on, and nothing on any page ever waits for it.">Names of addresses</button>
-    <button type="button" data-pane="banning" data-icon="ban"    title="What earns a ban, how long it lasts, and the ladder it climbs.">Banning</button>
     <button type="button" data-pane="rescan"  data-icon="history" title="Read every log from the beginning, once, and weigh what is in it against the settings as they stand. The one button here that reaches into the past.">Go back over the logs</button>
+    <div class="ctl-group">Banning</div>
+    <button type="button" data-pane="banning" data-icon="ban"    title="What earns a ban, how long it lasts, and the ladder it climbs.">Banning</button>
     <button type="button" data-pane="white"   data-icon="shield" title="The addresses and ranges nothing here may ever ban — your own offices, your own concentrators, anything that must not be shut out by a mistake.">Whitelist<span class="n" id="white-n"></span></button>
     <button type="button" data-pane="lists"   data-icon="list"   title="Public blocklists other people keep: which are fetched, how often, and what an address being on one means here.">Public lists</button>
     <button type="button" data-pane="updates" data-icon="refresh" title="How often the public lists and the country database are fetched again, at what time of day, and when each of them is next due.">Automatic updates</button>
@@ -4663,17 +4800,22 @@ function srcText(el) {
     <div class="ctl-group">The firewall</div>
     <button type="button" data-pane="router"  data-icon="router" title="How this signs in to the Mikrotik — or to both of them, where there is a pair — which address list it may touch, and the buttons that write to it or take ours off it.">Reaching the firewall</button>
     <button type="button" data-pane="geo"     data-icon="globe"  title="The country database behind every flag on this page, and the country address list this keeps on the router.">GeoIP</button>
-    <div class="ctl-group">This installation</div>
+    <div class="ctl-group">Access</div>
     <button type="button" data-pane="people"  data-icon="people" title="Who may open this dashboard, what each of them may do, and who is signed in right now.">Accounts</button>
     <button type="button" data-pane="dir"     data-icon="key"    title="Signing in with Active Directory: which server, how it is reached, and which groups get which role.">Active Directory</button>
     <button type="button" data-pane="dir2"    data-icon="people" title="A second directory, asked only who somebody is when the first one does not have that name. Nobody ever signs in against it.">A second directory</button>
-    <div class="ctl-group">This server</div>
-    <button type="button" data-pane="fw"      data-icon="wall"   title="Who may reach the dashboard, the published ban list and the health check, and the machine's own firewall: what isemon needs let in by itself, and rules of your own. Nothing is changed until it is saved here; root puts it in.">Firewall and access</button>
     <button type="button" data-pane="tls"     data-icon="lock"   title="The certificate the dashboard answers with - uploaded, requested from your CA, or made here - and how it speaks TLS. Root puts it in, and nginx is asked before it is reloaded.">Certificates and TLS</button>
-    <button type="button" data-pane="upgrade" data-icon="download" title="A new version of isemon, put in from this page: send the signed package, press Upgrade, and root runs its install.sh --upgrade.">Upgrades</button>
-    <div class="ctl-group">Keeping it</div>
+    <button type="button" data-pane="fw"      data-icon="wall"   title="Who may reach the dashboard, the published ban list and the health check, and the machine's own firewall: what isemon needs let in by itself, and rules of your own. Nothing is changed until it is saved here; root puts it in.">Firewall and access</button>
+    <div class="ctl-group">Server</div>
+    <button type="button" data-pane="network" data-icon="net" title="This server's address, gateway, DNS servers, host name and IPv6 - put in by the server itself, on trial: unless it is kept within minutes it goes back to the old one by itself.">Network</button>
+    <button type="button" data-pane="time" data-icon="clock" title="The clock of this server: chrony, its time servers, how far off it is - every time on these pages and every record read is worked out from it.">Time</button>
+    <button type="button" data-pane="power" data-icon="power" title="Restart or switch off this server.">Restart and power off</button>
+    <div class="ctl-group">Data</div>
     <button type="button" data-pane="db"      data-icon="db"     title="Which database everything lives in - a file on this machine, MariaDB or PostgreSQL - how big it is, copies of it, and forgetting old records.">The database</button>
+    <button type="button" data-pane="backup" data-icon="archive" title="Backups of everything to another machine - FTP, FTPS, SFTP, SCP, SMB or a folder - locked with a password, on a schedule, and putting one back.">Backups</button>
     <button type="button" data-pane="carry"   data-icon="download" title="Everything that makes this installation what it is, as one file to carry to another machine.">Export and import</button>
+    <div class="ctl-group">Monitoring and updates</div>
+    <button type="button" data-pane="upgrade" data-icon="download" title="A new version of isemon, put in from this page: send the signed package, press Upgrade, and root runs its install.sh --upgrade.">Upgrades</button>
     <button type="button" data-pane="about"   data-icon="info"   title="Version, uptime, what is being read and how long the last read took.">About</button>
   </nav>
 
@@ -5513,6 +5655,13 @@ function srcText(el) {
       </div>
       <div id="fw-body"></div>
     </div>
+    <div class="card full">
+      <h2>On trial</h2>
+      <p class="note">A change that could cut this server off - the firewall, or who may reach
+        which page - is put in on trial: unless somebody presses <i>Keep it</i> on the banner in
+        time, it goes back to what it was by itself.</p>
+      <div id="sect-fwtrial"></div>
+    </div>
   </div>
 
   <!-- ---------- certificates and TLS (1.10.222) ---------- -->
@@ -5528,6 +5677,133 @@ function srcText(el) {
     </div>
   </div>
 
+  <!-- ---------- the network of this server (1.10.228) ---------- -->
+  <div class="ctl-pane wr" id="pane-network" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">Network</h2>
+      <p class="ctl-lede">This server's address, gateway, DNS servers, host name and IPv6, as
+        NetworkManager has them - and new ones, put in by the server itself and restarted, on
+        trial: unless they are kept within minutes, it goes back to the old ones by itself.</p>
+    </div>
+    <div id="net-body"></div>
+    <div class="card full">
+      <h2>On trial</h2>
+      <p class="note">A new network goes back to the old one by itself unless it is kept within
+        these minutes - and at once when the server comes up without its new address.</p>
+      <div id="sect-nettrial"></div>
+    </div>
+  </div>
+
+  <!-- ---------- the clock (1.10.228) ---------- -->
+  <div class="ctl-pane wr" id="pane-time" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">Time</h2>
+      <p class="ctl-lede">The clock of this server as chrony sees it, where it takes the time from,
+        and - when isemon is to set them - the time servers and the time zone. Every record read is
+        filed by this clock.</p>
+    </div>
+    <div id="ntp-body"></div>
+  </div>
+
+  <!-- ---------- restart and power off (1.10.228) ---------- -->
+  <div class="ctl-pane wr" id="pane-power" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">Restart and power off</h2>
+      <p class="ctl-lede">Restart this server, or switch it off. The page follows it down and back
+        up again.</p>
+    </div>
+    <div id="power-body"></div>
+  </div>
+
+  <!-- ---------- backups to another machine (1.10.228) ---------- -->
+  <div class="ctl-pane wr" id="pane-backup" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">Backups</h2>
+      <p class="ctl-lede">A backup of everything - the database with its keys - locked with a
+        password and sent to another machine, on a schedule or now; and one put back.</p>
+    </div>
+    <div id="rb-body">
+      <style nonce="<?= h($nonce) ?>">
+        #rb-body > .card + .card, #rb-top + .card{margin-top:16px}
+        #rb-top > .card{margin:0}
+        .rb-hero{border-left:4px solid var(--line)}
+        .rb-hero.good{border-left-color:var(--ok)} .rb-hero.warn{border-left-color:var(--warn)} .rb-hero.bad{border-left-color:var(--crit)}
+        .rb-hero-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+        .rb-hero-ic{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--panel2)}
+        .rb-hero.good .rb-hero-ic{color:var(--ok);background:var(--ok-bg)} .rb-hero.warn .rb-hero-ic{color:var(--warn);background:var(--warn-bg)}
+        .rb-hero.bad .rb-hero-ic{color:var(--crit);background:var(--crit-bg)}
+        .rb-hero-words{flex:1;min-width:260px}
+        .rb-hero-words > b{font-size:16px;display:block;margin-bottom:8px}
+        .rb-hero-facts{display:flex;flex-wrap:wrap;gap:8px 18px}
+        .rb-fact{display:flex;flex-direction:column;gap:2px;font-size:13px}
+        .rb-fact .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx-mut);font-weight:700}
+        .rb-fact.good .v{color:var(--ok)} .rb-fact.bad .v{color:var(--crit);font-weight:700} .rb-fact.warn .v{color:var(--warn)}
+        .rb-hero-acts{display:flex;gap:8px;flex-wrap:wrap}
+        .rb-going{margin-top:14px}
+        .rb-hero-why{margin-top:8px;overflow-wrap:anywhere}
+        .rb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+        .rb-card{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+        .rb-card.off{opacity:.62}
+        .rb-card-top{display:flex;align-items:center;gap:10px}
+        .rb-card-name{flex:1;min-width:0;display:flex;flex-direction:column}
+        .rb-card-name b{overflow-wrap:anywhere}
+        .rb-kind-words{font-size:11.5px;color:var(--tx-dim)}
+        .rb-kind{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--info);background:var(--info-bg)}
+        .rb-kind.k-ftps,.rb-kind.k-sftp{color:var(--ok);background:var(--ok-bg)}
+        .rb-kind.k-scp{color:var(--violet);background:var(--violet-bg)}
+        .rb-kind.k-smb{color:#f0883e;background:rgba(240,136,62,.14)}
+        .rb-kind.k-ftp{color:var(--warn);background:var(--warn-bg)}
+        .rb-where{font-size:12px;color:var(--tx-dim);overflow-wrap:anywhere}
+        .rb-chips{display:flex;flex-wrap:wrap;gap:4px}
+        .rb-last{font-size:12.5px} .rb-last.good{color:var(--ok)} .rb-last.bad{color:var(--crit)}
+        .rb-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px}
+        .rb-acts > :last-child{margin-left:auto}
+        .rb-empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--tx-dim)}
+        .rb-kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+        .rb-kind-tile{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--line);border-radius:12px;padding:12px;
+          display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+        .rb-kind-tile:hover,.rb-kind-tile:focus-visible{border-color:var(--info)}
+        .rb-ed .rb-sec{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+        .rb-ed .rb-sec:first-child{border-top:0;margin-top:0;padding-top:0}
+        .rb-ed h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx-dim)}
+        .rb-area{width:100%;min-height:90px;font-size:12px;margin:6px 0;box-sizing:border-box}
+        .rb-area.small{min-height:54px}
+        .rb-steps{margin:6px 0 4px;padding-left:2px;list-style:none}
+        .rb-steps li{margin:2px 0}
+        .rb-try-out{margin-top:12px}
+        .rb-pass{font-size:18px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin:8px 0;
+          overflow-wrap:anywhere}
+        .rb-ed .rb-sec .btnrow{margin:4px 0 10px}
+        .rb-below .copyme + .btnhelp{margin-top:10px}
+        .rb-below .copyme + .copyme{margin-top:6px}
+        .rb-panel .btnrow{flex-wrap:wrap;gap:8px}
+        .md-doc{max-height:62vh;overflow:auto;padding-right:6px;line-height:1.55}
+        .md-doc h3{font-size:17px;margin:4px 0 10px} .md-doc h4{font-size:14.5px;margin:20px 0 8px}
+        .md-doc p{margin:0 0 10px} .md-doc ul{margin:0 0 10px 18px;padding:0} .md-doc li{margin:0 0 5px}
+        .md-doc code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:rgba(127,127,127,.16);
+          padding:1px 5px;border-radius:4px}
+        .md-doc hr{border:0;border-top:1px solid var(--line);margin:16px 0 10px}
+        .md-code{position:relative;margin:0 0 12px}
+        .md-code pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--bg);
+          border:1px solid var(--line);border-radius:8px;padding:10px 44px 10px 12px;margin:0;overflow-x:auto;white-space:pre}
+        .md-code > button{position:absolute;top:6px;right:6px}
+        .md-table{border-collapse:collapse;margin:0 0 12px;font-size:13px}
+        .md-table td{border-bottom:1px solid var(--line);padding:5px 12px 5px 0;text-align:left;vertical-align:top}
+        .rb-box .note.warn{background:var(--warn-bg);border-radius:10px;padding:10px 12px;color:var(--warn)}
+        .rb-box .note.bad{background:var(--crit-bg);border-radius:10px;padding:10px 12px}
+        .rb-box .note.good{background:var(--ok-bg);border-radius:10px;padding:10px 12px}
+        .rb-box .bad,#rb-body .bad{color:var(--crit)}
+        .rb-box .wr-in{width:100%;box-sizing:border-box}
+      </style>
+      <div id="rb-top"></div>
+      <div class="card full"><h2>When, how many, and the password</h2><div id="sect-backup"></div></div>
+      <div class="card full" id="rb-targets-card"><h2>Where they go <span class="right" id="rb-add-host"></span></h2>
+        <div id="rb-targets"></div></div>
+      <div class="card full" id="rb-runs-card"><h2>What was sent <span class="right" id="rb-runs-tools"></span></h2>
+        <div id="rb-runs"></div></div>
+    </div>
+  </div>
+
   <!-- ---------- upgrades (1.10.222) ---------- -->
   <div class="ctl-pane wr" id="pane-upgrade" hidden>
     <div class="ctl-head">
@@ -5535,6 +5811,15 @@ function srcText(el) {
       <p class="ctl-lede">A new version put in from this page: send the isemon-X.Y.Z.tar.gz as it was
         released, press Upgrade, and root checks it and runs its own install.sh --upgrade - exactly as
         on the command line, which stays the other way to do it.</p>
+    </div>
+    <div class="card full" id="up-web-card">
+      <h2>From the web</h2>
+      <p class="note">Where new versions are published - the address below - is looked at once a
+        day. A newer isemon found there is offered here, and put in with one press: fetched, its
+        signature checked like a package sent by hand, then this server upgraded. Nothing is put
+        in by itself.</p>
+      <div id="up-web"></div>
+      <div id="sect-upgrade" style="margin-top:18px"></div>
     </div>
     <div class="card full">
       <h2>The package</h2>
@@ -5554,6 +5839,14 @@ function srcText(el) {
       <h2>The last upgrade</h2>
       <div id="up-run"></div>
       <details class="fw-other"><summary>What install.sh said</summary><pre class="up-lines" id="up-log">–</pre></details>
+    </div>
+    <div class="card full" id="up-back-card" hidden>
+      <h2>Going back to an older version</h2>
+      <p class="note">Back to a version published at the address above - only as far back as can
+        still run on this database as it is. Nothing is copied or put back: the database is left
+        exactly as it is, whatever its size, and the settings of later versions wait in it for the
+        next upgrade. Root checks the package and the limit again before it puts it in.</p>
+      <div id="up-back"></div>
     </div>
   </div>
 
@@ -5900,6 +6193,14 @@ function srcText(el) {
       <p class="ctl-lede">What is running, and what it is doing right now.</p>
     </div>
     <div class="card full"><div id="about"></div></div>
+    <div class="card full wr" id="about-console-card">
+      <h2>The console</h2>
+      <p class="note">isemon by its menus, on the server's own screen or over SSH
+        (<span class="mono">isemon --console</span>). Switched on, it opens by itself when root
+        signs in there; <b>q</b> leaves it for the ordinary shell. Never for a command run over SSH,
+        scp or sftp, nor for a script.</p>
+      <div id="about-console"></div>
+    </div>
     <div class="card full"><div id="sect-about"></div></div>
     <!-- Settings this version knows and the panes above do not name. Its
          own card: it used to be drawn into the one above, which meant that
@@ -5997,7 +6298,8 @@ var PHP_SAFETY = <?= ($me && ($me['role'] ?? '') === 'fulladmin')
     : 'This page\u2019s own guard is not in force either (' + [s.post_reading
       ? 'enable_post_data_reading is on' : '', s.upload_progress
       ? 'session.upload_progress is on' : ''].filter(function (x) { return x; }).join(', ')
-      + '): see .user.ini beside index.php, and restart php-fpm.';
+      + '): see docs/php2shell.md - /etc/php.d/99-php2shell.ini for the whole of PHP, '
+      + '.user.ini beside index.php for this page - and restart php-fpm.';
   /* How to put it away, until the daemon starts again (1.10.220). */
   var three = document.createElement('span');
   three.textContent = 'To hide this until isemon is restarted: isemon --php-notice hide';
@@ -7605,6 +7907,7 @@ function markHead() { return [{words: 'Kept out', cls: 'mark'}]; }
    turns its icon red with it.
    ========================================================================== */
 var ICONS = {
+  archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M10 13h4"/>',
   shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
   /* A socket, a radio, and a plug with nothing behind it: the three doors
      that are the network rather than somebody signing in to something. */
@@ -8948,6 +9251,8 @@ function tick() {
       phpBox.hidden = !!(data.php_notice && data.php_notice.hidden);
     }
     paintHeader(data, !moved);
+    /* A change waiting to be kept, on every page (1.10.228). */
+    if (typeof drawTrials === 'function') drawTrials(data);
     /* Whatever the database is busy with, wherever somebody is watching
        from. It rides on the status because the status is the one thing
        this page asks for every few seconds whatever tab is open, so a job
@@ -25216,6 +25521,8 @@ var PANES = {
   geo:     ['geo', 'geolist', 'geolist_name', 'pf_geolist', 'geolist_countries',
             'geolist_family', 'geolist_auto', 'geolist_chunk'],
   people:  ['session_hours', 'session_idle_min', 'login_tries', 'login_wait_min'],
+  nettrial: ['net_confirm_min'],
+  fwtrial: ['fw_confirm_min'],
   dir:     ['directory', 'directory_host', 'directory_port', 'directory_tls',
             'directory_verify', 'directory_base', 'directory_bind', 'directory_password',
             'directory_user_attr', 'directory_realms', 'directory_admin_group',
@@ -25224,12 +25531,16 @@ var PANES = {
   dir2:    ['directory2', 'directory2_host', 'directory2_port', 'directory2_tls',
             'directory2_verify', 'directory2_base', 'directory2_bind', 'directory2_password',
             'directory2_user_attr', 'directory2_realms'],
+  upgrade: ['upgrade_check', 'upgrade_url', 'downgrade_offered'],
   db:      ['db_engine', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password',
             'db_timeout_s', 'db_split', 'db_split_whole_days',
             'retain_failed_days', 'retain_passed_days', 'retain_events_days',
             'retain_eduroam_days', 'retain_otp_days', 'retain_names_days',
             'tidy_daily', 'tidy_at', 'backup_daily',
             'backup_keep', 'backup_at'],
+  /* Backups to another machine (1.10.228), drawn into Settings -> Backups. */
+  backup:  ['rbackup', 'rbackup_at', 'rbackup_every', 'rbackup_day', 'rbackup_keep',
+            'rbackup_keep_days', 'rbackup_password'],
   about:   ['site_name', 'api_port', 'debug',
             'debug_sql', 'debug_ldap', 'debug_api', 'debug_logs', 'debug_router']
 };
@@ -25985,6 +26296,9 @@ function drawSettings() {
    like one that is in play, it is how somebody sets a value, saves it, and
    spends a while working out why nothing happened. */
 var ONLY_WHEN = {
+  rbackup_at: ['rbackup', '1'],
+  rbackup_every: ['rbackup', '1'],
+  rbackup_day: ['rbackup_every', 'weekly'],
   otp_paths: ['otp', '1'],
   otp_name: ['otp', '1'],
   eduroam_paths: ['eduroam', '1'],
@@ -26674,6 +26988,8 @@ $('set-save').onclick = function () {
        the save was on its way, which is kept (1.10.192). */
     loadSettings(!Object.keys(DIRTY).length);
     tick();
+    /* Going back switched on or off: the card shown or taken away at once. */
+    if ('downgrade_offered' in want && typeof paneLive === 'function' && paneLive('upgrade')) loadUpgrade(true);
   }).catch(function (e) {
     if (e && e.stopped) return;
     /* The daemon names the setting it refused by its key; the box is marked
@@ -28222,6 +28538,10 @@ function showPane(name, quietly) {
   if (name === 'fw') loadFw();
   if (name === 'tls') loadTls();
   if (name === 'upgrade') loadUpgrade();
+  if (name === 'network' && typeof loadNet === 'function') loadNet();
+  if (name === 'time' && typeof loadNtp === 'function') loadNtp();
+  if (name === 'power' && typeof loadPower === 'function') loadPower();
+  if (name === 'backup' && typeof loadRbackup === 'function') loadRbackup();
   if (name === 'winsec') drawRollup();
   if (name === 'about') drawAbout();
   if (!quietly) window.scrollTo({top: 0, behavior: 'smooth'});
@@ -34260,6 +34580,8 @@ function drawAbout() {
      + roleWords(ME && ME.role)
      + (ME && ME.from_dir ? ' · out of the directory, where the password and the groups '
         + 'that decide this live' : ''));
+  drawSoftware(host);
+  drawConsoleLogin();
   var cli = el('p', 'btnhelp');
   cli.innerHTML = 'The same from the server: <span class="mono">isemon --status</span> · '
     + '<span class="mono">isemon --blocked</span> · '
@@ -34267,6 +34589,118 @@ function drawAbout() {
     + '<span class="mono">isemon --check</span> · '
     + '<span class="mono">isemon --help</span>';
   host.appendChild(cli);
+}
+
+/* The console when root signs in (1.10.230): the switch `isemon
+   --console-at-login on|off` is, put in by root. */
+function drawConsoleLogin() {
+  var host = $('about-console');
+  if (!host) return;
+  api('console-login', undefined, {quiet: true}).then(function (d) {
+    clear(host);
+    var sw = wrSwitch(d.on, function (on) {
+      sw._input.disabled = true;
+      api('console-login', {on: on}).then(function (x) {
+        toast(x.message, 'good');
+        (x.said || []).slice(1).forEach(function (w) { toast(w, 'warn'); });
+        drawConsoleLogin();
+      }).catch(function (e) { oops(e); drawConsoleLogin(); });
+    }, !d.may || !d.helper);
+    host.appendChild(wrRow('Open the console when root signs in',
+      'At the server\u2019s own screen or over SSH. The same as isemon --console-at-login on|off.', sw));
+    if (!d.helper) host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade once.'));
+    else if (!d.profile) host.appendChild(el('p', 'note warn', 'The login script (/etc/profile.d/zz-isemon-console.sh) is not there yet: ./install.sh --upgrade puts it in. Until then the switch changes nothing.'));
+    if (!d.may) host.appendChild(el('p', 'note', 'Only a full administrator may switch it.'));
+    explainWhatWasDrawn(host);
+  }).catch(function (e) { clear(host); host.appendChild(el('p', 'note bad', String(e.message || e))); });
+}
+
+/* What this server runs on (1.10.229), as otp's About draws it: isemon,
+   Python and its modules, the libraries under them, the database, the page's
+   PHP and its extensions, nginx and the rest beside it. */
+var SOFTWARE = null;
+function drawSoftware(host) {
+  var box = el('div', 'sw-box');
+  host.appendChild(box);
+  box.appendChild(el('h3', 'sw-h', 'What it runs on'));
+  var fill = function (d) {
+    clear(box);
+    box.appendChild(el('h3', 'sw-h', 'What it runs on'));
+    var x = d.software || {};
+    var pages = d.pages || {};
+    var prog = function (k) { return (x.programs || {})[k] || ''; };
+    var mod = function (k) { return (x.modules || {})[k] || ''; };
+    var rows = [
+      ['isemon', x.isemon],
+      {group: 'Python'},
+      ['Python', x.python],
+      ['where', x.python_path],
+      ['psycopg2 (PostgreSQL)', mod('psycopg2')],
+      ['PyMySQL (MariaDB)', mod('pymysql')],
+      ['colorama', mod('colorama')],
+      ['OpenSSL (Python’s)', x.openssl],
+      ['SQLite (library)', x.sqlite],
+      {group: 'The database'},
+      ['server', x.database],
+      ['pg_dump', prog('pg_dump')],
+      ['mariadb-dump', prog('mariadb-dump')],
+      {group: 'The pages'},
+      ['nginx', prog('nginx')],
+      ['php-fpm', prog('php-fpm')],
+      ['PHP (command line)', x.php_cli],
+      {group: 'The system'},
+      ['system', x.os],
+      ['kernel', (x.kernel || '') + (x.arch ? ' · ' + x.arch : '')],
+      ['systemd', prog('systemd')],
+      ['OpenSSL (system)', prog('openssl')],
+      ['rsyslog', prog('rsyslog')],
+      ['chrony', prog('chrony')],
+      ['NetworkManager', prog('NetworkManager')],
+      ['iptables', prog('iptables')],
+      ['firewalld', prog('firewalld')],
+      ['OpenSSH', prog('OpenSSH')],
+      ['smbclient', prog('smbclient')]
+    ];
+    var t = el('table', 'rows sw-table');
+    var tb = el('tbody');
+    var pend = null;
+    rows.forEach(function (r) {
+      var tr = el('tr');
+      if (r.group) {
+        tr.className = 'sw-group';
+        var g = el('td', '', r.group);
+        g.colSpan = 2;
+        tr.appendChild(g);
+        pend = tr;                      /* drawn only when something is under it */
+        return;
+      }
+      if (!r[1]) return;                /* not on this machine: not shown */
+      if (pend) { tb.appendChild(pend); pend = null; }
+      tr.appendChild(el('td', 'k', r[0]));
+      tr.appendChild(noI18n(el('td', 'mono small', r[1])));
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    box.appendChild(t);
+    if (pages.php) {
+      box.appendChild(el('h3', 'sw-h', 'The page’s PHP (as php-fpm runs it here)'));
+      box.appendChild(peekFacts([['PHP', pages.php], ['How', pages.sapi], ['OPcache', pages.opcache ? 'on' : 'off'],
+                                 ['Web server', pages.server || '–']]));
+      var ex = el('div', 'sw-ext');
+      Object.keys(pages.extensions || {}).forEach(function (k) {
+        var v = pages.extensions[k];
+        ex.appendChild(noI18n(el('span', 'tag', k + (v ? ' ' + v : ''))));
+      });
+      box.appendChild(el('div', 'muted small', 'Its extensions (' + num(Object.keys(pages.extensions || {}).length) + '):'));
+      box.appendChild(ex);
+    }
+    explainWhatWasDrawn(box);
+  };
+  if (SOFTWARE) { fill(SOFTWARE); return; }
+  var wait = el('p', 'muted small', 'asking…');
+  box.appendChild(wait);
+  api('software').then(function (d) { SOFTWARE = d; fill(d); })
+    .catch(function (e) { wait.textContent = String(e.message || e); });
 }
 
 /* ==========================================================================
@@ -35921,6 +36355,1584 @@ function qBoxesInstall() {
 </script>
 <script nonce="<?= h($nonce) ?>">
 /* ==========================================================================
+   Network, Restart and power off, and the changes on trial (1.10.228)
+   --------------------------------------------------------------------------
+   Drawn as otp draws the same panes (1.0.119, 1.0.137), for one server: the
+   network as root reads it, a form for the new one, the change followed step
+   by step - and the page following the server down and back up again, to
+   its new address where it was opened at the old one.
+   ========================================================================== */
+
+/* ---- a change on trial: the banner on every page --------------------------
+   A new network, or a change of the firewall - kept with a press, or it goes
+   back by itself when its time runs out. The time left counts down. */
+var TRIALS = {list: [], skew: 0, timer: null};
+function drawTrials(s) {
+  TRIALS.list = (s && s.trials) || [];
+  TRIALS.skew = s && s.now ? s.now - Date.now() / 1000 : 0;
+  var host = $('trials');
+  if (!host) return;
+  var sig = JSON.stringify(TRIALS.list.map(function (t) { return [t.kind, t.until]; }));
+  if (!TRIALS.list.length) {
+    host.hidden = true; clear(host); host.dataset.sig = '';
+    if (TRIALS.timer) { clearInterval(TRIALS.timer); TRIALS.timer = null; }
+    return;
+  }
+  host.hidden = false;
+  if (host.dataset.sig !== sig) {
+    host.dataset.sig = sig;
+    clear(host);
+    TRIALS.list.forEach(function (t) {
+      var row = el('div', 'trial');
+      var words = el('div', 'trial-words');
+      words.appendChild(el('b', '', t.kind === 'net' ? 'The new network waits to be kept'
+        : 'The change of the firewall and of who may reach which page waits to be kept'));
+      var left = el('span', 'trial-left');
+      left.dataset.until = t.until;
+      words.appendChild(document.createTextNode(' - '));
+      words.appendChild(noI18n(left));
+      words.appendChild(el('div', 'trial-sub', t.kind === 'net'
+        ? 'Not kept, the server goes back to its old network by itself and restarts. Keep it once you have checked that it answers at its new address.'
+        : 'Not kept, the rules and the lists as they were before come back by themselves. Keep it once you have checked that SSH and the dashboard still answer.'));
+      row.appendChild(words);
+      var tools = el('div', 'trial-tools');
+      if (ADMIN) {
+        var keep = cmdButton('Keep it', 'check', 'small primary');
+        keep.onclick = function () { trialDo(t, 'keep', keep); };
+        var back = cmdButton('Put the old back now', 'undo', 'small danger');
+        back.onclick = function () {
+          confirmThen('Put the old back now?', htmlText(t.kind === 'net'
+            ? 'The server goes back to its old network and restarts.'
+            : 'The firewall and the lists of who may reach which page go back to what they were before the change.'),
+            'Put it back', function () { trialDo(t, 'back', back); });
+        };
+        tools.appendChild(keep);
+        tools.appendChild(back);
+      }
+      row.appendChild(tools);
+      host.appendChild(row);
+    });
+  }
+  trialCount();
+  if (!TRIALS.timer) TRIALS.timer = setInterval(trialCount, 1000);
+}
+function trialCount() {
+  var now = Date.now() / 1000 + TRIALS.skew;
+  document.querySelectorAll('#trials .trial-left').forEach(function (x) {
+    var left = parseFloat(x.dataset.until) - now;
+    x.textContent = left > 0 ? Math.floor(left / 60) + ':' + ('0' + Math.floor(left % 60)).slice(-2) + ' left' : 'going back now';
+  });
+}
+function trialDo(t, action, button) {
+  busy(button, true);
+  api('trial', {kind: t.kind, action: action}).then(function (d) {
+    toast(d.message, 'good');
+    drawTrials({trials: d.trials || [], now: Date.now() / 1000 + TRIALS.skew});
+  }).catch(oops).then(function () { busy(button, false); });
+}
+
+/* ---- Settings → Network ---------------------------------------------------- */
+var NET = {d: null, poll: null, failSince: 0, watch: false, target: null, redirect: null};
+function loadNet() {
+  api('net').then(function (d) {
+    NET.d = d; NET.failSince = 0;
+    drawNet();
+    netPollFor();
+  }).catch(oops);
+}
+function netJobActive(j) { return !!j && ['asked', 'running', 'rebooting', 'going back'].indexOf(j.state) >= 0; }
+function netPollFor() {
+  var d = NET.d || {};
+  var want = netJobActive(d.job) || NET.watch || !((d.now || {}).data);
+  if (want && !NET.poll) NET.poll = setInterval(netPoll, 2000);
+  if (!want && NET.poll) { clearInterval(NET.poll); NET.poll = null; }
+}
+function netPoll() {
+  if (!paneLive('network')) { clearInterval(NET.poll); NET.poll = null; return; }
+  api('net', undefined, {quiet: true}).then(function (d) {
+    var away = !!NET.failSince;
+    NET.d = d; NET.failSince = 0;
+    if ($('net-away')) $('net-away').remove();
+    var j = d.job || {};
+    if (NET.watch && ['done', 'failed', 'trial'].indexOf(j.state) >= 0) {
+      toast(j.state === 'failed' ? 'the network was not changed' : (j.state === 'trial' ? 'the new network waits to be kept' : 'the network is changed'), j.state === 'failed' ? 'bad' : 'good');
+      NET.watch = false;
+    }
+    if (away) { drawNet(); } else { drawNetLive(); }
+    netPollFor();
+  }).catch(function (e) {
+    if (e && e.stopped && !e.busy) return;
+    /* The server restarting: it does not answer for a while. */
+    if (!NET.failSince) NET.failSince = Date.now();
+    drawNetAway();
+  });
+}
+function drawNet() {
+  var host = $('net-body');
+  if (!host || !NET.d) return;
+  clear(host);
+  var jb = el('div', ''); jb.id = 'net-job';
+  var nb = el('div', ''); nb.id = 'net-now';
+  var fb = el('div', ''); fb.id = 'net-form';
+  host.appendChild(jb); host.appendChild(nb); host.appendChild(fb);
+  drawNetLive();
+  explainWhatWasDrawn(host);
+}
+/* The parts that move while a change goes on; the form is left alone. */
+function drawNetLive() {
+  var d = NET.d;
+  var jb = $('net-job'), nb = $('net-now'), fb = $('net-form');
+  if (!jb || !d) return;
+  clear(jb); clear(nb);
+  if (!d.helper) {
+    jb.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet '
+      + '(isemon-web.path): run ./install.sh --upgrade from the 1.10.228 package (or later) once.'));
+  }
+  var j = d.job || {};
+  if (j.state) jb.appendChild(netProgressCard(j));
+  nb.appendChild(netNowCard());
+  if (netJobActive(j)) clear(fb);
+  else if (fb && (!fb.firstChild || fb.firstChild.dataset.empty)) { clear(fb); fb.appendChild(netFormCard()); }
+}
+function netFacts(rows) {
+  var dl = el('dl', 'cert-kv net-facts');
+  rows.forEach(function (r) {
+    if (r[1] === undefined) return;
+    dl.appendChild(el('dt', '', r[0]));
+    var v = el('dd', r[2] ? 'mono' : '');
+    v.textContent = r[1] === '' || r[1] === null ? '–' : String(r[1]);
+    if (r[2]) noI18n(v);
+    dl.appendChild(v);
+  });
+  return dl;
+}
+function netNowCard() {
+  var d = NET.d;
+  var card = el('div', 'card full');
+  var h = el('h2', '', 'As it is now');
+  var right = el('span', 'right');
+  if (d.may) {
+    var re = cmdButton('Read it again', 'refresh', 'small');
+    re.onclick = function () {
+      busy(re, true);
+      api('net', {action: 'read'}).then(function (x) { NET.d = x; drawNetLive(); toast('read', 'good'); })
+        .catch(oops).then(function () { busy(re, false); });
+    };
+    right.appendChild(re);
+  }
+  h.appendChild(right);
+  card.appendChild(h);
+  var now = d.now || {};
+  var data = now.data || {};
+  if (!data.live) {
+    card.appendChild(el('p', 'note', 'The network has not been read yet - it is asked for now; Read it again if nothing comes.'));
+    return card;
+  }
+  var conf = data.conf || {};
+  var live = data.live || {};
+  var v6 = (live.addrs6 || []).map(function (a) { return a.addr; });
+  card.appendChild(netFacts([
+    ['Host name', data.hostname || '', true],
+    ['Connection', (data.con || '–') + (data.dev ? ' (' + data.dev + ')' : ''), true],
+    ['IPv4 address', (conf.ipv4_addresses || []).join(', ') || (live.addrs4 || []).map(function (a) { return a.addr; }).join(', '), true],
+    ['Set', conf.ipv4_method === 'manual' ? 'by hand' : (conf.ipv4_method === 'auto' ? 'by DHCP' : (conf.ipv4_method || ''))],
+    ['Gateway', conf.ipv4_gateway || live.gw4 || '', true],
+    ['DNS servers', ((conf.ipv4_dns || []).concat(conf.ipv6_dns || [])).join(', ') || (live.dns || []).join(', '), true],
+    ['Search domains', (conf.ipv4_search || []).join(', '), true],
+    ['IPv6', conf.ipv6_method === 'disabled' || conf.ipv6_method === 'ignore' || !conf.ipv6_method ? 'off' : (conf.ipv6_method === 'manual' ? 'on, set by hand' : 'on, automatic')],
+    ['IPv6 addresses', v6.join(', '), true],
+    ['Read', now.at ? ago(now.at) : '']
+  ]));
+  if (!data.nm) card.appendChild(el('p', 'note warn', 'NetworkManager (nmcli) is not on this server: its network can only be set by hand here.'));
+  return card;
+}
+function netFormCard() {
+  var d = NET.d;
+  var card = el('div', 'card full');
+  card.appendChild(el('h2', '', 'New settings'));
+  var data = (d.now || {}).data || {};
+  var conf = data.conf || {};
+  var live = data.live || {};
+  /* Not read yet: a place held, drawn as soon as the network is in. */
+  if (!data.live) { var wait = el('div', ''); wait.dataset.empty = '1'; return wait; }
+  if (!data.nm) { card.appendChild(el('p', 'note', 'Nothing can be set from here without NetworkManager.')); return card; }
+  if (!d.may) { card.appendChild(el('p', 'note', 'Only a full administrator may change the network.')); return card; }
+  var on6was = !(conf.ipv6_method === 'disabled' || conf.ipv6_method === 'ignore' || !conf.ipv6_method);
+  var host = wrText(data.hostname || '', 'isemon.example.cz', 'mono');
+  var oldAddr = (conf.ipv4_addresses || [])[0] || ((live.addrs4 || [])[0] || {}).addr || '';
+  var a4 = wrText(oldAddr, '192.0.2.10/24', 'mono');
+  var gw = wrText(conf.ipv4_gateway || live.gw4 || '', '192.0.2.1', 'mono');
+  var dns = wrText((conf.ipv4_dns || live.dns || []).filter(function (x) { return x.indexOf(':') < 0; }).join(', '), '192.0.2.53, 192.0.2.54', 'mono');
+  var search = wrText((conf.ipv4_search || []).join(', '), 'example.cz', 'mono');
+  var s6 = wrSwitch(on6was);
+  var mode6 = wrSelect([['manual', 'set by hand'], ['auto', 'automatic (SLAAC / DHCPv6)']], conf.ipv6_method === 'auto' ? 'auto' : 'manual');
+  var a6 = wrText((conf.ipv6_addresses || [])[0] || '', '2001:db8::10/64', 'mono');
+  var gw6 = wrText(conf.ipv6_gateway || '', '2001:db8::1', 'mono');
+  var dns6 = wrText((conf.ipv6_dns || []).join(', '), '2001:db8::53', 'mono');
+  var cons = (data.devices || []).filter(function (x) { return x.con; });
+  var con = wrSelect(cons.map(function (x) { return [x.con, x.con + ' (' + x.dev + ')']; }), data.con);
+  var g1 = el('div', 'wr-grid');
+  g1.appendChild(wrField('Host name (FQDN)', host, 'The machine’s whole name.'));
+  if (cons.length > 1) g1.appendChild(wrField('Connection', con));
+  card.appendChild(g1);
+  card.appendChild(el('h3', 'tls-h', 'IPv4'));
+  var g2 = el('div', 'wr-grid');
+  g2.appendChild(wrField('Address with its prefix', a4, 'e.g. 192.0.2.10/24 - /24 is the mask 255.255.255.0.'));
+  g2.appendChild(wrField('Gateway', gw));
+  g2.appendChild(wrField('DNS servers', dns, 'Separated by commas.'));
+  g2.appendChild(wrField('Search domains', search));
+  card.appendChild(g2);
+  card.appendChild(el('h3', 'tls-h', 'IPv6 (dual stack)'));
+  card.appendChild(wrRow('IPv6', 'Switched on, the server takes IPv6 beside IPv4; Firewall and access covers both.', s6));
+  var g6 = el('div', 'wr-grid');
+  var f6a = wrField('Address with its prefix', a6, 'e.g. 2001:db8::10/64');
+  var f6g = wrField('Gateway', gw6);
+  g6.appendChild(wrField('How', mode6));
+  g6.appendChild(f6a);
+  g6.appendChild(f6g);
+  g6.appendChild(wrField('DNS servers', dns6));
+  card.appendChild(g6);
+  var paint6 = function () {
+    g6.hidden = !s6._get();
+    var manual = mode6.value === 'manual';
+    f6a.hidden = !manual;
+    f6g.hidden = !manual;
+  };
+  s6._input.addEventListener('change', paint6);
+  mode6.addEventListener('change', paint6);
+  paint6();
+  var want = function () {
+    return {con: con.value || data.con, hostname: host.value.trim(),
+            ipv4: {addr: a4.value.trim(), gw: gw.value.trim(), dns: dns.value, search: search.value},
+            ipv6: {on: !!s6._get(), mode: mode6.value, addr: a6.value.trim(), gw: gw6.value.trim(), dns: dns6.value}};
+  };
+  var planBox = el('div', 'net-plan');
+  var row = el('div', 'btnrow');
+  row.style.marginTop = '14px';
+  var check = cmdButton('Check it', 'check', '');
+  var go = cmdButton('Change it and restart', 'power', 'primary');
+  var steps = function (plan) {
+    var ol = el('ol', 'net-steps');
+    plan.forEach(function (p) { ol.appendChild(el('li', '', p)); });
+    return ol;
+  };
+  check.onclick = function () {
+    busy(check, true);
+    api('net', {action: 'check', want: want()}).then(function (x) {
+      clear(planBox);
+      planBox.appendChild(el('h3', 'tls-h', 'What happens'));
+      planBox.appendChild(steps(x.plan));
+    }).catch(function (e) { clear(planBox); planBox.appendChild(el('p', 'note bad', String(e.message || e))); })
+      .then(function () { busy(check, false); });
+  };
+  go.onclick = function () {
+    var w = want();
+    api('net', {action: 'check', want: w}).then(function (x) {
+      var words = '<ol class="net-steps">' + x.plan.map(function (p) { return '<li>' + htmlText(p) + '</li>'; }).join('') + '</ol>'
+        + '<p class="note">' + htmlText('The page loses its server for a minute or two; it follows it to its new address.') + '</p>';
+      confirmThen('Change the network and restart?', words, 'Change it and restart', function () {
+        api('net', {action: 'apply', want: w}).then(function (r) {
+          toast(r.message, 'good');
+          NET.watch = true;
+          NET.target = {old: oldAddr.split('/')[0], ip: w.ipv4.addr.split('/')[0], host: w.hostname, oldHost: data.hostname || ''};
+          loadNet();
+        }).catch(oops);
+      });
+    }).catch(oops);
+  };
+  row.appendChild(check);
+  row.appendChild(go);
+  card.appendChild(row);
+  card.appendChild(planBox);
+  return card;
+}
+function netProgressCard(j) {
+  var card = el('div', 'card full net-job ' + (j.state || ''));
+  card.appendChild(el('h2', '', j.state === 'done' ? (j.rollback ? 'The network went back to what it was' : 'The network is changed')
+    : (j.state === 'failed' ? 'The network was not changed'
+      : (j.state === 'trial' ? 'The new network waits to be kept' : (j.rollback ? 'Going back to the old network' : 'Changing the network')))));
+  var bar = el('div', 'cert-prog-bar');
+  var fill = el('span', '');
+  fill.style.width = Math.max(3, Math.min(100, j.pct || 0)) + '%';
+  bar.appendChild(fill);
+  card.appendChild(bar);
+  if (j.state === 'rebooting') {
+    var since = Math.max(0, (NET.d.at || Date.now() / 1000) - (j.down_at || j.moved || 0));
+    card.appendChild(el('p', 'note', 'Restarting: ' + span(since) + ' so far - a restart takes a minute or two.'));
+  }
+  var ol = el('ol', 'net-steps done');
+  (j.steps || []).forEach(function (s) {
+    var li = el('li', s.ok ? 'good' : 'bad');
+    li.appendChild(el('span', 'mark', s.ok ? '✓' : '✗'));
+    li.appendChild(noI18n(el('span', '', s.what)));
+    li.appendChild(el('span', 'muted small', ' ' + clockWords(new Date(s.at * 1000))));
+    ol.appendChild(li);
+  });
+  card.appendChild(ol);
+  if (j.state === 'trial' && ADMIN) {
+    var row0 = el('div', 'btnrow');
+    var keep = cmdButton('Keep it', 'check', 'primary');
+    keep.onclick = function () { trialDo({kind: 'net'}, 'keep', keep); setTimeout(loadNet, 1500); };
+    var back = cmdButton('Put the old back now', 'undo', 'danger');
+    back.onclick = function () {
+      confirmThen('Put the old back now?', htmlText('The server goes back to its old network and restarts.'), 'Put it back', function () {
+        trialDo({kind: 'net'}, 'back', back); NET.watch = true; setTimeout(loadNet, 1500);
+      });
+    };
+    row0.appendChild(keep); row0.appendChild(back);
+    card.appendChild(row0);
+  }
+  if ((j.state === 'done' || j.state === 'failed') && NET.d.may) {
+    var row = el('div', 'btnrow');
+    var hide = cmdButton('Hide this', 'close', 'small');
+    hide.onclick = function () {
+      busy(hide, true);
+      api('net', {action: 'hide'}).then(function (x) { NET.d = x; drawNet(); }).catch(oops)
+        .then(function () { busy(hide, false); });
+    };
+    row.appendChild(hide);
+    row.appendChild(el('span', 'muted small', j.state === 'done'
+      ? 'Hidden by itself 6 hours after it was done.' : 'Hidden by itself after a day.'));
+    card.appendChild(row);
+  }
+  return card;
+}
+function netNewHost() {
+  /* Where the page goes once the server is back: its new address or name,
+     when it was opened at the old one. */
+  var t = NET.target || {};
+  var at = location.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (t.ip && t.old && t.ip !== t.old && at === t.old) return t.ip;
+  if (t.host && t.oldHost && t.host !== t.oldHost.toLowerCase() && at === t.oldHost.toLowerCase()) return t.host;
+  if (t.host && t.oldHost && at === t.oldHost.split('.')[0].toLowerCase() && t.host.split('.')[0] !== at) return t.host;
+  return '';
+}
+function drawNetAway() {
+  var host = $('net-body');
+  if (!host) return;
+  var away = Math.round((Date.now() - NET.failSince) / 1000);
+  var box = $('net-away');
+  if (!box) {
+    box = el('div', 'card full net-job');
+    box.id = 'net-away';
+    host.insertBefore(box, host.firstChild);
+  }
+  clear(box);
+  box.appendChild(el('h2', '', 'This server is restarting'));
+  var bar = el('div', 'cert-prog-bar');
+  var fill = el('span', '');
+  fill.style.width = Math.min(100, Math.round(away / 150 * 100)) + '%';
+  bar.appendChild(fill);
+  box.appendChild(bar);
+  box.appendChild(el('p', 'note', 'Not answering for ' + span(away) + '. The page asks again every two seconds.'));
+  var newHost = netNewHost();
+  if (newHost) {
+    var url = location.protocol + '//' + (newHost.indexOf(':') >= 0 ? '[' + newHost + ']' : newHost)
+      + (location.port ? ':' + location.port : '') + location.pathname + '#settings/network';
+    var p = el('p', 'note');
+    p.appendChild(document.createTextNode('It comes back at its new address - sign in there again: '));
+    var a = noI18n(el('a', 'mono', url)); a.href = url;
+    p.appendChild(a);
+    box.appendChild(p);
+    if (away > 150 && !NET.redirect) NET.redirect = setTimeout(function () { location.href = url; }, 500);
+  }
+}
+
+/* ---- Settings → Restart and power off ------------------------------------------ */
+var PW = {d: null, poll: null, failSince: 0, reload: false};
+function loadPower() {
+  api('power').then(function (d) { PW.d = d; PW.failSince = 0; drawPower(); pwPollFor(); }).catch(oops);
+}
+function pwLive(d) { var p = (d || {}).plan || {}; return !!p.id && ['asked', 'going'].indexOf(p.state) >= 0; }
+function pwPollFor() {
+  var live = pwLive(PW.d) || PW.reload;
+  if (live && !PW.poll) PW.poll = setInterval(pwPoll, 2000);
+  if (!live && PW.poll) { clearInterval(PW.poll); PW.poll = null; }
+}
+function pwPoll() {
+  if (!paneLive('power')) { clearInterval(PW.poll); PW.poll = null; return; }
+  api('power', undefined, {quiet: true}).then(function (d) {
+    var wasAway = !!PW.failSince;
+    PW.d = d; PW.failSince = 0;
+    drawPower();
+    if (!pwLive(d)) {
+      clearInterval(PW.poll); PW.poll = null;
+      if (wasAway || PW.reload) {
+        PW.reload = false;
+        toast(d.plan && d.plan.how === 'poweroff' ? 'switched on again' : 'up again', 'good');
+        setTimeout(function () { location.reload(); }, 2500);
+      }
+    }
+  }).catch(function (e) {
+    if (e && e.stopped && !e.busy) return;
+    if (!PW.failSince) PW.failSince = Date.now();
+    drawPowerAway();
+  });
+}
+function pwState(d) {
+  var p = d.plan || {};
+  if (p.state === 'failed') return {k: 'bad', w: 'failed: ' + (p.said || '')};
+  if (p.state === 'back') return {k: 'ok', w: p.how === 'reboot' ? 'up again' : 'switched on again'};
+  if (p.state === 'going') {
+    if (p.how === 'poweroff') return {k: 'going', w: 'switching off'};
+    if (d.now < (p.down_at || 0) + 15) return {k: 'going', w: 'going down'};
+    return {k: 'going', w: 'restarting'};
+  }
+  return {k: 'wait', w: 'asked'};
+}
+function drawPower() {
+  var host = $('power-body');
+  if (!host || !PW.d) return;
+  clear(host);
+  var d = PW.d;
+  if (d.plan && d.plan.id) host.appendChild(pwProgress(d));
+  var me = d.me || {};
+  var c = el('div', 'card full pw-node');
+  var h = el('h2', '');
+  h.appendChild(el('span', 'dot ok'));
+  h.appendChild(document.createTextNode(' '));
+  h.appendChild(noI18n(el('span', '', me.name || 'this server')));
+  h.appendChild(el('span', 'tag info', 'this page'));
+  c.appendChild(h);
+  c.appendChild(netFacts([
+    ['State', 'answering'],
+    ['Address', (me.address || '').split('/')[0], true],
+    ['Running for', me.boot ? span(d.now - me.boot) : ''],
+    ['isemon running for', me.started ? span(d.now - me.started) : ''],
+    ['Version', me.version || '', true]
+  ]));
+  if (d.may) {
+    var row = el('div', 'btnrow');
+    row.style.marginTop = '12px';
+    var rb = cmdButton('Restart', 'refresh', '');
+    var off = cmdButton('Power off', 'power', 'danger');
+    rb.disabled = off.disabled = !!d.busy;
+    rb.onclick = function () { pwAsk('reboot'); };
+    off.onclick = function () { pwAsk('poweroff'); };
+    row.appendChild(rb); row.appendChild(off);
+    c.appendChild(row);
+    if (d.busy) c.appendChild(el('p', 'note', 'A restart, a power-off or a change of the network is under way.'));
+  } else {
+    c.appendChild(el('p', 'note', 'Only a full administrator may restart this server or switch it off.'));
+  }
+  host.appendChild(c);
+  explainWhatWasDrawn(host);
+}
+function pwAsk(how) {
+  var words = how === 'poweroff'
+    ? 'The server is switched off. Nothing answers - the dashboard, the logs are not read, nobody is banned - until somebody switches it on again at the machine.'
+    : 'The server restarts: for a minute or two nothing answers. The page follows it and comes back by itself.';
+  confirmThen(how === 'reboot' ? 'Restart this server?' : 'Power off this server?', htmlText(words),
+    how === 'reboot' ? 'Restart' : 'Power off', function () {
+      api('power', {how: how}).then(function (r) {
+        toast(r.message, 'good');
+        PW.reload = how === 'reboot';
+        loadPower();
+      }).catch(oops);
+    }, how === 'poweroff' ? undefined : false);
+}
+function pwProgress(d) {
+  var p = d.plan;
+  var st = pwState(d);
+  var card = el('div', 'card full net-job');
+  var over = st.k === 'ok' || st.k === 'bad';
+  card.appendChild(el('h2', '', (p.how === 'reboot' ? 'Restart' : 'Power-off') + (over ? ' - done' : ' under way')));
+  var ol = el('ol', 'net-steps done');
+  var li = el('li', st.k === 'ok' ? 'good' : (st.k === 'bad' ? 'bad' : ''));
+  li.appendChild(el('span', 'mark', st.k === 'ok' ? '✓' : (st.k === 'bad' ? '✗' : '…')));
+  li.appendChild(el('span', '', st.w));
+  li.appendChild(noI18n(el('span', 'muted small', ' ' + (p.by || ''))));
+  ol.appendChild(li);
+  card.appendChild(ol);
+  if (st.k === 'going' && p.down_at) {
+    var t = Math.max(0, d.now - p.down_at);
+    var bar = el('div', 'cert-prog-bar');
+    var fill = el('span', '');
+    fill.style.width = Math.min(100, Math.round(t / 120 * 100)) + '%';
+    bar.appendChild(fill);
+    card.appendChild(bar);
+  }
+  if (over && d.may) {
+    var row = el('div', 'btnrow');
+    row.style.marginTop = '10px';
+    var hide = cmdButton('Hide this', 'close', 'small');
+    hide.onclick = function () {
+      busy(hide, true);
+      api('power', {action: 'hide'}).then(function (x) { PW.d = x; drawPower(); }).catch(oops)
+        .then(function () { busy(hide, false); });
+    };
+    row.appendChild(hide);
+    row.appendChild(el('span', 'muted small', 'Hidden by itself half an hour after it began.'));
+    card.appendChild(row);
+  }
+  return card;
+}
+function drawPowerAway() {
+  var host = $('power-body');
+  if (!host) return;
+  var box = $('pw-away');
+  if (!box) { box = el('div', 'card full net-job'); box.id = 'pw-away'; host.insertBefore(box, host.firstChild); }
+  clear(box);
+  var away = Math.round((Date.now() - PW.failSince) / 1000);
+  box.appendChild(el('h2', '', 'This server is restarting'));
+  var bar = el('div', 'cert-prog-bar');
+  var fill = el('span', '');
+  fill.style.width = Math.min(100, Math.round(away / 120 * 100)) + '%';
+  bar.appendChild(fill);
+  box.appendChild(bar);
+  box.appendChild(el('p', 'note', 'Not answering for ' + span(away) + ' - asked again every two seconds; the page comes back by itself.'));
+}
+/* The banner at once, from the status the page was drawn with. */
+if (typeof STATUS !== 'undefined' && STATUS) drawTrials(STATUS);
+/* Opened straight at one of these panes, the pane was switched to before
+   this block was read: drawn now. */
+setTimeout(function () {
+  if (paneLive('network')) loadNet();
+  if (paneLive('power')) loadPower();
+}, 0);
+</script>
+<script nonce="<?= h($nonce) ?>">
+/* ==========================================================================
+   Settings → Backups: backups to another machine (1.10.228)
+   --------------------------------------------------------------------------
+   Drawn as otp draws the same pane: destinations (a folder, FTP, FTPS, SFTP,
+   SCP, SMB) with their sign-in - passwords, ssh keys made here or brought,
+   the server's host key or its certificate checked, a client certificate
+   for FTPS - a backup sent now or on a schedule, the history, the backups at
+   each destination, and putting one back. Only a full administrator sees any
+   of it: a backup holds the key of every password kept here.
+   ========================================================================== */
+var RB = null;
+var RB_POLL = null;
+var RB_KIND_ICON = {folder: 'db', ftp: 'upload', ftps: 'lock', sftp: 'terminal', scp: 'terminal', smb: 'net'};
+var RB_KIND_SAYS = {
+  folder: 'A folder on this machine - an NFS or other share mounted here.',
+  ftp: 'Plain FTP: the password and the file go over unencrypted - only inside a network you trust (the file itself is locked).',
+  ftps: 'FTP over TLS - explicit (port 21) or implicit (990); the server’s certificate checked, a client certificate if it wants one.',
+  sftp: 'SSH file transfer: a key made here or your own, or a password; the server’s host key checked.',
+  scp: 'scp over SSH, and ssh to list and take away old ones - needs a shell on the server.',
+  smb: 'A Windows or Samba share: the account, its domain, SMB3 encryption.'
+};
+function rbWhen(ts) {
+  if (!ts) return '';
+  var n = Number(ts);
+  return isNaN(n) ? String(ts) : 'until ' + stamp(n);
+}
+function rbBytes(n) {
+  n = Number(n || 0);
+  if (n < 1024) return num(n) + ' B';
+  var u = ['kB', 'MB', 'GB', 'TB'], i = -1;
+  do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+  return n.toFixed(n < 10 ? 1 : 0) + ' ' + u[i];
+}
+function rbWhere(t) {
+  if (t.kind === 'folder') return t.path || '';
+  if (t.kind === 'smb') return '\\\\' + t.host + (t.port && t.port !== 445 ? ':' + t.port : '') + '\\' + (t.share || '') + (t.path ? '\\' + String(t.path).replace(/\//g, '\\') : '');
+  return (t.user ? t.user + '@' : '') + t.host + (t.port ? ':' + t.port : '') + '/' + String(t.path || '').replace(/^\//, '');
+}
+function rbMask(value, placeholder) {
+  var t = el('input', 'wr-in mono');
+  t.type = 'password';
+  t.value = value || '';
+  t.placeholder = placeholder || '';
+  t.autocomplete = 'new-password';
+  t.spellcheck = false;
+  return t;
+}
+function rbArea(value, placeholder) {
+  var a = el('textarea', 'wr-in mono rb-area small');
+  a.value = value || '';
+  a.placeholder = placeholder || '';
+  a.spellcheck = false;
+  return a;
+}
+function loadRbackup() {
+  var top = $('rb-top');
+  if (!top) return;
+  if (!ADMIN) {
+    clear(top);
+    top.appendChild(el('p', 'note', 'Only a full administrator sees and changes the backups: they hold the key of every password kept here.'));
+    ['rb-targets-card', 'rb-runs-card'].forEach(function (id) { if ($(id)) $(id).hidden = true; });
+    return;
+  }
+  api('rbackup').then(function (d) {
+    RB = d;
+    drawRbTop();
+    drawRbTargets();
+    drawRbRuns();
+    rbPassTools();
+    if (d.job && d.job.running) rbWatch();
+  }).catch(oops);
+}
+function rbPassTools() {
+  /* "Make a strong one" beside the password of the backups: a long random
+     one, shown once to be put into the password vault. */
+  var item = document.querySelector('.set-item[data-key="rbackup_password"]');
+  if (!ADMIN || !item || item.querySelector('.rb-gen')) return;
+  var b = cmdButton('Make a strong one', 'key', 'small rb-gen');
+  b.style.alignSelf = 'flex-start';
+  b.onclick = function () {
+    var a = new Uint8Array(24);
+    crypto.getRandomValues(a);
+    var abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    var pw = '';
+    for (var i = 0; i < a.length; i++) { pw += abc.charAt(a[i] % abc.length); if (i % 6 === 5 && i < a.length - 1) pw += '-'; }
+    var box = item.querySelector('input');
+    if (box) {
+      box.value = pw;
+      box.dispatchEvent(new Event('input', {bubbles: true}));
+      box.dispatchEvent(new Event('change', {bubbles: true}));
+    }
+    modal('The password of the backups', function (body) {
+      body.appendChild(el('p', 'note', 'Put it into your password vault now - this is the only time it is shown whole. Without it no backup can be opened, by anybody. Then save the changes.'));
+      body.appendChild(noI18n(el('div', 'rb-pass mono', pw)));
+      var c = cmdButton('Copy', 'copy', 'small');
+      c.onclick = function () { copyText(pw, 'copied'); };
+      body.appendChild(c);
+    }, [{words: 'Close', close: true}], true);
+  };
+  var says = item.querySelector('.says');
+  if (says) says.parentNode.insertBefore(b, says); else item.appendChild(b);
+}
+/* The settings are drawn into the pane whenever they are loaded or saved:
+   "Make a strong one" is put beside the password each time. */
+(function () {
+  var host = $('sect-backup');
+  if (host && window.MutationObserver) {
+    new MutationObserver(function () { rbPassTools(); }).observe(host, {childList: true, subtree: true});
+  }
+}());
+/* Opened straight at #settings/backup, the pane was shown before this script
+   was read: drawn once it is. */
+setTimeout(function () { if (paneLive('backup') && !RB) loadRbackup(); }, 0);
+function drawRbTop() {
+  var host = $('rb-top');
+  clear(host);
+  var d = RB;
+  var card = el('div', 'card full rb-hero');
+  var mine = (d.runs || [])[0];
+  var on = (d.targets || []).filter(function (t) { return t.enabled; });
+  var state = !on.length ? 'warn' : (!mine ? 'warn' : (mine.ok ? 'good' : 'bad'));
+  card.classList.add(state);
+  var head = el('div', 'rb-hero-head');
+  var ic = el('span', 'rb-hero-ic');
+  ic.innerHTML = iconMarkup(state === 'good' ? 'check' : (state === 'bad' ? 'flag' : 'info'), 22);
+  head.appendChild(ic);
+  var words = el('div', 'rb-hero-words');
+  var title = !on.length ? 'No destination yet - backups go nowhere'
+    : (!mine ? 'No backup has been sent yet'
+      : (mine.ok ? 'The last backup went to every destination'
+        : 'The last backup did not reach every destination'));
+  words.appendChild(el('b', '', title));
+  var facts = el('div', 'rb-hero-facts');
+  var fact = function (k, v, cls, keep) {
+    var f = el('span', 'rb-fact ' + (cls || ''));
+    f.appendChild(el('span', 'k', k));
+    var vv = el('span', 'v', v);
+    if (keep) noI18n(vv);
+    f.appendChild(vv);
+    facts.appendChild(f);
+  };
+  if (mine) fact('Last', ago(mine.at) + ' · ' + rbBytes(mine.bytes), '', true);
+  if (d.next) fact('Next', stamp(new Date(d.next).getTime() / 1000), '', true);
+  else fact('Next', 'by hand only', 'warn');
+  fact('Locked', d.locked ? 'with the password (AES-256)' : 'no password - nothing is sent', d.locked ? 'good' : 'bad');
+  fact('Destinations', num(on.length) + ' of ' + num((d.targets || []).length) + ' switched on', '', true);
+  words.appendChild(facts);
+  if (mine && !mine.ok) {
+    var bad = (mine.targets || []).filter(function (x) { return !x.ok; });
+    var why = noI18n(el('div', 'rb-hero-why small bad'));
+    why.textContent = mine.error || bad.map(function (x) { return x.name + ': ' + (x.error || 'failed'); }).join(' · ');
+    words.appendChild(why);
+  }
+  head.appendChild(words);
+  var acts = el('div', 'rb-hero-acts');
+  var running = d.job && d.job.running;
+  var now = cmdButton('Back up now', 'upload', 'primary');
+  now.id = 'rb-now';
+  now.disabled = !on.length || running || !d.locked;
+  explain(now, 'A backup made now and sent to every destination switched on - the same as the scheduled one.');
+  now.onclick = function () {
+    busy(now, true);
+    api('rbackup', {action: 'run'}).then(function (x) { toast(x.message, 'good'); RB.job = x.job; rbWatch(); })
+      .catch(function (e) { busy(now, false); oops(e); });
+  };
+  acts.appendChild(now);
+  var dl = cmdButton('Download one here', 'download', '');
+  dl.disabled = running || !d.locked;
+  explain(dl, 'A backup made now, saved on the computer you are sitting at - locked with the password as the others. A large database takes a while: the download starts when it is ready.');
+  dl.onclick = function () {
+    busy(dl, true);
+    api('rbackup', {action: 'here'}).then(function (x) { toast(x.message, 'good'); RB.job = x.job; rbWatch(); })
+      .catch(function (e) { busy(dl, false); oops(e); });
+  };
+  acts.appendChild(dl);
+  var back = cmdButton('Put one back…', 'undo', '');
+  back.onclick = rbPutBackFile;
+  acts.appendChild(back);
+  var guide = cmdButton('How to put it back', 'info', '');
+  explain(guide, 'RESTORE.md - the exact steps to bring everything back from a backup, filled in with this installation, as every backup carries it. To read now, and to keep apart from the backups.');
+  guide.onclick = rbGuide;
+  acts.appendChild(guide);
+  head.appendChild(acts);
+  card.appendChild(head);
+  var going = el('div', 'rb-going');
+  going.id = 'rb-going';
+  going.hidden = !running;
+  var bar = el('div', 'prog');
+  var fill = el('span');
+  fill.id = 'rb-going-fill';
+  bar.appendChild(fill);
+  going.appendChild(bar);
+  var sy = el('div', 'btnhelp');
+  sy.id = 'rb-going-says';
+  going.appendChild(sy);
+  card.appendChild(going);
+  if (!d.locked) card.appendChild(el('p', 'note bad', 'The backups have no password, so nothing is sent: a backup holds the key of every password kept here. Set the password of the backups below (Make a strong one) and save.'));
+  if (!d.tools.openssl) card.appendChild(el('p', 'note bad', 'openssl is not on this machine: backups cannot be locked (dnf install openssl).'));
+  host.appendChild(card);
+}
+/* RESTORE.md on the page: read here, downloaded as the file. */
+function rbGuide() {
+  api('rbackup', {action: 'restore_md'}).then(function (d) {
+    modal('How to put a backup back', function (body) {
+      var lede = el('p', 'note');
+      lede.innerHTML = 'The <code>RESTORE.md</code> every backup carries, as one made now would have it. Keep a copy apart from the backups - with the password of the backups in a vault.';
+      body.appendChild(lede);
+      var doc = noI18n(el('div', 'md-doc'));
+      doc.appendChild(rbMdRender(d.md));
+      body.appendChild(doc);
+    }, [{words: 'Close', close: true},
+        {words: 'Download RESTORE.md', cls: 'primary', icon: 'download', go: function () {
+          var a = el('a');
+          a.href = URL.createObjectURL(new Blob([d.md], {type: 'text/markdown;charset=utf-8'}));
+          a.download = d.name || 'RESTORE.md';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+        }}], 'medium');
+  }).catch(oops);
+}
+/* Markdown as the guides are written: headings, paragraphs, lists, tables,
+   fenced code (with a copy button), `code`, **bold**, *italic*. Built from
+   elements - nothing in the text becomes HTML. */
+function rbMdInline(text) {
+  var frag = document.createDocumentFragment();
+  var re = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g, last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+    var t = m[0];
+    if (t.charAt(0) === '`') frag.appendChild(el('code', '', t.slice(1, -1)));
+    else if (t.slice(0, 2) === '**') frag.appendChild(el('b', '', t.slice(2, -2)));
+    else frag.appendChild(el('i', '', t.slice(1, -1)));
+    last = re.lastIndex;
+  }
+  if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+  return frag;
+}
+function rbMdRender(md) {
+  var out = document.createDocumentFragment();
+  var lines = String(md || '').split('\n'), i = 0;
+  var para = [];
+  var flush = function () {
+    if (!para.length) return;
+    var p = el('p');
+    p.appendChild(rbMdInline(para.join(' ')));
+    out.appendChild(p);
+    para = [];
+  };
+  while (i < lines.length) {
+    var ln = lines[i];
+    if (/^```/.test(ln)) {
+      flush();
+      var code = [];
+      i += 1;
+      while (i < lines.length && !/^```/.test(lines[i])) { code.push(lines[i]); i += 1; }
+      i += 1;
+      var wrap = el('div', 'md-code');
+      wrap.appendChild(el('pre', '', code.join('\n')));
+      var cp = iconButton('copy', 'Copy');
+      (function (txt, b) { b.onclick = function () { copyText(txt, 'copied'); }; })(code.join('\n'), cp);
+      wrap.appendChild(cp);
+      out.appendChild(wrap);
+      continue;
+    }
+    var hd = /^(#{1,4})\s+(.*)$/.exec(ln);
+    if (hd) { flush(); var hn = el('h' + Math.min(6, hd[1].length + 2)); hn.appendChild(rbMdInline(hd[2])); out.appendChild(hn); i += 1; continue; }
+    if (/^\|/.test(ln)) {
+      flush();
+      var rows = [];
+      while (i < lines.length && /^\|/.test(lines[i])) { rows.push(lines[i]); i += 1; }
+      var tbl = el('table', 'md-table');
+      var tb = el('tbody');
+      rows.forEach(function (r, n) {
+        if (/^\|[\s|:-]+\|$/.test(r)) return;
+        var cells = r.replace(/^\|/, '').replace(/\|$/, '').split('|');
+        if (n === 0 && cells.every(function (c) { return !c.trim(); })) return;
+        var tr = el('tr');
+        cells.forEach(function (c) { var td = el('td'); td.appendChild(rbMdInline(c.trim())); tr.appendChild(td); });
+        tb.appendChild(tr);
+      });
+      tbl.appendChild(tb);
+      out.appendChild(tbl);
+      continue;
+    }
+    if (/^\s*[-*] /.test(ln)) {
+      flush();
+      var ul = el('ul');
+      while (i < lines.length && /^\s*[-*] /.test(lines[i])) {
+        var li = el('li');
+        li.appendChild(rbMdInline(lines[i].replace(/^\s*[-*] /, '')));
+        ul.appendChild(li);
+        i += 1;
+      }
+      out.appendChild(ul);
+      continue;
+    }
+    if (/^---+\s*$/.test(ln)) { flush(); out.appendChild(el('hr')); i += 1; continue; }
+    if (!ln.trim()) { flush(); i += 1; continue; }
+    para.push(ln.trim());
+    i += 1;
+  }
+  flush();
+  return out;
+}
+function rbWatch() {
+  if (RB_POLL) return;
+  var step = function () {
+    api('rbackup', {action: 'job'}, {quiet: true}).then(function (x) {
+      var j = x.job || {};
+      var g = $('rb-going');
+      if (g) {
+        g.hidden = !j.running;
+        var f = $('rb-going-fill');
+        if (f) f.style.width = (j.whole ? Math.round(100 * j.done / j.whole) : 5) + '%';
+        var sy = $('rb-going-says');
+        if (sy) sy.textContent = j.says || '';
+      }
+      if (j.running) { RB_POLL = setTimeout(step, paneLive('backup') ? 1000 : 5000); return; }
+      RB_POLL = null;
+      var r = j.result || {};
+      if (j.error) toast('the backup: ' + j.error, 'bad');
+      else if (r.made && ME && j.by === ME.name) {
+        toast(r.message || 'ready', 'good');
+        window.location.href = '?api=rbackup-download&made=' + encodeURIComponent(r.made);
+      } else if (j.result) toast(r.ok ? 'the backup went to every destination' : 'the backup did not reach every destination', r.ok ? 'good' : 'bad');
+      if (paneLive('backup')) loadRbackup();
+    }).catch(function () { RB_POLL = null; });
+  };
+  step();
+}
+function drawRbTargets() {
+  var host = $('rb-targets');
+  clear(host);
+  var add = cmdButton('Add a destination', 'add', 'primary small');
+  add.disabled = (RB.targets || []).length >= (RB.most || 20);
+  add.onclick = rbPickKind;
+  var ah = $('rb-add-host');
+  clear(ah);
+  ah.appendChild(add);
+  var ts = RB.targets || [];
+  if (!ts.length) {
+    var empty = el('div', 'rb-empty');
+    empty.appendChild(el('p', '', 'No destination yet. A backup kept only on this machine is lost with it: add a place on another machine.'));
+    host.appendChild(empty);
+    return;
+  }
+  var grid = el('div', 'rb-grid');
+  ts.forEach(function (t) {
+    var c = el('div', 'rb-card' + (t.enabled ? '' : ' off'));
+    var top = el('div', 'rb-card-top');
+    var ic = el('span', 'rb-kind k-' + t.kind);
+    ic.innerHTML = iconMarkup(RB_KIND_ICON[t.kind] || 'db', 18);
+    top.appendChild(ic);
+    var nm = el('div', 'rb-card-name');
+    nm.appendChild(noI18n(el('b', '', t.name)));
+    nm.appendChild(el('span', 'rb-kind-words', t.kind_words));
+    top.appendChild(nm);
+    var sw = wrSwitch(t.enabled, function (v) {
+      api('rbackup', {action: 'save', id: t.id, target: {kind: t.kind, enabled: v ? 1 : 0, name: t.name, host: t.host, port: t.port, path: t.path, user: t.user, share: t.share, domain: t.domain, smb_encrypt: t.smb_encrypt, implicit: t.implicit, tls_check: t.tls_check, passive: t.passive}})
+        .then(function () { loadRbackup(); }).catch(function (e) { oops(e); loadRbackup(); });
+    });
+    explain(sw, t.enabled ? 'Backups go here. Switch off to stop sending, keeping everything set.' : 'Switched off: nothing is sent here.');
+    top.appendChild(sw);
+    c.appendChild(top);
+    c.appendChild(noI18n(el('div', 'rb-where mono', rbWhere(t))));
+    var chips = el('div', 'rb-chips');
+    var chip = function (w, cls, tip) { var x = el('span', 'tag ' + (cls || 'dim'), w); if (tip) x.title = tip; chips.appendChild(x); };
+    if (t.has_password) chip('password', 'dim');
+    if (t.has_key) chip('ssh key', 'violet');
+    if (t.ssh_cert) chip('ssh certificate', 'violet');
+    if (t.kind === 'sftp' || t.kind === 'scp') chip(t.hostkey ? 'host key trusted' : 'host key not trusted yet', t.hostkey ? 'ok' : 'warn', (t.hostkey_fp || []).join('\n'));
+    if (t.kind === 'ftps') chip({system: 'certificate: system authorities', ca: 'certificate: own authority', pin: 'certificate pinned', none: 'certificate NOT checked'}[t.tls_check] || '', t.tls_check === 'none' ? 'warn' : 'ok');
+    if (t.has_client_key) chip('client certificate', 'violet');
+    if (t.kind === 'smb' && t.smb_encrypt) chip('SMB3 encrypted', 'ok');
+    if (t.kind === 'ftp') chip('not encrypted on the way', 'warn');
+    var need = {sftp: ['ssh', 'sftp'], scp: ['ssh', 'scp'], smb: ['smbclient']}[t.kind] || [];
+    if (need.some(function (x) { return !RB.tools[x]; })) chip(t.kind === 'smb' ? 'smbclient is missing here' : 'OpenSSH is missing here', 'crit');
+    c.appendChild(chips);
+    var last = t.last;
+    var ls = noI18n(el('div', 'rb-last ' + (last ? (last.ok ? 'good' : 'bad') : 'muted')));
+    if (!last) { ls.removeAttribute('data-no-i18n'); ls.textContent = 'nothing sent here yet'; }
+    else ls.textContent = last.ok ? '✓ ' + ago(last.at) + ' · ' + rbBytes(last.bytes) : '✗ ' + ago(last.at) + ': ' + (last.error || 'failed');
+    c.appendChild(ls);
+    var acts = el('div', 'rb-acts');
+    var tr = cmdButton('Try it', 'play', 'small');
+    tr.onclick = function () { rbTry(t, null, tr); };
+    acts.appendChild(tr);
+    var ed = cmdButton('Edit', 'gear', 'small');
+    ed.onclick = function () { rbEdit(t); };
+    acts.appendChild(ed);
+    var ls2 = cmdButton('Backups there', 'list', 'small');
+    ls2.onclick = function () { rbListThere(t); };
+    acts.appendChild(ls2);
+    var del = iconButton('trash', 'Take this destination away');
+    del.onclick = function () {
+      confirmThen('Take the destination ' + htmlText(t.name) + ' away?', 'Nothing is deleted on the server; backups simply stop going there, and its keys and certificates set here are forgotten.', 'Take it away', function () {
+        api('rbackup', {action: 'delete', id: t.id}).then(function (x) { toast(x.message, 'good'); loadRbackup(); }).catch(oops);
+      });
+    };
+    acts.appendChild(del);
+    c.appendChild(acts);
+    grid.appendChild(c);
+  });
+  host.appendChild(grid);
+}
+function drawRbRuns() {
+  var host = $('rb-runs');
+  clear(host);
+  var runs = RB.runs || [];
+  /* The list can be emptied, or a line taken off - the backups themselves
+     stay where they went. */
+  var tools = $('rb-runs-tools');
+  if (tools) {
+    clear(tools);
+    if (runs.length) {
+      var wipe = cmdButton('Clear the list', 'trash', 'small');
+      wipe.onclick = function () {
+        confirmThen('Clear the list of backups sent?', 'Every line goes from this list. <b>The backups themselves stay where they went</b> - delete them under <i>Backups there</i> on a destination. Events keeps a line saying who cleared it.', 'Clear the list', function () {
+          api('rbackup', {action: 'runs_forget', all: 1}).then(function (d) { toast(d.message, 'good'); RB.runs = d.runs || []; drawRbRuns(); }).catch(oops);
+        });
+      };
+      tools.appendChild(wipe);
+    }
+  }
+  if (!runs.length) { host.appendChild(el('p', 'note', 'No backup sent yet.')); return; }
+  host.appendChild(listTable(['When', 'File', 'Size', 'Where it went', 'Who', ''], runs, function (r) {
+    var tr = el('tr');
+    tr.appendChild(noI18n(el('td', 'muted', stamp(r.at))));
+    var f = el('td', 'mono small');
+    f.appendChild(noI18n(el('span', '', r.file || '–')));
+    tr.appendChild(f);
+    tr.appendChild(noI18n(el('td', 'num', r.bytes ? rbBytes(r.bytes) : '–')));
+    var w = el('td');
+    if (r.error) w.appendChild(noI18n(el('span', 'small bad', r.error)));
+    (r.targets || []).forEach(function (x) {
+      var s = el('span', 'tag namepill ' + (x.ok ? 'ok' : 'crit'), (x.ok ? '✓ ' : '✗ ') + x.name);
+      s.title = x.ok ? (x.secs + ' s' + ((x.taken_away || []).length ? ' · taken away: ' + x.taken_away.join(', ') : '')) : (x.error || '');
+      noI18n(s);
+      w.appendChild(s);
+      w.appendChild(document.createTextNode(' '));
+    });
+    tr.appendChild(w);
+    tr.appendChild(noI18n(el('td', 'muted small', r.by || '')));
+    var a = el('td', 'rowtools');
+    var del = iconButton('trash', 'Take it off the list');
+    del.onclick = function () {
+      api('rbackup', {action: 'runs_forget', at: r.at, file: r.file || ''}).then(function (d) { toast(d.message, 'good'); RB.runs = d.runs || []; drawRbRuns(); }).catch(oops);
+    };
+    a.appendChild(del);
+    tr.appendChild(a);
+    return tr;
+  }, 'plain'));
+}
+function rbPickKind() {
+  modal('Where should the backups go?', function (body) {
+    var g = el('div', 'rb-kinds');
+    (RB.kinds || []).forEach(function (k) {
+      var b = el('button', 'rb-kind-tile');
+      b.type = 'button';
+      var ic = el('span', 'rb-kind k-' + k.kind);
+      ic.innerHTML = iconMarkup(RB_KIND_ICON[k.kind] || 'db', 20);
+      b.appendChild(ic);
+      b.appendChild(el('b', '', k.words));
+      b.appendChild(el('span', 'small muted', RB_KIND_SAYS[k.kind] || ''));
+      var need = {sftp: ['ssh', 'sftp'], scp: ['ssh', 'scp'], smb: ['smbclient']}[k.kind] || [];
+      var missing = need.filter(function (x) { return !RB.tools[x]; });
+      if (missing.length) {
+        b.appendChild(el('span', 'small bad', k.kind === 'smb' ? 'smbclient is not on this machine: dnf install samba-client' : 'OpenSSH is not on this machine: dnf install openssh-clients'));
+      }
+      b.onclick = function () { closeModal(); setTimeout(function () { rbEdit({kind: k.kind, enabled: 1, port: k.port}); }, 30); };
+      g.appendChild(b);
+    });
+    body.appendChild(g);
+  }, [{words: 'Close', close: true}], 'medium');
+}
+/* The editor of one destination. A new one is saved before a key or a
+   certificate is made for it - they are kept with it. */
+function rbEdit(t) {
+  t = t || {};
+  var isNew = !t.id;
+  var cur = {id: t.id};
+  modal(isNew ? 'A new destination: ' + (t.kind_words || (RB.kinds.filter(function (k) { return k.kind === t.kind; })[0] || {}).words || t.kind) : t.name, function (body) {
+    /* In a box of its own: the popup's body is the page's one, and a class
+       left on it would follow every popup after this one. */
+    var inner = el('div', 'rb-ed rb-box');
+    body.appendChild(inner);
+    body = inner;
+    var f = {};
+    var sec = function (title, says) {
+      var s = el('div', 'rb-sec');
+      s.appendChild(el('h4', '', title));
+      if (says) s.appendChild(el('p', 'small muted', says));
+      var g = el('div', 'wr-grid');
+      s.appendChild(g);
+      body.appendChild(s);
+      return g;
+    };
+    var g0 = sec('What it is called', '');
+    f.name = wrText(t.name || '', 'NAS in the server room');
+    g0.appendChild(wrField('Name', f.name));
+    f.enabled = wrSwitch(t.enabled === undefined ? 1 : t.enabled);
+    g0.appendChild(wrField('Backups go here', f.enabled));
+    var g1 = sec('Where', t.kind === 'folder' ? 'A whole path on this machine; the isemon account must be able to write into it, and isemon.service must be let write there (systemctl edit isemon: ReadWritePaths=).' : '');
+    if (t.kind === 'folder') {
+      f.path = wrText(t.path || '', '/mnt/backup/isemon', 'mono');
+      g1.appendChild(wrField('The folder', f.path));
+    } else {
+      f.host = wrText(t.host || '', 'backup.example.cz', 'mono');
+      g1.appendChild(wrField('The server', f.host));
+      f.port = wrText(t.port || '', String({ftp: 21, ftps: t.implicit ? 990 : 21, sftp: 22, scp: 22, smb: 445}[t.kind] || ''), 'mono');
+      g1.appendChild(wrField('Port', f.port));
+      if (t.kind === 'smb') {
+        f.share = wrText(t.share || '', 'backup', 'mono');
+        g1.appendChild(wrField('The share', f.share));
+        f.path = wrText(t.path || '', 'isemon\\nightly', 'mono');
+        g1.appendChild(wrField('The folder in it', f.path, 'Made if it is not there.'));
+      } else {
+        f.path = wrText(t.path || '', t.kind === 'ftp' || t.kind === 'ftps' ? 'isemon/backups' : '/home/backup/isemon', 'mono');
+        g1.appendChild(wrField('The folder there', f.path, 'Made if it is not there. Without / at the start: under the account’s home.'));
+      }
+    }
+    if (t.kind !== 'folder') {
+      var g2 = sec('Signing in', t.kind === 'sftp' || t.kind === 'scp' ? 'A key (below) or a password - or both.' : '');
+      f.user = wrText(t.user || '', t.kind === 'smb' ? 'backup' : 'isemon-backup', 'mono');
+      g2.appendChild(wrField('Account', f.user));
+      f.password = rbMask(t.password || '', t.has_password ? '' : '(none)');
+      g2.appendChild(wrField('Password', f.password, t.has_password ? 'Kept, sealed. Type a new one to change it.' : ''));
+      if (t.kind === 'smb') {
+        f.domain = wrText(t.domain || '', 'CORP', 'mono');
+        g2.appendChild(wrField('Domain (workgroup)', f.domain));
+        f.smb_encrypt = wrSwitch(t.smb_encrypt === undefined ? 1 : t.smb_encrypt);
+        g2.appendChild(wrField('SMB3 encryption required', f.smb_encrypt, 'Everything on the wire encrypted; a server that cannot is refused.'));
+      }
+      if (t.kind === 'ftp' || t.kind === 'ftps') {
+        f.passive = wrSwitch(t.passive === undefined ? 1 : t.passive);
+        g2.appendChild(wrField('Passive mode', f.passive, 'The usual one, through firewalls and NAT.'));
+      }
+    }
+    if (t.kind === 'ftps') rbFtpsBlock(body, t, f, cur);
+    if (t.kind === 'sftp' || t.kind === 'scp') rbSshBlock(body, t, f, cur);
+    var out = el('div', 'rb-try-out');
+    out.id = 'rb-try-out';
+    body.appendChild(out);
+    rbEdit.form = f;
+  }, [
+    {words: 'Close', close: true},
+    {words: 'Try it', icon: 'play', go: function (b) { rbTry(cur.id ? rbTarget(cur.id) || t : t, rbFormData(t.kind), b, true); }},
+    {words: 'Save', cls: 'primary', icon: 'save', go: function (b) {
+      busy(b, true);
+      rbSaveForm(t.kind, cur).then(function () { busy(b, false); toast('saved', 'good'); closeModal(); loadRbackup(); })
+        .catch(function (e) { busy(b, false); oops(e); });
+    }}], 'medium');
+}
+function rbTarget(id) { return (RB.targets || []).filter(function (x) { return x.id === id; })[0]; }
+function rbFormData(kind) {
+  var f = rbEdit.form || {};
+  var v = function (k) { return f[k] ? (f[k]._get ? f[k]._get() : f[k].value) : undefined; };
+  var d = {kind: kind};
+  ['name', 'enabled', 'host', 'port', 'path', 'user', 'share', 'domain', 'smb_encrypt', 'passive', 'implicit', 'tls_check', 'ca', 'pin', 'ssh_cert'].forEach(function (k) {
+    var x = v(k);
+    if (typeof x === 'boolean') x = x ? 1 : 0;
+    if (x !== undefined) d[k] = typeof x === 'string' ? x.trim() : x;
+  });
+  if (f.password) d.password = f.password.value;
+  return d;
+}
+function rbSaveForm(kind, cur) {
+  return api('rbackup', {action: 'save', id: cur.id || '', target: rbFormData(kind)}).then(function (x) {
+    cur.id = x.target.id;
+    var i = (RB.targets || []).map(function (t) { return t.id; }).indexOf(x.target.id);
+    if (i >= 0) RB.targets[i] = x.target; else RB.targets.push(x.target);
+    return x.target;
+  });
+}
+function rbNeedSaved(kind, cur) {
+  return cur.id ? Promise.resolve(rbTarget(cur.id)) : rbSaveForm(kind, cur);
+}
+/* A question asked over the editor: this page has one popup at a time, so
+   the editor is opened again, as it is saved, once the question is
+   answered. */
+function rbOver(cur, kind, ask) {
+  return rbNeedSaved(kind, cur).then(function () {
+    return new Promise(function (done) { ask(done); });
+  }).then(function (said) {
+    return api('rbackup').then(function (d) {
+      RB = d;
+      drawRbTargets();
+      var t = rbTarget(cur.id);
+      if (t) rbEdit(t);
+      return said;
+    });
+  });
+}
+function rbConfirm(cur, kind, title, words, yes, go, danger) {
+  rbOver(cur, kind, function (done) {
+    var answered = false;
+    modal(title, function (body) {
+      var p = el('p', 'note');
+      p.innerHTML = words;
+      body.appendChild(p);
+    }, [{words: 'No, leave it', close: true},
+        {words: yes, cls: danger === false ? 'primary' : 'danger', go: function (b) {
+          answered = true;
+          busy(b, true);
+          Promise.resolve(go()).catch(oops).then(function () { done(); });
+        }}], true);
+    MODAL_CLOSE = function () { if (!answered) done(); };
+  }).catch(oops);
+}
+function rbCopyme(text, said) {
+  var code = noI18n(el('code', 'copyme', text));
+  explain(code, 'Click to copy.');
+  code.onclick = function () { copyText(text, said || 'copied'); };
+  return code;
+}
+function rbPanel(note) {
+  var box = el('div', 'subpanel rb-panel');
+  var p = el('p', 'note');
+  p.innerHTML = note;
+  box.appendChild(p);
+  var row = el('div', 'btnrow');
+  box.appendChild(row);
+  var below = el('div', 'rb-below');
+  box.appendChild(below);
+  return {box: box, row: row, below: below};
+}
+function rbTryButton(t, cur) {
+  var b = cmdButton('Try reaching it', 'pulse', 'primary');
+  explain(b, 'Sign in, write a small file, find it in the list and take it away again - with what is typed above, saved or not.');
+  b.onclick = function () { rbTry(cur.id ? (rbTarget(cur.id) || t) : t, rbFormData(t.kind), b, true); };
+  return b;
+}
+function rbSshBlock(body, t, f, cur) {
+  var s = el('div', 'rb-sec');
+  s.appendChild(el('h4', '', 'The SSH key'));
+  var P = rbPanel('A key is better than a password: made here, it never leaves this machine except when you download it, and the server holds only its <b>public</b> half - in <code>~/.ssh/authorized_keys</code> of the account.');
+  if (!RB.tools['ssh-keygen']) {
+    P.box.insertBefore(el('p', 'note warn', 'ssh-keygen is not on this machine, so a key cannot be made or read here: dnf install openssh-clients. A password still works.'), P.row);
+  }
+  var mk = cmdButton('Make a key', 'key', '');
+  explain(mk, 'Make a fresh ed25519 pair here. The private half stays on this machine, sealed; the public half is shown below for you to put on the server. Any key already kept is replaced.');
+  var own = cmdButton('Use my own', 'upload', '');
+  explain(own, 'Use a private key you already have. Paste it whole, with its BEGIN and END lines; its public half is worked out here.');
+  var dl = cmdButton('Download it', 'download', '');
+  explain(dl, 'The private half as a file, for keeping somewhere safe. That it was downloaded, and by whom, is written into Events.');
+  var fg = cmdButton('Forget it', 'forget', 'danger');
+  explain(fg, 'Delete the private key from this machine. Unless the server takes a password instead, nothing here reaches it until a new key is made and put on it.');
+  [mk, own, dl, fg].forEach(function (b) { P.row.appendChild(b); });
+  P.row.appendChild(el('span', 'spacer'));
+  P.row.appendChild(rbTryButton(t, cur));
+  var has = !!t.has_key;
+  clear(P.below);
+  dl.disabled = !has;
+  fg.disabled = !has;
+  mk.disabled = own.disabled = !RB.tools['ssh-keygen'];
+  if (!has || !t.pub) {
+    P.below.appendChild(el('p', 'btnhelp', 'No key yet — make one, or let it sign in with a password.'));
+  } else {
+    P.below.appendChild(el('p', 'btnhelp', 'The public half. Click it to copy.'));
+    P.below.appendChild(rbCopyme(t.pub, 'the public key is on the clipboard'));
+    P.below.appendChild(el('p', 'btnhelp', 'On the server, as the account the backups sign in with:'));
+    P.below.appendChild(rbCopyme("mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '" + t.pub + "' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"));
+  }
+  mk.onclick = function () {
+    rbConfirm(cur, t.kind, 'Make a key for ' + htmlText((f.name && f.name.value) || t.name || 'this destination'),
+      'A fresh ed25519 pair is made here. The private half stays on this machine and the public half is shown for you to put on the server.' + (has ? '<br><br><b>The key kept now is replaced</b>, so until the new public half is on the server, backups cannot sign in there.' : ''),
+      'Make one', function () {
+        return api('rbackup', {action: 'keygen', id: cur.id}).then(function () { toast('a new key was made — put the public half on the server', 'good'); });
+      }, false);
+  };
+  own.onclick = function () {
+    var key = null, pass = null;
+    rbOver(cur, t.kind, function (done) {
+      var answered = false;
+      modal('Use my own key', function (body2) {
+        var p = el('p', 'note');
+        p.innerHTML = 'An OpenSSH private key, whole, including its <code>BEGIN</code> and <code>END</code> lines. It is kept in this machine’s database, sealed, and never shown back. Its public half is worked out here, so you do not have to hand that over as well.';
+        body2.appendChild(p);
+        key = rbArea('', '-----BEGIN OPENSSH PRIVATE KEY-----');
+        key.rows = 11;
+        key.classList.remove('small');
+        body2.appendChild(key);
+        pass = rbMask('', '');
+        body2.appendChild(wrField('Its passphrase, if it has one', pass));
+      }, [{words: 'Cancel', close: true},
+          {words: 'Keep this key', cls: 'primary', go: function (b) {
+            answered = true;
+            busy(b, true);
+            api('rbackup', {action: 'key_paste', id: cur.id, key: key.value, passphrase: pass.value})
+              .then(function () { toast('the key was stored', 'good'); }).catch(oops).then(function () { done(); });
+          }}]);
+      MODAL_CLOSE = function () { if (!answered) done(); };
+    }).catch(oops);
+  };
+  dl.onclick = function () {
+    rbConfirm(cur, t.kind, 'Download the private key', 'The private half leaves this machine as a file. Anybody holding it can sign in to the server as <code>' + htmlText((f.user && f.user.value) || 'that account') + '</code>. That it was downloaded, and by whom, is written into Events.', 'Download it', function () {
+      return api('rbackup', {action: 'key_download', id: cur.id}).then(function (x) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([x.pem], {type: 'application/octet-stream'}));
+        a.download = x.file;
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+    }, false);
+  };
+  fg.onclick = function () {
+    rbConfirm(cur, t.kind, 'Forget the key', 'The private key is deleted from this machine. Unless the server takes a password instead, backups will not reach it until a new key is made and put on it.', 'Forget it', function () {
+      return api('rbackup', {action: 'key_forget', id: cur.id}).then(function () { toast('the key is gone'); });
+    });
+  };
+  s.appendChild(P.box);
+  f.ssh_cert = rbArea(t.ssh_cert || '', 'ssh-ed25519-cert-v01@openssh.com AAAA…');
+  var cf = wrField('SSH certificate of the key (only if the server wants one)', f.ssh_cert);
+  cf.style.marginTop = '12px';
+  s.appendChild(cf);
+  body.appendChild(s);
+  var h = el('div', 'rb-sec');
+  h.appendChild(el('h4', '', 'The server’s host key'));
+  var H = rbPanel('The key the server proves itself with. Trusted once, after comparing its fingerprint with the server’s own (<code>ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub</code> on it); a server answering with any other is refused - somebody in between, or the server reinstalled.');
+  var hf = cmdButton('Forget it', 'forget', 'danger');
+  H.row.appendChild(hf);
+  H.row.appendChild(el('span', 'spacer'));
+  H.row.appendChild(rbTryButton(t, cur));
+  var fps = t.hostkey_fp || [];
+  hf.disabled = !fps.length;
+  if (fps.length) {
+    H.below.appendChild(el('p', 'btnhelp', 'Trusted. Click to copy.'));
+    fps.forEach(function (x) { H.below.appendChild(rbCopyme(x)); });
+  } else {
+    H.below.appendChild(el('p', 'btnhelp', 'Not trusted yet — Try reaching it shows the fingerprint to trust.'));
+  }
+  hf.onclick = function () {
+    rbConfirm(cur, t.kind, 'Forget the host key', 'Backups stop going there until it is trusted again.', 'Forget it', function () {
+      return api('rbackup', {action: 'hostkey_forget', id: cur.id});
+    });
+  };
+  h.appendChild(H.box);
+  body.appendChild(h);
+}
+function rbFtpsBlock(body, t, f, cur) {
+  var s = el('div', 'rb-sec');
+  s.appendChild(el('h4', '', 'TLS'));
+  var g = el('div', 'wr-grid');
+  f.implicit = wrSelect([['0', 'explicit - AUTH TLS on port 21'], ['1', 'implicit - TLS from the start, port 990']], t.implicit ? '1' : '0');
+  f.implicit._get = function () { return f.implicit.value === '1' ? 1 : 0; };
+  f.implicit.onchange = function () { if (f.port && (!f.port.value || f.port.value === '21' || f.port.value === '990')) f.port.value = f.implicit.value === '1' ? '990' : '21'; };
+  g.appendChild(wrField('TLS', f.implicit));
+  f.tls_check = wrSelect([['system', 'against the authorities this machine trusts'], ['ca', 'against an authority of my own'], ['pin', 'pinned: exactly this certificate'], ['none', 'not checked (not safe)']], t.tls_check || 'system');
+  g.appendChild(wrField('The server’s certificate is checked', f.tls_check));
+  s.appendChild(g);
+  f.ca = rbArea(t.ca || '', '-----BEGIN CERTIFICATE-----');
+  var caf = wrField('The authority (PEM)', f.ca, t.ca_info ? 'Now: ' + (t.ca_info.subject || '') + ' · ' + rbWhen(t.ca_info.not_after) : 'The certificate of the authority that signed the server’s.');
+  s.appendChild(caf);
+  f.pin = wrText(t.pin || '', '64 hex digits - Try reaching it shows the server’s', 'mono');
+  var pinf = wrField('Pinned SHA-256 fingerprint', f.pin);
+  s.appendChild(pinf);
+  var show = function () { caf.hidden = f.tls_check.value !== 'ca'; pinf.hidden = f.tls_check.value !== 'pin'; };
+  f.tls_check.onchange = show;
+  show();
+  rbFtpsBlock.pin = f.pin;
+  rbFtpsBlock.check = f.tls_check;
+  body.appendChild(s);
+  var cc = el('div', 'rb-sec');
+  cc.appendChild(el('h4', '', 'Client certificate'));
+  var P = rbPanel('Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the <b>certificate</b> - give it to its administrator.');
+  var mk = cmdButton('Make one', 'key', '');
+  explain(mk, 'A key and a certificate for it, made here (EC P-256, five years). Any one kept is replaced.');
+  var own = cmdButton('Use my own', 'upload', '');
+  explain(own, 'A certificate and its key you have: PEM (both, in any order) or a PFX / PKCS#12 file with its password.');
+  var dl = cmdButton('Download it', 'download', '');
+  explain(dl, 'The certificate as a file (not its key), for the server’s administrator.');
+  var fg = cmdButton('Forget it', 'forget', 'danger');
+  [mk, own, dl, fg].forEach(function (b) { P.row.appendChild(b); });
+  P.row.appendChild(el('span', 'spacer'));
+  P.row.appendChild(rbTryButton(t, cur));
+  var cert = t.client_cert, info = t.client_cert_info;
+  dl.disabled = fg.disabled = !cert;
+  if (!cert) {
+    P.below.appendChild(el('p', 'btnhelp', 'No client certificate — most servers want none.'));
+  } else {
+    if (info) P.below.appendChild(noI18n(el('p', 'btnhelp', (info.subject || '') + ' · ' + rbWhen(info.not_after))));
+    P.below.appendChild(el('p', 'btnhelp', 'The certificate. Click it to copy.'));
+    P.below.appendChild(rbCopyme(cert, 'the certificate is on the clipboard'));
+  }
+  mk.onclick = function () {
+    rbConfirm(cur, t.kind, 'Make a client certificate', 'A key and a certificate for it are made here; the key stays on this machine.' + (cert ? '<br><br><b>The one kept now is replaced</b>: the server has to be given the new certificate.' : ''), 'Make one', function () {
+      return api('rbackup', {action: 'cert_make', id: cur.id, cn: 'isemon-backup-' + (RB.host || '')}).then(function () { toast('made — give the certificate to the server', 'good'); });
+    }, false);
+  };
+  own.onclick = function () {
+    var area = null, pw = null;
+    rbOver(cur, t.kind, function (done) {
+      var answered = false;
+      modal('Use my own client certificate', function (body2) {
+        var p = el('p', 'note');
+        p.innerHTML = 'The certificate and its private key, as PEM - pasted, in any order - or a <code>.pfx</code> / <code>.p12</code> file. The key is kept sealed and never shown back.';
+        body2.appendChild(p);
+        area = rbArea('', '-----BEGIN CERTIFICATE-----\n…\n-----BEGIN PRIVATE KEY-----');
+        area.rows = 11;
+        area.classList.remove('small');
+        body2.appendChild(area);
+        var file = el('input');
+        file.type = 'file';
+        file.accept = '.pem,.crt,.key,.pfx,.p12';
+        file.onchange = function () {
+          var fl = file.files[0];
+          if (!fl) return;
+          if (/\.(pfx|p12)$/i.test(fl.name)) fl.arrayBuffer().then(function (buf) {
+            var b = new Uint8Array(buf), s2 = '';
+            for (var i = 0; i < b.length; i++) s2 += String.fromCharCode(b[i]);
+            area.value = btoa(s2);
+          });
+          else fl.text().then(function (x) { area.value = (area.value ? area.value + '\n' : '') + x; });
+        };
+        body2.appendChild(wrField('Or a file', file));
+        pw = rbMask('', '');
+        body2.appendChild(wrField('The password of the key or of the PFX, if it has one', pw));
+      }, [{words: 'Cancel', close: true},
+          {words: 'Keep this certificate', cls: 'primary', go: function (b) {
+            answered = true;
+            busy(b, true);
+            api('rbackup', {action: 'cert_given', id: cur.id, text: area.value, password: pw.value})
+              .then(function () { toast('the certificate was stored', 'good'); }).catch(oops).then(function () { done(); });
+          }}]);
+      MODAL_CLOSE = function () { if (!answered) done(); };
+    }).catch(oops);
+  };
+  dl.onclick = function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([cert], {type: 'application/x-pem-file'}));
+    a.download = 'isemon-backup-client.crt';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  fg.onclick = function () {
+    rbConfirm(cur, t.kind, 'Forget the client certificate', 'Its key is deleted from this machine. A server that asks for one will refuse backups until another is made and given to it.', 'Forget it', function () {
+      return api('rbackup', {action: 'cert_forget', id: cur.id});
+    });
+  };
+  cc.appendChild(P.box);
+  body.appendChild(cc);
+}
+function rbTry(t, data, button, inEditor) {
+  if (button) busy(button, true);
+  var ask = {action: 'try', id: t.id || ''};
+  if (data) ask.target = data;
+  api('rbackup', ask).then(function (x) {
+    if (button) busy(button, false);
+    var show = function (host) {
+      clear(host);
+      if (x.hostkey_needed) {
+        host.appendChild(el('p', 'note warn', 'The server shows this host key. Compare it with the server’s own fingerprint before you trust it:'));
+        (x.fingerprints || []).forEach(function (fp) { host.appendChild(noI18n(el('div', 'mono small', fp))); });
+        var tb = cmdButton('Trust it', 'check', 'small primary');
+        tb.onclick = function () {
+          busy(tb, true);
+          var save = (inEditor && rbEdit.form) ? rbSaveForm(t.kind, {id: t.id}) : Promise.resolve(t);
+          save.then(function (saved) {
+            return api('rbackup', {action: 'hostkey_trust', id: saved.id, hostkey: x.hostkey}).then(function () {
+              toast('trusted', 'good');
+              return api('rbackup').then(function (d) {
+                RB = d;
+                var fresh = rbTarget(saved.id);
+                if (inEditor && fresh) rbEdit(fresh); else closeModal();
+                loadRbackup();
+              });
+            });
+          }).catch(function (e) { busy(tb, false); oops(e); });
+        };
+        host.appendChild(tb);
+        return;
+      }
+      var box = el('div', 'note ' + (x.ok ? 'good' : 'bad'));
+      box.appendChild(el('b', '', x.ok ? 'It works' : 'It does not work'));
+      if (x.ok) box.appendChild(noI18n(el('span', 'muted', ' (' + x.secs + ' s)')));
+      var ul = el('ul', 'rb-steps');
+      (x.steps || []).forEach(function (s) { ul.appendChild(el('li', '', '✓ ' + s)); });
+      if (x.error) ul.appendChild(noI18n(el('li', 'bad', '✗ ' + x.error)));
+      box.appendChild(ul);
+      var sc = x.server_cert;
+      if (sc && sc.fingerprint) {
+        var p = el('div', 'small');
+        p.appendChild(el('span', '', 'The server’s certificate: '));
+        p.appendChild(noI18n(el('span', 'mono', ((sc.cert || {}).subject || '') + ' · SHA-256 ' + sc.fingerprint)));
+        box.appendChild(p);
+        if (inEditor && rbFtpsBlock.pin && rbFtpsBlock.pin.isConnected) {
+          var pin = cmdButton('Pin this certificate', 'pin', 'small');
+          pin.onclick = function () { rbFtpsBlock.check.value = 'pin'; rbFtpsBlock.check.onchange(); rbFtpsBlock.pin.value = sc.fingerprint; toast('pinned - Save to keep it', 'good'); };
+          box.appendChild(pin);
+        }
+      }
+      host.appendChild(box);
+    };
+    var host = inEditor ? $('rb-try-out') : null;
+    if (host) show(host);
+    else modal('Trying ' + (t.name || ''), function (body) { var hh = el('div', 'rb-box'); body.appendChild(hh); show(hh); }, [{words: 'Close', close: true}], true);
+    if (!inEditor) loadRbackup();
+  }).catch(function (e) { if (button) busy(button, false); oops(e); });
+}
+function rbListThere(t) {
+  modal('Backups at ' + t.name, function (body) {
+    var host = el('div', 'rb-box');
+    host.appendChild(el('p', 'muted', 'Asking…'));
+    body.appendChild(host);
+    api('rbackup', {action: 'list', id: t.id}).then(function (x) {
+      clear(host);
+      var files = x.files || [];
+      if (!files.length) { host.appendChild(el('p', 'note', 'No backup of isemon there.')); return; }
+      host.appendChild(listTable(['Made', 'Machine', 'Size', ''], files, function (fl) {
+        var tr = el('tr');
+        var w = el('td');
+        w.appendChild(noI18n(el('div', '', stamp(fl.when))));
+        w.appendChild(noI18n(el('div', 'mono small muted', fl.name)));
+        tr.appendChild(w);
+        var n = el('td');
+        n.appendChild(noI18n(el('span', '', fl.host)));
+        if (fl.mine) { n.appendChild(document.createTextNode(' ')); n.appendChild(el('span', 'tag info', 'this machine')); }
+        tr.appendChild(n);
+        var sz = el('td', 'num');
+        sz.appendChild(noI18n(el('span', '', rbBytes(fl.bytes))));
+        if (!fl.encrypted) { sz.appendChild(document.createTextNode(' ')); sz.appendChild(el('span', 'tag crit', 'not locked')); }
+        tr.appendChild(sz);
+        var a = el('td', 'rowtools');
+        var dl = iconButton('download', 'Download it');
+        dl.onclick = function () {
+          busy(dl, true);
+          api('rbackup', {action: 'fetch', id: t.id, name: fl.name}).then(function (y) {
+            toast(y.message, 'good');
+            closeModal();
+            RB.job = y.job;
+            rbWatch();
+          }).catch(function (e) { busy(dl, false); oops(e); });
+        };
+        a.appendChild(dl);
+        var pb = iconButton('undo', 'Put this back…');
+        pb.onclick = function () { rbPutBackConfirm({id: t.id, name: fl.name, encrypted: fl.encrypted, when: fl.when, host: fl.host}); };
+        a.appendChild(pb);
+        var del = iconButton('trash', 'Delete it there');
+        del.onclick = function () {
+          confirmThen('Delete ' + htmlText(fl.name) + '?', 'It is deleted at ' + htmlText(t.name) + ', with its checksum and its RESTORE.md.', 'Delete it', function () {
+            api('rbackup', {action: 'delete_file', id: t.id, name: fl.name}).then(function () { toast('deleted', 'good'); rbListThere(t); }).catch(oops);
+          });
+        };
+        a.appendChild(del);
+        tr.appendChild(a);
+        return tr;
+      }, 'plain'));
+    }).catch(function (e) { clear(host); host.appendChild(noI18n(el('p', 'note bad', String(e.message || e)))); });
+  }, [{words: 'Close', close: true}], 'medium');
+}
+function rbPutBackConfirm(what) {
+  var pw = null;
+  modal('Put this backup back?', function (outer) {
+    var body = el('div', 'rb-box');
+    outer.appendChild(body);
+    var facts = [];
+    if (what.when) facts.push(['Made', stamp(what.when)]);
+    if (what.host) facts.push(['On', what.host]);
+    if (what.manifest) {
+      var m = what.manifest;
+      facts = [['Made', m.made_words], ['On', m.host + ' (' + (m.fqdn || '') + ')'], ['isemon', m.isemon], ['Database', m.engine_words || m.engine], ['The copy in it', rbBytes(m.copy_bytes)]];
+    }
+    if (facts.length) {
+      var dl = el('dl', 'cert-kv');
+      facts.forEach(function (f) { dl.appendChild(el('dt', '', f[0])); dl.appendChild(noI18n(el('dd', '', f[1] || '–'))); });
+      body.appendChild(dl);
+    }
+    if (what.said) body.appendChild(noI18n(el('p', 'note warn', what.said)));
+    body.appendChild(el('p', 'note warn', 'Everything in the database is replaced with what the backup holds - every record, the bans, the accounts, every setting, the certificate of the pages - and its keys are put in place. You sign in again afterwards, with an account the backup has. A copy of what is here now is made first (Settings → The database).'));
+    pw = rbMask('', what.encrypted === false ? '(not locked)' : 'empty: the password of the backups set here');
+    body.appendChild(wrField('Its password', pw, 'Only when it was locked with another password than the one set here now.'));
+  }, [{words: 'No, leave it', close: true},
+      {words: 'Put it back', cls: 'danger', icon: 'undo', close: true, go: function () {
+        var ask = {action: 'restore', password: pw.value};
+        if (what.upload) ask.upload = what.upload; else { ask.id = what.id; ask.name = what.name; }
+        api('rbackup', ask).then(function (x) {
+          toast(x.message, 'good');
+          rbRestoreWatch(x.job_id);
+        }).catch(oops);
+      }}], true);
+}
+function rbRestoreWatch(jid) {
+  modal('Putting the backup back', function (body) {
+    var bar = el('div', 'prog');
+    var fill = el('span');
+    fill.id = 'rbr-fill';
+    bar.appendChild(fill);
+    body.appendChild(bar);
+    var says = el('div', 'btnhelp');
+    says.id = 'rbr-says';
+    body.appendChild(says);
+  }, [{words: 'Close', close: true}], true);
+  var step = function () {
+    api('job&id=' + encodeURIComponent(jid), undefined, {quiet: true}).then(function (d) {
+      var j = d.job || {};
+      if ($('rbr-fill')) $('rbr-fill').style.width = (j.total ? Math.round(100 * j.done_n / j.total) : 5) + '%';
+      if ($('rbr-says')) $('rbr-says').textContent = j.last || '';
+      if (!j.done) { setTimeout(step, 1000); return; }
+      if (!j.ok) { if ($('rbr-says')) $('rbr-says').textContent = j.error; toast('putting it back failed: ' + j.error, 'bad'); return; }
+      var r = j.result || {};
+      if ($('rbr-says')) {
+        var said = $('rbr-says');
+        clear(said);
+        said.appendChild(el('div', '', 'Put back.'));
+        if ((r.carried || []).length) said.appendChild(noI18n(el('div', 'small', (r.carried || []).join(', '))));
+        if (r.safety) said.appendChild(noI18n(el('div', 'small muted', r.safety)));
+      }
+      toast('the backup is back', 'good');
+      setTimeout(function () { location.reload(); }, 4000);
+    }).catch(function () {
+      /* Who was signed in is what the backup says now: api() takes the page
+         to the sign-in when the session is gone. */
+      setTimeout(step, 2000);
+    });
+  };
+  setTimeout(step, 500);
+}
+function rbPutBackFile() {
+  var file = el('input');
+  file.type = 'file';
+  file.accept = '.enc,.gz';
+  file.onchange = function () {
+    var fl = file.files[0];
+    if (!fl) return;
+    toast('sending ' + fl.name + '…', 'good');
+    fetch('?api=rbackup-upload', {method: 'POST', body: fl, credentials: 'same-origin',
+                                  headers: {'X-Isemon-Rbackup': '1', 'Content-Type': 'application/octet-stream'}})
+      .then(function (r) {
+        return r.json().catch(function () {
+          throw new Error('the server did not answer with anything readable (HTTP ' + r.status + ')');
+        }).then(function (d) {
+          if (!r.ok || d.ok === false) throw new Error(d.error || ('the server said ' + r.status));
+          return d;
+        });
+      }).then(function (d) {
+        rbPutBackConfirm({upload: d.upload, encrypted: d.locked, manifest: d.manifest, said: d.said});
+      }).catch(oops);
+  };
+  file.click();
+}
+</script>
+<script nonce="<?= h($nonce) ?>">
+/* ==========================================================================
    Firewall and access, Certificates and TLS, Upgrades (1.10.222)
    --------------------------------------------------------------------------
    Drawn as otp draws the same three: what is asked is kept by the daemon,
@@ -36950,8 +38962,165 @@ function drawUpgradeRun(d) {
   lg.textContent = (d.log || []).length ? d.log.join('\n') : '–';
   noI18n(lg);
 }
+/* New versions on the web (1.10.228): what the address had when it was last
+   asked, and one press to put the newest in - as otp draws it. */
+function drawUpWeb(d) {
+  var w = d.online || {};
+  var o = w.online || {};
+  var host = $('up-web');
+  if (!host) return;
+  clear(host);
+  var p = el('p', 'note ' + (o.error ? 'bad' : (o.newer ? 'good' : '')));
+  if (!o.at) p.textContent = w.check ? 'Not looked at yet - within minutes, or press Look now.' : 'Not looked at: looking every day is switched off below. Look now asks once.';
+  else if (o.error) p.textContent = 'Looked ' + ago(o.at) + ': ' + o.error;
+  else if (o.newer) p.textContent = 'isemon ' + o.newest.version + ' is there - this server runs ' + (o.here || d.version) + ' (looked ' + ago(o.at) + ')';
+  else if (o.newest) p.textContent = 'Nothing newer: the newest there is ' + o.newest.version + ' and this server runs ' + (o.here || d.version) + ' (looked ' + ago(o.at) + ')';
+  else p.textContent = 'No isemon package there (looked ' + ago(o.at) + ')';
+  host.appendChild(p);
+  if (o.url || w.url) host.appendChild(noI18n(el('p', 'mono small muted', o.url || w.url)));
+  if (!ADMIN) return;
+  var row = el('div', 'btnrow');
+  var look = cmdButton('Look now', 'refresh', '');
+  look.onclick = function () {
+    busy(look, true);
+    api('upgrade', {action: 'online_look'}).then(function (x) { toast(x.message, 'good'); drawUpgrade(x); })
+      .catch(oops).then(function () { busy(look, false); });
+  };
+  row.appendChild(look);
+  if (o.newer && !d.running) {
+    /* More than one version newer than this one (1.10.231): which of them is
+       chosen here, the newest unless another is picked. One: as it was. */
+    var here = upVer(o.here || d.version);
+    var newer = (o.packages || []).filter(function (p) { return upCmp(upVer(p.version), here) > 0; });
+    if (!newer.length) newer = [o.newest];
+    if (!UP.pick || !newer.some(function (p) { return p.version === UP.pick; })) UP.pick = o.newest.version;
+    var chosen = function () {
+      return newer.filter(function (p) { return p.version === UP.pick; })[0] || o.newest;
+    };
+    var up = cmdButton('Upgrade to ' + chosen().version + ' now', 'play', 'primary');
+    if (newer.length > 1) {
+      var pick = wrSelect(newer.map(function (p, n) {
+        return [p.version, 'isemon ' + p.version + (n === 0 ? ' (the newest)' : '')];
+      }), UP.pick);
+      noI18n(pick);
+      pick.onchange = function () {
+        UP.pick = pick.value;
+        setButtonIcon(up, 'play', 'Upgrade to ' + chosen().version + ' now');
+      };
+      var pr = el('div', 'up-pick');
+      pr.appendChild(el('span', '', num(newer.length) + ' versions newer than this one are there - put in:'));
+      pr.appendChild(pick);
+      host.appendChild(pr);
+    }
+    up.onclick = function () {
+      var c = chosen();
+      confirmThen('Upgrade to isemon ' + c.version + '?', htmlText('It is fetched from '
+        + (c.url || o.url) + ', its signature checked, and this server is upgraded: isemon '
+        + 'restarts once, and for a minute nothing is read or banned.'), 'Upgrade', function () {
+        busy(up, true);
+        api('upgrade', {action: 'online_fetch', version: c.version, start: true}).then(function (x) {
+          toast(x.message, 'good'); drawUpgrade(x); if (x.running) upgradeAgain(2000);
+        }).catch(oops).then(function () { busy(up, false); });
+      }, false);
+    };
+    row.appendChild(up);
+    var only = cmdButton('Only fetch it', 'down', '');
+    explain(only, 'Fetched and checked, and left ready below - put in when Upgrade is pressed.');
+    only.onclick = function () {
+      busy(only, true);
+      api('upgrade', {action: 'online_fetch', version: chosen().version}).then(function (x) { toast(x.message, 'good'); drawUpgrade(x); })
+        .catch(oops).then(function () { busy(only, false); });
+    };
+    row.appendChild(only);
+  }
+  host.appendChild(row);
+}
+/* A version as numbers, and two of them compared. */
+function upVer(v) {
+  return String(v || '').split('.').map(function (x) { return parseInt(x, 10) || 0; });
+}
+function upCmp(a, b) {
+  for (var i = 0; i < Math.max(a.length, b.length); i++) {
+    if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0) ? 1 : -1;
+  }
+  return 0;
+}
+/* Going back (1.10.232): the older versions at upgrade_url, each safe or why
+   not, and a button for the safe ones - asked for twice, the version typed. */
+function drawUpBack(d) {
+  var host = $('up-back');
+  if (!host) return;
+  clear(host);
+  var b = d.back || {};
+  var older = b.older || [];
+  /* Offered only when switched on (1.10.233, Settings below: Offer going
+     back to an older version); off, the card is not there at all. */
+  $('up-back-card').hidden = !b.offered;
+  if (!b.offered) return;
+  host.appendChild(peekFacts([['Safe as far back as', noI18n(el('span', 'mono', b.floor || '?'))],
+                              ['Running now', noI18n(el('span', 'mono', d.version || '?'))]]));
+  if (!b.looked) {
+    host.appendChild(el('p', 'note', 'The address has not been looked at yet: Look now, above, lists what is there.'));
+    return;
+  }
+  if (b.error) { host.appendChild(el('p', 'note bad', 'The address did not answer: ' + b.error)); return; }
+  if (!older.length) { host.appendChild(el('p', 'note', 'No older version is there.')); return; }
+  (b.busy || []).forEach(function (w) { host.appendChild(el('p', 'note warn', 'Not now: ' + w)); });
+  var t = el('table', 'rows');
+  var tb = el('tbody');
+  older.forEach(function (p) {
+    var tr = el('tr');
+    tr.appendChild(noI18n(el('td', 'mono', 'isemon ' + p.version)));
+    var st = el('td');
+    st.appendChild(el('span', 'tag ' + (p.safe ? 'ok' : 'warn'), p.safe ? 'safe' : 'not safe'));
+    st.appendChild(el('span', 'sub', p.safe ? 'the database is left as it is' : p.why));
+    tr.appendChild(st);
+    var td = el('td', 'right');
+    /* What changed in that version, as this version's README keeps it. */
+    var what = cmdButton('What changed', 'list', 'small');
+    what.onclick = function () { upChangelog(p); };
+    td.appendChild(what);
+    if (p.safe && ADMIN) {
+      var go = cmdButton('Go back to ' + p.version + '…', 'undo', 'small danger');
+      go.disabled = !!(b.busy || []).length || !!d.running;
+      go.onclick = function () { upGoBack(p, go); };
+      td.appendChild(go);
+    }
+    tr.appendChild(td);
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  host.appendChild(t);
+}
+function upChangelog(p) {
+  modal('What changed in isemon ' + p.version, function (body) {
+    if (p.changelog) body.appendChild(noI18n(el('pre', 'up-lines', p.changelog)));
+    else body.appendChild(el('p', 'note', 'This version’s README has no entry for it.'));
+  }, [{words: 'Close', close: true}]);
+}
+function upGoBack(p, button) {
+  var typed = null;
+  modal('Go back to isemon ' + p.version + '?', function (body) {
+    body.appendChild(el('p', 'note', p.waiting
+      ? 'The package waiting has its signature checked again, and root puts it in with its own install.sh. The database is left exactly as it is - nothing is copied or put back. isemon restarts once, and for a minute nothing is read or banned. Upgrading again later is the ordinary upgrade.'
+      : 'It is fetched from ' + (p.url || 'upgrade_url') + ', its signature checked, and root puts it in with its own install.sh. The database is left exactly as it is - nothing is copied or put back. isemon restarts once, and for a minute nothing is read or banned. Upgrading again later is the ordinary upgrade.'));
+    typed = wrText('', p.version, 'mono');
+    noI18n(typed);
+    body.appendChild(wrField('Type the version to go back to', typed));
+  }, [{words: 'No, leave it', close: true},
+      {words: 'Go back', cls: 'danger', icon: 'undo', go: function () {
+        if (!typed || typed.value.trim() !== p.version) { toast('type ' + p.version + ' to go back to it', 'warn'); return; }
+        closeModal();
+        busy(button, true);
+        api('upgrade', p.waiting ? {action: 'start'} : {action: 'go_back', version: p.version}).then(function (x) {
+          toast(x.message, 'good'); drawUpgrade(x); if (x.running) upgradeAgain(2000);
+        }).catch(oops).then(function () { busy(button, false); });
+      }}], true);
+}
 function drawUpgrade(d) {
   UP.last = d;
+  drawUpWeb(d);
+  drawUpBack(d);
   var facts = $('up-facts');
   clear(facts);
   var fact = function (k, v) {
@@ -36983,6 +39152,14 @@ function drawUpgrade(d) {
   var running = !!d.running;
   $('up-forget').hidden = !d.package || running;
   $('up-start').disabled = !d.package || running || !d.unit;
+  /* A package waiting to go back to (1.10.232) says so on its button. */
+  var backPk = !!(d.package && d.package.downgrade);
+  if ($('up-start').dataset.back !== String(backPk)) {
+    $('up-start').dataset.back = String(backPk);
+    setButtonIcon($('up-start'), backPk ? 'undo' : 'play', backPk ? 'Go back to this version' : 'Upgrade this server');
+    $('up-start').classList.toggle('danger', backPk);
+    $('up-start').classList.toggle('primary', !backPk);
+  }
   var rd = $('up-ready');
   clear(rd);
   if (!d.unit) {
@@ -37030,6 +39207,7 @@ if ($('up-drop')) {
     });
     $('up-start').onclick = function () {
       var p = (UP.last || {}).package || {};
+      if (p.downgrade) { upGoBack({version: p.version, waiting: true}, $('up-start')); return; }
       confirmThen('Upgrade this server to ' + htmlText(p.version || '?'),
         'Root checks the package again and runs its install.sh --upgrade. isemon restarts once, '
         + 'for a few seconds: these pages stop answering for that moment and the logs are read on '
@@ -37051,6 +39229,335 @@ if ($('up-drop')) {
   }());
 }
 
+</script>
+<script nonce="<?= h($nonce) ?>">
+/* ==========================================================================
+   Settings → Time (1.10.228; after otp's, 1.0.120)
+   --------------------------------------------------------------------------
+   This server's clock as chrony sees it, its sources, and - when isemon is to
+   set them - the time servers and the time zone. Root reads the clock every
+   minute (ntp.ask, ntp.json); the servers wait for the save bar, as every
+   setting does, and root puts them into /etc/chrony.conf. Refreshing by
+   itself redraws the clock and the sources, never the form being filled in.
+   ========================================================================== */
+var NTP = {d: null, timer: null, draft: null, dirty: false, ver: 0};
+function loadNtp() {
+  api('ntp').then(drawNtp).catch(oops);
+  clearInterval(NTP.timer);
+  NTP.timer = setInterval(function () {
+    if (!paneLive('time')) { clearInterval(NTP.timer); NTP.timer = null; return; }
+    if (document.hidden) return;
+    api('ntp', undefined, {quiet: true}).then(function (d) { drawNtp(d, true); }).catch(function () {});
+  }, 10000);
+}
+function ntpMs(s) {
+  if (s === undefined || s === null || isNaN(s)) return '–';
+  var ms = s * 1000;
+  var a = Math.abs(ms);
+  return (ms >= 0 ? '+' : '−') + (a >= 1000 ? (a / 1000).toFixed(2) + ' s'
+    : (a >= 10 ? a.toFixed(1) : a.toFixed(3)) + ' ms');
+}
+function ntpHealth(d) {
+  var nd = (d.now || {}).data || {};
+  var t = nd.tracking || {};
+  if (!nd.time) return {k: 'crit', w: 'not read yet'};
+  if (!nd.chrony) return nd.ntpsynchronized === 'yes' ? {k: 'ok', w: 'synchronised (not chrony)'}
+    : {k: 'crit', w: 'chrony is not installed'};
+  if (t.leap === 'Not synchronised' || !t.stratum) return {k: 'crit', w: 'not synchronised'};
+  var off = Math.abs(t.offset || 0);
+  if (off > 1) return {k: 'crit', w: 'synchronised, but off'};
+  if (off > 0.1) return {k: 'warn', w: 'synchronised'};
+  return {k: 'ok', w: 'synchronised'};
+}
+function ntpFromServer(d) {
+  return JSON.parse(JSON.stringify(d.conf || {}));
+}
+function drawNtp(d, quiet) {
+  var body = $('ntp-body');
+  if (!body || !d) return;
+  NTP.d = d;
+  if (!$('ntp-live')) {
+    clear(body);
+    body.appendChild(el('div', '', '')).id = 'ntp-live';
+    body.appendChild(el('div', '', '')).id = 'ntp-form-host';
+  }
+  var live = $('ntp-live');
+  clear(live);
+  if (!d.helper) live.appendChild(wrRootLine({helper: false}, 'this'));
+  live.appendChild(ntpCard(d));
+  live.appendChild(ntpSources(d));
+  /* The form: drawn again only when nothing is changed in it and nobody is
+     in one of its boxes - never from under the person filling it in. */
+  var formHost = $('ntp-form-host');
+  var busyHere = formHost.contains(document.activeElement)
+    && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (!quiet || (!NTP.dirty && !busyHere)) {
+    if (!NTP.dirty || !NTP.draft) NTP.draft = ntpFromServer(d);
+    clear(formHost);
+    formHost.appendChild(ntpForm(d));
+  }
+  explainWhatWasDrawn($('pane-time'));
+}
+function ntpCard(d) {
+  var nd = (d.now || {}).data || {};
+  var t = nd.tracking || {};
+  var h = ntpHealth(d);
+  var grid = el('div', 'cert-grid');
+  var card = el('section', 'cert-card ntp-node');
+  var head = el('header', 'cert-h');
+  var title = el('div', 'cert-title');
+  title.appendChild(el('span', 'cert-target', 'This server'));
+  title.appendChild(noI18n(el('b', '', location.hostname || 'this machine')));
+  head.appendChild(title);
+  head.appendChild(el('span', 'tag ' + h.k, h.w));
+  card.appendChild(head);
+  var big = el('div', 'ntp-big');
+  big.appendChild(noI18n(el('span', 'ntp-off', ntpMs(t.offset))));
+  big.appendChild(el('span', 'muted small', ' off the time servers'));
+  card.appendChild(big);
+  var clock = '';
+  if (nd.time) {
+    var at = (d.now || {}).at || d.t;
+    clock = new Date((nd.time + ((d.t || at) - at)) * 1000).toLocaleString(numLang());
+  }
+  var facts = [
+    ['Follows', t.ref || t.ref_id || '–', true],
+    ['Stratum', t.stratum !== undefined ? String(t.stratum) : '–', true],
+    ['Last correction', ntpMs(t.last_offset), true],
+    ['Frequency', t.freq !== undefined ? t.freq.toFixed(3) + ' ppm' : '–', true],
+    ['Root delay / dispersion', t.root_delay !== undefined
+      ? ntpMs(t.root_delay).replace('+', '') + ' / ' + ntpMs(t.root_disp).replace('+', '') : '–', true],
+    ['Leap status', t.leap || '–'],
+    ['Time zone', nd.timezone || '–', true],
+    ['Its time', clock || '–', true],
+    ['Read', d.now && d.now.at ? ago(d.now.at) : '–']
+  ];
+  var kv = el('dl', 'cert-kv');
+  facts.forEach(function (f) {
+    kv.appendChild(el('dt', '', f[0]));
+    var dd = el('dd', '', f[1]);
+    if (f[2]) noI18n(dd);
+    kv.appendChild(dd);
+  });
+  card.appendChild(kv);
+  if (d.said) {
+    var bad = el('div', 'note bad');
+    bad.appendChild(el('b', '', 'Root did not answer:'));
+    bad.appendChild(noI18n(el('span', 'mono', d.said)));
+    card.appendChild(bad);
+  }
+  if (nd.said) card.appendChild(noI18n(el('p', 'small muted mono', nd.said)));
+  var ap = d.applied || {};
+  if (ap.at && (d.conf || {}).at) {
+    var st = el('div', 'fw-state');
+    st.appendChild(el('span', 'dot ' + (ap.ok ? (ap.hash === d.hash ? 'ok' : 'warn') : 'crit')));
+    st.appendChild(el('span', '', ap.ok ? 'Time servers set ' + ago(ap.at)
+                                        : 'Time servers NOT set ' + ago(ap.at)));
+    card.appendChild(st);
+    if (ap.said) card.appendChild(noI18n(el('p', 'small ' + (ap.ok ? 'muted' : 'bad') + ' mono', ap.said)));
+  }
+  if (d.may && d.helper) {
+    var row = el('div', 'btnrow');
+    var re = cmdButton('Read it again', 'refresh', 'small');
+    re.onclick = function () {
+      api('ntp', {action: 'read'}).then(function (r) {
+        toast(r.message, 'good'); setTimeout(loadNtp, 4000);
+      }).catch(oops);
+    };
+    var sy = cmdButton('Step it now', 'clock', 'small');
+    explain(sy, 'The clock set to the time servers at once (chronyc makestep), not slewed slowly - for a clock that is far off.');
+    sy.onclick = function () {
+      confirmThen('Step the clock of this server now?',
+        'The clock jumps to the time servers’ time at once. Records read in that moment may look out of order.',
+        'Step it', function () {
+          api('ntp', {action: 'sync'}).then(function (r) {
+            toast(r.message, 'good'); setTimeout(loadNtp, 6000);
+          }).catch(oops);
+        }, false);
+    };
+    row.appendChild(re);
+    row.appendChild(sy);
+    card.appendChild(row);
+  }
+  grid.appendChild(card);
+  return grid;
+}
+function ntpSources(d) {
+  var nd = (d.now || {}).data || {};
+  var sc = el('div', 'card full');
+  sc.style.marginTop = '14px';
+  sc.appendChild(el('h2', '', 'Where the time comes from'));
+  var srcs = nd.sources || [];
+  var STATES = {'*': ['ok', 'followed'], '+': ['ok', 'combined'], '-': ['', 'not combined'],
+                '?': ['crit', 'unreachable'], 'x': ['crit', 'false ticker'], '~': ['warn', 'too variable']};
+  if (!srcs.length) sc.appendChild(el('p', 'note', 'No source - chrony has none, or is not installed.'));
+  else sc.appendChild(listTable(['State', 'Source', 'Stratum', 'Asked every', 'Reached', 'Last heard', 'Offset'],
+    srcs, function (s) {
+      var tr = el('tr');
+      var stt = STATES[s.state] || ['', s.state];
+      var td = el('td');
+      td.appendChild(el('span', 'tag ' + stt[0], stt[1]));
+      if (s.mode === '=') td.appendChild(el('span', 'muted small', ' peer'));
+      tr.appendChild(td);
+      tr.appendChild(noI18n(el('td', 'mono', s.name)));
+      tr.appendChild(el('td', 'num', String(s.stratum)));
+      tr.appendChild(el('td', 'num', span(Math.pow(2, s.poll || 0))));
+      var r = el('td');
+      var bits = el('span', 'reach');
+      for (var i = 7; i >= 0; i--) bits.appendChild(el('i', (s.reach >> i) & 1 ? 'on' : ''));
+      bits.title = (s.reach || 0).toString(2).padStart(8, '0') + ' - the last 8 tries';
+      r.appendChild(bits);
+      tr.appendChild(r);
+      tr.appendChild(el('td', 'muted', s.last_rx === null || s.last_rx === undefined ? '–' : span(s.last_rx) + ' ago'));
+      tr.appendChild(noI18n(el('td', 'num mono', ntpMs(s.offset) + ' ± ' + ntpMs(s.error).replace('+', ''))));
+      return tr;
+    }, 'plain'));
+  var own = nd.own || [];
+  if (own.length && !nd.managed) {
+    sc.appendChild(el('p', 'muted small', 'Its own /etc/chrony.conf:'));
+    sc.appendChild(noI18n(el('pre', 'fw-pre mono', own.join('\n'))));
+  }
+  return sc;
+}
+function ntpDirty() {
+  NTP.dirty = true;
+  NTP.ver += 1;
+  extraPending('ntp', {save: ntpSave, reset: function () {
+    NTP.dirty = false; NTP.draft = null; extraDone('ntp'); loadNtp();
+  }});
+}
+function ntpCheck(label, on, help, set) {
+  var l = el('label', 'check small ntp-check');
+  var cb = el('input');
+  cb.type = 'checkbox';
+  cb.checked = !!on;
+  cb.onchange = function () { set(cb.checked); };
+  l.appendChild(cb);
+  l.appendChild(el('span', '', label));
+  explain(l, help);
+  return l;
+}
+function ntpForm(d) {
+  var dr = NTP.draft;
+  var card = el('div', 'card full');
+  card.id = 'ntp-form';
+  card.style.marginTop = '14px';
+  /* Anything changed here waits for the save bar at the bottom. */
+  ['input', 'change'].forEach(function (ev) { card.addEventListener(ev, function () { ntpDirty(); }); });
+  card.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('button')) ntpDirty();
+  });
+  card.appendChild(el('h2', '', 'The time servers'));
+  card.appendChild(wrRow('isemon sets the time servers',
+    'Off: the machine keeps its own /etc/chrony.conf (AlmaLinux’s pool, or what you set by hand) - shown and checked here, not changed. On: the servers below; the file’s own server and pool lines are commented out, and put back when switched off again.',
+    wrSwitch(dr.manage, function (v) { dr.manage = v; draw(); }, !d.may)));
+  var body = el('div');
+  card.appendChild(body);
+  var draw = function () {
+    clear(body);
+    body.hidden = !dr.manage;
+    if (!dr.servers) dr.servers = [];
+    var list = el('div', 'ntp-servers');
+    dr.servers.forEach(function (s, i) {
+      var row = el('div', 'ntp-srv');
+      var hostIn = wrText(s.host, 'ntp.example.cz', 'mono');
+      hostIn.oninput = function () { s.host = hostIn.value.trim(); };
+      var kind = wrSelect([['server', 'one server'], ['pool', 'a pool (several addresses)']], s.pool ? 'pool' : 'server');
+      kind.onchange = function () { s.pool = kind.value === 'pool'; };
+      row.appendChild(hostIn);
+      row.appendChild(kind);
+      row.appendChild(ntpCheck('iburst', s.iburst,
+        'Four quick questions at the start: synchronised in seconds, not minutes.',
+        function (v) { s.iburst = v; }));
+      row.appendChild(ntpCheck('preferred', s.prefer,
+        'Followed before the others when it is good.', function (v) { s.prefer = v; }));
+      row.appendChild(ntpCheck('NTS', s.nts,
+        'Network Time Security: the server proves who it is (time.cloudflare.com, ptbtime1.ptb.de, nts.netnod.se…). Needs TCP 4460 out.',
+        function (v) { s.nts = v; }));
+      var x = iconButton('trash', 'Take it away');
+      x.onclick = function () { dr.servers.splice(i, 1); draw(); };
+      row.appendChild(x);
+      list.appendChild(row);
+    });
+    body.appendChild(list);
+    var adds = el('div', 'btnrow');
+    var add = cmdButton('Add a server', 'add', 'small');
+    add.onclick = function () {
+      dr.servers.push({host: '', pool: false, iburst: true, prefer: false, nts: false}); draw();
+    };
+    adds.appendChild(add);
+    [['cz.pool.ntp.org', true, false], ['pool.ntp.org', true, false], ['time.cloudflare.com', false, true],
+     ['tik.cesnet.cz', false, false], ['tak.cesnet.cz', false, false]].forEach(function (p) {
+      var b = cmdButton('+ ' + p[0], '', 'small');
+      noI18n(b);
+      b.onclick = function () {
+        if (dr.servers.some(function (s) { return s.host === p[0]; })) return;
+        dr.servers.push({host: p[0], pool: p[1], iburst: true, prefer: false, nts: p[2]}); draw();
+      };
+      adds.appendChild(b);
+    });
+    body.appendChild(adds);
+    var g = el('div', 'wr-grid');
+    g.style.marginTop = '14px';
+    var ms = dr.makestep || [1, 3];
+    var stepS = wrText(String(ms[0]), '1', 'mono');
+    stepS.oninput = function () { dr.makestep = [stepS.value, (dr.makestep || [1, 3])[1]]; };
+    var stepN = wrText(String(ms[1]), '3', 'mono');
+    stepN.oninput = function () { dr.makestep = [(dr.makestep || [1, 3])[0], stepN.value]; };
+    g.appendChild(wrField('Step when off by more than (s)', stepS,
+      'Further off than this, the clock jumps to the right time instead of being slowed or sped up gently.'));
+    g.appendChild(wrField('…in the first updates', stepN,
+      'How many updates after chronyd starts may step it: 3 is after a boot; -1 any time.'));
+    var mins = wrText(String(dr.minsources || 1), '1', 'mono');
+    mins.oninput = function () { dr.minsources = mins.value; };
+    g.appendChild(wrField('Sources that have to agree', mins,
+      'The clock is set only when at least this many sources agree. 1 with one server; 2 or 3 with several.'));
+    var allow = wrText(Array.isArray(dr.allow) ? dr.allow.join(', ') : (dr.allow || ''), '192.0.2.0/24', 'mono');
+    allow.oninput = function () { dr.allow = allow.value; };
+    g.appendChild(wrField('Serve the time to', allow,
+      'Networks that may ask this server for the time (UDP 123) - the switches or the VPN concentrators, say. Empty: nobody. When isemon looks after the firewall, it opens it by itself (NTP (time served)).'));
+    body.appendChild(g);
+    if (!d.may) ntpReadOnly(body);
+  };
+  draw();
+  var zones = d.zones || [];
+  if (dr.timezone && zones.indexOf(dr.timezone) < 0) zones = [dr.timezone].concat(zones);
+  var tz = wrSelect([['', '- as the machine has it -']].concat(zones.map(function (z) { return [z, z]; })),
+                    dr.timezone || '');
+  tz.onchange = function () { dr.timezone = tz.value; };
+  var g2 = el('div', 'wr-grid');
+  g2.style.marginTop = '14px';
+  g2.appendChild(wrField('Time zone', tz,
+    'Of the machine: the logs and the times on these pages (timedatectl set-timezone).'));
+  card.appendChild(g2);
+  card.appendChild(el('p', 'muted small', 'Saved with the bar at the bottom; root then puts them in within seconds.'));
+  if (!d.may) ntpReadOnly(card);
+  return card;
+}
+function ntpReadOnly(node) {
+  Array.prototype.forEach.call(node.querySelectorAll('input, select, button'),
+    function (x) { x.disabled = true; });
+}
+function ntpSave() {
+  var dr = NTP.draft;
+  if (!dr) return Promise.resolve(true);
+  var ver = NTP.ver;
+  var c = {manage: !!dr.manage, servers: (dr.servers || []).filter(function (s) { return s.host; }),
+           allow: dr.allow, step_s: (dr.makestep || [1, 3])[0], step_n: (dr.makestep || [1, 3])[1],
+           minsources: dr.minsources, timezone: dr.timezone};
+  return api('ntp', {action: 'save', conf: c}).then(function (r) {
+    toast(r.message, 'good');
+    if (NTP.ver !== ver) return false;        // changed while it was saved: still to save
+    NTP.dirty = false; NTP.draft = null;
+    extraDone('ntp');
+    loadNtp();
+    setTimeout(function () { if (paneLive('time')) loadNtp(); }, 5000);
+    return true;
+  });
+}
+/* Opened straight at this pane, it was switched to before this block was
+   read: drawn now. */
+setTimeout(function () { if (paneLive('time')) loadNtp(); }, 0);
 </script>
 </body>
 </html>

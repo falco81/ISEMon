@@ -17,7 +17,10 @@ runs this as root. This then trusts nothing it was handed:
   * every file in it is listed in MANIFEST with the right hash, nothing more,
     no links, no device, no path outside its one folder;
   * it is not older than the version installed (the same one again is a
-    retry and is allowed).
+    retry and is allowed) - unless going back was asked for (1.10.232), and
+    then not older than DOWNGRADE_FLOOR of the version installed: the oldest
+    one that can still run on the database this one has used. That floor is
+    read from root's own copy of the program, never from what was asked.
 
 Then its own install.sh --upgrade --yes is run, exactly as somebody would
 on the command line, and what it said is written back for the pages.
@@ -108,6 +111,28 @@ def installed_version():
     return ''
 
 
+def installed_floor():
+    """How far back the installed version says it is safe to go: the oldest
+    version that can run on a database it has used (1.10.232). '' when it
+    does not say - an older one, or none installed - and then nothing goes
+    back from the pages."""
+    try:
+        with open(os.path.join(LIB_DIR, 'isemon.py'), encoding='utf-8') as f:
+            for line in f:
+                m = re.match(r"^DOWNGRADE_FLOOR = '([0-9]+(?:\.[0-9]+){2,3})'", line)
+                if m:
+                    return m.group(1)
+    except OSError:
+        pass
+    return ''
+
+
+# Where the console at login is wired in. Going back to a version that has no
+# console (before 1.10.228), the profile script would run `isemon --console`
+# on every root login and be told the option is not known.
+CONSOLE_PROFILE = os.environ.get('ISEMON_CONSOLE_PROFILE', '/etc/profile.d/zz-isemon-console.sh')
+
+
 def trusted_keys():
     try:
         names = sorted(n for n in os.listdir(KEYS_DIR) if n.endswith('.pub'))
@@ -148,6 +173,7 @@ def inspect(path, extract_to=None):
         # getmembers() read every header first, millions of them if the
         # package said so, before anything was counted.
         members = []
+        declared = 0
         try:
             while True:
                 one = tar.next()
@@ -156,6 +182,13 @@ def inspect(path, extract_to=None):
                 members.append(one)
                 if len(members) > MOST_FILES:
                     break
+                # Counted here, before the next header (1.10.227): reaching
+                # it means unpacking this one, and a few megabytes of
+                # package saying "two gigabytes of zeros" twice kept root
+                # unpacking for minutes before the count below refused it.
+                declared += max(0, one.size)
+                if declared > MOST_UNPACKED:
+                    raise Refused('the package unpacks to more than 256 MB')
         except (tarfile.TarError, OSError, EOFError) as e:
             raise Refused('the package is damaged: %s' % e)
         if not members or len(members) > MOST_FILES:
@@ -274,7 +307,8 @@ def inspect(path, extract_to=None):
     return {'version': version, 'top': top, 'files': len(have), 'signed_by': who,
             'bytes': size, 'changelog': changelog, 'installed': have_v,
             'newer': not have_v or version_tuple(version) > version_tuple(have_v),
-            'older': bool(have_v) and version_tuple(version) < version_tuple(have_v)}
+            'older': bool(have_v) and version_tuple(version) < version_tuple(have_v),
+            'floor': installed_floor()}
 
 
 # ---- writing where isemon may also write: never through a link ----------------------
@@ -325,7 +359,28 @@ def status(**fields):
     write_safely(os.path.join(UPGRADE_DIR, 'status.json'), json.dumps(fields))
 
 
-def put_in(package, ident='', want_sha='', by='the command line', log_to=None):
+def may_go_back(info, want_floor=''):
+    """Refused unless going back to this package is safe: never below the
+    floor root's own copy of the installed version names, nor below the one
+    the database has seen (passed by the daemon - it may only raise it)."""
+    floor = installed_floor()
+    if not floor:
+        raise Refused('isemon %s does not say how far back is safe; going back is done on the '
+                      'command line' % (info.get('installed') or '?'))
+    try:
+        if want_floor and version_tuple(want_floor) > version_tuple(floor):
+            floor = want_floor
+    except ValueError:
+        pass
+    if version_tuple(info['version']) < version_tuple(floor):
+        raise Refused('isemon %s is older than %s, the oldest version that can run on this '
+                      'database - going back that far would need the database put back too'
+                      % (info['version'], floor))
+    return floor
+
+
+def put_in(package, ident='', want_sha='', by='the command line', log_to=None,
+           downgrade=False, want_floor=''):
     """Check the package and run its install.sh --upgrade. Returns (rc, log)."""
     if os.geteuid() != 0:
         raise Refused('putting a version in takes root')
@@ -362,19 +417,29 @@ def put_in(package, ident='', want_sha='', by='the command line', log_to=None):
         unpacked = os.path.join(work, 'x')
         os.makedirs(unpacked, mode=0o700)
         info = inspect(copy, extract_to=unpacked)
-        if info['older']:
-            raise Refused('%s is older than %s, which is installed: going back is done on the '
-                          'command line' % (info['version'], info['installed']))
+        if info['older'] and not downgrade:
+            raise Refused('%s is older than %s, which is installed: going back is asked for as '
+                          'such (Upgrades - Going back, or isemon --downgrade)'
+                          % (info['version'], info['installed']))
         say('isemon %s, signed by %s, %d files - checked' % (info['version'], info['signed_by'],
                                                          info['files']))
         src = os.path.join(unpacked, info['top'])
+        if info['older']:
+            floor = may_go_back(info, want_floor)
+            say('going back from %s to %s - safe down to %s; the database is left as it is'
+                % (info['installed'], info['version'], floor))
+            if not os.path.exists(os.path.join(src, 'deploy', 'isemon-console-login.sh')) and \
+                    os.path.isfile(CONSOLE_PROFILE) and not os.path.islink(CONSOLE_PROFILE):
+                os.unlink(CONSOLE_PROFILE)
+                say('%s taken away: %s has no console' % (CONSOLE_PROFILE, info['version']))
         env = {'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
                'LANG': 'C.UTF-8', 'ISEMON_UPGRADE_FROM_PAGES': '1', 'TERM': 'dumb',
                'ISEMON_UPGRADE_BY': str(by)[:100]}
         say('running %s/install.sh --upgrade --yes' % info['top'])
         p = subprocess.Popen(['bash', os.path.join(src, 'install.sh'), '--upgrade', '--yes'],
                              cwd=src, env=env, stdin=subprocess.DEVNULL,
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             start_new_session=True)
         # A deadline of its own (1.0.59), under systemd's and the daemon's:
         # an install.sh that hangs (a dnf lock, a slow mirror) is stopped
         # here and said failed, not killed with the status left "running".
@@ -382,10 +447,16 @@ def put_in(package, ident='', want_sha='', by='the command line', log_to=None):
 
         def too_long():
             late.append(1)
+            # The whole group, not bash alone (1.10.227): a dnf or a sleep
+            # install.sh started kept the pipe open, the reading below went
+            # on waiting, and the deadline stopped nothing.
             try:
-                p.kill()
+                os.killpg(p.pid, signal.SIGKILL)
             except OSError:
-                pass
+                try:
+                    p.kill()
+                except OSError:
+                    pass
         dog = threading.Timer(INSTALL_LIMIT_S, too_long)
         dog.daemon = True
         dog.start()
@@ -471,7 +542,9 @@ def serve_request():
         run.update(id=ident, version=str(r.get('version') or '')[:20])
         say_status()
         rc, info, _ = put_in(os.path.join(UPGRADE_DIR, name), ident,
-                             str(r.get('sha') or ''), r.get('by') or 'the pages', log_to)
+                             str(r.get('sha') or ''), r.get('by') or 'the pages', log_to,
+                             downgrade=r.get('downgrade') is True,
+                             want_floor=re.sub(r'[^0-9.]', '', str(r.get('floor') or ''))[:20])
         run.update(version=info['version'], pct=100 if rc == 0 else run['pct'],
                    words='done' if rc == 0 else 'install.sh ended with %d' % rc)
         say_status('done' if rc == 0 else 'failed', rc=rc, tail=log_lines[-40:])

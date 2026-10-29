@@ -104,6 +104,16 @@ systemctl enable --now iptables ip6tables
 If firewalld is running, isemon leaves the firewall to it and says so on the
 page; the lists of who may reach which page work either way.
 
+## On trial (1.10.228)
+
+A save here is put in on trial: unless somebody presses *Keep it* (the banner
+on every page, or `isemon --change-keep fw`) within `fw_confirm_min` minutes
+(5), what was set before the first change of the trial comes back by itself
+and root puts it in again - a rule that shuts SSH or the dashboard out does
+not stay. Further saves within the trial move its deadline on.
+`isemon --change-back fw` puts the old back at once; `fw_confirm_min` 0 keeps
+every change at once. See [network-and-power.md](network-and-power.md).
+
 ## Checking
 
 The page shows both at the bottom of the firewall card (*The firewall on this

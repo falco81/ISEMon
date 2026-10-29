@@ -43,6 +43,14 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 import isemon                                        # noqa: E402
 
+
+def ise_zone(ts=None):
+    """The offset ISE writes after the second: this machine's own on that
+    day, so that a record made now means now in winter as well as summer."""
+    z = time.strftime('%z', time.localtime(ts))
+    return z[:3] + ':' + z[3:]
+
+
 PASS = FAIL = 0
 
 
@@ -1841,7 +1849,8 @@ for words, user in (('an ordinary name', 'jnovak'),
         day = time.strftime('%b %d %H:%M:%S', time.localtime(at))
         iso = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(at))
         head = '%s ise2 CISE_Failed_Attempts 00000%05d 3 ' % (day, 700 + n)
-        lines = [head + '0 ' + iso + '.500 +02:00 0229674592 5400 NOTICE Failed-Attempt: '
+        lines = [head + '0 ' + iso + '.500 ' + ise_zone(at) +
+                 ' 0229674592 5400 NOTICE Failed-Attempt: '
                  'Authentication failed, ConfigVersionId=86, '
                  'Device IP Address=172.22.0.137, UserName=' + user + ', Protocol=Radius, '
                  'NetworkDeviceName=FTD-VPN, Calling-Station-ID=203.0.113.66, '

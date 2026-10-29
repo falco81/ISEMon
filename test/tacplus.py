@@ -20,11 +20,18 @@ Nothing here is ever judged and nothing here can earn anybody a ban.
     ./test/tacplus.py
 """
 import json
+import os
 import shutil
 import sys
 import tempfile
 import time
 from pathlib import Path
+
+# The lines below were written in Prague and some of them carry no zone, so
+# the suite is run where they were written - not wherever the machine
+# running it happens to be (a test box in UTC read them two hours out).
+os.environ['TZ'] = 'Europe/Prague'
+time.tzset()
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))

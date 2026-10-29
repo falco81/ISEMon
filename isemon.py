@@ -45,7 +45,17 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.226'
+__version__ = '1.10.233'
+# How far back it is safe to go from this version (1.10.232): the oldest one
+# that can still run on a database this version has used - the same tables,
+# the same columns, nothing written that it would misread. Going back to it
+# leaves the database exactly as it is: nothing is copied or put back, which
+# on a database of a terabyte is the only way going back can be done at all.
+# Raised whenever a version changes what older ones read; test/fixes232.py
+# holds the shape of the database it was set for and fails when that shape
+# changes, so that it is never forgotten. Root reads it from its own copy of
+# the program (isemon_upgrade.py), never from what was asked.
+DOWNGRADE_FLOOR = '1.10.226'
 
 import argparse
 import traceback
@@ -818,6 +828,13 @@ DEFAULTS = {
     'session_idle_min': 120,      # ...and how long it may sit untouched
     'login_tries': 5,             # wrong passwords from one address before it waits
     'login_wait_min': 15,
+    # Changes that could cut this server off, taken back unless kept
+    # (1.10.228, after otp 1.0.137): a new network (Settings - Network) and
+    # a change of the firewall or of who may reach which page go back to what
+    # was there before by themselves unless somebody presses Keep it within
+    # these minutes. 0: kept at once.
+    'net_confirm_min': 10,
+    'fw_confirm_min': 5,
 
     # --- housekeeping -------------------------------------------------------
     'retain_failed_days': 90,     # how long the failed attempts are kept
@@ -855,6 +872,26 @@ DEFAULTS = {
     'backup_daily': 1,            # a dump of the database once a day
     'backup_keep': 14,
     'backup_at': '03:30',
+    # New versions looked for on the web (1.10.228): once a day at
+    # upgrade_url, and only offered - nothing is ever put in by itself. The
+    # release folder of the repository keeps the packages as released.
+    'upgrade_check': 1,
+    'upgrade_url': 'https://github.com/falco81/ISEMon/tree/main/release',
+    # Going back to an older version offered at all (1.10.233): off, the card
+    # is not shown and going back is refused on the page, the command line
+    # and in the console alike.
+    'downgrade_offered': 0,
+    # Backups to another machine (1.10.228), Settings -> Backups: the full
+    # backup, locked with `rbackup_password` and sent to the destinations
+    # kept on that page. Off, and with nowhere to go, until somebody sets
+    # them up there.
+    'rbackup': 0,
+    'rbackup_at': '04:15',
+    'rbackup_every': 'daily',
+    'rbackup_day': 7,
+    'rbackup_keep': 30,
+    'rbackup_keep_days': 0,
+    'rbackup_password': '',
     # On PostgreSQL, the firewall's lines, their counts and the domain's
     # events split into a part a day, so that a day that has aged goes in
     # one step. See `Storage.SPLIT`. Nothing on the other two engines.
@@ -903,7 +940,8 @@ SECRET_KEYS = ('mikrotik_password', 'mikrotik2_password', 'directory_password',
                'mikrotik2_opn_apisecret',
                'mikrotik2_pfa_apikey',
                'mikrotik2_opnssh_password',
-               'mikrotik2_pfssh_password')
+               'mikrotik2_pfssh_password',
+               'rbackup_password')
 
 # The firewalls this can write to, in order. Two at most, and the second is
 # there for a pair in high availability: whichever of them is carrying the
@@ -1872,6 +1910,10 @@ def check_setting(key, value):
         if not shape[0] <= number <= shape[1]:
             raise ValueError('%s must be between %d and %d' % (key, shape[0], shape[1]))
         want = number
+    if key == 'upgrade_url' and str(want or '').strip():
+        want = str(want).strip()
+        if not want.startswith('https://') or any(c in want for c in ' \t\r\n"\'<>'):
+            raise ValueError('upgrade_url is an https:// address')
     if key == 'block_ladder' and str(want).strip():
         # Every step has to be a number of minutes or the word "forever",
         # because a ladder nobody can read is a ladder that silently becomes
@@ -1891,8 +1933,8 @@ def check_setting(key, value):
             except (ValueError, OverflowError):
                 raise ValueError('"%s" in the ladder is neither a number of minutes '
                                  'nor "forever"' % piece[:20])
-    if key == 'backup_at' and parse_hhmm(want) is None:
-        raise ValueError('backup_at is a time of day written as HH:MM')
+    if key in ('backup_at', 'rbackup_at') and parse_hhmm(want) is None:
+        raise ValueError('%s is a time of day written as HH:MM' % key)
     if key == 'tidy_at' and parse_hhmm(want) is None:
         raise ValueError('tidy_at is a time of day written as HH:MM')
     if key == 'update_at' and str(want).strip() and parse_hhmm(want) is None:
@@ -11059,8 +11101,7 @@ FTD_DESC = {
     '716058': 'AnyConnect session lost, waiting to resume',
     '716059': 'AnyConnect session resumed',
     '722022': 'AnyConnect connection established', '722023': 'AnyConnect connection ended',
-    '722028': 'AnyConnect connection kept alive', '722033': 'AnyConnect DTLS established',
-    '722034': 'AnyConnect DTLS ended', '722035': 'AnyConnect: large packet',
+    '722028': 'AnyConnect connection kept alive', '722035': 'AnyConnect: large packet',
     '722037': 'AnyConnect connection closing', '722041': 'AnyConnect: no IPv6 address',
     '722051': 'AnyConnect address assigned', '725001': 'TLS handshake started',
     '725002': 'TLS handshake completed', '725003': 'TLS session resumed',
@@ -33841,17 +33882,25 @@ class Storage(object):
             low, high = (ts - self.ASKED_PAIR_S, ts - 0.5) if answer else \
                 (ts + 0.5, ts + self.ASKED_PAIR_S)
             rows = self.db.execute(
-                "SELECT ident, ts, username, verdict, rid FROM otp_asked WHERE kind = 'ask' "
-                'AND server = ? AND ts >= ? AND ts <= ? ORDER BY ts',
+                "SELECT ident, ts, username, verdict, rid, detail FROM otp_asked "
+                "WHERE kind = 'ask' AND server = ? AND ts >= ? AND ts <= ? ORDER BY ts",
                 (facts.get('server') or '', low, high)).fetchall()
         except sqlite3.Error:
             return ''
         rid = str(facts.get('rid') or '')
+        said = str(facts.get('id') or '')
         best = None
         for row in rows:
             name = str(row['ident'] or '')
             if name.rsplit('/', 1)[-1] != port:
                 continue
+            # This very record, already put together with its other half
+            # under that half's second (1.10.227): the file read again, or
+            # the shipper sending it twice. Its own second has no row, so
+            # without this it made one - the request nobody answered, or the
+            # answer to nobody, that the pairing is there to stop.
+            if said and said in self._asked_made_of(row['detail']):
+                return name
             if rid and row['rid'] and str(row['rid']) != rid:
                 continue
             # Only a row that is missing exactly this half: a request nobody
@@ -33864,6 +33913,14 @@ class Storage(object):
             if best is None or gap < best[0]:
                 best = (gap, name)
         return best[1] if best else ''
+
+    def _asked_made_of(self, detail):
+        """The shipper's names of the records a stored packet was made of."""
+        try:
+            was = json.loads(self.unpack_detail(detail) or '{}')
+        except (ValueError, TypeError):
+            return []
+        return list(was.get('made_of') or []) if isinstance(was, dict) else []
 
     def mend_otp_pairs(self):
         """Requests and replies written a second apart, put together (1.10.226).
@@ -34164,9 +34221,25 @@ class Storage(object):
                 # WHICH conversation, and the clock says which of that
                 # conversation's packets this attempt is.
                 best = None
+                whole = str(ask['whole'] or '').strip().lower()
+                bare = otp_account(ask['account']).lower()
                 for row in exact[ask['rid']]:
                     name = str(row['ident'] or '')
                     if name and name in used:
+                        continue
+                    # An id is the client's address and port, and those are
+                    # reused - by the next person through the same head end,
+                    # or by every one of them where the token server passes
+                    # on the NAS. So it says which conversation only on the
+                    # same machine and for the same person (1.10.227): with
+                    # this attempt's own packet not shipped yet, the nearest
+                    # one carrying the id was somebody else's, and the row
+                    # wore their address, marked as certain.
+                    if ask['server'] and row['server'] and row['server'] != ask['server']:
+                        continue
+                    said = str(row['username'] or '')
+                    if said and not ((whole and said.strip().lower() == whole) or
+                                     (bare and otp_account(said).lower() == bare)):
                         continue
                     gap = abs(float(row['ts'] or 0) - ask['ts'])
                     if gap > self.ASKED_ID_WITHIN_S:
@@ -34314,11 +34387,17 @@ class Storage(object):
         if not state:
             return True
         at = float(ts or 0)
+        # A question whose request was never put together with it has no
+        # name on it (1.10.227), and the answer does: asked by the name, a
+        # code that was typed was written down as never typed. The State is
+        # otp's own random string, so without a name it is asked by that.
+        named = 'AND username = ? ' if username else ''
         try:
             rows = self.db.execute(
-                "SELECT detail FROM otp_asked WHERE kind = 'ask' AND username = ? "
-                'AND ts > ? AND ts <= ? ORDER BY ts LIMIT 40',
-                (username or '', at, at + self.CHALLENGE_WITHIN_S)).fetchall()
+                "SELECT detail FROM otp_asked WHERE kind = 'ask' " + named +
+                'AND ts > ? AND ts <= ? ORDER BY ts LIMIT %d' % (40 if username else 2000),
+                ([username] if username else []) +
+                [at, at + self.CHALLENGE_WITHIN_S]).fetchall()
         except sqlite3.Error:
             return True
         for row in rows:
@@ -43165,6 +43244,11 @@ class Daemon(object):
         self.webroot = WebRoot(self)
         # ...and a new version put in from the page (1.10.222).
         self.upgrades = Upgrades(self)
+        # How far back is safe from here, written into the database it runs on.
+        self.upgrades.note_floor()
+        # ...and this server's network, a restart, and changes on trial
+        # (1.10.228).
+        self.netpower = NetPower(self)
         # A database put back from a full backup by any way there is keeps
         # no keys in it.
         if getattr(store, 'db', None) is not None and not getattr(store, 'trouble', ''):
@@ -56166,12 +56250,17 @@ class Daemon(object):
         'geolist_chunk': (20, 500), 'mikrotik_chunk': (1, 200),
         'session_hours': (1, 720), 'session_idle_min': (5, 10080),
         'login_tries': (1, 100), 'login_wait_min': (1, 1440),
+        'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
         'retain_failed_days': (0, 3650), 'retain_passed_days': (0, 3650),
         'retain_events_days': (0, 3650),
         'retain_eduroam_days': (1, 3650), 'retain_otp_days': (1, 3650),
         'retain_names_days': (1, 3650),
         'tidy_daily': (0, 1), 'tidy_at': 'str',
         'backup_daily': (0, 1), 'backup_keep': (1, 365), 'backup_at': 'str',
+        'upgrade_check': (0, 1), 'upgrade_url': 'str', 'downgrade_offered': (0, 1),
+        'rbackup': (0, 1), 'rbackup_at': 'str', 'rbackup_every': ('daily', 'weekly'),
+        'rbackup_day': (1, 7), 'rbackup_keep': (1, 1000), 'rbackup_keep_days': (0, 3650),
+        'rbackup_password': 'str',
         'db_split': (0, 1), 'db_split_whole_days': (0, 1),
         'site_name': 'str', 'api_port': (1, 65535), 'debug': (0, 1),
         'debug_sql': (0, 1), 'debug_ldap': (0, 1), 'debug_api': (0, 1),
@@ -56414,6 +56503,8 @@ class Daemon(object):
         'session_idle_min': 'Or until untouched for (min)',
         'login_tries': 'Wrong passwords before waiting',
         'login_wait_min': 'Then wait (min)',
+        'net_confirm_min': 'A new network goes back unless kept within (min)',
+        'fw_confirm_min': 'A firewall change goes back unless kept within (min)',
         'retain_failed_days': 'Keep failed attempts for (days)',
         'retain_passed_days': 'Keep successful logins for (days)',
         'retain_events_days': 'Keep events for (days)',
@@ -56427,6 +56518,16 @@ class Daemon(object):
         'db_split': 'Split the biggest tables by day (PostgreSQL)',
         'db_split_whole_days': 'Let the split tables go a whole day at a time',
         'backup_at': 'Dump it at (HH:MM)',
+        'upgrade_check': 'Look for a new version once a day',
+        'upgrade_url': 'Where new versions are looked for',
+        'downgrade_offered': 'Offer going back to an older version',
+        'rbackup': 'Backups to the destinations on a schedule',
+        'rbackup_at': 'At',
+        'rbackup_every': 'How often',
+        'rbackup_day': 'On (1 Monday - 7 Sunday)',
+        'rbackup_keep': 'Backups kept at each destination',
+        'rbackup_keep_days': 'And none older than (days)',
+        'rbackup_password': 'The password of the backups',
         'db_engine': 'Everything is kept in',
         'db_host': 'The database server is at',
         'db_port': 'On port',
@@ -57424,6 +57525,15 @@ class Daemon(object):
         'session_idle_min': 'How long a sign-in may sit untouched before it ends.',
         'login_tries': 'Wrong passwords from one address before it has to wait.',
         'login_wait_min': 'How long it waits.',
+        'net_confirm_min': 'A new network (Settings - Network) is put in, the server '
+                           'restarts with it - and the old one comes back by itself unless '
+                           'somebody presses Keep it within these minutes: a typo in the '
+                           'gateway or the prefix does not leave the server unreachable. 0: '
+                           'kept at once.',
+        'fw_confirm_min': 'A change of the firewall or of who may reach which page is put in - '
+                          'and what was there before comes back by itself unless somebody '
+                          'presses Keep it within these minutes: a rule that shuts SSH or the '
+                          'dashboard out does not stay. 0: kept at once.',
         'retain_failed_days': 'How long failed attempts are kept. 0 keeps them for ever.',
         'retain_passed_days': 'How long successful logins are kept.',
         'retain_events_days': 'How long this daemon’s own events are kept.',
@@ -57474,6 +57584,20 @@ class Daemon(object):
                         'client program is not on this machine a portable copy is made '
                         'instead, so a night is never without one.',
         'backup_keep': 'How many of those dumps are kept.',
+        'upgrade_check': 'Once a day the address below is asked what versions it has. A newer '
+                         'one is only offered under Upgrades - From the web: nothing is fetched '
+                         'or put in until somebody presses the button. Off, it is asked only '
+                         'when Look now is pressed.',
+        'downgrade_offered': 'Shows the card Going back to an older version below, and lets '
+                             'it be done - here, with isemon --downgrade and in the console. '
+                             'Only as far back as can still run on the database as it is; the '
+                             'database is never copied or put back. Off, nothing goes back but '
+                             'by hand.',
+        'upgrade_url': 'A GitHub folder (https://github.com/OWNER/REPO/tree/BRANCH/FOLDER, read '
+                       'through GitHub\u2019s API), a web page or a folder listing that links to '
+                       'isemon-X.Y.Z.tar.gz, or one package\u2019s own address. HTTPS only. A '
+                       'package fetched from it is checked exactly as one sent by hand: signed by '
+                       'a release key this server trusts, every file the one signed.',
         'db_split':
             'On PostgreSQL, the firewall\u2019s lines, their counts and the domain\u2019s '
             'events are kept in a part a day, and each day in a part per how long its rows '
@@ -57489,6 +57613,19 @@ class Daemon(object):
             'leaves the day already empty by the time it is let go. On keeps each kind of '
             'row up to a day longer than its setting says.',
         'backup_at': 'What time of day, as HH:MM.',
+        'rbackup': 'A backup of everything is made and sent to every destination switched on, '
+                   'at the time below. Without it, only Back up now sends one.',
+        'rbackup_at': 'When, as <code>HH:MM</code> on this machine’s clock.',
+        'rbackup_every': 'daily, or weekly on the day below.',
+        'rbackup_day': 'The day of a weekly backup: 1 is Monday, 7 Sunday.',
+        'rbackup_keep': 'How many of this machine’s backups each destination keeps; the oldest '
+                        'go first, the newest never.',
+        'rbackup_keep_days': 'Older ones are taken away too - 0: only the count above decides.',
+        'rbackup_password': 'Every backup is locked with it (AES-256, opened with isemon or with '
+                            'openssl alone). Keep it apart from the backups as well - in a '
+                            'password vault: without it nobody, you included, opens them. '
+                            'Without it nothing is sent: a backup holds the key of every '
+                            'password kept here.',
         'db_engine': 'A file on this machine, or a database server. The file needs nothing '
                      'installing and is the faster of the two; a server is for keeping this '
                      'somewhere it is backed up and watched with everything else. Changing '
@@ -57558,6 +57695,7 @@ class Daemon(object):
         'fwlog_ros_plain': {'allow': 'Let through (allow)', 'info': 'Only said (info)'},
         'mikrotik_kind': FW_KIND_WORDS,
         'mikrotik2_kind': FW_KIND_WORDS,
+        'rbackup_every': {'daily': 'Daily', 'weekly': 'Weekly'},
     }
 
     def settings_state(self, may_change=True):
@@ -58217,6 +58355,8 @@ class Daemon(object):
                     continue
                 if key == 'directory2_password' and not int(CONFIG.get('directory2') or 0):
                     continue
+                if key == 'rbackup_password' and not int(CONFIG.get('rbackup') or 0):
+                    continue           # backups to other machines off (1.10.228)
                 if key == 'banfeed_password' and not (
                         int(CONFIG.get('banfeed') or 0)
                         and str(CONFIG.get('banfeed_auth') or 'none') == 'basic'):
@@ -58983,6 +59123,9 @@ class Daemon(object):
         if failed and now - self.started > 600 and not any(
                 int(t.get('records') or 0) for t in tails):
             return {'level': 'warn', 'says': 'nothing has been read at all'}
+        # Every record is filed by this machine's clock (1.10.228).
+        if ntp_problem(short=True):
+            return {'level': 'warn', 'says': ntp_problem(short=True)}
         return {'level': 'ok', 'says': ''}
 
     def status(self, who=None):
@@ -59053,6 +59196,8 @@ class Daemon(object):
             'version': self.version,
             'now': now,
             'php_notice': self.php_notice(),
+            # Changes waiting to be kept (1.10.228): the banner on every page.
+            'trials': self._trials_now(),
             'uptime': now - self.started,
             'pace': self.pace(),
             # The page's questions of the records taking their turn (1.10.171).
@@ -59177,6 +59322,8 @@ class Daemon(object):
             # names a zone that exists, which is nearly all of them.
             'log_zone': str(CONFIG.get('log_zone') or ''),
             'log_zone_trouble': zone_trouble(),
+            # A clock not synchronised, or more than a second off (1.10.228).
+            'clock_trouble': ntp_problem(),
             'read_at': self._read_at,
             'read_ms': self._read_ms,
             'last_record': self._last_record,
@@ -61353,6 +61500,30 @@ class Daemon(object):
             self.webroot.due()
         except Exception as e:
             log('the web server and the firewall: %s' % e, 'warn')
+        # A new version on the web, looked for once a day (1.10.228).
+        try:
+            self.upgrades.online_tick()
+        except Exception as e:
+            log('looking for a new version: %s' % e, 'warn')
+        # The clock read, and the time servers put in when they changed
+        # (1.10.228).
+        try:
+            ntp_tick(self.webroot)
+        except Exception as e:
+            log('the time: %s' % e, 'warn')
+
+    def _trials_now(self):
+        try:
+            return self.netpower.trials()
+        except Exception:
+            return []
+
+    def _net_pass(self):
+        """The network, a restart, and the changes on trial (1.10.228)."""
+        try:
+            self.netpower.tick()
+        except Exception as e:
+            log('the network: %s' % e, 'warn')
 
     def _directory_pass(self):
         try:
@@ -62496,6 +62667,8 @@ class Daemon(object):
                 # What root has in place for nginx and the firewall, against
                 # what is kept (1.10.222): asked again when they differ.
                 self.behind('web', self._web_pass)
+                # ...and the backups to other machines on their schedule (1.10.228).
+                self.behind('rbackup', lambda: rb_tick(self), 'the backups to other machines')
             # Cheap, and wanted soon after the packets arrive: an attempt
             # shown as a sign-in when it was a refusal is the one mistake
             # this page must not make for long.
@@ -62508,6 +62681,11 @@ class Daemon(object):
             if now - last_fold > 300:
                 last_fold = now
                 self.behind('fold', self.fold_due, 'folding by itself')
+            # The network, a restart, the changes on trial (1.10.228): a job
+            # to finish after a reboot, a deadline to keep. Behind the loop.
+            if now - getattr(self, '_net_at', 0) > 10:
+                self._net_at = now
+                self.behind('net', self._net_pass)
             # The MikroTiks' API readers as the settings now say (1.10.211):
             # a look at the settings, nothing more, unless something changed.
             if now - getattr(self, '_rosapi_synced', 0) > 15:
@@ -63569,7 +63747,7 @@ class WebRoot(object):
                 'action': action, 'note': note, 'disabled': bool(x.get('disabled'))}
 
     # ---- what isemon lets in by itself -----------------------------------------
-    AUTO = ('ssh', 'icmp', 'dhcpv6', 'web', 'logs')
+    AUTO = ('ssh', 'icmp', 'dhcpv6', 'web', 'logs', 'ntp')
 
     def auto_rules(self, look=None, fw=None, access=None):
         """What the machine needs let in for what isemon does here, worked out
@@ -63633,6 +63811,14 @@ class WebRoot(object):
                       if ports else 'rsyslog listens on no network port here (or it is not '
                                     'known yet)',
                       'rules': logs, 'senders': fw['logs']})
+        # The time served to the networks set under Settings → Time (1.10.228).
+        nc = self._meta('ntp_conf', {})
+        if nc.get('manage') and nc.get('allow'):
+            items.append({'key': 'ntp', 'title': 'NTP (time served)',
+                          'why': 'udp 123 - this machine serves the time to the networks set '
+                                 'under Settings → Time',
+                          'rules': [r for a in nc['allow'][:20]
+                                    for r in both('udp', '123', str(a), 'NTP (time served)')]})
         for one in items:
             one['on'] = one['key'] not in off
         return items
@@ -63777,8 +63963,12 @@ class WebRoot(object):
                 raise WebRootError('the logs would come from nobody: name the senders, or '
                                    'anywhere')
         said = []
-        if data.get('access') is not None:
-            acc = self.access_checked(data['access'])
+        acc = self.access_checked(data['access']) if data.get('access') is not None else None
+        # On trial (1.10.228): what was there before the first change of a
+        # trial is kept, to go back to unless it is kept in time.
+        trial = self.daemon.netpower.fw_trial_begin(by) \
+            if getattr(self.daemon, 'netpower', None) else None
+        if acc is not None:
             self._put('web_access', acc)
             said.append('who may reach which page')
         fw.pop('touched', None)
@@ -63792,9 +63982,11 @@ class WebRoot(object):
                                         '(%s)' % ('isemon\'s chain on' if fw['on'] else
                                                   'isemon\'s chain off'), who=by)
         got = self.push('saved on the page', by, force=True)
-        return {'ok': True, 'message': 'saved; root puts it in within seconds' if
-                got.get('pushed') else 'saved - ' + got.get('said', ''), 'said': said,
-                'root': self.state()}
+        return {'ok': True, 'message': ('saved; root puts it in within seconds' if
+                                        got.get('pushed') else 'saved - ' + got.get('said', ''))
+                + ('; it goes back by itself unless it is kept within %d min' % trial['min']
+                   if trial else ''), 'said': said,
+                'root': self.state(), 'trial': trial and {'until': trial['until']}}
 
     # ---- certificates and TLS ------------------------------------------------
     def tls_page(self, may=False):
@@ -63990,6 +64182,287 @@ class WebRoot(object):
 
 
 # ---------------------------------------------------------------------------
+# The clock: chrony (1.10.228; after otp's Settings → Time, 1.0.120)
+# ---------------------------------------------------------------------------
+# Every record read is filed by this machine's clock, and a log is judged
+# "too old" or "dated ahead" against it: a clock that is off makes both say
+# what is not so. Settings → Time shows the clock as chrony sees it (how far
+# off, the source it follows, its sources) - read by root every minute, in
+# ntp.ask and ntp.json beside the web server's files - and, when isemon is
+# to set them, the time servers: kept in the database (meta 'ntp_conf', the
+# way WebRoot keeps 'web_fw'), put into /etc/chrony.conf by root's helper
+# when they change, and what it said kept in 'ntp_applied'. Until somebody
+# turns that on, /etc/chrony.conf is only shown, never changed.
+NTP_READ_S = 60
+NTP_WORK = {'busy': False, 'read_at': 0.0, 'failed_at': 0.0, 'said': '', 'last': {},
+            'want_read': 0.0, 'want_sync': 0.0, 'synced': 0.0, 'apply_now': False}
+NTP_WORK_LOCK = threading.Lock()
+NTP_DEFAULT = {'manage': False, 'servers': [], 'allow': [], 'makestep': [1.0, 3],
+               'minsources': 1, 'timezone': ''}
+
+
+def ntp_root_ask(wr, data, wait=60):
+    """One question for root's helper in ntp.ask, and its answer out of
+    ntp.json - the one with the same id."""
+    ask_id = secrets.token_hex(8)
+    wr.write('ntp.ask', dict(data, id=ask_id))
+    end = time.time() + wait
+    while time.time() < end:
+        got = wr.read('ntp.json')
+        if isinstance(got, dict) and got.get('id') == ask_id:
+            if not got.get('ok'):
+                raise WebRootError(got.get('said') or 'root\'s helper said no')
+            return got.get('data') if isinstance(got.get('data'), dict) else {}
+        time.sleep(0.4)
+    raise WebRootError('root\'s helper did not answer in %d s - is isemon-web.path running? '
+                       '(systemctl status isemon-web.path; ./install.sh --upgrade puts in the '
+                       'one that is asked about the clock)' % wait)
+
+
+def ntp_conf(wr):
+    c = dict(NTP_DEFAULT)
+    c.update(wr._meta('ntp_conf', {}))
+    return c
+
+
+def ntp_desired(wr):
+    c = ntp_conf(wr)
+    return {'manage': bool(c.get('manage')), 'servers': c.get('servers') or [],
+            'allow': c.get('allow') or [], 'makestep': c.get('makestep') or [1.0, 3],
+            'minsources': c.get('minsources') or 1, 'timezone': c.get('timezone') or ''}
+
+
+def ntp_hash(want):
+    return hashlib.sha256(json.dumps(want, sort_keys=True).encode()).hexdigest()[:24]
+
+
+def ntp_checked(b):
+    """The settings from the page, made whole - the root helper checks them
+    again."""
+    if not isinstance(b, dict):
+        raise WebRootError('the time servers\' settings are not given')
+    out = dict(NTP_DEFAULT)
+    out['manage'] = bool(b.get('manage'))
+    servers = []
+    for x in (b.get('servers') or [])[:12]:
+        if not isinstance(x, dict):
+            continue
+        host = str(x.get('host') or '').strip().lower().rstrip('.')
+        if not host:
+            continue
+        try:
+            host = str(ipaddress.ip_address(host))
+            if '%' in host:
+                raise WebRootError('%r: a scope id is not taken' % host[:60])
+        except ValueError as e:
+            if isinstance(e, WebRootError):
+                raise
+            if not re.match(r'^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
+                            r'(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$', host):
+                raise WebRootError('%r is not a host name or an address' % host[:80])
+        servers.append({'host': host, 'pool': bool(x.get('pool')),
+                        'iburst': bool(x.get('iburst', True)), 'prefer': bool(x.get('prefer')),
+                        'nts': bool(x.get('nts'))})
+    if out['manage'] and not servers:
+        raise WebRootError('at least one time server - or let the machine keep its own')
+    out['servers'] = servers
+    allow = []
+    for a in re.split(r'[\s,;]+', b.get('allow') if isinstance(b.get('allow'), str)
+                      else ' '.join(str(x) for x in b.get('allow') or [])):
+        if not a:
+            continue
+        try:
+            net = ipaddress.ip_network(a, strict=False)
+        except ValueError:
+            raise WebRootError('%r is not a network (192.0.2.0/24)' % a[:60])
+        if '%' in a:
+            raise WebRootError('%r: a scope id is not taken' % a[:60])
+        allow.append(str(net))
+    out['allow'] = list(dict.fromkeys(allow))[:20]
+    try:
+        th = float(b.get('step_s', 1.0))
+        lim = int(b.get('step_n', 3))
+    except (TypeError, ValueError):
+        raise WebRootError('the step: seconds, and how many updates')
+    if not (0.001 <= th <= 3600) or not (-1 <= lim <= 1000):
+        raise WebRootError('the step: 0.001 to 3600 s; -1 (always) to 1000 updates')
+    out['makestep'] = [th, lim]
+    try:
+        out['minsources'] = max(1, min(10, int(b.get('minsources') or 1)))
+    except (TypeError, ValueError):
+        raise WebRootError('how many sources have to agree is a number')
+    tz = str(b.get('timezone') or '').strip()
+    if tz and not re.match(r'^[A-Za-z0-9_+-]{1,40}(/[A-Za-z0-9_+-]{1,40}){0,3}\Z', tz):
+        raise WebRootError('%r is not a time zone' % tz[:60])
+    out['timezone'] = tz
+    return out
+
+
+def ntp_save(wr, b, by=''):
+    c = ntp_checked(b)
+    c.update(at=time.time(), by=by)
+    was = ntp_conf(wr)
+    wr._put('ntp_conf', c)
+    what = ('the servers %s' % ', '.join(x['host'] for x in c['servers'])) if c['manage'] \
+        else 'the machine keeps its own servers'
+    if c['timezone']:
+        what += '; time zone %s' % c['timezone']
+    wr.store.add_event('control', 'the time was set: %s' % what, 'warn', who=by)
+    NTP_WORK['apply_now'] = True
+    ntp_tick(wr)
+    # The networks the time is served to are let in by the firewall when
+    # isemon looks after it ("NTP (time served)"): asked of root at once.
+    if wr.fw_conf()['on'] and (bool(was.get('manage')), was.get('allow') or []) != \
+            (c['manage'], c['allow']):
+        try:
+            wr.push('the time served changed', by)
+        except (OSError, WebRootError) as e:
+            log('asking root for the firewall after the time: %s' % e, 'warn')
+    return c
+
+
+def ntp_publish(wr, zones=False):
+    try:
+        data = ntp_root_ask(wr, {'do': 'read', 'zones': bool(zones)}, 30)
+    except (WebRootError, OSError) as e:
+        NTP_WORK['failed_at'] = time.time()
+        if NTP_WORK.get('said') != str(e):
+            log('reading the clock: %s' % e, 'warn')
+        NTP_WORK['said'] = str(e)[:300]
+        return {}
+    now = {'at': time.time(), 'data': {k: v for k, v in data.items() if k != 'zones'}}
+    NTP_WORK.update(read_at=time.time(), last=now, said='')
+    if zones and data.get('zones'):
+        wr._put('ntp_zones', [str(z) for z in data['zones']][:700])
+    return now
+
+
+def ntp_apply(wr):
+    want = ntp_desired(wr)
+    row = {'hash': ntp_hash(want), 'at': time.time()}
+    try:
+        got = ntp_root_ask(wr, dict(want, do='apply'), 300)
+        row.update(ok=True, said='; '.join(str(x) for x in got.get('said') or []) or
+                   'as it was')
+        log('the time: %s' % row['said'])
+    except (WebRootError, OSError) as e:
+        row.update(ok=False, said=str(e)[:300])
+        log('the time servers could not be set: %s' % e, 'warn')
+    wr._put('ntp_applied', row)
+    ntp_publish(wr)
+
+
+def ntp_sync(wr):
+    try:
+        got = ntp_root_ask(wr, {'do': 'sync'}, 60)
+        wr.store.add_event('control', 'the clock was stepped to the time servers (%s)'
+                           % '; '.join(str(x) for x in got.get('said') or []), 'warn')
+    except (WebRootError, OSError) as e:
+        wr.store.add_event('control', 'the clock could not be stepped: %s' % str(e)[:200],
+                           'warn')
+        NTP_WORK['said'] = str(e)[:300]
+    time.sleep(3)
+    ntp_publish(wr)
+
+
+def _ntp_thread(wr, fn, *args):
+    def go():
+        try:
+            fn(wr, *args)
+        except Exception as e:                          # noqa: BLE001
+            log('the time: %s' % e, 'warn')
+        finally:
+            with NTP_WORK_LOCK:
+                NTP_WORK['busy'] = False
+        # Whatever was asked while this ran, now rather than in a minute.
+        if NTP_WORK['apply_now'] or NTP_WORK['want_sync'] > NTP_WORK['synced'] or \
+                NTP_WORK['want_read'] > NTP_WORK['read_at']:
+            ntp_tick(wr)
+    with NTP_WORK_LOCK:
+        if NTP_WORK['busy']:
+            return False
+        NTP_WORK['busy'] = True
+    threading.Thread(target=go, name='isemon-ntp', daemon=True).start()
+    return True
+
+
+def ntp_tick(wr):
+    """Every minute, and when the page asks: the settings put in when they
+    differ from what root last put in, a step asked for, and the clock read."""
+    if NTP_WORK['busy'] or not wr.helper_there() or not wr.folder().is_dir():
+        return
+    if wr._meta('ntp_conf', {}):
+        h = ntp_hash(ntp_desired(wr))
+        done = wr._meta('ntp_applied', {})
+        if NTP_WORK['apply_now'] or (done.get('hash') != h and
+                                     time.time() - float(done.get('at') or 0) > 30):
+            NTP_WORK['apply_now'] = False
+            _ntp_thread(wr, ntp_apply)
+            return
+    if NTP_WORK['want_sync'] > NTP_WORK['synced']:
+        NTP_WORK['synced'] = NTP_WORK['want_sync']
+        _ntp_thread(wr, ntp_sync)
+        return
+    wanted = NTP_WORK['want_read'] > NTP_WORK['read_at']
+    # A helper that does not answer (one from before 1.10.228) is asked again
+    # every ten minutes, not every minute.
+    every = NTP_READ_S * (10 if NTP_WORK['failed_at'] > NTP_WORK['read_at'] else 1)
+    if wanted or time.time() - max(NTP_WORK['read_at'], NTP_WORK['failed_at']) > every:
+        if wanted:
+            NTP_WORK['failed_at'] = 0.0
+        _ntp_thread(wr, ntp_publish, wanted or not wr._meta('ntp_zones', []))
+
+
+def ntp_ask(wr, what, by=''):
+    """Read it again, or step it now: done behind, within seconds."""
+    if not wr.helper_there():
+        raise WebRootError('root\'s half is not installed on this machine yet: run '
+                           './install.sh --upgrade (1.10.228 or later) once')
+    if what == 'sync':
+        NTP_WORK['want_sync'] = time.time()
+        wr.store.add_event('control', '%s asked for the clock to be stepped to the time servers '
+                                      'now' % (by or 'somebody'), 'warn', who=by)
+    else:
+        NTP_WORK['want_read'] = time.time()
+    ntp_tick(wr)
+    return {'ok': True, 'message': 'asked: it is done within seconds'}
+
+
+def ntp_problem(short=False):
+    """Words for the status when this machine's clock is not to be trusted;
+    empty when it is, or when it has not been read lately."""
+    now = NTP_WORK.get('last') or {}
+    d = now.get('data') or {}
+    if not d or time.time() - float(now.get('at') or 0) > 600:
+        return ''
+    t = d.get('tracking') or {}
+    if d.get('chrony') and t:
+        if t.get('leap') == 'Not synchronised' or not t.get('stratum'):
+            return 'the clock is not synchronised' if short else (
+                'the clock is not synchronised to a time server (chrony) - every record is '
+                'filed by it: Settings → Time')
+        off = abs(float(t.get('offset') or 0))
+        if off > 1.0:
+            return ('the clock is %.1f s off' % off) if short else (
+                'the clock is %.1f s off the time servers - every record is filed by it: '
+                'Settings → Time' % off)
+    elif d.get('ntpsynchronized') == 'no':
+        return 'the clock is not synchronised' if short else (
+            'the clock is not synchronised (timedatectl): Settings → Time')
+    return ''
+
+
+def ntp_view(wr, may=False):
+    conf = ntp_conf(wr)
+    saved = bool(wr._meta('ntp_conf', {}))
+    return {'ok': True, 'may': may, 'helper': wr.helper_there(),
+            'now': NTP_WORK.get('last') or {}, 'applied': wr._meta('ntp_applied', {}),
+            'conf': conf, 'zones': wr._meta('ntp_zones', []),
+            'hash': ntp_hash(ntp_desired(wr)) if saved else '', 'busy': NTP_WORK['busy'],
+            'said': NTP_WORK.get('said') or '', 'problem': ntp_problem(), 't': time.time()}
+
+
+# ---------------------------------------------------------------------------
 # A full backup: a copy of the database with its keys in it (1.10.222)
 # ---------------------------------------------------------------------------
 # A copy of the database is everything this program knows, except what is on
@@ -64137,6 +64610,2298 @@ def carried_put(found, by=''):
     return put
 
 
+# ---------------------------------------------------------------------------
+# Backups to another machine (1.10.228)
+# ---------------------------------------------------------------------------
+# One file that brings this installation back onto a machine installed from
+# nothing: the full backup (the copy of the database with the keys in it -
+# settings.key, banfeed.key, known_hosts - and config.json to read), a
+# manifest with the checksum of each file, and RESTORE.md - the exact steps.
+# Locked with a password kept in the settings, sealed (openssl enc,
+# AES-256-CBC, PBKDF2-SHA256: opened with isemon, or with openssl alone on
+# any machine); without that password nothing is sent at all, because the
+# file holds the key that opens every password kept here. RESTORE.md and a
+# .sha256 also go beside it, not locked, so the steps can be read before
+# anything is opened. Ported from otp 1.0.138, as Settings -> Backups is.
+#
+# Where they go: a folder (an NFS or other mount), FTP, FTPS (explicit or
+# implicit), SFTP, SCP or SMB, each with its name and password, SSH keys made
+# here or brought, the server's host key or certificate checked, a client
+# certificate for FTPS. Old ones are taken away as kept-count and age say.
+#
+# A database can be large (tens of gigabytes on PostgreSQL), so nothing of it
+# is ever held in memory: the copy is made by `Storage.backup` as every copy
+# is, packed and locked as a stream into one file, sent as a stream, and the
+# whole of it runs as a job the page follows.
+import ftplib
+import tarfile
+
+RB_KINDS = ('folder', 'ftp', 'ftps', 'sftp', 'scp', 'smb')
+RB_KIND_WORDS = {'folder': 'a folder', 'ftp': 'FTP', 'ftps': 'FTPS', 'sftp': 'SFTP',
+                 'scp': 'SCP (ssh)', 'smb': 'SMB (Windows share, Samba)'}
+RB_PORTS = {'ftp': 21, 'ftps': 21, 'sftp': 22, 'scp': 22, 'smb': 445}
+RB_SEALED = ('password', 'key', 'client_key', 'key_pass')
+RB_LOCK = threading.Lock()
+RB_ITER = 600000
+RB_MOST = 20
+RB_NAME_RE = re.compile(r'^isemon-backup-(?P<site>[A-Za-z0-9_.]+?)-(?P<host>[A-Za-z0-9_.]+)-'
+                        r'(?P<stamp>\d{8}-\d{6})\.tar\.gz(?P<enc>\.enc)?\Z')
+RB_TIMEOUT = 60
+# What is inside, by name - and nothing else is taken out of one.
+RB_DB = 'isemon-full.db'
+RB_INSIDE = ('about.json', 'RESTORE.md', RB_DB, 'manifest.json')
+
+
+class RbError(Exception):
+    pass
+
+
+def rb_bin(name):
+    """A program this calls, by its name - or where ISEMON_RB_<NAME> says
+    it is (the tests stand fakes in for ssh, sftp, smbclient)."""
+    return os.environ.get('ISEMON_RB_' + re.sub(r'[^A-Z]', '_', name.upper())) or name
+
+
+def rb_has(name):
+    return bool(shutil.which(rb_bin(name)))
+
+
+def rb_clean(text, what, most=200, pattern=None, empty=True):
+    t = str(text if text is not None else '').strip()
+    if not t and empty:
+        return ''
+    if len(t) > most or re.search(r'[\x00-\x1f\x7f]', t):
+        raise ValueError('%s: at most %d characters, one line' % (what, most))
+    if pattern and t and not re.match(pattern, t):
+        raise ValueError('%s: %r is not one' % (what, t[:60]))
+    return t
+
+
+def rb_slug(text, fallback='isemon'):
+    return re.sub(r'[^A-Za-z0-9_.]+', '_', str(text or fallback)).strip('_.')[:40] or fallback
+
+
+def rb_site():
+    return rb_slug(CONFIG.get('site_name') or 'isemon')
+
+
+def rb_host():
+    return rb_slug((socket.gethostname() or 'isemon').split('.')[0])
+
+
+def rb_masked(value):
+    return isinstance(value, str) and value.startswith('•')
+
+
+def rb_folder(name):
+    """A folder of this program's own under the state directory, made the
+    first time: what a backup made for downloading waits in, and what a file
+    sent from the page waits in to be put back."""
+    p = Path(STATE_DIR) / name
+    p.mkdir(mode=0o700, exist_ok=True)
+    return p
+
+
+def rb_tidy_folders(most=3600):
+    """What waited there longer than an hour, taken away."""
+    now = time.time()
+    for name in ('rbackup-made', 'rbackup-uploads'):
+        p = Path(STATE_DIR) / name
+        if not p.is_dir():
+            continue
+        for one in p.iterdir():
+            try:
+                if now - one.stat().st_mtime > most:
+                    one.unlink()
+            except OSError:
+                pass
+
+
+def rb_room(where, need, what):
+    """There is room for `need` bytes where `where` is - or it is said, in
+    numbers, before anything is begun."""
+    try:
+        free = shutil.disk_usage(str(where)).free
+    except OSError:
+        return
+    if free < need:
+        raise RbError('%s needs about %s free in %s, and there is %s: make room there first'
+                      % (what, human_size(need), where, human_size(free)))
+
+
+# ---- the destinations ---------------------------------------------------------------
+def rb_targets(store):
+    try:
+        got = json.loads(store.get_meta('rbackup:targets') or '[]')
+    except ValueError:
+        got = []
+    return [t for t in got if isinstance(t, dict) and t.get('id')]
+
+
+def rb_put_targets(store, targets):
+    store.set_meta('rbackup:targets', json.dumps(targets))
+
+
+def rb_target(store, tid):
+    return next((t for t in rb_targets(store) if t['id'] == str(tid)), None)
+
+
+def rb_secret(t, k):
+    v = t.get(k) or ''
+    return (unseal_secret(v) or '') if v else ''
+
+
+def rb_seal(text):
+    try:
+        return seal_secret(text)
+    except OSError as e:
+        raise ValueError('it could not be sealed: %s' % (getattr(e, 'strerror', None) or e))
+
+
+def ssh_fingerprints(lines):
+    """The SHA256 fingerprints of known_hosts lines, as ssh-keygen says them."""
+    if not lines.strip() or not rb_has('ssh-keygen'):
+        return []
+    got = subprocess.run([rb_bin('ssh-keygen'), '-lf', '-'], input=lines, capture_output=True,
+                         text=True, timeout=20)
+    return [x.strip() for x in got.stdout.splitlines() if x.strip()]
+
+
+def rb_cert_info(pem):
+    try:
+        f = cert_facts(pem)
+    except Exception:
+        return None
+    return {'subject': f.get('subject') or '', 'not_after': f.get('until') or 0,
+            'sha256': f.get('sha256') or ''}
+
+
+def rb_view(t):
+    """A destination as the pages see it: nothing secret, what it has said."""
+    out = {k: v for k, v in t.items() if k not in RB_SEALED}
+    for k in RB_SEALED:
+        out['has_' + k] = bool(t.get(k))
+    out['kind_words'] = RB_KIND_WORDS.get(t.get('kind'), t.get('kind'))
+    if t.get('password'):
+        out['password'] = secret_shown(rb_secret(t, 'password')) or '•' * 8
+    if t.get('hostkey'):
+        out['hostkey_fp'] = ssh_fingerprints(t['hostkey'])
+    if t.get('client_cert'):
+        out['client_cert_info'] = rb_cert_info(t['client_cert'])
+    if t.get('ca'):
+        out['ca_info'] = rb_cert_info(t['ca'])
+    return out
+
+
+def rb_checked(data, old=None):
+    """A destination as typed on the pages, checked; secrets left out or as
+    dots keep what was there."""
+    old = dict(old or {})
+    if not isinstance(data, dict):
+        raise ValueError('a destination is an object')
+    kind = str(data.get('kind') or old.get('kind') or '')
+    if kind not in RB_KINDS:
+        raise ValueError('the kind is one of %s' % ', '.join(RB_KINDS))
+    t = {'id': old.get('id') or secrets.token_hex(6), 'kind': kind}
+    t['name'] = rb_clean(data.get('name'), 'the name', 60) or \
+        rb_clean('%s %s' % (RB_KIND_WORDS[kind], data.get('host') or data.get('path') or ''),
+                 'the name', 400)[:60].strip()
+    t['enabled'] = 1 if data.get('enabled', old.get('enabled', 1)) else 0
+    t['path'] = rb_clean(data.get('path'), 'the folder', 400)
+    if kind == 'folder':
+        if not t['path'].startswith('/'):
+            raise ValueError('the folder is a whole path on this machine (/mnt/backup/isemon)')
+        if re.search(r'(^|/)\.\.(/|$)', t['path']):
+            raise ValueError('the folder has no .. in it')
+    else:
+        t['host'] = rb_clean(data.get('host'), 'the server', 253,
+                             r'^[A-Za-z0-9][A-Za-z0-9.:_-]*\Z', empty=False)
+        try:
+            port = int(data.get('port') or RB_PORTS.get(kind) or 0)
+        except (TypeError, ValueError):
+            raise ValueError('the port is a number')
+        if kind == 'ftps' and data.get('implicit') and not data.get('port'):
+            port = 990
+        if not 1 <= port <= 65535:
+            raise ValueError('the port is 1 to 65535')
+        t['port'] = port
+        t['user'] = rb_clean(data.get('user'), 'the account', 128, r'^[^\s:@/\\]+\Z') or ''
+        # Nothing a tool on the way reads as more (otp 1.0.136): smbclient
+        # takes ; as the next command whatever the quotes, ssh a leading -
+        # as an option of its own.
+        if t['user'].startswith('-'):
+            raise ValueError('the account does not begin with -')
+        if re.search(r'[;"]', t['path']) or t['path'].lstrip().startswith('-'):
+            raise ValueError('the folder has no ; or " in it, and does not begin with -')
+        if kind != 'smb' and re.search(r'(^|/)\.\.(/|$)', t['path']):
+            raise ValueError('the folder has no .. in it')
+    pw = data.get('password')
+    if pw is None or rb_masked(pw):
+        t['password'] = old.get('password') or ''
+    else:
+        pw = str(pw)
+        if len(pw) > 512 or '\n' in pw or '\r' in pw or '\x00' in pw:
+            raise ValueError('the password is one line, at most 512 characters')
+        t['password'] = rb_seal(pw) if pw else ''
+    if kind in ('sftp', 'scp'):
+        for k in ('key', 'pub', 'ssh_cert', 'hostkey', 'key_pass'):
+            if k in old:
+                t[k] = old[k]
+        if data.get('ssh_cert') is not None:
+            c = str(data.get('ssh_cert') or '').strip()
+            if c and not re.match(r'^[a-z0-9@.-]+-cert-v01@openssh\.com AAAA[A-Za-z0-9+/=]+'
+                                  r'( [^\x00-\x1f]*)?\Z', c):
+                raise ValueError('the SSH certificate is the one line of a ...-cert.pub file')
+            t['ssh_cert'] = c
+    if kind in ('ftp', 'ftps'):
+        t['passive'] = 0 if data.get('passive', old.get('passive', 1)) in (0, '0', False) else 1
+    if kind == 'ftps':
+        t['implicit'] = 1 if data.get('implicit', old.get('implicit')) not in (
+            None, 0, '0', False, '') else 0
+        check = str(data.get('tls_check') or old.get('tls_check') or 'system')
+        if check not in ('system', 'ca', 'pin', 'none'):
+            raise ValueError('the server certificate is checked against system, ca, pin or none')
+        t['tls_check'] = check
+        for k in ('ca', 'pin', 'client_cert', 'client_key'):
+            if k in old:
+                t[k] = old[k]
+        if data.get('ca') is not None:
+            ca = str(data.get('ca') or '').strip()
+            if ca and not PEM_CERT_RE.search(ca):
+                raise ValueError('the authority is a PEM certificate (-----BEGIN CERTIFICATE-----)')
+            t['ca'] = '\n'.join(m.group(0) for m in PEM_CERT_RE.finditer(ca)) + '\n' if ca else ''
+        if data.get('pin') is not None:
+            pin = re.sub(r'[^0-9A-Fa-f]', '', str(data.get('pin') or '')).lower()
+            if pin and len(pin) != 64:
+                raise ValueError('the pinned fingerprint is SHA-256: 64 hex digits')
+            t['pin'] = pin
+        if check == 'ca' and not t.get('ca'):
+            raise ValueError('checked against an authority: give its certificate')
+        if check == 'pin' and not t.get('pin'):
+            raise ValueError('pinned: the fingerprint is needed - Try it shows the server\'s')
+    if kind == 'smb':
+        t['share'] = rb_clean(data.get('share'), 'the share', 80,
+                              r'^[^\\/:*?"<>|;-][^\\/:*?"<>|;]*\Z', empty=False)
+        t['domain'] = rb_clean(data.get('domain'), 'the domain', 64, r'^[A-Za-z0-9._-]+\Z')
+        t['smb_encrypt'] = 1 if data.get('smb_encrypt', old.get('smb_encrypt', 1)) else 0
+        if re.search(r'(^|[\\/])\.\.([\\/]|$)', t['path']):
+            raise ValueError('the folder has no .. in it')
+    for k in ('last', 'made', 'tried'):
+        if k in old:
+            t[k] = old[k]
+    return t
+
+
+def rb_save(store, data, by):
+    with RB_LOCK:
+        targets = rb_targets(store)
+        old = next((x for x in targets if x['id'] == str(data.get('id') or '')), None)
+        if data.get('id') and not old:
+            raise ValueError('no such destination')
+        t = rb_checked(data, old)
+        if old:
+            targets = [t if x['id'] == t['id'] else x for x in targets]
+        else:
+            if len(targets) >= RB_MOST:
+                raise ValueError('%d destinations at most' % RB_MOST)
+            t['made'] = time.time()
+            targets.append(t)
+        rb_put_targets(store, targets)
+    store.add_event('settings', '%s %s the backup destination %s (%s)' % (
+        by, 'changed' if old else 'added', t['name'], RB_KIND_WORDS[t['kind']]), who=by)
+    return t
+
+
+def rb_set_fields(store, tid, by, said, **fields):
+    with RB_LOCK:
+        targets = rb_targets(store)
+        t = next((x for x in targets if x['id'] == str(tid)), None)
+        if not t:
+            raise ValueError('no such destination')
+        for k, v in fields.items():
+            if v is None:
+                t.pop(k, None)
+            else:
+                t[k] = v
+        rb_put_targets(store, targets)
+    if said:
+        store.add_event('settings', '%s: the backup destination %s - %s' % (by, t['name'], said),
+                        who=by)
+    return t
+
+
+def rb_delete(store, tid, by):
+    with RB_LOCK:
+        targets = rb_targets(store)
+        t = next((x for x in targets if x['id'] == str(tid)), None)
+        if not t:
+            raise ValueError('no such destination')
+        rb_put_targets(store, [x for x in targets if x['id'] != t['id']])
+    store.add_event('settings', '%s took away the backup destination %s' % (by, t['name']),
+                    'warn', who=by)
+
+
+# ---- keys and certificates ----------------------------------------------------------
+def rb_ssh_keygen(comment):
+    if not rb_has('ssh-keygen'):
+        raise ValueError('ssh-keygen is not on this machine (dnf install openssh-clients)')
+    with tempfile.TemporaryDirectory(prefix='isemon-key-') as d:
+        path = os.path.join(d, 'k')
+        got = subprocess.run([rb_bin('ssh-keygen'), '-q', '-t', 'ed25519', '-N', '', '-C',
+                              comment, '-f', path], capture_output=True, text=True, timeout=30)
+        if got.returncode != 0:
+            raise ValueError('ssh-keygen: %s' % (got.stderr or got.stdout).strip()[:200])
+        with open(path) as f:
+            private = f.read()
+        with open(path + '.pub') as f:
+            public = f.read().strip()
+    return private, public
+
+
+def rb_askpass(folder):
+    """A program ssh asks for the secret: it prints what is in the
+    environment, so the secret is never on a command line, where `ps` shows
+    it, nor in a file."""
+    ask = os.path.join(folder, 'ask')
+    with open(ask, 'w') as f:
+        f.write('#!/bin/sh\nprintf "%s\\n" "$ISEMON_RB_SECRET"\n')
+    os.chmod(ask, 0o700)
+    return ask
+
+
+def rb_ssh_public_of(private, passphrase=''):
+    """The public half of a private key given - and that it is one."""
+    if not rb_has('ssh-keygen'):
+        raise ValueError('ssh-keygen is not on this machine (dnf install openssh-clients)')
+    private = str(private or '').replace('\r\n', '\n').strip() + '\n'
+    if 'PRIVATE KEY-----' not in private or len(private) > 32768:
+        raise ValueError('that is not a private key (-----BEGIN OPENSSH PRIVATE KEY----- or '
+                         'another PEM private key)')
+    with tempfile.TemporaryDirectory(prefix='isemon-key-') as d:
+        path = os.path.join(d, 'k')
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'w') as f:
+            f.write(private)
+        env = dict(os.environ, DISPLAY=':0', SSH_ASKPASS_REQUIRE='force')
+        if passphrase:
+            env.update(SSH_ASKPASS=rb_askpass(d), ISEMON_RB_SECRET=passphrase)
+            argv = [rb_bin('ssh-keygen'), '-y', '-f', path]
+        else:
+            argv = [rb_bin('ssh-keygen'), '-y', '-P', '', '-f', path]
+        got = subprocess.run(argv, capture_output=True, text=True, timeout=20, env=env,
+                             stdin=subprocess.DEVNULL)
+    if got.returncode != 0:
+        said = (got.stderr or got.stdout).strip()
+        if 'passphrase' in said.lower() or 'incorrect' in said.lower():
+            raise ValueError('the key is locked with a passphrase: give it too')
+        raise ValueError('ssh-keygen does not read it: %s' % said[:200])
+    return private, got.stdout.strip()
+
+
+def rb_client_cert_make(cn, days=1825):
+    """A key and a self-signed client certificate for FTPS."""
+    key = _openssl(['genpkey', '-algorithm', 'EC', '-pkeyopt', 'ec_paramgen_curve:P-256'],
+                   'the key')
+    with tempfile.TemporaryDirectory(prefix='isemon-crt-') as d:
+        kf = os.path.join(d, 'k.pem')
+        fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'w') as f:
+            f.write(key)
+        cn = re.sub(r'[^A-Za-z0-9.@_-]', '', str(cn or 'isemon-backup'))[:64] or 'isemon-backup'
+        crt = _openssl(['req', '-new', '-x509', '-key', kf, '-days', str(int(days)), '-subj',
+                        '/CN=' + cn, '-addext', 'extendedKeyUsage=clientAuth',
+                        '-addext', 'keyUsage=critical,digitalSignature'], 'the certificate')
+    return key, crt
+
+
+def rb_client_cert_given(text, password=''):
+    """A client certificate brought: PEM (certificate and key, in any order)
+    or PFX (base64 of it, with its password)."""
+    text = str(text or '').strip()
+    if len(text) > 262144:
+        raise ValueError('that is too long for a certificate and its key')
+    env = dict(os.environ, ISEMON_PW=str(password or ''))
+    if 'BEGIN' in text:
+        certs = [m.group(0) for m in PEM_CERT_RE.finditer(text)]
+        m = re.search(r'-----BEGIN (?:[A-Z ]*)PRIVATE KEY-----[\s\S]+?-----END (?:[A-Z ]*)'
+                      r'PRIVATE KEY-----', text)
+        if not certs or not m:
+            raise ValueError('a client certificate needs its certificate and its private key')
+        key = m.group(0) + '\n'
+        if 'ENCRYPTED' in key:
+            key = _openssl(['pkey', '-passin', 'env:ISEMON_PW'], 'the key (its password)', key,
+                           env=env)
+        if _openssl(['pkey', '-pubout'], 'the key', key).strip() != \
+                _openssl(['x509', '-noout', '-pubkey'], 'the certificate', certs[0]).strip():
+            raise ValueError('the key is not the one of this certificate')
+        return key, '\n'.join(certs) + '\n'
+    try:
+        pfx = base64.b64decode(text, validate=False)
+    except (ValueError, TypeError):
+        raise ValueError('neither PEM nor PFX')
+    with tempfile.TemporaryDirectory(prefix='isemon-pfx-') as d:
+        pf = os.path.join(d, 'c.pfx')
+        with open(pf, 'wb') as f:
+            f.write(pfx)
+        both = ''
+        for extra in ([], ['-legacy']):
+            try:
+                both = _openssl(['pkcs12', '-in', pf, '-nodes', '-passin', 'env:ISEMON_PW']
+                                + extra, 'the PFX (its password?)', env=env)
+                break
+            except ValueError:
+                if extra:
+                    raise
+    return rb_client_cert_given(both)
+
+
+# ---- the transports ------------------------------------------------------------------
+def rb_safe_name(name):
+    name = str(name or '')
+    if not re.match(r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,200}\Z', name):
+        raise RbError('not a file name of a backup: %r' % name[:80])
+    return name
+
+
+class RbFolder(object):
+    def __init__(self, t):
+        self.t = t
+        self.dir = t['path']
+
+    def open(self):
+        try:
+            os.makedirs(self.dir, exist_ok=True)
+        except OSError as e:
+            if e.errno == errno.EROFS:
+                raise RbError(self.walled())
+            raise RbError('the folder %s cannot be made: %s' % (self.dir, e.strerror or e))
+        if not os.access(self.dir, os.W_OK):
+            raise RbError('the isemon account may not write into %s' % self.dir)
+
+    def walled(self):
+        # isemon.service may write only in its own folders (ProtectSystem=strict).
+        return ('%s is outside the folders isemon.service may write in: allow it once with '
+                '"systemctl edit isemon" ([Service] ReadWritePaths=%s), then restart isemon'
+                % (self.dir, self.dir))
+
+    def put(self, local, name):
+        name = rb_safe_name(name)
+        part = os.path.join(self.dir, '.%s.part' % name)
+        try:
+            shutil.copyfile(local, part)
+            os.chmod(part, 0o640)
+            os.replace(part, os.path.join(self.dir, name))
+        except OSError as e:
+            if e.errno == errno.EROFS:
+                raise RbError(self.walled())
+            raise
+
+    def get(self, name, local):
+        shutil.copyfile(os.path.join(self.dir, rb_safe_name(name)), local)
+
+    def list(self):
+        out = []
+        for e in os.scandir(self.dir):
+            if e.is_file(follow_symlinks=False) and not e.name.startswith('.'):
+                st = e.stat()
+                out.append({'name': e.name, 'size': st.st_size, 'mtime': st.st_mtime})
+        return out
+
+    def delete(self, name):
+        os.unlink(os.path.join(self.dir, rb_safe_name(name)))
+
+    def close(self):
+        pass
+
+
+class _ImplicitFTP_TLS(ftplib.FTP_TLS):
+    """FTPS on its own port (990): TLS from the first byte."""
+    def connect(self, host='', port=0, timeout=-999, source_address=None):
+        if host:
+            self.host = host
+        if port > 0:
+            self.port = port
+        if timeout != -999:
+            self.timeout = timeout
+        self.sock = socket.create_connection((self.host, self.port), self.timeout)
+        self.af = self.sock.family
+        self.sock = self.context.wrap_socket(self.sock, server_hostname=self.host)
+        self.file = self.sock.makefile('r', encoding=self.encoding)
+        self.welcome = self.getresp()
+        return self.welcome
+
+
+class _ReuseMixin(object):
+    """The data connection resumes the control connection's TLS session:
+    vsftpd, ProFTPD and FileZilla Server refuse one that does not (522)."""
+    def ntransfercmd(self, cmd, rest=None):
+        conn, size = ftplib.FTP.ntransfercmd(self, cmd, rest)
+        if self._prot_p:
+            conn = self.context.wrap_socket(conn, server_hostname=self.host,
+                                            session=self.sock.session)
+        return conn, size
+
+
+class RbFtpTls(_ReuseMixin, ftplib.FTP_TLS):
+    pass
+
+
+class RbFtpTlsImplicit(_ReuseMixin, _ImplicitFTP_TLS):
+    pass
+
+
+class RbFtp(object):
+    def __init__(self, t):
+        self.t = t
+        self.ftp = None
+        self.tmp = None
+        self.seen = {}
+
+    def _context(self):
+        t = self.t
+        check = t.get('tls_check') or 'system'
+        if check == 'ca':
+            ctx = ssl.create_default_context(cadata=t.get('ca') or '')
+        elif check == 'system':
+            ctx = ssl.create_default_context()
+        else:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        if t.get('client_cert') and t.get('client_key'):
+            self.tmp = tempfile.mkdtemp(prefix='isemon-ftps-')
+            cf, kf = os.path.join(self.tmp, 'c.pem'), os.path.join(self.tmp, 'k.pem')
+            with open(cf, 'w') as f:
+                f.write(t['client_cert'])
+            fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'w') as f:
+                f.write(rb_secret(t, 'client_key'))
+            ctx.load_cert_chain(cf, kf)
+        return ctx
+
+    def open(self):
+        t = self.t
+        try:
+            if t['kind'] == 'ftps':
+                cls = RbFtpTlsImplicit if t.get('implicit') else RbFtpTls
+                self.ftp = cls(context=self._context(), timeout=RB_TIMEOUT)
+                self.ftp.connect(t['host'], int(t['port']))
+                if not t.get('implicit'):
+                    self.ftp.auth()
+                der = self.ftp.sock.getpeercert(True)
+                fp = hashlib.sha256(der).hexdigest() if der else ''
+                self.seen = {'fingerprint': fp}
+                try:
+                    info = rb_cert_info(ssl.DER_cert_to_PEM_cert(der))
+                    if info:
+                        self.seen['cert'] = info
+                except Exception:
+                    pass
+                if (t.get('tls_check') == 'pin') and fp != (t.get('pin') or ''):
+                    raise RbError('the server answers with another certificate than the one '
+                                  'pinned (SHA-256 %s)' % fp)
+            else:
+                self.ftp = ftplib.FTP(timeout=RB_TIMEOUT)
+                self.ftp.connect(t['host'], int(t['port']))
+            self.ftp.login(t.get('user') or 'anonymous', rb_secret(t, 'password'))
+            if t['kind'] == 'ftps':
+                self.ftp.prot_p()
+            self.ftp.set_pasv(bool(t.get('passive', 1)))
+            self._cd(t.get('path') or '')
+        except ssl.SSLCertVerificationError as e:
+            raise RbError('the server\'s certificate is not trusted: %s - check it against '
+                          'its authority, or pin it' % e.verify_message)
+        except ftplib.error_perm as e:
+            raise RbError('the FTP server said: %s' % str(e)[:200])
+        except (OSError, EOFError, ftplib.Error) as e:
+            raise RbError(str(e)[:200] or e.__class__.__name__)
+
+    def _cd(self, path):
+        if not path:
+            return
+        if path.startswith('/'):
+            self.ftp.cwd('/')
+        for part in [p for p in path.split('/') if p]:
+            try:
+                self.ftp.cwd(part)
+            except ftplib.error_perm:
+                self.ftp.mkd(part)
+                self.ftp.cwd(part)
+
+    def put(self, local, name):
+        name = rb_safe_name(name)
+        with open(local, 'rb') as f:
+            self.ftp.storbinary('STOR .%s.part' % name, f, blocksize=262144)
+        try:
+            self.ftp.delete(name)
+        except ftplib.error_perm:
+            pass
+        self.ftp.rename('.%s.part' % name, name)
+
+    def get(self, name, local):
+        with open(local, 'wb') as f:
+            self.ftp.retrbinary('RETR %s' % rb_safe_name(name), f.write, blocksize=262144)
+
+    def list(self):
+        out = []
+        try:
+            for name, facts in self.ftp.mlsd(facts=['type', 'size', 'modify']):
+                if facts.get('type') == 'file':
+                    m = facts.get('modify') or ''
+                    try:
+                        mt = datetime.strptime(m[:14], '%Y%m%d%H%M%S').replace(
+                            tzinfo=timezone.utc).timestamp()
+                    except ValueError:
+                        mt = 0
+                    out.append({'name': name, 'size': int(facts.get('size') or 0), 'mtime': mt})
+            return out
+        except ftplib.error_perm:
+            pass
+        for name in self.ftp.nlst():
+            name = name.rsplit('/', 1)[-1]
+            if name in ('.', '..'):
+                continue
+            try:
+                size = self.ftp.size(name) or 0
+            except ftplib.error_perm:
+                continue            # a folder
+            out.append({'name': name, 'size': size, 'mtime': 0})
+        return out
+
+    def delete(self, name):
+        self.ftp.delete(rb_safe_name(name))
+
+    def close(self):
+        try:
+            if self.ftp:
+                self.ftp.quit()
+        except Exception:
+            try:
+                self.ftp.close()
+            except Exception:
+                pass
+        if self.tmp:
+            shutil.rmtree(self.tmp, ignore_errors=True)
+
+
+def ssh_keyscan(host, port):
+    """The server's host keys, as known_hosts lines - and their fingerprints."""
+    if not rb_has('ssh-keyscan'):
+        raise ValueError('ssh-keyscan is not on this machine (dnf install openssh-clients)')
+    got = subprocess.run([rb_bin('ssh-keyscan'), '-T', '10', '-p', str(int(port)), '--', host],
+                         capture_output=True, text=True, timeout=30)
+    lines = [x for x in got.stdout.splitlines() if x.strip() and not x.startswith('#')]
+    if not lines:
+        raise ValueError('%s:%s did not show a host key: %s' % (
+            host, port, ' '.join((got.stderr or '').strip().splitlines()[-1:]) or 'no answer'))
+    return '\n'.join(lines) + '\n', ssh_fingerprints('\n'.join(lines) + '\n')
+
+
+def shlex_quote(text):
+    import shlex
+    return shlex.quote(str(text))
+
+
+class RbSsh(object):
+    """SFTP (the sftp program) or SCP (scp, and ssh for the list and the
+    deleting) - OpenSSH itself, the server's host key checked against the one
+    trusted on the pages, a key of its own or a password."""
+    def __init__(self, t):
+        self.t = t
+        self.d = None
+
+    def open(self):
+        t = self.t
+        tools = ['ssh'] + (['sftp'] if t['kind'] == 'sftp' else ['scp'])
+        for tool in tools:
+            if not rb_has(tool):
+                raise RbError('%s is not on this machine (dnf install openssh-clients)' % tool)
+        if not t.get('hostkey'):
+            raise RbError('the server\'s host key is not trusted yet: Try it, then trust the '
+                          'fingerprint it shows')
+        self.d = tempfile.mkdtemp(prefix='isemon-ssh-')
+        kh = os.path.join(self.d, 'known_hosts')
+        with open(kh, 'w') as f:
+            f.write(t['hostkey'])
+        self.opts = ['-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=' + kh,
+                     '-o', 'GlobalKnownHostsFile=/dev/null', '-o', 'ConnectTimeout=20',
+                     '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=4',
+                     '-o', 'LogLevel=ERROR', '-o', 'IdentitiesOnly=yes', '-F', '/dev/null']
+        key = rb_secret(t, 'key')
+        if key:
+            kf = os.path.join(self.d, 'id')
+            fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'w') as f:
+                f.write(key if key.endswith('\n') else key + '\n')
+            self.opts += ['-i', kf]
+            if t.get('ssh_cert'):
+                cf = os.path.join(self.d, 'id-cert.pub')
+                with open(cf, 'w') as f:
+                    f.write(t['ssh_cert'] + '\n')
+                self.opts += ['-o', 'CertificateFile=' + cf]
+        else:
+            self.opts += ['-o', 'IdentityFile=/dev/null']
+        # A password (or the key's passphrase) through SSH_ASKPASS: never on
+        # a command line, never in a file.
+        self.env = dict(os.environ, DISPLAY=':0', SSH_ASKPASS_REQUIRE='force')
+        secret = rb_secret(t, 'password') or rb_secret(t, 'key_pass')
+        self.env.update(SSH_ASKPASS=rb_askpass(self.d), ISEMON_RB_SECRET=secret)
+        auths = ['publickey'] if key else []
+        if rb_secret(t, 'password'):
+            auths += ['password', 'keyboard-interactive']
+        if not auths:
+            raise RbError('neither a key nor a password is set')
+        self.opts += ['-o', 'PreferredAuthentications=' + ','.join(auths),
+                      '-o', 'NumberOfPasswordPrompts=1']
+        if rb_secret(t, 'password') or rb_secret(t, 'key_pass'):
+            # sftp -b asks ssh for batch mode, which takes no password; the
+            # first value given wins, and this comes first.
+            self.opts += ['-o', 'BatchMode=no']
+        self.dest = '%s@%s' % (t.get('user') or 'root', t['host'])
+        self.dir = (t.get('path') or '').rstrip('/') or '.'
+        # Signed in and the folder made, at once - the errors said here.
+        if t['kind'] == 'sftp':
+            parts = [p for p in self.dir.split('/') if p and p != '.']
+            cmds = []
+            acc = '/' if self.dir.startswith('/') else ''
+            for p in parts:
+                acc = (acc + '/' + p) if acc not in ('', '/') else (acc + p)
+                cmds.append('-mkdir "%s"' % acc)
+            cmds.append('cd "%s"' % self.dir)
+            self._sftp(cmds)
+        else:
+            self._ssh('mkdir -p -- %s && test -w %s' % (shlex_quote(self.dir),
+                                                        shlex_quote(self.dir)))
+
+    def _run(self, args, what, stdin=None, timeout=6 * 3600):
+        got = subprocess.run(args, input=stdin, capture_output=True, text=True,
+                             timeout=timeout, env=self.env, start_new_session=True)
+        if got.returncode != 0:
+            said = (got.stderr or got.stdout or '').strip().splitlines()
+            said = [x for x in said if x.strip() and not x.startswith('Warning: Permanently')]
+            tail = ' / '.join(said[-3:])[:300] or 'it said nothing (exit %d)' % got.returncode
+            if 'Host key verification failed' in tail or 'REMOTE HOST IDENTIFICATION' in tail:
+                tail = ('the server shows another host key than the one trusted - if it was '
+                        'reinstalled on purpose, Try it and trust the new one')
+            elif 'Permission denied' in tail:
+                tail = 'the server did not let the account in (%s)' % tail
+            raise RbError('%s: %s' % (what, tail))
+        return got.stdout
+
+    def _ssh(self, command):
+        return self._run([rb_bin('ssh')] + self.opts + ['-p', str(int(self.t['port'])), '--',
+                                                        self.dest, command], 'ssh')
+
+    def _sftp(self, cmds):
+        batch = os.path.join(self.d, 'batch')
+        with open(batch, 'w') as f:
+            f.write('\n'.join(cmds) + '\n')
+        return self._run([rb_bin('sftp')] + self.opts + ['-P', str(int(self.t['port'])),
+                                                         '-b', batch, '--', self.dest], 'sftp')
+
+    def put(self, local, name):
+        name = rb_safe_name(name)
+        if self.t['kind'] == 'sftp':
+            self._sftp(['cd "%s"' % self.dir, 'put "%s" ".%s.part"' % (local, name),
+                        '-rm "%s"' % name, 'rename ".%s.part" "%s"' % (name, name)])
+        else:
+            self._run([rb_bin('scp')] + self.opts + ['-P', str(int(self.t['port'])), '-q', '--',
+                                                     local, '%s:%s/.%s.part' % (
+                                                         self.dest, self.dir, name)], 'scp')
+            self._ssh('mv -f -- %s %s' % (shlex_quote('%s/.%s.part' % (self.dir, name)),
+                                          shlex_quote('%s/%s' % (self.dir, name))))
+
+    def get(self, name, local):
+        name = rb_safe_name(name)
+        if self.t['kind'] == 'sftp':
+            self._sftp(['cd "%s"' % self.dir, 'get "%s" "%s"' % (name, local)])
+        else:
+            self._run([rb_bin('scp')] + self.opts + ['-P', str(int(self.t['port'])), '-q', '--',
+                                                     '%s:%s/%s' % (self.dest, self.dir, name),
+                                                     local], 'scp')
+
+    def list(self):
+        if self.t['kind'] == 'sftp':
+            text = self._sftp(['cd "%s"' % self.dir, 'ls -ln'])
+        else:
+            text = self._ssh('LC_ALL=C ls -ln -- %s' % shlex_quote(self.dir))
+        out = []
+        for line in text.splitlines():
+            f = line.split(None, 8)
+            if len(f) == 9 and f[0].startswith('-'):
+                name = f[8].rsplit('/', 1)[-1]
+                try:
+                    out.append({'name': name, 'size': int(f[4]), 'mtime': 0})
+                except ValueError:
+                    pass
+        return out
+
+    def delete(self, name):
+        name = rb_safe_name(name)
+        if self.t['kind'] == 'sftp':
+            self._sftp(['cd "%s"' % self.dir, 'rm "%s"' % name])
+        else:
+            self._ssh('rm -f -- %s' % shlex_quote('%s/%s' % (self.dir, name)))
+
+    def close(self):
+        if self.d:
+            shutil.rmtree(self.d, ignore_errors=True)
+
+
+class RbSmb(object):
+    """SMB through smbclient: an authentication file of its own (never the
+    password on a command line), SMB2 at least, SMB3 encryption when asked."""
+    def __init__(self, t):
+        self.t = t
+        self.d = None
+
+    def open(self):
+        t = self.t
+        if not rb_has('smbclient'):
+            raise RbError('smbclient is not on this machine (dnf install samba-client)')
+        self.d = tempfile.mkdtemp(prefix='isemon-smb-')
+        auth = os.path.join(self.d, 'auth')
+        fd = os.open(auth, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'w') as f:
+            f.write('username = %s\npassword = %s\n' % (t.get('user') or 'guest',
+                                                       rb_secret(t, 'password')))
+            if t.get('domain'):
+                f.write('domain = %s\n' % t['domain'])
+        self.args = [rb_bin('smbclient'), '//%s/%s' % (t['host'], t['share']), '-A', auth,
+                     '-p', str(int(t['port'])), '--option=client min protocol=SMB2',
+                     '-t', str(RB_TIMEOUT)]
+        if t.get('smb_encrypt'):
+            self.args += ['--client-protection=encrypt']
+        self.dir = (t.get('path') or '').replace('/', '\\').strip('\\')
+        cmds = []
+        acc = ''
+        for p in [x for x in self.dir.split('\\') if x]:
+            acc = (acc + '\\' + p) if acc else p
+            cmds.append('mkdir "%s"' % acc)
+        self._run(cmds + [self._cd(), 'ls'], ignore=('NT_STATUS_OBJECT_NAME_COLLISION',))
+
+    def _run(self, cmds, ignore=(), timeout=6 * 3600):
+        got = subprocess.run(self.args + ['-c', '; '.join(cmds)], capture_output=True, text=True,
+                             timeout=timeout, cwd=self.d, start_new_session=True)
+        text = (got.stdout or '') + (got.stderr or '')
+        bad = [x for x in text.splitlines() if 'NT_STATUS_' in x and
+               not any(i in x for i in ignore)]
+        if got.returncode != 0 or bad:
+            said = ' / '.join((bad or text.strip().splitlines() or ['no answer'])[-2:])[:300]
+            if 'NT_STATUS_LOGON_FAILURE' in said:
+                said = 'the server did not take the account and password (%s)' % said
+            elif 'NT_STATUS_BAD_NETWORK_NAME' in said:
+                said = 'there is no share %s on %s' % (self.t['share'], self.t['host'])
+            elif 'protection' in said.lower() and 'unknown' in said.lower():
+                said = ('this smbclient does not know --client-protection: switch "SMB3 '
+                        'encryption required" off or install a newer samba-client')
+            raise RbError('smbclient: %s' % said)
+        return got.stdout or ''
+
+    def _cd(self):
+        return 'cd "\\%s"' % self.dir
+
+    def put(self, local, name):
+        name = rb_safe_name(name)
+        self._run([self._cd(), 'put "%s" ".%s.part"' % (local, name), 'del "%s"' % name,
+                   'rename ".%s.part" "%s"' % (name, name)],
+                  ignore=('NT_STATUS_NO_SUCH_FILE', 'NT_STATUS_OBJECT_NAME_NOT_FOUND'))
+
+    def get(self, name, local):
+        self._run([self._cd(), 'get "%s" "%s"' % (rb_safe_name(name), local)])
+
+    def list(self):
+        out = []
+        for line in self._run([self._cd(), 'ls']).splitlines():
+            m = re.match(r'^\s\s(.+?)\s+([ADHNRS]*)\s+(\d+)\s+(\w{3} \w{3}\s+\d+ [\d:]+ \d{4})\s*$',
+                         line)
+            if m and 'D' not in m.group(2) and m.group(1) not in ('.', '..'):
+                try:
+                    mt = datetime.strptime(re.sub(r'\s+', ' ', m.group(4)),
+                                           '%a %b %d %H:%M:%S %Y').timestamp()
+                except ValueError:
+                    mt = 0
+                out.append({'name': m.group(1), 'size': int(m.group(3)), 'mtime': mt})
+        return out
+
+    def delete(self, name):
+        self._run([self._cd(), 'del "%s"' % rb_safe_name(name)])
+
+    def close(self):
+        if self.d:
+            shutil.rmtree(self.d, ignore_errors=True)
+
+
+def rb_scrub(text):
+    """An error as it may be said: no secret of any destination in it."""
+    return re.sub(r'(?i)(password|passwd|pass)\s*[=:]\s*\S+', r'\1=…', str(text or ''))
+
+
+def rb_said(e):
+    """An error in words, whatever library raised it."""
+    if isinstance(e, EOFError):
+        return 'the server closed the connection'
+    if isinstance(e, socket.timeout):
+        return 'the server did not answer in time'
+    if isinstance(e, ssl.SSLCertVerificationError):
+        return ('the server\'s certificate is not trusted: %s - check it against its authority, '
+                'or pin it' % e.verify_message)
+    if isinstance(e, ftplib.Error):
+        return 'the FTP server said: %s' % str(e)[:300]
+    if isinstance(e, subprocess.TimeoutExpired):
+        return 'it took too long'
+    return rb_scrub(str(e) or e.__class__.__name__)[:400]
+
+
+def rb_transport(t):
+    return {'folder': RbFolder, 'ftp': RbFtp, 'ftps': RbFtp, 'sftp': RbSsh, 'scp': RbSsh,
+            'smb': RbSmb}[t['kind']](t)
+
+
+def rb_try(t):
+    """Signed in, a small file written, seen in the list, taken away again."""
+    out = {'ok': False, 'steps': []}
+    began = time.time()
+    tr = rb_transport(t)
+    try:
+        tr.open()
+        out['steps'].append('signed in, the folder is there')
+        if getattr(tr, 'seen', None):
+            out['server_cert'] = tr.seen
+        name = 'isemon-try-%s-%s.txt' % (rb_host(), secrets.token_hex(4))
+        with tempfile.NamedTemporaryFile('w', prefix='isemon-try-', delete=False) as f:
+            f.write('isemon %s on %s tried this destination at %s - this file is taken away '
+                    'again\n' % (__version__, rb_host(),
+                                 datetime.now().isoformat(timespec='seconds')))
+            local = f.name
+        try:
+            tr.put(local, name)
+        finally:
+            os.unlink(local)
+        out['steps'].append('a file written')
+        names = [x['name'] for x in tr.list()]
+        if name not in names:
+            raise RbError('the file written is not in the list the server gives')
+        out['steps'].append('it is in the list (%d file(s) there)' % len(names))
+        tr.delete(name)
+        out['steps'].append('taken away again')
+        out['ok'] = True
+    except Exception as e:
+        out['error'] = rb_said(e)
+        if getattr(tr, 'seen', None):
+            out['server_cert'] = tr.seen
+    finally:
+        tr.close()
+    out['secs'] = round(time.time() - began, 1)
+    return out
+
+
+# ---- the backup itself -----------------------------------------------------------------
+def rb_password():
+    return str(CONFIG.get('rbackup_password') or '')
+
+
+def rb_restore_md(m):
+    """RESTORE.md: the exact steps, filled in with what this backup is."""
+    name = m['file']
+    tar = name[:-4] if name.endswith('.enc') else name
+    ver = m.get('isemon') or '?'
+    lines = [
+        '# Restoring isemon from %s' % name, '',
+        '| | |', '|---|---|',
+        '| Made | %s |' % m.get('made_words'),
+        '| Installation | %s |' % (m.get('site') or 'isemon'),
+        '| Machine | %s (%s) |' % (m.get('host') or '?', m.get('fqdn') or ''),
+        '| isemon | %s |' % ver,
+        '| Database | %s |' % m.get('engine_words'),
+        '| Locked | yes - AES-256-CBC, PBKDF2-SHA256, %d rounds (openssl enc) |' % RB_ITER,
+        '', 'Everything is in it: the whole database (every record, the bans, the accounts, every',
+        'setting saved on the pages, the certificate of the pages, the firewall and who may reach',
+        'which page), the key that opens the passwords kept in it (`settings.key`), the ban',
+        'feed\'s key, the routers\' host keys, and this machine\'s `/etc/isemon/config.json` to',
+        'read.', '',
+        'Keep the password of the backups apart from the backups (a password vault): without it',
+        'the file cannot be opened - by anybody.', '',
+        '## 0. Check the file', '', '```bash',
+        'sha256sum -c %s.sha256          # "%s: OK"' % (name, name), '```', '',
+        '## 1. Open it', '',
+        'isemon opens it by itself (step 3). With openssl alone, on any machine:', '',
+        '```bash',
+        'openssl enc -d -aes-256-cbc -pbkdf2 -iter %d -md sha256 -in %s -out %s'
+        % (RB_ITER, name, tar),
+        '# it asks for the password of the backups',
+        'tar tzf %s                    # what is inside' % tar, '```', '',
+        'Inside: `%s` (the full backup: the database as a file any of the three engines' % RB_DB,
+        'takes, with the keys in it), `about.json`, `manifest.json` (a checksum of each file)',
+        'and this file.', '',
+        '## 2. A machine to put it on', '',
+        'AlmaLinux / Rocky / RHEL 9 (or the machine it came from). Install isemon **%s or' % ver,
+        'newer** from its package - the same way as the first time:', '', '```bash',
+        'tar xzf isemon-%s.tar.gz && cd isemon-%s' % (ver, ver),
+        './install.sh', '```', '',
+        'The backup goes into whichever database the new machine is set to use - the file after',
+        'a plain install is fine; PostgreSQL or MariaDB can be chosen before or afterwards',
+        '(docs/the-database.md).', '',
+        '## 3. Put it back', '', '```bash',
+        'systemctl stop isemon',
+        'isemon --restore-bundle %s          # shows what is in it, asks for the password' % name,
+        'isemon --restore-bundle %s --yes    # puts it back' % name,
+        'systemctl start isemon', '```', '',
+        'The password may come from a file instead (`--passphrase-file FILE`, one line) or from',
+        'the environment (`ISEMON_BACKUP_PASSWORD`).', '',
+        'What it does: a copy of what the new machine has is made first (in',
+        '/var/lib/isemon/backups); then the database is replaced with the one in the backup, and',
+        '`settings.key`, `banfeed.key` and `known_hosts` are put in place (the ones there before',
+        'are kept beside them as `*.before-restore-*`). The new machine\'s own',
+        '`/etc/isemon/config.json` stays as it is - it belongs to the new machine; the old one is',
+        'inside the backup to read (`isemon --backup-info` is not needed: it is plain JSON in the',
+        '`isemon_carried` table of `%s`).' % RB_DB, '',
+        '## 4. Check it', '', '```bash',
+        'isemon --status                  # the logs read, the database, the bans',
+        'isemon --web-status              # nginx, TLS and the firewall put in by root', '```', '',
+        'Then sign in to the pages with an account from the backup. Point the syslog of ISE, the',
+        'firewalls and the RADIUS servers at the new machine if it has another address.', '',
+        '## By hand, without --restore-bundle', '', '```bash',
+        'openssl enc -d -aes-256-cbc -pbkdf2 -iter %d -md sha256 -in %s | tar xz'
+        % (RB_ITER, name),
+        'systemctl stop isemon',
+        'isemon --restore %s/%s --yes' % (m.get('base') or 'isemon-backup-...', RB_DB),
+        'systemctl start isemon', '```', '',
+        '---', 'Made by isemon %s on %s. The whole subject: docs/remote-backups.md in the '
+        'package.' % (__version__, m.get('host') or '?'), '']
+    return '\n'.join(lines)
+
+
+def rb_about(store, base, copy_bytes=0):
+    """What a backup made now is: the head of its manifest and of RESTORE.md."""
+    return {'isemon': __version__, 'made': time.time(),
+            'made_words': datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S %Z').strip(),
+            'site': CONFIG.get('site_name') or 'isemon', 'host': rb_host(),
+            'fqdn': socket.getfqdn(), 'engine': store.dialect.name,
+            'engine_words': ENGINE_WORDS.get(store.dialect.name, store.dialect.name),
+            'base': base, 'file': base + '.tar.gz.enc', 'iter': RB_ITER, 'encrypted': True,
+            'copy_bytes': int(copy_bytes or 0)}
+
+
+def rb_base():
+    return 'isemon-backup-%s-%s-%s' % (rb_site(), rb_host(),
+                                        datetime.now().strftime('%Y%m%d-%H%M%S'))
+
+
+def rb_restore_guide(store):
+    """RESTORE.md as a backup made now would carry it - for reading on the
+    pages before anything is lost. No secret is in it."""
+    m = rb_about(store, rb_base())
+    return {'md': rb_restore_md(m), 'name': 'RESTORE-%s-%s.md' % (rb_site(), rb_host()),
+            'file': m['file']}
+
+
+class _Counted(object):
+    """A file read through, counted and hashed as it goes - what is packed
+    is checked by the same read that packs it."""
+    def __init__(self, f, seen=None):
+        self.f = f
+        self.h = hashlib.sha256()
+        self.n = 0
+        self.seen = seen
+
+    def read(self, size=-1):
+        lump = self.f.read(size)
+        self.h.update(lump)
+        self.n += len(lump)
+        if self.seen:
+            self.seen(self.n)
+        return lump
+
+
+def rb_sha(path):
+    h = hashlib.sha256()
+    with open(str(path), 'rb') as f:
+        for chunk in iter(lambda: f.read(1 << 20), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def rb_pack(parts, out, password, seen=None):
+    """`parts` ([(name inside, path, bytes, or what makes the bytes from the
+    sums so far)], in order) packed as a
+    .tar.gz and locked, as one stream into `out`: tar into gzip into openssl,
+    openssl's output hashed as it is written. Nothing is held whole, and
+    nothing is written unlocked. Returns ({name: {sha256, bytes}}, sha256 of
+    the file)."""
+    if not rb_has('openssl'):
+        raise RbError('openssl is not on this machine: the backup cannot be locked '
+                      '(dnf install openssl)')
+    import io
+    env = dict(os.environ, ISEMON_RB_PASS=password)
+    err = tempfile.TemporaryFile()
+    proc = subprocess.Popen([rb_bin('openssl'), 'enc', '-aes-256-cbc', '-pbkdf2', '-iter',
+                             str(RB_ITER), '-md', 'sha256', '-salt', '-pass',
+                             'env:ISEMON_RB_PASS'], stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=err, env=env)
+    whole = hashlib.sha256()
+    trouble = []
+
+    def drain():
+        try:
+            fd = os.open(str(out), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'wb') as f:
+                for lump in iter(lambda: proc.stdout.read(1 << 20), b''):
+                    whole.update(lump)
+                    f.write(lump)
+        except Exception as e:
+            trouble.append(e)
+            try:
+                proc.kill()
+            except OSError:
+                pass
+    reader = threading.Thread(target=drain, name='rbackup-pack', daemon=True)
+    reader.start()
+    sums = {}
+    base = Path(out).name.split('.tar.gz')[0]
+    try:
+        gz = gzip.GzipFile(fileobj=proc.stdin, mode='wb', compresslevel=6, mtime=0)
+        with tarfile.open(fileobj=gz, mode='w|', format=tarfile.PAX_FORMAT) as tf:
+            for name, src in parts:
+                ti = tarfile.TarInfo('%s/%s' % (base, name))
+                ti.mode, ti.mtime = 0o600, int(time.time())
+                if callable(src):
+                    src = src(dict(sums))
+                if isinstance(src, (bytes, bytearray)):
+                    ti.size = len(src)
+                    reading = _Counted(io.BytesIO(bytes(src)))
+                    tf.addfile(ti, reading)
+                else:
+                    ti.size = os.path.getsize(str(src))
+                    with open(str(src), 'rb') as f:
+                        reading = _Counted(f, seen if name == RB_DB else None)
+                        tf.addfile(ti, reading)
+                sums[name] = {'sha256': reading.h.hexdigest(), 'bytes': reading.n}
+        gz.close()
+        proc.stdin.close()
+    except (BrokenPipeError, OSError) as e:
+        trouble.append(e)
+    finally:
+        try:
+            proc.stdin.close()
+        except OSError:
+            pass
+        rc = proc.wait()
+        reader.join()
+        err.seek(0)
+        said = err.read().decode('utf-8', 'replace').strip().splitlines()
+        err.close()
+    if trouble or rc != 0:
+        why = trouble[0] if trouble else None
+        if isinstance(why, OSError) and why.errno == errno.ENOSPC:
+            raise RbError('the disk ran full while the backup was packed (%s)' % Path(out).parent)
+        raise RbError('locking it: %s' % ((said[-1] if said else '') or (str(why) if why else '')
+                                          or 'openssl said no')[:240])
+    return sums, whole.hexdigest()
+
+
+def _rb_follow_copy(progress, began, low, high):
+    """The copy being made, said as it goes - from what `Going` says of it."""
+    stop = threading.Event()
+
+    def watch():
+        last = -1
+        while not stop.wait(2.0):
+            mine = [v for v in Going.snapshot().values()
+                    if v.get('kind') == 'db-copy' and v.get('began', 0) >= began - 1]
+            if not mine:
+                continue
+            part = max(0.0, min(1.0, float(mine[-1].get('part') or 0)))
+            pct = int(part * 100)
+            if pct != last:
+                last = pct
+                progress(low + int(part * (high - low)), 1000,
+                         'the database is copied: %d%%' % pct)
+    t = threading.Thread(target=watch, name='rbackup-copy', daemon=True)
+    t.start()
+    return stop
+
+
+def rb_build(store, work, progress=None):
+    """The backup, built in `work`: (path of the file, its about/manifest,
+    RESTORE.md text). Its .sha256 and -RESTORE.md are left beside it."""
+    def say(n, words):
+        if progress:
+            progress(n, 1000, words)
+    pw = rb_password()
+    if not pw:
+        raise RbError('the backups have no password: set one (Settings - Backups) - unlocked, '
+                      'a backup would hand the key of every password kept here to whoever can '
+                      'read the destination')
+    if not rb_has('openssl'):
+        raise RbError('openssl is not on this machine: the backup cannot be locked '
+                      '(dnf install openssl)')
+    if getattr(store, 'trouble', ''):
+        raise RbError('the database this is set to use will not open: a backup of the empty one '
+                      'standing in for it would be worse than none')
+    work = Path(work)
+    base = rb_base()
+    # The copy, and the packed file beside it: room for both, or nothing begun.
+    est = int(store.size() or 0)
+    rb_room(work, est + est // 2 + (512 << 20), 'making a backup')
+    say(10, 'the database is copied')
+    began = time.time()
+    follow = _rb_follow_copy(progress, began, 10, 450) if progress else None
+    try:
+        copy = store.backup(folder=str(work), label='rbackup')
+    finally:
+        if follow:
+            follow.set()
+    carried = full_carry(copy)
+    os.chmod(str(copy), 0o600)
+    size = copy.stat().st_size
+    rb_room(work, size // 3 + (256 << 20), 'packing the backup')
+    say(460, 'the keys put in (%s); packed and locked' % ', '.join(carried))
+    m = rb_about(store, base, size)
+    m['carried'] = carried
+    md = rb_restore_md(m)
+    out = work / m['file']
+
+    def seen(n):
+        if progress and size:
+            pct = int(100 * n / size)
+            if pct != seen.last and pct % 2 == 0:
+                seen.last = pct
+                say(460 + int(340 * n / size), 'packed and locked: %d%%' % pct)
+    seen.last = -1
+    about = json.dumps(m, indent=1, default=str).encode()
+    # One stream, the manifest last: the copy's checksum is known only once
+    # it has gone through.
+    sums, sha = rb_pack([('about.json', about), ('RESTORE.md', md.encode()), (RB_DB, copy),
+                         ('manifest.json', lambda got: json.dumps(
+                             dict(m, files=got), indent=1, default=str).encode())],
+                        out, pw, seen)
+    try:
+        copy.unlink()
+    except OSError:
+        pass
+    m['sha256'] = sha
+    m['bytes'] = out.stat().st_size
+    m['files'] = sums
+    (work / (m['file'] + '.sha256')).write_text('%s  %s\n' % (sha, m['file']))
+    (work / (base + '-RESTORE.md')).write_text(md)
+    say(800, 'packed and locked: %s' % human_size(m['bytes']))
+    return out, m, md
+
+
+def rb_companions(name):
+    if not RB_NAME_RE.match(name):
+        return []
+    base = name.split('.tar.gz')[0]
+    return [name + '.sha256', base + '-RESTORE.md']
+
+
+def rb_mine(m):
+    """Whether a backup's name says it is this installation's, of this machine."""
+    return bool(m) and m.group('site') == rb_site() and m.group('host') == rb_host()
+
+
+def rb_retain(tr, keep, days, now=None):
+    """This machine's backups at a destination beyond what is kept, taken
+    away - never the newest."""
+    now = now or time.time()
+    files = tr.list()
+    names = set(x['name'] for x in files)
+    ours = []
+    for x in files:
+        m = RB_NAME_RE.match(x['name'])
+        if rb_mine(m):
+            try:
+                when = datetime.strptime(m.group('stamp'), '%Y%m%d-%H%M%S').timestamp()
+            except ValueError:
+                continue
+            ours.append((when, x['name']))
+    ours.sort(reverse=True)
+    gone = []
+    for i, (when, name) in enumerate(ours):
+        if i == 0:
+            continue
+        if (keep and i >= keep) or (days and now - when > days * 86400):
+            for n in [name] + [c for c in rb_companions(name) if c in names]:
+                try:
+                    tr.delete(n)
+                except Exception:
+                    pass
+            gone.append(name)
+    return gone
+
+
+def rb_run(store, by, only=None, progress=None):
+    """Made once, sent to every destination switched on (or the ones asked):
+    the result of each, kept in the history."""
+    targets = [t for t in rb_targets(store)
+               if (only and t['id'] in only) or (not only and t.get('enabled'))]
+    if not targets:
+        raise RbError('no destination is switched on')
+    # Never sent unlocked (otp 1.0.136): it holds the key every password
+    # here is sealed with - whoever reads the share could open them all.
+    if not rb_password():
+        raise RbError('the backups have no password: set one (Settings - Backups) - unlocked, '
+                      'a backup would hand the key of every password kept here to whoever can '
+                      'read the destination')
+    work = Path(tempfile.mkdtemp(prefix='isemon-rbackup-', dir=scratch_dir()))
+    os.chmod(str(work), 0o700)
+    began = time.time()
+    run = {'at': began, 'by': by, 'host': rb_host(), 'targets': [], 'ok': False}
+    try:
+        path, m, _md = rb_build(store, work, progress)
+        run.update(file=m['file'], bytes=m['bytes'], encrypted=True)
+        sha = work / (m['file'] + '.sha256')
+        md = work / (m['base'] + '-RESTORE.md')
+        for i, t in enumerate(targets):
+            if progress:
+                progress(800 + int(190 * i / len(targets)), 1000,
+                         'sent to %s (%d of %d)' % (t['name'], i + 1, len(targets)))
+            one = {'id': t['id'], 'name': t['name'], 'kind': t['kind'], 'ok': False}
+            t0 = time.time()
+            tr = rb_transport(t)
+            try:
+                tr.open()
+                tr.put(str(path), m['file'])
+                tr.put(str(sha), sha.name)
+                tr.put(str(md), md.name)
+                got = {x['name']: x['size'] for x in tr.list()}
+                if got.get(m['file']) not in (None, m['bytes']):
+                    raise RbError('the server holds %s bytes of it, not %s' % (
+                        got.get(m['file']), m['bytes']))
+                one['ok'] = True
+                try:
+                    one['taken_away'] = rb_retain(tr, int(CONFIG.get('rbackup_keep') or 0),
+                                                  int(CONFIG.get('rbackup_keep_days') or 0))
+                except Exception as e:
+                    one['retain_error'] = rb_said(e)[:200]
+            except Exception as e:
+                one['error'] = rb_said(e)
+            finally:
+                tr.close()
+            one['secs'] = round(time.time() - t0, 1)
+            run['targets'].append(one)
+            try:
+                rb_set_fields(store, t['id'], '', '', last={
+                    'at': time.time(), 'ok': one['ok'], 'error': one.get('error') or '',
+                    'file': m['file'], 'bytes': m['bytes']})
+            except ValueError:
+                pass                                # taken away meanwhile
+        run['ok'] = all(x['ok'] for x in run['targets'])
+    except (RbError, OSError, ValueError, StorageError, sqlite3.Error,
+            subprocess.SubprocessError) as e:
+        run['error'] = rb_said(e)
+    finally:
+        shutil.rmtree(str(work), ignore_errors=True)
+    run['secs'] = round(time.time() - began, 1)
+    rb_history_add(store, run)
+    good = [x['name'] for x in run['targets'] if x['ok']]
+    bad = ['%s (%s)' % (x['name'], x.get('error')) for x in run['targets'] if not x['ok']]
+    store.add_event('backup', 'a backup to other machines (%s) %s%s%s' % (
+        human_size(run.get('bytes') or 0), ('went to ' + ', '.join(good))
+        if good else 'went nowhere', ('; not to ' + '; '.join(bad)) if bad else '',
+        ('; ' + run['error']) if run.get('error') else ''),
+        'info' if run['ok'] else 'warn', who=by)
+    log('backup to other machines: %s' % ('sent to ' + ', '.join(good) if good else 'not sent')
+        + (' - failed: ' + '; '.join(bad) if bad else '')
+        + (' - ' + run['error'] if run.get('error') else ''), 'info' if run['ok'] else 'warn')
+    if progress:
+        progress(1000, 1000, 'done' if run['ok'] else (run.get('error') or 'not everywhere'))
+    return run
+
+
+def rb_history(store):
+    try:
+        got = json.loads(store.get_meta('rbackup:runs') or '[]')
+    except ValueError:
+        got = []
+    return [x for x in got if isinstance(x, dict)]
+
+
+def rb_history_forget(store, at=None, file=None):
+    """One line off the list (at and file), or all of it. The backups
+    themselves stay where they went."""
+    with RB_LOCK:
+        runs = rb_history(store)
+        if at is None:
+            left = []
+        else:
+            left = [r for r in runs if not (abs(float(r.get('at') or 0) - float(at)) < 0.001 and
+                                           str(r.get('file') or '') == str(file or ''))]
+        store.set_meta('rbackup:runs', json.dumps(left, default=str))
+        return len(runs) - len(left)
+
+
+def rb_history_add(store, run):
+    with RB_LOCK:
+        runs = [run] + rb_history(store)
+        store.set_meta('rbackup:runs', json.dumps(runs[:60], default=str))
+
+
+# ---- jobs, and the schedule --------------------------------------------------------------
+def rb_job_of(daemon, kind='rbackup'):
+    """The newest job of that kind - going, or the last one over."""
+    mine = [j for j in daemon.jobs() if j.get('kind') == kind]
+    mine.sort(key=lambda j: j.get('started') or 0)
+    return mine[-1] if mine else None
+
+
+def rb_job_view(job):
+    """A job as otp's page reads it: running, how far, what it says."""
+    if not job:
+        return {'running': False}
+    return {'id': job['id'], 'running': not job['done'], 'what': job.get('key') or '',
+            'done': job.get('done_n') or 0, 'whole': job.get('total') or 0,
+            'says': job.get('last') or '', 'error': job.get('error') or '',
+            'result': job.get('result'), 'began': job.get('started'),
+            'ended': job.get('finished'), 'by': job.get('by') or ''}
+
+
+def rb_job_start(daemon, by, only=None):
+    """A backup sent, on a thread of its own; the page follows the job."""
+    def work(progress):
+        run = rb_run(daemon.store, by, only, progress)
+        if run.get('error'):
+            raise RbError(run['error'])
+        run['message'] = ('the backup went to every destination' if run['ok'] else
+                          'the backup did not reach every destination')
+        return run
+    return daemon.job_start('rbackup', work, by=by, key='send',
+                            label='A backup to the destinations')
+
+
+def rb_here_start(daemon, by):
+    """A backup made for the computer somebody is sitting at: built here,
+    kept for an hour, fetched by the page when it is ready."""
+    def work(progress):
+        if not rb_password():
+            # Locked always (otp 1.0.136): unlocked it holds every key here.
+            raise RbError('without a password of the backups the file would hold the key of '
+                          'every password kept here unlocked: set the password first')
+        rb_tidy_folders()
+        made = rb_folder('rbackup-made')
+        work_ = Path(tempfile.mkdtemp(prefix='isemon-rbhere-', dir=scratch_dir()))
+        try:
+            path, m, _md = rb_build(daemon.store, work_, progress)
+            shutil.move(str(path), str(made / m['file']))
+        finally:
+            shutil.rmtree(str(work_), ignore_errors=True)
+        daemon.store.add_event('backup', '%s made a backup to download (%s, %s, locked)'
+                               % (by, m['file'], human_size(m['bytes'])), 'warn', who=by)
+        progress(1000, 1000, 'ready to download')
+        return {'message': 'the backup is ready: the download starts', 'made': m['file'],
+                'bytes': m['bytes']}
+    return daemon.job_start('rbackup', work, by=by, key='here',
+                            label='A backup to download')
+
+
+def rb_fetch_start(daemon, by, tid, name):
+    """One at a destination, fetched here to be downloaded."""
+    t = rb_target(daemon.store, tid)
+    if not t or not RB_NAME_RE.match(str(name or '')):
+        raise ValueError('which backup?')
+
+    def work(progress):
+        rb_tidy_folders()
+        made = rb_folder('rbackup-made')
+        progress(100, 1000, 'fetched from %s' % t['name'])
+        part = made / ('.%s.part' % name)
+        try:
+            rb_fetch(daemon.store, t['id'], name, str(part))
+            os.replace(str(part), str(made / name))
+        finally:
+            try:
+                part.unlink()
+            except OSError:
+                pass
+        daemon.store.add_event('backup', '%s fetched the backup %s from %s to download'
+                               % (by, name, t['name']), 'warn', who=by)
+        progress(1000, 1000, 'ready to download')
+        return {'message': 'fetched: the download starts', 'made': name}
+    return daemon.job_start('rbackup', work, by=by, key='fetch:%s' % name,
+                            label='A backup fetched to download')
+
+
+def rb_due(last_day, now=None):
+    """Whether the scheduled backup is due now: the day it is for, or None."""
+    if not int(CONFIG.get('rbackup') or 0):
+        return None
+    want = parse_hhmm(CONFIG.get('rbackup_at'), 4 * 60 + 15)
+    now = now or datetime.now()
+    if now.hour * 60 + now.minute < want:
+        return None
+    if str(CONFIG.get('rbackup_every') or 'daily') == 'weekly' and \
+            now.isoweekday() != int(CONFIG.get('rbackup_day') or 7):
+        return None
+    today = now.strftime('%Y-%m-%d')
+    return today if today != last_day else None
+
+
+def rb_next_words(now=None):
+    """When the next scheduled one is, as ISO time - '' when there is none."""
+    if not int(CONFIG.get('rbackup') or 0):
+        return ''
+    want = parse_hhmm(CONFIG.get('rbackup_at'), 4 * 60 + 15)
+    now = now or datetime.now()
+    nxt = now.replace(hour=want // 60, minute=want % 60, second=0, microsecond=0)
+    if nxt <= now:
+        nxt += timedelta(days=1)
+    if str(CONFIG.get('rbackup_every')) == 'weekly':
+        day = int(CONFIG.get('rbackup_day') or 7)
+        while nxt.isoweekday() != day:
+            nxt += timedelta(days=1)
+    return nxt.isoformat(timespec='minutes')
+
+
+def rb_tick(daemon):
+    """Once a minute, behind the daemon's loop: the scheduled backup."""
+    rb_tidy_folders()
+    store = daemon.store
+    day = rb_due(store.get_meta('rbackup_day', ''))
+    if not day:
+        return
+    going = rb_job_of(daemon)
+    if going and not going['done']:
+        return
+    if not any(t.get('enabled') for t in rb_targets(store)):
+        return
+    if not daemon.working():
+        return
+    store.set_meta('rbackup_day', day)
+    rb_job_start(daemon, 'isemon (scheduled)')
+
+
+# ---- putting one back -----------------------------------------------------------------
+class _Opened(object):
+    """A backup file opened as a stream: decrypted by openssl (when it is
+    locked) and read by tarfile, member by member, nothing held whole."""
+    def __init__(self, path, password):
+        self.path = str(path)
+        self.proc = None
+        self.raw = None
+        with open(self.path, 'rb') as f:
+            head = f.read(8)
+        self.locked = head.startswith(b'Salted__')
+        if self.locked:
+            if not password:
+                raise RbError('the backup is locked: its password is needed')
+            if not rb_has('openssl'):
+                raise RbError('openssl is not on this machine (dnf install openssl)')
+            self.err = tempfile.TemporaryFile()
+            self.proc = subprocess.Popen(
+                [rb_bin('openssl'), 'enc', '-d', '-aes-256-cbc', '-pbkdf2', '-iter',
+                 str(RB_ITER), '-md', 'sha256', '-in', self.path, '-pass', 'env:ISEMON_RB_PASS'],
+                stdout=subprocess.PIPE, stderr=self.err, stdin=subprocess.DEVNULL,
+                env=dict(os.environ, ISEMON_RB_PASS=password))
+            stream = self.proc.stdout
+        elif head.startswith(b'\x1f\x8b'):
+            self.raw = open(self.path, 'rb')
+            stream = self.raw
+        else:
+            raise RbError('that is not a backup of isemon (neither locked nor a .tar.gz)')
+        try:
+            self.tf = tarfile.open(fileobj=stream, mode='r|gz')
+        except (tarfile.TarError, OSError, EOFError, zlib.error):
+            self.close()
+            raise self.wrong()
+
+    def wrong(self):
+        return RbError('the password does not open it (or the file is damaged)' if self.locked
+                       else 'the file is damaged: it is not a whole .tar.gz')
+
+    def members(self):
+        """(name inside, member) - checked: one folder, only the files a
+        backup has, each once."""
+        top, seen = None, set()
+        try:
+            for mb in self.tf:
+                parts = mb.name.split('/')
+                if len(parts) != 2 or not mb.isfile() or parts[1] not in RB_INSIDE \
+                        or parts[1] in seen or not re.match(r'^isemon-backup-[A-Za-z0-9_.-]+\Z',
+                                                            parts[0]):
+                    raise RbError('the archive has a file it may not have: %r' % mb.name[:100])
+                if top is None:
+                    top = parts[0]
+                elif parts[0] != top:
+                    raise RbError('the archive is not one backup')
+                seen.add(parts[1])
+                yield parts[1], mb
+        except (tarfile.TarError, EOFError, zlib.error) as e:
+            raise RbError('%s (%s)' % (self.wrong(), str(e)[:80]))
+
+    def finish(self):
+        """openssl's own word that what it gave was whole."""
+        if self.proc is None:
+            return
+        try:
+            self.proc.stdout.read()
+        except OSError:
+            pass
+        if self.proc.wait() != 0:
+            raise self.wrong()
+
+    def close(self):
+        if self.proc is not None:
+            try:
+                if self.proc.poll() is None:
+                    self.proc.kill()
+                self.proc.wait()
+            except OSError:
+                pass
+            try:
+                self.err.close()
+            except OSError:
+                pass
+        if self.raw is not None:
+            self.raw.close()
+
+
+def rb_peek(path, password):
+    """What a backup says it is (about.json, the first thing in it) - read
+    without unpacking the rest. Also proves the password opens it."""
+    o = _Opened(path, password)
+    try:
+        for name, mb in o.members():
+            if name != 'about.json' or mb.size > 1 << 20:
+                raise RbError('there is no about.json at the start of it: not a backup of isemon')
+            try:
+                return json.loads(o.tf.extractfile(mb).read().decode('utf-8'))
+            except ValueError:
+                raise RbError('its about.json is not readable')
+        raise o.wrong()
+    finally:
+        o.close()
+
+
+def rb_open(path, password, work, room_for=0, progress=None):
+    """A backup file opened into `work`: (the folder, its manifest) - every
+    file checked against the checksum the manifest has. Unpacked only when
+    it fits, with `room_for` bytes more left over (the copy a restore makes
+    of what it replaces)."""
+    out = Path(work) / 'x'
+    out.mkdir(mode=0o700)
+    o = _Opened(path, password)
+    sums, manifest = {}, None
+    try:
+        for name, mb in o.members():
+            try:
+                free = shutil.disk_usage(str(out)).free
+            except OSError:
+                free = None
+            if free is not None and mb.size + room_for + (256 << 20) > free:
+                raise RbError('unpacked it is %s, and with the copy of what it replaces that is '
+                              'more than there is room for in %s (%s free)'
+                              % (human_size(mb.size), out, human_size(max(0, free))))
+            src = o.tf.extractfile(mb)
+            h = hashlib.sha256()
+            n = 0
+            fd = os.open(str(out / name), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'wb') as f:
+                for lump in iter(lambda: src.read(1 << 20), b''):
+                    h.update(lump)
+                    f.write(lump)
+                    n += len(lump)
+                    if progress and name == RB_DB and mb.size:
+                        progress(n, mb.size)
+            sums[name] = h.hexdigest()
+            if name == 'manifest.json':
+                try:
+                    manifest = json.loads((out / name).read_text(encoding='utf-8'))
+                except ValueError:
+                    raise RbError('its manifest is not readable')
+        o.finish()
+    finally:
+        o.close()
+    if not isinstance(manifest, dict):
+        raise RbError('there is no manifest in it')
+    for name in ('about.json', 'RESTORE.md', RB_DB):
+        want = ((manifest.get('files') or {}).get(name) or {}).get('sha256')
+        if name not in sums:
+            raise RbError('%s is missing from it' % name)
+        if want != sums[name]:
+            raise RbError('%s is damaged (its checksum is not the one in the manifest)' % name)
+    return out, manifest
+
+
+def rb_restore(store, path, password, by, daemon=None, progress=None):
+    """Everything in a backup put back on this machine: the database (a copy
+    of what it replaces made first, as every restore does) and the keys it
+    carries. The new machine's config.json stays its own."""
+    def say(n, words):
+        if progress:
+            progress(n, 1000, words)
+    work = Path(tempfile.mkdtemp(prefix='isemon-putback-', dir=scratch_dir()))
+    os.chmod(str(work), 0o700)
+    try:
+        say(150, 'opened and checked')
+        top, m = rb_open(path, password, work, room_for=int(store.size() or 0),
+                         progress=(lambda n, of: say(150 + int(400 * n / of),
+                                                     'opened and checked: %d%%'
+                                                     % int(100 * n / of))) if progress else None)
+        db = top / RB_DB
+        said, why = store.dump_peek(db)
+        if said is None:
+            raise RbError(why)
+        if not said.get('admins'):
+            raise RbError('that backup has no full administrator in it - putting it back would '
+                          'lock everybody out')
+        carried = carried_in(db)
+        say(600, 'the database is put back (a copy of what it replaces first)')
+        done = store.restore_dump(db)
+        if daemon is not None:
+            put = daemon.after_full_restore(carried, by)
+            daemon.after_restore()
+            daemon.webroot_again('a backup was put back')
+        else:
+            carried_drop(store)
+            put = carried_put(carried, by) if carried else []
+        store.add_event('backup', '%s put back the backup %s (made %s on %s, isemon %s); a copy '
+                        'of what it replaced is %s' % (
+                            by, os.path.basename(str(path)), m.get('made_words'), m.get('host'),
+                            m.get('isemon'), done['safety']), 'warn', who=by)
+        log('a backup was put back by %s: %s; what it replaced is in %s'
+            % (by, os.path.basename(str(path)), done['safety']), 'warn')
+        say(1000, 'put back')
+        return {'manifest': {k: v for k, v in m.items() if k != 'files'},
+                'safety': done['safety'], 'carried': put,
+                'message': 'the backup is back; what it replaced is kept as %s' % done['safety']}
+    finally:
+        shutil.rmtree(str(work), ignore_errors=True)
+
+
+def rb_restore_start(daemon, by, password, upload=None, tid=None, name=None):
+    """A backup put back - one at a destination, or one sent from the page -
+    as a job the page follows."""
+    src = None
+    t = None
+    if upload:
+        if not re.match(r'^[0-9a-f]{16}\Z', str(upload)):
+            raise ValueError('which file?')
+        src = rb_folder('rbackup-uploads') / str(upload)
+        if not src.is_file():
+            raise ValueError('the file sent is not here any more: send it again')
+    else:
+        t = rb_target(daemon.store, tid)
+        if not t or not RB_NAME_RE.match(str(name or '')):
+            raise ValueError('which backup?')
+
+    def work(progress):
+        tmp = None
+        try:
+            path = src
+            if path is None:
+                progress(20, 1000, 'fetched from %s' % t['name'])
+                tmp = Path(tempfile.mkdtemp(prefix='isemon-fetch-', dir=scratch_dir()))
+                os.chmod(str(tmp), 0o700)
+                path = tmp / name
+                rb_fetch(daemon.store, t['id'], name, str(path))
+            return rb_restore(daemon.store, str(path), password, by, daemon, progress)
+        finally:
+            if tmp:
+                shutil.rmtree(str(tmp), ignore_errors=True)
+            if src is not None:
+                try:
+                    src.unlink()
+                except OSError:
+                    pass
+    return daemon.job_start('rbackup-restore', work, by=by, label='Putting a backup back')
+
+
+def rb_fetch(store, tid, name, dst):
+    t = rb_target(store, tid)
+    if not t:
+        raise ValueError('no such destination')
+    if not RB_NAME_RE.match(str(name or '')):
+        raise ValueError('not a backup of isemon: %r' % str(name)[:80])
+    tr = rb_transport(t)
+    try:
+        tr.open()
+        size = next((x['size'] for x in tr.list() if x['name'] == name), None)
+        if size is None:
+            raise RbError('%s is not there any more' % name)
+        rb_room(Path(dst).parent, int(size) + (256 << 20), 'fetching it')
+        tr.get(name, dst)
+    finally:
+        tr.close()
+
+
+def rb_remote_list(store, tid):
+    t = rb_target(store, tid)
+    if not t:
+        raise ValueError('no such destination')
+    tr = rb_transport(t)
+    try:
+        tr.open()
+        files = tr.list()
+    finally:
+        tr.close()
+    names = set(x['name'] for x in files)
+    out = []
+    for x in files:
+        m = RB_NAME_RE.match(x['name'])
+        if not m:
+            continue
+        try:
+            when = datetime.strptime(m.group('stamp'), '%Y%m%d-%H%M%S').timestamp()
+        except ValueError:
+            when = x.get('mtime') or 0
+        out.append({'name': x['name'], 'bytes': x['size'], 'when': when,
+                    'host': m.group('host'), 'site': m.group('site'),
+                    'encrypted': bool(m.group('enc')), 'mine': rb_mine(m),
+                    'sha256': (x['name'] + '.sha256') in names})
+    out.sort(key=lambda x: -x['when'])
+    return out
+
+
+# ---- the pages --------------------------------------------------------------------------
+def rb_tools():
+    return {k: rb_has(k) for k in ('ssh', 'sftp', 'scp', 'ssh-keygen', 'ssh-keyscan',
+                                    'smbclient', 'openssl')}
+
+
+def rb_page(daemon):
+    store = daemon.store
+    return {'ok': True, 'targets': [rb_view(t) for t in rb_targets(store)],
+            'runs': rb_history(store)[:40], 'job': rb_job_view(rb_job_of(daemon)),
+            'kinds': [{'kind': k, 'words': RB_KIND_WORDS[k], 'port': RB_PORTS.get(k)}
+                      for k in RB_KINDS],
+            'tools': rb_tools(), 'host': rb_host(), 'locked': bool(rb_password()),
+            'iter': RB_ITER, 'site': CONFIG.get('site_name') or 'isemon', 'most': RB_MOST,
+            'next': rb_next_words(), 'on': bool(int(CONFIG.get('rbackup') or 0))}
+
+
+def _rb_target_for(store, b):
+    """The destination asked about: the one saved, with what is typed over
+    it (Try it before Save)."""
+    tid = str(b.get('id') or '')
+    old = rb_target(store, tid) if tid else None
+    if tid and not old:
+        raise RbError('no such destination')
+    if isinstance(b.get('target'), dict):
+        t = rb_checked(dict(b['target'], id=tid or None), old)
+        if old:
+            for k in ('key', 'pub', 'hostkey', 'client_cert', 'client_key', 'key_pass', 'ca',
+                      'pin', 'ssh_cert'):
+                if k in old and k not in t:
+                    t[k] = old[k]
+        return t
+    if not old:
+        raise RbError('which destination?')
+    return old
+
+
+def rb_do(daemon, b, by):
+    """What Settings -> Backups asks (POST /api/rbackup)."""
+    store = daemon.store
+    act = str(b.get('action') or '')
+    if act == 'save':
+        target = b.get('target') if isinstance(b.get('target'), dict) else {}
+        t = rb_save(store, dict(target, id=b.get('id') or target.get('id')), by)
+        return {'message': 'saved', 'target': rb_view(t)}
+    if act == 'delete':
+        rb_delete(store, b.get('id'), by)
+        return {'message': 'taken away'}
+    if act == 'try':
+        t = _rb_target_for(store, b)
+        if t['kind'] in ('sftp', 'scp') and not t.get('hostkey'):
+            lines, fps = ssh_keyscan(t['host'], t['port'])
+            return {'hostkey_needed': True, 'hostkey': lines, 'fingerprints': fps,
+                    'message': 'the server\'s host key is not trusted yet'}
+        out = rb_try(t)
+        store.add_event('settings', '%s tried the backup destination %s: %s' % (
+            by, t['name'], 'it works' if out['ok'] else out.get('error')), who=by)
+        if t.get('id') and rb_target(store, t['id']):
+            rb_set_fields(store, t['id'], '', '', tried={'at': time.time(), 'ok': out['ok'],
+                                                         'error': out.get('error') or ''})
+        return out
+    if act == 'hostkey_scan':
+        t = _rb_target_for(store, b)
+        lines, fps = ssh_keyscan(t['host'], t['port'])
+        return {'hostkey': lines, 'fingerprints': fps}
+    if act == 'hostkey_trust':
+        t = _rb_target_for(store, b)
+        lines = str(b.get('hostkey') or '')
+        fresh, fps = ssh_keyscan(t['host'], t['port'])
+        # Only what the server shows now, as the page showed it: nothing
+        # typed in its place.
+        if sorted(x.strip() for x in lines.splitlines() if x.strip()) != \
+                sorted(x.strip() for x in fresh.splitlines() if x.strip()):
+            raise RbError('the server shows other host keys now than the ones shown: '
+                          'Try it again')
+        rb_set_fields(store, t['id'], by, 'its host key trusted (%s)' % '; '.join(fps),
+                      hostkey=fresh)
+        return {'message': 'trusted', 'fingerprints': fps}
+    if act == 'hostkey_forget':
+        t = _rb_target_for(store, b)
+        rb_set_fields(store, t['id'], by, 'its host key forgotten', hostkey=None)
+        return {'message': 'forgotten'}
+    if act == 'keygen':
+        t = _rb_target_for(store, b)
+        private, public = rb_ssh_keygen('isemon-backup@%s' % rb_host())
+        rb_set_fields(store, t['id'], by, 'a new ssh key made here',
+                      key=rb_seal(private), pub=public, key_pass=None)
+        return {'message': 'made', 'pub': public}
+    if act == 'key_paste':
+        t = _rb_target_for(store, b)
+        pp = str(b.get('passphrase') or '')
+        private, public = rb_ssh_public_of(b.get('key'), pp)
+        rb_set_fields(store, t['id'], by, 'an ssh key of their own given',
+                      key=rb_seal(private), pub=public, key_pass=rb_seal(pp) if pp else None)
+        return {'message': 'taken', 'pub': public}
+    if act == 'key_download':
+        t = _rb_target_for(store, b)
+        private = rb_secret(t, 'key')
+        if not private:
+            raise RbError('there is no key')
+        store.add_event('settings', '%s downloaded the private ssh key of the backup '
+                        'destination %s' % (by, t['name']), 'warn', who=by)
+        return {'pem': private if private.endswith('\n') else private + '\n',
+                'file': 'isemon-backup-%s-key' % rb_slug(t['name'])}
+    if act == 'key_forget':
+        t = _rb_target_for(store, b)
+        rb_set_fields(store, t['id'], by, 'its ssh key forgotten', key=None, pub=None,
+                      key_pass=None, ssh_cert=None)
+        return {'message': 'forgotten'}
+    if act == 'cert_make':
+        t = _rb_target_for(store, b)
+        key, crt = rb_client_cert_make(b.get('cn') or 'isemon-backup-%s' % rb_host())
+        rb_set_fields(store, t['id'], by, 'a client certificate made here',
+                      client_cert=crt, client_key=rb_seal(key))
+        return {'message': 'made', 'cert': crt, 'info': rb_cert_info(crt)}
+    if act == 'cert_given':
+        t = _rb_target_for(store, b)
+        key, crt = rb_client_cert_given(b.get('text'), str(b.get('password') or ''))
+        rb_set_fields(store, t['id'], by, 'a client certificate of their own given',
+                      client_cert=crt, client_key=rb_seal(key))
+        return {'message': 'taken', 'cert': crt, 'info': rb_cert_info(crt)}
+    if act == 'cert_forget':
+        t = _rb_target_for(store, b)
+        rb_set_fields(store, t['id'], by, 'its client certificate forgotten',
+                      client_cert=None, client_key=None)
+        return {'message': 'forgotten'}
+    if act == 'pin':
+        t = _rb_target_for(store, b)
+        pin = re.sub(r'[^0-9a-f]', '', str(b.get('pin') or '').lower())
+        if len(pin) != 64:
+            raise RbError('the fingerprint is SHA-256: 64 hex digits')
+        rb_set_fields(store, t['id'], by, 'the server\'s certificate pinned (%s)' % pin,
+                      pin=pin, tls_check='pin')
+        return {'message': 'pinned'}
+    if act == 'run':
+        only = [str(x) for x in (b.get('ids') or [])][:RB_MOST] or None
+        if not rb_password():
+            raise RbError('the backups have no password: set one first - unlocked, a backup '
+                          'would hand the key of every password kept here to whoever can read '
+                          'the destination')
+        job = rb_job_start(daemon, by, only)
+        return {'message': 'the backup is being made', 'job': rb_job_view(job)}
+    if act == 'here':
+        if not rb_password():
+            raise RbError('without a password of the backups the file would hold the key of '
+                          'every password kept here unlocked: set the password first')
+        job = rb_here_start(daemon, by)
+        return {'message': 'the backup is being made - the download starts when it is ready',
+                'job': rb_job_view(job)}
+    if act == 'fetch':
+        job = rb_fetch_start(daemon, by, b.get('id'), b.get('name'))
+        return {'message': 'it is being fetched - the download starts when it is here',
+                'job': rb_job_view(job)}
+    if act == 'job':
+        return {'job': rb_job_view(rb_job_of(daemon))}
+    if act == 'list':
+        return {'files': rb_remote_list(store, b.get('id'))}
+    if act == 'delete_file':
+        t = rb_target(store, b.get('id'))
+        name = str(b.get('name') or '')
+        if not t or not RB_NAME_RE.match(name):
+            raise RbError('which backup?')
+        tr = rb_transport(t)
+        try:
+            tr.open()
+            names = set(x['name'] for x in tr.list())
+            for n in [name] + [c for c in rb_companions(name) if c in names]:
+                tr.delete(n)
+        finally:
+            tr.close()
+        store.add_event('backup', '%s deleted the backup %s at %s' % (by, name, t['name']),
+                        'warn', who=by)
+        return {'message': 'deleted'}
+    if act == 'restore_md':
+        return rb_restore_guide(store)
+    if act == 'runs_forget':
+        if b.get('all'):
+            n = rb_history_forget(store)
+            store.add_event('backup', '%s cleared the list of backups sent (%d line(s)); '
+                            'the backups stay where they went' % (by, n), who=by)
+            return {'message': 'the list is empty; the backups stay where they went',
+                    'runs': rb_history(store)[:40]}
+        try:
+            at = float(b.get('at'))
+        except (TypeError, ValueError):
+            raise RbError('which line?')
+        n = rb_history_forget(store, at, b.get('file'))
+        if not n:
+            raise RbError('that line is not on the list any more')
+        store.add_event('backup', '%s took %s off the list of backups sent; the backup '
+                        'stays where it went' % (by, b.get('file') or 'a failed backup'),
+                        who=by)
+        return {'message': 'taken off the list', 'runs': rb_history(store)[:40]}
+    if act == 'restore':
+        password = str(b.get('password') or '') or rb_password()
+        job = rb_restore_start(daemon, by, password, upload=b.get('upload'), tid=b.get('id'),
+                               name=b.get('name'))
+        return {'message': 'the backup is being put back', 'job_id': job['id'],
+                'job': rb_job_view(job)}
+    raise RbError('no such thing to do')
+
+
+def rb_upload(h, me):
+    """A backup file sent from the page (POST /api/rbackup/upload), the file
+    itself as the body - kept for an hour to be put back."""
+    try:
+        length = int(h.headers.get('Content-Length') or 0)
+    except (TypeError, ValueError):
+        length = 0
+    if length <= 0:
+        return h.fail('no file arrived')
+    if length > 64 * 1024 ** 3:
+        return h.fail('that file is too big')
+    rb_tidy_folders()
+    folder = rb_folder('rbackup-uploads')
+    try:
+        # The file itself; what it unpacks to and the copy of what it
+        # replaces are measured again when it is opened, member by member.
+        rb_room(folder, length + (256 << 20), 'taking that file')
+    except RbError as e:
+        return h.fail(str(e))
+    up = secrets.token_hex(8)
+    dst = folder / up
+    keep = False
+    try:
+        left = length
+        fd = os.open(str(dst), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'wb') as f:
+            while left > 0:
+                lump = h.rfile.read(min(1024 * 1024, left))
+                if not lump:
+                    break
+                f.write(lump)
+                left -= len(lump)
+        if left > 0:
+            return h.fail('the file did not arrive whole')
+        with open(str(dst), 'rb') as f:
+            head = f.read(8)
+        if not (head.startswith(b'Salted__') or head.startswith(b'\x1f\x8b')):
+            return h.fail('that is not a backup of isemon')
+        keep = True
+        locked = head.startswith(b'Salted__')
+        if locked and not rb_password():
+            return h.send_json({'ok': True, 'upload': up, 'locked': True,
+                                'said': 'no password of the backups is set here: type the one '
+                                        'it was locked with'})
+        try:
+            about = rb_peek(str(dst), rb_password())
+        except RbError as e:
+            return h.send_json({'ok': True, 'upload': up, 'locked': locked, 'said': str(e)})
+        return h.send_json({'ok': True, 'upload': up, 'locked': locked, 'manifest': about})
+    finally:
+        if not keep:
+            try:
+                dst.unlink()
+            except OSError:
+                pass
+
+
+def rb_download(h, me, name):
+    """A backup made or fetched for downloading, sent as a stream - and
+    gone once it has been sent whole."""
+    name = str(name or '')
+    if not RB_NAME_RE.match(name):
+        return h.fail('which backup?', 404)
+    path = Path(STATE_DIR) / 'rbackup-made' / name
+    if not path.is_file() or path.is_symlink():
+        return h.fail('that backup is not ready here (any more): make it again', 404)
+    size = path.stat().st_size
+    whole = False
+    try:
+        h.send_response(200)
+        h.send_header('Content-Type', 'application/octet-stream')
+        h.send_header('Content-Length', str(size))
+        h.send_header('Content-Disposition', 'attachment; filename="%s"' % name)
+        h.send_header('Cache-Control', 'no-store')
+        h.end_headers()
+        sent = 0
+        with open(str(path), 'rb') as f:
+            for lump in iter(lambda: f.read(256 * 1024), b''):
+                h.wfile.write(lump)
+                sent += len(lump)
+        whole = sent == size
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+    if whole:
+        h.daemon.store.add_event('backup', '%s downloaded the backup %s (%s)'
+                                 % (me['name'], name, human_size(size)), 'warn', who=me['name'])
+        try:
+            path.unlink()
+        except OSError:
+            pass
+    return None
+
+
+def rb_route(h, method, path, one):
+    """/api/rbackup and what hangs off it - a full administrator's only:
+    the backups hold the key of every password kept here."""
+    me = h.need_admin()
+    if not me:
+        return None
+    daemon = h.daemon
+    if path == '/api/rbackup/upload' and method == 'POST':
+        return rb_upload(h, me)
+    if path == '/api/rbackup/download' and method != 'POST':
+        return rb_download(h, me, one('made'))
+    if path != '/api/rbackup':
+        return h.fail('no such thing', 404)
+    if method != 'POST':
+        return h.send_json(rb_page(daemon))
+    try:
+        out = rb_do(daemon, h.body(), me.get('name') or '')
+    except (RbError, ValueError, OSError) as e:
+        return h.fail(rb_said(e))
+    except subprocess.SubprocessError as e:
+        return h.fail('it took too long: %s' % rb_said(e)[:200], 504)
+    out.setdefault('ok', True)
+    return h.send_json(out)
+
+
+# ---- the command line --------------------------------------------------------------------
+def cmd_rbackup_status(args, pal, store):
+    held = type('Held', (), {'store': store, 'jobs': lambda self: []})()
+    v = rb_page(held)
+    if as_json(args, v):
+        return 0
+    pal.title('Backups to other machines')
+    pal.kv('on a schedule', ('yes, next %s' % v['next'].replace('T', ' ')) if v['next']
+           else 'no - by hand only')
+    pal.kv('locked', 'with the password of the backups' if v['locked']
+           else pal.warn_text('no password set: nothing is sent'))
+    if not v['targets']:
+        pal.note('  no destination yet (Settings -> Backups)')
+    for t in v['targets']:
+        last = t.get('last') or {}
+        pal.note('  %-24s %-6s %-3s %s' % (t['name'][:24], t['kind'], 'on' if t.get('enabled')
+                                           else 'off', ('last %s: %s' % (
+                                               stamp(last['at']), 'sent' if last.get('ok')
+                                               else last.get('error'))) if last else 'never sent'))
+    if v['runs']:
+        pal.title('The last backups sent')
+    for r in v['runs'][:10]:
+        pal.note('  %s  %-9s %s' % (stamp(r['at']), human_size(r.get('bytes') or 0),
+                                    '; '.join('%s %s' % (x['name'], 'ok' if x['ok'] else
+                                                         'FAILED: %s' % x.get('error'))
+                                              for x in r.get('targets') or [])
+                                    or r.get('error') or ''))
+    return 0
+
+
+def cmd_rbackup_now(args, pal, store):
+    def said(done, whole, words=''):
+        if words and sys.stdout.isatty():
+            sys.stdout.write('\r  %-70s' % words[:70])
+            sys.stdout.flush()
+    try:
+        run = rb_run(store, 'the command line', progress=said)
+    except (RbError, ValueError) as e:
+        pal.bad(str(e))
+        return 1
+    if sys.stdout.isatty():
+        sys.stdout.write('\r%s\r' % (' ' * 74))
+    if run.get('error'):
+        pal.bad(run['error'])
+        return 1
+    pal.good('%s (%s, locked)' % (run.get('file'), human_size(run.get('bytes') or 0)))
+    for x in run['targets']:
+        if x['ok']:
+            pal.good('%s: sent%s' % (x['name'], (' - taken away: %s' % ', '.join(x['taken_away']))
+                                     if x.get('taken_away') else ''))
+        else:
+            pal.bad('%s: %s' % (x['name'], x.get('error')))
+    return 0 if run['ok'] else 2
+
+
+def cmd_restore_bundle(args, pal, store):
+    """A backup sent to another machine, put back here - on a machine
+    installed from nothing, too."""
+    path = Path(str(args.restore_bundle)).expanduser()
+    if not path.is_file():
+        pal.bad('there is no file %s' % path)
+        return 1
+    if store.trouble:
+        pal.bad('the database this is set to use will not open: nothing was put back')
+        return 1
+    password = os.environ.get('ISEMON_BACKUP_PASSWORD', '')
+    if args.passphrase_file:
+        try:
+            password = Path(args.passphrase_file).expanduser().read_text().split('\n')[0]
+        except OSError as e:
+            pal.bad(str(e))
+            return 1
+    with open(str(path), 'rb') as f:
+        locked = f.read(8).startswith(b'Salted__')
+    if locked and not password:
+        password = rb_password()
+        if not password:
+            if not sys.stdin.isatty():
+                pal.bad('the backup is locked: --passphrase-file FILE, or ISEMON_BACKUP_PASSWORD')
+                return 1
+            password = getpass.getpass('the password of the backups: ')
+    try:
+        about = rb_peek(str(path), password)
+    except RbError as e:
+        pal.bad(str(e))
+        return 1
+    if not args.yes:
+        pal.title('What is in %s' % path.name)
+        for k, words in (('made_words', 'made'), ('site', 'installation'), ('host', 'machine'),
+                         ('isemon', 'isemon'), ('engine_words', 'database'),
+                         ('copy_bytes', 'the database copy')):
+            v = about.get(k)
+            if k == 'copy_bytes' and v:
+                v = human_size(v)
+            pal.kv(words, v if v not in (None, '') else '-')
+        pal.note('it would replace everything in %s and put its keys (settings.key, banfeed.key, '
+                 'known_hosts) in place; a copy of what is there now is made first.'
+                 % store.dialect.where())
+        pal.note('  again with --yes to put it back (the daemon stopped first):')
+        pal.note('      systemctl stop isemon')
+        pal.note('      isemon --restore-bundle %s --yes' % path)
+        pal.note('      systemctl start isemon')
+        return 0
+    # The daemon has this database open and its own idea of where each log
+    # was read up to: as --restore, it is stopped first.
+    if api_call('/api/health', timeout=3.0)[0] == 200:
+        pal.bad('the daemon is running and has this database open')
+        pal.note('  stop it first, then put the backup back, then start it again:')
+        pal.note('      systemctl stop isemon')
+        pal.note('      isemon --restore-bundle %s --yes' % path)
+        pal.note('      systemctl start isemon')
+        pal.note('  or do it from the pages, under Settings -> Backups, which does all three.')
+        return 1
+    try:
+        got = rb_restore(store, str(path), password, 'the command line')
+    except (RbError, ValueError, OSError, StorageError) as e:
+        pal.bad(str(e))
+        return 1
+    m = got['manifest']
+    pal.good('put back: %s, made %s on %s (isemon %s)'
+             % (path.name, m.get('made_words'), m.get('host'), m.get('isemon')))
+    if got['carried']:
+        pal.good('%s put in place (the ones before are kept beside them in %s)'
+                 % (', '.join(got['carried']), STATE_DIR))
+    pal.good('what this machine had is kept as %s/%s' % (BACKUP_DIR, got['safety']))
+    pal.note('  now:  systemctl start isemon')
+    return 0
+
+
 UPGRADE_PATH_UNIT = '/etc/systemd/system/isemon-upgrade.path'
 
 
@@ -64218,14 +66983,19 @@ class Upgrades(object):
             raise WebRootError(said.get('said') or 'the package was refused')
         return said
 
-    def take(self, src, by=''):
+    def take(self, src, by='', back=False):
         """A package that arrived from the page: checked, and kept as the one
         waiting - any other waiting one goes."""
         with self.lock:
             info = self.inspect(src)
+            if info.get('older') and not back:
+                raise WebRootError('%s is older than %s, which is installed: going back is asked '
+                                   'for as such (Going back to an older version, or isemon '
+                                   '--downgrade)' % (info['version'], info['installed']))
             if info.get('older'):
-                raise WebRootError('%s is older than %s, which is installed: going back is done on '
-                                   'the command line' % (info['version'], info['installed']))
+                why = self.back_refused(info['version'])
+                if why:
+                    raise WebRootError(why)
             folder = self.folder()
             folder.mkdir(mode=0o750, parents=True, exist_ok=True)
             name = 'isemon-%s.tar.gz' % info['version']
@@ -64245,7 +67015,8 @@ class Upgrades(object):
             os.replace(str(tmp), str(dest))
             keep = {k: info.get(k) for k in ('version', 'files', 'signed_by', 'bytes', 'installed',
                                              'newer', 'changelog')}
-            keep.update(file=name, sha=h.hexdigest(), by=by, at=time.time())
+            keep.update(file=name, sha=h.hexdigest(), by=by, at=time.time(),
+                        downgrade=bool(info.get('older')))
             write_replacing(folder / 'package.json', json.dumps(keep), 0o640)
             self.daemon.store.add_event('control', 'isemon %s was sent for an upgrade (signed by '
                                                    '%s)' % (info['version'], info.get('signed_by')),
@@ -64274,9 +67045,21 @@ class Upgrades(object):
 
     def running(self):
         st = self.read_json('status.json') or {}
-        pending = (self.folder() / 'request.json').exists() or \
-            (self.folder() / 'request.taken').exists()
         alive = st.get('state') == 'running' and time.time() - float(st.get('at') or 0) < 30 * 60
+        # A request root took and never finished - the helper killed after
+        # systemd's 25 minutes, the machine restarted under it - is left
+        # behind as request.taken, and counted for ever it said "an upgrade
+        # is running already" to every upgrade after it, with nothing on the
+        # page to clear it (1.10.227). It counts while it, or what root last
+        # said about it, is younger than the half hour the page calls stuck.
+        pending = False
+        for name in ('request.json', 'request.taken'):
+            try:
+                made = (self.folder() / name).stat().st_mtime
+            except OSError:
+                continue
+            if time.time() - max(made, float(st.get('at') or 0)) < 30 * 60:
+                pending = True
         return pending or alive
 
     def start(self, by=''):
@@ -64290,16 +67073,27 @@ class Upgrades(object):
             pk = self.package()
             if not pk:
                 raise WebRootError('send the package first')
+            back = bool(pk.get('downgrade'))
+            if back:
+                why = self.back_refused(pk['version'])
+                if why:
+                    raise WebRootError(why)
             ident = secrets.token_hex(8)
             req = {'id': ident, 'file': pk['file'], 'sha': pk['sha'], 'version': pk['version'],
                    'by': by or 'the page', 'at': time.time()}
+            if back:
+                # Root checks it again against its own copy's floor; this one
+                # (what the database has seen) can only raise it.
+                req.update(downgrade=True, floor=self.floor())
             write_replacing(self.folder() / 'status.json', json.dumps({
                 'id': ident, 'state': 'running', 'version': pk['version'], 'at': time.time(),
                 'progress': {'pct': 1, 'words': 'waiting for root', 'step': 0, 'total': 0,
                              'began': time.time()}}), 0o640)
             write_replacing(self.folder() / 'request.json', json.dumps(req), 0o640)
-            self.daemon.store.add_event('control', 'an upgrade to isemon %s was started from the '
-                                                   'page' % pk['version'], 'warn', who=by)
+            self.daemon.store.add_event('control', ('going back to isemon %s was started - the '
+                                                    'database is left as it is' if back else
+                                                    'an upgrade to isemon %s was started from the '
+                                                    'page') % pk['version'], 'warn', who=by)
             log('an upgrade to %s was asked for by %s' % (pk['version'], by or 'the page'), 'warn')
             return ident
 
@@ -64325,7 +67119,1367 @@ class Upgrades(object):
                 if os.path.isdir(os.environ.get('ISEMON_RELEASE_KEYS',
                                                 '/usr/local/lib/isemon/release-keys')) else [],
                 'run': st or None, 'log': [l for l in lines if l.strip()],
-                'running': self.running()}
+                'running': self.running(), 'online': self.online_view(),
+                'back': self.back_view()}
+
+    # ---- new versions from the web (1.10.228) ---------------------------------
+    # upgrade_url is asked once a day (upgrade_check) and when Look now is
+    # pressed, for isemon-X.Y.Z.tar.gz: a GitHub folder through GitHub's API,
+    # any other page by the links in it, or one package's own address. The
+    # newest one newer than what runs here is offered; one press fetches it,
+    # and it goes the road of a package sent by hand - checked by root's own
+    # isemon_upgrade.py, signed by a release key this server trusts - and,
+    # when asked, the upgrade is begun. Nothing is put in by itself.
+    ONLINE_PKG_RE = re.compile(r'(?:^|/)(isemon-(\d+)\.(\d+)\.(\d+)\.tar\.gz)(?:\?|#|$)')
+    ONLINE_EVERY_S = 86400
+    ONLINE_MOST = 64 * 1024 * 1024
+    ONLINE_META = 'upgrade:online'
+
+    @staticmethod
+    def online_get(url, limit=4 * 1024 * 1024, accept='*/*', timeout=30):
+        """One answer from the web, over HTTPS only - and never sent on to
+        anything that is not HTTPS. The proxy, if the server needs one, is
+        https_proxy in the service's environment."""
+        import urllib.request
+        if not str(url).startswith('https://'):
+            raise ValueError('only https:// addresses are asked: %s' % url)
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'isemon/%s (+upgrade check)' % __version__, 'Accept': accept})
+        with urllib.request.urlopen(req, timeout=timeout,
+                                    context=ssl.create_default_context()) as r:
+            final = r.geturl()
+            if not str(final).startswith('https://'):
+                raise ValueError('it was sent on to an address that is not https: %s' % final)
+            data = r.read(limit + 1)
+            if len(data) > limit:
+                raise ValueError('the answer from %s is bigger than %d MB' % (url, limit >> 20))
+            return data, r.headers.get('Content-Type') or '', final
+
+    @staticmethod
+    def online_url():
+        return str(CONFIG.get('upgrade_url') or '').strip()
+
+    @staticmethod
+    def ver_tuple(v):
+        try:
+            return tuple(int(x) for x in str(v).split('.')[:4])
+        except ValueError:
+            return (0, 0, 0)
+
+    def online_list(self, url):
+        """The packages at `url`: [{'name', 'version', 'url', 'bytes'}],
+        newest first."""
+        import html as _html
+        import urllib.parse
+        url = str(url or '').strip()
+        if not url:
+            raise ValueError('no address to look at (Settings - Upgrades)')
+        found = {}
+
+        def add(name, link, size=None):
+            m = self.ONLINE_PKG_RE.search('/' + str(name))
+            if not m or not str(link).startswith('https://'):
+                return
+            v = tuple(int(x) for x in m.group(2, 3, 4))
+            found[m.group(1)] = {'name': m.group(1), 'version': '%d.%d.%d' % v, 'v': v,
+                                 'url': link, 'bytes': size}
+
+        gh = re.match(r'^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)'
+                      r'(?:/tree/([^/]+)(?:/(.*?))?)?/?$', url)
+        one = self.ONLINE_PKG_RE.search(urllib.parse.urlparse(url).path)
+        if one:
+            # One package's own address - a GitHub page of it read as the file.
+            link = url
+            b = re.match(r'^https://github\.com/([^/]+)/([^/]+)/blob/(.+)$', url)
+            if b:
+                link = 'https://raw.githubusercontent.com/%s/%s/%s' % b.groups()
+            add(one.group(1), link)
+        elif gh:
+            owner, repo, ref, sub = gh.group(1), gh.group(2), gh.group(3), gh.group(4) or ''
+            api = 'https://api.github.com/repos/%s/%s/contents/%s' % (
+                owner, repo, urllib.parse.quote(sub.strip('/')))
+            if ref:
+                api += '?ref=' + urllib.parse.quote(ref)
+            try:
+                data, _ct, _f = self.online_get(api, accept='application/vnd.github+json')
+                items = json.loads(data.decode('utf-8'))
+            except Exception as e:                      # noqa: BLE001
+                # GitHub's API refused (sixty questions an hour without an
+                # account, or not let through): the folder's own page, read
+                # for the names.
+                try:
+                    data, _ct, _f = self.online_get(url)
+                except Exception:                       # noqa: BLE001
+                    raise ValueError('GitHub did not answer: %s'
+                                     % (getattr(e, 'reason', None) or e))
+                items = []
+                base = 'https://raw.githubusercontent.com/%s/%s/%s/%s' % (
+                    owner, repo, ref or 'HEAD', (sub.strip('/') + '/') if sub.strip('/') else '')
+                for name in set(re.findall(r'isemon-\d+\.\d+\.\d+\.tar\.gz',
+                                           data.decode('utf-8', 'replace'))):
+                    items.append({'type': 'file', 'name': name, 'download_url': base + name})
+            if isinstance(items, dict):
+                items = [items]
+            for it in items if isinstance(items, list) else []:
+                if isinstance(it, dict) and it.get('type') == 'file' and it.get('download_url'):
+                    add(str(it.get('name') or ''), str(it['download_url']), it.get('size'))
+        else:
+            data, ct, final = self.online_get(url)
+            text = data.decode('utf-8', 'replace')
+            try:
+                items = json.loads(text) if 'json' in ct or text.lstrip()[:1] in '[{' else None
+            except ValueError:
+                items = None
+            if isinstance(items, list):
+                for it in items:
+                    if isinstance(it, dict):
+                        link = it.get('download_url') or it.get('url') or ''
+                        add(str(it.get('name') or link), urllib.parse.urljoin(final, str(link)),
+                            it.get('size'))
+            else:
+                for href in re.findall(r'''href\s*=\s*["']([^"']+)["']''', text, re.I):
+                    link = urllib.parse.urljoin(final, _html.unescape(href))
+                    mm = self.ONLINE_PKG_RE.search(urllib.parse.urlparse(link).path)
+                    if mm:
+                        add(mm.group(1), link)
+        out = sorted(found.values(), key=lambda x: x['v'], reverse=True)
+        for x in out:
+            x.pop('v', None)
+        return out
+
+    def _online_last(self):
+        try:
+            got = json.loads(self.daemon.store.get_meta(self.ONLINE_META, '') or '{}')
+        except (ValueError, TypeError, sqlite3.Error):
+            got = {}
+        return got if isinstance(got, dict) else {}
+
+    def online_look(self, by=''):
+        """The address asked now; what it found is kept for the page."""
+        url = self.online_url()
+        row = {'at': time.time(), 'url': url, 'by': by, 'here': __version__}
+        try:
+            got = self.online_list(url)
+            row['packages'] = got[:10]
+            newest = got[0] if got else None
+            row['newest'] = newest
+            row['newer'] = bool(newest and self.ver_tuple(newest['version']) >
+                                self.ver_tuple(__version__))
+            if row['newer']:
+                was = self._online_last()
+                if (was.get('newest') or {}).get('version') != newest['version']:
+                    self.daemon.store.add_event(
+                        'control', 'isemon %s is out (%s) - Settings, Upgrades'
+                        % (newest['version'], url), 'info')
+        except Exception as e:                          # noqa: BLE001
+            row['error'] = str(getattr(e, 'reason', None) or e).split('\n')[0][:300]
+        self.daemon.store.set_meta(self.ONLINE_META, json.dumps(row, default=str))
+        return row
+
+    def online_tick(self):
+        """Once a day, behind the loop; asked again at once when the address
+        changed."""
+        if not int(CONFIG.get('upgrade_check') or 0) or not self.online_url():
+            return
+        if time.time() - float(getattr(self, '_online_tried', 0) or 0) < 300:
+            return
+        self._online_tried = time.time()
+        last = self._online_last()
+        if last.get('url') == self.online_url() and \
+                time.time() - float(last.get('at') or 0) < self.ONLINE_EVERY_S:
+            return
+        with self.lock:
+            if getattr(self, '_online_busy', False):
+                return
+            self._online_busy = True
+
+        def go():
+            try:
+                self.online_look()
+            except Exception as e:                      # noqa: BLE001
+                log('looking for a new version: %s' % e, 'warn')
+            finally:
+                self._online_busy = False
+        threading.Thread(target=go, name='isemon-online', daemon=True).start()
+
+    def online_view(self):
+        row = self._online_last()
+        if row:
+            n = row.get('newest') or {}
+            row['newer'] = bool(n and self.ver_tuple(n.get('version')) >
+                                self.ver_tuple(__version__))
+            row['here'] = __version__
+        return {'online': row, 'url': self.online_url(),
+                'check': bool(int(CONFIG.get('upgrade_check') or 0)),
+                'busy': bool(getattr(self, '_online_busy', False))}
+
+    def online_fetch(self, version, by='', back=False):
+        """The package of `version` fetched from where it was found, and
+        taken as one sent by hand would be: checked, and kept as the one
+        waiting. Returns what `take` keeps."""
+        url = self.online_url()
+        pk = [p for p in self.online_list(url) if p['version'] == str(version)]
+        if not pk:
+            raise WebRootError('isemon %s is not at %s any more' % (version, url))
+        pk = pk[0]
+        if back:
+            why = self.back_refused(pk['version'])
+            if why:
+                raise WebRootError(why)
+        elif self.ver_tuple(pk['version']) <= self.ver_tuple(__version__):
+            raise WebRootError('isemon %s is not newer than %s, which runs here'
+                               % (pk['version'], __version__))
+        folder = tempfile.mkdtemp(prefix='isemon-online-', dir=scratch_dir())
+        try:
+            landed = Path(folder) / 'package.tar.gz'
+            try:
+                data, _ct, final = self.online_get(pk['url'], limit=self.ONLINE_MOST,
+                                                   timeout=300)
+            except Exception as e:                      # noqa: BLE001
+                raise WebRootError('the package could not be fetched from %s: %s'
+                                   % (pk['url'], getattr(e, 'reason', None) or e))
+            landed.write_bytes(data)
+            try:
+                kept = self.take(landed, by, back=back)
+            except WebRootError as e:
+                self.daemon.store.add_event('control', 'isemon %s from %s was refused: %s'
+                                            % (version, final, e), 'warn', who=by)
+                raise WebRootError('the package from %s was refused: %s' % (final, e))
+            self.daemon.store.add_event('control', 'isemon %s was fetched from %s (signed by '
+                                                   '%s), ready to be put in'
+                                        % (kept['version'], final, kept.get('signed_by')),
+                                        'warn', who=by)
+            return kept
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+
+    # ---- going back to an older version (1.10.232) ------------------------------
+    # Only as far as DOWNGRADE_FLOOR - the oldest version that can run on the
+    # database as this one leaves it - and only while nothing is half done
+    # that the older version would not finish: an upgrade, a change of the
+    # network or of the firewall waiting to be kept, a long job over the
+    # database. The database itself is never copied, put back or touched:
+    # the older version opens it as it is, and what it does not know (the
+    # settings of later versions) waits there for the next upgrade.
+    FLOOR_META = 'downgrade_floor'
+
+    def floor(self):
+        """The oldest version safe to go back to: this version's own floor, or
+        a higher one any version that ran on this database has written down."""
+        floor = DOWNGRADE_FLOOR
+        try:
+            seen = str(self.daemon.store.get_meta(self.FLOOR_META, '') or '')
+            if re.fullmatch(r'[0-9]+(\.[0-9]+){2,3}', seen) and \
+                    self.ver_tuple(seen) > self.ver_tuple(floor):
+                floor = seen
+        except Exception:                               # noqa: BLE001
+            pass
+        return floor
+
+    def note_floor(self):
+        """This version's floor written into the database once it runs on it:
+        the floor only ever rises, so a version gone back to by hand still
+        finds how far back the newest that ran here allowed."""
+        try:
+            seen = str(self.daemon.store.get_meta(self.FLOOR_META, '') or '')
+            if not re.fullmatch(r'[0-9]+(\.[0-9]+){2,3}', seen) or \
+                    self.ver_tuple(DOWNGRADE_FLOOR) > self.ver_tuple(seen):
+                self.daemon.store.set_meta(self.FLOOR_META, DOWNGRADE_FLOOR)
+        except Exception as e:                          # noqa: BLE001
+            log('the floor for going back could not be written down: %s' % e, 'warn')
+
+    def back_blocked(self):
+        """What is going on that going back would leave half done; [] when
+        nothing is."""
+        out = []
+        if self.running():
+            out.append('an upgrade is running')
+        np = getattr(self.daemon, 'netpower', None)
+        if np is not None:
+            try:
+                if np.job_active(np._get('net:job')):
+                    out.append('the network is being changed')
+                for t in np.trials():
+                    out.append('%s waits to be kept or put back' % t.get('words'))
+                if np.power_busy():
+                    out.append('a restart or a power-off is under way')
+            except Exception:                           # noqa: BLE001
+                pass
+        try:
+            for j in self.daemon.jobs():
+                if not j.get('done'):
+                    out.append('%s is going' % (j.get('label') or j.get('kind')))
+        except Exception:                               # noqa: BLE001
+            pass
+        return out
+
+    def back_refused(self, version):
+        """Why going back to `version` is not done, or '' when it is safe."""
+        if not int(CONFIG.get('downgrade_offered') or 0):
+            return ('going back to an older version is switched off (Settings - Upgrades: Offer '
+                    'going back to an older version, or isemon --set downgrade_offered=1)')
+        v, here, floor = self.ver_tuple(version), self.ver_tuple(__version__), self.floor()
+        if v >= here:
+            return 'isemon %s is not older than %s, which runs here' % (version, __version__)
+        if v < self.ver_tuple(floor):
+            return ('isemon %s is older than %s, the oldest version that can run on this '
+                    'database: going back that far would need the database put back as well, '
+                    'which is done by hand' % (version, floor))
+        busy = self.back_blocked()
+        if busy:
+            return 'not now: %s' % '; '.join(busy)
+        return ''
+
+    def back_view(self):
+        """The older versions at upgrade_url, each said safe or why not."""
+        row = self._online_last()
+        busy = self.back_blocked()
+        floor = self.floor()
+        older = []
+        for p in row.get('packages') or []:
+            v = self.ver_tuple(p.get('version'))
+            if v >= self.ver_tuple(__version__):
+                continue
+            safe = v >= self.ver_tuple(floor)
+            older.append(dict(p, safe=safe, why='' if safe else
+                              'older than %s, the oldest that can run on this database' % floor,
+                              changelog=self.changelog_of(p.get('version'))))
+        return {'floor': floor, 'older': older, 'busy': busy, 'looked': row.get('at') or 0,
+                'error': row.get('error') or '',
+                'offered': bool(int(CONFIG.get('downgrade_offered') or 0))}
+
+    @staticmethod
+    def changelog_of(version):
+        """What changed in `version`, as this version's own README says it
+        (1.10.233): every version's entry is kept there, newest first, so an
+        older one's is read here without fetching anything."""
+        path = Path(os.path.abspath(__file__)).parent / 'README.md'
+        try:
+            stamp_ = path.stat().st_mtime
+            if _README.get('at') != stamp_:
+                _README.update(at=stamp_, text=path.read_text(encoding='utf-8',
+                                                              errors='replace'))
+            text = _README['text']
+        except OSError:
+            return ''
+        m = re.search(r'(?ms)^%s\n(.*?)(?=^[0-9]+\.[0-9]+\.[0-9]+\s*$|\Z)'
+                      % re.escape(str(version or '')), text)
+        return m.group(1).strip()[:20000] if m else ''
+
+    def go_back(self, version, by=''):
+        """The older version fetched from upgrade_url, checked, and put in by
+        root - the database left exactly as it is."""
+        with self.lock:
+            why = self.back_refused(version)
+            if why:
+                raise WebRootError(why)
+            kept = self.online_fetch(version, by, back=True)
+            self.start(by)
+            return kept
+
+
+# ---------------------------------------------------------------------------
+# This server's network, restarting it and switching it off, and changes on
+# trial (1.10.228, after otp 1.0.119 and 1.0.137)
+# ---------------------------------------------------------------------------
+# Settings - Network shows the network as root reads it (isemon_web.py: ip,
+# nmcli, hostnamectl) and takes a new one: the address with its prefix, the
+# gateway, the DNS servers, the search domains, IPv6 and the host name. The
+# daemon may not change a byte of it; it asks root by laying net.ask down in
+# /var/lib/isemon/web/, and root answers in net.json - the same folder and
+# the same path unit as the firewall and TLS.
+#
+# A change is a job, kept in the database so that it survives the reboot it
+# ends in:
+#   1. what this server has now is kept, to go back to (only a network set
+#      by hand can be put back by itself - one from DHCP is said so, and the
+#      new one is kept at once);
+#   2. its own settings that named the old address or host name are changed
+#      with it (db_host, the name of the installation), and its certificate,
+#      where it signed itself, is made again for the new name and address;
+#   3. NetworkManager, the host name and /etc/hosts, then a reboot;
+#   4. back up, the new address is checked - and the job waits to be kept for
+#      net_confirm_min minutes. Not kept in time, or come up without its new
+#      address at all, the old network is asked for: the same job the other
+#      way round, which is not put on trial again.
+#
+# The firewall and who may reach which page are put on trial the same way
+# (fw_confirm_min): what was there before the first change of a trial is
+# kept, later changes in the same trial move its deadline on, and not kept in
+# time it comes back and is asked of root again.
+#
+# Restart and power off: asked of root (systemd-run, a few seconds later, so
+# the page has its answer first). The page follows the server down and up.
+NET_ASK_NAME = 'net.ask'
+NET_ANSWER_NAME = 'net.json'
+NET_READ_S = 300                # how often the network is read again, once it was read
+NET_JOB_LIVE_S = 1800           # a job not moving for this long is over
+POWER_LIVE_S = 1800             # a restart shown on the page for this long at most
+NET_HOST_RE = re.compile(r'^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
+                         r'(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$')
+
+
+def boot_time():
+    """When this machine started (the kernel's btime) - a restart of the
+    service is not a reboot."""
+    fake = os.environ.get('ISEMON_BTIME_FILE')       # tests: a reboot without one
+    if fake:
+        try:
+            return float(Path(fake).read_text().strip() or 0)
+        except (OSError, ValueError):
+            pass
+    try:
+        with open('/proc/stat') as f:
+            for line in f:
+                if line.startswith('btime '):
+                    return float(line.split()[1])
+    except (OSError, ValueError, IndexError):
+        pass
+    return 0.0
+
+
+def _net_list(v, most=4):
+    if isinstance(v, str):
+        v = re.split(r'[\s,;]+', v)
+    return [str(x).strip() for x in (v or []) if str(x).strip()][:most]
+
+
+def net_current_ip(now):
+    """This server's IPv4 address as NetworkManager has it (or the one on its
+    default route)."""
+    d = (now or {}).get('data') or {}
+    conf = d.get('conf') or {}
+    for a in conf.get('ipv4_addresses') or []:
+        return str(a)
+    dev = d.get('dev')
+    for a in (d.get('live') or {}).get('addrs4') or []:
+        if not dev or a.get('dev') == dev:
+            return str(a.get('addr') or '')
+    return ''
+
+
+def net_back_want(now):
+    """What the server has now, as the page would ask for it - what it goes
+    back to. None (and why) where it cannot be said so."""
+    d = (now or {}).get('data') or {}
+    conf = d.get('conf') or {}
+    if conf.get('ipv4_method') != 'manual' or not conf.get('ipv4_addresses'):
+        return None, 'the old network was not set by hand (%s) - it cannot be put back by ' \
+                     'itself, so the new one is kept at once' % (conf.get('ipv4_method') or '?')
+    m6 = conf.get('ipv6_method')
+    on6 = m6 not in (None, '', 'disabled', 'ignore')
+    return {'con': d.get('con') or '',
+            'ipv4': {'addr': conf['ipv4_addresses'][0], 'gw': conf.get('ipv4_gateway') or '',
+                     'dns': list(conf.get('ipv4_dns') or []),
+                     'search': list(conf.get('ipv4_search') or [])},
+            'ipv6': {'on': on6, 'mode': 'manual' if m6 == 'manual' else 'auto',
+                     'addr': (conf.get('ipv6_addresses') or [''])[0] if m6 == 'manual' else '',
+                     'gw': conf.get('ipv6_gateway') or '', 'dns': list(conf.get('ipv6_dns') or [])},
+            'hostname': str(d.get('hostname') or '').lower()}, ''
+
+
+class NetPower(object):
+    """Settings - Network, Settings - Restart and power off, and the changes
+    on trial. See the comment above."""
+
+    def __init__(self, daemon):
+        self.daemon = daemon
+        self.lock = threading.Lock()
+        self.ask_lock = threading.Lock()       # one question of root at a time
+        self.busy = False
+        self.read_at = 0.0
+
+    @property
+    def store(self):
+        return self.daemon.store
+
+    def _get(self, key):
+        try:
+            got = json.loads(self.store.get_meta(key, '') or 'null')
+        except ValueError:
+            got = None
+        return got if isinstance(got, dict) else {}
+
+    def _put(self, key, value):
+        self.store.set_meta(key, json.dumps(value, sort_keys=True))
+
+    # ---- asking root -----------------------------------------------------------
+    def root(self, data, wait=60):
+        """One request to root (isemon_web.py) and its answer."""
+        if not WebRoot.helper_there():
+            raise WebRootError('root\'s half is not installed on this machine yet: run '
+                               './install.sh --upgrade (1.10.228 or later) once')
+        wr = self.daemon.webroot
+        with self.ask_lock:
+            ask_id = secrets.token_hex(8)
+            wr.write(NET_ASK_NAME, dict(data, id=ask_id))
+            end = time.time() + wait
+            while time.time() < end:
+                got = wr.read(NET_ANSWER_NAME, 1024 * 1024)
+                if got and got.get('id') == ask_id:
+                    if not got.get('ok'):
+                        raise WebRootError(got.get('said') or 'root said no')
+                    return got.get('data') or {}
+                time.sleep(0.4)
+        raise WebRootError('root did not answer in %d s - is isemon-web.path running?  '
+                           'systemctl status isemon-web.path' % wait)
+
+    # ---- the console at login (1.10.230) -------------------------------------------
+    def console_view(self, may=False):
+        return {'ok': True, 'may': may, 'on': console_at_login(),
+                'profile': CONSOLE_PROFILE.is_file(), 'helper': WebRoot.helper_there(),
+                'flag': str(CONSOLE_FLAG)}
+
+    def console_set(self, on, by):
+        """Root's choice, switched by root (isemon_web.py) - /etc is not
+        this account's to write."""
+        got = self.root({'do': 'console', 'on': bool(on)}, 30)
+        self.store.add_event('control', '%s switched the console at login %s' % (
+            by, 'on' if on else 'off'), who=by)
+        out = self.console_view(True)
+        out['said'] = got.get('said') or []
+        return out
+
+    def publish(self):
+        """The network as root reads it, kept for the page."""
+        data = self.root({'do': 'read'}, 30)
+        now = {'at': time.time(), 'data': data, 'boot': boot_time()}
+        self._put('net:now', now)
+        self.read_at = time.time()
+        return now
+
+    def now(self):
+        return self._get('net:now')
+
+    def _thread(self, fn, *args):
+        """`fn` behind, one at a time: False when something is going already."""
+        def go():
+            try:
+                fn(*args)
+            except Exception as e:                      # noqa: BLE001
+                log('the network: %s' % e, 'warn')
+            finally:
+                with self.lock:
+                    self.busy = False
+                try:
+                    self.store.release()
+                except Exception:                       # noqa: BLE001
+                    pass
+        with self.lock:
+            if self.busy:
+                return False
+            self.busy = True
+        threading.Thread(target=go, name='isemon-net', daemon=True).start()
+        return True
+
+    # ---- what a change does to this server's own settings --------------------------
+    @staticmethod
+    def own_changes(w):
+        """This server's settings that name its old address or host name - and
+        only those: an address or a name of another machine is never touched."""
+        changes = {}
+        if w.get('ip_changed') and w.get('old_ip') and \
+                str(CONFIG.get('db_host') or '') == w['old_ip']:
+            changes['db_host'] = w['new_ip']
+        old, new = w.get('old_hostname') or '', w.get('hostname') or ''
+        if old and new and old != new:
+            site = str(CONFIG.get('site_name') or '')
+            if site and site.lower() == old:
+                changes['site_name'] = new
+            elif site and site.lower() == old.split('.')[0]:
+                changes['site_name'] = new.split('.')[0]
+        return changes
+
+    def cert_swap(self, w):
+        """What the certificate the dashboard answers with names of the old
+        address and name: {old: new}, and whether isemon can make it again
+        (one it keeps, that signs itself). ({}, None) when it names neither."""
+        swap = {}
+        if w.get('ip_changed') and w.get('old_ip'):
+            swap[w['old_ip']] = w['new_ip']
+        old, new = w.get('old_hostname') or '', w.get('hostname') or ''
+        if old and new and old != new:
+            swap[old] = new
+            swap[old.split('.')[0]] = new.split('.')[0]
+        if not swap:
+            return {}, None, {}
+        wr = self.daemon.webroot
+        tls = wr.tls_conf()
+        pem = tls.get('cert') if tls.get('managed') else ''
+        if not pem:
+            pem = ((wr.read('look.json') or {}).get('cert') or {}).get('pem') or ''
+        if not pem:
+            return {}, None, {}
+        try:
+            facts = cert_facts(pem)
+        except WebRootError:
+            return {}, None, {}
+        named = {k: v for k, v in swap.items()
+                 if k in (facts.get('names') or []) or k == facts.get('cn')}
+        if not named:
+            return {}, None, facts
+        ours = bool(tls.get('managed') and tls.get('cert') == pem and facts.get('self_signed')
+                    and tls.get('key') and unseal_secret(tls['key']))
+        return named, ours, facts
+
+    def cert_again(self, w, by):
+        """The dashboard's certificate, where it signs itself and isemon keeps
+        it, made again with the new address and name. One from an authority -
+        or the one install.sh made, whose key only nginx has - is said, not
+        changed."""
+        named, ours, facts = self.cert_swap(w)
+        if not named:
+            return ''
+        if not ours:
+            return ('the certificate the dashboard answers with names %s - make or get one '
+                    'for %s (Certificates and TLS)' % (', '.join(named),
+                                                       ', '.join(named[k] for k in named)))
+        wr = self.daemon.webroot
+        tls = wr.tls_conf()
+        names = []
+        for n in facts.get('names') or []:
+            n = named.get(n, n)
+            if n and n not in names:
+                names.append(n)
+        if w.get('ipv6', {}).get('addr'):
+            ip6 = w['ipv6']['addr'].split('/')[0]
+            if ip6 not in names:
+                names.append(ip6)
+        cn = named.get(facts.get('cn') or '', facts.get('cn') or '') or w.get('hostname')
+        text = _openssl(['x509', '-noout', '-text'], 'the certificate', tls['cert'])
+        kind = 'ec256' if 'id-ecPublicKey' in text else (
+            'rsa4096' if '4096 bit' in text else ('rsa3072' if '3072 bit' in text else 'rsa2048'))
+        made = tls_make({'cn': cn, 'san': ' '.join(x for x in names if x != cn), 'key': kind,
+                         'days': 825}, self_signed=True)
+        tls.update(cert=made['pem'], chain='', root='', key=seal_secret(made['key']),
+                   since=time.time(), by=by)
+        wr._put('web_tls', tls)
+        self.store.add_event('control', 'the dashboard\'s certificate that signs itself was made '
+                                        'again for %s (the network changed)' % ', '.join(names[:6]),
+                             who=by)
+        wr.push('the certificate made again for the new network', by, force=True)
+        return 'the certificate that signs itself made again for %s' % ', '.join(names[:6])
+
+    # ---- what is asked, checked -------------------------------------------------
+    def check(self, want, rollback=False):
+        """What the page asked for, made whole and checked against the server
+        as it said it is; with the plan in words. Raises WebRootError. Going
+        back, the old host name may be a single word, as it may have been."""
+        if not isinstance(want, dict):
+            raise WebRootError('nothing was asked')
+        now = self.now()
+        d = now.get('data') or {}
+        if not d:
+            raise WebRootError('the network has not been read yet - press Read it again and '
+                               'wait a few seconds')
+        if not d.get('nm'):
+            raise WebRootError('NetworkManager (nmcli) is not on this server: its network is set '
+                               'by hand here')
+        con = str(want.get('con') or d.get('con') or '')
+        if not con or con not in [x.get('con') for x in d.get('devices') or []]:
+            raise WebRootError('which connection? There are: %s' % (', '.join(
+                '%s (%s)' % (x.get('con'), x.get('dev')) for x in d.get('devices') or []
+                if x.get('con')) or 'none'))
+        v4 = want.get('ipv4') if isinstance(want.get('ipv4'), dict) else {}
+        try:
+            a4 = ipaddress.ip_interface(str(v4.get('addr') or '').strip())
+        except ValueError:
+            raise WebRootError('the IPv4 address is an address with its prefix: 192.0.2.10/24')
+        if a4.version != 4 or '/' not in str(v4.get('addr')):
+            raise WebRootError('the IPv4 address is an address with its prefix: 192.0.2.10/24')
+        if (a4.ip.is_loopback and not os.environ.get('ISEMON_NET_LOOPBACK_OK')) or \
+                a4.ip.is_multicast or a4.ip.is_unspecified or \
+                (a4.network.prefixlen < 31 and a4.ip in (a4.network.network_address,
+                                                         a4.network.broadcast_address)):
+            raise WebRootError('%s cannot be the address of a machine in %s' % (a4.ip, a4.network))
+        gw = str(v4.get('gw') or '').strip()
+        if gw:
+            try:
+                g = ipaddress.ip_address(gw)
+            except ValueError:
+                raise WebRootError('the gateway is one IPv4 address')
+            if g.version != 4 or g not in a4.network or g == a4.ip:
+                raise WebRootError('the gateway %s is not another address in %s' % (g, a4.network))
+        dns = _net_list(v4.get('dns'))
+        for x in dns:
+            try:
+                ipaddress.ip_address(x)
+            except ValueError:
+                raise WebRootError('%r is not the address of a DNS server' % x[:60])
+        search = _net_list(v4.get('search'), 6)
+        for x in search:
+            if not NET_HOST_RE.match(x.lower()) and not re.match(r'^[a-z0-9-]{1,63}$', x.lower()):
+                raise WebRootError('%r is not a domain' % x[:60])
+        v6 = want.get('ipv6') if isinstance(want.get('ipv6'), dict) else {}
+        on6 = bool(v6.get('on'))
+        mode6 = 'off'
+        a6 = None
+        if on6:
+            mode6 = 'manual' if str(v6.get('mode') or 'manual') == 'manual' else 'auto'
+            if mode6 == 'manual':
+                try:
+                    a6 = ipaddress.ip_interface(str(v6.get('addr') or '').strip())
+                except ValueError:
+                    raise WebRootError('the IPv6 address is an address with its prefix: '
+                                       '2001:db8::10/64')
+                if a6.version != 6 or a6.ip.is_link_local or '/' not in str(v6.get('addr')):
+                    raise WebRootError('the IPv6 address is a global one with its prefix: '
+                                       '2001:db8::10/64')
+            g6 = str(v6.get('gw') or '').strip()
+            if g6:
+                try:
+                    if ipaddress.ip_address(g6).version != 6:
+                        raise ValueError
+                except ValueError:
+                    raise WebRootError('the IPv6 gateway is one IPv6 address')
+        dns6 = _net_list(v6.get('dns')) if on6 else []
+        for x in dns6:
+            try:
+                ipaddress.ip_address(x)
+            except ValueError:
+                raise WebRootError('%r is not the address of a DNS server' % x[:60])
+        host = str(want.get('hostname') or '').strip().rstrip('.').lower()
+        if not NET_HOST_RE.match(host) and not (
+                rollback and re.match(r'^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$', host)):
+            raise WebRootError('the host name is the whole name: isemon.example.cz')
+        old_ip = net_current_ip(now).split('/')[0]
+        new_ip = str(a4.ip)
+        ip_changed = bool(old_ip) and old_ip != new_ip
+        host_old = str(d.get('hostname') or '').lower()
+        conf = d.get('conf') or {}
+        was6 = conf.get('ipv6_method') not in (None, '', 'disabled', 'ignore')
+        w = {'con': con, 'dev': next((x.get('dev') for x in d.get('devices') or []
+                                      if x.get('con') == con), ''),
+             'ipv4': {'addr': str(a4), 'gw': gw, 'dns': dns, 'search': search},
+             'ipv6': {'on': on6, 'mode': mode6, 'addr': str(a6) if a6 else '',
+                      'gw': str(v6.get('gw') or '').strip() if on6 else '', 'dns': dns6},
+             'hostname': host, 'old_ip': old_ip, 'new_ip': new_ip, 'old_hostname': host_old,
+             'ip_changed': ip_changed, 'was6': was6}
+        plan = []
+        changes = self.own_changes(w)
+        if changes:
+            plan.append('this server\'s settings that name the old address or name: %s' % ', '.join(
+                '%s = %s' % kv for kv in sorted(changes.items())))
+        try:
+            named, ours, _f = self.cert_swap(w)
+        except WebRootError:
+            named, ours = {}, None
+        if named:
+            plan.append('its certificate, which signs itself, is made again for %s' % ', '.join(
+                named[k] for k in named) if ours else
+                'the certificate the dashboard answers with names %s and is not made here: it '
+                'is left as it is - make or get one for the new name afterwards' % ', '.join(named))
+        if host != host_old:
+            plan.append('the host name %s → %s' % (host_old or '?', host))
+        if on6 != was6:
+            plan.append('IPv6 %s' % ('on, beside IPv4' if on6 else 'off'))
+        plan.append('NetworkManager (%s): %s via %s, DNS %s%s' % (
+            con, a4, gw or 'no gateway', ', '.join(dns) or 'none',
+            '' if not on6 else ', IPv6 %s' % (a6 if a6 else 'automatic')))
+        n = self.trial_min()
+        back, why = net_back_want(now)
+        if n and back:
+            plan.append('a reboot; back up, it checks the new address and waits to be kept: '
+                        'unless Keep it is pressed within %d min, the old network comes back '
+                        'by itself' % n)
+        elif n:
+            plan.append('a reboot; back up, it checks the new address. %s' % (
+                why[0].upper() + why[1:]))
+        else:
+            plan.append('a reboot; back up, it checks the new address (kept at once: '
+                        'net_confirm_min is 0)')
+        w['plan'] = plan
+        return w
+
+    @staticmethod
+    def job_active(job):
+        return bool(job) and job.get('state') in ('asked', 'running', 'rebooting',
+                                                  'going back') and \
+            time.time() - float(job.get('moved') or job.get('at') or 0) < NET_JOB_LIVE_S
+
+    def ask(self, want, by, rollback=False, checked=None):
+        """A change asked for: the job written, and started behind."""
+        if self.job_active(self._get('net:job')):
+            raise WebRootError('the network is being changed already')
+        if self.power_busy():
+            raise WebRootError('a restart or a power-off is under way')
+        w = checked or self.check(want)
+        job = {'id': secrets.token_hex(6), 'state': 'asked', 'at': time.time(), 'pct': 0,
+               'by': by, 'want': w, 'steps': [], 'boot': boot_time(),
+               'rollback': bool(rollback), 'moved': time.time()}
+        self._put('net:job', job)
+        if not rollback:
+            self.store.add_event('control', '%s asked for a new network: %s' % (
+                by, '; '.join(w['plan'])), 'warn', who=by)
+        # Started now - or, with something else of the network going behind,
+        # at the next pass (tick).
+        self._thread(self.job_run, json.loads(json.dumps(job)))
+        return job
+
+    # ---- the job ------------------------------------------------------------------
+    def _job_put(self, job, words=None, pct=None, ok=True, state=None):
+        if words:
+            job.setdefault('steps', []).append({'at': time.time(), 'what': str(words)[:400],
+                                                'ok': bool(ok)})
+            log('network: %s' % words, 'info' if ok else 'warn')
+        if pct is not None:
+            job['pct'] = int(pct)
+        if state:
+            job['state'] = state
+        job['moved'] = time.time()
+        self._put('net:job', job)
+
+    @staticmethod
+    def trial_min():
+        try:
+            return max(0, int(CONFIG.get('net_confirm_min') or 0))
+        except (TypeError, ValueError):
+            return 0
+
+    def job_run(self, job):
+        w = job['want']
+        by = '%s (network)' % (job.get('by') or 'isemon')
+        job['state'] = 'running'
+        if self.trial_min() and not job.get('rollback'):
+            job['back'], job['back_why'] = net_back_want(self.now())
+            job['trial_min'] = self.trial_min() if job['back'] else 0
+        undo = {}
+        try:
+            self._job_put(job, ('going back: %s' % '; '.join(w['plan'][:-1]) if job.get('rollback')
+                                else 'started - %s' % '; '.join(w['plan'][:2])), 3)
+            if job.get('trial_min'):
+                self._job_put(job, 'on trial: unless it is kept within %d min of coming back up, '
+                              'the network it has now comes back by itself' % job['trial_min'], 4)
+            elif job.get('back_why'):
+                self._job_put(job, job['back_why'], 4, ok=False)
+            # This server's own settings that name the old address or name -
+            # and what they were, put back should root not put the network in.
+            changes = self.own_changes(w)
+            undo['settings'] = {k: CONFIG.get(k) for k in changes}
+            undo['tls'] = self.daemon.webroot.tls_conf()
+            if changes:
+                self.daemon.save_settings(changes, by=by)
+                self._job_put(job, 'this server\'s settings: %s' % ', '.join(
+                    '%s = %s' % kv for kv in sorted(changes.items())), 35)
+            # Its own certificate.
+            try:
+                said = self.cert_again(w, by)
+                if said:
+                    self._job_put(job, said, 45, ok='make or get' not in said)
+            except WebRootError as e:
+                self._job_put(job, 'the certificate could not be made again: %s' % e, 45,
+                              ok=False)
+            # The network, the name - and the reboot.
+            job['down_at'] = time.time() + 8
+            self._job_put(job, 'NetworkManager, the host name and /etc/hosts', 70,
+                          state='rebooting')
+            got = self.root({'do': 'apply', 'con': w['con'], 'ipv4': w['ipv4'],
+                             'ipv6': {'mode': w['ipv6']['mode'] if w['ipv6']['on'] else 'off',
+                                      'addr': w['ipv6']['addr'], 'gw': w['ipv6']['gw'],
+                                      'dns': w['ipv6']['dns']},
+                             'hostname': w['hostname'],
+                             'old': [w['old_ip']] if w['old_ip'] else [],
+                             'old_hostname': w['old_hostname'], 'reboot_in': 8}, 90)
+            job['before'] = got.get('before') or {}
+            job['down_at'] = time.time() + 8
+            self._job_put(job, '; '.join(got.get('said') or []) or 'set', 80)
+            self._job_put(job, 'restarting - back in a minute or two at %s' % w['new_ip'], 85)
+        except Exception as e:                          # noqa: BLE001
+            job['error'] = str(e)[:400]
+            if not job.get('before'):
+                # The network was not put in: this server's own settings and
+                # its certificate as they were, or a database named by the
+                # new address would be looked for at it.
+                try:
+                    if undo.get('settings'):
+                        self.daemon.save_settings(undo['settings'], by=by)
+                    wr = self.daemon.webroot
+                    if undo.get('tls') is not None and wr.tls_conf() != undo['tls']:
+                        wr._put('web_tls', undo['tls'])
+                        wr.push('the network was not changed', by, force=True)
+                except Exception as e2:                 # noqa: BLE001
+                    log('network: putting this server\'s settings back: %s' % e2, 'warn')
+            self._job_put(job, ('stopped: %s - nothing of the network was changed' % e)
+                          if job.get('state') != 'rebooting' or not job.get('before')
+                          else 'stopped: %s' % e, job.get('pct'), ok=False, state='failed')
+            self.store.add_event('control', 'the new network was not put in: %s' % e, 'bad',
+                                 who=by)
+
+    def job_after(self, job):
+        """Back up after the reboot: is it what was asked?"""
+        w = job.get('want') or {}
+        by = '%s (network)' % (job.get('by') or 'isemon')
+        try:
+            now = self.publish()
+        except WebRootError as e:
+            if time.time() - boot_time() < 600:
+                return                                  # root not up yet: the next pass
+            now = {'data': {}}
+            self._job_put(job, 'the network could not be read after the restart: %s' % e, 87,
+                          ok=False)
+        d = now.get('data') or {}
+        have = set(a['addr'].split('/')[0] for a in ((d.get('live') or {}).get('addrs4') or []) +
+                   ((d.get('live') or {}).get('addrs6') or []) if a.get('addr'))
+        self._job_put(job, 'this server is back up', 88)
+        if w.get('new_ip') and w['new_ip'] not in have:
+            if job.get('trial_min') and job.get('back'):
+                # Not even the address: back at once, not after the trial.
+                self._job_put(job, 'it came up without %s (it has %s)' % (
+                    w['new_ip'], ', '.join(sorted(have)) or 'none'), 90, ok=False)
+                self.go_back(job, 'it came up without its new address')
+                return
+            self._job_put(job, 'it came up without %s (it has %s) - look at its console '
+                          '(nmtui); what it had before is in this job and in /etc/hosts.isemon-before'
+                          % (w['new_ip'], ', '.join(sorted(have)) or 'none'), 90, ok=False,
+                          state='failed')
+            self.store.add_event('control', 'this server came up without its new address %s'
+                                 % w['new_ip'], 'bad', who=by)
+            return
+        words = ['it is at %s' % w.get('new_ip')]
+        if (w.get('ipv6') or {}).get('on'):
+            six = sorted(a for a in have if ':' in a)
+            words.append('IPv6: %s' % (', '.join(six) or 'none yet'))
+        if w.get('hostname') and str(d.get('hostname') or '').lower() and \
+                str(d.get('hostname')).lower() != w['hostname']:
+            words.append('the host name is %s, not %s' % (d.get('hostname'), w['hostname']))
+        self._job_put(job, '; '.join(words), 90)
+        if job.get('trial_min') and job.get('back'):
+            self.trial_start(job, by)
+            return
+        self._job_put(job, 'done', 100, state='done')
+        self.store.add_event('control', 'the network %s: %s' % (
+            'went back to what it was' if job.get('rollback') else 'is changed',
+            '; '.join(words)), 'warn', who=by)
+
+    # ---- on trial -----------------------------------------------------------------
+    def trial_start(self, job, by):
+        n = int(job.get('trial_min') or 0)
+        job['trial_until'] = time.time() + n * 60
+        self._job_put(job, 'it waits to be kept: Keep it within %d min (the banner on every page, '
+                      'or  isemon --change-keep net), or the old network comes back by itself at '
+                      '%s' % (n, time.strftime('%H:%M', time.localtime(job['trial_until']))),
+                      99, state='trial')
+        self.store.add_event('control', 'the new network is on trial: kept within %d min, or it '
+                                        'goes back to %s' % (n, (job.get('want') or {}).get('old_ip')),
+                             'warn', who=by)
+
+    def go_back(self, job, why):
+        """The old network asked for - the same job the other way."""
+        back = job.get('back')
+        job['back_asked'] = time.time()
+        if not back:
+            self._job_put(job, 'not kept (%s), and it cannot go back by itself: %s' % (
+                why, job.get('back_why') or '?'), job.get('pct'), ok=False, state='failed')
+            return
+        # Read first: going back is planned from what the server has now (the
+        # new address), so its settings and certificate swap back too.
+        try:
+            self.publish()
+        except WebRootError as e:
+            log('network: read before going back: %s' % e, 'warn')
+        self._job_put(job, 'not kept: %s - the old network (%s) comes back' % (
+            why, (back.get('ipv4') or {}).get('addr')), job.get('pct'), ok=False,
+            state='going back')
+        self.store.add_event('control', 'the new network was not kept (%s): the old one (%s) '
+                                        'is put back' % (why, (back.get('ipv4') or {}).get('addr')),
+                             'warn')
+        try:
+            w = self.check(back, rollback=True)
+            nxt = {'id': secrets.token_hex(6), 'state': 'asked', 'at': time.time(), 'pct': 0,
+                   'by': 'isemon (%s)' % why, 'want': w, 'steps': [], 'boot': boot_time(),
+                   'rollback': True, 'moved': time.time(), 'from': job.get('id')}
+            self._put('net:job', nxt)
+            self.job_run(nxt)
+        except Exception as e:                          # noqa: BLE001
+            self._job_put(job, 'the old network could not be asked for: %s' % e, job.get('pct'),
+                          ok=False, state='failed')
+            self.store.add_event('control', 'the old network could not be put back: %s' % e,
+                                 'bad')
+
+    def trial_tick(self, job):
+        """A job on trial: kept, asked to go back, or out of time."""
+        keep = self._get('net:keep')
+        back = self._get('net:back')
+        if keep.get('id') == job.get('id'):
+            job['kept'] = keep.get('by')
+            self._job_put(job, 'kept by %s' % keep.get('by'), 100, state='done')
+            self.store.add_event('control', '%s kept the new network' % keep.get('by'),
+                                 who=keep.get('by'))
+            return
+        if back.get('id') == job.get('id'):
+            self.go_back(job, 'put back by %s' % back.get('by'))
+            return
+        if time.time() > float(job.get('trial_until') or 0):
+            self.go_back(job, 'not kept within %d min' % int(job.get('trial_min') or 0))
+
+    def net_answer(self, act, by):
+        """The page or the command line: keep it, or go back."""
+        job = self._get('net:job')
+        if job.get('state') != 'trial':
+            raise WebRootError('the network is not waiting to be kept')
+        self._put('net:%s' % ('keep' if act == 'keep' else 'back'),
+                  {'id': job.get('id'), 'by': by, 'at': time.time()})
+        self._thread(self.trial_tick, job)
+        return ('kept' if act == 'keep' else
+                'the old network comes back - the server restarts with it')
+
+    # ---- the firewall on trial -------------------------------------------------------
+    @staticmethod
+    def fw_trial_min():
+        try:
+            return max(0, int(CONFIG.get('fw_confirm_min') or 0))
+        except (TypeError, ValueError):
+            return 0
+
+    def fw_trial_begin(self, by):
+        """Before a change of the firewall or of who may reach which page: what
+        is there now kept, for going back to. None when it is kept at once."""
+        n = self.fw_trial_min()
+        if not n or not WebRoot.helper_there():
+            return None                     # kept at once; or nothing is put in anyway
+        t = time.time()
+        trial = self._get('fw:trial')
+        if not trial or trial.get('done'):
+            wr = self.daemon.webroot
+            fw = wr.fw_conf()
+            was = {k: v for k, v in fw.items() if k != 'touched'} if fw.get('touched') else \
+                {'on': False, 'off': [], 'rules': [], 'logs': {'any': True, 'from': []}}
+            acc = wr.access_conf()
+            trial = {'id': secrets.token_hex(6), 'was': was, 'access': acc,
+                     'access_nginx': None if acc else wr.access_from_nginx(wr.look(fresh_s=3600)),
+                     'at': t, 'by': by}
+        trial.update(until=t + n * 60, last_by=by, min=n)
+        self._put('fw:trial', trial)
+        return trial
+
+    def fw_answer(self, act, by):
+        trial = self._get('fw:trial')
+        if not trial or trial.get('done'):
+            raise WebRootError('no change of the firewall waits to be kept')
+        if act == 'keep':
+            trial.update(done='kept', done_by=by, done_at=time.time())
+            self._put('fw:trial', trial)
+            self.store.add_event('control', '%s kept the change of the firewall and of who may '
+                                            'reach which page' % by, who=by)
+            return 'kept'
+        self.fw_put_back(trial, 'put back by %s' % by)
+        return 'what was there before comes back - root puts it in within seconds'
+
+    def fw_put_back(self, trial, why):
+        wr = self.daemon.webroot
+        wr._put('web_fw', trial.get('was') or {'on': False, 'off': [], 'rules': [],
+                                               'logs': {'any': True, 'from': []}})
+        if trial.get('access'):
+            wr._put('web_access', trial['access'])
+        else:
+            # Never set before the trial: the lists as nginx had them then.
+            acc = None
+            try:
+                if trial.get('access_nginx'):
+                    acc = wr.access_checked(trial['access_nginx'])
+            except WebRootError:
+                acc = None
+            if acc:
+                wr._put('web_access', acc)
+            else:
+                self.store.drop_meta('web_access')
+        trial.update(done='back', done_by=why, done_at=time.time())
+        self._put('fw:trial', trial)
+        self.store.add_event('control', 'the firewall and who may reach which page went back to '
+                                        'what they were before %s: %s' % (
+                                            time.strftime('%H:%M', time.localtime(
+                                                trial.get('at') or 0)), why), 'warn')
+        log('the firewall went back: %s' % why, 'warn')
+        wr.push('the change was not kept: %s' % why, force=True)
+
+    def fw_trial_tick(self):
+        trial = self._get('fw:trial')
+        if not trial or trial.get('done') or time.time() <= float(trial.get('until') or 0):
+            return
+        self.fw_put_back(trial, 'not kept within %d min' % int(trial.get('min') or 0))
+
+    def trials(self):
+        """What waits to be kept, for the banner of every page and --status."""
+        out = []
+        job = self._get('net:job')
+        if job.get('state') == 'trial':
+            w = job.get('want') or {}
+            out.append({'kind': 'net', 'until': float(job.get('trial_until') or 0),
+                        'by': job.get('by') or '',
+                        'words': 'the new network (%s)' % (w.get('new_ip') or '?'),
+                        'back': w.get('old_ip') or '', 'new': w.get('new_ip') or ''})
+        trial = self._get('fw:trial')
+        if trial and not trial.get('done') and float(trial.get('until') or 0) > time.time() - 60:
+            out.append({'kind': 'fw', 'until': float(trial.get('until') or 0),
+                        'by': trial.get('last_by') or trial.get('by') or '',
+                        'words': 'the change of the firewall and of who may reach which page',
+                        'back': ''})
+        return out
+
+    @staticmethod
+    def trial_words(trials):
+        return ['%s waits to be kept: %d min left, then it goes back by itself (Keep it on the '
+                'banner, or  isemon --change-keep %s)' % (
+                    x['words'], max(0, int((x['until'] - time.time()) // 60)), x['kind'])
+                for x in trials]
+
+    def answer(self, kind, act, by):
+        if act not in ('keep', 'back'):
+            raise WebRootError('keep or back')
+        if kind == 'net':
+            return self.net_answer(act, by)
+        if kind == 'fw':
+            return self.fw_answer(act, by)
+        raise WebRootError('net or fw')
+
+    # ---- restart and power off -------------------------------------------------------
+    def power_plan(self):
+        return self._get('power:plan')
+
+    def power_busy(self):
+        p = self.power_plan()
+        return bool(p) and p.get('state') in ('asked', 'going') and \
+            time.time() - float(p.get('at') or 0) < POWER_LIVE_S and \
+            not (p.get('how') == 'poweroff' and p.get('state') == 'going')
+
+    def power_ask(self, how, by):
+        if how not in ('reboot', 'poweroff'):
+            raise WebRootError('reboot or poweroff')
+        if self.power_busy():
+            raise WebRootError('a restart or a power-off is under way already')
+        if self.job_active(self._get('net:job')):
+            raise WebRootError('the network is being changed')
+        plan = {'id': secrets.token_hex(6), 'how': how, 'by': by, 'at': time.time(),
+                'boot': boot_time(), 'state': 'asked', 'moved': time.time()}
+        self._put('power:plan', plan)
+        self.store.add_event('control', '%s asked for a %s of this server' % (
+            by, 'restart' if how == 'reboot' else 'power-off'), 'warn', who=by)
+        self.power_go(plan)
+        return plan
+
+    def _power_put(self, plan, state, words=''):
+        plan.update(state=state, moved=time.time())
+        if words:
+            plan['said'] = str(words)[:300]
+        self._put('power:plan', plan)
+
+    def power_go(self, plan):
+        try:
+            plan['down_at'] = time.time() + 5
+            self._power_put(plan, 'going', 'going down')
+            self.root({'do': 'power', 'how': plan['how'], 'in': 5}, 30)
+            log('%s in 5 s, asked by %s' % (plan['how'], plan.get('by')), 'warn')
+        except Exception as e:                          # noqa: BLE001
+            self._power_put(plan, 'failed', str(e))
+            self.store.add_event('control', 'the %s was not done: %s' % (
+                'restart' if plan['how'] == 'reboot' else 'power-off', e), 'bad',
+                who=plan.get('by'))
+            raise WebRootError(str(e))
+
+    def power_tick(self):
+        plan = self.power_plan()
+        if plan.get('state') != 'going':
+            return
+        if boot_time() > float(plan.get('boot') or 0) + 1:
+            self._power_put(plan, 'back', 'up again' if plan.get('how') == 'reboot'
+                            else 'switched on again')
+            self.store.add_event('control', 'this server is up again after the %s' % (
+                'restart' if plan.get('how') == 'reboot' else 'power-off'))
+        elif plan.get('how') == 'reboot' and time.time() - float(plan.get('moved') or 0) > 900:
+            self._power_put(plan, 'failed', 'it did not restart in 15 minutes')
+
+    def power_view(self, may=False):
+        plan = self.power_plan()
+        now = self.now()
+        seen = self.store.get_meta('power:seen', '') == str(plan.get('id') or '')
+        show = plan and not seen and (time.time() - float(plan.get('at') or 0) < POWER_LIVE_S
+                                      or plan.get('state') in ('asked', 'going'))
+        boot = boot_time()
+        return {'ok': True, 'may': may, 'plan': plan if show else {}, 'now': time.time(),
+                'busy': self.power_busy() or self.job_active(self._get('net:job')),
+                'me': {'name': socket.gethostname(), 'address': net_current_ip(now),
+                       'boot': boot, 'started': self.daemon.started, 'version': __version__}}
+
+    # ---- the page ---------------------------------------------------------------------
+    def view(self, may=False):
+        now = self.now()
+        if not now and WebRoot.helper_there() and time.time() - self.read_at > 30:
+            # Never read: asked now, behind; the page asks again in a moment.
+            self.read_at = time.time()
+            self._thread(self.publish)
+        job = self._get('net:job')
+        # A finished change is shown until somebody hides it, or for 6 hours
+        # when it went through, a day when it did not.
+        if job and job.get('state') in ('done', 'failed'):
+            keep = 6 * 3600 if job.get('state') == 'done' else 86400
+            if self.store.get_meta('net:seen', '') == str(job.get('id')) or \
+                    time.time() - float(job.get('moved') or job.get('at') or 0) > keep:
+                job = {}
+        return {'ok': True, 'may': may, 'now': now, 'job': job, 'at': time.time(),
+                'name': socket.gethostname(), 'helper': WebRoot.helper_there(),
+                'trial_min': self.trial_min(), 'trials': self.trials()}
+
+    def hide(self):
+        job = self._get('net:job')
+        if not job:
+            raise WebRootError('there is nothing to hide')
+        if job.get('state') not in ('done', 'failed'):
+            raise WebRootError('the change is not over yet')
+        self.store.set_meta('net:seen', str(job.get('id')))
+
+    def power_hide(self):
+        plan = self.power_plan()
+        if plan.get('id'):
+            self.store.set_meta('power:seen', str(plan['id']))
+
+    # ---- every few seconds --------------------------------------------------------------
+    def tick(self):
+        """A job to finish after a reboot, a trial to end, a restart that is
+        over, a firewall change not kept - and the network read again now and
+        then once somebody has looked at it."""
+        try:
+            self.fw_trial_tick()
+        except Exception as e:                          # noqa: BLE001
+            log('the firewall on trial: %s' % e, 'warn')
+        try:
+            self.power_tick()
+        except Exception as e:                          # noqa: BLE001
+            log('restart and power off: %s' % e, 'warn')
+        job = self._get('net:job')
+        state = job.get('state')
+        if state == 'trial':
+            self._thread(self.trial_tick, job)
+            return
+        if state == 'rebooting':
+            if boot_time() > float(job.get('boot') or 0) + 1:
+                self._thread(self.job_after, job)
+            elif not self.busy and time.time() - float(job.get('moved') or 0) > 900:
+                self._job_put(job, 'the machine did not restart in 15 minutes - restart it by '
+                              'hand; the network starts as set', job.get('pct'), ok=False,
+                              state='failed')
+            return
+        if state == 'asked' and not self.busy and \
+                time.time() - float(job.get('moved') or 0) < 600:
+            self._thread(self.job_run, job)
+            return
+        if state in ('asked', 'running', 'going back') and not self.busy and \
+                time.time() - float(job.get('moved') or 0) > 300:
+            self._job_put(job, 'it stopped half way (the service restarted?)', job.get('pct'),
+                          ok=False, state='failed')
+            return
+        if self.now() and WebRoot.helper_there() and \
+                time.time() - self.read_at > NET_READ_S:
+            self.read_at = time.time()
+            self._thread(self.publish)
+
+
+# This version's README, read once for what changed in each older version.
+_README = {'at': None, 'text': ''}
+
+
+# ---------------------------------------------------------------------------
+# What this server runs on (1.10.229), for Settings - About, as otp has it:
+# isemon, its Python and the modules it uses, the libraries under them, the
+# programs beside it and the system. Asked at most once an hour; the
+# database's own version and the command line's PHP each time.
+# ---------------------------------------------------------------------------
+_SOFTWARE = {'at': 0.0, 'state': None}
+
+
+def _first_line(cmd, timeout=5):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return ''
+    text = (r.stdout or '') + (r.stderr or '')
+    return (text.strip().splitlines() or [''])[0].strip()[:200]
+
+
+def software_info(store=None):
+    """{'isemon', 'python', 'modules', 'programs', 'os', 'kernel', ...}."""
+    if time.time() - _SOFTWARE['at'] < 3600 and _SOFTWARE['state'] is not None:
+        out = json.loads(json.dumps(_SOFTWARE['state']))
+    else:
+        import glob
+        import platform
+        out = {'isemon': __version__,
+               'python': '%s %s' % (platform.python_implementation(), platform.python_version()),
+               'python_path': os.path.realpath(sys.executable),
+               'openssl': ssl.OPENSSL_VERSION, 'sqlite': sqlite3.sqlite_version,
+               'kernel': '%s %s' % (platform.system(), platform.release()),
+               'arch': platform.machine(), 'modules': {}, 'programs': {}}
+        try:
+            with open('/etc/os-release', encoding='utf-8') as f:
+                rel = dict(l.strip().split('=', 1) for l in f if '=' in l)
+            out['os'] = rel.get('PRETTY_NAME', '').strip('"')
+        except OSError:
+            out['os'] = ''
+        for mod in ('psycopg2', 'pymysql', 'colorama'):
+            try:
+                m = __import__(mod)
+                v = str(getattr(m, '__version__', '') or '').split(' ')[0]
+                if mod == 'psycopg2':
+                    lib = getattr(m, '__libpq_version__', 0)
+                    if lib:
+                        v += ' (libpq %d.%d)' % (lib // 10000, lib % 10000 // 100 if lib < 100000
+                                                 else lib % 100)
+                out['modules'][mod] = v
+            except Exception:                           # noqa: BLE001
+                out['modules'][mod] = ''
+        progs = (('nginx', ['nginx', '-v']), ('php-fpm', None),
+                 ('pg_dump', ['pg_dump', '--version']),
+                 ('mariadb-dump', ['mariadb-dump', '--version']),
+                 ('openssl', ['openssl', 'version']), ('systemd', ['systemctl', '--version']),
+                 ('rsyslog', ['rsyslogd', '-v']), ('chrony', ['chronyc', '--version']),
+                 ('NetworkManager', ['nmcli', '--version']),
+                 ('iptables', ['iptables', '--version']),
+                 ('firewalld', ['firewall-cmd', '--version']),
+                 ('OpenSSH', ['ssh', '-V']), ('smbclient', ['smbclient', '--version']))
+        for name, cmd in progs:
+            if name == 'php-fpm':
+                fpm = sorted(glob.glob('/usr/sbin/php-fpm*') + glob.glob('/usr/sbin/php*-fpm*'))
+                line = _first_line([fpm[-1], '-v']) if fpm else ''
+            else:
+                exe = shutil.which(cmd[0]) or next((p for p in ('/usr/sbin/' + cmd[0],
+                                                                '/sbin/' + cmd[0])
+                                                    if os.path.exists(p)), None)
+                line = _first_line([exe] + cmd[1:]) if exe else ''
+            if name == 'OpenSSH':
+                m = re.search(r'OpenSSH_([0-9][^\s,]*)', line or '')
+            elif name == 'rsyslog':
+                m = re.search(r'rsyslogd\s+(\d+\.\d+(?:\.\d+)?)', line or '')
+            else:
+                m = re.search(r'(\d+\.\d+(?:\.\d+)?[^\s,()]*)', line or '')
+            if m and not re.search(r'(?i)denied|not found|error', line):
+                out['programs'][name] = m.group(1)
+            elif name == 'systemd':
+                m = re.search(r'^systemd\s+(\d+)', line or '')
+                if m:
+                    out['programs'][name] = m.group(1)
+        php = shutil.which('php') or next((p for p in ('/usr/bin/php', '/usr/local/bin/php')
+                                           if os.path.exists(p)), None)
+        out['php_cli'] = ''
+        if php:
+            try:
+                out['php_cli'] = subprocess.run(
+                    [php, '-r', 'echo PHP_VERSION;'], capture_output=True, text=True,
+                    timeout=10).stdout.strip()[:40]
+            except (OSError, subprocess.SubprocessError):
+                pass
+        _SOFTWARE.update(at=time.time(), state=json.loads(json.dumps(out)))
+    if store is not None:
+        out['engine'] = store.dialect.name
+        try:
+            if store.dialect.name == 'mariadb':
+                out['database'] = str(store.db.execute('SELECT VERSION() AS v').fetchone()['v'])
+            elif store.dialect.name == 'postgres':
+                out['database'] = str(store.db.execute(
+                    'SELECT version() AS v').fetchone()['v']).split(' on ')[0]
+            else:
+                out['database'] = 'SQLite %s' % sqlite3.sqlite_version
+        except Exception:                               # noqa: BLE001
+            out['database'] = ''
+    return out
 
 
 class ApiHandler(BaseHTTPRequestHandler):
@@ -65788,6 +69942,79 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.send_json(daemon.webroot.tls_do(data, me.get('name') or ''))
             except (WebRootError, OSError) as e:
                 return self.fail(str(e))
+        # The clock (1.10.228): how chrony sees it, read again or stepped now,
+        # and the time servers - kept here, put in by root (isemon_web.py).
+        if path == '/api/ntp':
+            if method != 'POST':
+                me = self.need_login()
+                if not me:
+                    return None
+                return self.send_json(ntp_view(daemon.webroot, me.get('role') == 'fulladmin'))
+            me = self.need_admin()
+            if not me:
+                return None
+            data = self.body()
+            act = str(data.get('action') or '')
+            try:
+                if act in ('save', 'apply'):
+                    ntp_save(daemon.webroot, data.get('conf') or {}, me.get('name') or '')
+                    return self.send_json({'ok': True, 'message': 'saved; root puts the time '
+                                                                  'servers in within seconds'})
+                if act in ('read', 'sync'):
+                    return self.send_json(ntp_ask(daemon.webroot, act, me.get('name') or ''))
+            except (WebRootError, OSError) as e:
+                return self.fail(str(e))
+            return self.fail('read, sync or save')
+
+        # This server's network, a restart or a power-off, and the changes
+        # on trial (1.10.228): looked at by anybody signed in, changed by a
+        # full administrator.
+        if path in ('/api/net', '/api/power', '/api/trial'):
+            np = daemon.netpower
+            if method != 'POST':
+                me = self.need_login()
+                if not me:
+                    return None
+                may = me.get('role') == 'fulladmin'
+                if path == '/api/net':
+                    return self.send_json(np.view(may))
+                if path == '/api/power':
+                    return self.send_json(np.power_view(may))
+                return self.send_json({'ok': True, 'trials': np.trials(), 'now': time.time()})
+            me = self.need_admin()
+            if not me:
+                return None
+            data = self.body()
+            who = me.get('name') or ''
+            act = str(data.get('action') or '')
+            try:
+                if path == '/api/trial':
+                    return self.send_json({'ok': True, 'message': np.answer(
+                        str(data.get('kind') or ''), act, who), 'trials': np.trials()})
+                if path == '/api/power':
+                    if act == 'hide':
+                        np.power_hide()
+                        return self.send_json(np.power_view(True))
+                    plan = np.power_ask(str(data.get('how') or act), who)
+                    return self.send_json({'ok': True, 'plan': plan, 'message': (
+                        'the server restarts in a few seconds' if plan['how'] == 'reboot'
+                        else 'the server switches off in a few seconds')})
+                if act == 'read':
+                    np.publish()
+                    return self.send_json(np.view(True))
+                if act in ('check', 'plan'):
+                    got = np.check(data.get('want') or {})
+                    return self.send_json({'ok': True, 'plan': got['plan'], 'want': got})
+                if act == 'hide':
+                    np.hide()
+                    return self.send_json(np.view(True))
+                if act == 'apply':
+                    job = np.ask(data.get('want') or {}, who)
+                    return self.send_json({'ok': True, 'id': job['id'], 'message':
+                                           'asked: the server changes its network and restarts'})
+            except (WebRootError, ValueError, OSError) as e:
+                return self.fail(str(e))
+            return self.fail('nothing to do')
         # A new version from the page (1.10.222): the package arrives as the
         # body, the way a copy of the database does, and root puts it in.
         if path == '/api/upgrade/package' and method == 'POST':
@@ -65833,7 +70060,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             me = self.need_admin()
             if not me:
                 return None
-            act = str(self.body().get('action') or '')
+            body = self.body()
+            act = str(body.get('action') or '')
             try:
                 if act == 'start':
                     daemon.upgrades.start(me.get('name') or '')
@@ -65846,7 +70074,45 @@ class ApiHandler(BaseHTTPRequestHandler):
                     out = daemon.upgrades.page(True)
                     out['message'] = 'the package is gone'
                     return self.send_json(out)
-            except (WebRootError, OSError) as e:
+                # From the web (1.10.228): looked at now, or a version
+                # fetched - and begun, when that was asked as well.
+                if act == 'online_look':
+                    row = daemon.upgrades.online_look(me.get('name') or '')
+                    out = daemon.upgrades.page(True)
+                    if row.get('error'):
+                        out['message'] = 'the address did not answer: %s' % row['error']
+                    elif row.get('newer'):
+                        out['message'] = 'isemon %s is there' % row['newest']['version']
+                    else:
+                        out['message'] = 'nothing newer than %s is there' % __version__
+                    return self.send_json(out)
+                # Going back (1.10.232): an older version from upgrade_url,
+                # only as far as is safe, the database left as it is.
+                if act == 'go_back':
+                    kept = daemon.upgrades.go_back(str(body.get('version') or ''),
+                                                   me.get('name') or '')
+                    out = daemon.upgrades.page(True)
+                    out['message'] = 'isemon %s was fetched and checked; root puts it in - the ' \
+                                     'database is left as it is - and this page comes back once ' \
+                                     'it is restarted' % kept['version']
+                    return self.send_json(out)
+                if act == 'online_fetch':
+                    if daemon.upgrades.running():
+                        raise WebRootError('an upgrade is running already')
+                    kept = daemon.upgrades.online_fetch(str(body.get('version') or ''),
+                                                        me.get('name') or '')
+                    if body.get('start'):
+                        daemon.upgrades.start(me.get('name') or '')
+                        out = daemon.upgrades.page(True)
+                        out['message'] = 'isemon %s was fetched and checked; root puts it in, and ' \
+                                         'this page comes back once it is restarted' \
+                                         % kept['version']
+                    else:
+                        out = daemon.upgrades.page(True)
+                        out['message'] = 'isemon %s was fetched and checked and waits: press ' \
+                                         'Upgrade' % kept['version']
+                    return self.send_json(out)
+            except (WebRootError, OSError, ValueError) as e:
                 return self.fail(str(e))
             return self.fail('nothing to do')
 
@@ -65862,6 +70128,35 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         # The dashboard's php2shell notice, put away until the daemon starts
         # again (1.10.220) - `isemon --php-notice hide|show`.
+        # The console when root signs in (1.10.230): Settings - About.
+        if path == '/api/console-login':
+            if method != 'POST':
+                me = self.need_login()
+                if not me:
+                    return None
+                return self.send_json(daemon.netpower.console_view(
+                    me.get('role') == 'fulladmin'))
+            me = self.need_admin()
+            if not me:
+                return None
+            data = self.body()
+            if not isinstance(data.get('on'), bool):
+                return self.fail('on is true or false')
+            try:
+                out = daemon.netpower.console_set(data['on'], me.get('name') or '')
+            except (WebRootError, OSError) as e:
+                return self.fail(str(e))
+            out['message'] = ('root lands in the isemon console when signing in at the '
+                              'console or over SSH' if data['on'] else
+                              'root lands in the ordinary shell; isemon --console opens the '
+                              'console')
+            return self.send_json(out)
+        # What this server runs on (1.10.229): Settings - About.
+        if path == '/api/software':
+            me = self.need_login()
+            if not me:
+                return None
+            return self.send_json({'ok': True, 'software': software_info(daemon.store)})
         if path == '/api/php-notice':
             if method != 'POST':
                 if not self.need_login():
@@ -67610,6 +71905,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             finally:
                 shutil.rmtree(folder, ignore_errors=True)
 
+        # Backups to another machine (1.10.228): Settings -> Backups.
+        if path == '/api/rbackup' or path.startswith('/api/rbackup/'):
+            return rb_route(self, method, path, one)
+
         if path == '/api/db/engine' and method != 'POST':
             # Which database everything is kept in, and what else it could be
             # kept in. A read, because the page that says a database will not
@@ -68619,6 +72918,9 @@ def cmd_status(args, pal, store):
         return 0
     pal.title('isemon %s on %s' % (data['version'], data['host']))
     pal.kv('running for', human_span(data['uptime']))
+    # A change waiting to be kept (1.10.228).
+    for line in NetPower.trial_words(data.get('trials') or []):
+        pal.warn(line)
     # How fast it reads, as the header of the page says it: out of memory,
     # nothing asked of the database to say it.
     pace = data.get('pace') or {}
@@ -68764,6 +73066,9 @@ def cmd_status(args, pal, store):
     if data.get('log_zone_trouble'):
         pal.note('')
         pal.bad('  %s' % data['log_zone_trouble'])
+    if data.get('clock_trouble'):
+        pal.note('')
+        pal.bad('  %s  (isemon --time)' % data['clock_trouble'])
     early = [t for t in data['logs'] if t.get('ahead')]
     if early:
         pal.note('')
@@ -69586,6 +73891,15 @@ def cmd_settings(args, pal, store):
                 pal.bad('--set wants key=value, not %r' % piece)
                 return 1
             key, _, value = piece.partition('=')
+            # A secret by the environment, off the command line where `ps`
+            # shows it (1.10.228): KEY=@env takes ISEMON_VALUE_KEY.
+            if value.strip() == '@env':
+                from_env = 'ISEMON_VALUE_' + key.strip().upper()
+                if from_env not in os.environ:
+                    pal.bad('%s=@env, and %s is not set: nothing was saved'
+                            % (key.strip(), from_env))
+                    return 1
+                value = os.environ[from_env]
             # The old name of the NPS switch is the new one (1.10.194).
             key = 'ban_from_nps' if key.strip() == 'judge_nps_vpn' else key
             want[key.strip()] = value.strip()
@@ -70479,6 +74793,183 @@ def cmd_address(args, pal, store):
     return 0
 
 
+def ntp_ms(s):
+    """An offset as the page says it: +0.123 ms, -12.3 ms, +1.20 s."""
+    if s is None:
+        return '-'
+    ms = float(s) * 1000
+    a = abs(ms)
+    return ('+' if ms >= 0 else '-') + ('%.2f s' % (a / 1000) if a >= 1000 else
+                                        ('%.1f ms' % a if a >= 10 else '%.3f ms' % a))
+
+
+NTP_STATES = {'*': 'followed', '+': 'combined', '-': 'not combined', '?': 'unreachable',
+              'x': 'false ticker', '~': 'too variable'}
+
+
+def cmd_time(args, pal, store):
+    """The clock as chrony sees it (1.10.228): --time, and --time-step to
+    step it to the time servers now."""
+    session = cli_session(store)
+    asked = time.time()
+    status, data = api_call('/api/ntp', 'POST', {'action': 'sync' if args.time_step else 'read'},
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    # Root reads it within seconds; what was there before is shown when it
+    # does not (and said to be that old).
+    view = {}
+    for _ in range(40 if args.time_step else 25):
+        status, view = api_call('/api/ntp', session=session)
+        if not need_daemon(pal, status, view):
+            return 1
+        if float((view.get('now') or {}).get('at') or 0) > asked + (3 if args.time_step else 0):
+            break
+        time.sleep(0.5)
+    if as_json(args, view):
+        return 0
+    now = view.get('now') or {}
+    d = now.get('data') or {}
+    t = d.get('tracking') or {}
+    pal.title('The clock of %s' % socket.gethostname())
+    if args.time_step:
+        pal.kv('stepped', 'asked: chronyc makestep')
+    if not d:
+        pal.bad(view.get('said') or 'it has not been read yet')
+        return 1
+    if not d.get('chrony'):
+        pal.kv('chrony', pal.bad_text('not installed'))
+        pal.kv('synchronised', str(d.get('ntpsynchronized') or '-') + ' (timedatectl)')
+    else:
+        synced = bool(t.get('stratum')) and t.get('leap') != 'Not synchronised'
+        off = abs(float(t.get('offset') or 0))
+        pal.kv('offset', pal.paint(ntp_ms(t.get('offset')), pal.c_bad if off > 1 else (
+            pal.c_warn if off > 0.1 else pal.c_ok)) + ' off the time servers')
+        pal.kv('synchronised', pal.ok_text('yes') if synced else pal.bad_text('NO'))
+        pal.kv('follows', '%s (stratum %s)' % (t.get('ref') or t.get('ref_id') or '-',
+                                                t.get('stratum', '-')))
+        pal.kv('last correction', ntp_ms(t.get('last_offset')))
+        if t.get('freq') is not None:
+            pal.kv('frequency', '%.3f ppm' % float(t['freq']))
+        pal.kv('leap status', t.get('leap') or '-')
+    pal.kv('time zone', d.get('timezone') or '-')
+    pal.kv('read', human_age(time.time() - float(now.get('at') or time.time())))
+    if view.get('said'):
+        pal.warn('  %s' % view['said'])
+    srcs = d.get('sources') or []
+    if srcs:
+        pal.title('Where the time comes from')
+        print_table(pal, ['state', 'source', 'stratum', 'reach', 'last heard', 'offset'],
+                    [[NTP_STATES.get(s.get('state'), s.get('state') or ''), s.get('name') or '',
+                      str(s.get('stratum')), '%o' % int(s.get('reach') or 0),
+                      '-' if s.get('last_rx') is None else human_span(s['last_rx']) + ' ago',
+                      '%s ± %s' % (ntp_ms(s.get('offset')), ntp_ms(s.get('error')).lstrip('+'))]
+                     for s in srcs], indent=2)
+    elif d.get('chrony'):
+        pal.note('  chrony has no source')
+    if view.get('problem'):
+        pal.bad('  %s' % view['problem'])
+    pal.blank()
+    return 1 if view.get('problem') else 0
+
+
+def cmd_net(args, pal, store):
+    """This server's network as root reads it, and a change under way or on
+    trial (1.10.228)."""
+    session = cli_session(store)
+    status, data = api_call('/api/net', session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    if status == 200 and not (data.get('now') or {}).get('data'):
+        # Never read yet: asked now.
+        status, data = api_call('/api/net', 'POST', {'action': 'read'}, session=session,
+                                timeout=60)
+    if status != 200:
+        pal.bad(data.get('error') or 'that did not work')
+        return 1
+    if as_json(args, data):
+        return 0
+    now = data.get('now') or {}
+    d = now.get('data') or {}
+    conf = d.get('conf') or {}
+    live = d.get('live') or {}
+    pal.title('The network of %s' % (d.get('hostname') or data.get('name') or 'this server'))
+    pal.kv('host name', d.get('hostname') or '-')
+    pal.kv('connection', (d.get('con') or '-') + (' (%s)' % d['dev'] if d.get('dev') else ''))
+    pal.kv('IPv4 address', ', '.join(conf.get('ipv4_addresses') or []) or ', '.join(
+        a.get('addr', '') for a in live.get('addrs4') or []) or '-')
+    pal.kv('set', {'manual': 'by hand', 'auto': 'by DHCP'}.get(conf.get('ipv4_method'),
+                                                              conf.get('ipv4_method') or '-'))
+    pal.kv('gateway', conf.get('ipv4_gateway') or live.get('gw4') or '-')
+    pal.kv('DNS servers', ', '.join((conf.get('ipv4_dns') or []) + (conf.get('ipv6_dns') or []))
+           or ', '.join(live.get('dns') or []) or '-')
+    pal.kv('search domains', ', '.join(conf.get('ipv4_search') or []) or '-')
+    m6 = conf.get('ipv6_method')
+    pal.kv('IPv6', 'off' if m6 in (None, '', 'disabled', 'ignore') else
+           ('on, set by hand' if m6 == 'manual' else 'on, automatic'))
+    six = [a.get('addr', '') for a in live.get('addrs6') or []]
+    if six:
+        pal.kv('IPv6 addresses', ', '.join(six))
+    if now.get('at'):
+        pal.kv('read', stamp(now['at']))
+    if d and not d.get('nm'):
+        pal.warn('NetworkManager (nmcli) is not on this server: its network is set by hand')
+    job = data.get('job') or {}
+    if job:
+        pal.title('The change (%s)' % job.get('state'))
+        for one in job.get('steps') or []:
+            pal.bullet('%s %s  %s' % ('ok ' if one.get('ok') else '!! ',
+                                      time.strftime('%H:%M:%S', time.localtime(one.get('at') or 0)),
+                                      one.get('what')))
+    for line in NetPower.trial_words(data.get('trials') or []):
+        pal.warn(line)
+    pal.note('  A new network is set on the pages: Settings - Network.')
+    return 0
+
+
+def cmd_power(args, pal, store):
+    """Restart this server, or switch it off (1.10.228). Asks first."""
+    how = 'reboot' if args.reboot else 'poweroff'
+    if not args.yes:
+        try:
+            said = input('  %s this server now? type yes to go ahead: ' % (
+                'restart' if how == 'reboot' else 'switch off')).strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            said = ''
+        if said != 'yes':
+            pal.note('  nothing was done')
+            return 1
+    session = cli_session(store)
+    status, data = api_call('/api/power', 'POST', {'how': how}, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    if status != 200:
+        pal.bad(data.get('error') or 'that did not work')
+        return 1
+    if as_json(args, data):
+        return 0
+    pal.good(data.get('message') or 'asked')
+    return 0
+
+
+def cmd_change(args, pal, store):
+    """A change on trial kept, or the old put back now (1.10.228)."""
+    kind = args.change_keep or args.change_back
+    act = 'keep' if args.change_keep else 'back'
+    session = cli_session(store)
+    status, data = api_call('/api/trial', 'POST', {'kind': kind, 'action': act},
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    if status != 200:
+        pal.bad(data.get('error') or 'that did not work')
+        return 1
+    if as_json(args, data):
+        return 0
+    pal.good(data.get('message') or 'done')
+    return 0
+
+
 def cmd_web_status(args, pal, store):
     """What root has in place of what the pages asked: nginx, TLS, the
     firewall, and the last upgrade from the pages (1.10.222)."""
@@ -70524,6 +75015,254 @@ def cmd_web_status(args, pal, store):
                                         stamp(upst.get('at') or 0)))
         if upst.get('said'):
             pal.note('    ' + str(upst['said']))
+    return 0
+
+
+def upgrade_bar(pct, width=30):
+    pct = max(0, min(100, int(pct or 0)))
+    full = int(round(width * pct / 100.0))
+    return '[%s%s] %3d %%' % ('#' * full, '-' * (width - full), pct)
+
+
+def cmd_upgrade_check(args, pal, store):
+    """What is at upgrade_url now, and whether it is newer (1.10.228)."""
+    session = cli_session(store)
+    status, data = api_call('/api/upgrade', 'POST', {'action': 'online_look'}, timeout=120,
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    o = (data.get('online') or {}).get('online') or {}
+    # {url, packages, newest, newer, error} - what the console reads.
+    if as_json(args, dict(o, url=o.get('url') or (data.get('online') or {}).get('url') or '')):
+        return 0
+    pal.title('New versions at %s' % (o.get('url') or (data.get('online') or {}).get('url') or
+                                       '(no address set: upgrade_url)'))
+    if o.get('error'):
+        pal.bad('  it did not answer: %s' % o['error'])
+        return 1
+    for p in o.get('packages') or []:
+        newer = Upgrades.ver_tuple(p['version']) > Upgrades.ver_tuple(__version__)
+        pal.kv(p['version'], ('newer' if newer else ('this one' if p['version'] == __version__
+                                                     else 'older')) +
+               (' - %s' % human_size(p['bytes']) if p.get('bytes') else ''))
+    if o.get('newer'):
+        pal.good('isemon %s is there; this server runs %s - isemon --upgrade-online puts it in'
+                 % (o['newest']['version'], __version__))
+    else:
+        pal.good('nothing newer than %s, which runs here' % __version__)
+    return 0
+
+
+def cmd_upgrade_follow(args, pal, store, began=None):
+    """An upgrade going on, followed with its bar until it ends - started on
+    the page or here. Ctrl+C stops the following, not the upgrade."""
+    began = began or time.time()
+    last_words = None
+    seen_running = False
+    session = cli_session(store)
+    try:
+        while True:
+            status, data = api_call('/api/upgrade', timeout=20, session=session)
+            if status == 0:
+                # The daemon restarting under the upgrade: waited for.
+                if seen_running:
+                    if last_words != 'restarting':
+                        print('  isemon is restarting...')
+                        last_words = 'restarting'
+                    time.sleep(2)
+                    if time.time() - began > 1800:
+                        pal.bad('isemon has not come back in half an hour - journalctl -u isemon')
+                        return 1
+                    continue
+                pal.bad(data.get('error') or 'the daemon is not answering')
+                return 1
+            if status >= 400:
+                pal.bad(data.get('error') or 'HTTP %s' % status)
+                return 1
+            run = data.get('run') or {}
+            state = run.get('state') or ''
+            if data.get('running') or state == 'running':
+                seen_running = True
+                pr = run.get('progress') or {}
+                words = '%s  %s' % (upgrade_bar(pr.get('pct')), pr.get('words') or 'working')
+                if words != last_words:
+                    print('  ' + words)
+                    last_words = words
+                time.sleep(1.5)
+                continue
+            if not seen_running and not data.get('running'):
+                if state in ('done', 'failed') and float(run.get('at') or 0) >= began - 5:
+                    seen_running = True
+                else:
+                    pal.note('no upgrade is going on (the last: %s to %s, %s)'
+                             % (state or 'none', run.get('version') or '-',
+                                stamp(run.get('at') or 0) if run.get('at') else '-'))
+                    return 0
+            if state == 'done':
+                pal.good('isemon %s is running' % data.get('version'))
+                return 0
+            pal.bad('the upgrade failed: %s' % (run.get('said') or 'install.sh ended with %s'
+                                                 % run.get('rc')))
+            for line in (data.get('log') or [])[-15:]:
+                pal.note('    ' + line)
+            return 1
+    except KeyboardInterrupt:
+        pal.note('\n  no longer followed here; the upgrade goes on (isemon --upgrade-follow)')
+        return 0
+
+
+def cmd_upgrade_online(args, pal, store):
+    """The newest version at upgrade_url - or the one named - fetched,
+    checked by root's helper, and put in, followed here (1.10.228)."""
+    session = cli_session(store)
+    status, data = api_call('/api/upgrade', 'POST', {'action': 'online_look'}, timeout=120,
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    o = (data.get('online') or {}).get('online') or {}
+    if o.get('error'):
+        pal.bad('the address did not answer: %s' % o['error'])
+        return 1
+    want = str(args.upgrade_online or '').strip()
+    if want in ('', 'newest', 'latest'):
+        if not o.get('newer'):
+            pal.good('nothing newer than %s, which runs here' % __version__)
+            return 0
+        want = o['newest']['version']
+    if not [p for p in o.get('packages') or [] if p['version'] == want]:
+        pal.bad('isemon %s is not at %s' % (want, o.get('url')))
+        return 1
+    if Upgrades.ver_tuple(want) <= Upgrades.ver_tuple(__version__):
+        pal.bad('isemon %s is not newer than %s, which runs here' % (want, __version__))
+        return 1
+    pal.title('Upgrade to isemon %s' % want)
+    pal.note('  fetched from %s, its signature checked by root, then install.sh --upgrade;'
+             % o.get('url'))
+    pal.note('  isemon restarts once, and for a minute nothing is read or banned.')
+    if not args.yes:
+        try:
+            if input('  type yes to go on: ').strip().lower() != 'yes':
+                pal.note('  nothing done')
+                return 1
+        except (EOFError, KeyboardInterrupt):
+            pal.note('  nothing done')
+            return 1
+    began = time.time()
+    status, data = api_call('/api/upgrade', 'POST', {'action': 'online_fetch', 'version': want,
+                                                     'start': True}, timeout=600,
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    pal.good(data.get('message') or 'begun')
+    return cmd_upgrade_follow(args, pal, store, began=began)
+
+
+def cmd_downgrade_check(args, pal, store):
+    """The older versions at upgrade_url, and which of them it is safe to go
+    back to (1.10.232)."""
+    session = cli_session(store)
+    status, data = api_call('/api/upgrade', 'POST', {'action': 'online_look'}, timeout=120,
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    back = data.get('back') or {}
+    if as_json(args, back):
+        return 0
+    pal.title('Going back from isemon %s' % __version__)
+    if not back.get('offered'):
+        pal.warn('  going back is switched off: Settings - Upgrades (Offer going back to an older '
+                 'version), or isemon --set downgrade_offered=1')
+    pal.kv('safe as far back as', back.get('floor') or '?')
+    if back.get('error'):
+        pal.bad('  the address did not answer: %s' % back['error'])
+        return 1
+    if not back.get('older'):
+        pal.note('  no older version is at upgrade_url')
+    for p in back.get('older') or []:
+        pal.kv(p['version'], 'safe - the database is left as it is' if p.get('safe')
+               else pal.warn_text('not safe: %s' % p.get('why')))
+        if getattr(args, 'changes', False) and p.get('changelog'):
+            for line in p['changelog'].splitlines():
+                pal.note('      ' + line)
+    for b in back.get('busy') or []:
+        pal.warn('  not now: %s' % b)
+    if any(p.get('safe') for p in back.get('older') or []):
+        pal.note('  isemon --downgrade VERSION goes back to one of those marked safe.')
+    return 0
+
+
+def cmd_downgrade(args, pal, store):
+    """Back to an older version from upgrade_url, as far back as is safe -
+    root checks it again, and the database is left as it is (1.10.232)."""
+    session = cli_session(store)
+    want = str(args.downgrade or '').strip()
+    status, data = api_call('/api/upgrade', 'POST', {'action': 'online_look'}, timeout=120,
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    back = data.get('back') or {}
+    if not back.get('offered'):
+        pal.bad('going back is switched off: Settings - Upgrades (Offer going back to an older '
+                'version), or isemon --set downgrade_offered=1')
+        return 1
+    one = [p for p in back.get('older') or [] if p.get('version') == want]
+    if not one:
+        pal.bad('isemon %s is not at upgrade_url as an older version (isemon --downgrade-check '
+                'lists them)' % want)
+        return 1
+    if not one[0].get('safe'):
+        pal.bad('isemon %s: %s - going back that far is done by hand, with the database put '
+                'back as well' % (want, one[0].get('why')))
+        return 1
+    if back.get('busy'):
+        pal.bad('not now: %s' % '; '.join(back['busy']))
+        return 1
+    pal.title('Going back to isemon %s' % want)
+    pal.note('  from %s; fetched, its signature checked by root, then its install.sh --upgrade.'
+             % __version__)
+    pal.note('  The database is left exactly as it is: %s and later can run on it.'
+             % back.get('floor'))
+    pal.note('  isemon restarts once, and for a minute nothing is read or banned.')
+    if not args.yes:
+        try:
+            if input('  type the version to go back to: ').strip() != want:
+                pal.note('  nothing done')
+                return 1
+        except (EOFError, KeyboardInterrupt):
+            pal.note('  nothing done')
+            return 1
+    began = time.time()
+    status, data = api_call('/api/upgrade', 'POST', {'action': 'go_back', 'version': want},
+                            timeout=600, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    pal.good(data.get('message') or 'begun')
+    return cmd_upgrade_follow(args, pal, store, began=began)
+
+
+def cmd_upgrade_status(args, pal, store):
+    """The last upgrade, what waits, and what the web has."""
+    status, data = api_call('/api/upgrade', timeout=20, session=cli_session(store))
+    if not need_daemon(pal, status, data):
+        return 1
+    if as_json(args, data):
+        return 0
+    pal.title('Upgrades')
+    pal.kv('running now', 'isemon %s' % data.get('version'))
+    pk = data.get('package')
+    pal.kv('waiting', ('isemon %s, signed by %s' % (pk['version'], pk.get('signed_by')))
+           if pk else 'nothing')
+    run = data.get('run') or {}
+    if run:
+        pal.kv('last', '%s to %s, %s' % (run.get('state'), run.get('version'),
+                                        stamp(run.get('at') or 0)))
+    o = (data.get('online') or {}).get('online') or {}
+    if o.get('at'):
+        pal.kv('on the web', ('isemon %s is newer' % o['newest']['version']) if o.get('newer')
+               else ('nothing newer (%s)' % o.get('error') if o.get('error') else 'nothing newer'))
+        pal.kv('looked', stamp(o['at']))
+    if data.get('running'):
+        pal.note('  an upgrade is going on: isemon --upgrade-follow')
     return 0
 
 
@@ -70821,6 +75560,2788 @@ def help_text(parser, pal):
     return '\n'.join(out)
 
 
+# ---------------------------------------------------------------------------
+# The console: isemon run by its menus, on the server's own screen (1.10.228)
+# ---------------------------------------------------------------------------
+# `isemon --console` - and, with `isemon --console-at-login on`, what root sees
+# first after signing in at the console or over SSH. As otp's console, which
+# it is a port of. Everything is done by the same `isemon ...` commands the
+# command line has, each one run as it would be typed, so nothing here can do
+# more than they do; plus the live log and the journal. q leaves it for the
+# ordinary shell; ! opens a shell and comes back when it is closed. English,
+# coloured with colorama when it is there.
+#
+# Options another version adds (the network, the time, remote backups,
+# upgrades from the web) are offered by the menus here whether or not this
+# version has them: the parser is asked first, and one it does not know is
+# "not in this version" rather than a command that fails.
+#
+# The choice at login is kept in /etc itself, where only root writes - not
+# in /etc/isemon, whose group the daemon's account is in and which could
+# have put a link there for root to follow, or a pipe for root's login to
+# hang on.
+CONSOLE_FLAG = Path(os.environ.get('ISEMON_CONSOLE_FLAG', '/etc/isemon-console-login'))
+CONSOLE_PROFILE = Path(os.environ.get('ISEMON_CONSOLE_PROFILE',
+                                      '/etc/profile.d/zz-isemon-console.sh'))
+# The programs the console runs itself, each one replaceable for the tests.
+CONSOLE_SYSTEMCTL = os.environ.get('ISEMON_SYSTEMCTL', 'systemctl')
+CONSOLE_JOURNALCTL = os.environ.get('ISEMON_JOURNALCTL', 'journalctl')
+
+
+def isemon_argv(here=None):
+    """How this program runs itself again (the console's commands): this
+    same file, by this same Python, with nothing taken from the folder it
+    is run in or from PYTHON* in the environment."""
+    return [sys.executable, '-I', os.path.realpath(here or __file__)]
+
+
+_CLI_PARSER_LOCK = threading.Lock()
+
+
+class _ParserBuilt(Exception):
+    """main() has built its parser: stop there."""
+
+
+def cli_parser():
+    """The command line's own parser, exactly as main() builds it - so that
+    the console knows which options this version has. main() is run up to
+    the point where it would read the arguments, and stopped there: nothing
+    is opened, read or written."""
+    got = {}
+
+    def grab(self, args=None, namespace=None):
+        got['parser'] = self
+        raise _ParserBuilt()
+    with _CLI_PARSER_LOCK:
+        real = HelpfulParser.parse_args
+        HelpfulParser.parse_args = grab
+        try:
+            main(['--version'])
+        except _ParserBuilt:
+            pass
+        finally:
+            HelpfulParser.parse_args = real
+    return got.get('parser')
+
+
+def cli_options():
+    """{'--option': its choices or None} for every option this version has."""
+    parser = cli_parser()
+    if parser is None:
+        return {}
+    return {name: (tuple(str(c) for c in action.choices) if action.choices else None)
+            for name, action in parser._option_string_actions.items()}
+
+
+def cli_missing(args, known):
+    """What in `args` (an isemon command line) this version does not have:
+    an option it does not know, or a word one of its options does not take.
+    None when it has all of it."""
+    args = [str(a) for a in args]
+    for i, a in enumerate(args):
+        if not a.startswith('--'):
+            continue
+        name = a.split('=', 1)[0]
+        if name not in known:
+            return name
+        choices = known.get(name)
+        if choices and i + 1 < len(args) and not args[i + 1].startswith('--') \
+                and args[i + 1] not in choices:
+            return '%s %s' % (name, args[i + 1])
+    return None
+
+
+class ConsoleBack(Exception):
+    """Back to the menu."""
+
+
+class Console(object):
+    # The words of the log's levels, by how bad.
+    LOG_TONES = {'error': 'bad', 'crit': 'bad', 'warn': 'warn', 'info': '', 'debug': 'dim'}
+    LIVE_KEEP = 20000
+    HELP = ' Up/Down move   Enter choose   Esc back   ! shell   q leave '
+    ROLES = [('fulladmin', 'fulladmin - everything'),
+             ('banadmin', 'banadmin - looks, bans and lets back in'),
+             ('readonly', 'readonly - looks, changes nothing')]
+
+    def __init__(self, pal, config=None):
+        self.pal = pal
+        self.config = config
+        self.me = os.path.realpath(__file__)
+        self._known = None
+        self.st, self.st_gen, self.st_now, self.closing, self.plain = {}, 0, False, False, False
+        self.backdrop = None
+
+    # ---- small things ---------------------------------------------------------------
+    def base(self):
+        return isemon_argv(self.me) + (['--config', str(self.config)] if self.config else [])
+
+    def known(self):
+        """The options this version has, asked of its parser once."""
+        if self._known is None:
+            try:
+                self._known = cli_options()
+            except Exception:                           # noqa: BLE001
+                self._known = {}
+        return self._known
+
+    def missing(self, args):
+        return cli_missing(args, self.known())
+
+    def out(self, *args):
+        """`isemon ARGS --json`, read; None when it gave no JSON."""
+        if self.missing(args):
+            return None
+        try:
+            got = subprocess.run(self.base() + [str(a) for a in args] + ['--json'],
+                                 capture_output=True, text=True, timeout=60,
+                                 stdin=subprocess.DEVNULL)
+            return json.loads(got.stdout or 'null')
+        except Exception:                               # noqa: BLE001
+            return None
+
+    @staticmethod
+    def _quote(a):
+        a = str(a)
+        return a if re.match(r'^[A-Za-z0-9_@%+=:,./-]+\Z', a) else "'%s'" % a.replace("'", "'\\''")
+
+    def shown(self, args):
+        return '$ isemon ' + ' '.join(self._quote(a) for a in args)
+
+    def dim(self, t):
+        return self.pal.paint(t, self.pal.dim)
+
+    @staticmethod
+    def utf():
+        return 'utf' in (getattr(sys.stdout, 'encoding', '') or '').lower()
+
+    # ---- keys on the ordinary terminal: Esc goes back everywhere --------------------
+    def _raw(self):
+        """The terminal's settings, to be put back; None without a terminal."""
+        try:
+            import termios
+            return termios.tcgetattr(sys.stdin.fileno())
+        except Exception:                               # noqa: BLE001
+            return None
+
+    def _restore(self, was):
+        if was is None:
+            return
+        import termios
+        termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, was)
+
+    def key(self, wait=None):
+        """One key, without Enter: 'esc', 'enter', 'bs', 'up'..., a character -
+        or None when `wait` seconds went by without one."""
+        import tty
+        fd = sys.stdin.fileno()
+        was = self._raw()
+        try:
+            if was is not None:
+                # TCSANOW: what was typed ahead is kept, not thrown away.
+                import termios
+                tty.setcbreak(fd, termios.TCSANOW)
+            r, _w, _x = select.select([fd], [], [], wait)
+            if not r:
+                return None
+            ch = os.read(fd, 1)
+            if ch == b'\x1b':
+                # Alone, Esc; followed at once by more, a key's sequence.
+                r, _w, _x = select.select([fd], [], [], 0.05)
+                if not r:
+                    return 'esc'
+                rest = os.read(fd, 8)
+                full = {b'[5~': 'pgup', b'[6~': 'pgdn', b'[1~': 'home', b'[4~': 'end',
+                        b'[7~': 'home', b'[8~': 'end', b'[H': 'home', b'[F': 'end',
+                        b'OH': 'home', b'OF': 'end'}.get(rest)
+                if full:
+                    return full
+                return {b'[A': 'up', b'[B': 'down', b'[C': 'right', b'[D': 'left', b'OA': 'up',
+                        b'OB': 'down', b'OC': 'right', b'OD': 'left'}.get(rest[:2], 'seq')
+            if ch in (b'\r', b'\n'):
+                return 'enter'
+            if ch in (b'\x7f', b'\x08'):
+                return 'bs'
+            if ch == b'\x03':
+                return 'ctrl-c'
+            if ch == b'\x04':
+                return 'ctrl-d'
+            if ch == b'\x15':
+                return 'ctrl-u'
+            try:
+                return ch.decode('utf-8')
+            except UnicodeDecodeError:
+                more = ch
+                while len(more) < 4:
+                    more += os.read(fd, 1)
+                    try:
+                        return more.decode('utf-8')
+                    except UnicodeDecodeError:
+                        continue
+                return ''
+        finally:
+            self._restore(was)
+
+    def pause(self):
+        sys.stdout.write(self.dim('\n  Enter or Esc - back to the menu '))
+        sys.stdout.flush()
+        if self._raw() is None:
+            try:
+                input()
+            except EOFError:
+                pass
+            return
+        while self.key() not in ('enter', 'esc', 'ctrl-c', 'ctrl-d', 'q'):
+            pass
+        sys.stdout.write('\n')
+
+    def clear_screen(self):
+        if sys.stdout.isatty():
+            sys.stdout.write('\033[H\033[2J')
+            sys.stdout.flush()
+
+    # ---- the bar at the top ---------------------------------------------------------
+    # As `isemon --status --json` says it: how many are banned, whether the
+    # logs are being read, the one verdict the dashboard's header draws, and
+    # a change waiting to be kept where this version has one. Asked again
+    # every 30 s off the screen's thread - the menu never waits for it - and
+    # not at all while nobody sees the bar (a live view, a page, a shell).
+    def status_thread(self):
+        def look():
+            while not self.closing:
+                if self.plain and not self.st_now:
+                    time.sleep(0.5)
+                    continue
+                self.st_now = False
+                st = self.out('--status')
+                active = '?'
+                if shutil.which(CONSOLE_SYSTEMCTL):
+                    try:
+                        active = subprocess.run([CONSOLE_SYSTEMCTL, 'is-active', 'isemon'],
+                                                capture_output=True, text=True,
+                                                timeout=10).stdout.strip() or '?'
+                    except Exception:                   # noqa: BLE001
+                        pass
+                self.st = dict(st if isinstance(st, dict) else {}, _active=active,
+                               _answered=isinstance(st, dict))
+                self.st_gen += 1
+                for _ in range(60):
+                    if self.closing or self.st_now:
+                        break
+                    time.sleep(0.5)
+        threading.Thread(target=look, name='isemon-console-status', daemon=True).start()
+
+    @staticmethod
+    def bar_bits(st, now=None):
+        """The facts on the right of the bar, most wanted first."""
+        now = time.time() if now is None else now
+        bits = []
+        if not st or not st.get('_answered', True):
+            return bits
+        blocked = st.get('blocked') or {}
+        if isinstance(blocked, dict) and blocked.get('now') is not None:
+            bits.append('%s banned' % num_words(int(blocked.get('now') or 0)))
+        tails = st.get('logs')
+        if isinstance(tails, list):
+            if not tails:
+                bits.append('no log set up')
+            else:
+                read_at = max([float(t.get('looked') or 0) for t in tails
+                               if isinstance(t, dict)] or [0])
+                if not read_at:
+                    bits.append('logs not read yet')
+                elif now - read_at <= 120:
+                    bits.append('logs read')
+                else:
+                    bits.append('logs NOT read for %s' % human_span(now - read_at))
+        if st.get('users') is not None:
+            bits.append('%s account(s)' % st.get('users'))
+        return bits
+
+    @staticmethod
+    def status_lines(st, now=None):
+        """The lines under the bar: [(words, tone)] - what is wrong, a switch
+        that is off, a change waiting to be kept."""
+        now = time.time() if now is None else now
+        out = []
+        if not st:
+            return out
+        if st.get('_answered') is False:
+            out.append(('the daemon is not answering (isemon --status)', 'bad'))
+            return out
+        if st.get('blacklist_on') is False:
+            out.append(('BANNING IS OFF - nobody is being kept out', 'warn'))
+        db = st.get('database') or {}
+        if isinstance(db, dict) and db.get('trouble'):
+            out.append(('the database will not open: %s' % str(db['trouble'])[:120], 'bad'))
+        health = st.get('health') or {}
+        if isinstance(health, dict) and health.get('level') not in (None, 'ok') \
+                and health.get('says'):
+            out.append(('! ' + str(health['says']), 'bad' if health['level'] == 'crit'
+                        else 'warn'))
+        for one in st.get('problems') or []:
+            out.append(('! ' + str(one), 'warn'))
+        for key in st.get('settings_unread') or []:
+            out.append(('a setting could not be read: %s' % key, 'warn'))
+        jobs = [j for j in st.get('jobs') or [] if isinstance(j, dict)]
+        if jobs:
+            out.append(('%d long job(s) going on: %s (Status > Long jobs)' % (
+                len(jobs), ', '.join(str(j.get('kind') or j.get('id')) for j in jobs[:3])), ''))
+        # A change on trial (the network, the firewall): kept, or it goes
+        # back by itself. Read as the version that has it says it.
+        trials = st.get('trials') or []
+        if isinstance(trials, dict):
+            trials = [dict(v, kind=k) for k, v in trials.items() if isinstance(v, dict)]
+        for t in trials:
+            if not isinstance(t, dict):
+                continue
+            left = max(0, int(float(t.get('until') or 0) - now))
+            out.append(('%s waits to be kept: %d:%02d left (Network, time and power > Keep or '
+                        'put back)' % ('the new network' if t.get('kind') == 'net'
+                                       else 'the change of the firewall', left // 60, left % 60),
+                        'warn'))
+        return out
+
+    # ---- the menus: a text screen, arrows and Enter -------------------------------
+    def _safe(self, text):
+        """Words a terminal that is not UTF-8 can take: what it cannot, a ?."""
+        text = str(text)
+        return text if self.utf() else text.encode('ascii', 'replace').decode('ascii')
+
+    def _put(self, y, x, text, attr=0):
+        try:
+            h, w = self.scr.getmaxyx()
+            if y < 0 or y >= h or x >= w:
+                return
+            self.scr.addnstr(y, x, self._safe(text), max(0, w - x - (1 if y == h - 1 else 0)),
+                             attr)
+        except Exception:                               # noqa: BLE001 - the edge
+            pass
+
+    def _colours(self):
+        c = self.curses
+        self.A = {'head': c.A_REVERSE, 'sel': c.A_REVERSE | c.A_BOLD, 'ok': c.A_BOLD,
+                  'warn': c.A_BOLD, 'bad': c.A_BOLD, 'dim': c.A_DIM, 'key': c.A_BOLD,
+                  'title': c.A_BOLD}
+        if not self.pal.on or not c.has_colors():
+            return
+        try:
+            c.start_color()
+            try:
+                c.use_default_colors()
+                bg = -1
+            except Exception:                           # noqa: BLE001
+                bg = c.COLOR_BLACK
+            c.init_pair(1, c.COLOR_BLACK, c.COLOR_CYAN)
+            c.init_pair(2, c.COLOR_BLACK, c.COLOR_GREEN)
+            c.init_pair(3, c.COLOR_GREEN, bg)
+            c.init_pair(4, c.COLOR_YELLOW, bg)
+            c.init_pair(5, c.COLOR_RED, bg)
+            c.init_pair(6, c.COLOR_CYAN, bg)
+            self.A.update(head=c.color_pair(1), sel=c.color_pair(2) | c.A_BOLD,
+                          ok=c.color_pair(3) | c.A_BOLD, warn=c.color_pair(4) | c.A_BOLD,
+                          bad=c.color_pair(5) | c.A_BOLD, key=c.color_pair(6) | c.A_BOLD)
+        except Exception:                               # noqa: BLE001
+            pass
+
+    def draw(self, title, items, sel, top, path):
+        scr, A = self.scr, self.A
+        scr.erase()
+        h, w = scr.getmaxyx()
+        st = self.st or {}
+        self._put(0, 0, ' ' * w, A['head'])
+        left = ' isemon %s  %s ' % (__version__, socket.gethostname())
+        self._put(0, 0, left, A['head'] | self.curses.A_BOLD)
+        active = st.get('_active') or '...'
+        svc = ' service %s ' % active
+        self._put(0, len(left) + 1, svc, A['sel'] if active == 'active' else
+                  (A['head'] if active == '...' else self.curses.A_REVERSE | A['bad']))
+        bits = self.bar_bits(st)
+        # Too long for the bar: the last facts give way; still too long, it
+        # goes on the line under the bar.
+        y = 1
+        for n in range(len(bits), -1, -1):
+            right = (' ' + ' | '.join(bits[:n]) + ' ') if n else ''
+            if len(left) + len(svc) + len(right) + 2 < w:
+                if right:
+                    self._put(0, w - len(right), right, A['head'])
+                break
+        if bits and len(left) + len(svc) + len(' ' + bits[0] + ' ') + 2 >= w:
+            self._put(1, 1, ' | '.join(bits), A['key'])
+            y = 2
+        for words, tone in self.status_lines(st)[:max(0, min(5, h - 12))]:
+            self._put(y, 1, words, A.get(tone, 0) if tone else 0)
+            y += 1
+        y += 1
+        self._put(y, 2, path, A['dim'])
+        self._put(y, 2 + len(path), title, A['title'])
+        y += 2
+        room = max(1, h - y - 2)
+        if sel < top:
+            top = sel
+        if sel >= top + room:
+            top = sel - room + 1
+        width = max(20, min(w - 6, max(len(it[1]) for it in items) + 10))
+        for n, it in enumerate(items[top:top + room]):
+            i = top + n
+            line = ' %3s  %s' % (it[0], it[1])
+            line = line + ' ' * max(0, width - len(line))
+            if i == sel:
+                self._put(y + n, 2, line, A['sel'])
+            else:
+                self._put(y + n, 2, ' %3s' % it[0], A['key'])
+                self._put(y + n, 8, it[1])
+        if top > 0:
+            self._put(y - 1, 4, '^ more', A['dim'])
+        if top + room < len(items):
+            self._put(y + room, 4, 'v more', A['dim'])
+        self._put(h - 1, 0, ' ' * (w - 1), A['head'])
+        self._put(h - 1, 0, self.HELP[:w - 1], A['head'])
+        scr.noutrefresh()
+        return top
+
+    def menu(self, title, items, path=''):
+        """items: [(key, words, function[, 'plain'])]; returns 'back' or 'quit'."""
+        c = self.curses
+        sel, top, typed, typed_at, seen = 0, 0, '', 0.0, -1
+        while True:
+            if self.plain:
+                # Back from a command's screen: drawn whole, once.
+                c.reset_prog_mode()
+                self.scr.clear()
+                self.plain = False
+                self.st_now = True
+            top = self.draw(title, items, sel, top, path)
+            c.doupdate()
+            self.backdrop = (lambda _s=sel, _t=top: self.draw(title, items, _s, _t, path))
+            seen = self.st_gen
+            k = None
+            while True:
+                k = self._getkey()
+                if k is not None or self.st_gen != seen:
+                    break
+            if k is None:
+                continue
+            if k == 'resize':
+                self.scr.clear()
+                continue
+            if k in ('up', 'k'):
+                sel = (sel - 1) % len(items)
+            elif k in ('down', 'j', 'tab'):
+                sel = (sel + 1) % len(items)
+            elif k in ('home', 'pgup'):
+                sel = 0
+            elif k in ('end', 'pgdn'):
+                sel = len(items) - 1
+            elif k in ('esc', 'left', 'bs'):
+                if path:
+                    return 'back'
+            elif k in ('q', 'Q'):
+                return 'quit'
+            elif k == '!':
+                self.go_plain(self.shell)
+            elif len(k) == 1 and k.isdigit():
+                now = time.time()
+                typed = (typed if now - typed_at < 1.0 else '') + k
+                typed_at = now
+                hit = [i for i, it in enumerate(items) if it[0] == typed]
+                if hit:
+                    sel = hit[0]
+                    # One that no longer number can grow into: chosen at once.
+                    if not any(it[0].startswith(typed) and it[0] != typed for it in items):
+                        k = 'enter'
+                        typed = ''
+            if k in ('enter', 'right'):
+                it = items[sel]
+                # Run on the text screen - its questions are windows there;
+                # only a view of its own ('plain') leaves it.
+                if len(it) > 3 and it[3] == 'plain':
+                    r = self.go_plain(it[2])
+                else:
+                    try:
+                        r = it[2]()
+                    except ConsoleBack:
+                        r = None
+                if r == 'quit':
+                    return 'quit'
+
+    def go_plain(self, fn):
+        """`fn` on the ordinary terminal - a command's output, the live log -
+        and back to the screen after it."""
+        c = self.curses
+        c.def_prog_mode()
+        c.endwin()
+        self.plain = True
+        if sys.stdout.isatty():
+            sys.stdout.write('\033[H\033[2J\033[3J')
+            sys.stdout.flush()
+        try:
+            return fn()
+        except ConsoleBack:
+            return None
+        except KeyboardInterrupt:
+            print()
+            return None
+
+    def main_menu(self):
+        return [
+            ('1', 'Status and checks', self.m_status),
+            ('2', 'Live log', self.m_live_log, 'plain'),
+            ('3', 'Failed attempts, logins and who is kept out', self.m_records),
+            ('4', 'Banning and the whitelist', self.m_banning),
+            ('5', 'The firewall and the router', self.m_firewall),
+            ('6', 'Accounts of the dashboard', self.m_accounts),
+            ('7', 'Settings', self.m_settings),
+            ('8', 'The database and backups', self.m_backups),
+            ('9', 'Network, time and power', self.m_machine),
+            ('10', 'Upgrades', self.m_upgrades),
+            ('11', 'The service', self.m_service),
+        ]
+
+    def run(self):
+        main = self.main_menu()
+        os.environ.setdefault('ESCDELAY', '25')     # Esc at once, not after a second
+        # Lines and blocks drawn as UTF-8 characters, as PuTTY in UTF-8 shows
+        # them - not the line-drawing set, which it draws as letters.
+        os.environ.setdefault('NCURSES_NO_UTF8_ACS', '1')
+        try:
+            import locale
+            locale.setlocale(locale.LC_ALL, '')
+        except Exception:                               # noqa: BLE001
+            pass
+        # A terminal that is not UTF-8 is written what it can take, never a
+        # character it would stop on.
+        try:
+            sys.stdout.reconfigure(errors='replace')
+        except Exception:                               # noqa: BLE001
+            pass
+        import curses
+        self.curses = curses
+
+        def body(scr):
+            self.scr = scr
+            try:
+                curses.curs_set(0)
+            except Exception:                           # noqa: BLE001
+                pass
+            scr.keypad(True)
+            self._colours()
+            self.status_thread()
+            # It opens on the live log, every line; Esc: the menu.
+            if os.environ.get('ISEMON_CONSOLE_START', 'log') != 'menu':
+                self.go_plain(lambda: self.live_log(''))
+            self.menu('Main menu', main)
+        try:
+            curses.wrapper(body)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.closing = True
+        print(self.dim('  The isemon console is closed - `isemon --console` opens it again.'))
+        return 0
+
+    def shell(self):
+        sh = os.environ.get('SHELL') or '/bin/bash'
+        print(self.dim('  A shell - exit (or Ctrl+D) comes back to the isemon console.'))
+        try:
+            subprocess.call([sh], env=dict(os.environ, ISEMON_CONSOLE='1'))
+        except (KeyboardInterrupt, OSError):
+            pass
+
+    def sub(self, title, items):
+        r = self.menu(title, items, path='Main menu > ')
+        return 'quit' if r == 'quit' else None
+
+    # ---- long output: a screen of its own, scrolled ------------------------------
+    # The terminal is not scrolled, a window (top) into the lines is; each
+    # frame is one write (home, each line cleared to its end, the rest
+    # cleared) so nothing blinks, and the scroll bar is drawn after it into
+    # the last column. A window made bigger or smaller is drawn again.
+    def capture(self, argv, env=None):
+        """What a command writes, its colour kept: (text, exit code)."""
+        e = dict(os.environ, **(env or {}))
+        if self.pal.on:
+            e.update(FORCE_COLOR='1', SYSTEMD_COLORS='1')
+        else:
+            e['NO_COLOR'] = '1'
+        e['COLUMNS'] = str(max(60, self._cols() - 2))
+        try:
+            got = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                 stdin=subprocess.DEVNULL, env=e, timeout=1800)
+            return got.stdout.decode('utf-8', 'replace'), got.returncode
+        except subprocess.TimeoutExpired:
+            return 'it took more than 30 minutes and was stopped', 124
+        except OSError as ex:
+            return str(ex), 127
+
+    @staticmethod
+    def _cols():
+        try:
+            return os.get_terminal_size(sys.__stdout__.fileno()).columns
+        except (OSError, ValueError, AttributeError):
+            return 100
+
+    @staticmethod
+    def _fit(line, width):
+        """`line` cut to `width` columns on the screen, its colours kept."""
+        out, seen = [], 0
+        for part in re.split(r'(\x1b\[[0-9;?]*[A-Za-z])', line):
+            if not part:
+                continue
+            if part.startswith('\x1b['):
+                out.append(part)
+                continue
+            if seen + len(part) > width:
+                out.append(part[:max(0, width - seen)])
+                out.append('\x1b[0m')
+                return ''.join(out)
+            out.append(part)
+            seen += len(part)
+        return ''.join(out) + ('\x1b[0m' if '\x1b[' in line else '')
+
+    def page(self, title, text):
+        lines = [ln.expandtabs(8).replace('\r', '') for ln in text.rstrip('\n').split('\n')] or ['']
+        if not self.pal.on:
+            lines = [self._plain_text(ln) for ln in lines]
+        if self._raw() is None or not sys.stdout.isatty():
+            print(text)
+            return
+        on = self.pal.on
+        out = sys.stdout
+        out.write('\x1b[?1049h\x1b[?25l')
+        top, size = 0, None
+        try:
+            while True:
+                try:
+                    sz = os.get_terminal_size(sys.__stdout__.fileno())
+                    cols, rows = max(20, sz.columns), max(5, sz.lines)
+                except OSError:
+                    cols, rows = 100, 30
+                avail = max(3, rows - 2)
+                top = max(0, min(top, max(0, len(lines) - avail)))
+                end = min(len(lines), top + avail)
+                head = ' %s ' % title
+                where = ' %d-%d of %d ' % (top + 1, end, len(lines)) if len(lines) > avail \
+                    else ' %d lines ' % len(lines)
+                bar = (head + ' ' * max(0, cols - len(head) - len(where)) + where)[:cols]
+                foot = (' Up/Down PgUp/PgDn Home/End scroll   Esc, q or Enter back ')[:cols - 1]
+                body = [self._fit(ln, cols - 2) for ln in lines[top:end]]
+                body += [''] * (avail - len(body))
+                frame = ['\x1b[7m' + bar + '\x1b[0m'] + body + \
+                    ['\x1b[7m' + foot + ' ' * max(0, cols - 1 - len(foot)) + '\x1b[0m']
+                out.write('\x1b[H' + '\n'.join(ln + '\x1b[K' for ln in frame) + '\x1b[J')
+                self._scrollbar(2, avail, len(lines), avail, top, cols, on)
+                out.flush()
+                size = (cols, rows)
+                while True:
+                    k = self.key(0.3)
+                    if k is not None:
+                        break
+                    try:
+                        sz = os.get_terminal_size(sys.__stdout__.fileno())
+                        if (max(20, sz.columns), max(5, sz.lines)) != size:
+                            break
+                    except OSError:
+                        pass
+                if k in ('esc', 'q', 'enter', 'ctrl-c', 'ctrl-d'):
+                    return
+                if k in ('up', 'k'):
+                    top -= 1
+                elif k in ('down', 'j'):
+                    top += 1
+                elif k in ('pgup', 'b'):
+                    top -= avail - 1
+                elif k in ('pgdn', ' ', 'f'):
+                    top += avail - 1
+                elif k in ('home', 'g'):
+                    top = 0
+                elif k in ('end', 'G'):
+                    top = len(lines)
+        finally:
+            out.write('\x1b[?25h\x1b[?1049l')
+            out.flush()
+
+    def _scrollbar(self, base_row, nrows, total, visible, top, cols, on=True):
+        if total <= visible or nrows <= 0:
+            return
+        thumb = max(1, min(nrows, round(nrows * visible / total)))
+        span = nrows - thumb
+        denom = max(1, total - visible)
+        tstart = max(0, min(span, round(span * (top / denom))))
+        utf = self.utf()
+        parts = ['\x1b[?7l']
+        for r in range(nrows):
+            hit = tstart <= r < tstart + thumb
+            g = ('█' if hit else '│') if utf else ('#' if hit else '|')
+            if on:
+                g = ('\x1b[36m' if hit else '\x1b[2m') + g + '\x1b[0m'
+            parts.append('\x1b[%d;%dH%s' % (base_row + r, cols, g))
+        parts.append('\x1b[?7h')
+        sys.stdout.write(''.join(parts))
+
+    def show_live(self, *args, env=None):
+        """`isemon ARGS` straight on the terminal - one that asks something, or
+        shows its progress as it goes."""
+        if any(a is None or str(a).strip() == '' for a in args):
+            return
+        self.clear_screen()
+        gone = self.missing(args)
+        print(self.dim(self.shown(args)))
+        if gone:
+            print(self.pal.warn_text('  %s is not in this version (isemon %s)' % (gone,
+                                                                                 __version__)))
+        else:
+            try:
+                subprocess.call(self.base() + [str(a) for a in args]
+                                + ([] if self.pal.on else ['--no-color']),
+                                env=dict(os.environ, **(env or {})))
+            except KeyboardInterrupt:
+                print()
+        self.pause()
+
+    # ---- live views: scrolled, and what is typed is a grep ------------------------
+    # The log and the journal come into one screen of their own: the newest at
+    # the bottom, followed while the view is at the end. Up/PgUp/Home scroll
+    # back (the view then stays where it is and counts what came meanwhile),
+    # End follows again; a bar on the right shows where the window is.
+    # Whatever is typed filters the lines as `grep -i` does (a regular
+    # expression, or the words as they are when it is not one), the hits
+    # marked; Backspace takes a character back, Ctrl+U all of them. Esc
+    # clears the filter first, then goes back to the menu.
+    @staticmethod
+    def log_path():
+        """Where the daemon writes its log: the one it opened, where this is
+        the daemon, or the one it opens."""
+        return Path(_LOG_PATH) if _LOG_PATH else (Path(LOG_DIR) / 'isemon.log')
+
+    def m_live_log(self):
+        return self.live_log('')
+
+    def live_log(self, what=''):
+        path = self.log_path()
+        st = {'f': None, 'ino': None}
+
+        def first():
+            try:
+                f = open(str(path), 'r', encoding='utf-8', errors='replace')
+            except OSError as e:
+                return ['%s cannot be read: %s' % (path, e)]
+            st['f'] = f
+            st['ino'] = os.fstat(f.fileno()).st_ino
+            # Read from near the end only: a log can be gigabytes.
+            f.seek(0, 2)
+            start = max(0, f.tell() - 2 * 1024 * 1024)
+            f.seek(start)
+            got = f.read().splitlines()
+            # A line cut in two by where the reading began is left out.
+            return (got[1:] if start and len(got) > 1 else got)[-self.LIVE_KEEP:]
+
+        def more():
+            f = st['f']
+            if f is None:
+                return []
+            out = []
+            while len(out) < 5000:
+                ln = f.readline()
+                if not ln:
+                    break
+                out.append(ln.rstrip('\n'))
+            if not out:
+                try:
+                    if os.stat(str(path)).st_ino != st['ino']:      # rotated
+                        f.close()
+                        st['f'] = open(str(path), 'r', encoding='utf-8', errors='replace')
+                        st['ino'] = os.fstat(st['f'].fileno()).st_ino
+                except OSError:
+                    pass
+            return out
+        try:
+            self.live_view('Live log  %s' % path, first, more, self.log_text, what)
+        finally:
+            if st['f']:
+                st['f'].close()
+
+    def journal(self):
+        """journalctl -u isemon -f, in the live view."""
+        try:
+            pr = subprocess.Popen([CONSOLE_JOURNALCTL, '-u', 'isemon', '-f', '-n', '400',
+                                   '--no-pager'], stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                  text=True, errors='replace')
+        except OSError as e:
+            self.page('journalctl', str(e))
+            return
+        q = collections.deque()
+
+        def pump():
+            for ln in pr.stdout:
+                q.append(ln.rstrip('\n'))
+        threading.Thread(target=pump, daemon=True).start()
+
+        def more():
+            out = []
+            while q:
+                out.append(q.popleft())
+            return out
+
+        def paint(ln):
+            # The journal's own head (when, where, who), then the log's line.
+            m = re.match(r'^(\S+ +\d+ [\d:]+ \S+ \S+: )(.*)$', ln)
+            if m:
+                return self.dim(m.group(1)) + self.log_text(m.group(2))
+            return self.log_text(ln)
+        try:
+            self.live_view('journalctl -u isemon -f', lambda: [], more, paint, '')
+        finally:
+            pr.terminate()
+            try:
+                pr.wait(3)
+            except Exception:                           # noqa: BLE001
+                pr.kill()
+
+    @staticmethod
+    def grep(find):
+        """What is typed as `grep -i` takes it: a test of one line."""
+        if not find:
+            return lambda s: True
+        try:
+            rx = re.compile(find, re.I)
+            return lambda s: rx.search(s) is not None
+        except re.error:
+            low = find.lower()
+            return lambda s: low in s.lower()
+
+    def mark(self, coloured, find):
+        """The hits of `find` shown reversed - in the text between the colours."""
+        if not find or not self.pal.on:
+            return coloured
+        try:
+            rx = re.compile(find, re.I)
+        except re.error:
+            rx = re.compile(re.escape(find), re.I)
+        out = []
+        for part in re.split(r'(\x1b\[[0-9;?]*[A-Za-z])', coloured):
+            if part.startswith('\x1b['):
+                out.append(part)
+            elif part:
+                out.append(rx.sub(lambda m: '\x1b[7m' + m.group(0) + '\x1b[27m'
+                                  if m.group(0) else '', part))
+        return ''.join(out)
+
+    @staticmethod
+    def _slice(line, start, width):
+        """Columns start..start+width of `line` on the screen, its colours kept."""
+        out, seen = [], 0
+        end = start + width
+        for part in re.split(r'(\x1b\[[0-9;?]*[A-Za-z])', line):
+            if not part:
+                continue
+            if part.startswith('\x1b['):
+                out.append(part)
+                continue
+            a, b = seen, seen + len(part)
+            if b > start and a < end:
+                out.append(part[max(0, start - a):max(0, end - a)])
+            seen = b
+        return ''.join(out) + ('\x1b[0m' if '\x1b[' in line else '')
+
+    def live_view(self, title, first, more, paint, find=''):
+        """The live screen: `first()` the lines there are, `more()` those come
+        since (asked a few times a second), `paint(line)` its colours."""
+        p = self.pal
+        if self._raw() is None or not sys.stdout.isatty():
+            for ln in first() + more():
+                print(ln)
+            return
+        import termios
+        import tty
+        fd = sys.stdin.fileno()
+        was = termios.tcgetattr(fd)
+        out = sys.stdout
+        lines = []                       # (plain, coloured)
+
+        def add(raw):
+            for ln in raw:
+                ln = ln.expandtabs(8).replace('\r', '')
+                col = (paint(ln) if paint else ln) if p.on else self._plain_text(ln)
+                lines.append((self._plain_text(col), col))
+        add(first())
+        test = self.grep(find)
+        hits = [i for i, x in enumerate(lines) if test(x[0])]
+        top, follow, xoff, new, dirty, size = 0, True, 0, 0, True, None
+        tty.setcbreak(fd, termios.TCSANOW)
+        out.write('\x1b[?1049h\x1b[?25l')
+        try:
+            while True:
+                came = more()
+                if came:
+                    n0 = len(lines)
+                    add(came)
+                    got = [i for i in range(n0, len(lines)) if test(lines[i][0])]
+                    hits += got
+                    if not follow:
+                        new += len(got)
+                    if len(lines) > self.LIVE_KEEP * 1.25:
+                        cut = len(lines) - self.LIVE_KEEP
+                        gone = sum(1 for i in hits if i < cut)
+                        del lines[:cut]
+                        hits = [i - cut for i in hits if i >= cut]
+                        top = max(0, top - gone)
+                    dirty = dirty or bool(got)
+                try:
+                    sz = os.get_terminal_size(sys.__stdout__.fileno())
+                    cols, rows = max(20, sz.columns), max(5, sz.lines)
+                except OSError:
+                    cols, rows = 100, 30
+                if (cols, rows) != size:
+                    size, dirty = (cols, rows), True
+                avail = max(3, rows - 2)
+                last = max(0, len(hits) - avail)
+                if follow:
+                    top = last
+                top = max(0, min(top, last))
+                if dirty:
+                    end = min(len(hits), top + avail)
+                    where = (' %d-%d of %d ' % (top + 1, end, len(hits))) if hits else ' 0 '
+                    state = ' following ' if follow else (' PAUSED%s ' % (
+                        ', %d new below' % new if new else ''))
+                    head = ' %s ' % title
+                    gp = '  grep -i: %s_ ' % find if find else '  type to grep '
+                    right = state + where
+                    bar = (head + gp)[:max(0, cols - len(right))]
+                    bar = bar + ' ' * max(0, cols - len(bar) - len(right)) + right
+                    foot = (' type: grep (any case)  Bksp  Ctrl+U clear   Up/Down PgUp/PgDn '
+                            'Home  End: follow   Left/Right  Esc back ')[:cols - 1]
+                    body = [self._slice(self.mark(lines[i][1], find), xoff, cols - 2)
+                            for i in hits[top:end]]
+                    if not hits:
+                        body = ['', '   ' + (self.dim('nothing with "%s" yet' % find) if find
+                                             else self.dim('nothing yet'))]
+                    body += [''] * (avail - len(body))
+                    tone = '\x1b[33m' if (not follow and p.on) else ''
+                    frame = [tone + '\x1b[7m' + bar[:cols] + '\x1b[0m'] + body[:avail] + \
+                        ['\x1b[7m' + foot + ' ' * max(0, cols - 1 - len(foot)) + '\x1b[0m']
+                    out.write('\x1b[H' + '\n'.join(ln + '\x1b[K' for ln in frame) + '\x1b[J')
+                    self._scrollbar(2, avail, len(hits), avail, top, cols, p.on)
+                    out.flush()
+                    dirty = False
+                k = self.key(0.25)
+                if k is None:
+                    continue
+                dirty = True
+                if k in ('esc', 'ctrl-c', 'ctrl-d'):
+                    if find and k == 'esc':
+                        find = ''
+                    else:
+                        return
+                elif k == 'up':
+                    follow, top = False, top - 1
+                elif k == 'down':
+                    top += 1
+                    follow = top >= last
+                elif k == 'pgup':
+                    follow, top = False, top - (avail - 1)
+                elif k == 'pgdn':
+                    top += avail - 1
+                    follow = top >= last
+                elif k == 'home':
+                    follow, top = False, 0
+                elif k in ('end', 'enter'):
+                    follow, new = True, 0
+                elif k == 'left':
+                    xoff = max(0, xoff - 20)
+                    continue
+                elif k == 'right':
+                    xoff += 20
+                    continue
+                elif k == 'bs':
+                    find = find[:-1]
+                elif k == 'ctrl-u':
+                    find = ''
+                elif k and len(k) == 1 and k.isprintable():
+                    find += k
+                else:
+                    continue
+                if k in ('bs', 'ctrl-u', 'esc') or (k and len(k) == 1 and k.isprintable()):
+                    test = self.grep(find)
+                    hits = [i for i, x in enumerate(lines) if test(x[0])]
+                    follow, new = True, 0
+                if follow:
+                    new = 0
+        finally:
+            out.write('\x1b[?25h\x1b[?1049l')
+            out.flush()
+            termios.tcsetattr(fd, termios.TCSADRAIN, was)
+
+    RE_LOG_LINE = re.compile(r'^(\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}) \[(\w+)\](\s+)(.*)$')
+
+    def log_text(self, ln):
+        """One line of the log, coloured: the time dim, the level by how bad,
+        what it is about in cyan, addresses in magenta, banned and refused in
+        red, let back in and signed in in green, a whole warning in yellow
+        and a whole error in red. Only colour is added - taken off again the
+        line is exactly what was in the file, column for column."""
+        p = self.pal
+        ln = ln.rstrip('\n')
+        m = self.RE_LOG_LINE.match(ln)
+        if not m or not p.on:
+            return ln
+        lvl, gap, rest = m.group(2), m.group(3), m.group(4)
+        tone = self.LOG_TONES.get(lvl, '')
+        whole = {'bad': p.c_bad, 'warn': p.c_warn, 'dim': p.dim}.get(tone, '')
+        what = re.match(r'^([a-z][a-z0-9 _/-]{1,30}): (.*)$', rest)
+        head, body = (what.group(1) + ':', what.group(2)) if what else ('', rest)
+
+        def back():
+            return p.off + whole
+
+        def words(t):
+            t = re.sub(r'(?<![\w.:])(\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?|'
+                       r'[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{0,4}){2,7}(?:/\d{1,3})?)(?![\w.:])',
+                       lambda x: p.c_addr + x.group(1) + back(), t)
+            t = re.sub(r'\b(let back in|let in|signed in|accepted|unbanned|synced|saved|ok)\b',
+                       lambda x: p.c_ok + x.group(1) + back(), t)
+            t = re.sub(r'\b(banned|refused|rejected|failed|wrong|cannot|not answering)\b',
+                       lambda x: p.c_bad + x.group(1) + back(), t)
+            return t
+        body = whole + words(body) + (p.off if whole else '')
+        lv = (whole or p.c_info) + '[' + lvl + ']' + p.off
+        return '%s %s%s%s%s' % (self.dim(m.group(1)), lv, gap,
+                                (p.c_info + head + p.off + ' ') if head else '', body)
+
+    # ---- 1 status -------------------------------------------------------------------
+    def m_status(self):
+        def events():
+            got = self.form('Events', [
+                {'key': 'n', 'label': 'how many', 'kind': 'number', 'value': '40',
+                 'range': (1, 5000), 'need': True},
+                {'key': 'q', 'label': 'only with the words', 'help':
+                 'Empty: every event. Or a name, an address or a word.'}])
+            if got:
+                self.act('--events', '--limit', got['n'],
+                         *(['--search', got['q']] if got['q'] else []))
+
+        def stop_job():
+            got = self.out('--jobs') or {}
+            jobs = self._rows(got, 'jobs', 'rows')
+            going = [j for j in jobs if isinstance(j, dict) and not j.get('done')]
+            if not going:
+                self.note('Stop a long job', 'No long job is going on.')
+                return
+            name = self.choose('Stop a long job', [
+                (str(j.get('id') or j.get('kind')), '%s  %s' % (j.get('id') or '',
+                                                                 j.get('kind') or ''))
+                for j in going], 'It stops after the batch it is in and keeps what it has '
+                'already done.')
+            if name and self.confirm('Stop a long job', 'The job %s stops after the batch it '
+                                     'is in.' % name, 'Stop it'):
+                self.act('--stop-job', name)
+        return self.sub('Status and checks', [
+            ('1', 'Status', lambda: self.act('--status')),
+            ('2', 'Status, every log file on a line of its own',
+             lambda: self.act('--status', '--files')),
+            ('3', 'Health check', lambda: self.act('--check')),
+            ('4', 'Long jobs going on', lambda: self.act('--jobs')),
+            ('5', 'Stop a long job', stop_job),
+            ('6', 'Events of the daemon', events),
+            ('7', 'What root has in place (nginx, TLS, the firewall)',
+             lambda: self.act('--web-status')),
+        ])
+
+    # ---- 3 records ------------------------------------------------------------------
+    KINDS = [('vpn', 'the VPN'), ('tacacs', 'TACACS logins'), ('commands', 'commands typed'),
+             ('acl', 'firewall lists handed out'), ('all', 'all of them')]
+
+    def _list_fields(self, kinds=False):
+        fields = [
+            {'key': 'n', 'label': 'how many', 'kind': 'number', 'value': '40',
+             'range': (1, 100000), 'need': True},
+            {'key': 'hours', 'label': 'only the last hours', 'kind': 'number', 'value': '',
+             'range': (1, 87600), 'help': 'Empty: as far back as there is.'},
+            {'key': 'q', 'label': 'only with the words',
+             'help': 'Empty: every row. Or a name, an address, a device.'}]
+        if kinds:
+            fields.insert(0, {'key': 'kind', 'label': 'which', 'kind': 'choice',
+                              'value': 'vpn', 'options': self.KINDS})
+        return fields
+
+    def _list_args(self, got):
+        return (['--limit', got['n']] + (['--hours', got['hours']] if got.get('hours') else [])
+                + (['--search', got['q']] if got.get('q') else []))
+
+    @staticmethod
+    def ip_bad(v):
+        try:
+            ipaddress.ip_network(str(v).strip(), strict=False)
+            return None
+        except ValueError:
+            return 'not an address or a subnet'
+
+    def m_records(self):
+        def failed():
+            got = self.form('Failed attempts', self._list_fields())
+            if got:
+                self.act('--failed', *self._list_args(got))
+
+        def passed():
+            got = self.form('Successful logins', self._list_fields(kinds=True))
+            if got:
+                self.act('--passed', '--kind', got['kind'], *self._list_args(got))
+
+        def address():
+            ip = self.ask_one('Everything about one address', 'the address', help_=(
+                'An IPv4 or IPv6 address: its failed attempts, logins, bans and where it '
+                'is from.'), check=lambda v, _: self.ip_bad(v))
+            if ip:
+                self.act('--address', ip)
+
+        def ptr():
+            ip = self.ask_one('What the name servers call an address', 'the address',
+                              check=lambda v, _: self.ip_bad(v))
+            if ip:
+                self.act('--ptr', ip)
+        return self.sub('Failed attempts, logins and who is kept out', [
+            ('1', 'Failed attempts', failed),
+            ('2', 'Successful logins', passed),
+            ('3', 'Who is kept out (Enter: let one back in)', self.banned_list),
+            ('4', 'Who is kept out, as text', lambda: self.act('--blocked')),
+            ('5', 'Everything about one address', address),
+            ('6', 'What the name servers call an address', ptr),
+        ])
+
+    # ---- 4 banning ------------------------------------------------------------------
+    def banned_list(self):
+        def load():
+            return self._rows(self.out('--blocked'), 'blocked', 'rows')
+        cols = [('address', lambda r: r.get('ip'), 40, None),
+                ('cc', lambda r: r.get('country') or '-', 3, None),
+                ('left', lambda r: 'let through' if r.get('spared') else (
+                    'for good' if r.get('forever') else human_span(r.get('left') or 0)), 12,
+                 lambda r: 'ok' if r.get('spared') else ('bad' if r.get('forever') else 'warn')),
+                ('by', lambda r: r.get('by') or ('auto' if r.get('auto') else '-'), 14, None),
+                ('why', lambda r: r.get('why') or '', 50, lambda r: 'dim')]
+        return self.pick('Who is kept out', load, cols, self.banned_do, 'nobody is banned')
+
+    def banned_do(self, r):
+        ip = r.get('ip')
+        what = self.choose(ip, [('show', 'Everything about it'),
+                                ('unban', 'Let it back in')], r.get('why') or '')
+        if what == 'show':
+            self.act('--address', str(ip).split('/')[0])
+        elif what == 'unban' and self.confirm('Let back in', '%s is let back in and taken '
+                                              'off the firewall.' % ip, 'Let it in'):
+            self.act('--unban', ip)
+
+    def ban_new(self):
+        got = self.form('Keep an address out', [
+            {'key': 'addr', 'label': 'address or subnet', 'need': True,
+             'help': '192.0.2.10, 192.0.2.0/24 or an IPv6 one. A whitelisted one is refused.',
+             'check': lambda v, _: self.ip_bad(v)},
+            {'key': 'how', 'label': 'for how long', 'kind': 'choice', 'value': 'set',
+             'options': [('set', 'as the settings say'), ('minutes', 'some minutes'),
+                         ('forever', 'for good')]},
+            {'key': 'minutes', 'label': 'minutes', 'kind': 'number', 'need': True,
+             'value': '60', 'range': (1, 5256000), 'when': lambda v: v.get('how') == 'minutes'},
+            {'key': 'why', 'label': 'why', 'help': 'Written beside it, for whoever looks.'}])
+        if not got:
+            return
+        extra = (['--minutes', got['minutes']] if got['how'] == 'minutes' else
+                 (['--forever'] if got['how'] == 'forever' else []))
+        self.act('--ban', got['addr'], *extra, *(['--why', got['why']] if got['why'] else []))
+
+    def unban_one(self):
+        ip = self.ask_one('Let an address back in', 'the address', help_=(
+            'As it is banned: one address or the subnet.'), check=lambda v, _: self.ip_bad(v))
+        if ip and self.confirm('Let back in', '%s is let back in and taken off the '
+                               'firewall.' % ip, 'Let it in'):
+            self.act('--unban', ip)
+
+    def unban_all(self):
+        if self.confirm('Let everybody back in', 'Every ban is lifted and the firewall '
+                        'emptied of ours. This cannot be undone.', 'Let them all in',
+                        danger=True):
+            self.act('--unban', 'all')
+
+    def whitelist(self):
+        def load():
+            return self._rows(self.out('--whitelist'), 'rows')
+
+        def do(r):
+            ip = r.get('ip')
+            if r.get('from') != 'list':
+                self.note(ip, '%s is in the never_block setting - it is changed in Settings.'
+                          % ip)
+                return
+            if self.confirm('Off the whitelist', '%s may be banned again.' % ip,
+                            'Take it off'):
+                self.act('--unallow', ip)
+        cols = [('address', lambda r: r.get('ip'), 40, None),
+                ('from', lambda r: 'the list' if r.get('from') == 'list' else 'never_block',
+                 12, None),
+                ('added', lambda r: self._when(r.get('at')), 16, None),
+                ('by', lambda r: r.get('by') or '-', 14, None),
+                ('note', lambda r: r.get('note') or '', 40, lambda r: 'dim')]
+        return self.pick('The whitelist', load, cols, do, 'nothing is whitelisted')
+
+    def allow_new(self):
+        got = self.form('Add to the whitelist', [
+            {'key': 'addr', 'label': 'address or subnet', 'need': True,
+             'help': 'Nothing may ever ban it; a ban it has now is lifted.',
+             'check': lambda v, _: self.ip_bad(v)}])
+        if got:
+            self.act('--allow', got['addr'])
+
+    def unban_source(self):
+        s = self.choose('Let go of one source\'s bans', [
+            (k, '%s  %s' % (k, BAN_SOURCE_WORDS.get(k, ''))) for k in BAN_SOURCES],
+            'An address banned by another source as well stays banned.')
+        if s and self.confirm('Let go of the bans of %s' % s, 'Every ban %s stands behind '
+                              'alone is lifted.' % BAN_SOURCE_WORDS.get(s, s), 'Let them go',
+                              danger=True):
+            self.act('--unban-source', s)
+
+    def purge(self):
+        w = self.choose('Take our entries off the router', [
+            ('both', 'both lists - the banned and the countries'),
+            ('blocked', 'the list of the banned'), ('geo', 'the country list')],
+            'Only what isemon put there is taken off; nothing else on the router is touched.')
+        if w and self.confirm('Take ours off the router', 'The router lets the banned '
+                              'through until the list is written again (Write the list now).',
+                              'Take them off', danger=True):
+            self.act('--mikrotik', '--purge', w)
+
+    def m_banning(self):
+        def rescan():
+            if self.confirm('Go back over the logs', 'Every log switched on is read again '
+                            'from the start and the bans the records earn are applied. On a '
+                            'big site this takes minutes.', 'Go back over them'):
+                self.show_live('--rescan')
+        return self.sub('Banning and the whitelist', [
+            ('1', 'Keep an address out', self.ban_new),
+            ('2', 'Let an address back in', self.unban_one),
+            ('3', 'Who is kept out (Enter: let one back in)', self.banned_list),
+            ('4', 'Let everybody back in', self.unban_all),
+            ('5', 'The whitelist (Enter: take one off)', self.whitelist),
+            ('6', 'Add to the whitelist', self.allow_new),
+            ('7', 'Where the bans come from', lambda: self.act('--ban-sources')),
+            ('8', 'Let go of one source\'s bans', self.unban_source),
+            ('9', 'Fold the banned into subnets: what it would do',
+             lambda: self.act('--fold')),
+            ('10', 'Take our entries off the router', self.purge),
+            ('11', 'Go back over every log (rescan)', rescan),
+        ])
+
+    # ---- 5 the firewall and the router -----------------------------------------------
+    def m_firewall(self):
+        def which(title):
+            return self.choose(title, [('1', 'Firewall 1'), ('2', 'Firewall 2')])
+
+        def fw_test():
+            n = which('Reach a firewall')
+            if n:
+                self.act('--fw-test', n)
+
+        def fw_key():
+            n = which('A firewall\'s ssh key')
+            if not n:
+                return
+            w = self.choose('The ssh key of firewall %s' % n, [
+                ('show', 'Show its public half'), ('generate', 'Make a new one'),
+                ('forget', 'Forget it')])
+            if w in ('generate', 'forget') and not self.confirm(
+                    'The ssh key of firewall %s' % n, 'The key it has now stops working: the '
+                    'firewall must be given the new public half.' if w == 'generate' else
+                    'The key is forgotten; the firewall can no longer be reached by it.',
+                    'Make a new one' if w == 'generate' else 'Forget it', danger=True):
+                return
+            if w:
+                self.act('--fw-key', w, '--fw', n)
+
+        def ios_acl():
+            fam = self.choose('A Cisco IOS access list', [('ipv4', 'IPv4'), ('ipv6', 'IPv6')],
+                              'The addresses banned for good, to paste into a router.')
+            if fam:
+                self.act('--ios-acl', fam)
+
+        def fetch():
+            w = self.choose('Fetch now', [('feeds', 'The public lists of bad addresses'),
+                                          ('geo', 'The country database')])
+            if w:
+                self.act('--fetch', w)
+        return self.sub('The firewall and the router', [
+            ('1', 'What the router is carrying', lambda: self.act('--mikrotik')),
+            ('2', 'Write the list to the router now', lambda: self.act('--mikrotik', '--sync')),
+            ('3', 'Reach a firewall (nothing is written)', fw_test),
+            ('4', 'A firewall\'s ssh key', fw_key),
+            ('5', 'Fill the country list on the router', lambda: self.act('--geo-sync')),
+            ('6', 'Take our entries off the router', self.purge),
+            ('7', 'The published ban list', lambda: self.act('--banfeed')),
+            ('8', 'The banned as a Cisco IOS access list', ios_acl),
+            ('9', 'Fetch the public lists or the country database', fetch),
+        ])
+
+    # ---- 6 accounts -----------------------------------------------------------------
+    def _pw_fields(self):
+        return [{'key': 'pw', 'label': 'password', 'kind': 'secret', 'need': True,
+                 'help': 'At least 8 characters; only stars are shown.',
+                 'check': lambda v, _: None if len(v) >= 8 else 'at least 8 characters'},
+                {'key': 'again', 'label': 'again', 'kind': 'secret', 'need': True,
+                 'check': lambda v, vals: None if v == vals.get('pw')
+                 else 'the two passwords are not the same'}]
+
+    def m_accounts(self):
+        def load():
+            return self._rows(self.out('--users'), 'users')
+
+        cols = [('account', lambda u: u.get('name'), 24, None),
+                ('role', lambda u: u.get('role'), 10, None),
+                ('state', lambda u: 'off' if u.get('disabled') else (
+                    'must change' if u.get('must_change') else 'on'), 11,
+                 lambda u: 'dim' if u.get('disabled') else 'ok'),
+                ('last in', lambda u: self._when(u.get('last_in')), 16, None),
+                ('note', lambda u: u.get('note') or '', 40, lambda u: 'dim')]
+        return self.sub('Accounts of the dashboard', [
+            ('1', 'Browse them (Enter: what to do with one)',
+             lambda: self.pick('Accounts of the dashboard', load, cols, self.account_do,
+                               'nobody can open the dashboard yet')),
+            ('2', 'Make one', self.account_new),
+            ('3', 'All of them as text', lambda: self.act('--users')),
+        ])
+
+    def account_do(self, u):
+        name = u['name']
+        opts = [('pw', 'Set its password'), ('role', 'Change its role (now %s)' % u.get('role')),
+                ('on', 'Switch it on again') if u.get('disabled') else ('off', 'Switch it off'),
+                ('show', 'Show it all'), ('delete', 'Delete it')]
+        what = self.choose(name, opts, '%s, %s' % (u.get('role'),
+                                                   'off' if u.get('disabled') else 'on'))
+        if what == 'pw':
+            got = self.form('A new password for %s' % name, self._pw_fields() + [
+                {'key': 'must', 'label': 'then', 'kind': 'choice', 'value': 'no',
+                 'options': [('no', 'it keeps this one'),
+                             ('yes', 'it chooses its own at the next sign-in')]}])
+            if got:
+                # The password by the environment, never on the command line
+                # where `ps` shows it.
+                self.act('--passwd', name, *(['--must-change'] if got['must'] == 'yes' else []),
+                         env={'ISEMON_PASSWORD': got['pw']})
+        elif what == 'role':
+            roles = [x[0] for x in self.ROLES]
+            r = self.choose('The role of %s' % name, self.ROLES,
+                            cur=roles.index(u.get('role')) if u.get('role') in roles else 0)
+            if r and r != u.get('role'):
+                self.act('--set-role', name, '--role', r)
+        elif what == 'off':
+            if self.confirm('Switch off', '%s can no longer sign in to the dashboard.' % name,
+                            'Switch it off'):
+                self.act('--disable-user', name)
+        elif what == 'on':
+            self.act('--enable-user', name)
+        elif what == 'show':
+            self.details(name, u)
+        elif what == 'delete':
+            if self.confirm('Delete', 'The account %s is deleted. This cannot be undone.' % name,
+                            'Delete it', danger=True):
+                self.act('--del-user', name)
+
+    def account_new(self):
+        got = self.form('Make an account', [
+            {'key': 'name', 'label': 'name', 'need': True,
+             'help': 'What it signs in with: letters, digits, . _ - @',
+             'check': lambda v, _: None if re.match(r'^[A-Za-z0-9._@-]{1,64}$', v)
+             and not v.startswith('-') else 'letters, digits and . _ - @ only'},
+            {'key': 'role', 'label': 'role', 'kind': 'choice', 'value': 'readonly',
+             'options': self.ROLES,
+             'help': 'fulladmin may do everything; banadmin bans and lets in; readonly looks.'}]
+            + self._pw_fields() + [
+            {'key': 'must', 'label': 'then', 'kind': 'choice', 'value': 'yes',
+             'options': [('yes', 'it chooses its own at the first sign-in'),
+                         ('no', 'it keeps this one')]}])
+        if got:
+            self.act('--add-user', got['name'], '--role', got['role'],
+                     *(['--must-change'] if got['must'] == 'yes' else []),
+                     env={'ISEMON_PASSWORD': got['pw']})
+
+    # ---- 7 settings -----------------------------------------------------------------
+    # Every setting, grouped by the first word of its key, as `isemon
+    # --settings --json` says it is now; what each one is called, what it does
+    # and what it may be, from the same tables the dashboard's settings page
+    # is drawn from.
+    SETTING_GROUPS = [
+        ('ise', 'The ISE logs'), ('read', 'Reading the logs'), ('judge', 'Judging'),
+        ('block', 'Banning'), ('ban', 'Where bans come from'), ('blacklist', 'Banning'),
+        ('never', 'Never banned'), ('mikrotik', 'The firewall and the router'),
+        ('mikrotik2', 'The second firewall'), ('pf', 'The firewall and the router'),
+        ('geo', 'Countries'), ('geolist', 'Countries'), ('feeds', 'Public lists'),
+        ('banfeed', 'The published ban list'), ('otp', 'The token logs'),
+        ('eduroam', 'eduroam'), ('winsec', 'The domain controllers'),
+        ('directory', 'The directory'), ('tacacs', 'TACACS'), ('tacplus', 'TACACS'),
+        ('nps', 'NPS'), ('radius', 'FreeRADIUS'), ('fwlog', 'The firewall\'s log'),
+        ('retain', 'How long things are kept'), ('tidy', 'How long things are kept'),
+        ('backup', 'Backups'), ('db', 'The database'), ('session', 'Signing in'),
+        ('login', 'Signing in'), ('api', 'The dashboard'), ('debug', 'Debugging'),
+    ]
+
+    def settings_rows(self, got=None):
+        """[('head', words) | ('set', {key, name, value, default, says, secret,
+        source})] - every setting, by group."""
+        got = self.out('--settings') if got is None else got
+        if not isinstance(got, dict):
+            return []
+        values = got.get('settings') or {}
+        saved = set(got.get('saved_in_db') or [])
+        file_only = set(got.get('file_only') or [])
+        rows = {}
+        for key in sorted(DEFAULTS):
+            secret = key in SECRET_KEYS
+            if key not in values and not secret:
+                continue
+            source = 'saved' if key in saved else ('file' if key in FILE_KEYS else 'default')
+            rows[key] = {'key': key, 'name': Daemon.NAMES.get(key, key),
+                         'value': None if secret else values.get(key),
+                         'default': None if secret else DEFAULTS.get(key),
+                         'says': Daemon.SAYS.get(key, ''), 'secret': secret,
+                         'source': source, 'source_says': Daemon.WHERE_FROM.get(source, ''),
+                         'file_only': key in file_only}
+        groups = collections.OrderedDict()
+        prefixes = sorted(self.SETTING_GROUPS, key=lambda g: -len(g[0]))
+        for key in rows:
+            words = next((w for pre, w in prefixes if key == pre or key.startswith(pre + '_')),
+                         'Everything else')
+            groups.setdefault(words, []).append(key)
+        order = []
+        for _pre, words in self.SETTING_GROUPS + [('', 'Everything else')]:
+            if words in groups and words not in order:
+                order.append(words)
+        out = []
+        for words in order:
+            out.append(('head', words))
+            out += [('set', rows[k]) for k in groups[words]]
+        return out
+
+    @staticmethod
+    def _shown(v):
+        if v is True:
+            return 'on'
+        if v is False:
+            return 'off'
+        if isinstance(v, list):
+            return ', '.join(str(x) for x in v)
+        return '' if v is None else str(v)
+
+    @staticmethod
+    def setting_kind(key):
+        """('switch' | 'choice' | 'number' | 'text', what it may be)."""
+        shape = Daemon.TUNABLE.get(key)
+        d = DEFAULTS.get(key)
+        if isinstance(d, bool) or shape == (0, 1):
+            return 'switch', ['1', '0']
+        if isinstance(shape, tuple) and shape and isinstance(shape[0], str):
+            return 'choice', [str(x) for x in shape]
+        if isinstance(shape, tuple) and len(shape) == 2:
+            return 'number', list(shape)
+        return 'text', None
+
+    @staticmethod
+    def setting_check(key, value):
+        """None when `value` may be saved under `key` - checked as the daemon
+        checks it before it saves - or what is wrong with it."""
+        try:
+            check_setting(key, value)
+        except (BadSetting, ValueError, TypeError) as e:
+            return str(e)
+        return None
+
+    def m_settings(self):
+        def by_key():
+            key = self.ask_one('Change one by its key', 'the key', help_=(
+                'Its key, as `isemon --settings` shows it - e.g. block_tries, backup_keep. '
+                'Then the same window as in Browse opens.'),
+                check=lambda v, _: None if v in DEFAULTS else 'there is no setting %s' % v)
+            if not key:
+                return
+            row = next((r[1] for r in self.settings_rows() if r[0] == 'set'
+                        and r[1]['key'] == key), None)
+            if not row:
+                self.note('Change one', 'there is no setting %s' % key, 'bad')
+                return
+            done = self._edit_one(row)
+            if done:
+                self.note('Change one', done[0], 'bad' if done[1] else 'ok')
+
+        def export():
+            got = self.form('Export the settings', [
+                {'key': 'file', 'label': 'to the file', 'value': '/root/isemon-config.json',
+                 'need': True, 'help': 'A JSON file; the passwords are left out of it.',
+                 'check': lambda v, _: None if v.startswith('/') else 'a full path, from /'}])
+            if got:
+                self.act('--export', got['file'])
+        return self.sub('Settings', [
+            ('1', 'Browse and change (arrows, Enter)', self.settings_tui),
+            ('2', 'Change one by its key', by_key),
+            ('3', 'All of them as text', lambda: self.act('--settings')),
+            ('4', 'Export them to a file', export),
+        ])
+
+    def settings_tui(self):
+        c, A = self.curses, self.A
+        rows = self.settings_rows()
+        if not rows:
+            self.note('Settings', 'isemon --settings --json gave nothing to show.', 'bad')
+            return None
+        sel = next(i for i, r in enumerate(rows) if r[0] == 'set')
+        top, said, said_bad, find = 0, '', False, ''
+        while True:
+            self._fresh()
+
+            def paint():
+                nonlocal top
+                h, w = self.scr.getmaxyx()
+                self.scr.erase()
+                self._put(0, 0, ' ' * w, A['head'])
+                self._put(0, 0, ' isemon %s  Settings' % __version__, A['head'] | c.A_BOLD)
+                if find:
+                    self._put(0, max(0, w - len(find) - 12), ' find: %s ' % find, A['head'])
+                avail = max(3, h - 3)
+                if sel < top:
+                    top = sel
+                if sel >= top + avail:
+                    top = sel - avail + 1
+                top = max(0, min(top, max(0, len(rows) - avail)))
+                if top > 0 and rows[top - 1][0] == 'head' and sel - top < avail - 1:
+                    top -= 1                    # the group's heading with its first setting
+                namew = max(12, min(44, w // 3))
+                valw = max(8, min(40, w - namew - 30))
+                for n, r in enumerate(rows[top:top + avail]):
+                    y = 1 + n
+                    if r[0] == 'head':
+                        self._put(y, 1, r[1].upper(), A['key'])
+                        continue
+                    st = r[1]
+                    val = '(hidden)' if st.get('secret') else self._shown(st.get('value'))
+                    line = '  %-*s %-*s %s' % (namew, (st.get('name') or st['key'])[:namew], valw,
+                                              val[:valw], st.get('key'))
+                    if top + n == sel:
+                        self._put(y, 0, line + ' ' * max(0, w - 2 - len(line)), A['sel'])
+                    else:
+                        self._put(y, 0, '  ' + (st.get('name') or st['key'])[:namew])
+                        tone = A['dim'] if st.get('source') == 'default' else A['ok']
+                        self._put(y, 3 + namew, val[:valw], tone)
+                        self._put(y, 4 + namew + valw, st.get('key'), A['dim'])
+                total = len(rows)
+                if total > avail:
+                    self._wbar(self.scr, 1, avail, total, top, w - 1, put=True)
+                if said:
+                    self._put(h - 2, 1, said[:w - 2], A['bad'] if said_bad else A['ok'])
+                help_ = ' Up/Down PgUp/PgDn Home/End move   Enter change   / find   Esc back '
+                self._put(h - 1, 0, ' ' * (w - 1), A['head'])
+                self._put(h - 1, 0, help_[:w - 1], A['head'])
+                self.scr.noutrefresh()
+                return h, avail
+            self.backdrop = paint
+            h, avail = paint()
+            c.doupdate()
+            k = self._getkey()
+            if k is None or k == 'resize':
+                continue
+            said = ''
+            sets = [i for i, r in enumerate(rows) if r[0] == 'set']
+            if k in ('esc', 'left', 'bs'):
+                if find and k == 'esc':
+                    find = ''
+                    continue
+                return None
+            if k == 'q':
+                return 'quit'
+            if k in ('up', 'down', 'pgup', 'pgdn', 'home', 'end'):
+                pos = sets.index(sel) if sel in sets else 0
+                pos = {'up': pos - 1, 'down': pos + 1, 'pgup': pos - (avail - 2),
+                       'pgdn': pos + (avail - 2), 'home': 0, 'end': len(sets) - 1}[k]
+                sel = sets[max(0, min(len(sets) - 1, pos))]
+            elif k == '/':
+                find = self._line_in(h - 2, 'Find (a word of its name or key): ', '') or ''
+                if find:
+                    hit = [i for i in sets if find.lower() in (
+                        str(rows[i][1].get('name')) + ' ' + rows[i][1]['key']).lower()]
+                    if hit:
+                        sel = hit[0]
+                    else:
+                        said, said_bad = 'nothing with "%s"' % find, True
+            elif k == 'n' and find:
+                hit = [i for i in sets if i > sel and find.lower() in (
+                    str(rows[i][1].get('name')) + ' ' + rows[i][1]['key']).lower()]
+                if hit:
+                    sel = hit[0]
+            elif k in ('enter', 'right'):
+                done = self._edit_one(rows[sel][1])
+                if done:
+                    said, said_bad = done
+                    if not said_bad:
+                        cur = rows[sel][1]['key']
+                        rows = self.settings_rows() or rows
+                        sel = next((i for i, r in enumerate(rows)
+                                    if r[0] == 'set' and r[1]['key'] == cur), sel)
+
+    def _edit_one(self, st):
+        """The window to change one setting: what it is, what it may be, the
+        value checked as the daemon checks it before `isemon --set` saves it.
+        Returns (words, bad) or None when nothing was done."""
+        c, A = self.curses, self.A
+        key = st['key']
+        if key == 'fwlog_sources':
+            self.note(st.get('name') or key, 'The firewalls whose log is read are a list of '
+                      'their own: Settings - The firewall\'s log on the dashboard.')
+            return None
+        kind, shape = self.setting_kind(key)
+        secret = bool(st.get('secret'))
+        cur = self._shown(st.get('value'))
+        if kind == 'switch':
+            cur = '1' if st.get('value') in (True, 1, '1', 'on') else '0'
+        text = '' if secret else cur
+        choice = shape.index(cur) if kind in ('switch', 'choice') and cur in (shape or []) else 0
+        words_of = Daemon.CHOICE_WORDS.get(key) or {}
+        err = ''
+        import html
+        helptext = re.sub(r'<[^>]+>', '', html.unescape(str(st.get('says') or '')))
+        helptext = helptext.replace('​', '\n')
+        while True:
+            self._under()
+            h, w = self.scr.getmaxyx()
+            ww = max(20, min(96, w - 4))
+            body = []
+            for para in helptext.split('\n'):
+                body += textwrap.wrap(para, max(10, ww - 4)) or ['']
+            facts = ['now: %s%s' % ('(hidden)' if secret else (self._shown(st.get('value'))
+                                                              or '(empty)'),
+                                    '' if st.get('source') == 'default' else
+                                    '   - %s' % (st.get('source_says') or st.get('source'))),
+                     'as it comes: %s' % ('(empty)' if secret else
+                                          (self._shown(st.get('default')) or '(empty)'))]
+            if kind == 'number':
+                facts.append('a whole number from %s to %s' % (shape[0], shape[1]))
+            elif kind == 'choice':
+                facts.append('one of: ' + ', '.join(shape))
+            if st.get('file_only'):
+                facts.append('kept in config.json on this machine - it takes effect after a '
+                             'restart')
+            fixed = len(facts) + 7 + (len(shape) - 1 if kind == 'choice' else 0)
+            body = body[:max(1, h - 2 - fixed)]
+            win, wh, ww = self._window(len(body) + fixed, ww)
+            self._wput(win, 0, 2, ' %s ' % (st.get('name') or key), A['title'], top=True)
+            self._wput(win, 1, 2, key, A['dim'])
+            y = 2
+            for ln in body:
+                self._wput(win, y, 2, ln)
+                y += 1
+            y += 1
+            for f in facts:
+                self._wput(win, y, 2, f, A['dim'])
+                y += 1
+            y += 1
+            if err:
+                self._wput(win, wh - 2, 2, err[:ww - 4], A['bad'])
+            else:
+                self._wput(win, wh - 2, 2, ('Left/Right choose' if kind in ('switch', 'choice')
+                                            else 'type the new value') +
+                           '   Enter save   Esc cancel', A['dim'])
+            if kind in ('switch', 'choice'):
+                names = {'1': 'on', '0': 'off'} if kind == 'switch' else {}
+                x = 2
+                for i, opt in enumerate(shape):
+                    lab = ' %s ' % (names.get(opt) or words_of.get(opt) or opt)
+                    if kind == 'choice':
+                        lab = (' > ' if i == choice else '   ') + lab.strip() + ' '
+                        self._wput(win, y, 2, lab, A['sel'] if i == choice else 0)
+                        y += 1
+                        continue
+                    self._wput(win, y, x, lab, A['sel'] if i == choice else 0)
+                    x += len(lab) + 1
+                win.noutrefresh()
+                c.doupdate()
+                k = self._wkey(win)
+                if k == 'esc':
+                    return None
+                if k in ('left', 'up'):
+                    choice = (choice - 1) % len(shape)
+                    continue
+                if k in ('right', 'down', 'tab', ' '):
+                    choice = (choice + 1) % len(shape)
+                    continue
+                if k != 'enter':
+                    continue
+                value = shape[choice]
+            else:
+                win.noutrefresh()
+                c.doupdate()
+                got = self._line_in(min(y, wh - 3), 'value: ', text, secret=secret, win=win,
+                                    x=2, width=max(4, ww - 14))
+                if got is None:
+                    return None
+                text = got
+                if secret and not got:
+                    return ('nothing typed - %s stays as it was' % key, False)
+                value = got
+            bad = self.setting_check(key, value)
+            if bad:
+                err = bad
+                continue
+            # A secret goes by the environment, not the command line, where
+            # `ps` would show it.
+            env = {'ISEMON_VALUE_' + key.upper(): value} if secret else None
+            args = ['--set', '%s=%s' % (key, '@env' if secret else value)]
+            gone = self.missing(args)
+            if gone:
+                err = '%s is not in this version' % gone
+                continue
+            self.working('working…  ' + self.shown(['--set', '%s=%s' % (
+                key, '****' if secret else value)]))
+            out, rc = self.capture(self.base() + args + ['--no-color'], env=env)
+            if rc != 0:
+                err = (self._plain_text(out).strip().splitlines() or ['it was not saved'])[-1]
+                continue
+            return ('%s = %s - saved%s' % (key, '(hidden)' if secret else value,
+                                           '; restart the service for it'
+                                           if st.get('file_only') else ''), False)
+
+    # ---- windows on the text screen: arrows and Enter ------------------------------
+    # Nothing is typed at a bare prompt: a question is a window (a form) whose
+    # fields are moved between by the arrows, a choice is picked by the
+    # arrows, a list is scrolled and Enter on one offers what can be done with
+    # it. What is typed is checked before anything is run; Esc closes the
+    # window and goes back. The screen under a window is drawn again by
+    # `self.backdrop`, so a window made bigger or smaller is drawn right.
+    def _getkey(self, win=None, wait=500):
+        """A key on the text screen, by name: 'up', 'enter', 'esc', or the
+        character; None when nothing was pressed within `wait` ms."""
+        c = self.curses
+        src = win or self.scr
+        src.timeout(wait)
+        k = src.getch()
+        if k == -1:
+            # The window's size looked at too (PuTTY and others whose
+            # change is not always told): drawn again to the new one.
+            try:
+                size = os.get_terminal_size(sys.__stdout__.fileno())
+                if (size.lines, size.columns) != self.scr.getmaxyx():
+                    c.resizeterm(size.lines, size.columns)
+                    self.scr.clear()
+                    return 'resize'
+            except (OSError, ValueError, c.error):
+                pass
+            return None
+        if k == 27:
+            # An arrow some terminals send as ESC [ B rather than as the key
+            # the terminal description names: read whole here.
+            src.nodelay(True)
+            try:
+                k2 = src.getch()
+                if k2 in (ord('['), ord('O')):
+                    seq = ''
+                    while True:
+                        k3 = src.getch()
+                        if k3 == -1:
+                            break
+                        seq += chr(k3)
+                        if chr(k3).isalpha() or chr(k3) == '~':
+                            break
+                    return {'A': 'up', 'B': 'down', 'C': 'right', 'D': 'left', 'H': 'home',
+                            'F': 'end', '5~': 'pgup', '6~': 'pgdn', '1~': 'home', '4~': 'end',
+                            '7~': 'home', '8~': 'end', '3~': 'del'}.get(seq, None)
+                if k2 != -1:
+                    c.ungetch(k2)
+                return 'esc'
+            finally:
+                src.nodelay(False)
+        named = {c.KEY_UP: 'up', c.KEY_DOWN: 'down', c.KEY_LEFT: 'left', c.KEY_RIGHT: 'right',
+                 c.KEY_PPAGE: 'pgup', c.KEY_NPAGE: 'pgdn', c.KEY_HOME: 'home', c.KEY_END: 'end',
+                 c.KEY_ENTER: 'enter', 10: 'enter', 13: 'enter', c.KEY_BACKSPACE: 'bs',
+                 127: 'bs', 8: 'bs', c.KEY_DC: 'del', c.KEY_RESIZE: 'resize', 21: 'ctrl-u',
+                 9: 'tab'}
+        if k in named:
+            if k == c.KEY_RESIZE:
+                try:
+                    c.update_lines_cols()
+                except Exception:                       # noqa: BLE001
+                    pass
+            return named[k]
+        if 32 <= k < 0x110000:
+            try:
+                return chr(k)
+            except ValueError:
+                return None
+        return None
+
+    def _line_in(self, y, prompt, text, secret=False, win=None, x=1, width=None):
+        """A line typed on the text screen: Enter gives it, Esc gives None."""
+        c = self.curses
+        scr = win or self.scr
+        pos = len(text)
+        try:
+            c.curs_set(1)
+        except Exception:                               # noqa: BLE001
+            pass
+        try:
+            while True:
+                h, w = scr.getmaxyx()
+                room = max(1, width or (w - x - len(prompt) - 2))
+                shown = ('*' * len(text)) if secret else text
+                start = max(0, pos - room + 1)
+                try:
+                    scr.addstr(y, x, prompt, self.A['key'])
+                    scr.addstr(y, x + len(prompt), shown[start:start + room].ljust(room),
+                               c.A_UNDERLINE)
+                    scr.move(y, x + len(prompt) + pos - start)
+                except c.error:
+                    pass
+                scr.refresh()
+                k = self._getkey(scr)
+                if k == 'enter':
+                    return text
+                if k == 'esc':
+                    return None
+                if k == 'bs' and pos > 0:
+                    text = text[:pos - 1] + text[pos:]
+                    pos -= 1
+                elif k == 'del':
+                    text = text[:pos] + text[pos + 1:]
+                elif k == 'left':
+                    pos = max(0, pos - 1)
+                elif k == 'right':
+                    pos = min(len(text), pos + 1)
+                elif k == 'home':
+                    pos = 0
+                elif k == 'end':
+                    pos = len(text)
+                elif k == 'ctrl-u':
+                    text, pos = '', 0
+                elif k and len(k) == 1 and k.isprintable():
+                    text = text[:pos] + k + text[pos:]
+                    pos += 1
+        finally:
+            try:
+                c.curs_set(0)
+            except Exception:                           # noqa: BLE001
+                pass
+
+    def _box(self, win, h, w):
+        """A frame round a window, in UTF-8 lines where the terminal takes
+        them and in ASCII where it does not."""
+        c, A = self.curses, self.A
+        if self.utf():
+            hz, vt, tl, tr, bl, br = '─', '│', '┌', '┐', '└', '┘'
+        else:
+            hz, vt, tl, tr, bl, br = '-', '|', '+', '+', '+', '+'
+        for y, line in ((0, tl + hz * (w - 2) + tr), (h - 1, bl + hz * (w - 2) + br)):
+            try:
+                win.addstr(y, 0, line, A['key'])
+            except c.error:
+                pass                                    # the bottom-right corner
+        for y in range(1, h - 1):
+            for x in (0, w - 1):
+                try:
+                    win.addstr(y, x, vt, A['key'])
+                except c.error:
+                    pass
+
+    def _fresh(self):
+        """Back from a command's own screen: the text screen drawn whole again."""
+        if self.plain:
+            self.curses.reset_prog_mode()
+            self.scr.clear()
+            self.plain = False
+            self.st_now = True
+
+    def _under(self):
+        """The screen under a window, written but not yet shown."""
+        self._fresh()
+        fn = self.backdrop
+        if fn:
+            try:
+                fn()
+                return
+            except Exception:                           # noqa: BLE001
+                pass
+        self.scr.noutrefresh()
+
+    def _window(self, want_h, want_w):
+        """A framed window in the middle of the screen; (win, h, w). Never
+        bigger than the screen, however small that is."""
+        c = self.curses
+        h, w = self.scr.getmaxyx()
+        ww = max(min(w, 12), min(want_w, w - 2))
+        wh = max(min(h, 4), min(want_h, h - 2))
+        win = c.newwin(wh, ww, max(0, (h - wh) // 2), max(0, (w - ww) // 2))
+        win.keypad(True)
+        win.erase()
+        self._box(win, wh, ww)
+        return win, wh, ww
+
+    def _wput(self, win, y, x, text, attr=0, top=False):
+        """Words in a window, cut at its frame; `top` writes on the frame
+        itself (a title)."""
+        try:
+            wh, ww = win.getmaxyx()
+            if (0 < y < wh - 1 or (top and y == 0)) and x < ww - 1:
+                win.addnstr(y, x, self._safe(text), max(0, ww - x - 1 - (1 if top else 0)), attr)
+        except Exception:                               # noqa: BLE001 - the edge
+            pass
+
+    def _wkey(self, win):
+        return self._getkey(win)
+
+    def _wrap(self, text, width):
+        out = []
+        for para in str(text or '').split('\n'):
+            out += textwrap.wrap(para, max(10, width)) or ['']
+        return out
+
+    @staticmethod
+    def _plain_text(text):
+        return re.sub(r'\x1b\[[0-9;?]*[A-Za-z]', '', str(text or ''))
+
+    def note(self, title, text, tone=''):
+        """Words in a window; any of Enter, Esc, q or Space closes it."""
+        A = self.A
+        while True:
+            self._under()
+            h, w = self.scr.getmaxyx()
+            ww = max(20, min(100, w - 4))
+            lines = self._wrap(text, ww - 4)[:max(1, h - 6)]
+            win, wh, ww = self._window(len(lines) + 4, max(len(title) + 8, min(
+                ww, max(len(x) for x in lines + ['']) + 6, ww)))
+            self._wput(win, 0, 2, ' %s ' % title, A['title'], top=True)
+            for i, ln in enumerate(lines):
+                self._wput(win, 1 + i, 2, ln, A.get(tone, 0) if tone else 0)
+            self._wput(win, wh - 2, 2, 'Enter or Esc - back', A['dim'])
+            win.noutrefresh()
+            self.curses.doupdate()
+            k = self._wkey(win)
+            if k in ('enter', 'esc', 'q', ' '):
+                return
+
+    def working(self, words):
+        """A window that says something is being done (the screen waits for it)."""
+        self._under()
+        win, wh, ww = self._window(3, min(100, len(words) + 6))
+        self._wput(win, 1, 2, words, self.A['dim'])
+        win.noutrefresh()
+        self.curses.doupdate()
+
+    def confirm(self, title, words, yes='Yes', no='No', danger=False):
+        """Yes or no, chosen by the arrows (or y / n); No unless chosen."""
+        A = self.A
+        pick = 1
+        while True:
+            self._under()
+            h, w = self.scr.getmaxyx()
+            ww = max(20, min(80, w - 4))
+            lines = self._wrap(words, ww - 4)[:max(1, h - 8)]
+            win, wh, ww = self._window(len(lines) + 5, ww)
+            self._wput(win, 0, 2, ' %s ' % title, A['bad'] if danger else A['title'], top=True)
+            for i, ln in enumerate(lines):
+                self._wput(win, 1 + i, 2, ln)
+            x = 2
+            y = wh - 2
+            for i, lab in enumerate((yes, no)):
+                lab = '  %s  ' % lab
+                self._wput(win, y, x, lab, (A['bad'] if danger and i == 0 else A['sel'])
+                           if i == pick else A['key'])
+                x += len(lab) + 2
+            self._wput(win, y, x + 2, 'Left/Right  Enter  Esc', A['dim'])
+            win.noutrefresh()
+            self.curses.doupdate()
+            k = self._wkey(win)
+            if k in ('esc', 'n', 'N'):
+                return False
+            if k in ('y', 'Y'):
+                return True
+            if k in ('left', 'right', 'tab', 'up', 'down'):
+                pick = 1 - pick
+            elif k == 'enter':
+                return pick == 0
+
+    def choose(self, title, options, words='', cur=0):
+        """One of `options` ([(value, words)]), picked by the arrows; Esc None."""
+        A = self.A
+        if not options:
+            return None
+        sel = max(0, min(cur or 0, len(options) - 1))
+        top = 0
+        while True:
+            self._under()
+            h, w = self.scr.getmaxyx()
+            ww = min(90, w - 4, max(36, max(len(o[1]) for o in options) + 12,
+                                    len(title) + 8, len(words) + 6 if words else 0))
+            head = self._wrap(words, ww - 4) if words else []
+            room = max(1, min(len(options), h - 6 - len(head)))
+            win, wh, ww = self._window(room + len(head) + (4 if head else 3), ww)
+            room = max(1, min(room, wh - 2 - len(head) - (1 if head else 0)))
+            self._wput(win, 0, 2, ' %s ' % title, A['title'], top=True)
+            y = 1
+            for ln in head:
+                self._wput(win, y, 2, ln, A['dim'])
+                y += 1
+            if head:
+                y += 1
+            if sel < top:
+                top = sel
+            if sel >= top + room:
+                top = sel - room + 1
+            for n, (_val, lab) in enumerate(options[top:top + room]):
+                i = top + n
+                line = ' %2d  %s' % (i + 1, lab)
+                if i == sel:
+                    self._wput(win, y + n, 2, line.ljust(max(0, ww - 5)), A['sel'])
+                else:
+                    self._wput(win, y + n, 2, ' %2d' % (i + 1), A['key'])
+                    self._wput(win, y + n, 7, lab)
+            if len(options) > room:
+                self._wbar(win, y, room, len(options), top, ww - 2)
+            win.noutrefresh()
+            self.curses.doupdate()
+            k = self._wkey(win)
+            if k in ('esc', 'left', 'q'):
+                return None
+            if k == 'up':
+                sel = (sel - 1) % len(options)
+            elif k in ('down', 'tab'):
+                sel = (sel + 1) % len(options)
+            elif k in ('home', 'pgup'):
+                sel = 0
+            elif k in ('end', 'pgdn'):
+                sel = len(options) - 1
+            elif k and k.isdigit():
+                n = int(k) - 1
+                if 0 <= n < len(options):
+                    return options[n][0]
+            elif k in ('enter', 'right'):
+                return options[sel][0]
+
+    def _wbar(self, win, y0, rows, total, top, x, put=False):
+        """The scroll bar on the right of a list."""
+        A = self.A
+        if total <= rows:
+            return
+        thumb = max(1, min(rows, round(rows * rows / total)))
+        tstart = max(0, min(rows - thumb, round((rows - thumb) * top / max(1, total - rows))))
+        utf = self.utf()
+        for r in range(rows):
+            hit = tstart <= r < tstart + thumb
+            g = ('█' if hit else '│') if utf else ('#' if hit else '|')
+            if put:
+                self._put(y0 + r, x, g, A['key'] if hit else A['dim'])
+                continue
+            try:
+                win.addstr(y0 + r, x, g, A['key'] if hit else A['dim'])
+            except self.curses.error:
+                pass
+
+    @staticmethod
+    def check_fields(fields, vals):
+        """The values of a form checked, the shown fields in order: (error,
+        the key it is about) of the first that is wrong, or (None, None).
+        Text is taken with its spaces off the ends; a secret as it is."""
+        for x in fields:
+            if x.get('when') and not x['when'](vals):
+                continue
+            kind = x.get('kind', 'text')
+            v = vals.get(x['key'], '')
+            if kind != 'choice':
+                v = str(v).strip() if kind != 'secret' else str(v)
+                vals[x['key']] = v
+            label = x.get('label') or x['key']
+            bad = None
+            if x.get('need') and v == '':
+                bad = '%s - it is needed' % label
+            elif kind == 'number' and v != '':
+                try:
+                    n = int(v)
+                    lo, hi = x.get('range') or (None, None)
+                    if (lo is not None and n < lo) or (hi is not None and n > hi):
+                        bad = '%s - a whole number from %s to %s' % (label, lo, hi)
+                except ValueError:
+                    bad = '%s - a whole number' % label
+            elif kind == 'choice' and v not in [o[0] for o in x.get('options') or []]:
+                bad = '%s - one of the choices' % label
+            if not bad and x.get('check') and v != '':
+                try:
+                    bad = x['check'](v, vals)
+                except Exception as e:                  # noqa: BLE001
+                    bad = str(e)
+            if bad:
+                return bad, x['key']
+        return None, None
+
+    def form(self, title, fields, words='', check=None, ok='OK'):
+        """Questions in one window. fields: [{'key', 'label', 'kind': 'text' |
+        'secret' | 'choice' | 'number', 'value', 'options': [(value, words)],
+        'need': True, 'range': (a, b), 'help', 'check': fn(value, values) ->
+        an error or None, 'when': fn(values) -> shown or not}]. Up/Down (Tab)
+        move between them, a choice is changed by Left/Right, Enter checks
+        them all and gives {key: value}; Esc gives None. A secret shows a star
+        for each character, never the characters."""
+        c, A = self.curses, self.A
+        vals, pos = {}, {}
+        for f in fields:
+            f.setdefault('kind', 'text')
+            if f['kind'] == 'choice':
+                opts = [o[0] for o in f['options']]
+                vals[f['key']] = f.get('value') if f.get('value') in opts else opts[0]
+            else:
+                vals[f['key']] = str(f.get('value') if f.get('value') is not None else '')
+            pos[f['key']] = len(vals[f['key']]) if f['kind'] != 'choice' else 0
+        at, err, err_at = 0, '', None
+        try:
+            while True:
+                shown = [f for f in fields if not f.get('when') or f['when'](vals)]
+                at = max(0, min(at, len(shown) - 1))
+                f = shown[at]
+                self._under()
+                h, w = self.scr.getmaxyx()
+                ww = max(20, min(100, w - 4))
+                head = self._wrap(words, ww - 4) if words else []
+                labw = min(30, max(len(x.get('label') or x['key']) for x in shown) + 1)
+                fieldw = max(4, ww - labw - 7)
+                helps = self._wrap(f.get('help') or '', ww - 4)[:4] if f.get('help') else []
+                win, wh, ww = self._window(len(head) + (1 if head else 0) + len(shown) + 7, ww)
+                self._wput(win, 0, 2, ' %s ' % title, A['title'], top=True)
+                y = 1
+                for ln in head:
+                    self._wput(win, y, 2, ln, A['dim'])
+                    y += 1
+                if head:
+                    y += 1
+                cursor = None
+                for i, x in enumerate(shown):
+                    lab = (x.get('label') or x['key'])[:labw - 1]
+                    here = i == at
+                    self._wput(win, y, 2, lab.rjust(labw), A['key'] if here else 0)
+                    vx = 3 + labw + 1
+                    v = vals[x['key']]
+                    if x['kind'] == 'choice':
+                        words_ = dict(x['options']).get(v, v)
+                        txt = ('< %s >' % words_) if here else ('  %s' % words_)
+                        self._wput(win, y, vx, txt[:fieldw], A['sel'] if here else A['ok'])
+                    else:
+                        t = ('*' * len(v)) if x['kind'] == 'secret' else v
+                        p = pos[x['key']] if here else len(t)
+                        start = max(0, p - fieldw + 1)
+                        self._wput(win, y, vx, t[start:start + fieldw].ljust(fieldw),
+                                   c.A_UNDERLINE | (A['key'] if here else 0))
+                        if here and y < wh - 1:
+                            cursor = (y, min(ww - 2, vx + p - start))
+                    if err and err_at == x['key']:
+                        self._wput(win, y, ww - 3, '!', A['bad'])
+                    y += 1
+                y += 1
+                for ln in helps:
+                    if y >= wh - 2:
+                        break
+                    self._wput(win, y, 2, ln, A['dim'])
+                    y += 1
+                if err:
+                    self._wput(win, wh - 2, 2, err[:ww - 4], A['bad'])
+                else:
+                    self._wput(win, wh - 2, 2, ('Up/Down field   ' + ('Left/Right choose   '
+                               if any(x['kind'] == 'choice' for x in shown) else '') +
+                               'Enter %s   Esc cancel' % ok)[:ww - 4], A['dim'])
+                try:
+                    c.curs_set(1 if cursor else 0)
+                    if cursor:
+                        win.move(*cursor)
+                except Exception:                       # noqa: BLE001
+                    pass
+                win.noutrefresh()
+                c.doupdate()
+                k = self._wkey(win)
+                if k is None or k == 'resize':
+                    continue
+                key, kind = f['key'], f['kind']
+                if k == 'esc':
+                    return None
+                if k == 'up':
+                    at = (at - 1) % len(shown)
+                elif k in ('down', 'tab'):
+                    at = (at + 1) % len(shown)
+                elif k == 'enter':
+                    err, err_at = self.check_fields(fields, vals)
+                    if err:
+                        err = err or ''
+                        at = next((i for i, x in enumerate(shown) if x['key'] == err_at), at)
+                        continue
+                    err = ''
+                    got = {x['key']: vals[x['key']] for x in shown}
+                    if check:
+                        bad = check(got)
+                        if bad:
+                            err, err_at = (bad if isinstance(bad, tuple) else (bad, None))
+                            if err_at:
+                                at = next((i for i, x in enumerate(shown) if x['key'] == err_at),
+                                          at)
+                            continue
+                    return got
+                elif kind == 'choice':
+                    opts = [o[0] for o in f['options']]
+                    i = opts.index(vals[key]) if vals[key] in opts else 0
+                    if k == 'left':
+                        vals[key] = opts[(i - 1) % len(opts)]
+                    elif k in ('right', ' '):
+                        vals[key] = opts[(i + 1) % len(opts)]
+                    err = ''
+                else:
+                    t, p = vals[key], pos[key]
+                    if k == 'bs' and p > 0:
+                        t, p = t[:p - 1] + t[p:], p - 1
+                    elif k == 'del':
+                        t = t[:p] + t[p + 1:]
+                    elif k == 'left':
+                        p = max(0, p - 1)
+                    elif k == 'right':
+                        p = min(len(t), p + 1)
+                    elif k == 'home':
+                        p = 0
+                    elif k == 'end':
+                        p = len(t)
+                    elif k == 'ctrl-u':
+                        t, p = '', 0
+                    elif k and len(k) == 1 and k.isprintable():
+                        if kind == 'number' and not (k.isdigit() or (k == '-' and p == 0)):
+                            continue
+                        t, p = t[:p] + k + t[p:], p + 1
+                    else:
+                        continue
+                    vals[key], pos[key] = t, p
+                    if err_at == key:
+                        err, err_at = '', None
+        finally:
+            try:
+                c.curs_set(0)
+            except Exception:                           # noqa: BLE001
+                pass
+
+    def ask_one(self, title, label, value='', help_='', need=True, secret=False, check=None):
+        """One question in a window; its answer, or None (Esc)."""
+        got = self.form(title, [{'key': 'v', 'label': label, 'value': value, 'help': help_,
+                                 'need': need, 'kind': 'secret' if secret else 'text',
+                                 'check': check}])
+        return None if got is None else got['v']
+
+    def pick(self, title, load, cols, act=None, empty='nothing here', words=''):
+        """A list to scroll with the arrows: `load()` gives its rows (asked
+        again after something was done to one), `cols` [(heading, fn(row),
+        width, tone fn(row) or None)]. Enter calls `act(row)`; / finds. Esc
+        back, q leaves the console."""
+        c, A = self.curses, self.A
+        rows = load() or []
+        sel, top, find, said, said_bad = 0, 0, '', '', False
+        while True:
+            self._fresh()
+            h, w = self.scr.getmaxyx()
+
+            def cell(fn, r):
+                try:
+                    return str(fn(r))
+                except Exception:                       # noqa: BLE001
+                    return '?'
+            seen = [r for r in rows if not find or find.lower() in ' '.join(
+                cell(fn, r) for _h, fn, _w, _t in cols).lower()]
+            sel = max(0, min(sel, len(seen) - 1))
+            avail = max(1, h - 5 - (1 if words else 0))
+            if sel < top:
+                top = sel
+            if sel >= top + avail:
+                top = sel - avail + 1
+            top = max(0, min(top, max(0, len(seen) - avail)))
+            ws = [cw for _h, _f, cw, _t in cols]
+            fixed = sum(x + 2 for x in ws[:-1])
+            ws[-1] = max(8, min(ws[-1] or 200, w - 4 - fixed))
+
+            def paint(_seen=seen, _top=top, _sel=sel, _ws=ws, _avail=avail):
+                self.scr.erase()
+                self._put(0, 0, ' ' * w, A['head'])
+                self._put(0, 0, ' isemon %s  %s ' % (__version__, title), A['head'] | c.A_BOLD)
+                right = ' %d%s ' % (len(_seen), (' of %d, with "%s"' % (len(rows), find))
+                                    if find else '')
+                self._put(0, max(0, w - len(right) - 1), right, A['head'])
+                y = 1
+                if words:
+                    self._put(y, 1, words[:w - 2], A['dim'])
+                    y += 1
+                x = 2
+                for (hd, _f, _w, _t), cw in zip(cols, _ws):
+                    self._put(y + 1, x, hd[:cw], A['key'])
+                    x += cw + 2
+                y += 2
+                if not _seen:
+                    self._put(y + 1, 4, empty if not find else 'nothing with "%s"' % find,
+                              A['dim'])
+                for n, r in enumerate(_seen[_top:_top + _avail]):
+                    i = _top + n
+                    x = 2
+                    if i == _sel:
+                        self._put(y + n, 1, ' ' * (w - 3), A['sel'])
+                    for (hd, fn, _w, tone), cw in zip(cols, _ws):
+                        attr = A['sel'] if i == _sel else (A.get(tone(r) or '', 0) if tone else 0)
+                        self._put(y + n, x, cell(fn, r)[:cw], attr)
+                        x += cw + 2
+                if len(_seen) > _avail:
+                    self._wbar(self.scr, y, _avail, len(_seen), _top, w - 1, put=True)
+                if said:
+                    self._put(h - 2, 1, said[:w - 2], A['bad'] if said_bad else A['ok'])
+                help_ = ' Up/Down PgUp/PgDn Home/End move   Enter %s   / find   Esc back ' % (
+                    'what to do with it' if act else 'look')
+                self._put(h - 1, 0, ' ' * (w - 1), A['head'])
+                self._put(h - 1, 0, help_[:w - 1], A['head'])
+                self.scr.noutrefresh()
+            self.backdrop = paint
+            paint()
+            c.doupdate()
+            k = self._getkey()
+            if k is None or k == 'resize':
+                continue
+            said = ''
+            if k in ('esc', 'left', 'bs'):
+                if find and k == 'esc':
+                    find = ''
+                    continue
+                return None
+            if k == 'q':
+                return 'quit'
+            if k in ('up', 'down', 'pgup', 'pgdn', 'home', 'end'):
+                sel = {'up': sel - 1, 'down': sel + 1, 'pgup': sel - (avail - 1),
+                       'pgdn': sel + (avail - 1), 'home': 0, 'end': len(seen) - 1}[k]
+            elif k == '/':
+                got = self.ask_one('Find', 'with the words', find, need=False,
+                                   help_='Only the rows with these words in them stay; '
+                                         'Esc in the list shows them all again.')
+                if got is not None:
+                    find, sel, top = got, 0, 0
+            elif k in ('enter', 'right') and seen and act:
+                r = act(seen[sel])
+                if r == 'quit':
+                    return 'quit'
+                rows = load() or []
+
+    def act(self, *args, env=None, title=None, quiet_ok=None):
+        """`isemon ARGS` run: a short answer in a window, a long one on a
+        screen of its own to scroll. Returns the exit code; None when this
+        version does not have what it asks for."""
+        shown = title or self.shown(args)
+        gone = self.missing(args)
+        if gone:
+            self.note(shown, '%s is not in this version (isemon %s).' % (gone, __version__),
+                      'warn')
+            return None
+        return self.act_argv(self.base() + [str(a) for a in args], shown, env=env,
+                             quiet_ok=quiet_ok)
+
+    def act_argv(self, argv, title, env=None, quiet_ok=None):
+        self.working('working…  ' + title)
+        text, rc = self.capture(argv, env=env)
+        plain = self._plain_text(text).rstrip()
+        if rc == 0 and not plain and quiet_ok:
+            plain = text = quiet_ok
+        h, w = self.scr.getmaxyx()
+        lines = self._wrap(plain, max(30, min(100, w - 4)) - 4)
+        if len(lines) <= max(3, min(14, h - 8)):
+            self.note(title if rc == 0 else '%s - it ended with %d' % (title, rc),
+                      plain or '(it said nothing)', '' if rc == 0 else 'bad')
+        else:
+            if rc not in (0, None):
+                text += '\n' + self.dim('(it ended with %d)' % rc)
+            self.go_plain(lambda: self.page(title, text))
+        self.st_now = True
+        return rc
+
+    # ---- small parts the lists use ------------------------------------------------
+    @staticmethod
+    def _when(ts):
+        if not ts:
+            return '-'
+        try:
+            return time.strftime('%d-%m-%Y %H:%M', time.localtime(float(ts)))
+        except (TypeError, ValueError):
+            return str(ts)
+
+    @staticmethod
+    def _rows(got, *keys):
+        if isinstance(got, dict):
+            for k in keys:
+                if isinstance(got.get(k), list):
+                    return got[k]
+            return []
+        return got if isinstance(got, list) else []
+
+    def details(self, title, row, skip=()):
+        """One row's fields as words, in a window or on its own screen."""
+        lines = []
+        for k, v in row.items():
+            if k in skip or v in (None, '', [], {}):
+                continue
+            if isinstance(v, (list, dict)):
+                v = json.dumps(v, default=str, ensure_ascii=False)
+            elif k in ('made', 'last_in', 'at') and isinstance(v, (int, float)):
+                v = self._when(v)
+            lines.append('%-16s %s' % (k, v))
+        h, w = self.scr.getmaxyx()
+        if len(lines) <= h - 8:
+            self.note(title, '\n'.join(lines))
+        else:
+            self.go_plain(lambda: self.page(title, '\n'.join(lines)))
+
+    # ---- 8 the database and backups ---------------------------------------------
+    @staticmethod
+    def kept_files():
+        out = []
+        for folder in (Path(BACKUP_DIR), Path(DUMP_DIR)):
+            try:
+                for f in folder.iterdir():
+                    if f.is_file() and not f.is_symlink():
+                        st = f.stat()
+                        out.append({'path': str(f), 'name': f.name, 'folder': folder.name,
+                                    'at': st.st_mtime, 'bytes': st.st_size})
+            except OSError:
+                continue
+        return sorted(out, key=lambda x: x['at'], reverse=True)
+
+    def m_backups(self):
+        def kept():
+            return self.pick('Backups kept here', self.kept_files, [
+                ('made', lambda f: self._when(f['at']), 16, None),
+                ('size', lambda f: human_size(f['bytes']), 10, None),
+                ('in', lambda f: f['folder'], 8, lambda f: 'dim'),
+                ('file', lambda f: f['name'], 60, None)], self.backup_do,
+                'no copy is kept here yet')
+
+        def by_path():
+            path = self.ask_one('Put a copy back', 'the file', str(BACKUP_DIR) + '/', help_=(
+                'A copy made here or brought from elsewhere. A copy of what is replaced is '
+                'made first.'), check=lambda v, _: None if os.path.isfile(v)
+                else 'there is no such file')
+            if path:
+                self.backup_do({'path': path, 'name': os.path.basename(path)}, 'restore')
+
+        def full():
+            if self.confirm('A full backup', 'The copy has the keys in it (settings.key, '
+                            'banfeed.key, known_hosts) and config.json: keep it where only '
+                            'root can read it.', 'Make it'):
+                self.act('--backup', '--full')
+
+        def erase():
+            w = self.choose('Erase collected data', [
+                ('records', 'the failed attempts and the logins'), ('otp', 'the token logs'),
+                ('eduroam', 'eduroam'), ('bans', 'every ban'), ('feeds', 'the public lists'),
+                ('geo', 'the country database'), ('events', 'the daemon\'s own events')],
+                'Accounts, settings and the whitelist are never touched.')
+            if w and self.confirm('Erase %s' % w, 'Everything of %s is erased from the '
+                                  'database. This cannot be undone.' % w, 'Erase it',
+                                  danger=True):
+                self.act('--erase', w, '--yes')
+
+        def setup():
+            if self.confirm('Make the database on a server', 'It asks for an administrator '
+                            'of that server and its password on the terminal, uses them once '
+                            'and writes them nowhere.', 'Go on'):
+                self.live(lambda: self.show_live('--database', 'setup'))
+        return self.sub('The database and backups', [
+            ('1', 'Which database everything is kept in', lambda: self.act('--database')),
+            ('2', 'Whether the settings reach it', lambda: self.act('--database', 'test')),
+            ('3', 'A copy now', lambda: self.act('--backup')),
+            ('4', 'A full backup now (with the keys)', full),
+            ('5', 'A dump in the engine\'s own format now', lambda: self.act('--dump')),
+            ('6', 'The copies kept here (Enter: put one back)', kept),
+            ('7', 'Put a copy back from a file', by_path),
+            ('8', 'Backups to other machines: how they went',
+             lambda: self.act('--rbackup-status')),
+            ('9', 'Backups to other machines: one now', lambda: self.act('--rbackup-now')),
+            ('10', 'Erase collected data', erase),
+            ('11', 'Make the database on a server (asks on the terminal)', setup),
+        ])
+
+    def backup_do(self, f, what=None):
+        if what is None:
+            what = self.choose(f['name'], [('restore', 'Put it back (replaces everything)')])
+        if what == 'restore':
+            if self.confirm('Put a copy back', 'Everything in the database is replaced by '
+                            '%s. The bans, records and settings made since are lost (a copy '
+                            'of them is made first).' % f['name'], 'Put it back', danger=True):
+                self.act('--restore', f['path'], '--yes')
+
+    # ---- 9 network, time and power ------------------------------------------------
+    def m_machine(self):
+        def trials():
+            st = self.out('--status') or {}
+            got = self.status_lines(dict(st, _answered=True))
+            waiting = [x for x in got if 'waits to be kept' in x[0]]
+            kind = self.choose('Keep or put back a change on trial', [
+                ('net', 'The network'), ('fw', 'The firewall and access')],
+                ('\n'.join(x[0] for x in waiting) if waiting else 'Nothing waits to be kept '
+                 'now, as far as the status says.') + ' Not kept in time, each goes back by '
+                'itself.')
+            if not kind:
+                return
+            act = self.choose('What to do', [('keep', 'Keep it'),
+                                             ('back', 'Put the old back now')])
+            if act == 'back' and not self.confirm('Put the old back', (
+                    'The network goes back to what it was.' if kind == 'net'
+                    else 'The firewall goes back to what it was.'), 'Put it back',
+                    danger=True):
+                return
+            if act:
+                self.act('--change-keep' if act == 'keep' else '--change-back', kind)
+
+        def sure(args, title, words, yes, danger=False):
+            def go():
+                if self.confirm(title, words, yes, danger=danger):
+                    self.act(*args)
+            return go
+        return self.sub('Network, time and power', [
+            ('0', 'Keep or put back a change on trial (network, firewall)', trials),
+            ('1', 'The network', lambda: self.act('--net')),
+            ('2', 'The time and its servers', lambda: self.act('--time')),
+            ('3', 'Step the clock to the time servers now',
+             sure(['--time-step'], 'Step the clock', 'The clock is set to the time servers '
+                  'at once, not slowly; the log may show a jump.', 'Step it')),
+            ('4', 'Restart the machine',
+             sure(['--reboot', '--yes'], 'Restart the machine', 'The machine restarts: '
+                  'nothing is read or banned for a minute or two, and this console closes.',
+                  'Restart it', danger=True)),
+            ('5', 'Switch the machine off',
+             sure(['--poweroff', '--yes'], 'Switch the machine off', 'The machine switches '
+                  'off and stays off until somebody switches it on.', 'Switch it off',
+                  danger=True)),
+        ])
+
+    # ---- 10 upgrades --------------------------------------------------------------
+    def m_upgrades(self):
+        def online():
+            if self.missing(['--upgrade-check']):
+                self.act('--upgrade-check')
+                return
+            self.working('working…  looking for a new version')
+            row = self.out('--upgrade-check') or {}
+            if not isinstance(row, dict) or row.get('error'):
+                self.note('Upgrade from the web', '%s' % (
+                    row.get('error') if isinstance(row, dict) else 'no answer'), 'bad')
+                return
+            here = self.ver(__version__)
+            newer = [p for p in row.get('packages') or []
+                     if isinstance(p, dict) and self.ver(p.get('version')) > here]
+            if not newer:
+                self.note('Upgrade from the web', 'Nothing newer than %s at %s.' % (
+                    __version__, row.get('url') or 'upgrade_url'), 'ok')
+                return
+            ver = self.choose('Upgrade from the web', [
+                (p['version'], 'isemon %s%s' % (p['version'], '   (the newest)' if i == 0 else ''))
+                for i, p in enumerate(newer)], 'This server runs %s. Found at %s:' % (
+                    __version__, row.get('url') or 'upgrade_url'))
+            if not ver:
+                return
+            if not self.confirm('Upgrade to %s' % ver, 'This server is upgraded and the '
+                                'service restarted: for a minute nothing is read or banned.',
+                                'Upgrade'):
+                return
+            self.live(lambda: self.show_live('--upgrade-online', ver, '--yes'))
+
+        def install():
+            path = self.ask_one('Upgrade from a package', 'the package', '/root/',
+                                help_='isemon-X.Y.Z.tar.gz, or the folder it was unpacked to.',
+                                check=lambda v, _: None if (
+                                    os.path.isfile(v) and v.endswith('.tar.gz')) or
+                                os.path.isfile(os.path.join(v, 'install.sh'))
+                                else 'neither an isemon-X.Y.Z.tar.gz nor a folder with '
+                                     'install.sh')
+            if not path:
+                return
+            folder = path
+            if path.endswith('.tar.gz'):
+                folder = tempfile.mkdtemp(prefix='isemon-up-')
+                subprocess.call(['tar', '-xzf', path, '-C', folder])
+                inner = [x for x in os.listdir(folder) if x.startswith('isemon')]
+                folder = os.path.join(folder, inner[0]) if inner else folder
+            script = os.path.join(folder, 'install.sh')
+            if not os.path.isfile(script):
+                self.note('Upgrade', 'there is no install.sh in %s' % folder, 'bad')
+                return
+            if self.confirm('Upgrade', 'This server is upgraded with %s.' % script, 'Upgrade'):
+                def go():
+                    self.clear_screen()
+                    try:
+                        subprocess.call(['bash', script, '--upgrade'])
+                    except KeyboardInterrupt:
+                        print()
+                    self.pause()
+                self.live(go)
+        def back():
+            # Going back (1.10.232): only to a version marked safe - the
+            # database is left as it is, nothing is copied or put back.
+            if self.missing(['--downgrade-check']):
+                self.act('--downgrade-check')
+                return
+            self.working('working…  looking at the older versions')
+            row = self.out('--downgrade-check') or {}
+            if not isinstance(row, dict) or row.get('error'):
+                self.note('Going back', '%s' % (
+                    row.get('error') if isinstance(row, dict) else 'no answer'), 'bad')
+                return
+            if not row.get('offered'):
+                self.note('Going back', 'Going back to an older version is switched off: '
+                          'Settings - Upgrades on the pages (Offer going back to an older '
+                          'version), or isemon --set downgrade_offered=1.', 'bad')
+                return
+            if row.get('busy'):
+                self.note('Going back', 'Not now: %s.' % '; '.join(row['busy']), 'bad')
+                return
+            safe = [p for p in row.get('older') or [] if isinstance(p, dict) and p.get('safe')]
+            if not safe:
+                self.note('Going back', 'No older version at upgrade_url that is safe to go back '
+                          'to: this database can run %s and later.' % (row.get('floor') or '?'),
+                          'ok')
+                return
+            ver = self.choose('Go back to an older version', [
+                (p['version'], 'isemon %s' % p['version']) for p in safe],
+                'This server runs %s; safe as far back as %s. The database is left as it is.'
+                % (__version__, row.get('floor') or '?'))
+            if not ver:
+                return
+            # What changed in it first, as long as it is wanted (1.10.233).
+            while True:
+                what = self.choose('isemon %s' % ver, [
+                    ('changes', 'What changed in %s' % ver), ('go', 'Go back to %s' % ver)],
+                    'The database is left as it is.')
+                if what == 'changes':
+                    one = [p for p in safe if p['version'] == ver][0]
+                    self.page('What changed in isemon %s' % ver,
+                              one.get('changelog') or 'This version\u2019s README has no '
+                                                       'entry for it.')
+                    continue
+                if what != 'go':
+                    return
+                break
+            if not self.confirm('Go back to %s' % ver, 'isemon %s is fetched, its signature '
+                                'checked by root, and put in; the database is left exactly as '
+                                'it is. For a minute nothing is read or banned.' % ver,
+                                'Go back', danger=True):
+                return
+            self.live(lambda: self.show_live('--downgrade', ver, '--yes'))
+
+        return self.sub('Upgrades', [
+            ('1', 'Look for a new version on the web now', lambda: self.act('--upgrade-check')),
+            ('2', 'Upgrade from the web, with its progress', online),
+            ('3', 'Follow the upgrade going on', lambda: self.show_live('--upgrade-follow'),
+             'plain'),
+            ('4', 'Upgrade from a package file', install),
+            ('5', 'What the last upgrade from the pages did', lambda: self.act('--web-status')),
+            ('6', 'Go back to an older version', back),
+        ])
+
+    @staticmethod
+    def ver(v):
+        """1.10.228 as numbers, to be compared."""
+        return tuple(int(x) for x in re.findall(r'\d+', str(v or ''))[:4])
+
+    def live(self, fn):
+        """A view of its own on the terminal (a live log, a progress)."""
+        self.go_plain(fn)
+
+    # ---- 11 the service -----------------------------------------------------------
+    def m_service(self):
+        def restart():
+            if self.confirm('Restart the service', 'Nothing is read or banned for a few '
+                            'seconds; the bans on the firewall stay.', 'Restart'):
+                self.act_argv([CONSOLE_SYSTEMCTL, 'restart', 'isemon'],
+                              '$ systemctl restart isemon', quiet_ok='restarted')
+
+        def at_login():
+            on = console_at_login()
+            r = self.choose('The console at login', [
+                ('on', 'On - root sees this console first when signing in'),
+                ('off', 'Off - root gets the ordinary shell')],
+                'It is %s now.' % ('ON' if on else 'off'), cur=0 if on else 1)
+            if r and (r == 'on') != on:
+                try:
+                    self.note('The console at login', console_at_login_set(r == 'on'), 'ok')
+                except (SystemExit, OSError) as e:
+                    self.note('The console at login', str(e), 'bad')
+        return self.sub('The service', [
+            ('1', 'Its state', lambda: self.act_argv(
+                [CONSOLE_SYSTEMCTL, 'status', 'isemon', '--no-pager', '-n', '60', '-l'],
+                '$ systemctl status isemon')),
+            ('2', 'Restart it', restart),
+            ('3', 'The pages (nginx, PHP)', lambda: self.act_argv(
+                [CONSOLE_SYSTEMCTL, 'status', 'nginx', 'php-fpm', '--no-pager', '-n', '5'],
+                '$ systemctl status nginx php-fpm')),
+            ('4', 'Its journal, live', self.journal, 'plain'),
+            ('5', 'The console at login: on or off', at_login),
+        ])
+
+
+def console_at_login():
+    """Whether root lands in the console at login: the flag file says `on`.
+    Read only as a plain file - a link is not followed, a pipe not waited
+    on."""
+    try:
+        fd = os.open(str(CONSOLE_FLAG), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return False
+    try:
+        import stat as _stat
+        if not _stat.S_ISREG(os.fstat(fd).st_mode):
+            return False
+        return os.read(fd, 8).decode('ascii', 'replace').strip() == 'on'
+    finally:
+        os.close(fd)
+
+
+def console_at_login_set(on):
+    if os.geteuid() != 0 and not os.environ.get('ISEMON_CONSOLE_FLAG'):
+        raise SystemExit('isemon: only root sets that')
+    # Written beside it and put in its place: a link or a pipe found there
+    # is replaced, never followed.
+    tmp = '%s.%d.tmp' % (CONSOLE_FLAG, os.getpid())
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+    try:
+        os.write(fd, b'on\n' if on else b'off\n')
+        os.fchmod(fd, 0o644)
+    finally:
+        os.close(fd)
+    try:
+        os.rename(tmp, str(CONSOLE_FLAG))
+    except OSError:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    return ('the isemon console opens when root signs in at the console or over SSH (q '
+            'leaves it for the shell)' if on else 'root signs in to the ordinary shell; '
+            '`isemon --console` opens the console')
+
+
+def cmd_console_at_login(args, pal):
+    try:
+        if args.console_at_login != 'status':
+            pal.good(console_at_login_set(args.console_at_login == 'on'))
+        else:
+            pal.good('the console at login is %s' % ('ON' if console_at_login() else 'off'))
+    except OSError as e:
+        pal.bad('%s: %s' % (CONSOLE_FLAG, e.strerror or e))
+        return 1
+    if not CONSOLE_PROFILE.exists():
+        pal.warn('%s is not there - install.sh puts it in' % CONSOLE_PROFILE)
+    return 0
+
+
+def console_main(pal, args=None):
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        pal.bad('the console needs a terminal')
+        return 2
+    try:
+        return Console(pal, config=getattr(args, 'config', None)).run()
+    except KeyboardInterrupt:
+        return 130
+
+
 class HelpfulParser(argparse.ArgumentParser):
     """An ArgumentParser whose help and whose complaints are readable.
 
@@ -70879,6 +78400,15 @@ def main(argv=None):
                              'the same, and colour is off anyway when this is not a terminal)')
     parser.add_argument('--json', action='store_true', help='answer as JSON where it makes sense')
     parser.add_argument('--debug', action='store_true', help='say everything, this run only')
+    # The console (1.10.228): isemon by its menus, on the server's screen or
+    # over SSH, and whether root lands in it at login.
+    con = parser.add_argument_group('the console')
+    con.add_argument('--console', action='store_true',
+                     help='isemon by its menus, on this screen or over SSH: every action '
+                          'is the isemon command it shows, plus the live log')
+    con.add_argument('--console-at-login', choices=('on', 'off', 'status'),
+                     metavar='on|off|status', dest='console_at_login',
+                     help='whether root lands in the console when signing in (root only)')
 
     look = parser.add_argument_group('looking')
     look.add_argument('--status', action='store_true', help='what it is doing, in one screen')
@@ -70974,9 +78504,49 @@ def main(argv=None):
     act.add_argument('--fetch', metavar='WHAT', choices=['feeds', 'geo'],
                      help='fetch the public lists, or the country database')
     act.add_argument('--backup', action='store_true', help='a copy of the database, now')
+    act.add_argument('--upgrade-check', action='store_true', dest='upgrade_check',
+                     help='what is at upgrade_url now, and whether it is newer')
+    act.add_argument('--upgrade-online', metavar='VERSION', nargs='?', const='newest',
+                     dest='upgrade_online',
+                     help='fetch the newest version from upgrade_url (or VERSION), have root '
+                          'check and put it in, and follow it (--yes: do not ask)')
+    act.add_argument('--upgrade-follow', action='store_true', dest='upgrade_follow',
+                     help='follow an upgrade going on, with its progress bar')
+    act.add_argument('--downgrade-check', action='store_true', dest='downgrade_check',
+                     help='the older versions at upgrade_url, and which of them it is safe to '
+                          'go back to')
+    act.add_argument('--changes', action='store_true',
+                     help='with --downgrade-check: what changed in each older version as well')
+    act.add_argument('--downgrade', metavar='VERSION', dest='downgrade',
+                     help='go back to an older version from upgrade_url - only as far back as '
+                          'is safe; the database is left as it is (--yes: do not ask)')
+    act.add_argument('--upgrade-status', action='store_true', dest='upgrade_status',
+                     help='the last upgrade, the package waiting, and what the web has')
+
+    act.add_argument('--net', action='store_true',
+                     help='this server\'s network as NetworkManager has it, and a change '
+                          'under way or waiting to be kept (set it on the pages: Settings - '
+                          'Network)')
+    act.add_argument('--reboot', action='store_true',
+                     help='restart this server, as Settings - Restart and power off does; '
+                          'asks first unless --yes')
+    act.add_argument('--poweroff', action='store_true',
+                     help='switch this server off; asks first unless --yes')
+    act.add_argument('--change-keep', metavar='net|fw', choices=('net', 'fw'),
+                     dest='change_keep',
+                     help='keep a change on trial: the new network (net), or the change of the '
+                          'firewall and of who may reach which page (fw)')
+    act.add_argument('--change-back', metavar='net|fw', choices=('net', 'fw'),
+                     dest='change_back',
+                     help='put back now what was there before a change on trial')
     act.add_argument('--web-status', action='store_true', dest='web_status',
                      help='what root has in place of what Settings asked: nginx, TLS, the '
                           'firewall, and the last upgrade from the pages')
+    act.add_argument('--time', action='store_true',
+                     help='the clock as chrony sees it: how far off, synchronised or not, '
+                          'its sources (Settings - Time)')
+    act.add_argument('--time-step', action='store_true', dest='time_step',
+                     help='step the clock to the time servers now (chronyc makestep)')
     act.add_argument('--full', action='store_true',
                      help='with --backup: a full backup - the copy with the keys in it '
                           '(settings.key, banfeed.key, known_hosts) and config.json to read')
@@ -70993,12 +78563,24 @@ def main(argv=None):
     act.add_argument('--restore', metavar='FILE',
                      help='put a copy of the database back, replacing everything in the '
                           'live one. A copy of what is replaced is made first')
+    # Backups to another machine (1.10.228).
+    act.add_argument('--restore-bundle', metavar='FILE', dest='restore_bundle',
+                     help='put back a backup sent to another machine '
+                          '(isemon-backup-....tar.gz.enc): the database and its keys; without '
+                          '--yes, what is in it')
+    act.add_argument('--passphrase-file', metavar='FILE', dest='passphrase_file',
+                     help='with --restore-bundle: the password of the backups, one line (else '
+                          'ISEMON_BACKUP_PASSWORD, else asked)')
+    act.add_argument('--rbackup-now', action='store_true', dest='rbackup_now',
+                     help='a backup to every destination switched on (Settings -> Backups), now')
+    act.add_argument('--rbackup-status', action='store_true', dest='rbackup_status',
+                     help='the backup destinations and the last backups sent')
     act.add_argument('--erase', metavar='WHAT', nargs='?', const='list',
                      help='erase collected data: records, otp, eduroam, bans, feeds, geo, events. '
                           'With no name it lists what there is. Never touches accounts, '
                           'settings or the whitelist')
     act.add_argument('--yes', action='store_true',
-                     help='with --erase: do not ask first')
+                     help='with --erase, --reboot or --poweroff: do not ask first')
     act.add_argument('--stop-job', metavar='NAME', dest='stop_job',
                      help='ask one of the jobs from --jobs to stop. It stops after the '
                           'batch it is in and keeps what it has already done')
@@ -71080,6 +78662,11 @@ def main(argv=None):
     if getattr(args, 'json', False) or args.no_color:
         pal = Palette(False)
         parser.palette = pal
+    # The console and its switch at login open no database (1.10.228).
+    if args.console_at_login:
+        return cmd_console_at_login(args, pal)
+    if args.console:
+        return console_main(pal, args)
 
     # The commands that are about accounts go straight to the database, so
     # they work when nothing else does.
@@ -71095,6 +78682,12 @@ def main(argv=None):
         (args.rollup_check, cmd_rollup_check),
         (bool(args.stop_job), cmd_stop_job), (bool(args.php_notice), cmd_php_notice),
         (args.web_status, cmd_web_status),
+        (args.upgrade_check, cmd_upgrade_check), (bool(args.upgrade_online), cmd_upgrade_online),
+        (args.upgrade_follow, cmd_upgrade_follow), (args.upgrade_status, cmd_upgrade_status),
+        (args.downgrade_check, cmd_downgrade_check), (bool(args.downgrade), cmd_downgrade),
+        (args.time or args.time_step, cmd_time),
+        (args.net, cmd_net), (args.reboot or args.poweroff, cmd_power),
+        (bool(args.change_keep or args.change_back), cmd_change),
         (args.failed, cmd_failed), (args.passed, cmd_passed),
         (args.blocked, cmd_blocked), (args.events, cmd_events), (args.check, cmd_check),
         (bool(args.address), cmd_address), (bool(args.ban), cmd_ban),
@@ -71108,6 +78701,8 @@ def main(argv=None):
         (bool(args.fetch), cmd_fetch),
         (bool(args.export), cmd_export), (bool(args.import_), cmd_import),
         (args.backup, cmd_backup), (args.dump, cmd_dump), (bool(args.restore), cmd_restore),
+        (args.rbackup_status, cmd_rbackup_status), (args.rbackup_now, cmd_rbackup_now),
+        (bool(args.restore_bundle), cmd_restore_bundle),
         (args.rescan, cmd_rescan), (args.ptr_fill, cmd_ptr_fill),
         (bool(args.ptr), cmd_ptr), (bool(args.database), cmd_database),
         (bool(args.erase), cmd_erase),

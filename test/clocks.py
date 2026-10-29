@@ -357,7 +357,12 @@ folder, otp, edu, store, daemon = fresh()
 # Written as a machine in Prague writes it, at this second, so that what
 # the reader makes of it is six hours out whatever the hour is.
 WROTE_AT = float(int(time.time()))
-GAP = 6 * 3600.0
+# Six hours for most of the year, five in the weeks when one of the two
+# has changed its clocks and the other has not yet.
+GAP = float(round(sum(
+    sign * isemon.datetime.fromtimestamp(WROTE_AT, __import__('zoneinfo').ZoneInfo(zone))
+    .utcoffset().total_seconds()
+    for sign, zone in ((1, 'Europe/Prague'), (-1, 'America/New_York')))))
 (otp / isemon.CONFIG['otp_name']).write_text(
     OTP_LINE.replace('Sep 25 11:32:48', prague_now(WROTE_AT)) + '\n')
 (edu / isemon.CONFIG['eduroam_name']).write_text(

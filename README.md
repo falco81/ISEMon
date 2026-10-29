@@ -371,6 +371,194 @@ working.
 
 ## Version
 
+1.10.233
+
+- **Going back to an older version is off until it is switched on.** *Offer
+  going back to an older version* (`downgrade_offered`, Settings - Upgrades,
+  off as it comes): off, the card *Going back to an older version* is not
+  shown, and going back is refused on the page, by `isemon --downgrade` and in
+  the console alike, saying where it is switched on. Switched on and saved,
+  the card is there at once.
+- **What changed, for every older version.** *What changed* beside each one on
+  the card shows its entry out of this version's own README (which keeps every
+  version's - nothing is fetched); `isemon --downgrade-check --changes` prints
+  them, and the console offers it before it goes back.
+
+1.10.232
+
+- **Going back to an older version, as far back as is safe - the database
+  left exactly as it is.** *Settings - Upgrades - Going back to an older
+  version*, `isemon --downgrade-check`, `isemon --downgrade VERSION` and the
+  console's *Upgrades - Go back to an older version*: a version published at
+  `upgrade_url`, only as far back as can still run on the database as it is.
+  Nothing is copied or put back, however big the database. How far is
+  `DOWNGRADE_FLOOR` (1.10.226 - the database has had exactly the same shape
+  since), written into the database (it only ever rises) and checked again by
+  root from its own copy of the program; refused while anything is half done
+  (an upgrade, a change waiting to be kept, a restart, a backup or another long
+  job). Every older version at the address is said safe or not, and why. The
+  version is typed before it goes. See [docs/upgrades.md](docs/upgrades.md).
+
+1.10.231
+
+- **Upgrades - From the web: which version, when there are several.** With
+  more than one version newer than this one at `upgrade_url`, a list above
+  the buttons picks which is put in - the newest unless another is chosen -
+  and *Upgrade to X now* and *Only fetch it* go by it. With only one there is
+  no list and the page is as it was. The command line already had it
+  (`isemon --upgrade-online 1.10.230`), and the console too.
+
+1.10.230
+
+- **Settings - About: the console when root signs in, switched on the page.**
+  The same choice as `isemon --console-at-login on|off` - the console opening
+  by itself when root signs in at the server's screen or over SSH - with a
+  switch under *The console*. /etc is not the isemon account's to write, so
+  root's own helper (isemon_web.py) writes /etc/isemon-console-login, as a
+  plain file put in place, never through a link. Anybody signed in sees it; a
+  full administrator switches it; Events says who. The page says when the
+  login script itself is not installed yet.
+
+1.10.229
+
+- **Settings - About says what this server runs on**, as otp's does: isemon,
+  Python and where it is, psycopg2 (with its libpq), PyMySQL, colorama,
+  Python's OpenSSL and SQLite, the database server as it names itself,
+  pg_dump and mariadb-dump, nginx, php-fpm and the command line's PHP, the
+  system and its kernel, systemd, the system's OpenSSL, rsyslog, chrony,
+  NetworkManager, iptables, firewalld, OpenSSH and smbclient - only what is
+  there. Under it the page's own PHP as php-fpm runs it (the version, how,
+  OPcache, the web server) and every extension it has loaded. Asked of the
+  machine at most once an hour.
+
+1.10.228
+
+What otp - the token server of the same author - learned about running a
+server, brought over: its network, its clock, restarting it, backups to
+another machine, upgrades from the web and a console, each with the same
+pages and the same words as otp has them. A plain upgrade switches none of it
+on and changes nothing on the machine.
+
+- **Settings, the menu on the left, in groups that say what is in them**:
+  Logs read, Banning, The firewall, Access (Accounts, Active Directory,
+  Certificates and TLS, Firewall and access), Server (Network, Time, Restart
+  and power off), Data (The database, Backups, Export and import), Monitoring
+  and updates (Upgrades, About).
+- **Settings - Network** ([docs/network-and-power.md](docs/network-and-power.md)):
+  this server's address with its prefix, gateway, DNS servers, search
+  domains, host name and IPv6 as NetworkManager has them, and new ones. *Check
+  it* says what will happen; *Change it and restart* is done by the server
+  itself, step by step on the page: the settings that named the old address or
+  name (the database's address when it was this server's own), a certificate
+  made here made again with the new name and address, NetworkManager, the
+  host name, /etc/hosts (the old one kept as /etc/hosts.isemon-before), and a
+  restart. A page opened at the old address goes to the new one.
+- **On trial, and back by itself unless kept**: a new network
+  (`net_confirm_min`, 10 min) and a change of the firewall or of who may reach
+  which page (`fw_confirm_min`, 5 min). A banner on every page counts the time
+  down with *Keep it* and *Put the old back now*; `isemon --change-keep
+  net|fw`, `--change-back`, the console and `isemon --status` too. Not kept -
+  or come up without its new address - the server goes back to its old network
+  (a restart) and the firewall and the lists to what they were.
+- **Settings - Restart and power off**: this server restarted or switched off,
+  the page following it down and back up; `isemon --reboot`, `--poweroff`.
+- **Settings - Time** ([docs/time.md](docs/time.md)): the clock as chrony sees
+  it - how far off, synchronised, the source, stratum, frequency, root delay
+  and dispersion, leap, the zone - every source with its state and reach, and
+  *Step it now*. When isemon is to set them (off unless switched on): the time
+  servers and pools with iburst, prefer and NTS, makestep, minsources, the
+  networks served the time (opened in isemon's firewall by itself) and the
+  time zone, written into /etc/chrony.conf between marks and taken out again
+  as they were. A clock not synchronised, or more than a second off, is a
+  problem in the header and in `isemon --status`; `isemon --time`,
+  `--time-step`. install.sh installs chrony only on a fresh install.
+- **Settings - Backups** ([docs/remote-backups.md](docs/remote-backups.md)):
+  a backup of everything - the full backup, the database with its keys -
+  packed, locked with the backups' password (`openssl enc -aes-256-cbc -pbkdf2
+  -iter 600000 -md sha256`, opened by isemon or by openssl alone) and sent to
+  other machines: a folder, FTP, FTPS (an authority of your own, a pinned
+  certificate, a client certificate), SFTP and SCP (a key made here, the
+  server's host key trusted once), SMB (SMB3 encryption) - up to twenty, on a
+  schedule (daily or weekly) or now, the newest N kept at each and none older
+  than so many days. Without a password nothing is sent. Each backup carries
+  its own RESTORE.md; one is put back from a destination's list, from a file
+  sent on the page or with `isemon --restore-bundle FILE` on a machine
+  installed from nothing - a copy of the database as it is is made first.
+  `isemon --rbackup-status`, `--rbackup-now`. No destination and the schedule
+  off until somebody sets them up.
+- **Upgrades - From the web** ([docs/upgrades.md](docs/upgrades.md)):
+  `upgrade_url` (https://github.com/falco81/ISEMon/tree/main/release - a
+  GitHub folder, a page or listing linking to packages, or one package) is
+  looked at once a day (`upgrade_check`) and on *Look now*; a newer one is
+  offered - *Upgrade to X now*, or *Only fetch it* - fetched over HTTPS and
+  checked by root exactly as a package sent by hand. Nothing is put in by
+  itself. `isemon --upgrade-check`, `--upgrade-online [VERSION] [--yes]`,
+  `--upgrade-follow`, `--upgrade-status`.
+- **`isemon --console`** ([docs/console.md](docs/console.md)): the whole of
+  isemon by its menus, on the server's screen or over SSH - a bar at the top
+  with what matters, menus by the arrows, windows with fields instead of
+  prompts, Yes/No before anything that cannot be undone, lists to scroll and
+  find in, the live log and the journal with what is typed as a grep. Every
+  action is the `isemon ...` command its window shows. `isemon
+  --console-at-login on|off|status` opens it when root signs in (never for a
+  command over SSH, scp or a script); a fresh install switches it on, an
+  upgrade leaves it off until switched on. `--set KEY=@env` takes a secret
+  from the environment rather than the command line.
+
+1.10.227
+
+A search for faults, and what it found.
+
+- **otp's packets read twice are written once.** A request and its reply put
+  together across a second (1.10.226) were written again as a second row
+  when the same lines came in again - a file read from its start, a shipper
+  sending twice: the request nobody answered, or the answer to nobody, and a
+  refusal before any code written twice, once with nobody's name on it. The
+  shipper's own id of each line is now looked for in the row it was put into.
+- **An id is somebody's own packet.** A token line whose packet had not been
+  shipped yet was given the nearest packet carrying the same id - the
+  client's address and port, which the next person through the same head end
+  uses too - on another node and of another person, and the opened record
+  said it was certain. The packet now has to be on the same machine and of
+  the same person, as the match by name always required.
+- **A code typed is not "a code by SMS was sent and never typed".** Where the
+  question's request was never put together with it, it has no name on it,
+  and the code typed into the second window was looked for under that empty
+  name and not found. It is looked for by otp's `State` instead.
+- **Upgrades from the page.** An upgrade whose helper was killed (systemd's
+  25 minutes, a restart under it) left its request behind, and every
+  upgrade after it said *an upgrade is running already*, for good; a request
+  no longer counts once it and root's last word on it are half an hour old,
+  which is when the page calls it stuck. The 20-minute deadline on
+  install.sh stopped only bash and went on waiting for what bash had started
+  (a dnf, a sleep); it now stops all of it. A package of a few megabytes
+  whose headers say gigabytes is refused at the first header, not after root
+  has unpacked it.
+- **Certificates and TLS.** Choosing only another DH group wrote the new
+  parameters and never reloaded nginx, which went on with the old ones; it
+  is reloaded now, and a refusal puts the old parameters back too. A
+  firewall that cannot be kept here (firewalld, or no iptables) is refused
+  before nginx is touched, not after the new certificate is already in force
+  under a status that said *failed*.
+- **The ban list.** A key, user name or password that is not UTF-8 (a
+  FortiGate sending its password in Latin-1, or junk in the address) was a
+  500 that never reached the daemon to be counted; it is refused like any
+  other wrong one.
+- **php2shell notice.** Upload progress is read as PHP as a whole has it:
+  `.user.ini` is applied after the body is read, so the notice said
+  *guarded* on a PHP that was not, and pointed at `.user.ini` as the fix. It
+  points at `/etc/php.d/99-php2shell.ini` as well now
+  ([docs/php2shell.md](docs/php2shell.md)).
+- FTD message 722033 was named *AnyConnect DTLS established*; it is the first
+  connection of a session.
+- `tools/release.py` refuses a linked folder, which it used to sign and every
+  machine then refused.
+- The tests no longer depend on the day or the zone they are run in: ISE's
+  offset was written as `+02:00` whatever the season, Prague and New York
+  were taken to be six hours apart in the week they are five, one test of
+  1.10.226 passed only on the afternoon of 24 October, and two read
+  Prague's lines in the machine's own zone.
+
 1.10.226
 
 - **otp - the token server that replaced totpcgi, with codes by SMS and by

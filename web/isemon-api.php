@@ -101,7 +101,13 @@ function isemon_call(string $path, string $method = 'GET', ?array $payload = nul
 
     $body = null;
     if ($payload !== null) {
-        $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        /* Bytes that are not UTF-8 - a ban-list key or password sent in
+           Latin-1, or anybody's junk in a query string - made json_encode
+           return false, and strlen(false) under strict_types was a 500
+           that never reached the daemon to be counted (1.10.227). They go
+           as U+FFFD instead, and are refused like any other wrong word. */
+        $body = (string) json_encode($payload,
+                                     JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Content-Length: ' . strlen($body);
     } elseif ($method !== 'GET') {
@@ -540,7 +546,15 @@ function isemon_php_safety(): array
         $needs = $patched ? '' : '8.2.35';
     }
     $reading = (string) ini_get('enable_post_data_reading');
-    $progress = (string) ini_get('session.upload_progress.enabled');
+    /* Upload progress as PHP as a whole has it, not as .user.ini has it for
+       this directory (1.10.227). php-fpm applies .user.ini after it has
+       already read the body - which is where php2shell is - so the page
+       said "guarded" on a PHP that was not, and pointed at .user.ini as
+       the fix. docs/php2shell.md step 4 is what turns it off early enough. */
+    $all = function_exists('ini_get_all') ? @ini_get_all('session', true) : false;
+    $progress = is_array($all) && isset($all['session.upload_progress.enabled']['global_value'])
+        ? (string) $all['session.upload_progress.enabled']['global_value']
+        : (string) ini_get('session.upload_progress.enabled');
     $off = function (string $v): bool {
         return in_array(strtolower($v), ['0', '', 'off', 'false', 'no'], true);
     };

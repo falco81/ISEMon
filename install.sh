@@ -51,6 +51,10 @@ WEB_PATH_UNIT="/etc/systemd/system/isemon-web.path"
 WEB_SERVICE_UNIT="/etc/systemd/system/isemon-web.service"
 UPGRADE_PATH_UNIT="/etc/systemd/system/isemon-upgrade.path"
 UPGRADE_SERVICE_UNIT="/etc/systemd/system/isemon-upgrade.service"
+# The console at login (1.10.228): the profile script, and root's choice,
+# kept in /etc itself where only root writes.
+CONSOLE_PROFILE="/etc/profile.d/zz-isemon-console.sh"
+CONSOLE_FLAG="/etc/isemon-console-login"
 
 DRY_RUN=""
 ASSUME_YES=""
@@ -190,6 +194,52 @@ root_helpers() {
         || warn "isemon-web.path did not start; the firewall and TLS from the pages wait for it"
     good "the firewall, TLS and upgrades from the pages: isemon-web.path, isemon-upgrade.path"
     good "packages from the pages must be signed by: $(ls "$LIB_DIR/release-keys" 2>/dev/null | sed 's/\.pub$//' | paste -sd, -)"
+}
+
+# The clock (1.10.228): Settings -> Time reads it through chrony. A fresh
+# install puts chrony in when it is missing (and starts it, the way
+# AlmaLinux has it out of the box); an upgrade does nothing at all to it -
+# the machine's time is the site's own - and only says so when chronyd is
+# not running.
+chrony_check() {    # chrony_check fresh|upgrade
+    if [[ "$1" == "fresh" ]] && ! command -v chronyd >/dev/null 2>&1 && [[ "$PKG" == "dnf" ]]; then
+        if run dnf install -y chrony >/dev/null 2>&1; then
+            good "chrony installed (Settings -> Time reads the clock through it)"
+            if ! systemctl is-active --quiet systemd-timesyncd 2>/dev/null; then
+                run systemctl enable --now chronyd >/dev/null 2>&1 || true
+            fi
+        else
+            warn "dnf could not install chrony; Settings -> Time shows the clock without it"
+        fi
+    fi
+    [[ -n "$DRY_RUN" ]] && return 0
+    if ! systemctl is-active --quiet chronyd 2>/dev/null; then
+        note "chronyd is not running here: Settings -> Time shows the clock as chrony sees it,"
+        note "  and says what it can without it (dnf install chrony; systemctl enable --now chronyd)"
+    fi
+    return 0
+}
+
+# The isemon console at login (1.10.228), as otp's: root signing in at the
+# console or over SSH lands in `isemon --console`, and q leaves it for the
+# shell. The profile script is put in on every run and does nothing without
+# the choice file; the choice is written on a fresh install only. An upgrade
+# never makes it or changes it, so a plain upgrade changes nothing about
+# root's login (`isemon --console-at-login on` switches it on there).
+install_console() {        # install_console fresh|upgrade
+    run install -D -m 0644 "$SOURCE_DIR/deploy/isemon-console-login.sh" "$CONSOLE_PROFILE"
+    [[ "$1" == "fresh" ]] || return 0
+    if [[ -n "$DRY_RUN" ]]; then note "[would write] $CONSOLE_FLAG"; return 0; fi
+    # A link or anything else that is not a plain file is taken away, never
+    # followed; a choice already made (a reinstall) is left as it is.
+    if [[ -L "$CONSOLE_FLAG" || ( -e "$CONSOLE_FLAG" && ! -f "$CONSOLE_FLAG" ) ]]; then
+        rm -f "$CONSOLE_FLAG"
+    fi
+    if [[ ! -f "$CONSOLE_FLAG" ]]; then
+        printf 'on\n' > "$CONSOLE_FLAG.$$" && chmod 0644 "$CONSOLE_FLAG.$$" \
+            && mv -f "$CONSOLE_FLAG.$$" "$CONSOLE_FLAG"
+    fi
+    good "the isemon console at login: $(head -c 3 "$CONSOLE_FLAG" 2>/dev/null | tr -cd 'onf') (isemon --console-at-login on|off)"
 }
 
 not_a_link() {      # not_a_link PATH...
@@ -535,7 +585,8 @@ if [[ -n "$DO_UNINSTALL" ]]; then
     run systemctl disable --now isemon-web.path isemon-upgrade.path 2>/dev/null || true
     for one in "$UNIT_FILE" "$LOGROTATE_FILE" "$NGINX_CONF" "$BIN_LINK" \
                "$WEB_PATH_UNIT" "$WEB_SERVICE_UNIT" "$UPGRADE_PATH_UNIT" "$UPGRADE_SERVICE_UNIT" \
-               "/etc/polkit-1/rules.d/49-isemon-database.rules" "$CONFIG_DIR/may-restart-database"; do
+               "/etc/polkit-1/rules.d/49-isemon-database.rules" "$CONFIG_DIR/may-restart-database" \
+               "$CONSOLE_PROFILE" "$CONSOLE_FLAG"; do
         [[ -e "$one" ]] && run rm -f "$one"
     done
     [[ -d "$LIB_DIR" ]] && run rm -rf "$LIB_DIR"
@@ -1250,6 +1301,8 @@ if [[ -n "$DO_UPGRADE" ]]; then
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.service" "$UNIT_FILE"
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.logrotate" "$LOGROTATE_FILE"
     root_helpers
+    chrony_check upgrade
+    install_console upgrade
     run systemctl daemon-reload
     progress 7 "restarting isemon"
     run systemctl restart isemon.service
@@ -1358,6 +1411,25 @@ else
     else
         note "python3-colorama is not available; colour is written by hand instead,"
         note "which works on this terminal and is the only difference."
+    fi
+fi
+
+# Backups to another machine (1.10.228): an SMB destination goes through
+# smbclient (SFTP and SCP through the OpenSSH above). Offered on a fresh
+# install and never insisted on; an upgrade never gets this far, so it
+# installs nothing for it - Settings -> Backups says when one is missing.
+if ! command -v smbclient >/dev/null 2>&1; then
+    smb_pkg="samba-client"
+    [[ "$PKG" == "apt" ]] && smb_pkg="smbclient"
+    if [[ "$PKG" == "dnf" ]]; then
+        dnf install -y "$smb_pkg" >/dev/null 2>&1 || true
+    elif [[ "$PKG" == "apt" ]]; then
+        apt-get install -y "$smb_pkg" >/dev/null 2>&1 || true
+    fi
+    if command -v smbclient >/dev/null 2>&1; then
+        good "$smb_pkg installed — backups can go to a Windows or Samba share"
+    else
+        note "$smb_pkg is not available; backups to a Windows share need it (the others do not)."
     fi
 fi
 
@@ -1589,6 +1661,8 @@ step "The service"
 run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.service" "$UNIT_FILE"
 run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.logrotate" "$LOGROTATE_FILE"
 root_helpers
+chrony_check fresh
+install_console fresh
 run systemctl daemon-reload
 run systemctl enable isemon.service >/dev/null
 run systemctl restart isemon.service
@@ -1788,6 +1862,7 @@ say "  isemon --blocked         who is banned"
 say "  isemon --failed          the failed attempts"
 say "  isemon --whitelist       what may never be banned"
 say "  isemon --users           who may open the dashboard"
+say "  isemon --console         all of it by its menus (root sees it at login)"
 say "  isemon --help            everything else"
 echo
 if [[ -z "$MIKROTIK_HOST" ]]; then
