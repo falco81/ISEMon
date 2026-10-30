@@ -371,6 +371,31 @@ working.
 
 ## Version
 
+1.10.246
+
+- **The otp logs over TLS: rsyslog took no input** where imtcp is loaded by a
+  file read after `10-otp-tls.conf` (a `10-remote-logs.conf`, say): rsyslog
+  reads its folder in order, and an input of a module not loaded yet is refused
+  - "input module name 'imtcp' is unknown" and every TLS parameter "not
+  known". The file is `/etc/rsyslog.d/99-otp-tls.conf` now, read after every
+  file that loads imtcp; a `10-otp-tls.conf` there before (1.10.245's, or one
+  by hand from otp's README - that one kept beside as `.isemon-before`) is
+  taken away when it is written. Checked against the real rsyslogd in the
+  tests where there is one. Nothing was changed by the refusal: rsyslog was
+  asked first and said no.
+- **isemon's firewall: The otp logs over TLS**, a card of its own under *What
+  isemon lets in by itself*, there once the encrypted input is switched on -
+  and the port let in at once, not at the next look (up to ten minutes): from
+  anywhere, or only from otp's nodes once their addresses are named on it; it
+  can be turned off like the others. Its port is no longer counted among the
+  plain logs' ports. The card on The OTP logs says what isemon's firewall does
+  with it.
+- **Remove…** on *Encrypted receiving (TLS)* (and `isemon --otp-tls-remove`, in
+  the console too): the encrypted receiving taken away whole - the input,
+  isemon's certificate and key, otp's authority and the one made here, the
+  folder `/etc/pki/rsyslog/otp/` with them. *Switch off…* goes on keeping the
+  certificate to switch it on again. Either way the plain input on 514 stays.
+
 1.10.245
 
 - **The otp logs over TLS** - *Settings → The OTP logs → Encrypted receiving
@@ -383,7 +408,7 @@ working.
   or **pasted** (your own CA or a public one); then the port (6514), mutual TLS
   and the nodes (by name, or any node with a certificate of otp's authority).
   Root's helper writes `/etc/pki/rsyslog/otp/` and its own
-  `/etc/rsyslog.d/10-otp-tls.conf` (otp's is read for the port, the mode and the
+  rsyslog file (otp's is read for the port, the mode and the
   nodes, never put in as it is): the TLS files per input, imtcp loaded once,
   the gtls driver (ossl where that is the one there; rsyslog-gnutls installed
   when neither is), `rsyslogd -N1` before the restart and a listening port

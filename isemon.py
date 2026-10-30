@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.245'
+__version__ = '1.10.246'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -63701,10 +63701,13 @@ class WebRoot(object):
     def fw_conf(self):
         got = self._meta('web_fw', {})
         logs = got.get('logs') if isinstance(got.get('logs'), dict) else {}
+        otl = got.get('otptls') if isinstance(got.get('otptls'), dict) else {}
         return {'on': bool(got.get('on')), 'off': [str(x) for x in got.get('off') or []][:20],
                 'rules': [r for r in got.get('rules') or [] if isinstance(r, dict)][:500],
                 'logs': {'any': logs.get('any', True) is not False,
                          'from': [str(x) for x in logs.get('from') or []][:400]},
+                'otptls': {'any': otl.get('any', True) is not False,
+                           'from': [str(x) for x in otl.get('from') or []][:400]},
                 'touched': bool(got)}
 
     def access_conf(self):
@@ -63811,7 +63814,10 @@ class WebRoot(object):
                 'action': action, 'note': note, 'disabled': bool(x.get('disabled'))}
 
     # ---- what isemon lets in by itself -----------------------------------------
-    AUTO = ('ssh', 'icmp', 'dhcpv6', 'web', 'logs', 'ntp')
+    AUTO = ('ssh', 'icmp', 'dhcpv6', 'web', 'logs', 'otptls', 'ntp')
+    # The file of rsyslog's encrypted input for otp's nodes (1.10.245-246):
+    # its port is a card of its own, with senders of its own.
+    OTPTLS_FILES = ('99-otp-tls.conf', '10-otp-tls.conf')
 
     def auto_rules(self, look=None, fw=None, access=None):
         """What the machine needs let in for what isemon does here, worked out
@@ -63861,6 +63867,8 @@ class WebRoot(object):
         items.append({'key': 'web', 'title': 'The dashboard (HTTP, HTTPS)', 'why': why,
                       'rules': web})
         ports = look.get('rsyslog') or []
+        tls = [p for p in ports if p.get('file') in self.OTPTLS_FILES and p.get('proto') == 'tcp']
+        ports = [p for p in ports if p not in tls]
         logs = []
         for p in ports[:12]:
             note = 'logs (%s %s)' % (p.get('proto'), p.get('port'))
@@ -63878,6 +63886,26 @@ class WebRoot(object):
                       if ports else 'rsyslog listens on no network port here (or it is not '
                                     'known yet)',
                       'rules': logs, 'senders': fw['logs']})
+        # The otp logs over TLS (1.10.246): there when rsyslog's encrypted
+        # input for otp's nodes is - let in by itself, from anywhere unless
+        # the nodes are named (mutual TLS checks them whatever the firewall).
+        if tls:
+            ot = fw['otptls']
+            rules = []
+            for p in tls[:4]:
+                note = 'the otp logs over TLS (tcp %s)' % p.get('port')
+                if ot['any'] or not ot['from']:
+                    rules += both('tcp', str(p.get('port')), '', note)
+                else:
+                    for n in ot['from']:
+                        rules += both('tcp', str(p.get('port')), n, note)
+            items.append({'key': 'otptls', 'title': 'The otp logs over TLS',
+                          'why': 'tcp %s, %s - rsyslog\'s encrypted input for otp\'s nodes '
+                                 '(Settings → The OTP logs → Encrypted receiving)' % (
+                                     ','.join(str(p.get('port')) for p in tls[:4]),
+                                     'from anywhere' if ot['any'] or not ot['from']
+                                     else 'only from the nodes named'),
+                          'rules': rules, 'senders': ot})
         # The time served to the networks set under Settings → Time (1.10.228).
         nc = self._meta('ntp_conf', {})
         if nc.get('manage') and nc.get('allow'):
@@ -64029,6 +64057,13 @@ class WebRoot(object):
             if not fw['logs']['any'] and not fw['logs']['from']:
                 raise WebRootError('the logs would come from nobody: name the senders, or '
                                    'anywhere')
+        if 'otptls' in data:
+            ot = data.get('otptls') if isinstance(data.get('otptls'), dict) else {}
+            fw['otptls'] = {'any': bool(ot.get('any', True)),
+                            'from': self.nets(ot.get('from'), 'otp\'s nodes')}
+            if not fw['otptls']['any'] and not fw['otptls']['from']:
+                raise WebRootError('the otp logs over TLS would come from nobody: name otp\'s '
+                                   'nodes, or anywhere')
         said = []
         acc = self.access_checked(data['access']) if data.get('access') is not None else None
         np = getattr(self.daemon, 'netpower', None)
@@ -65077,7 +65112,9 @@ def otptls_root_ask(wr, data, wait=900):
 
 OTPTLS_WORDS = {'apply': 'set up the otp logs over TLS', 'make': 'set up the otp logs over TLS '
                 'with a certificate made here', 'set': 'changed the otp logs over TLS',
-                'off': 'switched the otp logs over TLS off'}
+                'off': 'switched the otp logs over TLS off',
+                'remove': 'removed the otp logs over TLS - the input, the certificate, its key '
+                          'and the authorities'}
 
 
 def otptls_ask(wr, a):
@@ -65142,17 +65179,19 @@ def otptls_tick(wr):
                     (' - ' + '; '.join(said)[:400]) if said else ''), 'warn',
                     who=a.get('by') or '')
                 kept = wr._meta('otp_tls', {})
-                kept.update(do=a['do'], by=who, at=time.time(), on=a['do'] != 'off')
+                kept.update(do=a['do'], by=who, at=time.time(),
+                            on=a['do'] not in ('off', 'remove'))
                 if a['do'] in ('apply', 'make'):
                     kept['how'] = a.get('how') or a['do']
                 wr._put('otp_tls', kept)
                 # The port is one more rsyslog listens on: isemon's firewall
-                # (where it is isemon's) lets it in from the log senders.
+                # (where it is isemon's) lets it in by itself - The otp logs
+                # over TLS under What isemon lets in by itself - at once,
+                # not at the next look in ten minutes (1.10.246).
                 try:
-                    wr._asked_look = 0.0
-                    wr.look(fresh_s=0)
-                except Exception:                       # noqa: BLE001
-                    pass
+                    otptls_fw_follow(wr)
+                except Exception as e:                  # noqa: BLE001
+                    log('the otp logs over TLS: the firewall: %s' % e, 'warn')
         except Exception as e:                          # noqa: BLE001
             log('the otp logs over TLS: %s' % e, 'warn')
         finally:
@@ -65162,6 +65201,26 @@ def otptls_tick(wr):
         if more:
             otptls_tick(wr)
     threading.Thread(target=go, name='isemon-otptls', daemon=True).start()
+
+
+def otptls_fw_follow(wr, wait=30):
+    """Root looked again (the ports rsyslog listens on), and isemon's
+    firewall put in with the port of the otp logs over TLS - or without it,
+    once switched off. Nothing where the firewall is not isemon's."""
+    t0 = time.time()
+    wr._asked_look = 0.0
+    wr.look(fresh_s=0)
+    end = t0 + wait
+    while time.time() < end:
+        if float((wr.read('look.json') or {}).get('at') or 0) >= t0:
+            break
+        time.sleep(0.3)
+    if not wr.fw_conf()['on']:
+        return False
+    if wr.pending():
+        return False                # the minute's due() asks once root is free
+    return wr.push('the otp logs over TLS changed the ports rsyslog listens on').get(
+        'pushed', False)
 
 
 def otptls_suggest():
@@ -65190,6 +65249,7 @@ def otptls_view(wr):
         except (WebRootError, OSError):
             pass
     conf = now.get('conf') or {}
+    fw = wr.fw_conf()
     with OTPTLS_LOCK:
         pending = [a['do'] for a in OTPTLS_WORK['queue'] if a['do'] != 'read']
         if OTPTLS_WORK['busy'] and OTPTLS_WORK.get('doing') not in ('', 'read'):
@@ -65206,6 +65266,9 @@ def otptls_view(wr):
             'fw_open': now.get('fw_open'), 'trouble': now.get('trouble') or [],
             'plain': [p for p in now.get('others') or [] if str(p.get('port')) == '514'],
             'others': now.get('others') or [],
+            'fw_isemon': {'on': fw['on'], 'let': 'otptls' not in fw['off'],
+                          'any': fw['otptls']['any'] or not fw['otptls']['from'],
+                          'from': fw['otptls']['from']},
             'kept': wr._meta('otp_tls', {}), 'pending': pending, 'busy': OTPTLS_WORK['busy'],
             'error': OTPTLS_WORK.get('error') or '', 'said': OTPTLS_WORK.get('said') or [],
             'last': OTPTLS_WORK.get('last') or {}, 'suggest': otptls_suggest(),
@@ -65271,6 +65334,10 @@ def otptls_api(wr, b, by):
         otptls_ask(wr, ask)
         return {'ok': True, 'message': 'root puts it in - it takes a few seconds, a minute when '
                                        'rsyslog-gnutls has to be installed first'}
+    if act == 'remove':
+        otptls_ask(wr, {'do': 'remove', 'by': by})
+        return {'ok': True, 'message': 'root takes the encrypted input, its certificate and key '
+                                       'away within seconds; the plain one stays as it is'}
     if act == 'off':
         otptls_ask(wr, {'do': 'off', 'by': by})
         return {'ok': True, 'message': 'root takes the encrypted input away within seconds; the '
@@ -77850,6 +77917,41 @@ def cmd_otp_tls_off(args, pal, store):
     return rc
 
 
+def cmd_otp_tls_remove(args, pal, store):
+    """--otp-tls-remove (1.10.246): the encrypted receiving taken away whole -
+    the input, isemon's certificate and key, otp's authority and the one made
+    here. Asked first unless --yes. The plain input on 514 stays."""
+    session = cli_session(store)
+    status, v = _ot_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if not v.get('helper'):
+        pal.bad(OTPTLS_NO_HELPER)
+        return 1
+    if v.get('read') and not v.get('on') and not (v.get('cert') or {}).get('subject') and \
+            not (v.get('own_ca') or {}).get('pem') and not v.get('ca'):
+        if not as_json(args, v):
+            pal.note('  nothing of the otp logs over TLS is here: nothing to remove')
+        return 0
+    if not args.yes:
+        if getattr(args, 'json', False):
+            print(json.dumps({'ok': False, 'error': '--json does not ask: with --yes'}))
+            return 1
+        pal.say('  rsyslog no longer receives otp\'s logs encrypted, and isemon\'s certificate, '
+                'its key, otp\'s authority and the authority made here are deleted. The plain '
+                'input on 514 stays as it is. A certificate made here again comes from a new '
+                'authority, to paste into otp again.')
+        if not _ot_yes(args, pal, 'remove it?'):
+            return 1
+    asked = time.time() - 1
+    status, data = api_call('/api/otptls', 'POST', {'action': 'remove'}, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    rc, _v = _ot_after(args, pal, session, asked, 'removed - the plain input on 514 is as it '
+                       'was')
+    return rc
+
+
 def cmd_web_status(args, pal, store):
     """What root has in place of what the pages asked: nginx, TLS, the
     firewall, and the last upgrade from the pages (1.10.222)."""
@@ -81179,7 +81281,8 @@ class Console(object):
             ('import', 'Put in the file otp made (isemon-tls.zip)'),
             ('make', 'Make a certificate here (otp then trusts this machine\'s authority)'),
             ('set', 'Change the nodes, the port or the mode'),
-            ('off', 'Switch it off')],
+            ('off', 'Switch it off'),
+            ('remove', 'Remove it - the certificate and its key too')],
             'rsyslog\'s encrypted input for otp\'s logs (Settings → isemon → Encrypted sending '
             'in otp), put in by root. The plain input on 514 is never touched. Only a full '
             'administrator.')
@@ -81197,6 +81300,12 @@ class Console(object):
                             'until it sends plain again. The plain input on 514 stays; the '
                             'certificate and its key are kept.', 'Switch it off', danger=True):
                 self.act('--otp-tls-off', '--yes')
+        elif what == 'remove':
+            if self.confirm('Remove the otp logs over TLS', 'rsyslog no longer receives '
+                            'otp\'s logs encrypted, and isemon\'s certificate, its key and the '
+                            'authorities are deleted. The plain input on 514 stays.',
+                            'Remove it', danger=True):
+                self.act('--otp-tls-remove', '--yes')
 
     def _otp_tls_how(self, title, port='', nodes=None, mutual=None):
         """The port, the mode and the nodes asked: the options for them, or
@@ -81797,6 +81906,10 @@ def main(argv=None):
     act.add_argument('--otp-tls-off', action='store_true', dest='otp_tls_off',
                      help='switch the encrypted input off; the plain one on 514 stays. Asks '
                           'first unless --yes')
+    act.add_argument('--otp-tls-remove', action='store_true', dest='otp_tls_remove',
+                     help='take the encrypted receiving away whole - the input, its '
+                          'certificate, key and authorities; the plain one on 514 stays. '
+                          'Asks first unless --yes')
     act.add_argument('--otp-tls-port', metavar='N', type=int, dest='otp_tls_port',
                      help='with --otp-tls-import, -make or -set: the port it listens on '
                           '(6514 unless said)')
@@ -81847,7 +81960,8 @@ def main(argv=None):
                           'settings or the whitelist')
     act.add_argument('--yes', action='store_true',
                      help='with --erase, --reboot, --poweroff, --os-update, '
-                          '--root-key-drop, --otp-tls-import or --otp-tls-off: do not ask '
+                          '--root-key-drop, --otp-tls-import, --otp-tls-off or '
+                          '--otp-tls-remove: do not ask '
                           'first')
     act.add_argument('--stop-job', metavar='NAME', dest='stop_job',
                      help='ask one of the jobs from --jobs to stop. It stops after the '
@@ -81964,6 +82078,7 @@ def main(argv=None):
         (args.otp_tls, cmd_otp_tls), (bool(args.otp_tls_import), cmd_otp_tls_import),
         (bool(args.otp_tls_make), cmd_otp_tls_make), (args.otp_tls_set, cmd_otp_tls_set),
         (args.otp_tls_off, cmd_otp_tls_off),
+        (args.otp_tls_remove, cmd_otp_tls_remove),
         (args.failed, cmd_failed), (args.passed, cmd_passed),
         (args.blocked, cmd_blocked), (args.events, cmd_events), (args.check, cmd_check),
         (bool(args.address), cmd_address), (bool(args.ban), cmd_ban),

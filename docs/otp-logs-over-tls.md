@@ -90,10 +90,10 @@ none, it is let in by its certificate alone.
   isemon.crt      isemon's certificate (with its chain)
   isemon.key      its key - 0600
   isemon-ca.*     the authority made here, when it was
-/etc/rsyslog.d/10-otp-tls.conf
+/etc/rsyslog.d/99-otp-tls.conf
 ```
 
-`10-otp-tls.conf` as isemon writes it (rsyslog 8.2108 and later, mutual TLS
+`99-otp-tls.conf` as isemon writes it (rsyslog 8.2108 and later, mutual TLS
 with two nodes):
 
 ```
@@ -124,20 +124,36 @@ input(type="imtcp" port="6514" name="otp-tls"
   after the restart that it listens on the port. When either says no, every
   file is put back as it was, rsyslog restarted on the old ones, and the card
   says what rsyslog said.
-- **A file set up by hand before** (from otp's README) is written over - kept
+- **99-, not 10-** (1.10.246): rsyslog reads `/etc/rsyslog.d` in order, and
+  an input of a module not loaded yet is refused - `input module name 'imtcp'
+  is unknown`, and then every TLS parameter `not known`. otp's README names
+  the file `10-otp-tls.conf`, which comes before a `10-remote-logs.conf` that
+  loads imtcp; `99-otp-tls.conf` comes after every file that does.
+- **A `10-otp-tls.conf` there before** - set up by hand from otp's README, or
+  written by isemon 1.10.245 - is taken away when isemon's file is written (two
+  inputs on one port and rsyslog refuses both). One set up by hand is kept
   once beside it as `10-otp-tls.conf.isemon-before`, which rsyslog does not
   load.
 - **SELinux**: 6514/tcp is `syslog_tls_port_t` already; another port is added
   to it with `semanage` where SELinux is on. The files are labelled with
   `restorecon`.
 - **The firewall**: with firewalld, the port is let in (and taken out again
-  when switched off); with isemon's own firewall (*Settings → Firewall*), the
-  port is one more that rsyslog listens on, let in by *The logs arriving
-  (rsyslog)* from the log senders named there.
+  when switched off). With isemon's own firewall (*Settings → Firewall and
+  access*), switching it on adds a card of its own under *What isemon lets in
+  by itself* - **The otp logs over TLS** - and the port is let in at once, from
+  anywhere, or only from otp's nodes once their addresses are named there
+  (mutual TLS checks the nodes whatever the firewall says). Turned off there,
+  isemon lets it in no more; switched off here, the card goes.
 
-*Switch off…* takes `10-otp-tls.conf` away and restarts rsyslog; the
+*Switch off…* takes `99-otp-tls.conf` away and restarts rsyslog; the
 certificate and its key stay, to switch it on again (*Change nodes…*). The
 plain input is as it was all along.
+
+*Remove…* (1.10.246) takes all of it away: `99-otp-tls.conf`, isemon's
+certificate and key, otp's authority, the authority made here and the folder
+`/etc/pki/rsyslog/otp/` - and the port out of firewalld, where isemon put it
+there. Set up again afterwards, a certificate made here comes from a new
+authority, to paste into otp again. The plain input stays as it was.
 
 ## From the command line
 
@@ -147,6 +163,7 @@ isemon --otp-tls-import isemon-tls.zip   the file otp made (passphrase: --passph
 isemon --otp-tls-make isemon.example.net,192.0.2.10 [--otp-tls-ca otp-ca.pem]
 isemon --otp-tls-set --otp-tls-nodes "otp1 otp2 otp3"
 isemon --otp-tls-off
+isemon --otp-tls-remove                  the certificate, its key and the authorities too
 ```
 
 `--otp-tls-port`, `--otp-tls-nodes` and `--otp-tls-mutual yes|no` go with

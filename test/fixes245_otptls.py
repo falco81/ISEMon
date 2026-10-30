@@ -58,7 +58,8 @@ PLAIN = ('module(load="imudp")\ninput(type="imudp" port="514")\n'
 (rsd / '10-ise.conf').write_text(PLAIN)
 (rsd / '11-otp.conf').write_text('if ($programname == "totp.cgi") then { stop }\n')
 PKI = etc / 'pki' / 'rsyslog' / 'otp'
-CONF = rsd / '10-otp-tls.conf'
+CONF = rsd / '99-otp-tls.conf'
+OLD = rsd / '10-otp-tls.conf'
 mods = work / 'lib64-rsyslog'
 mods.mkdir()
 (mods / 'lmnsd_gtls.so').write_text('')
@@ -73,7 +74,7 @@ rsyslogd.write_text('#!/bin/sh\ncase "$1" in\n'
 rsyslogd.chmod(0o755)
 ENV = dict(os.environ, ISEMON_STATE=str(state), ISEMON_WEB_NO_SERVICES='1',
            ISEMON_RSYSLOG='%s:%s' % (etc / 'rsyslog.conf', rsd),
-           ISEMON_OTPTLS_CONF=str(CONF), ISEMON_OTPTLS_DIR=str(PKI),
+           ISEMON_OTPTLS_CONF=str(CONF), ISEMON_OTPTLS_OLD=str(OLD), ISEMON_OTPTLS_DIR=str(PKI),
            ISEMON_RSYSLOGD=str(rsyslogd), ISEMON_RSYSLOG_MODDIR=str(mods),
            ISEMON_NGINX_CONF=str(work / 'none.conf'))
 HELPER = ROOT / 'deploy' / 'isemon_web.py'
@@ -288,15 +289,76 @@ try:
     r = ask({'id': 'f3', 'do': 'make', 'names': '', 'port': 6514, 'mutual': False})
     ok('no name: refused', (r['ok'], 'one at least' in r['said']), (False, True))
 
-    print('\nOne set up by hand before')
-    CONF.write_text('# by hand\nmodule(load="imtcp")\ninput(type="imtcp" port="6514")\n')
+    print('\nOne set up by hand before, as otp\'s README says (10-otp-tls.conf)')
+    CONF.unlink()
+    OLD.write_text('# by hand\nmodule(load="imtcp")\ninput(type="imtcp" port="6514")\n')
     r = ask({'id': 'g1', 'do': 'read'})
-    ok('read as not isemon\'s', (r['data']['conf']['there'], r['data']['conf']['mine']),
-       (True, False))
+    ok('read as not isemon\'s, the file it is said', (r['data']['conf']['there'],
+                                                    r['data']['conf']['mine'], r['data']['file']),
+       (True, False, str(OLD)))
     r = ask({'id': 'g2', 'do': 'set', 'port': 6514, 'mutual': False})
-    ok('set here: it is written over, the old one kept beside - never loaded',
-       (r['ok'], Path(str(CONF) + '.isemon-before').read_text().startswith('# by hand'),
-        str(CONF.name + '.isemon-before').endswith('.conf')), (True, True, False))
+    ok('set here: isemon\'s 99-otp-tls.conf, the one by hand kept beside - never loaded - and '
+       'taken away (6514 is not taken twice)',
+       (r['ok'], CONF.exists(), OLD.exists(),
+        Path(str(OLD) + '.isemon-before').read_text().startswith('# by hand'),
+        str(OLD.name + '.isemon-before').endswith('.conf')), (True, True, False, True, False))
+
+    print('\nisemon 1.10.245\'s own 10-otp-tls.conf: taken over')
+    OLD.write_text(CONF.read_text())
+    CONF.unlink()
+    r = ask({'id': 'g3', 'do': 'read'})
+    ok('read as isemon\'s, by its old name', (r['data']['conf']['mine'], r['data']['file']),
+       (True, str(OLD)))
+    r = ask({'id': 'g4', 'do': 'set', 'port': 6514, 'mutual': False})
+    ok('set again: 99-otp-tls.conf, the old one gone and not kept beside again',
+       (r['ok'], CONF.exists(), OLD.exists(),
+        Path(str(OLD) + '.isemon-before').read_text().startswith('# by hand')),
+       (True, True, False, True))
+
+    # The fault 1.10.245 had on a real machine: imtcp loaded by a file read
+    # AFTER 10-otp-tls.conf (10-remote-logs.conf) - rsyslog refused the
+    # input ("input module name 'imtcp' is unknown", every TLS parameter
+    # "not known"). Checked with the real rsyslogd where there is one.
+    real = shutil.which('rsyslogd')
+    if real:
+        print('\nThe real rsyslogd (%s): imtcp loaded by a file read after 10-otp' %
+              subprocess.run([real, '-v'], capture_output=True, text=True).stdout.split('(')[0]
+              .strip())
+        main = etc / 'rsyslog-real.conf'
+        main.write_text('$IncludeConfig %s/*.conf\naction(type="omfile" file="/dev/null")\n' % rsd)
+        wrap = work / 'rsyslogd-real'
+        wrap.write_text('#!/bin/sh\n[ "$1" = "-N1" ] && exec %s -N1 -f %s\nexec %s "$@"\n'
+                        % (real, main, real))
+        wrap.chmod(0o755)
+        for f in rsd.iterdir():
+            f.unlink()
+        (rsd / '10-remote-logs.conf').write_text(
+            'module(load="imudp")\ninput(type="imudp" port="514")\n'
+            'module(load="imtcp")\ninput(type="imtcp" port="514")\n')
+        (rsd / '11-otp.conf').write_text('if ($programname == "totp.cgi") then { stop }\n')
+        OLD.write_text('input(type="imtcp" port="6514" name="otp-tls"\n'
+                       '      StreamDriver.Name="gtls" StreamDriver.Mode="1"\n'
+                       '      StreamDriver.AuthMode="anon")\n')
+        chk = subprocess.run([str(wrap), '-N1'], capture_output=True, text=True)
+        ok('...the fault as it was: rsyslog refuses a file named 10-otp-tls.conf',
+           ('imtcp\' is unknown' in chk.stderr + chk.stdout, chk.returncode != 0), (True, True))
+        OLD.unlink()
+        env_real = dict(ENV, ISEMON_RSYSLOGD=str(wrap))
+        env_real.pop('ISEMON_RSYSLOG_MODDIR')
+        for one in ({'do': 'apply', 'ca': held['ca'], 'cert': held['cert'], 'key': held['key'],
+                     'port': 6514, 'mutual': True, 'peers': 'otp1 otp2', 'how': 'otp'},
+                    {'do': 'set', 'port': 6514, 'mutual': True, 'peers': ''},
+                    {'do': 'set', 'port': 6514, 'mutual': False}):
+            (state / 'web' / 'otptls.ask').write_text(json.dumps(dict(one, id='r', at=time.time())))
+            subprocess.run(['python3', '-I', str(HELPER)], env=env_real, capture_output=True)
+            r = json.loads((state / 'web' / 'otptls.json').read_text())
+            ok('rsyslog takes it: %s' % (r['data']['conf'].get('auth') if r['ok'] else one),
+               (r['ok'], r.get('said') if not r['ok'] else ''), (True, ''))
+        chk = subprocess.run([str(wrap), '-N1'], capture_output=True, text=True)
+        ok('...rsyslogd -N1 of the whole: no error', [l for l in (chk.stderr + chk.stdout)
+                                                     .splitlines() if 'error' in l.lower()], [])
+        (rsd / '10-remote-logs.conf').unlink()
+        (rsd / '10-ise.conf').write_text(PLAIN)
 
     print('\nrsyslog\'s version')
     VERSION.write_text('8.2106.0')
@@ -329,6 +391,18 @@ try:
     ok('StreamDriver.Name="ossl"', (r['ok'], 'StreamDriver.Name="ossl"' in CONF.read_text()),
        (True, True))
 
+    print('\nRemoved (1.10.246): the input, the certificate, its key and the authorities')
+    ok('there before', (CONF.exists(), (PKI / 'isemon.key').exists()), (True, True))
+    r = ask({'id': 'k1', 'do': 'remove'})
+    ok('all of it gone, the folder too; the plain input as it was',
+       (r['ok'], CONF.exists(), PKI.exists(), (rsd / '10-ise.conf').read_text()),
+       (True, False, False, PLAIN))
+    ok('...said', any('certificate, its key and the authorities' in w for w in r['said']))
+    ok('...the read after: nothing', (r['data']['conf'], r['data'].get('cert'),
+                                      r['data'].get('own_ca')), ({'there': False}, None, None))
+    r = ask({'id': 'k2', 'do': 'remove'})
+    ok('removed again: no fault', r['ok'])
+
     # ------------------------------------------------------------------------
     print('\nThe daemon: the card\'s questions, done behind')
     isemon.STATE_DIR = state
@@ -360,8 +434,8 @@ try:
     v = isemon.otptls_view(wr)
     settle()
     v = isemon.otptls_view(wr)
-    ok('read by itself when the card is opened', (v['read'], v['on'], v['driver']),
-       (True, True, 'ossl'))
+    ok('read by itself when the card is opened (removed just before: off)',
+       (v['read'], v['on'], v['driver_there']), (True, False, 'ossl'))
     ok('...names this machine may be reached by, offered', bool(v['suggest']))
     got = isemon.otptls_api(wr, {'action': 'open', 'zip': base64.b64encode(ZIP).decode(),
                                  'passphrase': PW}, 'boss')
@@ -403,6 +477,43 @@ try:
                            'peers': 'otp1 otp2 otp3'}, 'boss')
     settle()
     ok('the nodes changed', isemon.otptls_view(wr)['peers'], ['otp1', 'otp2', 'otp3'])
+    print('\nisemon\'s firewall: a card of its own, let in by itself (1.10.246)')
+    look = wr.look(fresh_s=0)
+    end = time.time() + 20
+    while time.time() < end and not any(p.get('file') == CONF.name
+                                        for p in (wr.read('look.json') or {}).get('rsyslog') or []):
+        time.sleep(0.2)
+    look = wr.read('look.json') or {}
+    items = {i['key']: i for i in wr.auto_rules(look)}
+    ok('The otp logs over TLS under What isemon lets in by itself',
+       ('otptls' in items, [(r['proto'], r['port'], r['source']) for r in items['otptls']['rules']]
+        if 'otptls' in items else None),
+       (True, [('tcp', '6514', ''), ('tcp', '6514', '')]))
+    ok('...and not among the plain logs\' ports', any(r['port'] == '6514'
+                                                     for r in items['logs']['rules']), False)
+    ok('...on unless turned off', items['otptls']['on'])
+    wr._put('web_fw', {'on': True, 'otptls': {'any': False, 'from': ['192.0.2.21', '192.0.2.22']}})
+    items = {i['key']: i for i in wr.auto_rules(look)}
+    ok('...only from otp\'s nodes, when they are named',
+       [r['source'] for r in items['otptls']['rules']], ['192.0.2.21', '192.0.2.22'])
+    lines = wr.request(look)['fw']['rules']
+    ok('...in the rules root puts in', [r['source'] for r in lines if r['port'] == '6514'],
+       ['192.0.2.21', '192.0.2.22'])
+    pushed = []
+    wr.push = lambda why='', by='', force=False: pushed.append(why) or {'pushed': True}
+    ok('a change of the otp logs over TLS: the firewall put in at once',
+       (isemon.otptls_fw_follow(wr, wait=5), pushed[-1:]),
+       (True, ['the otp logs over TLS changed the ports rsyslog listens on']))
+    wr._put('web_fw', {'on': False})
+    ok('...nothing where the firewall is not isemon\'s', isemon.otptls_fw_follow(wr, wait=1), False)
+    del wr.push
+    v = isemon.otptls_view(wr)
+    ok('the card says what isemon\'s firewall does with it', v['fw_isemon'],
+       {'on': False, 'let': True, 'any': True, 'from': []})
+    page_ = (ROOT / 'web' / 'index.php').read_text()
+    ok('the firewall pane draws its senders', ("otptls: dr.otptls" in page_,
+                                              "item.key === 'otptls'" in page_), (True, True))
+
     isemon.otptls_api(wr, {'action': 'set', 'port': 6514, 'mutual': True,
                            'peers': 'bad name!'}, 'boss')
     settle()
@@ -416,6 +527,14 @@ try:
     v = isemon.otptls_view(wr)
     ok('switched off from the card', (v['on'], CONF.exists(), (rsd / '10-ise.conf').read_text()),
        (False, False, PLAIN))
+    isemon.otptls_api(wr, {'action': 'remove'}, 'boss')
+    settle()
+    v = isemon.otptls_view(wr)
+    ok('removed from the card: nothing left, said in the events',
+       (v['on'], v['cert'], PKI.exists(), any('removed the otp logs over TLS' in e['detail']
+                                              for e in store.events(limit=50)[0])),
+       (False, {}, False, True))
+    ok('...the page offers it', ("action: 'remove'" in page_, "'Remove…'" in page_), (True, True))
     stop.set()
 
     print('\nThe pages, the command line, the path unit')

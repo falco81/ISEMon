@@ -38701,6 +38701,7 @@ var FW = {last: null, timer: null, fam: '4', draft: null, dirty: false, ver: 0, 
 function fwFromServer(d) {
   return JSON.parse(JSON.stringify({on: !!d.conf.on, off: d.conf.off || [], rules: d.conf.rules || [],
                                     logs: d.conf.logs || {any: true, from: []},
+                                    otptls: d.conf.otptls || {any: true, from: []},
                                     access: d.access, access_changed: false}));
 }
 function fwDirty() {
@@ -38713,7 +38714,7 @@ function fwSave() {
   if (!FW.draft) return Promise.resolve(true);
   var dr = FW.draft, was = FW.last ? !!FW.last.conf.on : false, ver = FW.ver;
   var go = function () {
-    var body = {on: dr.on, off: dr.off, rules: dr.rules, logs: dr.logs};
+    var body = {on: dr.on, off: dr.off, rules: dr.rules, logs: dr.logs, otptls: dr.otptls};
     if (dr.access_changed) body.access = dr.access;
     return api('web-firewall', body).then(function (x) {
       toast(x.message, 'good');
@@ -38944,16 +38945,18 @@ function drawFwBody(d, auto) {
       fwDirty();
     }, !d.may));
     card.appendChild(top);
-    if (item.key === 'logs') {
-      var lg = FW.draft.logs;
+    if (item.key === 'logs' || item.key === 'otptls') {
+      var lg = item.key === 'logs' ? FW.draft.logs : FW.draft.otptls;
       var senders = el('textarea', 'mono fw-nets');
       senders.rows = 2; senders.spellcheck = false;
-      senders.placeholder = 'the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4';
+      senders.placeholder = item.key === 'logs' ? 'the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4'
+        : 'otp\'s nodes: 10.1.2.3, 10.1.2.4';
       senders.value = (lg.from || []).join(', ');
       senders.disabled = !d.may;
       senders.hidden = lg.any;
       senders.onchange = function () { lg.from = senders.value.split(/[\s,;]+/).filter(Boolean); fwDirty(); };
-      card.appendChild(wrSeg([[true, 'From anywhere'], [false, 'Only from the senders']], lg.any,
+      card.appendChild(wrSeg([[true, 'From anywhere'], [false, item.key === 'logs' ? 'Only from the senders'
+        : 'Only from otp\'s nodes']], lg.any,
         function (v) { lg.any = v; senders.hidden = v; fwDirty(); }, !d.may));
       card.appendChild(senders);
     }
@@ -40604,7 +40607,13 @@ function drawOtpTls() {
   if (d.on) {
     if (d.fw === 'firewalld') fw = d.fw_open === true ? 'firewalld lets it in'
       : (d.fw_open === false ? el('span', 'ot-warn', 'firewalld does not let it in') : 'unknown');
-    else if (d.fw === 'iptables') fw = 'isemon\'s firewall lets the log ports in from the log senders - see Settings → Firewall';
+    else if (d.fw === 'iptables') {
+      var fi = d.fw_isemon || {};
+      fw = !fi.on ? 'isemon\'s firewall is off here - the machine\'s own rules decide'
+        : (!fi.let ? el('span', 'ot-warn', 'isemon\'s firewall does not let it in - The otp logs over TLS is turned off under Settings → Firewall and access')
+          : (fi.any ? 'isemon\'s firewall lets it in from anywhere (Settings → Firewall and access)'
+            : 'isemon\'s firewall lets it in from otp\'s nodes only (Settings → Firewall and access)'));
+    }
     else fw = 'unknown';
   }
   var plain = (d.plain || []).map(function (p) { return p.proto + '/' + p.port + (p.file ? ' (' + p.file + ')' : ''); });
@@ -40672,9 +40681,17 @@ function drawOtpTls() {
   row.appendChild(again);
   if (d.on) {
     var sw = cmdButton('Switch off…', 'forget', 'danger');
+    explain(sw, 'The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes.');
     sw.disabled = off;
     sw.onclick = function () { otOff(); };
     row.appendChild(sw);
+  }
+  if (d.on || (d.cert && d.cert.subject) || (d.own_ca && d.own_ca.pem) || (d.ca && d.ca.length)) {
+    var rm = cmdButton('Remove…', 'trash', 'danger');
+    explain(rm, 'The encrypted receiving taken away whole: the input, isemon\'s certificate and key, otp\'s authority and the one made here. The plain input on 514 stays.');
+    rm.disabled = off;
+    rm.onclick = function () { otRemove(); };
+    row.appendChild(rm);
   }
   host.appendChild(row);
   if (d.on && d.mine) {
@@ -40699,6 +40716,11 @@ function otOff() {
   confirmThen('Switch the encrypted receiving off',
     'rsyslog stops taking otp\'s lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp\'s nodes back to plain sending first, or their lines stop arriving.',
     'Switch it off', function () { otSend({action: 'off'}).catch(oops); }, true);
+}
+function otRemove() {
+  confirmThen('Remove the encrypted receiving',
+    'rsyslog stops taking otp\'s lines over TLS, and isemon\'s certificate, its key, otp\'s authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch otp\'s nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again.',
+    'Remove it', function () { otSend({action: 'remove'}).catch(oops); }, true);
 }
 /* isemon's own authority, to paste into otp. */
 function otShowCa() {

@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.245",
+  "version": "1.10.246",
   "made": "2026-10-30",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -11016,9 +11016,21 @@
    "source": "isemon's certificate",
    "text": "isemon's certificate"
   },
-  "s.isemon-s-firewall-lets-the-log.d640d4d7": {
-   "source": "isemon's firewall lets the log ports in from the log senders - see Settings → Firewall",
-   "text": "isemon's firewall lets the log ports in from the log senders - see Settings → Firewall"
+  "s.isemon-s-firewall-does-not-let.bd4cce70": {
+   "source": "isemon's firewall does not let it in - The otp logs over TLS is turned off under Settings → Firewall and access",
+   "text": "isemon's firewall does not let it in - The otp logs over TLS is turned off under Settings → Firewall and access"
+  },
+  "s.isemon-s-firewall-is-off-here.4293acdb": {
+   "source": "isemon's firewall is off here - the machine's own rules decide",
+   "text": "isemon's firewall is off here - the machine's own rules decide"
+  },
+  "s.isemon-s-firewall-lets-it-in.1ca1c921": {
+   "source": "isemon's firewall lets it in from anywhere (Settings → Firewall and access)",
+   "text": "isemon's firewall lets it in from anywhere (Settings → Firewall and access)"
+  },
+  "s.isemon-s-firewall-lets-it-in.81ccaa7f": {
+   "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
+   "text": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)"
   },
   "s.isemon-service.141f5596": {
    "source": "isemon.service",
@@ -16236,6 +16248,10 @@
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the"
   },
+  "s.only-from-otp-s-nodes.cec2d00b": {
+   "source": "Only from otp's nodes",
+   "text": "Only from otp's nodes"
+  },
   "s.only-from-the-senders.92a4b4ca": {
    "source": "Only from the senders",
    "text": "Only from the senders"
@@ -16775,6 +16791,10 @@
   "s.otp-s-authority.35354348": {
    "source": "otp's authority",
    "text": "otp's authority"
+  },
+  "s.otp-s-nodes-10-1-2.db0d1b2e": {
+   "source": "otp's nodes: 10.1.2.3, 10.1.2.4",
+   "text": "otp's nodes: 10.1.2.3, 10.1.2.4"
   },
   "s.otp-s-nodes-can-send-their.db1557fb": {
    "source": "otp's nodes can send their totp.cgi and radius-detail lines here encrypted (syslog over TLS, RFC 5425). With mutual TLS only otp's own nodes may send. The plain input on 514 keeps working for any node not switched over yet, and what arrives is filed in the same folders - nothing about reading the logs changes.",
@@ -18616,6 +18636,18 @@
    "source": "Remove our address lists…",
    "text": "Remove our address lists…"
   },
+  "s.remove-the-encrypted-receiving.374e21c7": {
+   "source": "Remove the encrypted receiving",
+   "text": "Remove the encrypted receiving"
+  },
+  "s.remove.8ed77723": {
+   "source": "Remove…",
+   "text": "Remove…"
+  },
+  "s.remove.db998458": {
+   "source": "remove",
+   "text": "remove"
+  },
   "s.remove.e963907d": {
    "source": "Remove",
    "text": "Remove"
@@ -18936,6 +18968,10 @@
    "source": "root takes the encrypted input away within seconds; the plain one stays as it is",
    "text": "root takes the encrypted input away within seconds; the plain one stays as it is"
   },
+  "s.root-takes-the-encrypted-input-its.2228ad0a": {
+   "source": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is",
+   "text": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is"
+  },
   "s.root.dc76e9f0": {
    "source": "root",
    "text": "root"
@@ -19023,6 +19059,10 @@
   "s.rsyslog-s-encrypted-input-for-otp.dfdb0ed1": {
    "source": "rsyslog's encrypted input for otp's logs, read afresh: on or off, its port, its mode and nodes, the certificate, whether rsyslog listens, the firewall, the plain input on 514 kept, the last change (Settings - The OTP logs - Encrypted receiving)",
    "text": "rsyslog's encrypted input for otp's logs, read afresh: on or off, its port, its mode and nodes, the certificate, whether rsyslog listens, the firewall, the plain input on 514 kept, the last change (Settings - The OTP logs - Encrypted receiving)"
+  },
+  "s.rsyslog-stops-taking-otp-s-lines.4391a522": {
+   "source": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.",
+   "text": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is."
   },
   "s.rsyslog-stops-taking-otp-s-lines.e02e77b5": {
    "source": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.",
@@ -20992,6 +21032,10 @@
    "source": "Switch otp's nodes back to plain sending first, or their lines stop arriving.",
    "text": "Switch otp's nodes back to plain sending first, or their lines stop arriving."
   },
+  "s.switch-otp-s-nodes-back-to.a8cffc39": {
+   "source": "Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again.",
+   "text": "Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again."
+  },
   "s.switch-over-the-nodes-send-over.5ae428af": {
    "source": "Switch over: the nodes send over TLS from then on. The plain input here stays for any node not switched over.",
    "text": "Switch over: the nodes send over TLS from then on. The plain input here stays for any node not switched over."
@@ -21351,6 +21395,10 @@
   "s.take-the-clock-off-and-keep.60e3d70c": {
    "source": "Take the clock off and keep this address out until somebody says otherwise. The router is told at once.",
    "text": "Take the clock off and keep this address out until somebody says otherwise. The router is told at once."
+  },
+  "s.take-the-encrypted-receiving-away-whole.dda34616": {
+   "source": "take the encrypted receiving away whole - the input, its certificate, key and authorities; the plain one on 514 stays. Asks first unless --yes",
+   "text": "take the encrypted receiving away whole - the input, its certificate, key and authorities; the plain one on 514 stays. Asks first unless --yes"
   },
   "s.take-the-entries-this-daemon-put.901a4d8a": {
    "source": "Take the entries this daemon put on the firewall(s) off them — and nothing else. Anything you added by hand, every other address list, and all your firewall rules are untouched.",
@@ -23060,6 +23108,14 @@
    "source": "The eduroam logs",
    "text": "The eduroam logs"
   },
+  "s.the-encrypted-input-taken-away-the.e514e0a4": {
+   "source": "The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes.",
+   "text": "The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes."
+  },
+  "s.the-encrypted-receiving-taken-away-whole.7f2b653d": {
+   "source": "The encrypted receiving taken away whole: the input, isemon's certificate and key, otp's authority and the one made here. The plain input on 514 stays.",
+   "text": "The encrypted receiving taken away whole: the input, isemon's certificate and key, otp's authority and the one made here. The plain input on 514 stays."
+  },
   "s.the-end-has-to-come-after.ab4a91b6": {
    "source": "The end has to come after the start.",
    "text": "The end has to come after the start."
@@ -24451,6 +24507,10 @@
   "s.the-other-domains-it-answers-for.377a0a62": {
    "source": "The other domains it answers for",
    "text": "The other domains it answers for"
+  },
+  "s.the-otp-logs-over-tls.201c25e0": {
+   "source": "The otp logs over TLS",
+   "text": "The otp logs over TLS"
   },
   "s.the-otp-logs.1bf39375": {
    "source": "The OTP logs",
@@ -30264,9 +30324,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "with --downgrade-check: what changed in each older version as well"
   },
-  "s.with-erase-reboot-poweroff-os-update.87b3cc92": {
-   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import or --otp-tls-off: do not ask first",
-   "text": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import or --otp-tls-off: do not ask first"
+  "s.with-erase-reboot-poweroff-os-update.0131ff8a": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off or --otp-tls-remove: do not ask first",
+   "text": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off or --otp-tls-remove: do not ask first"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -33318,6 +33378,10 @@
    "source": "tcp {0} from anywhere - the way in to this machine. Turned off, keep a rule of your own for it.",
    "text": "tcp {0} from anywhere - the way in to this machine. Turned off, keep a rule of your own for it."
   },
+  "p.tcp-rsyslog-s-encrypted-input-for.2b388557": {
+   "source": "tcp {0}, {1} - rsyslog's encrypted input for otp's nodes (Settings → The OTP logs → Encrypted receiving)",
+   "text": "tcp {0}, {1} - rsyslog's encrypted input for otp's nodes (Settings → The OTP logs → Encrypted receiving)"
+  },
   "p.tcp.d3c8732d": {
    "source": "{0}/tcp, {1}",
    "text": "{0}/tcp, {1}"
@@ -35091,6 +35155,10 @@
   "r.rsyslog-stops-taking-otp-s-lines.5e5b3a5b": {
    "source": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving.",
    "text": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving."
+  },
+  "r.rsyslog-stops-taking-otp-s-lines.7c91c403": {
+   "source": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again.",
+   "text": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again."
   },
   "r.said-again-is-the-last-key.881cae52": {
    "source": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",

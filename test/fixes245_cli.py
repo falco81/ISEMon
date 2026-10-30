@@ -75,7 +75,7 @@ HELPER = ROOT / 'deploy' / 'isemon_web.py'
 import isemon                                        # noqa: E402
 
 PASS = FAIL = 0
-PORT = 19800 + random.randint(0, 90)
+PORT = 20100 + random.randint(0, 90)          # a range of its own: tests run side by side
 
 
 def ok(what, got, want=True):

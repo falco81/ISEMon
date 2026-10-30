@@ -2438,7 +2438,15 @@ def osup_job(ident, kind):
 # node not switched over yet goes on sending there.
 OTPTLS_ASK = 'otptls.ask'
 OTPTLS_FILE = 'otptls.json'
-OTPTLS_CONF = os.environ.get('ISEMON_OTPTLS_CONF', '/etc/rsyslog.d/10-otp-tls.conf')
+# 99-: read after every file that loads imtcp (1.10.246). rsyslog reads
+# rsyslog.d in order, and an input of a module not loaded yet is refused
+# ("input module name 'imtcp' is unknown", and every TLS parameter "not
+# known") - 10-otp-tls.conf, the name otp's README gives it, came before the
+# 10-remote-logs.conf of a site that loads imtcp there. One by that name -
+# isemon 1.10.245's, or one put in by hand - is taken away when this one is
+# written: two inputs on one port and rsyslog refuses both.
+OTPTLS_CONF = os.environ.get('ISEMON_OTPTLS_CONF', '/etc/rsyslog.d/99-otp-tls.conf')
+OTPTLS_OLD = os.environ.get('ISEMON_OTPTLS_OLD', '/etc/rsyslog.d/10-otp-tls.conf')
 OTPTLS_DIR = os.environ.get('ISEMON_OTPTLS_DIR', '/etc/pki/rsyslog/otp')
 RSYSLOGD = os.environ.get('ISEMON_RSYSLOGD', 'rsyslogd')
 RSYSLOG_MODDIRS = os.environ.get('ISEMON_RSYSLOG_MODDIR', '/usr/lib64/rsyslog:/usr/lib/rsyslog:'
@@ -2477,10 +2485,10 @@ def rsyslog_text(path):
 def otptls_others():
     """What the rest of rsyslog's files already say: whether imtcp is loaded,
     whether the default TLS files are set, and the ports listened on."""
-    mine = os.path.realpath(OTPTLS_CONF)
+    mine = (os.path.realpath(OTPTLS_CONF), os.path.realpath(OTPTLS_OLD))
     out = {'imtcp': [], 'global': [], 'ports': []}
     for path in rsyslog_conf_files():
-        if os.path.realpath(path) == mine:
+        if os.path.realpath(path) in mine:
             continue
         text = rsyslog_text(path)
         if re.search(r'module\s*\(\s*load\s*=\s*"imtcp"', text) or \
@@ -2489,7 +2497,7 @@ def otptls_others():
         if re.search(r'DefaultNetstreamDriver(CAFile|CertFile|KeyFile)', text):
             out['global'].append(path)
     for p in rsyslog_ports():
-        if os.path.realpath(os.path.join(os.path.dirname(OTPTLS_CONF), p['file'])) != mine:
+        if os.path.realpath(os.path.join(os.path.dirname(OTPTLS_CONF), p['file'])) not in mine:
             out['ports'].append(p)
     return out
 
@@ -2600,10 +2608,16 @@ def otptls_state():
         return {}
 
 
-def otptls_conf_now():
-    """The file there now: whether it is isemon's, and what it says."""
+def otptls_conf_now(path=None):
+    """The file there now: whether it is isemon's, and what it says - the
+    one by the old name when the new one is not there."""
+    if path is None:
+        got = otptls_conf_now(OTPTLS_CONF)
+        if not got.get('there') and os.path.lexists(OTPTLS_OLD):
+            got = dict(otptls_conf_now(OTPTLS_OLD), old=OTPTLS_OLD)
+        return got
     try:
-        with open(OTPTLS_CONF, encoding='utf-8', errors='replace') as f:
+        with open(path, encoding='utf-8', errors='replace') as f:
             text = f.read(65536)
     except FileNotFoundError:
         return {'there': False}
@@ -2652,7 +2666,7 @@ def fw_port_open(port):
 def otptls_read():
     conf = otptls_conf_now()
     st = otptls_state()
-    out = {'conf': conf, 'file': OTPTLS_CONF, 'dir': OTPTLS_DIR, 'version': '',
+    out = {'conf': conf, 'file': conf.get('old') or OTPTLS_CONF, 'dir': OTPTLS_DIR, 'version': '',
            'driver_there': otptls_driver(), 'how': st.get('how') or '',
            'fw': fw_backend(), 'others': []}
     v = rsyslog_version()
@@ -2814,27 +2828,37 @@ def otptls_apply(r):
     do = r.get('do')
     said = []
     v = rsyslog_version()
-    if do != 'off' and not NO_SERVICES and v is None:
+    if do not in ('off', 'remove') and not NO_SERVICES and v is None:
         raise Refused('rsyslog is not installed here (dnf install rsyslog)')
-    if do != 'off' and v is not None and v < (8, 2106):
+    if do not in ('off', 'remove') and v is not None and v < (8, 2106):
         raise Refused('rsyslog %d.%d cannot have an encrypted input beside the plain one: '
                       '8.2106 or later is needed (AlmaLinux / RHEL 9)' % v)
     per_input = v is None or v >= (8, 2108)
     st = otptls_state()
     now = otptls_conf_now()
-    paths = [OTPTLS_CONF, otptls_path('ca.pem'), otptls_path('isemon.crt'),
+    paths = [OTPTLS_CONF, OTPTLS_OLD, otptls_path('ca.pem'), otptls_path('isemon.crt'),
              otptls_path('isemon.key'), otptls_path('.isemon.json')]
     snap = snapshot(paths)
     old_port = now.get('port') if now.get('there') else 0
     # One set up by hand before: kept beside, once, never loaded again.
-    if now.get('there') and not now.get('mine') and \
-            not os.path.exists(OTPTLS_CONF + '.isemon-before'):
-        shutil.copy2(OTPTLS_CONF, OTPTLS_CONF + '.isemon-before')
-        said.append('the file there before is kept as %s.isemon-before' % OTPTLS_CONF)
+    for path in (OTPTLS_CONF, OTPTLS_OLD):
+        had = otptls_conf_now(path)
+        if had.get('there') and not had.get('mine') and \
+                not os.path.exists(path + '.isemon-before'):
+            shutil.copy2(path, path + '.isemon-before')
+            said.append('the file there before is kept as %s.isemon-before' % path)
     restarted = False
     try:
-        if do == 'off':
-            # The certificate and its key stay, to be switched on again.
+        # The one by the old name goes, whatever is asked (put back when
+        # rsyslog says no).
+        try:
+            os.unlink(OTPTLS_OLD)
+            said.append('%s taken away - %s takes its place' % (OTPTLS_OLD, OTPTLS_CONF))
+        except FileNotFoundError:
+            pass
+        if do in ('off', 'remove'):
+            # Off: the certificate and its key stay, to be switched on again.
+            # Removed (1.10.246): they go too, and the authority made here.
             try:
                 os.unlink(OTPTLS_CONF)
             except FileNotFoundError:
@@ -2842,10 +2866,29 @@ def otptls_apply(r):
             otptls_restart(0, said)
             restarted = True
             otptls_firewalld(old_port, False, st, said)
-            st.update(on=False, at=time.time())
-            if os.path.isdir(OTPTLS_DIR):
-                write_root(otptls_path('.isemon.json'), json.dumps(st), 0o600)
             said.append('the encrypted input is taken away; the plain one is as it was')
+            if do == 'off':
+                st.update(on=False, at=time.time())
+                if os.path.isdir(OTPTLS_DIR):
+                    write_root(otptls_path('.isemon.json'), json.dumps(st), 0o600)
+                return said
+            gone = []
+            if os.path.isdir(OTPTLS_DIR) and not os.path.islink(OTPTLS_DIR):
+                for name in sorted(os.listdir(OTPTLS_DIR)):
+                    if name in ('isemon.key', 'isemon.crt', 'ca.pem', 'isemon-ca.key',
+                                'isemon-ca.crt', 'isemon-ca.srl', '.isemon.json'):
+                        try:
+                            os.unlink(otptls_path(name))
+                            gone.append(name)
+                        except OSError:
+                            pass
+                try:
+                    os.rmdir(OTPTLS_DIR)
+                except OSError:
+                    pass
+            if gone:
+                said.append('the certificate, its key and the authorities taken away (%s)'
+                            % OTPTLS_DIR)
             return said
         port = otptls_port(r.get('port'))
         mutual = bool(r.get('mutual'))
@@ -2907,7 +2950,7 @@ def otptls_apply(r):
                                   'know the nodes by - the certificate here was set up without '
                                   'it')
             else:
-                raise Refused('read, apply, make, set or off')
+                raise Refused('read, apply, make, set, off or remove')
             if cert is not None:
                 cert_facts(pem_certs(cert)[0])
                 write_root(otptls_path('isemon.key'), key, 0o600)

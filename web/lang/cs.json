@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.245",
+  "version": "1.10.246",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -11016,9 +11016,21 @@
    "source": "isemon's certificate",
    "text": "Certifikát isemonu"
   },
-  "s.isemon-s-firewall-lets-the-log.d640d4d7": {
-   "source": "isemon's firewall lets the log ports in from the log senders - see Settings → Firewall",
-   "text": "firewall isemonu pouští porty logů dovnitř od odesílatelů logů - viz Nastavení → Firewall"
+  "s.isemon-s-firewall-does-not-let.bd4cce70": {
+   "source": "isemon's firewall does not let it in - The otp logs over TLS is turned off under Settings → Firewall and access",
+   "text": "firewall isemonu ho nepouští - The otp logs over TLS je vypnuté v Nastavení → Firewall a přístup"
+  },
+  "s.isemon-s-firewall-is-off-here.4293acdb": {
+   "source": "isemon's firewall is off here - the machine's own rules decide",
+   "text": "firewall isemonu je zde vypnutý - rozhodují vlastní pravidla stroje"
+  },
+  "s.isemon-s-firewall-lets-it-in.1ca1c921": {
+   "source": "isemon's firewall lets it in from anywhere (Settings → Firewall and access)",
+   "text": "firewall isemonu ho pouští odkudkoli (Nastavení → Firewall a přístup)"
+  },
+  "s.isemon-s-firewall-lets-it-in.81ccaa7f": {
+   "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
+   "text": "firewall isemonu ho pouští jen z uzlů otp (Nastavení → Firewall a přístup)"
   },
   "s.isemon-service.141f5596": {
    "source": "isemon.service",
@@ -16236,6 +16248,10 @@
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Jen pro server, který si o něj řekne. Vytvořený zde – jeho klíč nikdy neopustí tento stroj; server dostane"
   },
+  "s.only-from-otp-s-nodes.cec2d00b": {
+   "source": "Only from otp's nodes",
+   "text": "Jen z uzlů otp"
+  },
   "s.only-from-the-senders.92a4b4ca": {
    "source": "Only from the senders",
    "text": "Jen od odesílatelů"
@@ -16775,6 +16791,10 @@
   "s.otp-s-authority.35354348": {
    "source": "otp's authority",
    "text": "Autorita otp"
+  },
+  "s.otp-s-nodes-10-1-2.db0d1b2e": {
+   "source": "otp's nodes: 10.1.2.3, 10.1.2.4",
+   "text": "uzly otp: 10.1.2.3, 10.1.2.4"
   },
   "s.otp-s-nodes-can-send-their.db1557fb": {
    "source": "otp's nodes can send their totp.cgi and radius-detail lines here encrypted (syslog over TLS, RFC 5425). With mutual TLS only otp's own nodes may send. The plain input on 514 keeps working for any node not switched over yet, and what arrives is filed in the same folders - nothing about reading the logs changes.",
@@ -18616,6 +18636,18 @@
    "source": "Remove our address lists…",
    "text": "Odebrat naše address listy…"
   },
+  "s.remove-the-encrypted-receiving.374e21c7": {
+   "source": "Remove the encrypted receiving",
+   "text": "Odebrat šifrovaný příjem"
+  },
+  "s.remove.8ed77723": {
+   "source": "Remove…",
+   "text": "Odebrat…"
+  },
+  "s.remove.db998458": {
+   "source": "remove",
+   "text": "remove"
+  },
   "s.remove.e963907d": {
    "source": "Remove",
    "text": "Odebrat"
@@ -18936,6 +18968,10 @@
    "source": "root takes the encrypted input away within seconds; the plain one stays as it is",
    "text": "root během několika sekund odebere šifrovaný vstup; nešifrovaný zůstane, jak je"
   },
+  "s.root-takes-the-encrypted-input-its.2228ad0a": {
+   "source": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is",
+   "text": "root během několika sekund odebere šifrovaný vstup, jeho certifikát i klíč; nešifrovaný zůstává, jak je"
+  },
   "s.root.dc76e9f0": {
    "source": "root",
    "text": "root"
@@ -19023,6 +19059,10 @@
   "s.rsyslog-s-encrypted-input-for-otp.dfdb0ed1": {
    "source": "rsyslog's encrypted input for otp's logs, read afresh: on or off, its port, its mode and nodes, the certificate, whether rsyslog listens, the firewall, the plain input on 514 kept, the last change (Settings - The OTP logs - Encrypted receiving)",
    "text": "šifrovaný vstup rsyslogu pro logy otp, načtený znovu: zapnuto nebo vypnuto, jeho port, režim a uzly, certifikát, zda rsyslog naslouchá, firewall, ponechaný nešifrovaný vstup na 514, poslední změna (Nastavení - Logy OTP - Šifrovaný příjem)"
+  },
+  "s.rsyslog-stops-taking-otp-s-lines.4391a522": {
+   "source": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.",
+   "text": "rsyslog přestane přijímat řádky otp přes TLS a certifikát isemonu, jeho klíč, autorita otp i autorita vytvořená zde se z tohoto stroje smažou. Nešifrovaný vstup na 514 zůstává, jak je."
   },
   "s.rsyslog-stops-taking-otp-s-lines.e02e77b5": {
    "source": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.",
@@ -20992,6 +21032,10 @@
    "source": "Switch otp's nodes back to plain sending first, or their lines stop arriving.",
    "text": "Nejdřív přepněte uzly otp zpět na nešifrované odesílání, jinak jejich řádky přestanou docházet."
   },
+  "s.switch-otp-s-nodes-back-to.a8cffc39": {
+   "source": "Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again.",
+   "text": "Nejdřív přepněte uzly otp zpět na nešifrované posílání, jinak jejich řádky přestanou přicházet. Pro TLS znovu je nastavte od začátku - certifikát znovu vytvořený zde pochází z nové autority, kterou je třeba do otp vložit znovu."
+  },
   "s.switch-over-the-nodes-send-over.5ae428af": {
    "source": "Switch over: the nodes send over TLS from then on. The plain input here stays for any node not switched over.",
    "text": "Přepnout: uzly od té chvíle posílají přes TLS. Nešifrovaný vstup zde zůstává pro každý uzel, který nebyl přepnut."
@@ -21351,6 +21395,10 @@
   "s.take-the-clock-off-and-keep.60e3d70c": {
    "source": "Take the clock off and keep this address out until somebody says otherwise. The router is told at once.",
    "text": "Zrušit časový limit a držet tuto adresu venku, dokud někdo nerozhodne jinak. Router se to dozví okamžitě."
+  },
+  "s.take-the-encrypted-receiving-away-whole.dda34616": {
+   "source": "take the encrypted receiving away whole - the input, its certificate, key and authorities; the plain one on 514 stays. Asks first unless --yes",
+   "text": "odebere šifrovaný příjem celý - vstup, jeho certifikát, klíč a autority; nešifrovaný na 514 zůstává. Nejdřív se zeptá, pokud není --yes"
   },
   "s.take-the-entries-this-daemon-put.901a4d8a": {
    "source": "Take the entries this daemon put on the firewall(s) off them — and nothing else. Anything you added by hand, every other address list, and all your firewall rules are untouched.",
@@ -23060,6 +23108,14 @@
    "source": "The eduroam logs",
    "text": "Logy eduroam"
   },
+  "s.the-encrypted-input-taken-away-the.e514e0a4": {
+   "source": "The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes.",
+   "text": "Šifrovaný vstup se odebere - certifikát a jeho klíč zůstanou, aby šel znovu zapnout přes Změnit uzly."
+  },
+  "s.the-encrypted-receiving-taken-away-whole.7f2b653d": {
+   "source": "The encrypted receiving taken away whole: the input, isemon's certificate and key, otp's authority and the one made here. The plain input on 514 stays.",
+   "text": "Šifrovaný příjem se odebere celý: vstup, certifikát a klíč isemonu, autorita otp i ta vytvořená zde. Nešifrovaný vstup na 514 zůstává."
+  },
   "s.the-end-has-to-come-after.ab4a91b6": {
    "source": "The end has to come after the start.",
    "text": "Konec musí následovat po začátku."
@@ -24451,6 +24507,10 @@
   "s.the-other-domains-it-answers-for.377a0a62": {
    "source": "The other domains it answers for",
    "text": "Další domény, za které odpovídá"
+  },
+  "s.the-otp-logs-over-tls.201c25e0": {
+   "source": "The otp logs over TLS",
+   "text": "Logy otp přes TLS"
   },
   "s.the-otp-logs.1bf39375": {
    "source": "The OTP logs",
@@ -30264,9 +30324,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "s --downgrade-check: navíc co se změnilo v každé starší verzi"
   },
-  "s.with-erase-reboot-poweroff-os-update.87b3cc92": {
-   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import or --otp-tls-off: do not ask first",
-   "text": "s --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import nebo --otp-tls-off: neptat se předem"
+  "s.with-erase-reboot-poweroff-os-update.0131ff8a": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off or --otp-tls-remove: do not ask first",
+   "text": "s --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off nebo --otp-tls-remove: neptat se předem"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -33318,6 +33378,10 @@
    "source": "tcp {0} from anywhere - the way in to this machine. Turned off, keep a rule of your own for it.",
    "text": "tcp {0} odkudkoli – cesta k tomuto stroji. Když ho vypnete, ponechte si pro něj vlastní pravidlo."
   },
+  "p.tcp-rsyslog-s-encrypted-input-for.2b388557": {
+   "source": "tcp {0}, {1} - rsyslog's encrypted input for otp's nodes (Settings → The OTP logs → Encrypted receiving)",
+   "text": "tcp {0}, {1} - šifrovaný vstup rsyslogu pro uzly otp (Nastavení → Logy OTP → Šifrovaný příjem)"
+  },
   "p.tcp.d3c8732d": {
    "source": "{0}/tcp, {1}",
    "text": "{0}/tcp, {1}"
@@ -35092,6 +35156,10 @@
    "source": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving.",
    "text": "rsyslog přestane přijímat řádky otp přes TLS. Nešifrovaný vstup na 514 zůstane, jak je, a soubory certifikátu se ponechají.<br><br>Nejdřív přepněte uzly otp zpět na nešifrované odesílání, jinak jejich řádky přestanou docházet."
   },
+  "r.rsyslog-stops-taking-otp-s-lines.7c91c403": {
+   "source": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again.",
+   "text": "rsyslog přestane přijímat řádky otp přes TLS a certifikát isemonu, jeho klíč, autorita otp i autorita vytvořená zde se z tohoto stroje smažou. Nešifrovaný vstup na 514 zůstává, jak je.<br><br>Nejdřív přepněte uzly otp zpět na nešifrované posílání, jinak jejich řádky přestanou přicházet. Pro TLS znovu je nastavte od začátku - certifikát znovu vytvořený zde pochází z nové autority, kterou je třeba do otp vložit znovu."
+  },
   "r.said-again-is-the-last-key.881cae52": {
    "source": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
    "text": "Řečeno znovu: <code>{0}</code> je poslední klíč, kterým se root na tento server přihlašuje. Po jeho odebrání se na server přes SSH jako root s klíčem nikdo nedostane."
@@ -36294,6 +36362,10 @@
    "source": "ISEMON-IN - isemon’s own chain, as the kernel holds it now",
    "text": "ISEMON-IN – vlastní řetězec isemonu, tak jak ho teď drží jádro"
   },
+  "s.isemon-s-firewall-lets-the-log.d640d4d7": {
+   "source": "isemon's firewall lets the log ports in from the log senders - see Settings → Firewall",
+   "text": "firewall isemonu pouští porty logů dovnitř od odesílatelů logů - viz Nastavení → Firewall"
+  },
   "s.its-key-kept-here.8938ee6b": {
    "source": ", its key kept here",
    "text": ", jeho klíč je uložen zde"
@@ -36657,6 +36729,10 @@
   "s.with-erase-reboot-poweroff-os-update.30d671dd": {
    "source": "with --erase, --reboot, --poweroff, --os-update or --root-key-drop: do not ask first",
    "text": "s --erase, --reboot, --poweroff, --os-update nebo --root-key-drop: neptat se předem"
+  },
+  "s.with-erase-reboot-poweroff-os-update.87b3cc92": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import or --otp-tls-off: do not ask first",
+   "text": "s --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import nebo --otp-tls-off: neptat se předem"
   },
   "s.with-rescan-only-these-logs-comma.958df847": {
    "source": "with --rescan: only these logs, comma separated - ise, otp, eduroam, winsec, tacplus, nps, fwlog. Everything, as it always did, when this is left out. Naming one is how the logs that are never judged - a token server, eduroam, a domain, a tac_plus - are read again at all",
