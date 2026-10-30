@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.247'
+__version__ = '1.10.248'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -77600,7 +77600,7 @@ def otptls_print(pal, v):
         pal.note('  root is at it...')
     if v.get('trouble'):
         pal.blank()
-        pal.warn('what rsyslog said of TLS lately:')
+        pal.warn('what went wrong with TLS since rsyslog started:')
         for line in v['trouble']:
             pal.note('    ' + line)
     pal.blank()

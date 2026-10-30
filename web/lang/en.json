@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.246",
+  "version": "1.10.247",
   "made": "2026-10-30",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -28556,10 +28556,6 @@
    "source": "What root said:",
    "text": "What root said:"
   },
-  "s.what-rsyslog-said-about-tls-lately.4617a295": {
-   "source": "what rsyslog said about TLS lately",
-   "text": "what rsyslog said about TLS lately"
-  },
   "s.what-set-it-off.cf5a84d5": {
    "source": "what set it off",
    "text": "what set it off"
@@ -29055,6 +29051,10 @@
   "s.what-went-wrong-the-last-time.4b66149b": {
    "source": "What went wrong the last time this tried to put the country list on. The ranges here are unchanged; what is on the firewall is whatever was there before the attempt.",
    "text": "What went wrong the last time this tried to put the country list on. The ranges here are unchanged; what is on the firewall is whatever was there before the attempt."
+  },
+  "s.what-went-wrong-with-tls-since.bfaf62e8": {
+   "source": "what went wrong with TLS since rsyslog started",
+   "text": "what went wrong with TLS since rsyslog started"
   },
   "s.what-would-change.8cebb8a3": {
    "source": "What would change",

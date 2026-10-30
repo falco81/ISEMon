@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.248
+
+- *Encrypted receiving (TLS)*: the dot beside the machine's name is green when
+  the input is on, rsyslog listens and nothing has gone wrong with TLS since
+  rsyslog was started last; yellow only when it does not listen or something
+  did go wrong - a node refused, an authority not known, a certificate
+  expired. It was yellow for every line rsyslog had written about TLS in the
+  last half hour: its own words when it starts, a set-up refused before, a node
+  hanging up after otp's *Try it*. Those lines are no longer counted, and the
+  ones that are show under *what went wrong with TLS since rsyslog started*
+  (`isemon --otp-tls` the same).
+
 1.10.247
 
 - *Encrypted receiving (TLS)* on The OTP logs: **Switch off…** and **Remove…**

@@ -40588,6 +40588,8 @@ function drawOtpTls() {
   }
   /* The state, and the facts. */
   var hd = el('div', 'pw-head');
+  /* Green: on and listening, nothing gone wrong with TLS since rsyslog
+     started. Yellow: not listening, or something went wrong - said below. */
   var tone = !d.read ? '' : (d.on ? (d.listening === false || (d.trouble || []).length ? 'warn' : 'ok') : '');
   hd.appendChild(el('span', 'dot' + (tone ? ' ' + tone : '')));
   hd.appendChild(noI18n(el('b', '', location.hostname || 'this machine')));
@@ -40643,7 +40645,7 @@ function drawOtpTls() {
   ]));
   if ((d.trouble || []).length) {
     var more = el('details', 'fold');
-    var sum = el('summary', '', 'what rsyslog said about TLS lately');
+    var sum = el('summary', '', 'what went wrong with TLS since rsyslog started');
     sum.appendChild(el('span', 'n', String(d.trouble.length)));
     more.appendChild(sum);
     more.appendChild(noI18n(el('pre', 'lines', d.trouble.join('\n'))));

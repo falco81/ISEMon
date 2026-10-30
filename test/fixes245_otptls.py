@@ -15,6 +15,7 @@ back when rsyslog says no.
 """
 import base64
 import json
+import re
 import os
 import shutil
 import stat
@@ -409,6 +410,32 @@ try:
        (r['data']['conf'], r['data']['left']), ({'there': False}, ['isemon-ca.key']))
     r = ask({'id': 'k4', 'do': 'remove'})
     ok('...and taken away', (r['ok'], PKI.exists()), (True, False))
+
+    print('\nrsyslog\'s words about TLS: trouble only when something went wrong (1.10.248)')
+    import importlib.util                               # noqa: E402
+    spec = importlib.util.spec_from_file_location('isemon_web_248', str(HELPER))
+    W = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(W)
+
+    def trouble(line):
+        return bool(re.search(W.TLS_WORDS, line, re.I) and re.search(W.TLS_BAD, line, re.I)
+                    and not re.search(W.TLS_BENIGN, line, re.I))
+    ok('starting up, listening: no trouble', [trouble(x) for x in (
+        'rsyslogd: imtcp: module loaded, but no listeners defined',
+        'rsyslogd: imtcp: listening on port 6514, driver gtls',
+        'rsyslogd: [origin software="rsyslogd"] start')], [False, False, False])
+    ok('a node hanging up (otp\'s Try it): no trouble', [trouble(x) for x in (
+        'rsyslogd: unexpected GnuTLS error -110 - this could be caused by a broken connection',
+        'rsyslogd: netstream session 0x55 from otp1 will be closed due to error',
+        'rsyslogd[55121]: unexpected GnuTLS error -110 in nsd_gtls.c:646: The TLS connection was '
+        'non-properly terminated.  [v8.2510.0-2.el9_8.2 try https://www.rsyslog.com/e/2078 ]',
+        'rsyslogd[55121]: netstream session 0x7f6534004c0 from 192.168.42.32:38160 will be '
+        'closed due to error [v8.2510.0-2.el9_8.2 try https://www.rsyslog.com/e/2078 ]')],
+       [False, False, False, False])
+    ok('a node refused, an authority not known, a certificate expired: trouble', [trouble(x) for x in (
+        'rsyslogd: peer name not authorized - not permitted to talk to it. Names: DNS:otp3;',
+        'rsyslogd: not permitted to talk to peer, certificate invalid: signer not found (unknown CA)',
+        'rsyslogd: TLS certificate expired')], [True, True, True])
 
     # ------------------------------------------------------------------------
     print('\nThe daemon: the card\'s questions, done behind')

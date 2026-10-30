@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.246",
+  "version": "1.10.247",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -28556,10 +28556,6 @@
    "source": "What root said:",
    "text": "Co řekl root:"
   },
-  "s.what-rsyslog-said-about-tls-lately.4617a295": {
-   "source": "what rsyslog said about TLS lately",
-   "text": "co rsyslog v poslední době hlásil o TLS"
-  },
   "s.what-set-it-off.cf5a84d5": {
    "source": "what set it off",
    "text": "co to spustilo"
@@ -29055,6 +29051,10 @@
   "s.what-went-wrong-the-last-time.4b66149b": {
    "source": "What went wrong the last time this tried to put the country list on. The ranges here are unchanged; what is on the firewall is whatever was there before the attempt.",
    "text": "Co se pokazilo, když se naposledy pokoušel nahrát seznam zemí. Rozsahy zde se nezměnily; na firewallu je to, co tam bylo před pokusem."
+  },
+  "s.what-went-wrong-with-tls-since.bfaf62e8": {
+   "source": "what went wrong with TLS since rsyslog started",
+   "text": "co se s TLS pokazilo od startu rsyslogu"
   },
   "s.what-would-change.8cebb8a3": {
    "source": "What would change",
@@ -36661,6 +36661,10 @@
   "s.what-root-did-last.deff7760": {
    "source": "What root did last",
    "text": "Co root udělal naposledy"
+  },
+  "s.what-rsyslog-said-about-tls-lately.4617a295": {
+   "source": "what rsyslog said about TLS lately",
+   "text": "co rsyslog v poslední době hlásil o TLS"
   },
   "s.what-the-list-looks-like-cisco.b3395f01": {
    "source": "What the list looks like. Cisco FTD and FortiGate both read one address or range per line and nothing else; the plain list adds a few lines of comments for a person; JSON is for a script. The URL below carries the format, so one firewall of each kind can fetch its own.",

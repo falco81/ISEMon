@@ -2642,16 +2642,43 @@ def listening(port):
     return bool(got.stdout.strip()) if got.returncode == 0 else None
 
 
-def rsyslog_trouble(minutes=30):
-    """What rsyslog said lately about TLS - the cause of most of what goes wrong."""
+TLS_WORDS = r'gtls|gnutls|ossl|openssl|tls|certificate|permitted|peer|netstream|imtcp|6514'
+TLS_BAD = (r'error|fail|not permitted|unknown ca|untrusted|expired|not yet valid|denied|refus|'
+           r'could not|cannot|invalid|unable|abort|alert|bad |mismatch')
+# A node that hangs up without a goodbye - otp's "Try it", a node restarted -
+# is said by GnuTLS as an error -110 and the session closed: no trouble.
+TLS_BENIGN = (r'error -110|broken connection|premature termination|non-properly terminated|'
+              r'will be closed due to error')
+
+
+def rsyslog_since():
+    """When rsyslog was started last, as seconds since 1970 - or None."""
+    try:
+        got = subprocess.run(['systemctl', 'show', 'rsyslog', '-p', 'ActiveEnterTimestamp',
+                              '--timestamp=unix', '--value'], capture_output=True, text=True,
+                             timeout=20)
+        m = re.match(r'^@(\d+)', got.stdout.strip())
+        return int(m.group(1)) if m else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def rsyslog_trouble(minutes=30, problems=True):
+    """What rsyslog said about TLS that went wrong - since it was started
+    last, so that a set-up refused before it, or rsyslog's own words when it
+    starts, are not taken for trouble now (1.10.248). problems=False: every
+    line about TLS (why a restart did not listen)."""
     if NO_SERVICES or not shutil.which('journalctl'):
         return []
-    got = subprocess.run(['journalctl', '-u', 'rsyslog', '--since', '-%dmin' % minutes,
+    since = '-%dmin' % minutes
+    began = rsyslog_since() if problems else None
+    if began and began > time.time() - minutes * 60:
+        since = '@%d' % began
+    got = subprocess.run(['journalctl', '-u', 'rsyslog', '--since', since,
                           '--no-pager', '-o', 'short-iso', '-n', '400'],
                          capture_output=True, text=True, timeout=30)
-    hit = [l for l in got.stdout.splitlines() if re.search(
-        r'gtls|gnutls|ossl|openssl|tls|certificate|permitted|peer|netstream|imtcp|6514',
-        l, re.I) and not l.startswith('-- ')]
+    hit = [l for l in got.stdout.splitlines() if re.search(TLS_WORDS, l, re.I)
+           and not l.startswith('-- ') and (not problems or (re.search(TLS_BAD, l, re.I) and not re.search(TLS_BENIGN, l, re.I)))]
     return [l[:300] for l in hit[-8:]]
 
 
@@ -2793,7 +2820,8 @@ def otptls_restart(port, said):
                 return
             time.sleep(0.5)
         raise Refused('rsyslog restarted but does not listen on %d/tcp: %s' % (
-            port, ' | '.join(rsyslog_trouble(2)[-3:]) or 'journalctl -u rsyslog says why'))
+            port, ' | '.join(rsyslog_trouble(2, problems=False)[-3:]) or
+            'journalctl -u rsyslog says why'))
 
 
 def otptls_firewalld(port, add, st, said):
