@@ -35,7 +35,19 @@ The clock (1.10.228): asked in ntp.ask, answered in ntp.json - how chrony
 sees it, a step to the right time now, and the time servers and time zone
 put into /etc/chrony.conf when isemon is to set them (see ntp_part).
 
-  isemon_web.py            serve request.json, look.ask, net.ask and ntp.ask (as root, from systemd)
+Root's SSH keys (1.10.239): asked in sshkeys.ask, answered in sshkeys.json -
+the keys in /root/.ssh/authorized_keys, one added or taken away, and what
+sshd makes of root (see sshkeys_part).
+
+The updates of the operating system (1.10.239): asked in osup.ask, answered
+in osup.ans - a look for updates or the update itself, started as a unit of
+its own (isemon_web.py --os-job ID check|upgrade) that writes how far it is
+into osup.json (see osup_part).
+
+  isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask and
+                           osup.ask (as root, from systemd)
+  isemon_web.py --os-job ID check|upgrade
+                           a look for updates or the update (started by osup.ask)
   isemon_web.py --status   what is in place here (JSON)
 """
 import ipaddress
@@ -1423,6 +1435,209 @@ def ntp_part():
     write_here(NTP_FILE, json.dumps(out))
 
 
+# ---- the SSH keys root signs in with (1.10.239; after otp's otp_web.py 1.0.158) ----
+# Asked in sshkeys.ask: the keys there now (list), one more (add), one taken
+# away (drop); answered in sshkeys.json with what is there after it and what
+# sshd makes of root. Only /root/.ssh/authorized_keys is ever written, whole:
+# a new file of root's, 0600, made beside it and renamed over it, in a folder
+# that is not a link (made 0700 when it is not there); the file itself never
+# read or written through a link. Every line it does not understand - a
+# comment, a key with options before it - is kept as it was. A key is added
+# only as one plain public key line (Ed25519, ECDSA, RSA of 3072 bits and
+# more), and the last key root signs in with goes only when said again.
+SSHKEYS_ASK = 'sshkeys.ask'
+SSHKEYS_FILE = 'sshkeys.json'
+ROOT_AUTH = os.environ.get('ISEMON_ROOT_AUTHKEYS', '/root/.ssh/authorized_keys')
+SSH_KEYGEN = os.environ.get('ISEMON_SSH_KEYGEN', 'ssh-keygen')
+SSHD = os.environ.get('ISEMON_SSHD', 'sshd')
+SSHKEYS_FRESH_S = 600              # an add or a drop asked longer ago is not done
+KEY_TYPES = ('ssh-ed25519', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521',
+             'ssh-rsa', 'sk-ssh-ed25519@openssh.com', 'sk-ecdsa-sha2-nistp256@openssh.com')
+KEY_LINE_RE = re.compile(r'^(?P<type>[a-z0-9@.-]+) (?P<blob>[A-Za-z0-9+/]{40,16000}={0,3})'
+                         r'(?: (?P<comment>[^\x00-\x1f\x7f]{0,200}))?\Z')
+
+
+def key_facts(line):
+    """(bits, SHA256:..., type) of one public key line, read by ssh-keygen;
+    None when it does not read it."""
+    if not shutil.which(SSH_KEYGEN):
+        return None
+    got = subprocess.run([SSH_KEYGEN, '-l', '-E', 'sha256', '-f', '-'], input=line + '\n',
+                         capture_output=True, text=True, timeout=20)
+    m = re.match(r'^(\d+) (SHA256:[A-Za-z0-9+/=]+) .*\((\w+)\)\s*$', got.stdout.strip())
+    if got.returncode != 0 or not m:
+        return None
+    return int(m.group(1)), m.group(2), m.group(3)
+
+
+def auth_lines():
+    """The lines of root's authorized_keys - none where it is not there.
+    Never through a link."""
+    try:
+        fd = os.open(ROOT_AUTH, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except FileNotFoundError:
+        return []
+    except OSError as e:
+        raise Refused('%s cannot be read: %s' % (ROOT_AUTH, e))
+    with os.fdopen(fd, 'r', encoding='utf-8', errors='surrogateescape') as f:
+        if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+            raise Refused('%s is not a plain file' % ROOT_AUTH)
+        return f.read(1 << 20).split('\n')
+
+
+def auth_keys(lines):
+    out = []
+    for i, ln in enumerate(lines):
+        t = ln.strip()
+        if not t or t.startswith('#'):
+            continue
+        facts = key_facts(t)
+        m = KEY_LINE_RE.match(t)
+        out.append({'line': i, 'fp': facts[1] if facts else '', 'bits': facts[0] if facts else 0,
+                    'type': facts[2] if facts else '?',
+                    'comment': (m.group('comment') or '') if m else '',
+                    'options': not bool(m), 'readable': bool(facts),
+                    # The line itself, for the page's export: public halves only.
+                    'text': t[:16500].encode('utf-8', 'replace').decode('utf-8', 'replace')})
+    return out
+
+
+def auth_write(lines):
+    """root's authorized_keys written whole: its folder made 0700 when it is
+    not there, refused when it is a link; a new file of root's, 0600, renamed
+    in."""
+    folder = os.path.dirname(ROOT_AUTH)
+    try:
+        st = os.lstat(folder)
+        if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode):
+            raise Refused('%s is not a plain folder' % folder)
+    except FileNotFoundError:
+        os.makedirs(folder, mode=0o700)
+        os.chmod(folder, 0o700)
+    try:
+        if not stat.S_ISREG(os.lstat(ROOT_AUTH).st_mode):
+            raise Refused('%s is a link or not a plain file - put the file itself there'
+                          % ROOT_AUTH)
+    except FileNotFoundError:
+        pass
+    text = '\n'.join(lines).rstrip('\n') + '\n'
+    fd, tmp = tempfile.mkstemp(prefix='.authorized_keys.', dir=folder)
+    try:
+        os.fchmod(fd, 0o600)
+        if os.geteuid() == 0:
+            os.fchown(fd, 0, 0)
+        with os.fdopen(fd, 'w', encoding='utf-8', errors='surrogateescape') as f:
+            fd = None
+            f.write(text)
+        os.replace(tmp, ROOT_AUTH)
+    except BaseException:
+        if fd is not None:
+            os.close(fd)
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    if shutil.which('restorecon') and not NO_SERVICES:
+        subprocess.run(['restorecon', '-R', folder], capture_output=True)
+
+
+def sshd_says():
+    """What sshd makes of root and of keys: a key is no use where it does not
+    let root in with one."""
+    sshd = shutil.which(SSHD) or ('/usr/sbin/sshd' if os.path.exists('/usr/sbin/sshd') else '')
+    if not sshd:
+        return {'there': False}
+    try:
+        got = subprocess.run([sshd, '-T'], capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return {'there': False}
+    said = {}
+    for ln in got.stdout.splitlines():
+        k, _, v = ln.partition(' ')
+        if k in ('permitrootlogin', 'pubkeyauthentication', 'passwordauthentication', 'port'):
+            said.setdefault(k, re.sub(r'[^A-Za-z0-9-]', '', v.strip())[:40])
+    return {'there': True, 'permit_root': said.get('permitrootlogin', ''),
+            'pubkey': said.get('pubkeyauthentication', ''),
+            'password': said.get('passwordauthentication', ''), 'port': said.get('port', '')}
+
+
+def sshkeys_do(r):
+    do = r.get('do')
+    if do in ('add', 'drop'):
+        # One left lying from before (an older helper, a run that never
+        # came): never done long after it was asked.
+        try:
+            at = float(r.get('at') or 0)
+        except (TypeError, ValueError):
+            at = 0.0
+        if abs(time.time() - at) > SSHKEYS_FRESH_S:
+            raise Refused('that was asked too long ago - ask again on the page if it is still '
+                          'wanted')
+    lines = auth_lines()
+    if do == 'add':
+        line = str(r.get('line') or '').strip()
+        m = KEY_LINE_RE.match(line)
+        if not m or m.group('type') not in KEY_TYPES:
+            raise Refused('that is not one public key line (ssh-ed25519 AAAA... comment) - '
+                          'options before the key are not taken here')
+        facts = key_facts(line)
+        if not facts:
+            raise Refused('ssh-keygen does not read that key')
+        bits, fp, kind = facts
+        if kind == 'RSA' and bits < 3072:
+            raise Refused('an RSA key of %d bits is too weak: 3072 at least, or ed25519' % bits)
+        if kind == 'DSA':
+            raise Refused('DSA keys are not taken')
+        # There already is no fault: a key of root's handed over again.
+        if not any(k['fp'] == fp for k in auth_keys(lines)):
+            auth_write([ln for ln in lines if ln.strip()] + [line])
+    elif do == 'drop':
+        fp = str(r.get('fp') or '')
+        keys = auth_keys(lines)
+        hit = [k for k in keys if k['fp'] and k['fp'] == fp]
+        if not hit:
+            raise Refused('no key %s is there' % fp[:80])
+        if len(keys) == len(hit) and r.get('last_ok') is not True:
+            raise Refused('that is the last key root signs in with here - said again to take it '
+                          'away anyway')
+        gone = {k['line'] for k in hit}
+        auth_write([ln for i, ln in enumerate(lines) if i not in gone])
+    elif do != 'list':
+        raise Refused('list, add or drop')
+    return {'keys': [dict((k, v) for k, v in x.items() if k != 'line')
+                     for x in auth_keys(auth_lines())],
+            'file': ROOT_AUTH, 'sshd': sshd_says()}
+
+
+def sshkeys_part():
+    try:
+        raw = read_req(SSHKEYS_ASK, 65536)
+    except FileNotFoundError:
+        return
+    except (Refused, OSError):
+        # A link or a folder in its place: taken away, never followed.
+        drop_entry(SSHKEYS_ASK)
+        return
+    drop_entry(SSHKEYS_ASK)
+    out = {'at': time.time(), 'ok': False, 'id': ''}
+    try:
+        try:
+            r = json.loads(raw.decode('utf-8'))
+        except ValueError:
+            raise Refused('the request does not read')
+        if not isinstance(r, dict):
+            raise Refused('the request is not an object')
+        out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
+        out['data'] = sshkeys_do(r)
+        out['ok'] = True
+    except Refused as e:
+        out['said'] = str(e)[:400]
+    except Exception as e:                              # noqa: BLE001 - said, never lost
+        out['said'] = 'it went wrong: %s' % str(e)[:300]
+    write_here(SSHKEYS_FILE, json.dumps(out))
+
+
 # ---- this machine's network, its name, and switching it off (1.10.228) -----------
 # After otp's otp_web.py. Asked in net.ask: what the network is now (read), a
 # new one put in NetworkManager with the host name and /etc/hosts (apply), or
@@ -1909,6 +2124,300 @@ def net_part():
     write_here(NET_FILE, json.dumps(out))
 
 
+# ---- updates of the operating system (1.10.239; after otp's otp_web.py 1.0.158) ----
+# Asked in osup.ask, answered at once in osup.ans: a look for updates (check)
+# or the update of every package (upgrade). The work itself - minutes of dnf
+# or apt - runs as a unit of its own (systemd-run), so this oneshot service
+# ends and the other asks are served meanwhile, one at a time under a lock of
+# its own that is never a link. How far it is and its last lines go into
+# osup.json, every second or so: the daemon reads them from there, and keeps
+# in the database only how it ended. An ask older than a few minutes is not
+# done: one left behind is never started later by surprise.
+OSUP_ASK = 'osup.ask'
+OSUP_ANS = 'osup.ans'
+OSUP_FILE = 'osup.json'
+OSUP_LOCK = os.environ.get('ISEMON_OSUP_LOCK', '/run/isemon-osup.lock')
+OSUP_PM = os.environ.get('ISEMON_OSUP_PM', '')      # tests: a fake package manager
+OSUP_ASK_LIVE_S = 300
+
+
+def osup_pm():
+    if OSUP_PM:
+        return 'fake'
+    if shutil.which('dnf'):
+        return 'dnf'
+    if shutil.which('apt-get'):
+        return 'apt'
+    return ''
+
+
+def osup_lock_fd():
+    """The lock file, opened without following a link - and only a file."""
+    fd = os.open(OSUP_LOCK, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        os.close(fd)
+        raise Refused('%s is not a file' % OSUP_LOCK)
+    return fd
+
+
+def osup_running():
+    import fcntl
+    try:
+        fd = osup_lock_fd()
+    except (OSError, Refused):
+        return True                     # a link or a folder there: nothing is started
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return False
+    except OSError:
+        return True
+    finally:
+        os.close(fd)
+
+
+def osup_launch(ident, kind):
+    if not ident:
+        raise Refused('the ask has no id')
+    if osup_running():
+        raise Refused('an update or a look for updates is going on already')
+    if not osup_pm():
+        raise Refused('neither dnf nor apt-get is on this machine')
+    me = os.path.abspath(__file__)
+    argv = [sys.executable, '-I', me, '--os-job', ident, kind]
+    if shutil.which('systemd-run') and not NO_SERVICES and os.path.isdir('/run/systemd/system'):
+        got = subprocess.run(['systemd-run', '--unit', 'isemon-os-%s-%s' % (kind, ident[:12]),
+                              '--collect', '--quiet', '--property', 'TimeoutStopSec=30min'] + argv,
+                             capture_output=True, text=True, timeout=30)
+        if got.returncode != 0:
+            raise Refused('systemd-run: %s' % (got.stderr or got.stdout).strip()[-200:])
+        return
+    subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True, close_fds=True)
+
+
+def osup_part():
+    try:
+        raw = read_req(OSUP_ASK, 4096)
+    except FileNotFoundError:
+        return
+    except (Refused, OSError):
+        drop_entry(OSUP_ASK)            # a link or a folder in its place: never followed
+        return
+    drop_entry(OSUP_ASK)
+    out = {'at': time.time(), 'ok': False, 'id': ''}
+    try:
+        try:
+            r = json.loads(raw.decode('utf-8'))
+        except ValueError:
+            raise Refused('the request does not read')
+        if not isinstance(r, dict):
+            raise Refused('the request is not an object')
+        out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
+        kind = r.get('kind')
+        if r.get('do') != 'run' or kind not in ('check', 'upgrade'):
+            raise Refused('run: check or upgrade')
+        try:
+            asked = float(r.get('at'))
+        except (TypeError, ValueError):
+            raise Refused('the ask does not say when it was made')
+        if not abs(time.time() - asked) < OSUP_ASK_LIVE_S:
+            raise Refused('an old ask, not done: ask again')
+        osup_launch(out['id'], kind)
+        out['ok'] = True
+        out['data'] = {'started': kind, 'pm': osup_pm()}
+    except Refused as e:
+        out['said'] = str(e)[:400]
+    except Exception as e:                              # noqa: BLE001
+        out['said'] = 'it went wrong: %s' % str(e)[:300]
+    write_here(OSUP_ANS, json.dumps(out))
+
+
+# The packages a restart is needed for once they are updated, as dnf
+# needs-restarting -r and Debian's reboot-required name them (otp 1.0.159).
+REBOOT_PKGS = {'kernel', 'kernel-core', 'kernel-rt', 'kernel-rt-core', 'kernel-modules',
+               'kernel-uek', 'glibc', 'linux-firmware', 'systemd', 'dbus', 'dbus-broker',
+               'dbus-daemon', 'microcode_ctl', 'zlib', 'zlib-ng-compat', 'libc6', 'linux-base',
+               'intel-microcode', 'amd64-microcode'}
+
+
+def reboot_for(packages):
+    """Which of the packages waiting want a restart once updated."""
+    out = []
+    for p in packages:
+        name = str(p).split()[0] if str(p).split() else ''
+        if re.search(r'\.(x86_64|aarch64|noarch|i686|ppc64le|s390x)$', name):
+            name = name.rsplit('.', 1)[0]
+        if name in REBOOT_PKGS or name.startswith(('linux-image', 'kernel-core-', 'linux-modules')):
+            out.append(name)
+    return sorted(set(out))
+
+
+def reboot_now(pm, env, say=None):
+    """Whether this machine waits for a restart already."""
+    if pm == 'fake':
+        return subprocess.run([OSUP_PM, 'needs-restart'], stdout=subprocess.DEVNULL,
+                              timeout=300).returncode == 1
+    if pm == 'dnf':
+        nr = subprocess.run(['dnf', 'needs-restarting', '-r'], capture_output=True,
+                            text=True, env=env, timeout=300)
+        # 1 is also what dnf says for a command it does not have (no
+        # dnf-plugins-core): a restart only when it says so in words.
+        need = nr.returncode == 1 and 'reboot' in (nr.stdout or '').lower()
+        if need and say:
+            say(nr.stdout.strip().splitlines()[0])
+        return need
+    return os.path.exists('/var/run/reboot-required')
+
+
+def osup_job(ident, kind):
+    """The work itself, as root, in a process of its own."""
+    import fcntl
+    try:
+        fd = osup_lock_fd()
+    except (OSError, Refused):
+        return 1
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        os.close(fd)
+        return 1
+    state = {'id': ident, 'kind': kind, 'state': 'running', 'pct': 1, 'lines': [],
+             'began': time.time(), 'at': time.time(), 'packages': [], 'reboot': False,
+             'pm': osup_pm(), 'phase': 'starting'}
+    last = [0.0]
+
+    def put(force=False):
+        state['at'] = time.time()
+        if force or time.time() - last[0] > 0.8:
+            last[0] = time.time()
+            state['lines'] = state['lines'][-400:]
+            write_here(OSUP_FILE, json.dumps(state))
+
+    def say(line):
+        line = line.rstrip()
+        if line:
+            state['lines'].append(line[:300])
+        put()
+
+    env = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C', 'LC_ALL': 'C',
+           'DEBIAN_FRONTEND': 'noninteractive', 'HOME': '/root'}
+
+    def stream(cmd, on_line=None, ok=(0,)):
+        say('$ ' + ' '.join(cmd))
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env,
+                             stdin=subprocess.DEVNULL, text=True, bufsize=1, errors='replace')
+        for ln in p.stdout:
+            say(ln)
+            if on_line:
+                on_line(ln)
+        rc = p.wait()
+        if rc not in ok:
+            raise Refused('%s ended with %d' % (os.path.basename(cmd[0]), rc))
+        return rc
+
+    pm = state['pm']
+    try:
+        put(True)
+        if kind == 'check':
+            state['phase'] = 'asking for what is new'
+            pk = []
+            if pm == 'fake':
+                stream([OSUP_PM, 'check'], lambda ln: pk.append(ln.strip())
+                       if ln.strip() and not ln.startswith('#') else None)
+                state['security'] = len([p for p in pk if p.endswith(' security')])
+                pk = [p[:-len(' security')] if p.endswith(' security') else p for p in pk]
+            elif pm == 'dnf':
+                rc_out = []
+                stream(['dnf', '-q', '--refresh', 'check-update'], rc_out.append, ok=(0, 100))
+                for ln in rc_out:
+                    parts = ln.split()
+                    if len(parts) >= 3 and '.' in parts[0] and not ln.startswith(' '):
+                        pk.append('%s %s' % (parts[0], parts[1]))
+                state['security'] = 0
+                sec = subprocess.run(['dnf', '-q', 'updateinfo', 'list', '--security'],
+                                     capture_output=True, text=True, env=env, timeout=300)
+                state['security'] = len([x for x in sec.stdout.splitlines() if x.strip()])
+            else:
+                stream(['apt-get', 'update'])
+                got = subprocess.run(['apt', 'list', '--upgradable'], capture_output=True,
+                                     text=True, env=env, timeout=300)
+                for ln in got.stdout.splitlines():
+                    if '/' in ln and '[upgradable' in ln:
+                        name = ln.split('/', 1)[0]
+                        ver = ln.split()[1] if len(ln.split()) > 1 else ''
+                        pk.append('%s %s' % (name, ver))
+            state['packages'] = pk[:1000]
+            state['count'] = len(pk)
+            # Whether the update will need a restart, told before it is made.
+            state['phase'] = 'whether a restart is needed'
+            state['reboot_why'] = reboot_for(pk)
+            state['reboot_after'] = bool(state['reboot_why'])
+            try:
+                state['reboot_now'] = reboot_now(pm, env)
+            except (OSError, subprocess.SubprocessError):
+                state['reboot_now'] = False
+            if state['reboot_now']:
+                say('a restart is needed already, before any update')
+            if state['reboot_why']:
+                say('a restart will be needed after the update: %s'
+                    % ', '.join(state['reboot_why']))
+            state['pct'] = 100
+        else:
+            seen = {'total': 0, 'done': 0}
+
+            def count(ln):
+                m = re.search(r'\b(\d+)/(\d+)\s*$', ln)
+                if pm in ('dnf', 'fake') and m and re.search(
+                        r'(Upgrading|Installing|Cleanup|Verifying|Running scriptlet|Erasing|'
+                        r'Reinstalling|Downgrading|Obsoleting)\s*:', ln):
+                    total = int(m.group(2)) * 2          # each one upgraded and then verified
+                    seen['total'] = max(seen['total'], total)
+                    seen['done'] = min(seen['total'], seen['done'] + 1)
+                    state['phase'] = 'putting the packages in'
+                if pm in ('dnf', 'fake') and ln.startswith('Downloading Packages'):
+                    state['phase'] = 'downloading'
+                    state['pct'] = max(state['pct'], 8)
+                if pm == 'apt':
+                    m2 = re.match(r'^(\d+) upgraded, (\d+) newly installed', ln)
+                    if m2:
+                        seen['total'] = (int(m2.group(1)) + int(m2.group(2))) * 2
+                    if ln.startswith(('Unpacking ', 'Setting up ')):
+                        seen['done'] += 1
+                        state['phase'] = 'putting the packages in'
+                    if ln.startswith('Get:'):
+                        state['phase'] = 'downloading'
+                        state['pct'] = max(state['pct'], 8)
+                if seen['total']:
+                    state['pct'] = max(state['pct'], min(97, 10 + int(87 * seen['done'] /
+                                                                      seen['total'])))
+            state['phase'] = 'asking for what is new'
+            if pm == 'fake':
+                stream([OSUP_PM, 'upgrade'], count)
+            elif pm == 'dnf':
+                stream(['dnf', '-y', '--refresh', 'upgrade'], count)
+            else:
+                stream(['apt-get', 'update'])
+                state['pct'] = max(state['pct'], 5)
+                stream(['apt-get', '-y', '-o', 'Dpkg::Options::=--force-confdef', '-o',
+                        'Dpkg::Options::=--force-confold', 'upgrade'], count)
+            state['phase'] = 'whether a restart is needed'
+            state['reboot'] = reboot_now(pm, env, say)
+            state['pct'] = 100
+        state['state'] = 'done'
+        state['phase'] = 'done'
+    except Refused as e:
+        state.update(state='failed', said=str(e)[:300])
+    except Exception as e:                              # noqa: BLE001
+        state.update(state='failed', said='it broke: %s' % str(e)[:300])
+    finally:
+        try:
+            put(True)
+        finally:
+            os.close(fd)
+    return 0
+
+
 def status_read():
     """What this helper wrote last. It lies in the folder the isemon account
     owns, so nothing of it is trusted: what is used again (the DH choice) is
@@ -1938,6 +2447,14 @@ def serve():
         net_part()
     except Exception as e:                              # noqa: BLE001
         print('isemon_web.py: the network: %s' % e, file=sys.stderr)
+    try:
+        sshkeys_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: root\'s SSH keys: %s' % e, file=sys.stderr)
+    try:
+        osup_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: the updates of the system: %s' % e, file=sys.stderr)
     # One left by a run that was stopped half way (1.10.238) - a reboot, a
     # timeout during DH: taken away and said, or the daemon would wait on it
     # for ever and never ask again.
@@ -1999,6 +2516,9 @@ def main(argv):
     if os.geteuid() != 0 and not NO_SERVICES:
         print('isemon_web.py: root only', file=sys.stderr)
         return 2
+    # The update of the system, started by osup_part as a unit of its own.
+    if argv[:1] == ['--os-job'] and len(argv) >= 3 and argv[2] in ('check', 'upgrade'):
+        return osup_job(re.sub(r'[^A-Za-z0-9]', '', argv[1])[:40], argv[2])
     return serve()
 
 

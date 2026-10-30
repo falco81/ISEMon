@@ -371,6 +371,28 @@ working.
 
 ## Version
 
+1.10.239
+
+- **Settings - System updates**, as otp has it: what dnf (or apt) has waiting
+  on this server - how many, how many of them security, the packages, and
+  whether the update will need a restart (kernel, glibc, systemd,
+  linux-firmware...) or one is needed already - and *Update it now*, with a bar
+  and what the package manager says as it goes (hidden, shown, or the window
+  cleared for good). A restart it needs is offered at the end, or made by
+  itself, as chosen. Refused while an upgrade of isemon, a restart, a power-off
+  or a change of the network is going on; it can be stopped until it begins.
+  The update runs as a unit of its own, outside root's helper, under its own
+  lock. See [docs/system-updates.md](docs/system-updates.md).
+- **Settings - SSH keys of root**, as otp has it: the keys that may sign in to
+  this server as root (`/root/.ssh/authorized_keys`) - *A key for root* makes
+  one (Ed25519, or RSA 4096) whose private half is shown once and kept nowhere;
+  *Add a key* takes a public line or .pub file, or a private key of which only
+  the public half is used; each key exported as a .pub file, or taken away
+  (the last one only when said again). RSA under 3072 bits, DSA and lines with
+  options before the key are refused. Written by root as 0600 in a 0700
+  folder, never through a link; what sshd makes of root is shown beside it.
+  See [docs/ssh-keys-of-root.md](docs/ssh-keys-of-root.md).
+
 1.10.238
 
 - **Settings - Time:** a time server's name with a line end hidden in it (it
@@ -591,6 +613,13 @@ on and changes nothing on the machine.
   as they were. A clock not synchronised, or more than a second off, is a
   problem in the header and in `isemon --status`; `isemon --time`,
   `--time-step`. install.sh installs chrony only on a fresh install.
+- **Settings - SSH keys of root** ([docs/ssh-keys-of-root.md](docs/ssh-keys-of-root.md)):
+  the keys in /root/.ssh/authorized_keys with what sshd makes of root; a key
+  made here (Ed25519 or RSA 4096) whose private half is shown once and kept
+  nowhere, a key of one's own added (its public line, .pub file or private
+  key - only the public half used), each exported as a .pub file or taken
+  away (the last one only when said again). Written by root's helper, 0600 in
+  a 0700 folder, never through a link; every change in Events.
 - **Settings - Backups** ([docs/remote-backups.md](docs/remote-backups.md)):
   a backup of everything - the full backup, the database with its keys -
   packed, locked with the backups' password (`openssl enc -aes-256-cbc -pbkdf2

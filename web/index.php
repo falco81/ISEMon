@@ -412,8 +412,11 @@ if (isset($_GET['api'])) {
         'net'          => '/api/net',
         'ntp'          => '/api/ntp',
         'power'        => '/api/power',
+        'osup'         => '/api/osup',
         'trial'        => '/api/trial',
         'rbackup'      => '/api/rbackup',
+        /* Root's SSH keys (1.10.239). */
+        'sshkeys'      => '/api/sshkeys',
         'dashboard' => '/api/dashboard',
         /* One door's own shape, counted by what matters behind that door. */
         'door'      => '/api/door',
@@ -495,8 +498,10 @@ if (isset($_GET['api'])) {
         'net'          => '/api/net',
         'ntp'          => '/api/ntp',
         'power'        => '/api/power',
+        'osup'         => '/api/osup',
         'trial'        => '/api/trial',
         'rbackup'      => '/api/rbackup',
+        'sshkeys'      => '/api/sshkeys',
         'console-login' => '/api/console-login',
         'win-reread'   => '/api/windows/reread',
         'win-rollup'   => '/api/windows/rollup',
@@ -3829,18 +3834,52 @@ function srcText(el) {
   /* The buttons as otp's: the one to press filled, the one that cannot be
      taken back red. */
   #pane-network .btn.primary,#pane-time .btn.primary,#pane-power .btn.primary,#pane-backup .btn.primary,
+  #pane-osup .btn.primary,
   #pane-about .btn.primary,#pane-upgrade .btn.primary,.save-bar .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
   #pane-network .btn.primary:hover:not(:disabled),#pane-time .btn.primary:hover:not(:disabled),
   #pane-power .btn.primary:hover:not(:disabled),#pane-backup .btn.primary:hover:not(:disabled),
+  #pane-osup .btn.primary:hover:not(:disabled),
   #pane-about .btn.primary:hover:not(:disabled),#pane-upgrade .btn.primary:hover:not(:disabled),
   .save-bar .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
   #pane-network .btn.primary svg,#pane-time .btn.primary svg,#pane-power .btn.primary svg,#pane-backup .btn.primary svg,
+  #pane-osup .btn.primary svg,
   #pane-about .btn.primary svg,#pane-upgrade .btn.primary svg,.save-bar .btn.primary svg{opacity:1}
   #pane-network .btn.danger,#pane-time .btn.danger,#pane-power .btn.danger,#pane-backup .btn.danger,
+  #pane-osup .btn.danger,
   #pane-about .btn.danger,#pane-upgrade .btn.danger{color:var(--crit);border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
   #pane-network .btn.danger:hover:not(:disabled),#pane-time .btn.danger:hover:not(:disabled),
   #pane-power .btn.danger:hover:not(:disabled),#pane-backup .btn.danger:hover:not(:disabled),
+  #pane-osup .btn.danger:hover:not(:disabled),
   #pane-about .btn.danger:hover:not(:disabled),#pane-upgrade .btn.danger:hover:not(:disabled){background:rgba(248,81,73,.22);color:#ff7b72;border-color:var(--crit)}
+  /* System updates (1.10.239), as otp 1.0.158-1.0.160 draws them. */
+  #ou-host > .card + .card,#ou-host > .pw-grid + .card,#ou-host > .note + .card,#ou-host > .card + .pw-grid,
+  #ou-host > .card + .note{margin-top:16px}
+  #ou-host .pw-grid{margin-bottom:0}
+  #ou-host .ou-reboot{border-color:rgba(210,153,34,.55)}
+  #ou-host .ou-reboot .btn{margin-top:4px}
+  #ou-host .card h2 .right{display:inline-flex;gap:8px;align-items:center}
+  #ou-host details.fold{margin:12px 0 0}
+  #ou-host pre.lines{white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:60vh;overflow:auto;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}
+  #ou-host details.fold pre.lines{border:0;border-radius:0 0 12px 12px;max-height:340px}
+  #ou-host pre.ou-log{max-height:420px}
+  #ou-host .ou-after{margin:4px 0 14px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+  #ou-host .ou-who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  #ou-host .ou-hide-row{margin-top:12px}
+  #ou-host .up-bar{margin:6px 0 10px}
+  #ou-host .card > .up-bar{margin:6px 0 14px}
+  #ou-host .up-bar .says{font-size:12px;margin-top:4px}
+  #ou-host .up-bar.good .bar span{background:var(--ok)}
+  #ou-host .up-bar.bad .bar span{background:var(--crit)}
+  #ou-host td.up-how .up-bar{margin:0}
+  #ou-host table.up-plan-table{table-layout:fixed;width:100%}
+  #ou-host table.up-plan-table th:nth-child(1),#ou-host table.up-plan-table td:nth-child(1){width:14%}
+  #ou-host table.up-plan-table th:nth-child(2),#ou-host table.up-plan-table td:nth-child(2){width:14%}
+  #ou-host table.up-plan-table th:nth-child(3),#ou-host table.up-plan-table td:nth-child(3){width:26%}
+  #ou-host table.up-plan-table th:nth-child(4),#ou-host table.up-plan-table td:nth-child(4){width:34%}
+  #ou-host table.up-plan-table th:nth-child(5),#ou-host table.up-plan-table td:nth-child(5){width:12%}
+  #ou-host table.up-plan-table td{vertical-align:top;overflow-wrap:anywhere}
+  #ou-host table.up-plan-table td.up-how{padding-right:24px}
   /* About: what it runs on, across the card as otp has it. */
   #pane-about .sw-box{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
   #pane-about .sw-box > .sw-h:first-child{margin-top:0}
@@ -4882,6 +4921,8 @@ function srcText(el) {
     <button type="button" data-pane="network" data-icon="net" title="This server's address, gateway, DNS servers, host name and IPv6 - put in by the server itself, on trial: unless it is kept within minutes it goes back to the old one by itself.">Network</button>
     <button type="button" data-pane="time" data-icon="clock" title="The clock of this server: chrony, its time servers, how far off it is - every time on these pages and every record read is worked out from it.">Time</button>
     <button type="button" data-pane="power" data-icon="power" title="Restart or switch off this server.">Restart and power off</button>
+    <button type="button" data-pane="osup" data-icon="download" title="The operating system's packages updated by dnf (or apt), with what it says as it goes; a restart offered when one is needed.">System updates</button>
+    <button type="button" class="admin-only" data-pane="sshkeys" data-icon="key" title="The keys that may sign in to this server as root over SSH: made here, added or taken away.">SSH keys of root</button>
     <div class="ctl-group">Data</div>
     <button type="button" data-pane="db"      data-icon="db"     title="Which database everything lives in - a file on this machine, MariaDB or PostgreSQL - how big it is, copies of it, and forgetting old records.">The database</button>
     <button type="button" data-pane="backup" data-icon="archive" title="Backups of everything to another machine - FTP, FTPS, SFTP, SCP, SMB or a folder - locked with a password, on a schedule, and putting one back.">Backups</button>
@@ -5785,6 +5826,44 @@ function srcText(el) {
         up again.</p>
     </div>
     <div id="power-body"></div>
+  </div>
+
+  <!-- ---------- the updates of the operating system (1.10.239) ---------- -->
+  <div class="ctl-pane wr" id="pane-osup" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">System updates</h2>
+      <p class="ctl-lede">The operating system's packages, updated by dnf (or apt) on this server -
+        what is waiting, how many of them are security updates, and whether a restart will be
+        needed. A restart an update needs is offered when it is done, or made by itself.</p>
+    </div>
+    <div id="ou-host"></div>
+  </div>
+
+  <!-- ---------- root's SSH keys (1.10.239) ---------- -->
+  <div class="ctl-pane wr" id="pane-sshkeys" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">SSH keys of root</h2>
+      <p class="ctl-lede">The keys that may sign in to this server as root over SSH - the lines of
+        /root/.ssh/authorized_keys. A key made here is shown once, to be kept by you, and kept
+        nowhere on the server; one of your own is put on by its public half. Every change is
+        written into Events.</p>
+    </div>
+    <div id="sk-host">
+      <style nonce="<?= h($nonce) ?>">
+        #sk-host > .card + .card, #sk-host > .card + .pw-grid, #sk-host > .note + .card{margin-top:16px}
+        #sk-host > .note{margin:0 0 12px}
+        #sk-host .rb-panel .btnrow{flex-wrap:wrap;gap:8px}
+        #sk-host td.sk-act{white-space:nowrap;text-align:right}
+        #sk-host td.sk-act button + button{margin-left:8px}
+        #sk-host td .tag + .tag{margin-left:6px}
+        #sk-host .pw-grid{margin-top:16px;grid-template-columns:repeat(auto-fill,minmax(520px,1fr))}
+        #sk-host .pw-node .net-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+        #pane-sshkeys .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+        #pane-sshkeys .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
+        .modal .sk-made textarea{width:100%;box-sizing:border-box}
+        .modal .sk-made .btnrow{margin:12px 0 16px}
+      </style>
+    </div>
   </div>
 
   <!-- ---------- backups to another machine (1.10.228) ---------- -->
@@ -28632,6 +28711,9 @@ function showPane(name, quietly) {
   if (name === 'network' && typeof loadNet === 'function') loadNet();
   if (name === 'time' && typeof loadNtp === 'function') loadNtp();
   if (name === 'power' && typeof loadPower === 'function') loadPower();
+  if (name === 'sshkeys' && typeof loadSshKeys === 'function') loadSshKeys();
+  if (name === 'osup' && typeof loadOsup === 'function') loadOsup();
+  else if (typeof ouPoll === 'function') ouPoll(false);
   if (name === 'backup' && typeof loadRbackup === 'function') loadRbackup();
   if (name === 'winsec') drawRollup();
   if (name === 'about') drawAbout();
@@ -37011,6 +37093,256 @@ function drawPowerAway() {
   box.appendChild(bar);
   box.appendChild(el('p', 'note', 'Not answering for ' + span(away) + ' - asked again every two seconds; the page comes back by itself.'));
 }
+/* ---- Settings → System updates (1.10.239) ---------------------------------------
+   As otp 1.0.158-1.0.160 draws it, for one server: what dnf (or apt) has
+   waiting, the update of all of it with a bar and what the package manager
+   says as it comes, and the restart it needs offered at the end. What it
+   says is read from what root's work writes, not kept in the database. */
+var OU = {d: null, poll: null, hide: false, reboot: 'ask', asked: 0, away: 0, pkOpen: false};
+try { OU.hide = localStorage.getItem('isemon-ou-hide') === '1'; } catch (e) { /* only a convenience */ }
+var OU_STATE = {waiting: ['waits to begin', 'dim'], updating: ['updating', 'info'],
+                rebooting: ['restarting', 'warn'], done: ['done', 'ok'], failed: ['failed', 'crit']};
+function loadOsup() {
+  api('osup').then(function (d) { OU.d = d; OU.away = 0; drawOsup(); ouPoll(ouLive(d)); }).catch(oops);
+}
+function ouLive(d) {
+  d = d || OU.d || {};
+  /* Just asked: the work has not begun yet, followed until it says. */
+  if (Date.now() - OU.asked < 30000) return true;
+  return (d.plan && d.plan.state === 'running') || (d.nodes || []).some(function (n) { return (n.check || {}).state === 'running'; }) || !!(d.power && d.power.id);
+}
+function ouPoll(on) {
+  if (on && !OU.poll) {
+    OU.poll = setInterval(function () {
+      if (!paneLive('osup')) { ouPoll(false); return; }
+      api('osup', undefined, {quiet: true}).then(function (d) { OU.d = d; OU.away = 0; drawOsup(true); if (!ouLive(d)) ouPoll(false); })
+        .catch(function (e) { if (e && e.stopped && !e.busy) return; OU.away = OU.away || Date.now(); drawOsup(true); });
+    }, 2500);
+  }
+  if (!on && OU.poll) { clearInterval(OU.poll); OU.poll = null; }
+}
+/* Something asked of the server: followed from now on. */
+function ouAsked() { OU.asked = Date.now(); ouPoll(true); }
+function ouPercent(r) {
+  var st = (r || {}).state;
+  if (st === 'done' || st === 'failed') return 100;
+  if (st === 'updating') return Math.max(8, Math.min(95, Number(r.pct || 0)));
+  if (st === 'rebooting') return 96;
+  return 0;
+}
+/* A bar and the words under it, as otp's upBar. */
+function ouBar(pc, kind, words, wide) {
+  var box = el('div', 'going up-bar' + (wide ? ' wide' : '') + (kind ? ' ' + kind : ''));
+  var bar = el('div', 'bar');
+  var fill = el('span', '');
+  fill.style.width = Math.max(0, Math.min(100, pc)) + '%';
+  bar.appendChild(fill);
+  box.appendChild(bar);
+  if (words) box.appendChild(wide ? el('div', 'says', words) : noI18n(el('div', 'says', words)));
+  return box;
+}
+/* Text being selected in the pane is not drawn away from under the mouse. */
+function ouSelecting(host) {
+  try {
+    var sel = window.getSelection ? window.getSelection() : null;
+    return !!(sel && !sel.isCollapsed && sel.anchorNode && host.contains(sel.anchorNode));
+  } catch (e) { return false; }
+}
+function drawOsup(live) {
+  var host = $('ou-host');
+  if (!host || !OU.d) return;
+  if (live && ouSelecting(host)) return;
+  /* The window keeps its place when somebody scrolled up in it. */
+  var old = host.querySelector('pre.ou-log');
+  var keep = old && old.scrollTop + old.clientHeight < old.scrollHeight - 8 ? old.scrollTop : null;
+  clear(host);
+  var d = OU.d, plan = d.plan || {}, nodes = d.nodes || [];
+  var n = nodes[0] || {};
+  var running = plan.state === 'running';
+  var power = !!(d.power && d.power.id);
+  if (OU.away) host.appendChild(el('p', 'note warn', 'This server is not answering for ' + span(Math.round((Date.now() - OU.away) / 1000)) + ' - restarting; asked again every few seconds.'));
+  /* A restart the update left to do. */
+  if (n.reboot && !power) {
+    var rb = el('div', 'card full ou-reboot');
+    rb.appendChild(el('h2', '', 'This server needs a restart'));
+    rb.appendChild(el('p', 'note', 'A new kernel or libraries are in that only a restart brings into use. For a minute or two nothing answers - the dashboard, the logs are not read.'));
+    if (d.may) {
+      var go = cmdButton('Restart this server', 'refresh', 'primary');
+      go.onclick = function () {
+        confirmThen('Restart after the update', htmlText('This server restarts now: for a minute or two nothing answers. The page follows it and comes back by itself.'), 'Restart', function () {
+          api('osup', {action: 'reboot'}).then(function (x) { toast(x.message, 'good'); ouAsked(); loadOsup(); }).catch(oops);
+        }, false);
+      };
+      rb.appendChild(go);
+    }
+    host.appendChild(rb);
+  }
+  if (power) host.appendChild(el('p', 'note', 'Restarting - followed on Restart and power off.'));
+  /* What is waiting. */
+  var grid = el('div', 'pw-grid');
+  var c = el('div', 'card pw-node');
+  var hd = el('div', 'pw-head');
+  hd.appendChild(el('span', 'dot ok'));
+  hd.appendChild(noI18n(el('b', '', n.name || 'this server')));
+  hd.appendChild(el('span', 'tag info', 'this page'));
+  var ck = n.check || {};
+  if (ck.state === 'running') hd.appendChild(el('span', 'tag info', 'looking…'));
+  else if (ck.checked && ck.state === 'done') hd.appendChild(el('span', 'tag ' + (ck.count ? 'warn' : 'ok'), ck.count ? num(ck.count) + ' waiting' : 'up to date'));
+  if (n.reboot) hd.appendChild(el('span', 'tag warn', 'restart needed'));
+  else if (ck.reboot_after && ck.count) hd.appendChild(el('span', 'tag info', 'restart after the update'));
+  c.appendChild(hd);
+  c.appendChild(netFacts([
+    ['Updates waiting', ck.checked ? num(ck.count || 0) : 'not looked yet'],
+    ['Of them security', ck.security !== undefined && ck.security !== null ? num(ck.security) : ''],
+    ['A restart', !ck.checked ? '' : (ck.reboot_now ? 'needed now, before any update'
+      : (ck.reboot_after && ck.count ? 'needed after the update - ' + (ck.reboot_why || []).join(', ') : 'not needed by these updates'))],
+    ['Looked', ck.checked ? ago(ck.checked) : ''],
+    ['Updated by', ck.pm || '', true]
+  ]));
+  if (ck.error) c.appendChild(el('p', 'note bad', ck.error));
+  if ((ck.packages || []).length) {
+    var more = el('details', 'fold');
+    more.appendChild(el('summary', '', 'what is waiting'));
+    more.appendChild(noI18n(el('pre', 'lines ou-pk', ck.packages.slice(0, 300).join('\n') + (ck.packages.length > 300 ? '\n…' : ''))));
+    if (OU.pkOpen) more.open = true;
+    more.ontoggle = function () { OU.pkOpen = more.open; };
+    c.appendChild(more);
+  }
+  if (d.may) {
+    var row = el('div', 'btnrow');
+    var look = cmdButton('Look for updates', 'search', '');
+    look.disabled = !d.helper || ck.state === 'running' || running;
+    look.onclick = function () { busy(look, true); api('osup', {action: 'check'}).then(function (x) { toast(x.message); ouAsked(); loadOsup(); }).catch(function (e) { busy(look, false); oops(e); }); };
+    row.appendChild(look);
+    c.appendChild(row);
+  } else {
+    c.appendChild(el('p', 'note', 'Only a full administrator may look for updates or update this server.'));
+  }
+  grid.appendChild(c);
+  host.appendChild(grid);
+  /* The update itself. */
+  if (!running && d.may) {
+    var uc = el('div', 'card full');
+    uc.appendChild(el('h2', '', 'Update this server'));
+    uc.appendChild(el('p', 'note', 'dnf (or apt) updates every package. The logs go on being read meanwhile; a restart it needs is offered at the end.'));
+    var segb = el('div', 'seg');
+    [['ask', 'Ask me when a restart is needed'], ['auto', 'Restart by itself when needed']].forEach(function (o) {
+      var b = el('button', OU.reboot === o[0] ? 'on' : '', o[1]);
+      b.type = 'button';
+      b.onclick = function () { OU.reboot = o[0]; drawOsup(); };
+      segb.appendChild(b);
+    });
+    if (ck.reboot_after && ck.count) uc.appendChild(el('p', 'note warn', 'This server needs a restart after this update: ' + (ck.reboot_why || []).join(', ') + '.'));
+    var fld = el('div', 'wr-field ou-after');
+    fld.appendChild(el('span', '', 'After the update'));
+    fld.appendChild(segb);
+    uc.appendChild(fld);
+    var row2 = el('div', 'btnrow');
+    var start = cmdButton('Update it now', 'download', 'primary');
+    start.disabled = !d.helper || power || !!d.refused || ck.state === 'running';
+    start.onclick = function () {
+      confirmThen('Update this server', OU.reboot === 'auto'
+        ? 'Every package of the system is updated.<br><br>When it needs one, the server is <b>restarted by itself</b>.'
+        : 'Every package of the system is updated.<br><br>A restart it needs is offered when it is done.',
+        'Update', function () {
+          api('osup', {action: 'start', reboot: OU.reboot}).then(function (x) { toast(x.message, 'good'); ouAsked(); loadOsup(); }).catch(oops);
+        }, false);
+    };
+    row2.appendChild(start);
+    uc.appendChild(row2);
+    if (d.refused) uc.appendChild(el('p', 'note warn', d.refused));
+    if (!d.helper) uc.appendChild(el('p', 'note bad', 'Root\'s half of this server does not do updates of the system yet (install.sh --upgrade puts it in).'));
+    host.appendChild(uc);
+  }
+  /* How far it is. */
+  if (plan.id) {
+    var r = n.row || {};
+    var st = r.state || 'waiting';
+    var pc = el('div', 'card full');
+    var ph = el('h2', '', 'The update');
+    if (running && st === 'waiting' && d.may) {
+      var stop = cmdButton('Stop it', 'cancel', 'small danger');
+      explain(stop, 'Stopped before it begins, nothing is updated. Once the package manager is at work it is not stopped half way: it finishes.');
+      stop.onclick = function () {
+        confirmThen('Stop the update', htmlText('It has not begun: nothing is updated.'), 'Stop it', function () {
+          api('osup', {action: 'cancel'}).then(function (x) { toast(x.message); loadOsup(); }).catch(oops);
+        }, true);
+      };
+      var tl = el('span', 'right'); tl.appendChild(stop); ph.appendChild(tl);
+    }
+    pc.appendChild(ph);
+    var how = {running: 'going on', done: 'done', failed: 'failed', cancelled: 'stopped'}[plan.state || 'running'];
+    var who = el('p', 'note');
+    who.appendChild(document.createTextNode('Started by ' + (plan.by || '?') + ', ' + ago(plan.at)));
+    who.appendChild(el('span', 'tag ' + ({done: 'ok', failed: 'crit', cancelled: 'dim'}[plan.state] || 'info'), how));
+    if (plan.reboot === 'auto') who.appendChild(el('span', 'tag dim', 'restarted by itself when needed'));
+    who.classList.add('ou-who');
+    pc.appendChild(who);
+    var p2 = plan.state === 'cancelled' ? 0 : ouPercent(r);
+    var kind = st === 'failed' ? 'bad' : (st === 'done' ? 'good' : '');
+    pc.appendChild(ouBar(p2, kind, num(p2) + ' %', true));
+    var w = OU_STATE[st] || OU_STATE.waiting;
+    var t = listTable(['Server', 'Step', 'How far', 'What happened', 'When'], [[n.name, r]], function (x) {
+      var tr = el('tr');
+      tr.appendChild(noI18n(el('td', 'mono', x[0] || '')));
+      var c2 = el('td');
+      c2.appendChild(el('span', 'tag ' + (plan.state === 'cancelled' ? 'dim' : w[1]), plan.state === 'cancelled' ? 'stopped' : w[0]));
+      tr.appendChild(c2);
+      var b2 = el('td', 'up-how');
+      b2.appendChild(ouBar(p2, kind, st === 'updating' && x[1].phase ? x[1].phase : num(p2) + ' %'));
+      tr.appendChild(b2);
+      var said = x[1].said || '';
+      if (!said && running && st === 'waiting') said = 'begins within seconds - it can be stopped until then';
+      tr.appendChild(el('td', 'small', said));
+      tr.appendChild(el('td', 'muted', x[1].at ? ago(x[1].at) : '–'));
+      return tr;
+    }, 'plain');
+    (t.querySelector('table') || t).classList.add('up-plan-table');
+    pc.appendChild(t);
+    if (!running && d.may) {
+      var hr = el('div', 'btnrow ou-hide-row');
+      var hide = cmdButton('Hide this', 'close', 'small');
+      hide.onclick = function () {
+        busy(hide, true);
+        api('osup', {action: 'hide'}).then(function (x) { OU.d = x; drawOsup(); }).catch(function (e) { busy(hide, false); oops(e); });
+      };
+      hr.appendChild(hide);
+      pc.appendChild(hr);
+    }
+    host.appendChild(pc);
+  }
+  /* What the package manager says. */
+  var lines = ((n.row || {}).lines || []).length ? n.row.lines : ((n.check || {}).lines || []);
+  if (lines.length) {
+    var lc = el('div', 'card full');
+    var lh = el('h2', '', 'What it says');
+    var lt = el('span', 'right');
+    var hb = cmdButton(OU.hide ? 'Show it' : 'Hide it', OU.hide ? 'unfold' : 'fold', 'small');
+    hb.onclick = function () { OU.hide = !OU.hide; try { localStorage.setItem('isemon-ou-hide', OU.hide ? '1' : '0'); } catch (e) { /* only a convenience */ } drawOsup(); };
+    lt.appendChild(hb);
+    if (d.may) {
+      var cb = cmdButton('Clear the window', 'broom', 'small');
+      explain(cb, 'Empty the window - for every page, and after a reload too; what comes after is shown.');
+      cb.onclick = function () {
+        busy(cb, true);
+        api('osup', {action: 'clear'}).then(function (x) { OU.d = x; drawOsup(); toast('the window is empty'); })
+          .catch(function (e) { busy(cb, false); oops(e); });
+      };
+      lt.appendChild(cb);
+    }
+    lh.appendChild(lt);
+    lc.appendChild(lh);
+    if (!OU.hide) {
+      var pre = noI18n(el('pre', 'lines ou-log', lines.join('\n') || '–'));
+      lc.appendChild(pre);
+      setTimeout(function () { pre.scrollTop = keep === null ? pre.scrollHeight : keep; }, 0);
+    } else {
+      lc.appendChild(el('p', 'muted small', 'Hidden - ' + num(lines.length) + ' line(s).'));
+    }
+    host.appendChild(lc);
+  }
+  explainWhatWasDrawn(host);
+}
 /* The banner at once, from the status the page was drawn with. */
 if (typeof STATUS !== 'undefined' && STATUS) drawTrials(STATUS);
 /* Opened straight at one of these panes, the pane was switched to before
@@ -37018,6 +37350,7 @@ if (typeof STATUS !== 'undefined' && STATUS) drawTrials(STATUS);
 setTimeout(function () {
   if (paneLive('network')) loadNet();
   if (paneLive('power')) loadPower();
+  if (paneLive('osup')) loadOsup();
 }, 0);
 </script>
 <script nonce="<?= h($nonce) ?>">
@@ -39727,6 +40060,270 @@ function ntpSave() {
 /* Opened straight at this pane, it was switched to before this block was
    read: drawn now. */
 setTimeout(function () { if (paneLive('time')) loadNtp(); }, 0);
+</script>
+<script nonce="<?= h($nonce) ?>">
+/* ==========================================================================
+   Settings → SSH keys of root (1.10.239; after otp's, 1.0.158-1.0.161)
+   --------------------------------------------------------------------------
+   This server's /root/.ssh/authorized_keys as root's helper reads it (asked
+   in sshkeys.ask, answered in sshkeys.json), with what sshd makes of root.
+   Above the list, a key for root made here - drawn as a router's key is - of
+   which the private half is shown once and kept nowhere; a key of one's own
+   is added in the list, from its public line, its .pub file or the private
+   key, of which only the public half is used. One server: no nodes to choose.
+   ========================================================================== */
+var SK = {d: null, poll: null, asked: 0};
+function loadSshKeys() {
+  api('sshkeys').then(function (d) {
+    SK.d = d; drawSshKeys();
+    /* Read afresh when the pane is opened. */
+    if (d.helper && Date.now() - SK.asked > 20000) {
+      SK.asked = Date.now();
+      api('sshkeys', {action: 'refresh'}).then(function () { skPoll(true); }).catch(function () {});
+    }
+    skPoll(skPending());
+  }).catch(oops);
+}
+function skPending() { return !!(SK.d && (SK.d.pending || SK.d.busy)); }
+function skPoll(on) {
+  if (on && !SK.poll) {
+    SK.poll = setInterval(function () {
+      if (!paneLive('sshkeys')) { skPoll(false); return; }
+      api('sshkeys', undefined, {quiet: true}).then(function (d) {
+        SK.d = d; drawSshKeys(); if (!skPending()) skPoll(false);
+      }).catch(function () {});
+    }, 2000);
+  }
+  if (!on && SK.poll) { clearInterval(SK.poll); SK.poll = null; }
+}
+function skKind(k) {
+  var t = String(k.type || '?').toUpperCase();
+  return t + (k.bits && t !== 'ED25519' ? ' ' + k.bits : '');
+}
+function drawSshKeys() {
+  var host = $('sk-host');
+  if (!host || !SK.d) return;
+  var style = host.querySelector('style');
+  clear(host);
+  if (style) host.appendChild(style);
+  var d = SK.d, sd = d.sshd || {}, keys = d.keys || [];
+  if (!d.helper) {
+    host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet '
+      + '(isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. '
+      + 'Until then the keys are neither read nor changed here.'));
+  }
+  if (d.error) {
+    var bad = el('div', 'note bad');
+    bad.appendChild(el('b', '', 'Root said:'));
+    bad.appendChild(noI18n(el('span', 'mono', d.error)));
+    host.appendChild(bad);
+  }
+  /* What sshd makes of root: keys are no use where it does not let root in. */
+  if (sd.there && sd.permit_root === 'no')
+    host.appendChild(el('p', 'note warn', 'sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does.'));
+  if (sd.there && sd.pubkey === 'no')
+    host.appendChild(el('p', 'note warn', 'sshd takes no keys (PubkeyAuthentication no).'));
+  var kept = d.kept || {};
+  host.appendChild(skKeptCard(d));
+  var card = el('div', 'card full');
+  var h = el('h2', '', 'Keys that may sign in as root');
+  var tools = el('span', 'right');
+  var add = cmdButton('Add a key', 'upload', 'small');
+  explain(add, 'A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root\'s authorized_keys.');
+  add.disabled = !d.helper;
+  var again = iconButton('refresh', 'Read the keys again');
+  again.disabled = !d.helper;
+  tools.appendChild(add); tools.appendChild(document.createTextNode(' ')); tools.appendChild(again);
+  h.appendChild(tools);
+  card.appendChild(h);
+  add.onclick = skAdd;
+  again.onclick = function () {
+    api('sshkeys', {action: 'refresh'}).then(function () { skPoll(true); toast('asked again'); }).catch(oops);
+  };
+  if (!keys.length) {
+    card.appendChild(el('p', 'note', d.at ? 'No key lets root in over SSH on this server.'
+      : (d.helper ? 'Reading the keys…' : 'Not read.')));
+  } else {
+    card.appendChild(listTable(['Key', 'Fingerprint', 'Comment', ''], keys.map(function (k, i) { return i; }), function (i) {
+      var k = keys[i];
+      var tr = el('tr');
+      var t = el('td');
+      t.appendChild(el('span', 'tag ' + (String(k.type).toUpperCase() === 'ED25519' ? 'ok' : 'info'), skKind(k)));
+      if (k.options) t.appendChild(el('span', 'tag warn', 'with options'));
+      if (kept.fp && k.fp === kept.fp) t.appendChild(el('span', 'tag info', 'made here'));
+      tr.appendChild(t);
+      tr.appendChild(noI18n(el('td', 'mono small', k.fp || '–')));
+      tr.appendChild(noI18n(el('td', 'small', k.comment || '–')));
+      var act = el('td', 'sk-act');
+      /* Each key exported by itself, as its .pub file. */
+      var ex = iconButton('download', 'Export this key - its public half, as a .pub file');
+      ex.disabled = !k.text;
+      ex.onclick = function () { skExport(k); };
+      act.appendChild(ex);
+      var rm = iconButton('trash', 'Take this key away');
+      rm.disabled = !k.fp;
+      rm.onclick = function () { skDrop(k); };
+      act.appendChild(rm);
+      tr.appendChild(act);
+      return tr;
+    }, 'plain'));
+  }
+  if (d.pending) card.appendChild(el('p', 'muted small', 'Being written…'));
+  host.appendChild(card);
+  /* This server's own facts. */
+  var grid = el('div', 'pw-grid');
+  var c = el('div', 'card pw-node');
+  var hd = el('div', 'pw-head');
+  hd.appendChild(el('span', 'dot ' + (d.at ? 'ok' : 'warn')));
+  hd.appendChild(noI18n(el('b', '', location.hostname || 'this machine')));
+  hd.appendChild(el('span', 'tag info', 'this page'));
+  c.appendChild(hd);
+  c.appendChild(netFacts([
+    ['Keys', d.at ? String(keys.length) : '–'],
+    ['Root may sign in', sd.there ? (sd.permit_root || '?') : (d.at ? 'sshd is not here' : '–')],
+    ['With a password', sd.there ? (sd.password || '?') : ''],
+    ['SSH port', sd.port || '', true],
+    ['The file', d.file || '/root/.ssh/authorized_keys', true],
+    ['Read', d.at ? ago(d.at) : 'not yet']
+  ]));
+  grid.appendChild(c);
+  host.appendChild(grid);
+  explainWhatWasDrawn($('pane-sshkeys'));
+}
+/* Root's key, made here: the router's key panel - the same words, the
+   buttons in a row. Unlike a router's it is kept nowhere: isemon never signs
+   in as root, so a key made here is handed over once. Taking a key away is
+   in the list. */
+function skKeptCard(d) {
+  var card = el('div', 'card full');
+  card.appendChild(el('h2', '', 'A key for root'));
+  var P = rbPanel('Its <b>public</b> half goes into <code>/root/.ssh/authorized_keys</code> of this server. The <b>private</b> half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too.');
+  if (!d.keygen) {
+    var miss = el('p', 'note');
+    miss.style.color = 'var(--warn)';
+    miss.textContent = 'ssh-keygen is not on this machine, so a key cannot be made or read here: dnf install openssh-clients.';
+    P.box.insertBefore(miss, P.row);
+  }
+  var mk = cmdButton('Make a key', 'key', '');
+  explain(mk, 'Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root\'s authorized_keys of this server.');
+  P.row.appendChild(mk);
+  mk.disabled = !d.keygen || !d.helper;
+  mk.onclick = function () {
+    var kind = 'ed25519';
+    modal('Make a key for this server', function (body) {
+      var p = el('p', 'note');
+      p.innerHTML = 'A fresh pair is made here. Its <b>private</b> half is shown to you once, to download or copy, and kept nowhere; its <b>public</b> half goes into root\'s authorized_keys of this server. A key there before stays until it is taken away in the list below.';
+      body.appendChild(p);
+      var sg = wrSeg([['ed25519', 'Ed25519 (the strongest, and short)'], ['rsa4096', 'RSA 4096 (where something old needs RSA)']],
+                     kind, function (v) { kind = v; });
+      body.appendChild(wrField('The kind', sg));
+    }, [{words: 'Cancel', close: true}, {words: 'Make one', cls: 'primary', icon: 'key', go: function (b) {
+      busy(b, true);
+      api('sshkeys', {action: 'rk_make', kind: kind}).then(function (x) {
+        skShowMade(x);
+        return api('sshkeys');
+      }).then(function (d2) { SK.d = d2; drawSshKeys(); skPoll(true); })
+        .catch(function (e) { busy(b, false); oops(e); });
+    }}], 'medium');
+  };
+  card.appendChild(P.box);
+  return card;
+}
+function skShowMade(x) {
+  var m = modal('Keep the private key now', function (body) {
+    var box = el('div', 'sk-made');
+    var w = el('p', 'note warn');
+    w.textContent = 'This is the only time it is shown. Whoever holds it signs in to this server as root.';
+    box.appendChild(w);
+    var area = noI18n(el('textarea', 'wr-in mono'));
+    area.rows = 9; area.readOnly = true; area.value = x.private; area.spellcheck = false;
+    box.appendChild(area);
+    var row = el('div', 'btnrow');
+    var dl = cmdButton('Download the key', 'download', 'primary');
+    dl.onclick = function () { skSave(x.private, x.file); };
+    var cp = cmdButton('Copy it', 'copy', '');
+    cp.onclick = function () { copyText(x.private, 'the private key is on the clipboard'); };
+    row.appendChild(dl); row.appendChild(cp);
+    box.appendChild(row);
+    box.appendChild(el('p', 'btnhelp', 'Its public half, put onto this server - click it to copy:'));
+    box.appendChild(rbCopyme(x.pub, 'the public key is on the clipboard'));
+    box.appendChild(noI18n(el('p', 'muted small mono', x.fp)));
+    box.appendChild(el('p', 'btnhelp', 'Then, on your machine: ssh -i ' + x.file + ' root@…'));
+    body.appendChild(box);
+  }, [{words: 'I have kept it', cls: 'primary', close: true}], 'medium');
+  /* Gone from the page when the popup closes: nothing keeps it. */
+  MODAL_CLOSE = function () { clear(m.body); x.private = ''; };
+}
+function skSave(text, file) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: 'application/octet-stream'}));
+  a.download = file;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+}
+/* One key's public half as a .pub file, named by its comment. */
+function skExport(k) {
+  var name = String(k.comment || k.type || 'key').replace(/[^A-Za-z0-9@._-]+/g, '_').replace(/^[._]+/, '').slice(0, 60) || 'key';
+  skSave(k.text + '\n', name + '.pub');
+  toast('the key is exported as ' + name + '.pub', 'good');
+}
+function skAdd() {
+  var area, pp, ppf;
+  modal('Add a key for root', function (body) {
+    var p = el('p', 'note');
+    p.innerHTML = 'One line of a <code>.pub</code> file: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA or RSA of 3072 bits and more; options before the key are not taken here. A private key is taken too: its public half is worked out here and the private half is not kept.';
+    body.appendChild(p);
+    area = noI18n(rbArea('', 'ssh-ed25519 AAAA… you@laptop'));
+    area.rows = 4;
+    area.classList.remove('small');
+    body.appendChild(area);
+    var fr = el('div', 'btnrow');
+    fr.style.margin = '8px 0 4px';
+    var pickB = cmdButton('Read a file…', 'upload', 'small');
+    var input = el('input'); input.type = 'file'; input.hidden = true;
+    pickB.onclick = function () { input.click(); };
+    input.onchange = function () {
+      var f = input.files && input.files[0];
+      if (!f) return;
+      if (f.size > 65536) { toast('that file is far bigger than a key', 'warn'); return; }
+      f.text().then(function (t) { t = t.trim(); area.value = t.indexOf('PRIVATE KEY') >= 0 ? t : t.split(/\r?\n/)[0]; skAddPp(); });
+    };
+    fr.appendChild(pickB); fr.appendChild(input);
+    body.appendChild(fr);
+    pp = rbMask('', '');
+    ppf = wrField('Its passphrase, if the private key has one', pp);
+    var skAddPp = function () { ppf.hidden = area.value.indexOf('PRIVATE KEY') < 0; };
+    area.oninput = skAddPp;
+    skAddPp();
+    body.appendChild(ppf);
+    setTimeout(function () { area.focus(); }, 60);
+  }, [{words: 'Cancel', close: true}, {words: 'Add it', cls: 'primary', icon: 'add', close: true, go: function () {
+    var line = area.value.trim(), pass = pp.value;
+    api('sshkeys', {action: 'add', line: line, passphrase: pass}).then(function (x) { toast(x.message, 'good'); skPoll(true); }).catch(oops);
+  }}], 'medium');
+  /* A private key pasted is gone from the page when the popup closes. */
+  MODAL_CLOSE = function () { if (area) area.value = ''; if (pp) pp.value = ''; };
+}
+/* Taken away after it is said twice: the key, and - when it is the last one
+   root signs in with - that too, again. */
+function skDrop(k) {
+  var last = (((SK.d && SK.d.keys) || []).filter(function (x) { return x.fp; }).length <= 1);
+  var go = function (lastOk) {
+    api('sshkeys', {action: 'drop', fp: k.fp, last_ok: lastOk}).then(function (x) { toast(x.message, 'good'); skPoll(true); }).catch(oops);
+  };
+  confirmThen('Take the key away', 'Root no longer signs in with <code>' + htmlText(k.fp || '') + '</code>' + (k.comment ? ' (' + htmlText(k.comment) + ')' : '') + ' on this server.'
+    + (last ? '<br><br><b>It is the last key root signs in with on this server.</b> Unless root may sign in with a password, nobody reaches it over SSH as root after this.' : ''),
+    'Take it away', function () {
+      if (!last) { go(false); return; }
+      setTimeout(function () {
+        confirmThen('Take the last key away?', 'Said again: <code>' + htmlText(k.fp || '') + '</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.',
+          'Take it away anyway', function () { go(true); }, true);
+      }, 0);
+    }, true);
+}
+/* Opened straight at this pane, it was switched to before this block was
+   read: drawn now. */
+setTimeout(function () { if (paneLive('sshkeys')) loadSshKeys(); }, 0);
 </script>
 </body>
 </html>

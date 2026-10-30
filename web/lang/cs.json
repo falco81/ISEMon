@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.238",
+  "version": "1.10.239",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -628,6 +628,10 @@
    "source": "A fresh key and certificate are made here, for",
    "text": "Zde se vytvoří nový klíč a certifikát pro"
   },
+  "s.a-fresh-pair-is-made-here.5855a676": {
+   "source": "A fresh pair is made here. Its",
+   "text": "Vytvoří se zde nový pár. Jeho"
+  },
   "s.a-full-admin-may-change-anything.ecdff4fc": {
    "source": "A full admin may change anything: ban, unban, settings, the router, accounts.",
    "text": "Plný správce může měnit cokoli: blokovat, odblokovat, nastavení, router, účty."
@@ -720,6 +724,10 @@
    "source": "a key — but there is none yet",
    "text": "klíč — ale zatím žádný není"
   },
+  "s.a-key-for-root.46c67d83": {
+   "source": "A key for root",
+   "text": "Klíč pro roota"
+  },
   "s.a-key-in-the-url-a.f1eebd6d": {
    "source": "A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and for a pfSense; it works for a FortiGate and an OPNsense too.",
    "text": "Klíč v URL: dlouhý náhodný klíč obsažený v URL, který změníte tlačítkem Nový klíč. Je to jediná možnost pro FMC, které nemá kam zadat heslo pro feed, a pro pfSense; funguje i pro FortiGate a OPNsense."
@@ -759,6 +767,10 @@
   "s.a-key-this-machine-holds.9a2c6c72": {
    "source": "a key this machine holds",
    "text": "klíč uložený na tomto stroji"
+  },
+  "s.a-key-you-have-already-its.b6a2074a": {
+   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root's authorized_keys.",
+   "text": "Klíč, který už máte - jeho veřejný řádek nebo soubor .pub, nebo soukromý klíč, z něhož se použije jen veřejná polovina - vložený do authorized_keys roota."
   },
   "s.a-knock-on-this-door-which.aca13bb2": {
    "source": "a knock on this door — which is why one failure is enough. Switched on and off with",
@@ -967,6 +979,10 @@
   "s.a-new-connection-to-the-ssl.5fa71c96": {
    "source": "a new connection to the SSL VPN",
    "text": "nové připojení k SSL VPN"
+  },
+  "s.a-new-kernel-or-libraries-are.f1c886d0": {
+   "source": "A new kernel or libraries are in that only a restart brings into use. For a minute or two nothing answers - the dashboard, the logs are not read.",
+   "text": "Je nainstalované nové jádro nebo knihovny, které začne používat až restart. Minutu či dvě nic neodpovídá - dashboard ani čtení logů."
   },
   "s.a-new-key-for-the-published.7147774c": {
    "source": "A new key for the published list",
@@ -1223,6 +1239,14 @@
   "s.a-restart-a-power-off-or.22ed9b33": {
    "source": "A restart, a power-off or a change of the network is under way.",
    "text": "Probíhá restart, vypnutí nebo změna sítě."
+  },
+  "s.a-restart-it-needs-is-offered.6e1cc90a": {
+   "source": "A restart it needs is offered when it is done.",
+   "text": "Restart, který potřebuje, se nabídne po dokončení."
+  },
+  "s.a-restart.6a4bd134": {
+   "source": "A restart",
+   "text": "Restart"
   },
   "s.a-role-is-fulladmin-banadmin-or.c5b7ee05": {
    "source": "a role is fulladmin, banadmin or readonly",
@@ -1788,6 +1812,14 @@
    "source": "Add a firewall",
    "text": "Přidat firewall"
   },
+  "s.add-a-key-for-root.33c294da": {
+   "source": "Add a key for root",
+   "text": "Přidat klíč pro roota"
+  },
+  "s.add-a-key.730531ca": {
+   "source": "Add a key",
+   "text": "Přidat klíč"
+  },
   "s.add-a-name-server.f5c4541b": {
    "source": "Add a name server",
    "text": "Přidat DNS server"
@@ -2043,6 +2075,10 @@
   "s.after-it-where-it-is-not.36b3f076": {
    "source": "after it where it is not 53. The first one that hands over a",
    "text": "za ním, pokud to není 53. První, který vrátí"
+  },
+  "s.after-the-update.5d11e200": {
+   "source": "After the update",
+   "text": "Po aktualizaci"
   },
   "s.after.405906c9": {
    "source": "after",
@@ -3096,6 +3132,10 @@
    "source": "Ask it again every (hours)",
    "text": "Znovu se ptát každých (hodin)"
   },
+  "s.ask-me-when-a-restart-is.0e95d460": {
+   "source": "Ask me when a restart is needed",
+   "text": "Zeptat se, když bude potřeba restart"
+  },
   "s.ask-one-of-the-jobs-from.4008a3a3": {
    "source": "ask one of the jobs from --jobs to stop. It stops after the batch it is in and keeps what it has already done",
    "text": "požádat jednu z úloh z --jobs o zastavení. Zastaví se po dávce, ve které právě je, a ponechá si, co už udělala"
@@ -3128,9 +3168,17 @@
    "source": "Ask this one earlier",
    "text": "Zeptat se na tuto dříve"
   },
+  "s.ask.1c8f0927": {
+   "source": "ask",
+   "text": "ask"
+  },
   "s.asked-again-after.02539c25": {
    "source": "Asked again after",
    "text": "Znovu dotázáno po"
+  },
+  "s.asked-again.c77d47a3": {
+   "source": "asked again",
+   "text": "dotázáno znovu"
   },
   "s.asked-by.e867115a": {
    "source": "Asked by",
@@ -3764,6 +3812,10 @@
    "source": "BEGIN",
    "text": "BEGIN"
   },
+  "s.begins-within-seconds-it-can-be.2c3d76dc": {
+   "source": "begins within seconds - it can be stopped until then",
+   "text": "začne během několika sekund - do té doby ji lze zastavit"
+  },
   "s.behind-by.ede9254b": {
    "source": "Behind by",
    "text": "Pozadu o"
@@ -3795,6 +3847,10 @@
   "s.being-worked-out-again-now.464189af": {
    "source": "being worked out again now",
    "text": "právě se počítá znovu"
+  },
+  "s.being-written.60d8641e": {
+   "source": "Being written…",
+   "text": "Zapisuje se…"
   },
   "s.belarus.027a12c2": {
    "source": "Belarus",
@@ -4476,6 +4532,10 @@
    "source": "Check its HTTPS certificate",
    "text": "Ověřovat jeho HTTPS certifikát"
   },
+  "s.check-start-cancel-clear-hide-or.a2a6a669": {
+   "source": "check, start, cancel, clear, hide or reboot",
+   "text": "check, start, cancel, clear, hide nebo reboot"
+  },
   "s.check-that-domain-s-certificate-against.366993cc": {
    "source": "Check that domain’s certificate against an authority this machine trusts, or the one imported below.",
    "text": "Ověřit certifikát této domény vůči autoritě, které tento stroj důvěřuje, nebo vůči té importované níže."
@@ -4636,6 +4696,10 @@
    "source": "Clear the list",
    "text": "Vymazat seznam"
   },
+  "s.clear-the-window.2dfdb643": {
+   "source": "Clear the window",
+   "text": "Vyprázdnit okno"
+  },
   "s.clear-them.52282abc": {
    "source": "Clear them",
    "text": "Vymazat je"
@@ -4647,6 +4711,10 @@
   "s.clear-who-fetched-it.2f969605": {
    "source": "Clear who fetched it…",
    "text": "Vymazat, kdo ho stáhl…"
+  },
+  "s.clear.168cbb2e": {
+   "source": "clear",
+   "text": "clear"
   },
   "s.clear.719ea396": {
    "source": "Clear",
@@ -5676,6 +5744,10 @@
    "source": "Djibouti",
    "text": "Džibutsko"
   },
+  "s.dnf-or-apt-updates-every-package.d3e81e76": {
+   "source": "dnf (or apt) updates every package. The logs go on being read meanwhile; a restart it needs is offered at the end.",
+   "text": "dnf (nebo apt) aktualizuje všechny balíčky. Logy se mezitím čtou dál; restart, který bude potřeba, se nabídne na konci."
+  },
   "s.dns-filter-lines-written-for-this.ff0b9f6a": {
    "source": "DNS filter lines written for this session",
    "text": "řádky DNS filtru zapsané pro tuto relaci"
@@ -5859,6 +5931,10 @@
   "s.download-the-certificate-and-its-key.105c7505": {
    "source": "Download the certificate and its key as one file, isemon-api.pem, to import on the router. That it was downloaded, and by whom, is written into Events.",
    "text": "Stáhnout certifikát a jeho klíč jako jeden soubor, isemon-api.pem, k importu na router. Že byl stažen a kým, se zapíše do Událostí."
+  },
+  "s.download-the-key.2f04cae7": {
+   "source": "Download the key",
+   "text": "Stáhnout klíč"
   },
   "s.download-the-private-half-as-a.c5841155": {
    "source": "Download the private half as a file, for keeping somewhere safe or for using the same key elsewhere. It is written into Events that it was downloaded, and by whom.",
@@ -6152,6 +6228,14 @@
    "source": "Ecuador",
    "text": "Ekvádor"
   },
+  "s.ed25519-the-strongest-and-short.8405314d": {
+   "source": "Ed25519 (the strongest, and short)",
+   "text": "Ed25519 (nejsilnější a krátký)"
+  },
+  "s.ed25519.1b7ef327": {
+   "source": "ed25519",
+   "text": "ed25519"
+  },
   "s.edit-0.0d5005bf": {
    "source": "edit 0",
    "text": "edit 0"
@@ -6295,6 +6379,10 @@
   "s.empty-the-search-show-every-country.20e0638f": {
    "source": "Empty the search, show every country again and order the history the way it opens: newest first.",
    "text": "Vyprázdnit hledání, znovu zobrazit všechny země a seřadit historii tak, jak se otevírá: nejnovější první."
+  },
+  "s.empty-the-window-for-every-page.0a874da2": {
+   "source": "Empty the window - for every page, and after a reload too; what comes after is shown.",
+   "text": "Vyprázdní okno - pro všechny stránky i po znovunačtení; zobrazí se to, co přijde potom."
   },
   "s.empty.ad87109b": {
    "source": "empty",
@@ -7028,6 +7116,10 @@
    "source": "Every other field FortiOS writes — read out of each line, slower",
    "text": "Všechna ostatní pole, která FortiOS zapisuje — čtou se z každého řádku, pomaleji"
   },
+  "s.every-package-of-the-system-is.88324484": {
+   "source": "Every package of the system is updated.",
+   "text": "Aktualizují se všechny balíčky systému."
+  },
   "s.every-pass-over-the-log-files.ddf0369d": {
    "source": "Every pass over the log files: how far each has been read, how many records came off it and how long the pass took. What to turn on when records are not arriving or are arriving twice.",
    "text": "Každý průchod logy: kam až byl každý přečten, kolik záznamů z něj vzešlo a jak dlouho průchod trval. To zapněte, když záznamy nepřicházejí nebo přicházejí dvakrát."
@@ -7552,6 +7644,10 @@
    "source": "Export my settings",
    "text": "Exportovat moje nastavení"
   },
+  "s.export-this-key-its-public-half.ce6ae641": {
+   "source": "Export this key - its public half, as a .pub file",
+   "text": "Exportovat tento klíč - jeho veřejnou polovinu, jako soubor .pub"
+  },
   "s.export-which-cannot-hold-a-password.220a96ac": {
    "source": "export, which cannot hold a password, a key or a certificate. Until these are set, this machine cannot do the part of its job that needs them:",
    "text": "export, který nemůže obsahovat heslo, klíč ani certifikát. Dokud nejsou nastaveny, tento stroj nemůže vykonávat tu část své práce, která je potřebuje:"
@@ -8015,6 +8111,10 @@
   "s.find.ded8dae5": {
    "source": "find",
    "text": "hledat"
+  },
+  "s.fingerprint.fed4c905": {
+   "source": "Fingerprint",
+   "text": "Otisk"
   },
   "s.finland.c909b138": {
    "source": "Finland",
@@ -9024,9 +9124,25 @@
    "source": "half an hour",
    "text": "půl hodiny"
   },
+  "s.half-goes-into-root-s-authorized.add26887": {
+   "source": "half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
+   "text": "polovina jde do authorized_keys roota na tomto serveru. Klíč, který tam byl předtím, zůstane, dokud se v seznamu níže neodebere."
+  },
+  "s.half-goes-into.70961d26": {
+   "source": "half goes into",
+   "text": "polovina jde do"
+  },
   "s.half-in.d8f00458": {
    "source": "half - in",
    "text": "polovinu – v"
+  },
+  "s.half-is-never-kept-here-it.01541f87": {
+   "source": "half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too.",
+   "text": "polovina se zde nikdy neukládá: ukáže se vám jednou, ke stažení nebo zkopírování. Klíč je pak v seznamu níže - tam se exportuje nebo odebírá; tam se přidává i vlastní klíč."
+  },
+  "s.half-is-shown-to-you-once.fec83906": {
+   "source": "half is shown to you once, to download or copy, and kept nowhere; its",
+   "text": "polovina se vám ukáže jednou, ke stažení nebo zkopírování, a nikde se neuloží; jeho"
   },
   "s.half-on-it.1c8fff0c": {
    "source": "half on it.",
@@ -9103,6 +9219,10 @@
   "s.hidden-by-itself-half-an-hour.8efcc7e6": {
    "source": "Hidden by itself half an hour after it began.",
    "text": "Samo se skryje půl hodiny po začátku."
+  },
+  "s.hide-it.c002485a": {
+   "source": "Hide it",
+   "text": "Skrýt"
   },
   "s.hide-this.0a0d9af9": {
    "source": "Hide this",
@@ -9243,6 +9363,10 @@
   "s.how-far-back-to-weigh-everything.8745fcef": {
    "source": "How far back to weigh. Everything is still read and written down; this only limits what may earn a ban.",
    "text": "Jak daleko do minulosti posuzovat. Vše se stále čte a zapisuje; toto jen omezuje, co může vést k blokaci."
+  },
+  "s.how-far.d122c848": {
+   "source": "How far",
+   "text": "Jak daleko"
   },
   "s.how-fast-it-is-growing-is.48009ae9": {
    "source": "How fast it is growing is not known yet: the size is noted once a day, and two are needed.",
@@ -9879,6 +10003,10 @@
   "s.hungary.f14e46ce": {
    "source": "Hungary",
    "text": "Maďarsko"
+  },
+  "s.i-have-kept-it.60211bdb": {
+   "source": "I have kept it",
+   "text": "Uložil jsem si ho"
   },
   "s.i-will-set-them.191ae17e": {
    "source": "I will set them",
@@ -10540,6 +10668,10 @@
    "source": "is the interface facing the internet; put yours.",
    "text": "je rozhraní směřující do internetu; uveďte své."
   },
+  "s.is-the-last-key-root-signs.a7f642aa": {
+   "source": "is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
+   "text": "je poslední klíč, kterým se root na tento server přihlašuje. Po jeho odebrání se na server přes SSH jako root s klíčem nikdo nedostane."
+  },
   "s.is-the-one-meant-for-it.bea0b21e": {
    "source": "is the one meant for it.",
    "text": "je k tomu určený."
@@ -10920,6 +11052,10 @@
    "source": "It has not answered yet. This program goes on trying by itself; the card says when it is back.",
    "text": "Zatím neodpovídá. Program to dál zkouší sám; karta ukáže, až bude zpět."
   },
+  "s.it-has-not-begun-nothing-is.aa3db164": {
+   "source": "It has not begun: nothing is updated.",
+   "text": "Ještě nezačala: nic se neaktualizuje."
+  },
   "s.it-has-now-knocked-on-this.1461d5de": {
    "source": "it has now knocked on this door, which is two things rather than one. The third group is whatever somebody put there by hand.",
    "text": "nyní zaklepal na tento vstup, což jsou dvě věci, ne jedna. Třetí skupina je cokoli, co tam někdo vložil ručně."
@@ -10975,6 +11111,10 @@
   "s.it-is-the-half-of-the.a2c7fdca": {
    "source": "It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.",
    "text": "Je to ta polovina příběhu, kterou tato stránka nikdy neukazovala: prázdný seznam výše neříká nic o tom, zda se nic neděje, nebo zda se vše děje jeden pokus pod hranicí."
+  },
+  "s.it-is-the-last-key-root.aac33a11": {
+   "source": "It is the last key root signs in with on this server.",
+   "text": "Je to poslední klíč, kterým se root na tento server přihlašuje."
   },
   "s.it-is-used-only-while-the.cd613c27": {
    "source": "; it is used only while the directory is unreachable.",
@@ -11164,6 +11304,10 @@
    "source": "Its passphrase, if it has one",
    "text": "Jeho heslo, pokud nějaké má"
   },
+  "s.its-passphrase-if-the-private-key.4e70924f": {
+   "source": "Its passphrase, if the private key has one",
+   "text": "Jeho heslo, pokud ho soukromý klíč má"
+  },
   "s.its-password.eed05453": {
    "source": "Its password",
    "text": "Jeho heslo"
@@ -11183,6 +11327,10 @@
   "s.its-port.0355175d": {
    "source": "its port",
    "text": "jeho port"
+  },
+  "s.its-public-half-put-onto-this.77d4840e": {
+   "source": "Its public half, put onto this server - click it to copy:",
+   "text": "Jeho veřejná polovina, vložená na tento server - kliknutím zkopírujete:"
   },
   "s.its-routing-table-ipv4-and-ipv6.a0a2f060": {
    "source": "Its routing table, IPv4 and IPv6: where each network is sent, and which routes are in use.",
@@ -11255,6 +11403,10 @@
   "s.its-wireguard-peers-where-each-was.9fbbe7d0": {
    "source": "Its WireGuard peers: where each was last heard from, when it last shook hands and what it has carried.",
    "text": "Jeho WireGuard protějšky: odkud byl každý naposledy slyšet, kdy naposledy proběhl handshake a co přenesl."
+  },
+  "s.its.a06c46ed": {
+   "source": "Its",
+   "text": "Jeho"
   },
   "s.itself-a-root.50438917": {
    "source": "itself (a root)",
@@ -11371,6 +11523,10 @@
   "s.keep-the-names-of-addresses-for.80117e0a": {
    "source": "Keep the names of addresses for (days)",
    "text": "Uchovávat názvy adres (dní)"
+  },
+  "s.keep-the-private-key-now.19dd7a57": {
+   "source": "Keep the private key now",
+   "text": "Uložte si soukromý klíč teď"
   },
   "s.keep-the-router-in-sync-by.7ca30c41": {
    "source": "Keep the router in sync by itself. Off, the list is still kept here and the router is only filled when somebody presses the button.",
@@ -11512,6 +11668,10 @@
    "source": "key",
    "text": "klíč"
   },
+  "s.key.c67dd20e": {
+   "source": "Key",
+   "text": "Klíč"
+  },
   "s.key.dd65c1b4": {
    "source": "KEY",
    "text": "KLÍČ"
@@ -11527,6 +11687,14 @@
   "s.keys-add.b02ad723": {
    "source": "Keys → Add",
    "text": "Keys → Add"
+  },
+  "s.keys-that-may-sign-in-as.61b1b6b3": {
+   "source": "Keys that may sign in as root",
+   "text": "Klíče, kterými se lze přihlásit jako root"
+  },
+  "s.keys.e5651c68": {
+   "source": "Keys",
+   "text": "Klíče"
   },
   "s.kind-dump.17159a62": {
    "source": "&kind=dump",
@@ -12348,6 +12516,10 @@
    "source": "Look for a new version once a day",
    "text": "Hledat novou verzi jednou denně"
   },
+  "s.look-for-updates.ad47ab51": {
+   "source": "Look for updates",
+   "text": "Zjistit aktualizace"
+  },
   "s.look-it-up.828f2d61": {
    "source": "Look it up",
    "text": "Vyhledat"
@@ -12376,9 +12548,17 @@
    "source": "Looked at first, in this order: a DROP or REJECT here wins over what isemon lets in below. Each carries its note as the comment of the rule in iptables.",
    "text": "Posuzují se jako první, v tomto pořadí: DROP nebo REJECT zde vyhrává nad tím, co isemon pouští níže. Každé nese svou poznámku jako komentář pravidla v iptables."
   },
+  "s.looked.8db21b5c": {
+   "source": "Looked",
+   "text": "Zjišťováno"
+  },
   "s.looking-for-lines-where.1bdc0535": {
    "source": "Looking for lines where",
    "text": "Hledají se řádky, kde"
+  },
+  "s.looking-for-updates.95ff01c0": {
+   "source": "looking for updates",
+   "text": "zjišťují se aktualizace"
   },
   "s.looking-up-names-is-switched-off.8abb16a9": {
    "source": "Looking up names is switched off above, so nothing is asked for on its own — this button asks anyway.",
@@ -12395,6 +12575,10 @@
   "s.looking.dac3990e": {
    "source": "looking",
    "text": "hledá se"
+  },
+  "s.looking.fec72543": {
+   "source": "looking…",
+   "text": "zjišťuje se…"
   },
   "s.looks-at-every-page-and-changes.3d368adf": {
    "source": "looks at every page and changes nothing;",
@@ -12608,6 +12792,10 @@
    "source": "Made here, and its key never leaves this machine except when you download it. Put the",
    "text": "Vytvořen zde a jeho klíč tento stroj nikdy neopustí, leda když si ho stáhnete. Na router nahrajte"
   },
+  "s.made-here.827209b5": {
+   "source": "made here",
+   "text": "vytvořen zde"
+  },
   "s.made-if-it-is-not-there.a34adf55": {
    "source": "Made if it is not there.",
    "text": "Vytvoří se, pokud tam není."
@@ -12659,6 +12847,14 @@
   "s.make-a-fresh-key-and-certificate.9cd14041": {
    "source": "Make a fresh key and certificate here, for this router’s address. It is pinned at once, so until the new one is on the router this will not reach it.",
    "text": "Vytvořit zde nový klíč a certifikát pro adresu tohoto routeru. Připne se hned, takže dokud nový nebude na routeru, nepřipojí se k němu."
+  },
+  "s.make-a-fresh-pair-here-ed25519.63aac4c6": {
+   "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server.",
+   "text": "Vytvořit zde nový pár - Ed25519, nebo RSA 4096 tam, kde něco starého potřebuje RSA. Soukromá polovina se vám ukáže jednou; veřejná jde do authorized_keys roota na tomto serveru."
+  },
+  "s.make-a-key-for-this-server.4d5d544e": {
+   "source": "Make a key for this server",
+   "text": "Vytvořit klíč pro tento server"
   },
   "s.make-a-key.fcb94d2b": {
    "source": "Make a key",
@@ -13356,6 +13552,10 @@
    "source": "nearest",
    "text": "nearest"
   },
+  "s.needed-now-before-any-update.71734206": {
+   "source": "needed now, before any update",
+   "text": "potřeba hned, ještě před aktualizací"
+  },
   "s.needed-only-when-this-reaches-that.403242b7": {
    "source": "Needed only when this reaches that directory over TLS and the certificate was signed by your own authority. It is kept apart from the first directory's, because the two domains are two domains.",
    "text": "Potřebné pouze tehdy, když se k tomuto adresáři připojuje přes TLS a certifikát podepsala vaše vlastní certifikační autorita. Uchovává se odděleně od certifikátu prvního adresáře, protože dvě domény jsou dvě domény."
@@ -13715,6 +13915,10 @@
   "s.no-ise-log-is-there.3f273b04": {
    "source": "no ISE log is there",
    "text": "žádný ISE log tam není"
+  },
+  "s.no-key-lets-root-in-over.7a439df4": {
+   "source": "No key lets root in over SSH on this server.",
+   "text": "Žádný klíč nepustí roota na tento server přes SSH."
   },
   "s.no-key-yet-make-one-or.6b9618dd": {
    "source": "No key yet — make one, or let it sign in with a password.",
@@ -14292,9 +14496,17 @@
    "source": "Not looked at yet - within minutes, or press Look now.",
    "text": "Zatím nezkontrolováno – během pár minut, nebo stiskněte Zkontrolovat teď."
   },
+  "s.not-looked-yet.f70e8a50": {
+   "source": "not looked yet",
+   "text": "zatím nezjišťováno"
+  },
   "s.not-looking.8f970300": {
    "source": "not looking",
    "text": "nesleduje"
+  },
+  "s.not-needed-by-these-updates.a7587b74": {
+   "source": "not needed by these updates",
+   "text": "tyto aktualizace ho nepotřebují"
   },
   "s.not-now.e4571490": {
    "source": "Not now",
@@ -14319,6 +14531,10 @@
   "s.not-read-yet.dde0369d": {
    "source": "Not read yet",
    "text": "Zatím nepřečteno"
+  },
+  "s.not-read.d6b203a2": {
+   "source": "Not read.",
+   "text": "Nenačteno."
   },
   "s.not-ready.970258df": {
    "source": "not ready",
@@ -15024,9 +15240,17 @@
    "source": "of them offering a name that does not exist,",
    "text": "z nich zkoušejí jméno, které neexistuje,"
   },
+  "s.of-them-security.1f69a19e": {
+   "source": "Of them security",
+   "text": "Z toho bezpečnostních"
+  },
   "s.of-these-have-not-been-downloaded.58189017": {
    "source": "of these have not been downloaded while these logs have been read, so the",
    "text": "z nich nebylo během čtení těchto logů staženo, takže"
+  },
+  "s.of-this-server-the.d25192d1": {
+   "source": "of this server. The",
+   "text": "tohoto serveru. Jeho"
   },
   "s.of-type.0c6f84bb": {
    "source": "of type",
@@ -15528,6 +15752,10 @@
    "source": "One kind of thing this daemon does.",
    "text": "Jeden druh činnosti, kterou tento démon vykonává."
   },
+  "s.one-line-of-a.104b3de8": {
+   "source": "One line of a",
+   "text": "Jeden řádek souboru"
+  },
   "s.one-line-of-the-firewall-s.d763ccfa": {
    "source": "One line of the firewall’s log",
    "text": "Jeden řádek logu firewallu"
@@ -15683,6 +15911,10 @@
   "s.only-a-full-administrator-may-change.ba6e5f9c": {
    "source": "Only a full administrator may change the network.",
    "text": "Síť smí měnit jen plný administrátor."
+  },
+  "s.only-a-full-administrator-may-look.c40154db": {
+   "source": "Only a full administrator may look for updates or update this server.",
+   "text": "Zjišťovat aktualizace a aktualizovat tento server smí jen plný administrátor."
   },
   "s.only-a-full-administrator-may-restart.eb8ca587": {
    "source": "Only a full administrator may restart this server or switch it off.",
@@ -16259,6 +16491,10 @@
   "s.ospf.fbaa55c2": {
    "source": "OSPF",
    "text": "OSPF"
+  },
+  "s.osup.db81e090": {
+   "source": "osup",
+   "text": "osup"
   },
   "s.other-domains-it-trusts.6115661c": {
    "source": "Other domains it trusts",
@@ -17760,6 +17996,10 @@
    "source": "Read the ISE logs",
    "text": "Číst logy ISE"
   },
+  "s.read-the-keys-again.bcc61a0c": {
+   "source": "Read the keys again",
+   "text": "Načíst klíče znovu"
+  },
   "s.read-the-one-time-password-logs.564bd013": {
    "source": "Read the one-time password logs",
    "text": "Číst logy jednorázových hesel"
@@ -17803,6 +18043,10 @@
   "s.reading-every-log-file-and-weighing.adc2da50": {
    "source": "Reading every log file and weighing every failure in it. You can close this and it carries on; what it did ends up in Events either way.",
    "text": "Čtou se všechny soubory logů a posuzuje se každý neúspěšný pokus v nich. Toto okno můžete zavřít a práce poběží dál; co se provedlo, se v každém případě objeví v Událostech."
+  },
+  "s.reading-the-keys.0dc2065c": {
+   "source": "Reading the keys…",
+   "text": "Načítají se klíče…"
   },
   "s.reading-what-the-machine-has-and.b305415b": {
    "source": "Reading what the machine has and what the server is set to, and timing a few small writes…",
@@ -18132,13 +18376,29 @@
    "source": "rest",
    "text": "rest"
   },
+  "s.restart-after-the-update.21d6a9f9": {
+   "source": "restart after the update",
+   "text": "restart po aktualizaci"
+  },
+  "s.restart-after-the-update.dfbe8cf3": {
+   "source": "Restart after the update",
+   "text": "Restart po aktualizaci"
+  },
   "s.restart-and-power-off.acbf4025": {
    "source": "Restart and power off",
    "text": "Restart a vypnutí"
   },
+  "s.restart-by-itself-when-needed.511f545a": {
+   "source": "Restart by itself when needed",
+   "text": "Restartovat sám, když je potřeba"
+  },
   "s.restart-it-when-it-suits-on.0628b0ba": {
    "source": "Restart it when it suits, on the server, as root:",
    "text": "Restartujte ho, až se to hodí, na serveru jako root:"
+  },
+  "s.restart-needed.444efe88": {
+   "source": "restart needed",
+   "text": "potřeba restart"
   },
   "s.restart-or-switch-off-this-server.e42b52cf": {
    "source": "Restart or switch off this server.",
@@ -18168,6 +18428,10 @@
    "source": "Restart this server, or switch it off. The page follows it down and back up again.",
    "text": "Restartovat tento server, nebo ho vypnout. Stránka ho sleduje dolů i zpátky nahoru."
   },
+  "s.restart-this-server.7aeb05a0": {
+   "source": "Restart this server",
+   "text": "Restartovat tento server"
+  },
   "s.restart-this-server.82717074": {
    "source": "Restart this server?",
    "text": "Restartovat tento server?"
@@ -18180,9 +18444,21 @@
    "source": "Restart",
    "text": "Restart"
   },
+  "s.restarted-by-itself-when-needed.a34100d5": {
+   "source": "restarted by itself when needed",
+   "text": "restartuje se sám, když je potřeba"
+  },
+  "s.restarted-by-itself.2eccbe1e": {
+   "source": "restarted by itself",
+   "text": "restartuje se sám"
+  },
   "s.restarted.80801e18": {
    "source": "Restarted",
    "text": "Restartováno"
+  },
+  "s.restarting-followed-on-restart-and-power.97c646ed": {
+   "source": "Restarting - followed on Restart and power off.",
+   "text": "Restartuje se - sledováno v Restart a vypnutí."
   },
   "s.restarting-takes-a-few-seconds-while.eb7a39d3": {
    "source": "Restarting takes a few seconds. While PostgreSQL is down this program cannot write; it waits, and carries on where it was.",
@@ -18312,6 +18588,14 @@
    "source": "root did not put it in",
    "text": "root to nenasadil"
   },
+  "s.root-may-sign-in.f4b2fb79": {
+   "source": "Root may sign in",
+   "text": "Root se smí přihlásit"
+  },
+  "s.root-no-longer-signs-in-with.934cf2b1": {
+   "source": "Root no longer signs in with",
+   "text": "Root se už nepřihlásí pomocí"
+  },
   "s.root-s-half-of-this-is.0898ea2a": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade once.",
    "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade."
@@ -18320,13 +18604,25 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.228 package (or later) once.",
    "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.228 (nebo novějšího)."
   },
+  "s.root-s-half-of-this-is.54666464": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here.",
+   "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.239 (nebo novějšího). Do té doby se klíče zde nečtou ani nemění."
+  },
   "s.root-s-half-of-this-is.d288dacc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there.",
    "text": "Rootova část tohoto zatím na stroji není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.222 (nebo novějšího). Do té doby se to, co zde uložíte, uchová a nasadí se, jakmile tam bude."
   },
+  "s.root-s-half-of-this-server.2295f614": {
+   "source": "Root's half of this server does not do updates of the system yet (install.sh --upgrade puts it in).",
+   "text": "Rootova část tohoto serveru zatím aktualizace systému nedělá (vloží ji install.sh --upgrade)."
+  },
   "s.root-s-half.eec0bc02": {
    "source": "Root’s half",
    "text": "Rootova část"
+  },
+  "s.root-said.9873d2f0": {
+   "source": "Root said:",
+   "text": "Root řekl:"
   },
   "s.root.dc76e9f0": {
    "source": "root",
@@ -18391,6 +18687,10 @@
   "s.rsa-3072.e4512e73": {
    "source": "RSA 3072",
    "text": "RSA 3072"
+  },
+  "s.rsa-4096-where-something-old-needs.4fc0d88e": {
+   "source": "RSA 4096 (where something old needs RSA)",
+   "text": "RSA 4096 (tam, kde něco starého potřebuje RSA)"
   },
   "s.rsa-4096.68ee9b91": {
    "source": "RSA 4096",
@@ -18499,6 +18799,10 @@
   "s.safe.bf31c52c": {
    "source": "safe",
    "text": "bezpečné"
+  },
+  "s.said-again.343ef2b2": {
+   "source": "Said again:",
+   "text": "Řečeno znovu:"
   },
   "s.said-bad-why.7ca2a949": {
    "source": "said bad why",
@@ -19224,6 +19528,10 @@
    "source": "Shortest password",
    "text": "Nejkratší heslo"
   },
+  "s.show-it.2ce0388f": {
+   "source": "Show it",
+   "text": "Zobrazit"
+  },
   "s.show-only-the-rows-from-one.b3b60bf1": {
    "source": "Show only the rows from one country. Search it by name or by its two letters;",
    "text": "Zobrazit jen řádky z jedné země. Hledejte ji podle názvu nebo podle dvoupísmenného kódu;"
@@ -19876,6 +20184,10 @@
    "source": "ssh certificate",
    "text": "ssh certifikát"
   },
+  "s.ssh-ed25519-aaaa-you-laptop.983a660d": {
+   "source": "ssh-ed25519 AAAA… you@laptop",
+   "text": "ssh-ed25519 AAAA… you@laptop"
+  },
   "s.ssh-ed25519-cert-v01-openssh-com.8973ee48": {
    "source": "ssh-ed25519-cert-v01@openssh.com AAAA…",
    "text": "ssh-ed25519-cert-v01@openssh.com AAAA…"
@@ -19892,9 +20204,21 @@
    "source": "ssh-keygen is not on this machine, so a key cannot be made or read here: dnf install openssh-clients. A password still works.",
    "text": "ssh-keygen na tomto počítači není, takže klíč zde nelze vytvořit ani přečíst: dnf install openssh-clients. Heslo stále funguje."
   },
+  "s.ssh-keygen-is-not-on-this.ba232304": {
+   "source": "ssh-keygen is not on this machine, so a key cannot be made or read here: dnf install openssh-clients.",
+   "text": "ssh-keygen na tomto stroji není, klíč tu tedy nelze vytvořit ani přečíst: dnf install openssh-clients."
+  },
   "s.ssh-keygen-lf-etc-ssh-ssh.999da3d7": {
    "source": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
    "text": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub"
+  },
+  "s.ssh-keys-of-root.4b7cbf6b": {
+   "source": "SSH keys of root",
+   "text": "SSH klíče roota"
+  },
+  "s.ssh-port.b17dc791": {
+   "source": "SSH port",
+   "text": "SSH port"
   },
   "s.ssh-to-the-firewall-itself.86a706d7": {
    "source": "SSH to the firewall itself",
@@ -19907,6 +20231,22 @@
   "s.ssh.e8b9f665": {
    "source": "ssh",
    "text": "ssh"
+  },
+  "s.sshd-does-not-let-root-sign.be438f60": {
+   "source": "sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does.",
+   "text": "sshd roota vůbec nepustí (PermitRootLogin no) - klíče níže se nepoužijí, dokud to nepovolí."
+  },
+  "s.sshd-is-not-here.b8a873de": {
+   "source": "sshd is not here",
+   "text": "sshd tu není"
+  },
+  "s.sshd-takes-no-keys-pubkeyauthentication-no.febbe96a": {
+   "source": "sshd takes no keys (PubkeyAuthentication no).",
+   "text": "sshd nepřijímá klíče (PubkeyAuthentication no)."
+  },
+  "s.sshkeys.921bbf4e": {
+   "source": "sshkeys",
+   "text": "sshkeys"
   },
   "s.ssid.5cd4c27a": {
    "source": "ssid",
@@ -20092,6 +20432,10 @@
    "source": "step",
    "text": "step"
   },
+  "s.step.dc416e10": {
+   "source": "Step",
+   "text": "Krok"
+  },
   "s.still-in-force-this-address-cannot.0de1f869": {
    "source": "Still in force. This address cannot reach the VPN now.",
    "text": "Stále platí. Tato adresa se teď do VPN nedostane."
@@ -20128,6 +20472,10 @@
    "source": "stop an account signing in, without removing it",
    "text": "zakázat účtu přihlášení, aniž by byl odebrán"
   },
+  "s.stop-it.df098732": {
+   "source": "Stop it",
+   "text": "Zastavit"
+  },
   "s.stop-looking-after-the-tls.1f43810e": {
    "source": "Stop looking after the TLS",
    "text": "Přestat se starat o TLS"
@@ -20136,17 +20484,33 @@
    "source": "Stop reading this firewall",
    "text": "Přestat číst tento firewall"
   },
+  "s.stop-the-update.c4b1c1fb": {
+   "source": "Stop the update",
+   "text": "Zastavit aktualizaci"
+  },
   "s.stop.9e253470": {
    "source": "Stop",
    "text": "Zastavit"
+  },
+  "s.stopped-before-it-begins-nothing-is.51959f04": {
+   "source": "Stopped before it begins, nothing is updated. Once the package manager is at work it is not stopped half way: it finishes.",
+   "text": "Zastavená před začátkem nic neaktualizuje. Jakmile správce balíčků pracuje, nezastaví se v půli: dokončí to."
   },
   "s.stopped-by-protocol-inspection.8b3d1a5e": {
    "source": "stopped by protocol inspection",
    "text": "zastaveno inspekcí protokolu"
   },
+  "s.stopped-nothing-was-updated.8f68e055": {
+   "source": "stopped - nothing was updated",
+   "text": "zastaveno - nic nebylo aktualizováno"
+  },
   "s.stopped-the-rows-below-are-from.53276eb8": {
    "source": "Stopped — the rows below are from the search before.",
    "text": "Zastaveno — řádky níže jsou z předchozího hledání."
+  },
+  "s.stopped.5acf4111": {
+   "source": "stopped",
+   "text": "zastaveno"
   },
   "s.stopped.8fcc7be3": {
    "source": "Stopped.",
@@ -20416,6 +20780,10 @@
    "source": "System → Settings → Administration → Secure Shell",
    "text": "System → Settings → Administration → Secure Shell"
   },
+  "s.system-updates.d7c57673": {
+   "source": "System updates",
+   "text": "Aktualizace systému"
+  },
   "s.system-user-manager.f1db4f94": {
    "source": "System → User Manager",
    "text": "System → User Manager"
@@ -20544,6 +20912,10 @@
    "source": "Take isemon’s rules away",
    "text": "Odebrat pravidla isemonu"
   },
+  "s.take-it-away-anyway.29e93be5": {
+   "source": "Take it away anyway",
+   "text": "Přesto odebrat"
+  },
   "s.take-it-away.07f68f99": {
    "source": "Take it away",
    "text": "Odebrat"
@@ -20596,9 +20968,17 @@
    "source": "Take the entries this daemon put on the firewall(s) off them — and nothing else. Anything you added by hand, every other address list, and all your firewall rules are untouched.",
    "text": "Odebrat z firewallu (firewallů) položky, které tam vložil tento démon — a nic jiného. Cokoli, co jste přidali ručně, všechny ostatní address listy a všechna vaše pravidla firewallu zůstanou nedotčena."
   },
+  "s.take-the-key-away.ac56a594": {
+   "source": "Take the key away",
+   "text": "Odebrat klíč"
+  },
   "s.take-the-ladder-away-every-block.a184df67": {
    "source": "Take the ladder away; every block becomes the single length set above",
    "text": "Zrušit stupně blokace; každá blokace bude mít jedinou délku nastavenou výše"
+  },
+  "s.take-the-last-key-away.d5860a0d": {
+   "source": "Take the last key away?",
+   "text": "Odebrat poslední klíč?"
   },
   "s.take-the-stored-authority-away-the.2a98bbcc": {
    "source": "Take the stored authority away. The server's certificate then has to be signed by one this machine already trusts.",
@@ -20623,6 +21003,10 @@
   "s.take-this-folding-apart-the-subnet.4d28a42a": {
    "source": "Take this folding apart: the subnet comes off and every address it was made from goes back on as it was, with its own reason and its own end.",
    "text": "Zrušit toto sloučení: podsíť se odebere a každá adresa, ze které vznikla, se vrátí zpět tak, jak byla, s vlastním důvodem a vlastním koncem."
+  },
+  "s.take-this-key-away.77aa279e": {
+   "source": "Take this key away",
+   "text": "Odebrat tento klíč"
   },
   "s.take-this-off-the-search.81dad072": {
    "source": "Take this off the search:",
@@ -20827,6 +21211,10 @@
   "s.that-file-could-not-be-read.4a035d12": {
    "source": "that file could not be read",
    "text": "ten soubor nelze přečíst"
+  },
+  "s.that-file-is-far-bigger-than.6c5d0539": {
+   "source": "that file is far bigger than a key",
+   "text": "ten soubor je mnohem větší než klíč"
   },
   "s.that-file-is-too-big.3e63d759": {
    "source": "that file is too big",
@@ -22864,6 +23252,10 @@
    "source": "the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4",
    "text": "uzly ISE, firewally: 10.1.2.3, 10.1.2.4"
   },
+  "s.the-key-goes-into-root-s.8674b156": {
+   "source": "the key goes into root's authorized_keys again",
+   "text": "klíč jde znovu do authorized_keys roota"
+  },
   "s.the-key-half-of-an-api.7585aa6a": {
    "source": "The key half of an API key made on the OPNsense (System → Access → Users → the user → API keys). The user needs the privilege to edit firewall aliases and nothing more.",
    "text": "Klíčová polovina API klíče vytvořeného na OPNsense (System → Access → Users → uživatel → API keys). Uživatel potřebuje oprávnění upravovat aliasy firewallu a nic víc."
@@ -22879,6 +23271,10 @@
   "s.the-key-is-made-here-and.4ee4408e": {
    "source": "The key is made here and never leaves this machine except when you download it. Put the public half on the firewall — on RouterOS, /user ssh-keys import public-key-file=… user=… — and it will let this in without a password. Keep the private half safe: anybody holding it can sign in to the firewall as that account.",
    "text": "Klíč se vytváří zde a tento stroj nikdy neopustí, leda když si ho stáhnete. Veřejnou část vložte na firewall — na RouterOS /user ssh-keys import public-key-file=… user=… — a firewall pak tento stroj pustí bez hesla. Soukromou část dobře chraňte: kdokoli ji má, se může k firewallu přihlásit jako tento účet."
+  },
+  "s.the-key-is-taken-away-within.bb3623d7": {
+   "source": "the key is taken away within a few seconds",
+   "text": "klíč se během několika sekund odebere"
   },
   "s.the-key-kept-now-is-replaced.64ac91fd": {
    "source": "The key kept now is replaced",
@@ -22896,6 +23292,14 @@
    "source": "The key",
    "text": "Klíč"
   },
+  "s.the-keys-that-may-sign-in.db24acff": {
+   "source": "The keys that may sign in to this server as root over SSH - the lines of /root/.ssh/authorized_keys. A key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events.",
+   "text": "Klíče, kterými se lze na tento server přihlásit jako root přes SSH - řádky /root/.ssh/authorized_keys. Klíč vytvořený zde se ukáže jednou, abyste si ho uložili, a na serveru se nikde neuchová; vlastní klíč se vloží svou veřejnou polovinou. Každá změna se zapíše do Událostí."
+  },
+  "s.the-keys-that-may-sign-in.e26240fb": {
+   "source": "The keys that may sign in to this server as root over SSH: made here, added or taken away.",
+   "text": "Klíče, kterými se lze na tento server přihlásit jako root přes SSH: vytvořené zde, přidané nebo odebrané."
+  },
   "s.the-kind-of-connection.d3e4886a": {
    "source": "the kind of connection",
    "text": "druh spojení"
@@ -22903,6 +23307,10 @@
   "s.the-kind-of-line.e75a5db2": {
    "source": "the kind of line",
    "text": "druh řádku"
+  },
+  "s.the-kind.a74aa40f": {
+   "source": "The kind",
+   "text": "Druh"
   },
   "s.the-ladder-counts-how-many-times.f2715572": {
    "source": "The ladder counts how many times an address has come back, not how hard it knocked: three failures in the window and three hundred are both one block on the first step. This asks the other question once. At or past this many failed logins inside the window the ladder is skipped and the address is kept out for good. 0 is off, and everything takes the ladder.",
@@ -23552,6 +23960,14 @@
    "source": "The only name it offered was its own MAC address, which is what MAB is: the endpoint has no supplicant and nothing to say for itself.",
    "text": "Jediné jméno, které nabídl, byla jeho vlastní MAC adresa, což je přesně MAB: koncové zařízení nemá žádného suplikanta a nemá o sobě co říct."
   },
+  "s.the-operating-system-s-packages-updated.3f043325": {
+   "source": "The operating system's packages, updated by dnf (or apt) on this server - what is waiting, how many of them are security updates, and whether a restart will be needed. A restart an update needs is offered when it is done, or made by itself.",
+   "text": "Balíčky operačního systému aktualizované přes dnf (nebo apt) na tomto serveru - co čeká, kolik z toho jsou bezpečnostní aktualizace a zda bude potřeba restart. Restart, který aktualizace potřebuje, se po dokončení nabídne, nebo proběhne sám."
+  },
+  "s.the-operating-system-s-packages-updated.b79e4573": {
+   "source": "The operating system's packages updated by dnf (or apt), with what it says as it goes; a restart offered when one is needed.",
+   "text": "Balíčky operačního systému aktualizované přes dnf (nebo apt), s tím, co během toho vypisuje; restart nabídnutý, když je potřeba."
+  },
   "s.the-opnsense-appears-under.81ff1b16": {
    "source": "The OPNsense appears under",
    "text": "OPNsense se objeví pod"
@@ -23827,6 +24243,10 @@
   "s.the-private-key-is-deleted-from.99e089c1": {
    "source": "The private key is deleted from this machine. Unless that router is set to take a password instead, nothing here will reach it until a new key is made and put on it — bans will go on being recorded here and will stop arriving there. The other firewall’s key is not touched.",
    "text": "Soukromý klíč se z tohoto stroje smaže. Pokud router není nastaven tak, aby místo toho přijímal heslo, nic odsud se k němu nedostane, dokud se nevytvoří nový klíč a nenahraje se na něj — blokace se zde budou dál zaznamenávat, ale na router přestanou docházet. Klíč druhého firewallu se nemění."
+  },
+  "s.the-private-key-is-on-the.64d2d79e": {
+   "source": "the private key is on the clipboard",
+   "text": "soukromý klíč je ve schránce"
   },
   "s.the-program-on-that-machine-that.a5d629a7": {
    "source": "The program on that machine that went and used the password.",
@@ -24292,6 +24712,10 @@
    "source": "The server restarts: for a minute or two nothing answers. The page follows it and comes back by itself.",
    "text": "Server se restartuje: minutu nebo dvě nic neodpovídá. Stránka ho sleduje a sama se vrátí."
   },
+  "s.the-server-restarts-in-a-few.20aab510": {
+   "source": "the server restarts in a few seconds",
+   "text": "server se za několik sekund restartuje"
+  },
   "s.the-server-s-certificate-is-checked.25fcd572": {
    "source": "The server’s certificate is checked",
    "text": "Certifikát serveru se ověřuje"
@@ -24700,6 +25124,14 @@
    "source": "The units of the pair, by how much each wrote and what. The active one writes the sessions; the standby’s copies of them are already left out.",
    "text": "Jednotky páru podle toho, kolik toho každá zapsala a co. Aktivní jednotka zapisuje relace; kopie relací ze standby jednotky jsou již vynechány."
   },
+  "s.the-update-begins-in-a-few.34391e52": {
+   "source": "the update begins in a few seconds - it can be stopped until then",
+   "text": "aktualizace začne za několik sekund - do té doby ji lze zastavit"
+  },
+  "s.the-update.0b50d6a5": {
+   "source": "The update",
+   "text": "Aktualizace"
+  },
   "s.the-uploaded-package-is-deleted-send.9cc567fc": {
    "source": "The uploaded package is deleted; send it again to upgrade.",
    "text": "Nahraný balíček se smaže; pro upgrade ho pošlete znovu."
@@ -24975,6 +25407,10 @@
   "s.the-widest-subnet-a-folding-may.01d59424": {
    "source": "The widest subnet a folding may make. /24 is two hundred and fifty-six addresses; /16 is sixty-five thousand, which is a whole provider.",
    "text": "Nejširší podsíť, kterou může slučování vytvořit. /24 je dvě stě padesát šest adres; /16 je šedesát pět tisíc, což je celý poskytovatel."
+  },
+  "s.the-window-is-empty.f6502dfd": {
+   "source": "the window is empty",
+   "text": "okno je prázdné"
   },
   "s.the-windows-domain-controllers-security-logs.13288e6c": {
    "source": "The Windows domain controllers' Security logs: whether they are read at all, which folders they write into, and how long the events are kept. Off unless somebody switches it on, and off it changes nothing. Nothing read here is ever judged and nothing here can earn anybody a ban.",
@@ -25500,6 +25936,10 @@
    "source": "this is the line that OPENS an access list, and that one is written for you - what goes here is the body, the permit and deny lines that sit inside it",
    "text": "toto je řádek, který access list OTEVÍRÁ, a ten se zapíše za vás - sem patří tělo, tedy řádky permit a deny uvnitř něj"
   },
+  "s.this-is-the-only-time-it.92827b46": {
+   "source": "This is the only time it is shown. Whoever holds it signs in to this server as root.",
+   "text": "Ukazuje se jen teď. Kdo ho má, přihlásí se na tento server jako root."
+  },
   "s.this-is-the-sign-in-you.4002ae91": {
    "source": "This is the sign-in you are using now: ending it signs you out of this page.",
    "text": "Toto je přihlášení, které právě používáte: jeho ukončením se z této stránky odhlásíte."
@@ -25675,6 +26115,14 @@
   "s.this-server-is-restarting.f4a119ba": {
    "source": "This server is restarting",
    "text": "Tento server se restartuje"
+  },
+  "s.this-server-needs-a-restart.b1c47909": {
+   "source": "This server needs a restart",
+   "text": "Tento server potřebuje restart"
+  },
+  "s.this-server-restarts-now-for-a.a6798a3c": {
+   "source": "This server restarts now: for a minute or two nothing answers. The page follows it and comes back by itself.",
+   "text": "Tento server se teď restartuje: minutu či dvě nic neodpovídá. Stránka ho sleduje a sama se vrátí."
   },
   "s.this-server-s-address-gateway-dns.fe76ad54": {
    "source": "This server's address, gateway, DNS servers, host name and IPv6, as NetworkManager has them - and new ones, put in by the server itself and restarted, on trial: unless they are kept within minutes, it goes back to the old ones by itself.",
@@ -26520,6 +26968,10 @@
    "source": "unless Logins at the firewall itself is switched on under Banning, and then only a sign-in refused from an address on the internet. Switched off, not one file is opened.",
    "text": ", dokud není v Banningu zapnuté Přihlášení přímo na firewallu, a pak jen odmítnuté přihlášení z adresy na internetu. Je-li vypnuto, neotevře se jediný soubor."
   },
+  "s.unless-root-may-sign-in-with.672e8506": {
+   "source": "Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
+   "text": "Pokud se root nesmí přihlásit heslem, nikdo se pak na server přes SSH jako root nedostane."
+  },
   "s.unless.42e18493": {
    "source": "unless",
    "text": ", dokud není"
@@ -26628,9 +27080,33 @@
    "source": "Update frequency:",
    "text": "Update frequency:"
   },
+  "s.update-it-now.e064c064": {
+   "source": "Update it now",
+   "text": "Aktualizovat teď"
+  },
   "s.update-run.d66641c3": {
    "source": "Update → Run",
    "text": "Update → Run"
+  },
+  "s.update-this-server.bd05bff0": {
+   "source": "Update this server",
+   "text": "Aktualizovat tento server"
+  },
+  "s.update.fb91e24f": {
+   "source": "Update",
+   "text": "Aktualizovat"
+  },
+  "s.updated-by.c793ca7d": {
+   "source": "Updated by",
+   "text": "Aktualizuje"
+  },
+  "s.updates-waiting.2b433b4f": {
+   "source": "Updates waiting",
+   "text": "Čekající aktualizace"
+  },
+  "s.updating.6cb858ee": {
+   "source": "updating",
+   "text": "aktualizuje se"
   },
   "s.upgrade-this-server.76935d12": {
    "source": "Upgrade this server",
@@ -27032,6 +27508,10 @@
    "source": "waiting",
    "text": "čeká"
   },
+  "s.waits-to-begin.cd5e49e0": {
+   "source": "waits to begin",
+   "text": "čeká na začátek"
+  },
   "s.wallis-and-futuna.a187509a": {
    "source": "Wallis and Futuna",
    "text": "Wallis a Futuna"
@@ -27316,6 +27796,10 @@
    "source": "What is there now is kept, and Put back as it was goes back to it.",
    "text": "Současné hodnoty se uloží a tlačítko Vrátit původní se k nim vrátí."
   },
+  "s.what-is-waiting.43b1c87f": {
+   "source": "what is waiting",
+   "text": "co čeká"
+  },
   "s.what-is-wrong-with-this-file.5f6bf991": {
    "source": "What is wrong with this file, in words: it is not there, it may not be read, its records are dated ahead of the clock.",
    "text": "Co je s tímto souborem špatně, slovy: neexistuje, nesmí se číst, jeho záznamy mají datum v budoucnosti."
@@ -27411,6 +27895,10 @@
   "s.what-it-said.7cd936a8": {
    "source": "what it said",
    "text": "co řekl"
+  },
+  "s.what-it-says.4d1860c5": {
+   "source": "What it says",
+   "text": "Co vypisuje"
   },
   "s.what-it-signs-in-with-letters.49a55b6a": {
    "source": "What it signs in with: letters, digits, . _ - @",
@@ -28059,6 +28547,10 @@
   "s.when-it-expires.435d8490": {
    "source": "when it expires",
    "text": "kdy vyprší"
+  },
+  "s.when-it-needs-one-the-server.b7ee2785": {
+   "source": "When it needs one, the server is",
+   "text": "Když ho potřebuje, server se"
   },
   "s.when-it-ran.acc3eb7c": {
    "source": "when it ran",
@@ -29244,6 +29736,10 @@
    "source": "with a long random password it will never use, and under",
    "text": "s dlouhým náhodným heslem, které nikdy nepoužije, a v"
   },
+  "s.with-a-password.c6f78b9f": {
+   "source": "With a password",
+   "text": "S heslem"
+  },
   "s.with-a-user-name-and-a.a150abf1": {
    "source": "with a user name and a password. Choose",
    "text": "s uživatelským jménem a heslem. Zvolte tam"
@@ -29315,6 +29811,10 @@
   "s.with-nps-which-of-its-answers.cd07e59c": {
    "source": "With NPS: which of its answers are eduroam’s, where it answers other things as well - the switches’ 802.1X, a VPN. Patterns, comma separated, matched against the connection request policy, the network policy and the wireless network: eduroam* is the usual. Empty: everything in those files is eduroam, which is right for an NPS that serves eduroam alone.",
    "text": "S NPS: které z jeho odpovědí patří eduroamu, pokud odpovídá i na jiné věci - 802.1X switchů, VPN. Vzory oddělené čárkou, porovnávané se zásadou pro žádosti o připojení, se síťovou zásadou a s bezdrátovou sítí: obvyklé je eduroam*. Prázdné: vše v těchto souborech je eduroam, což je správně pro NPS, které obsluhuje jen eduroam."
+  },
+  "s.with-options.74c47bca": {
+   "source": "with options",
+   "text": "s volbami"
   },
   "s.with-passed-which-of-them-vpn.6fec38da": {
    "source": "with --passed: which of them (vpn, tacacs, commands, acl, all). A command run on a switch and a firewall list handed to a session are not logins, so they are left out unless asked for",
@@ -30622,6 +31122,10 @@
    "source": "{0} has not answered yet",
    "text": "{0} zatím neodpověděl"
   },
+  "p.hidden-line-s.b0e1062d": {
+   "source": "Hidden - {0} line(s).",
+   "text": "Skryto - {0} řádků."
+  },
   "p.hide.01e42476": {
    "source": "Hide “{0}”",
    "text": "Skrýt „{0}“"
@@ -31258,6 +31762,10 @@
    "source": "· named whole by {0}",
    "text": "· celé pojmenováno podle {0}"
   },
+  "p.needed-after-the-update.2b173de5": {
+   "source": "needed after the update - {0}",
+   "text": "potřeba po aktualizaci - {0}"
+  },
   "p.newest-hour-counted.c95689ff": {
    "source": "Newest hour counted: {0}.",
    "text": "Nejnovější započtená hodina: {0}."
@@ -31554,6 +32062,10 @@
    "source": "· {0} on the VPN",
    "text": "· {0} na VPN"
   },
+  "p.on-this-server.28ccf243": {
+   "source": "{0} on this server.{1}",
+   "text": "{0} na tomto serveru.{1}"
+  },
   "p.one-name-tried-from-different-addresses.fcbac5bf": {
    "source": "One name tried from {0} different addresses is the shape of a password spray: one password against many places rather than many passwords against one. A name that has never got in here may be a name that does not exist.",
    "text": "Jedno jméno zkoušené z {0} různých adres má podobu password spray: jedno heslo na mnoha místech místo mnoha hesel na jednom. Jméno, které se sem nikdy nedostalo, může být jméno, které neexistuje."
@@ -31753,6 +32265,10 @@
   "p.proto.c6cced2b": {
    "source": "proto/{0}",
    "text": "proto/{0}"
+  },
+  "p.pub.090e9b6f": {
+   "source": "{0}.pub",
+   "text": "{0}.pub"
   },
   "p.put-on-in-s.84078b62": {
    "source": "{0} put on in {1} s{2}",
@@ -32142,6 +32658,10 @@
    "source": "Start using {0}",
    "text": "Začít používat {0}"
   },
+  "p.started-by.26ae5b97": {
+   "source": "Started by {0}, {1}",
+   "text": "Spustil {0}, {1}"
+  },
   "p.started-over.8ed3b487": {
    "source": "started over {0}×",
    "text": "spuštěno znovu {0}×"
@@ -32470,6 +32990,14 @@
    "source": "The first {0} of them. This domain has {1}, which is more than is carried for matching — the number above is the domain’s own.",
    "text": "Prvních {0} z nich. Tato doména jich má {1}, což je víc, než se uchovává pro porovnávání — číslo výše je číslo samotné domény."
   },
+  "p.the-key-goes-into-root-s.be660579": {
+   "source": "the key goes into root's authorized_keys within a few seconds{0}",
+   "text": "klíč půjde během několika sekund do authorized_keys roota{0}"
+  },
+  "p.the-key-is-exported-as-pub.459b412b": {
+   "source": "the key is exported as {0}.pub",
+   "text": "klíč je exportován jako {0}.pub"
+  },
   "p.the-keys-could-not-be-put.03fbc035": {
    "source": "the keys could not be put into the copy: {0}",
    "text": "klíče se nepodařilo vložit do kopie: {0}"
@@ -32682,6 +33210,10 @@
    "source": "The {0} worked out from the log folders and the servers that have written lately are marked; nothing else is.",
    "text": "Označeny jsou {0} odvozené ze složek s logy a servery, které v poslední době zapisovaly; nic jiného."
   },
+  "p.then-on-your-machine-ssh-i.85827aa3": {
+   "source": "Then, on your machine: ssh -i {0} root@…",
+   "text": "Pak na svém stroji: ssh -i {0} root@…"
+  },
   "p.there-are-already-record-s-in.6be26df5": {
    "source": "there are already {0} record(s) in it. Moving into a database that is not empty would mix two installations; empty it first if it really is spare.",
    "text": "už v ní je {0} záznamů. Přesun do databáze, která není prázdná, by smíchal dvě instalace; pokud je opravdu volná, nejprve ji vyprázdněte."
@@ -32773,6 +33305,14 @@
   "p.this-record-named-the-vlan-but.37cf97eb": {
    "source": "This record named the VLAN but did not number it — {0} writes one or the other and not always both. The number is the one other records here carry for",
    "text": "Tento záznam uvedl název VLAN, ale ne její číslo — {0} zapisuje jedno nebo druhé, a ne vždy obojí. Číslo je to, které jiné zdejší záznamy uvádějí pro"
+  },
+  "p.this-server-is-not-answering-for.4d764beb": {
+   "source": "This server is not answering for {0} - restarting; asked again every few seconds.",
+   "text": "Tento server neodpovídá už {0} - restartuje se; dotaz se opakuje každých pár sekund."
+  },
+  "p.this-server-needs-a-restart-after.51c554ce": {
+   "source": "This server needs a restart after this update: {0}.",
+   "text": "Tento server bude po této aktualizaci potřebovat restart: {0}."
   },
   "p.this-signed-in-to-over-ssh.ea000ef3": {
    "source": "This signed in to {0} over ssh, asked its name, its version and its connections, and came back. Nothing was written and nothing was changed.",
@@ -32985,6 +33525,10 @@
   "p.vlan.47ba265b": {
    "source": "VLAN {0}",
    "text": "VLAN {0}"
+  },
+  "p.waiting.e6b3d051": {
+   "source": "{0} waiting",
+   "text": "{0} čeká"
   },
   "p.was-already-switched.ace8db90": {
    "source": "{0} was already switched {1}",
@@ -33223,6 +33767,10 @@
   "r.a-fresh-ed25519-pair-is-made.3e16dfb8": {
    "source": "A fresh ed25519 pair is made here. The private half stays on this machine and the public half is shown for you to put on that router.<br><br><b>Any key already stored for it is replaced</b>, so until the new public half is on it this will not be able to sign in — which means bans stop reaching it until you do. The other firewall’s key is not touched.",
    "text": "Zde se vytvoří nový pár klíčů ed25519. Soukromá polovina zůstává na tomto serveru a veřejná se zobrazí, abyste ji vložili na daný router.<br><br><b>Jakýkoli klíč, který je pro něj už uložen, bude nahrazen</b>, takže dokud na něm nebude nová veřejná polovina, nebude se moci přihlásit — což znamená, že se na něj do té doby nedostanou blokace. Klíče druhého firewallu se to nedotkne."
+  },
+  "r.a-fresh-pair-is-made-here.a320b484": {
+   "source": "A fresh pair is made here. Its <b>private</b> half is shown to you once, to download or copy, and kept nowhere; its <b>public</b> half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
+   "text": "Vytvoří se zde nový pár. Jeho <b>soukromá</b> polovina se vám ukáže jednou, ke stažení nebo zkopírování, a nikde se neuloží; jeho <b>veřejná</b> polovina jde do authorized_keys roota na tomto serveru. Klíč, který tam byl předtím, zůstane, dokud se v seznamu níže neodebere."
   },
   "r.a-full-admin-may-change-anything.55cf7935": {
    "source": "A <b>full admin</b> may change anything here. A <b>read only</b> account may look at every page and change nothing — no ban, no setting, not even a fetch.",
@@ -33500,6 +34048,14 @@
    "source": "Every one of these came from a device that is not in <b>watch_devices</b>, so none of them is counted towards a ban. It is here because it is happening, not because it is about to earn anything.",
    "text": "Každá z těchto položek pochází ze zařízení, které není v <b>watch_devices</b>, takže se žádná nepočítá do blokace. Je zde proto, že se to děje, ne proto, že by se k něčemu schylovalo."
   },
+  "r.every-package-of-the-system-is.0ef5761d": {
+   "source": "Every package of the system is updated.<br><br>When it needs one, the server is <b>restarted by itself</b>.",
+   "text": "Aktualizují se všechny balíčky systému.<br><br>Když je potřeba, server se <b>restartuje sám</b>."
+  },
+  "r.every-package-of-the-system-is.309a9133": {
+   "source": "Every package of the system is updated.<br><br>A restart it needs is offered when it is done.",
+   "text": "Aktualizují se všechny balíčky systému.<br><br>Restart, který potřebuje, se nabídne po dokončení."
+  },
   "r.every-table-on-these-pages-can.67374c9e": {
    "source": "Every table on these pages can be laid out the way you read it. Press your name at the top right and switch on <b>Edit the columns</b>; then drag the edge of a column's heading to make it wider or narrower, and drag the heading itself to move the column. Twice on an edge puts that table's widths back. Each change is kept with your account the moment you let go, not in this browser, and comes back wherever you sign in; nobody else's tables change. The switch is for this sign-in only: signing out, the sign-in running out or the service restarting turn it off again, and the columns stay as you left them.",
    "text": "Každou tabulku na těchto stránkách si můžete rozvrhnout podle sebe. Klikněte na své jméno vpravo nahoře a zapněte <b>Upravit sloupce</b>; pak tažením okraje záhlaví sloupce měňte jeho šířku a tažením samotného záhlaví sloupec přesuňte. Dvojklik na okraj vrátí šířky dané tabulky. Každá změna se uloží k vašemu účtu ve chvíli, kdy pustíte tlačítko, ne v tomto prohlížeči, a vrátí se, ať se přihlásíte kdekoli; tabulky nikoho jiného se nezmění. Přepínač platí jen pro toto přihlášení: odhlášení, vypršení přihlášení nebo restart služby ho opět vypne a sloupce zůstanou tak, jak jste je nechali."
@@ -33688,9 +34244,17 @@
    "source": "<br>It is one of the names under <b>a name that does not exist</b> in Settings: nobody has ever had it, so this is guessing rather than mistyping.",
    "text": "<br>Jde o jedno ze jmen v seznamu <b>neexistující jméno</b> v Nastavení: nikdo ho nikdy neměl, takže jde o hádání, ne o překlep."
   },
+  "r.it-is-the-last-key-root.289eca80": {
+   "source": "<br><br><b>It is the last key root signs in with on this server.</b> Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
+   "text": "<br><br><b>Je to poslední klíč, kterým se root na tento server přihlašuje.</b> Pokud se root nesmí přihlásit heslem, nikdo se pak na server přes SSH jako root nedostane."
+  },
   "r.it-says-what-it-would-do.28f93df9": {
    "source": "It says what it would do before it does anything, and a subnet is only made where two or more banned addresses fall inside it — never where it would swallow something under <i>never kept out</i>.",
    "text": "Nejdřív řekne, co by udělal, než cokoli udělá, a podsíť vytvoří jen tam, kde do ní padnou dvě či více zablokovaných adres — nikdy tam, kde by pohltila něco ze seznamu <i>nikdy neblokovat</i>."
+  },
+  "r.its-public-half-goes-into-root.81273509": {
+   "source": "Its <b>public</b> half goes into <code>/root/.ssh/authorized_keys</code> of this server. The <b>private</b> half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too.",
+   "text": "Jeho <b>veřejná</b> polovina jde do <code>/root/.ssh/authorized_keys</code> tohoto serveru. <b>Soukromá</b> polovina se zde nikdy neukládá: ukáže se vám jednou, ke stažení nebo zkopírování. Klíč je pak v seznamu níže - tam se exportuje nebo odebírá; tam se přidává i vlastní klíč."
   },
   "r.keep-out-for-good-now-without.07eaa15c": {
    "source": "Keep {0} out <b>for good</b>, now, without waiting for it to reach the bar. The router is told at once.",
@@ -33824,6 +34388,10 @@
    "source": "One folder per firewall, comma separated, as the syslog server files it - <code>/var/log/remote/fortigate</code>. A path to one file works as well.",
    "text": "Jedna složka na firewall, oddělené čárkou, tak jak je ukládá syslog server - <code>/var/log/remote/fortigate</code>. Funguje i cesta k jednomu souboru."
   },
+  "r.one-line-of-a-pub-file.5502bb80": {
+   "source": "One line of a <code>.pub</code> file: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA or RSA of 3072 bits and more; options before the key are not taken here. A private key is taken too: its public half is worked out here and the private half is not kept.",
+   "text": "Jeden řádek souboru <code>.pub</code>: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA nebo RSA s 3072 bity a více; volby před klíčem se zde nepřijímají. Přijme se i soukromý klíč: jeho veřejná polovina se zde spočítá a soukromá se neuloží."
+  },
   "r.only-a-vpn-refusal-from-an.e317f690": {
    "source": "Only a <b>VPN refusal</b> from an address on the internet can earn a ban - while <i>The VPN through a FreeRADIUS of your own</i> under Banning → Where the bans come from is on, which it is not until switched on. A socket or a radio never does. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "K banu může vést jen <b>odmítnutí do VPN</b> z adresy na internetu – dokud je <i>VPN přes vlastní FreeRADIUS</i> v Banningu → Odkud bany přicházejí zapnuto, což není, dokud se to nezapne. Zásuvka ani rádio nikdy. Je-li vypnuto, neotevře se ani jeden soubor a nic se nikde nechová jinak."
@@ -33943,6 +34511,14 @@
   "r.refused-the-domain.0185c2fe": {
    "source": "<i></i>refused · the domain",
    "text": "<i></i>odmítnuto · doména"
+  },
+  "r.root-no-longer-signs-in-with.c3b654aa": {
+   "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
+   "text": "Root se už nepřihlásí pomocí <code>{0}</code>{1} na tomto serveru.{2}"
+  },
+  "r.said-again-is-the-last-key.881cae52": {
+   "source": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
+   "text": "Řečeno znovu: <code>{0}</code> je poslední klíč, kterým se root na tento server přihlašuje. Po jeho odebrání se na server přes SSH jako root s klíčem nikdo nedostane."
   },
   "r.search-es-of-the-find-box.66d390c6": {
    "source": "• {0} search(es) of the find box<br>",

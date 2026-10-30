@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.238'
+__version__ = '1.10.239'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -61550,6 +61550,11 @@ class Daemon(object):
             ntp_tick(self.webroot)
         except Exception as e:
             log('the time: %s' % e, 'warn')
+        # What was asked of root about its SSH keys and waited (1.10.239).
+        try:
+            sshkeys_tick(self.webroot)
+        except Exception as e:
+            log('root\'s SSH keys: %s' % e, 'warn')
 
     def _trials_now(self):
         try:
@@ -61563,6 +61568,12 @@ class Daemon(object):
             self.netpower.tick()
         except Exception as e:
             log('the network: %s' % e, 'warn')
+        # The updates of the system (1.10.239): nothing at all until somebody
+        # asked for a look or an update on Settings - System updates.
+        try:
+            osup_tick(self)
+        except Exception as e:
+            log('the update of the system: %s' % e, 'warn')
 
     def _directory_pass(self):
         try:
@@ -64559,6 +64570,298 @@ def ntp_view(wr, may=False):
 
 
 # ---------------------------------------------------------------------------
+# Root's SSH keys (1.10.239; after otp's Settings → SSH keys of root, 1.0.158-161)
+# ---------------------------------------------------------------------------
+# The keys that may sign in to this server as root over SSH - the lines of
+# /root/.ssh/authorized_keys - read, added to and taken away from by root's
+# helper (isemon_web.py), asked in sshkeys.ask and answered in sshkeys.json
+# beside the web server's files, as the clock is. What is asked waits in
+# SSHKEYS_WORK and is done behind, one after another, within seconds; what
+# root said last is kept there too, never in the database. Nothing is read
+# until somebody opens the pane, and nothing is changed until somebody asks.
+#
+# A key made here is handed to the page once and kept nowhere: isemon never
+# signs in as root, so a private half in the database would only be one more
+# way to root. One given as a private key has its public half worked out and
+# the private half dropped. What is remembered of a key made here (meta
+# 'ssh_rootkey') is its public half and fingerprint, to mark it in the list.
+SSHKEYS_WORK = {'busy': False, 'since': 0.0, 'queue': [], 'doing': [], 'now': {}, 'error': '',
+                'change_err_at': 0.0}
+SSHKEYS_LOCK = threading.Lock()
+SSHKEYS_STALE_S = 300
+SSH_KEY_KINDS = {'ed25519': ['-t', 'ed25519'], 'rsa4096': ['-t', 'rsa', '-b', '4096']}
+SSH_KEY_TYPES = ('ssh-ed25519', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384',
+                 'ecdsa-sha2-nistp521', 'ssh-rsa', 'sk-ssh-ed25519@openssh.com',
+                 'sk-ecdsa-sha2-nistp256@openssh.com')
+SSH_KEY_LINE_RE = re.compile(r'^(?P<type>[a-z0-9@.-]+) (?P<blob>[A-Za-z0-9+/]{40,16000}={0,3})'
+                             r'(?: (?P<comment>[^\x00-\x1f\x7f]{0,200}))?\Z')
+
+
+def sshkeys_root_ask(wr, data, wait=60):
+    """One question for root's helper in sshkeys.ask, and its answer out of
+    sshkeys.json - the one with the same id. One not taken in time is taken
+    back, so it is never done long after."""
+    ask_id = secrets.token_hex(8)
+    wr.write('sshkeys.ask', dict(data, id=ask_id, at=time.time()))
+    end = time.time() + wait
+    while time.time() < end:
+        got = wr.read('sshkeys.json')
+        if isinstance(got, dict) and got.get('id') == ask_id:
+            if not got.get('ok'):
+                raise WebRootError(got.get('said') or 'root\'s helper said no')
+            return got.get('data') if isinstance(got.get('data'), dict) else {}
+        time.sleep(0.4)
+    try:
+        if (wr.read('sshkeys.ask') or {}).get('id') == ask_id:
+            os.unlink(str(wr.folder() / 'sshkeys.ask'))
+    except OSError:
+        pass
+    raise WebRootError('root\'s helper did not answer in %d s - is isemon-web.path running? '
+                       '(systemctl status isemon-web.path; ./install.sh --upgrade puts in the '
+                       'one that is asked about root\'s keys)' % wait)
+
+
+def ssh_key_facts(public):
+    """(bits, SHA256:..., type) of one public key line, as ssh-keygen reads it."""
+    got = subprocess.run([rb_bin('ssh-keygen'), '-l', '-E', 'sha256', '-f', '-'],
+                         input=public + '\n', capture_output=True, text=True, timeout=20)
+    m = re.match(r'^(\d+) (SHA256:[A-Za-z0-9+/=]+) .*\((\w+)\)\s*$', got.stdout.strip())
+    if got.returncode != 0 or not m:
+        raise ValueError('ssh-keygen does not read that key')
+    return int(m.group(1)), m.group(2), m.group(3)
+
+
+def sshkey_line_checked(line):
+    """One public key line as root takes it - said here at once rather than
+    by root a few seconds later. Root checks it again."""
+    line = str(line or '').strip()
+    m = SSH_KEY_LINE_RE.match(line)
+    if not m or m.group('type') not in SSH_KEY_TYPES:
+        raise ValueError('that is not one public key line (ssh-ed25519 AAAA... comment) - '
+                         'options before the key are not taken here')
+    if rb_has('ssh-keygen'):
+        bits, _, kind = ssh_key_facts(line)
+        if kind == 'RSA' and bits < 3072:
+            raise ValueError('an RSA key of %d bits is too weak: 3072 at least, or ed25519' % bits)
+        if kind == 'DSA':
+            raise ValueError('DSA keys are not taken')
+    return line
+
+
+def sshkeys_ask(wr, do, by, line='', fp='', last_ok=False):
+    """A read, a key added or one taken away: done behind, within seconds."""
+    if not wr.helper_there():
+        raise WebRootError('root\'s half is not installed on this machine yet: run '
+                           './install.sh --upgrade (1.10.239 or later) once')
+    if do not in ('list', 'add', 'drop'):
+        raise ValueError('list, add or drop')
+    if do == 'add':
+        line = sshkey_line_checked(line)
+    fp = str(fp or '').strip()[:80]
+    if do == 'drop' and not re.match(r'^SHA256:[A-Za-z0-9+/=]{20,}$', fp):
+        raise ValueError('which key? (its SHA256 fingerprint)')
+    a = {'id': secrets.token_hex(6), 'do': do, 'line': line if do == 'add' else '',
+         'fp': fp if do == 'drop' else '', 'last_ok': bool(last_ok) and do == 'drop',
+         'by': str(by or '')[:80], 'at': time.time()}
+    with SSHKEYS_LOCK:
+        SSHKEYS_WORK['queue'] = (SSHKEYS_WORK['queue'] + [a])[-20:]
+    sshkeys_tick(wr)
+    return a['id']
+
+
+def _sshkey_words(a):
+    line = a.get('line') or ''
+    return line.split(' ', 2)[2] if line.count(' ') >= 2 else (line[:40] or a.get('fp') or '')
+
+
+def sshkeys_tick(wr):
+    """What is asked, done one after another by root behind - reads asked
+    again and again are one read. Every minute too, for what waited."""
+    if SSHKEYS_WORK['busy'] and time.time() - SSHKEYS_WORK['since'] < 900:
+        return
+    if not wr.helper_there() or not wr.folder().is_dir():
+        return
+    with SSHKEYS_LOCK:
+        todo = [a for a in SSHKEYS_WORK['queue'] if time.time() - a['at'] < 3600]
+        SSHKEYS_WORK['queue'] = []
+        if not todo:
+            return
+        SSHKEYS_WORK.update(busy=True, since=time.time())
+        lists = [a for a in todo if a['do'] == 'list']
+        todo = [a for a in todo if a['do'] != 'list'] + lists[-1:]
+        SSHKEYS_WORK['doing'] = [a['id'] for a in todo if a['do'] != 'list']
+
+    def go():
+        try:
+            for a in todo:
+                err, got = '', None
+                try:
+                    got = sshkeys_root_ask(wr, {'do': a['do'], 'line': a['line'], 'fp': a['fp'],
+                                                'last_ok': a['last_ok']}, 60)
+                except (WebRootError, OSError) as e:
+                    err = str(e)[:300] or e.__class__.__name__
+                    log('root\'s SSH keys: %s' % err, 'warn')
+                who = a['by'] or 'somebody'
+                if a['do'] == 'add':
+                    wr.store.add_event('settings', '%s added the SSH key %s for root' % (
+                        who, _sshkey_words(a)) if not err else
+                        'the SSH key %s was not added for root (asked by %s): %s' % (
+                            _sshkey_words(a), who, err), 'warn', who=a['by'])
+                elif a['do'] == 'drop':
+                    wr.store.add_event('settings', '%s took away the SSH key %s for root' % (
+                        who, a['fp']) if not err else
+                        'the SSH key %s was not taken away for root (asked by %s): %s' % (
+                            a['fp'], who, err), 'warn', who=a['by'])
+                # A change refused stays said over the reads after it - the
+                # page reads again as soon as it has asked - for two minutes.
+                if a['do'] != 'list':
+                    SSHKEYS_WORK.update(error=err, change_err_at=time.time() if err else 0.0)
+                elif err or time.time() - SSHKEYS_WORK.get('change_err_at', 0.0) > 120:
+                    SSHKEYS_WORK['error'] = err
+                if got:
+                    SSHKEYS_WORK['now'] = {'keys': got.get('keys') or [],
+                                           'sshd': got.get('sshd') or {},
+                                           'file': got.get('file') or '', 'at': time.time()}
+                with SSHKEYS_LOCK:
+                    SSHKEYS_WORK['doing'] = [x for x in SSHKEYS_WORK['doing'] if x != a['id']]
+        except Exception as e:                          # noqa: BLE001
+            log('root\'s SSH keys: %s' % e, 'warn')
+        finally:
+            with SSHKEYS_LOCK:
+                SSHKEYS_WORK.update(busy=False, doing=[])
+                more = bool(SSHKEYS_WORK['queue'])
+        # Whatever was asked while this ran, now rather than in a minute.
+        if more:
+            sshkeys_tick(wr)
+    threading.Thread(target=go, name='isemon-sshkeys', daemon=True).start()
+
+
+def sshkeys_view(wr):
+    now = SSHKEYS_WORK.get('now') or {}
+    helper = wr.helper_there()
+    # Read when it was never read or not lately - reading changes nothing.
+    if helper and time.time() - float(now.get('at') or 0) > SSHKEYS_STALE_S and \
+            not SSHKEYS_WORK['busy'] and not SSHKEYS_WORK['queue']:
+        try:
+            sshkeys_ask(wr, 'list', '')
+        except (WebRootError, ValueError, OSError):
+            pass
+    with SSHKEYS_LOCK:
+        pending = len([a for a in SSHKEYS_WORK['queue'] if a['do'] != 'list']) + \
+            len(SSHKEYS_WORK['doing'])
+    keys = now.get('keys') or []
+    return {'ok': True, 'helper': helper, 'keys': keys, 'sshd': now.get('sshd') or {},
+            'file': now.get('file') or '', 'at': now.get('at'),
+            'error': SSHKEYS_WORK.get('error') or '', 'pending': pending,
+            'busy': SSHKEYS_WORK['busy'], 'keygen': rb_has('ssh-keygen'),
+            'kept': rootkey_view(wr, keys), 't': time.time()}
+
+
+# -- root's key, made or given here ---------------------------------------------------
+def sshkey_pair(kind, comment):
+    """A new key pair made by ssh-keygen in a folder of its own, taken away
+    after: (private, public, fingerprint)."""
+    if kind not in SSH_KEY_KINDS:
+        raise ValueError('ed25519 or rsa4096')
+    if not rb_has('ssh-keygen'):
+        raise ValueError('ssh-keygen is not on this machine (dnf install openssh-clients)')
+    comment = re.sub(r'[^A-Za-z0-9@._ -]', '', str(comment or ''))[:80].strip() or 'root'
+    with tempfile.TemporaryDirectory(prefix='.isemon-key-') as work:
+        path = os.path.join(work, 'k')
+        got = subprocess.run([rb_bin('ssh-keygen'), '-q'] + SSH_KEY_KINDS[kind] +
+                             ['-a', '100', '-N', '', '-C', comment, '-f', path],
+                             capture_output=True, text=True, timeout=120)
+        if got.returncode != 0:
+            raise ValueError('ssh-keygen: %s' % (got.stderr or got.stdout).strip()[:200])
+        with open(path) as f:
+            private = f.read()
+        with open(path + '.pub') as f:
+            public = f.read().strip()
+    return private, public, ssh_key_facts(public)[1]
+
+
+def rootkey_view(wr, keys):
+    r = wr._meta('ssh_rootkey', {})
+    return {'has': bool(r.get('pub')), 'pub': r.get('pub') or '', 'fp': r.get('fp') or '',
+            'kind': r.get('kind') or '', 'how': r.get('how') or '', 'by': r.get('by') or '',
+            'at': r.get('at'),
+            'on': bool(r.get('fp')) and any(k.get('fp') == r.get('fp') for k in keys)}
+
+
+def rootkey_put(wr, public, by, how):
+    """A public half into root's authorized_keys, remembered as the key made
+    or given here. The key put there before stays - it is taken away in the
+    list, if it should go."""
+    _, fp, kind = ssh_key_facts(public)
+    sshkeys_ask(wr, 'add', by, line=public)
+    wr._put('ssh_rootkey', {'pub': public, 'fp': fp, 'kind': kind, 'how': how, 'by': by,
+                            'at': time.time()})
+    return {'pub': public, 'fp': fp}
+
+
+def rootkey_public(text, passphrase=''):
+    """What the page was given: a public key line as it is, or a private
+    key's public half - the private half dropped."""
+    text = str(text or '').strip()
+    if len(text) > 32768:
+        raise ValueError('that is far bigger than a key')
+    if 'PRIVATE KEY-----' in text:
+        _, public = rb_ssh_public_of(text, passphrase)
+        return public, True
+    line = text.splitlines()[0].strip() if text else ''
+    if not re.match(r'(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)|sk-ssh-ed25519@openssh\.com|'
+                    r'sk-ecdsa-sha2-nistp256@openssh\.com) [A-Za-z0-9+/=]{20,}( [^\r\n]{0,200})?$', line):
+        raise ValueError('that is not a public key line (ssh-ed25519 AAAA… comment) nor a private key')
+    return line, False
+
+
+def sshkeys_api(wr, b, by):
+    """What the pane asks for (POST /api/sshkeys)."""
+    act = str(b.get('action') or '')
+    if act == 'refresh':
+        sshkeys_ask(wr, 'list', by)
+        return {'ok': True, 'message': 'asked again'}
+    if act == 'add':
+        # A public line, or a private key of which only the public half is
+        # used and nothing else kept.
+        line, was_private = rootkey_public(b.get('line'), str(b.get('passphrase') or ''))
+        sshkeys_ask(wr, 'add', by, line=line)
+        return {'ok': True, 'message': 'the key goes into root\'s authorized_keys within a few '
+                                       'seconds%s' % (' - the private half was not kept'
+                                                      if was_private else '')}
+    if act == 'drop':
+        sshkeys_ask(wr, 'drop', by, fp=str(b.get('fp') or ''), last_ok=b.get('last_ok') is True)
+        return {'ok': True, 'message': 'the key is taken away within a few seconds'}
+    if act == 'rk_make':
+        kind = str(b.get('kind') or 'ed25519')
+        if kind not in SSH_KEY_KINDS:
+            raise ValueError('ed25519 or rsa4096')
+        if not wr.helper_there():
+            raise WebRootError('root\'s half is not installed on this machine yet: run '
+                               './install.sh --upgrade (1.10.239 or later) once')
+        private, public, _ = sshkey_pair(kind, 'root@%s %s' % (rb_host(),
+                                                               time.strftime('%Y-%m-%d')))
+        x = rootkey_put(wr, public, by, 'made')
+        wr.store.add_event('settings', '%s made a new SSH key for root (%s) - its private half '
+                           'handed to the page once, kept nowhere' % (by or 'somebody', x['fp']),
+                           'warn', who=by)
+        return dict(x, ok=True, private=private, file='isemon-root-%s' % time.strftime('%Y%m%d'),
+                    message='made - keep the private half now, it is not shown again')
+    if act == 'rk_given':
+        public, was_private = rootkey_public(b.get('key'), str(b.get('passphrase') or ''))
+        x = rootkey_put(wr, public, by, 'given')
+        return dict(x, ok=True, message='the public half goes into root\'s authorized_keys%s' % (
+            ' - the private half was not kept' if was_private else ''))
+    if act == 'rk_again':
+        r = wr._meta('ssh_rootkey', {})
+        if not r.get('pub'):
+            raise ValueError('there is no key made or given here')
+        sshkeys_ask(wr, 'add', by, line=r['pub'])
+        return {'ok': True, 'message': 'the key goes into root\'s authorized_keys again'}
+    raise ValueError('no such thing to do')
+
+
+# ---------------------------------------------------------------------------
 # A full backup: a copy of the database with its keys in it (1.10.222)
 # ---------------------------------------------------------------------------
 # A copy of the database is everything this program knows, except what is on
@@ -67484,6 +67787,9 @@ class Upgrades(object):
                                    'command line (./install.sh --upgrade), which puts it in.')
             if self.running():
                 raise WebRootError('an upgrade is running already')
+            if osup_updating(self.daemon.store):
+                raise WebRootError('the system is being updated (Settings - System updates) - '
+                                   'wait for it to end')
             pk = self.package()
             if not pk:
                 raise WebRootError('send the package first')
@@ -68386,6 +68692,8 @@ class NetPower(object):
             raise WebRootError('the network is being changed already')
         if self.power_busy():
             raise WebRootError('a restart or a power-off is under way')
+        if osup_updating(self.store) and not rollback:
+            raise WebRootError('the system is being updated - wait for it to end')
         w = checked or self.check(want)
         job = {'id': secrets.token_hex(6), 'state': 'asked', 'at': time.time(), 'pct': 0,
                'by': by, 'want': w, 'steps': [], 'boot': boot_time(), 'boot_id': boot_id(),
@@ -68762,6 +69070,8 @@ class NetPower(object):
             raise WebRootError('a restart or a power-off is under way already')
         if self.job_active(self._get('net:job')):
             raise WebRootError('the network is being changed')
+        if osup_updating(self.store):
+            raise WebRootError('the system is being updated - wait for it to end')
         plan = {'id': secrets.token_hex(6), 'how': how, 'by': by, 'at': time.time(),
                 'boot': boot_time(), 'boot_id': boot_id(), 'state': 'asked',
                 'moved': time.time()}
@@ -68892,6 +69202,495 @@ class NetPower(object):
                 time.time() - self.read_at > NET_READ_S:
             self.read_at = time.time()
             self._thread(self.publish)
+
+
+# ---------------------------------------------------------------------------
+# Settings → System updates: the operating system's packages (1.10.239)
+# ---------------------------------------------------------------------------
+# After otp 1.0.158-1.0.160, for one server - no other node, no maintenance,
+# nothing moved out of the way first. What dnf (or apt) has waiting: how
+# many, how many of them security, the packages, and whether a restart will
+# be needed after them (kernel, glibc, systemd, linux-firmware...) or is
+# already; and an update of all of them, with a bar and what the package
+# manager says as it goes. Root's helper (isemon_web.py) is asked in
+# osup.ask to start the work and answers in osup.ans at once; the work runs
+# as a unit of its own, under a lock of its own, and writes how far it is
+# and its last lines into osup.json. A page asking how it goes reads them
+# from there: the database keeps only what was asked and how it ended
+# (meta 'osup:check', 'osup:checkwant', 'osup:plan', 'osup:row', 'osup:seen',
+# 'osup:cleared'). Refused while an upgrade of isemon, a restart or a
+# power-off, or a change of the network is going on; it waits a few seconds
+# before it begins, and can be stopped until then. A restart the update needs
+# is offered at the end, or asked for by itself, as chosen. Until somebody
+# asks for something here, nothing of it runs and root is asked nothing.
+OSUP_ASK = 'osup.ask'
+OSUP_ANS = 'osup.ans'
+OSUP_FILE = 'osup.json'
+OSUP_BY = 'isemon (system update)'
+OSUP_GRACE_S = 10               # an update waits this long before it begins: Stop meanwhile
+OSUP_WORK = {'busy': False}
+OSUP_WORK_LOCK = threading.Lock()
+OSUP_TICK_LOCK = threading.Lock()           # one pass at a time: a page's and the daemon's
+
+
+def _osup_get(store, key):
+    try:
+        got = json.loads(store.get_meta(key, '') or 'null')
+    except ValueError:
+        got = None
+    return got if isinstance(got, dict) else {}
+
+
+def _osup_set(store, key, value):
+    store.set_meta(key, json.dumps(value))
+
+
+def osup_plan(store):
+    return _osup_get(store, 'osup:plan')
+
+
+def osup_row(store):
+    return _osup_get(store, 'osup:row')
+
+
+def osup_check(store):
+    return _osup_get(store, 'osup:check')
+
+
+def osup_put(store, row, **kw):
+    row.update(kw, at=time.time())
+    _osup_set(store, 'osup:row', row)
+    return row
+
+
+def osup_helper():
+    """Whether root's helper here is asked about updates: the path unit
+    install.sh 1.10.239 and later puts in watches osup.ask."""
+    if os.environ.get('ISEMON_WEB_HELPER'):
+        return os.environ['ISEMON_WEB_HELPER'] == '1'
+    try:
+        return 'osup.ask' in Path(WEB_PATH_UNIT).read_text()
+    except OSError:
+        return False
+
+
+OSUP_NO_HELPER = ('root\'s half does not do updates of the system on this machine yet: run '
+                  './install.sh --upgrade (1.10.239 or later) once')
+
+
+def osup_updating(store):
+    """The package manager at work on an update now."""
+    plan = osup_plan(store)
+    row = osup_row(store)
+    return plan.get('state') == 'running' and row.get('plan') == plan.get('id') and \
+        row.get('state') == 'updating'
+
+
+def osup_want_check(store, by):
+    _osup_set(store, 'osup:checkwant', {'id': secrets.token_hex(6), 'by': by, 'at': time.time()})
+
+
+def _osup_said(daemon):
+    """What the work wrote last (osup.json) - in the isemon account's folder,
+    so only shown, every value made plain first."""
+    got = daemon.webroot.read(OSUP_FILE) or {}
+    if not got:
+        return {}
+
+    def number(v):
+        try:
+            return float(v or 0)
+        except (TypeError, ValueError, OverflowError):
+            return 0.0
+    out = {'id': str(got.get('id') or '')[:40], 'kind': str(got.get('kind') or ''),
+           'state': got.get('state') if got.get('state') in ('running', 'done', 'failed')
+           else 'failed', 'at': number(got.get('at')), 'began': number(got.get('began')),
+           'pct': max(0, min(100, int(number(got.get('pct'))))),
+           'phase': str(got.get('phase') or '')[:80], 'said': str(got.get('said') or '')[:300],
+           'pm': str(got.get('pm') or '')[:10], 'reboot': got.get('reboot') is True,
+           'reboot_after': got.get('reboot_after') is True,
+           'reboot_now': got.get('reboot_now') is True,
+           'count': int(number(got.get('count'))),
+           'security': int(number(got.get('security'))) if got.get('security') is not None
+           else None}
+    lines = got.get('lines') if isinstance(got.get('lines'), list) else []
+    out['lines'] = [str(x)[:300] for x in lines[-400:]]
+    pk = got.get('packages') if isinstance(got.get('packages'), list) else []
+    out['packages'] = [str(x)[:200] for x in pk[:1000]]
+    why = got.get('reboot_why') if isinstance(got.get('reboot_why'), list) else []
+    out['reboot_why'] = [str(x)[:60] for x in why[:20]]
+    return out
+
+
+def _osup_parts(daemon):
+    """The plan, this server's part in it and the last look for updates - one
+    going on with how far it is and its lines as the work wrote them a
+    moment ago, never kept in the database at that rate."""
+    store = daemon.store
+    plan = osup_plan(store)
+    row = osup_row(store)
+    row = row if plan.get('id') and row.get('plan') == plan.get('id') else {}
+    chk = osup_check(store)
+    # A look asked for and not yet begun is shown as going on: the page
+    # follows it from the moment it is asked.
+    want = _osup_get(store, 'osup:checkwant')
+    if want.get('id') and want['id'] not in (chk.get('asked') or []) and \
+            time.time() - float(want.get('at') or 0) < 900 and chk.get('state') != 'running' \
+            and plan.get('state') != 'running':
+        chk = dict(chk, state='running', phase='asked', job='')
+    live = None
+    if chk.get('state') == 'running' or row.get('state') == 'updating':
+        live = _osup_said(daemon)
+    if live and chk.get('state') == 'running' and live['id'] == chk.get('job'):
+        chk = dict(chk, lines=live['lines'][-40:], phase=live['phase'])
+    if live and row.get('state') == 'updating' and live['id'] == row.get('job') and \
+            live['state'] == 'running':
+        row = dict(row, pct=live['pct'], phase=live['phase'], lines=live['lines'][-300:])
+    return plan, row, chk
+
+
+def osup_view(daemon, may=False):
+    store = daemon.store
+    plan, row, chk = _osup_parts(daemon)
+    seen = store.get_meta('osup:seen', '')
+    np = daemon.netpower
+    nodes = [{'name': socket.gethostname(), 'me': True, 'alive': True, 'row': row,
+              'check': chk, 'started': daemon.started,
+              'reboot': bool(row.get('reboot') and not row.get('rebooted')) or
+              bool(chk.get('reboot_now') and chk.get('state') == 'done')}]
+    _osup_cleared(store, nodes)
+    hidden = bool(plan) and seen == plan.get('id') and plan.get('state') != 'running'
+    return {'ok': True, 'may': may, 'plan': {} if hidden else plan, 'nodes': nodes,
+            'now': time.time(), 'cluster': False, 'helper': osup_helper(),
+            'grace': OSUP_GRACE_S, 'refused': osup_refused(daemon),
+            'power': np.power_plan() if np.power_busy() else {}}
+
+
+def _osup_mark(part):
+    """Which run a part's lines are of: the same mark, the same run."""
+    return '%s|%s' % (part.get('plan') or part.get('job') or '', part.get('began') or '')
+
+
+def _osup_cleared(store, nodes):
+    """The lines cleared from the window (otp 1.0.160) left out: of the run
+    they were cleared in, only what came after the last line then shown.
+    Kept in the database, so for every page and after a reload."""
+    cl = _osup_get(store, 'osup:cleared')
+    for n in nodes:
+        for part in ('row', 'check'):
+            p = n.get(part) or {}
+            c = cl.get(part) or {}
+            lines = p.get('lines') or []
+            if not lines or not isinstance(c, dict) or c.get('mark') != _osup_mark(p):
+                continue
+            last = c.get('last')
+            at = max((i for i, ln in enumerate(lines) if ln == last), default=None)
+            n[part] = dict(p, lines=lines[at + 1:] if at is not None else lines)
+
+
+def osup_clear(daemon, by=''):
+    """The window emptied: the lines there now not shown again."""
+    plan, row, chk = _osup_parts(daemon)
+    cl = {k: {'mark': _osup_mark(p), 'last': (p.get('lines') or [''])[-1]}
+          for k, p in (('row', row), ('check', chk)) if p.get('lines')}
+    _osup_set(daemon.store, 'osup:cleared', cl)
+
+
+def osup_refused(daemon):
+    """Why an update may not begin now, or ''."""
+    np = daemon.netpower
+    try:
+        if daemon.upgrades.running():
+            return 'an upgrade of isemon is going on - wait for it to end'
+    except Exception:                                   # noqa: BLE001
+        pass
+    if np.power_busy():
+        return 'a restart or a power-off is going on - wait for it to end'
+    job = np._get('net:job')
+    if job.get('state') == 'trial':
+        return 'a new network is on trial - keep it, or put the old one back, first'
+    if np.job_active(job):
+        return 'the network is being changed - wait for it to end'
+    return ''
+
+
+def osup_check_ask(daemon, by):
+    store = daemon.store
+    if not osup_helper():
+        raise WebRootError(OSUP_NO_HELPER)
+    if osup_check(store).get('state') == 'running':
+        raise WebRootError('a look for updates is going on already')
+    if osup_plan(store).get('state') == 'running':
+        raise WebRootError('the system is being updated - it is looked at again when it is done')
+    osup_want_check(store, by)
+    osup_tick(daemon)
+
+
+def osup_start(daemon, reboot, by):
+    store = daemon.store
+    if not osup_helper():
+        raise WebRootError(OSUP_NO_HELPER)
+    if osup_plan(store).get('state') == 'running':
+        raise WebRootError('an update is going on already')
+    if osup_check(store).get('state') == 'running' or OSUP_WORK['busy']:
+        raise WebRootError('a look for updates is going on - wait for it to end')
+    why = osup_refused(daemon)
+    if why:
+        raise WebRootError(why)
+    if reboot not in ('ask', 'auto'):
+        reboot = 'ask'
+    me = socket.gethostname()
+    plan = {'id': secrets.token_hex(6), 'order': [me], 'reboot': reboot, 'by': by,
+            'at': time.time(), 'state': 'running', 'from': me}
+    _osup_set(store, 'osup:plan', plan)
+    store.add_event('control', '%s started the update of the system%s' % (
+        by, ', restarted by itself when it needs it' if reboot == 'auto' else ''), 'warn',
+        who=by)
+    log('the update of the system was asked for by %s' % by, 'warn')
+    return plan
+
+
+def osup_cancel(daemon, by):
+    """Stopped before it began. Once the package manager is at work it is
+    not stopped half way: it finishes."""
+    store = daemon.store
+    with OSUP_WORK_LOCK:
+        plan = osup_plan(store)
+        if plan.get('state') != 'running':
+            raise WebRootError('no update is going on')
+        row = osup_row(store)
+        if OSUP_WORK['busy'] or (row.get('plan') == plan.get('id') and
+                                 row.get('state') not in (None, '', 'waiting')):
+            raise WebRootError('it has begun: the package manager is not stopped half way - '
+                               'it finishes')
+        plan.update(state='cancelled', ended=time.time(), cancelled_by=by)
+        _osup_set(store, 'osup:plan', plan)
+    store.add_event('control', '%s stopped the update of the system before it began' % by,
+                    'warn', who=by)
+
+
+def osup_hide(daemon):
+    plan = osup_plan(daemon.store)
+    if plan.get('state') == 'running':
+        raise WebRootError('it is still going on')
+    if plan.get('id'):
+        daemon.store.set_meta('osup:seen', str(plan['id']))
+
+
+def _osup_job(daemon, kind, wait=60):
+    """Root's helper asked to start the work; the work's id."""
+    wr = daemon.webroot
+    ask_id = secrets.token_hex(8)
+    wr.write(OSUP_ASK, {'do': 'run', 'kind': kind, 'id': ask_id, 'at': time.time()})
+    end = time.time() + wait
+    while time.time() < end:
+        got = wr.read(OSUP_ANS, 65536)
+        if got and got.get('id') == ask_id:
+            if not got.get('ok'):
+                raise WebRootError(str(got.get('said') or 'root\'s helper said no')[:300])
+            return ask_id
+        time.sleep(0.4)
+    # Not taken: taken away here, so that it is not done later by surprise.
+    try:
+        (wr.folder() / OSUP_ASK).unlink()
+    except OSError:
+        pass
+    raise WebRootError('root\'s helper did not answer in %d s - is isemon-web.path running? '
+                       '(systemctl status isemon-web.path)' % wait)
+
+
+def osup_tick(daemon):
+    """Every few seconds: a look for updates asked for, the update when its
+    turn comes, what the work says while it runs, and the machine back after
+    the restart an update asked for."""
+    if OSUP_WORK['busy'] or not OSUP_TICK_LOCK.acquire(False):
+        return
+    try:
+        _osup_tick(daemon)
+    finally:
+        OSUP_TICK_LOCK.release()
+
+
+def _osup_tick(daemon):
+    store = daemon.store
+    # Up again after a restart the update needed: done, and looked at again.
+    row = osup_row(store)
+    if row.get('reboot') and not row.get('rebooted') and rebooted(row):
+        row['rebooted'] = True
+        osup_want_check(store, OSUP_BY)
+        if row.get('state') == 'rebooting':
+            row['state'] = 'done'
+            row['said'] = 'up again after the restart'
+            plan = osup_plan(store)
+            if plan.get('state') == 'running' and row.get('plan') == plan.get('id'):
+                plan.update(state='done', ended=time.time())
+                _osup_set(store, 'osup:plan', plan)
+            store.add_event('control', 'this server is up again after the restart the update '
+                                       'of the system needed', who=OSUP_BY)
+        osup_put(store, row)
+    chk = osup_check(store)
+    # It said a restart was waiting and the machine has restarted since:
+    # looked at again, not left saying so.
+    if chk.get('reboot_now') and chk.get('state') == 'done' and not chk.get('relook') and \
+            rebooted(chk):
+        chk['relook'] = True
+        _osup_set(store, 'osup:check', chk)
+        osup_want_check(store, OSUP_BY)
+    want = _osup_get(store, 'osup:checkwant')
+    if want.get('id') and want['id'] not in (chk.get('asked') or []) and \
+            time.time() - float(want.get('at') or 0) < 900 and chk.get('state') != 'running' and \
+            osup_plan(store).get('state') != 'running':
+        _osup_go(daemon, 'check', want)
+        return
+    if chk.get('state') == 'running':
+        _osup_follow_check(daemon, chk)
+        return
+    plan = osup_plan(store)
+    if plan.get('state') != 'running':
+        return
+    row = osup_row(store)
+    if row.get('plan') != plan.get('id'):
+        row = {'plan': plan.get('id'), 'state': 'waiting'}
+    st = row.get('state') or 'waiting'
+    if st == 'waiting':
+        if time.time() - float(plan.get('at') or 0) >= OSUP_GRACE_S:
+            _osup_go(daemon, 'upgrade', {'plan': plan, 'row': row})
+        return
+    if st == 'updating':
+        _osup_follow(daemon, plan, row)
+        return
+    if st == 'rebooting' and time.time() - float(row.get('at') or 0) > 1200:
+        # The restart never came (refused, or the machine would not go down).
+        osup_put(store, row, state='done', said='updated; it did not restart - restart it on '
+                                                'Restart and power off')
+        plan.update(state='done', ended=time.time())
+        _osup_set(store, 'osup:plan', plan)
+
+
+def _osup_go(daemon, what, ctx):
+    with OSUP_WORK_LOCK:
+        if OSUP_WORK['busy']:
+            return False
+        OSUP_WORK['busy'] = True
+
+    def go():
+        store = daemon.store
+        try:
+            if what == 'check':
+                chk = osup_check(store)
+                asked = (list(chk.get('asked') or []) + [ctx['id']])[-20:]
+                try:
+                    job = _osup_job(daemon, 'check')
+                    _osup_set(store, 'osup:check', dict(
+                        chk, state='running', asked=asked, job=job, began=time.time(),
+                        at=time.time(), error='', lines=[], by=ctx.get('by') or '',
+                        boot=boot_time(), boot_id=boot_id()))
+                except (WebRootError, OSError) as e:
+                    _osup_set(store, 'osup:check', dict(
+                        chk, state='failed', asked=asked, at=time.time(), error=str(e)[:300]))
+                return
+            # Read again: stopped, or begun by another pass, in the meantime.
+            plan = osup_plan(store)
+            row = ctx['row']
+            if plan.get('state') != 'running' or plan.get('id') != ctx['plan'].get('id') or \
+                    osup_row(store).get('plan') == plan.get('id'):
+                return
+            why = osup_refused(daemon)
+            if why:
+                _osup_end(daemon, plan, row, False, why)
+                return
+            try:
+                job = _osup_job(daemon, 'upgrade')
+                osup_put(store, row, state='updating', job=job, began=time.time(), pct=1,
+                         lines=[], said='the packages are being updated', boot=boot_time(),
+                         boot_id=boot_id())
+            except (WebRootError, OSError) as e:
+                _osup_end(daemon, plan, row, False, str(e))
+        except Exception as e:                          # noqa: BLE001
+            log('the update of the system: %s' % e, 'warn')
+        finally:
+            with OSUP_WORK_LOCK:
+                OSUP_WORK['busy'] = False
+            try:
+                store.release()
+            except Exception:                           # noqa: BLE001
+                pass
+    threading.Thread(target=go, name='isemon-osup', daemon=True).start()
+    return True
+
+
+def _osup_follow_check(daemon, chk):
+    store = daemon.store
+    got = _osup_said(daemon)
+    if not got or got['id'] != chk.get('job') or got['kind'] != 'check':
+        if time.time() - float(chk.get('began') or 0) > 1800:
+            _osup_set(store, 'osup:check', dict(
+                chk, state='failed', error='root\'s helper did not say anything', at=time.time()))
+        return
+    if got['state'] == 'running':
+        if rebooted(chk) or time.time() - got['at'] > 3600:
+            _osup_set(store, 'osup:check', dict(
+                chk, state='failed', at=time.time(), lines=got['lines'][-40:],
+                error='it stopped half way (the machine restarted?)'))
+        return
+    _osup_set(store, 'osup:check', dict(
+        chk, state=got['state'], at=time.time(), checked=time.time(), relook=False,
+        packages=got['packages'], count=got['count'], security=got['security'], pm=got['pm'],
+        error=got['said'], reboot_after=got['reboot_after'], reboot_why=got['reboot_why'],
+        reboot_now=got['reboot_now'], lines=got['lines'][-40:], boot=boot_time(),
+        boot_id=boot_id()))
+    if got['state'] == 'failed':
+        log('looking for updates of the system: %s' % (got['said'] or 'it failed'), 'warn')
+
+
+def _osup_follow(daemon, plan, row):
+    got = _osup_said(daemon)
+    if not got or got['id'] != row.get('job') or got['kind'] != 'upgrade':
+        if time.time() - float(row.get('began') or 0) > 600:
+            _osup_end(daemon, plan, row, False, 'root\'s helper did not start the update')
+        return
+    if got['state'] == 'running':
+        if rebooted(row) or time.time() - got['at'] > 3600:
+            row['lines'] = got['lines'][-300:]
+            _osup_end(daemon, plan, row, False, 'it stopped half way (the machine restarted?) - '
+                                                'look at what the package manager says')
+        return
+    row['lines'] = got['lines'][-300:]
+    row['pct'] = 100
+    _osup_end(daemon, plan, row, got['state'] == 'done', got['said'], reboot=got['reboot'])
+
+
+def _osup_end(daemon, plan, row, ok, said='', reboot=False):
+    store = daemon.store
+    row.update(plan=plan.get('id'), done_at=time.time(), reboot=bool(reboot), rebooted=False,
+               boot=boot_time(), boot_id=boot_id())
+    if not ok:
+        osup_put(store, row, state='failed', said=said or 'it failed')
+        plan.update(state='failed', ended=time.time())
+        _osup_set(store, 'osup:plan', plan)
+        store.add_event('control', 'the update of the system failed: %s' % (said or '?'), 'bad',
+                        who=OSUP_BY)
+        return
+    if reboot and plan.get('reboot') == 'auto':
+        osup_put(store, row, state='rebooting', said='updated - restarting, as it needs')
+        store.add_event('control', 'the system is updated - it restarts, as it needs',
+                        'warn', who=OSUP_BY)
+        try:
+            daemon.netpower.power_ask('reboot', OSUP_BY)
+            return
+        except (WebRootError, OSError) as e:
+            osup_put(store, row, state='done', said='updated; the restart was not started: %s'
+                                                    % str(e)[:200])
+    else:
+        osup_put(store, row, state='done', said='updated' + (' - it needs a restart'
+                                                             if reboot else ''))
+        store.add_event('control', 'the system is updated%s' % (
+            ' - it needs a restart' if reboot else ''), 'warn' if reboot else 'info',
+            who=OSUP_BY)
+    # What is waiting looked at again, not left at what was there before.
+    osup_want_check(store, OSUP_BY)
+    plan.update(state='done', ended=time.time())
+    _osup_set(store, 'osup:plan', plan)
 
 
 # This version's README, read once for what changed in each older version.
@@ -70524,6 +71323,20 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.fail(str(e))
             return self.fail('read, sync or save')
 
+        # Root's SSH keys (1.10.239): looked at and changed by a full
+        # administrator only, put in by root (isemon_web.py).
+        if path == '/api/sshkeys':
+            me = self.need_admin()
+            if not me:
+                return None
+            if method != 'POST':
+                return self.send_json(sshkeys_view(daemon.webroot))
+            try:
+                return self.send_json(sshkeys_api(daemon.webroot, self.body(),
+                                                  me.get('name') or ''))
+            except (WebRootError, ValueError, OSError) as e:
+                return self.fail(str(e))
+
         # This server's network, a restart or a power-off, and the changes
         # on trial (1.10.228): looked at by anybody signed in, changed by a
         # full administrator.
@@ -70573,6 +71386,45 @@ class ApiHandler(BaseHTTPRequestHandler):
             except (WebRootError, ValueError, OSError) as e:
                 return self.fail(str(e))
             return self.fail('nothing to do')
+        # The updates of the operating system (1.10.239): looked at by anybody
+        # signed in, asked for by a full administrator.
+        if path == '/api/osup':
+            if method != 'POST':
+                me = self.need_login()
+                if not me:
+                    return None
+                return self.send_json(osup_view(daemon, me.get('role') == 'fulladmin'))
+            me = self.need_admin()
+            if not me:
+                return None
+            data = self.body()
+            who = me.get('name') or ''
+            act = str(data.get('action') or '')
+            try:
+                if act == 'check':
+                    osup_check_ask(daemon, who)
+                    return self.send_json({'ok': True, 'message': 'looking for updates'})
+                if act == 'start':
+                    plan = osup_start(daemon, str(data.get('reboot') or 'ask'), who)
+                    return self.send_json({'ok': True, 'plan': plan, 'message': (
+                        'the update begins in a few seconds - it can be stopped until then')})
+                if act == 'cancel':
+                    osup_cancel(daemon, who)
+                    return self.send_json({'ok': True, 'message': 'stopped - nothing was '
+                                                                  'updated'})
+                if act == 'clear':
+                    osup_clear(daemon, who)
+                    return self.send_json(osup_view(daemon, True))
+                if act == 'hide':
+                    osup_hide(daemon)
+                    return self.send_json(osup_view(daemon, True))
+                if act == 'reboot':
+                    plan = daemon.netpower.power_ask('reboot', who)
+                    return self.send_json({'ok': True, 'plan': plan, 'message':
+                                           'the server restarts in a few seconds'})
+            except (WebRootError, ValueError, OSError) as e:
+                return self.fail(str(e))
+            return self.fail('check, start, cancel, clear, hide or reboot')
         # A new version from the page (1.10.222): the package arrives as the
         # body, the way a copy of the database does, and root puts it in.
         if path == '/api/upgrade/package' and method == 'POST':

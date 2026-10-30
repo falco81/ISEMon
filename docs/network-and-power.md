@@ -155,3 +155,8 @@ can stand in for them: `ISEMON_NMCLI`, `ISEMON_HOSTNAMECTL`, `ISEMON_IP`,
 `ISEMON_POWER_CMD` (a file the reboot or power-off is written to instead).
 The daemon reads the boot time from `ISEMON_BTIME_FILE` when it is set. See
 `test/fixes228_net.py`.
+
+## See also
+
+The packages of the operating system, updated from the page with the restart
+they need: [system-updates.md](system-updates.md).

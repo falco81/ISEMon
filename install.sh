@@ -192,7 +192,7 @@ root_helpers() {
     fi
     { run systemctl enable isemon-web.path >/dev/null 2>&1 && run systemctl restart isemon-web.path >/dev/null 2>&1; } \
         || warn "isemon-web.path did not start; the firewall and TLS from the pages wait for it"
-    good "the firewall, TLS and upgrades from the pages: isemon-web.path, isemon-upgrade.path"
+    good "the firewall, TLS, system updates and upgrades from the pages: isemon-web.path, isemon-upgrade.path"
     good "packages from the pages must be signed by: $(ls "$LIB_DIR/release-keys" 2>/dev/null | sed 's/\.pub$//' | paste -sd, -)"
 }
 
