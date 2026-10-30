@@ -371,6 +371,15 @@ working.
 
 ## Version
 
+1.10.243
+
+- **After an upgrade from the pages, *Load it again* loads a page that draws.**
+  It loaded the page in the seconds after the new version had started; the
+  page's first question waited on a daemon still starting, and nothing was
+  drawn until F5. The button now waits until the new version answers (its
+  version, then its status - two minutes at most), and a page whose first
+  question has not been answered asks again after 15 seconds, not a minute.
+
 1.10.242
 
 - **System updates and SSH keys of root on the command line and in the

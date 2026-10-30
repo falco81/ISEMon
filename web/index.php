@@ -9459,7 +9459,10 @@ function tick() {
      each one slower for the ones beside it - and an older answer landing
      after a newer one redrew the page backwards. A tick that finds one
      still out simply lets it be; the next tick is five seconds away. */
-  if (TICK_BUSY && Date.now() - TICK_BUSY < 65000) return;
+  /* Until the first answer, a question is waited on fifteen seconds, not a
+     minute (1.10.243): the page opened while the daemon was still starting
+     stayed empty for that minute. */
+  if (TICK_BUSY && Date.now() - TICK_BUSY < (LAST_OK ? 65000 : 15000)) return;
   /* ...but never for ever: a question the browser is still waiting on after
      half a minute is one the relay has already given up on, and holding the
      flag for it would stop the page asking again. The flag is the moment it
@@ -39511,7 +39514,28 @@ function drawUpgradeRun(d) {
     r.appendChild(document.createTextNode('isemon ' + d.version + ' is running. This page is still the '
       + 'one of ' + UP.loaded + '. '));
     var a = cmdButton('Load it again', 'refresh', 'small primary');
-    a.onclick = function () { location.reload(); };
+    /* ...once the new version answers what the page asks first (1.10.243):
+       loaded in the seconds after its start, the page's first question
+       waited on a daemon still starting and nothing was drawn until F5. */
+    a.onclick = function () {
+      busy(a, true);
+      var until = Date.now() + 120000;
+      var again = function () {
+        api('upgrade', undefined, {quiet: true}).then(function (u) {
+          if (u && u.version && u.version !== d.version && Date.now() < until) {
+            setTimeout(again, 2000);
+            return null;
+          }
+          /* ...and its status, what the page draws everything from. */
+          return api('status&logs=0', undefined, {quiet: true}).then(function () {
+            location.reload();
+          });
+        }).catch(function () {
+          if (Date.now() < until) setTimeout(again, 2000); else location.reload();
+        });
+      };
+      again();
+    };
     r.appendChild(a);
     host.appendChild(r);
   } else if (run.state === 'done' && run.version && run.version !== d.version) {
