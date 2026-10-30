@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.241
+
+- **Popups close only when they are closed.** A click beside a popup closes
+  nothing any more - only its own buttons, its cross and Escape do.
+- **A popup opened from a popup comes back to it.** The one underneath is
+  kept whole - what was typed, searched, filtered, paged and scrolled - and
+  closing the one on top brings it back exactly as it was left, as many deep
+  as they go (*Kept out now* → an address → whatever is opened from that, and
+  back). A popup whose answer arrives is drawn in its own place; a button that
+  is done with its popup and opens another (*Put it back* → the progress)
+  hands its place over; going to another tab closes them all.
+
 1.10.240
 
 - **SSH keys of root: the server's card wide enough.** Its file,

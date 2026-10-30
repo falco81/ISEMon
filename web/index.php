@@ -6864,11 +6864,75 @@ var MODAL_CLOSE = null;
    answer arriving late - press address A, close it, press address B - drew
    A's story over B's, or reopened a popup somebody had just closed. */
 var MODAL_GEN = 0;
+var MODAL_SEQ = 0;          /* never given twice: a popup put back keeps its own */
 function modalTicket() { return MODAL_GEN; }
-function modalStill(ticket) { return ticket === MODAL_GEN && !$('modal').hidden; }
+/* Asked by what is about to draw its answer into the popup it opened: a
+   popup drawn right after "yes" is that one, drawn again in its own place. */
+var MODAL_REDRAW = -1;
+function modalStill(ticket) {
+  var still = ticket === MODAL_GEN && !$('modal').hidden;
+  if (still) {
+    /* ...for the drawing that follows at once, and no later: a popup that
+       drew its answer itself and is then pressed on opens a new one. */
+    var g = MODAL_REDRAW = MODAL_GEN;
+    setTimeout(function () { if (MODAL_REDRAW === g) MODAL_REDRAW = -1; }, 0);
+  }
+  return still;
+}
+
+/* Popups opened from popups (1.10.241): the one underneath is kept whole -
+   its very nodes, so what was typed, searched, paged and scrolled stays as
+   it was - and comes back when the one on top is closed, as many deep as
+   they go. The same popup drawn again (the same title) is drawn in its own
+   place, not stacked on itself; a button that closes its popup and opens
+   another hands its place over to it. */
+var MODAL_STACK = [];
+function modalPark() {
+  var body = $('modal-body'), foot = $('modal-foot');
+  var frame = {gen: MODAL_GEN, title: $('modal-title').textContent, cls: $('modal-box').className,
+               body: document.createDocumentFragment(), foot: document.createDocumentFragment(),
+               close: MODAL_CLOSE, from: MODAL_FROM, top: body.scrollTop,
+               focus: document.activeElement};
+  /* Scrolled boxes inside it keep where they were too. */
+  frame.scrolled = Array.prototype.filter.call(body.querySelectorAll('*'), function (n) {
+    return n.scrollTop > 0;
+  }).map(function (n) { return [n, n.scrollTop]; });
+  while (body.firstChild) frame.body.appendChild(body.firstChild);
+  while (foot.firstChild) frame.foot.appendChild(foot.firstChild);
+  MODAL_CLOSE = null;
+  MODAL_STACK.push(frame);
+}
+function modalUnpark() {
+  var frame = MODAL_STACK.pop();
+  var body = $('modal-body'), foot = $('modal-foot');
+  clear(body);
+  clear(foot);
+  $('modal-title').textContent = frame.title;
+  $('modal-box').className = frame.cls;
+  body.appendChild(frame.body);
+  foot.appendChild(frame.foot);
+  MODAL_CLOSE = frame.close;
+  MODAL_FROM = frame.from;
+  MODAL_GEN = frame.gen;
+  body.scrollTop = frame.top;
+  frame.scrolled.forEach(function (x) { x[0].scrollTop = x[1]; });
+  if (frame.focus && frame.focus.isConnected && frame.focus.focus) {
+    try { frame.focus.focus({preventScroll: true}); } catch (e) { }
+  }
+}
 
 function modal(title, build, buttons, narrow) {
-  MODAL_GEN += 1;
+  if (!$('modal').hidden) {
+    var again = MODAL_REDRAW === MODAL_GEN;
+    MODAL_REDRAW = -1;
+    if (again || $('modal-title').textContent === title) {
+      /* drawn again in its own place */
+      if (MODAL_CLOSE) { var f0 = MODAL_CLOSE; MODAL_CLOSE = null; f0(); }
+    } else {
+      modalPark();
+    }
+  }
+  MODAL_GEN = ++MODAL_SEQ;
   $('modal-title').textContent = title;
   /* `narrow` is true for the small popup, or the name of another size. */
   $('modal-box').className = 'box' + (typeof narrow === 'string' ? ' ' + narrow
@@ -6885,11 +6949,18 @@ function modal(title, build, buttons, narrow) {
     setButtonIcon(button, b.icon || iconForWords(b.words), b.words);
     if (b.left) button.classList.add('left');
     button.onclick = function () {
-      var was = MODAL_GEN;
+      var was = MODAL_GEN, deep = MODAL_STACK.length;
       if (b.go) b.go(button);
       /* ...unless what the button did was open another popup in this one's
-         place: closing then closed that one. (1.10.168) */
+         place: closing then closed that one. (1.10.168) And this one is not
+         kept under it to come back (1.10.241): it was done with. */
       if (b.close && MODAL_GEN === was) closeModal();
+      else if (b.close && MODAL_STACK.length === deep + 1 &&
+               MODAL_STACK[MODAL_STACK.length - 1].gen === was) {
+        var gone = MODAL_STACK.pop();
+        if (gone.close) { try { gone.close(); } catch (e) { } }
+        MODAL_FROM = gone.from;
+      }
     };
     foot.appendChild(button);
   });
@@ -6898,6 +6969,7 @@ function modal(title, build, buttons, narrow) {
      so Enter did nothing and Tab walked the page underneath. (1.10.159) */
   var opened = !$('modal').hidden;
   if (!opened) MODAL_FROM = document.activeElement;
+  else if (MODAL_STACK.length) MODAL_FROM = null;     /* the one underneath gets it back */
   $('modal').hidden = false;
   var first = body.querySelector('input:not([type=hidden]):not([disabled]), select:not([disabled]), '
                                  + 'textarea:not([disabled])')
@@ -6909,8 +6981,24 @@ function modal(title, build, buttons, narrow) {
   return {body: $('modal-body'), foot: foot};
 }
 var MODAL_FROM = null;
+/* Every popup closed at once - for going to another tab or page. */
+function closeAllModals() {
+  while (MODAL_STACK.length) {
+    var gone = MODAL_STACK.pop();
+    if (gone.close) { try { gone.close(); } catch (e) { } }
+    if (gone.from) MODAL_FROM = gone.from;
+  }
+  if (!$('modal').hidden) closeModal();
+}
 function closeModal() {
-  MODAL_GEN += 1;
+  MODAL_REDRAW = -1;
+  if (MODAL_STACK.length) {
+    /* The one underneath back, as it was left. */
+    if (MODAL_CLOSE) { var f1 = MODAL_CLOSE; MODAL_CLOSE = null; f1(); }
+    modalUnpark();
+    return;
+  }
+  MODAL_GEN = ++MODAL_SEQ;
   $('modal').hidden = true;
   if (MODAL_CLOSE) { var f = MODAL_CLOSE; MODAL_CLOSE = null; f(); }
   var back = MODAL_FROM;
@@ -6932,7 +7020,8 @@ document.addEventListener('keydown', function (e) {
   }
 });
 $('modal-x').onclick = closeModal;
-$('modal').addEventListener('click', function (e) { if (e.target === $('modal')) closeModal(); });
+/* A click beside the popup closes nothing (1.10.241): only its own buttons,
+   its cross and Escape do. */
 document.addEventListener('keydown', function (e) {
   /* A help popup open is the first thing Escape closes. (1.10.159) */
   if (e.key === 'Escape' && typeof SETHELP !== 'undefined' && SETHELP
@@ -9293,6 +9382,8 @@ function isTuckedAway(node) {
 }
 
 function showTab(name) {
+  /* Another tab: every popup goes, none comes back over it (1.10.241). */
+  if (!$('modal').hidden) closeAllModals();
   TAB = name;
   Array.prototype.forEach.call(document.querySelectorAll('.tabs button[data-tab]'),
     function (b) {
@@ -11844,7 +11935,7 @@ function drawStory(body, d) {
       var chip = el('button', 'chip', side[1] + ': ' + said);
       chip.type = 'button';
       chip.onclick = function () {
-        closeModal();
+        closeAllModals();
         showTab('traffic');
         /* Every line, not only the sessions: the chip counts the failed
            sign-ins and what the firewall said too. (1.10.166) */
@@ -23472,7 +23563,7 @@ function tvButtons(list) {
 }
 
 function tvGo(term, page) {
-  closeModal();
+  closeAllModals();
   showTab('traffic');
   tOpen(term, page);
 }
@@ -23560,7 +23651,7 @@ function drawVpnClient(body, c) {
   }
   body.appendChild(tvButtons([
     ['Everything about ' + c.user, 'search', function () {
-      closeModal(); openFind(c.user); setTimeout(function () { lookUpPerson(c.user); }, 40); }],
+      closeAllModals(); openFind(c.user); setTimeout(function () { lookUpPerson(c.user); }, 40); }],
     ['This person\u2019s VPN lines', 'list', function () {
       tvGo('user:' + tQuote(c.user) + ' kind:event/vpn', 'cvpn'); }],
     c.inner ? ['What ' + c.inner + ' did', 'list', function () {
@@ -23663,7 +23754,7 @@ function drawVpnTunnel(body, t) {
       }, 'rows'));
   }
   body.appendChild(tvButtons([
-    ['Everything about ' + t.peer, 'search', function () { closeModal(); lookUp(t.peer); }],
+    ['Everything about ' + t.peer, 'search', function () { lookUp(t.peer); }],
     ['This peer\u2019s lines', 'list', function () {
       tvGo('srcip:' + t.peer + ' kind:event/vpn', 's2s'); }]
   ]));
@@ -24156,7 +24247,7 @@ function tOpen(query, page, more) {
 function tSearchFor(field, value, page) {
   var term = field + ':' + tQuote(value);
   var now = $('t-q').value.trim();
-  closeModal();
+  closeAllModals();
   if (TAB !== 'traffic') showTab('traffic');
   $('t-q').value = (now && TPAGE !== 'over' ? now + ' ' : '') + term;
   if (TPAGE === 'over' || page) {
@@ -25206,7 +25297,7 @@ function tHelp() {
       row.appendChild(el('code', 'k t-help-code', one[0]));
       row.appendChild(el('span', 'v t-help-says', one[1]));
       opensWith(row, 'Search for this.', function () {
-        closeModal();
+        closeAllModals();
         $('t-q').value = one[0];
         if (TPAGE === 'over') tShowPage('list'); else tRun();
       });
@@ -25346,7 +25437,7 @@ function fwSide(title, r, side) {
     row.appendChild(look);
     var only = cmdButton(p === 'src' ? 'Lines from here' : 'Lines to here', 'list', 'small');
     only.onclick = function () {
-      closeModal();
+      closeAllModals();
       showTab('traffic');
       tOpen((p === 'src' ? 'srcip:' : 'dstip:') + ip, TPAGE === 'over' ? 'all' : TPAGE);
     };
@@ -35190,7 +35281,7 @@ function flashAt(node) {
 function goToRecords(where, door, q, session) {
   var passed = where === 'passed';
   closeFind();
-  closeModal();
+  closeAllModals();
   showTab(passed ? 'logins' : 'failed');
   /* The window has to be wide enough to hold what somebody was sent to
      see, or they land on a page that says nothing matches about a record

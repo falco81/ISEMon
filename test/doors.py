@@ -3588,8 +3588,11 @@ ok('every popup that asks the daemon holds a ticket',
    PAGE.count('var ticket = modalTicket();'), 15)   # + the time window picker (1.10.152)
 #                                                   + the database server's four (1.10.173)
 ok('...and draws only while its ticket is current', PAGE.count('modalStill(ticket)') >= 5, True)
+# 1.10.241: a popup underneath gets its own ticket back; the last closed
+# spends it for a number never given before.
 ok('...and closing the popup spends the ticket',
-   'function closeModal() {\n  MODAL_GEN += 1;' in PAGE, True)
+   "MODAL_GEN = ++MODAL_SEQ;\n  $('modal').hidden = true;" in PAGE and
+   'MODAL_GEN = frame.gen;' in PAGE, True)
 ok('the directory\u2019s answer lands in the card that asked',
    'var where = dir;\n      if (!where.isConnected) return;' in PAGE, True)
 ok('one status question in flight at a time', 'if (TICK_BUSY && Date.now() - TICK_BUSY < 65000) return;'
