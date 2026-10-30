@@ -631,7 +631,7 @@ try:
     ok('System updates and SSH keys of root in it', ('System updates' in names,
                                                      'SSH keys of root' in names), (True, True))
     ok('...after what was there, numbered on', [it[0] for it in items],
-       ['0', '1', '2', '3', '4', '5', '6', '7'])
+       ['0', '1', '2', '3', '4', '5', '6', '7', '8'])
 
     def walk(item, picks=None, asks=None, keys=None):
         d.ran, d.said = [], []

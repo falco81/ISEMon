@@ -371,9 +371,36 @@ working.
 
 ## Version
 
+1.10.245
+
+- **The otp logs over TLS** - *Settings → The OTP logs → Encrypted receiving
+  (TLS)*, the isemon side of otp 1.0.172's *Settings → isemon → Encrypted
+  sending*. *Set up…* takes isemon's certificate from **the file otp made**
+  (`isemon-tls.zip`, every entry AES-256: opened here, in memory - no 7z, no
+  copy left; its key goes to root once and is kept only where rsyslog reads
+  it), **made here** by an authority of this machine's own (shown to paste into
+  otp as *isemon has one from its own CA*; made again, otp trusts it as it is),
+  or **pasted** (your own CA or a public one); then the port (6514), mutual TLS
+  and the nodes (by name, or any node with a certificate of otp's authority).
+  Root's helper writes `/etc/pki/rsyslog/otp/` and its own
+  `/etc/rsyslog.d/10-otp-tls.conf` (otp's is read for the port, the mode and the
+  nodes, never put in as it is): the TLS files per input, imtcp loaded once,
+  the gtls driver (ossl where that is the one there; rsyslog-gnutls installed
+  when neither is), `rsyslogd -N1` before the restart and a listening port
+  after it - every file put back when either says no. firewalld lets the port
+  in; isemon's own firewall lets it in from the log senders by itself. The card
+  says whether rsyslog listens, the certificate's names and end, and rsyslog's
+  own words about TLS; *Change nodes…*, *Switch off…* (the certificate stays).
+  **The plain input on 514 is never touched**: nodes not switched over go on
+  sending there, and what arrives either way is filed into the same files.
+  `isemon --otp-tls`, `--otp-tls-import`, `--otp-tls-make`, `--otp-tls-set`,
+  `--otp-tls-off`, and in `isemon --console`. install.sh adds rsyslog-gnutls
+  where rsyslog is and it is not. See
+  [docs/otp-logs-over-tls.md](docs/otp-logs-over-tls.md).
+
 1.10.244
 
-- The test of the page's status question follows 1.10.243 (15 seconds until
+- The test of the page's status question follows the page (15 seconds until
   the first answer, then a minute), and the test of `--os-update` waits for
   the look for updates the daemon begins after an update before it asks for
   the next one. Nothing else changed.
@@ -671,6 +698,14 @@ on and changes nothing on the machine.
   key - only the public half used), each exported as a .pub file or taken
   away (the last one only when said again). Written by root's helper, 0600 in
   a 0700 folder, never through a link; every change in Events.
+- **Settings - The OTP logs - Encrypted receiving (TLS)**
+  ([docs/otp-logs-over-tls.md](docs/otp-logs-over-tls.md)): the isemon side of
+  otp's *Encrypted sending* (otp 1.0.172) - rsyslog's TLS input on 6514/tcp put
+  in by root, with the certificate from the file otp makes (isemon-tls.zip,
+  AES-256, opened here), one made by an authority of this machine's own, or one
+  pasted; mutual TLS with otp's nodes by name or by otp's authority alone. The
+  plain input on 514 is never touched. `isemon --otp-tls`, `--otp-tls-import`,
+  `--otp-tls-make`, `--otp-tls-set`, `--otp-tls-off`.
 - **Settings - Backups** ([docs/remote-backups.md](docs/remote-backups.md)):
   a backup of everything - the full backup, the database with its keys -
   packed, locked with the backups' password (`openssl enc -aes-256-cbc -pbkdf2

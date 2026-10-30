@@ -250,6 +250,16 @@ ensure_packages() {     # ensure_packages fresh|upgrade
             || ls /usr/sbin/php*-fpm* >/dev/null 2>&1 || tool_add php-fpm php-fpm php-fpm "the pages' PHP"
         tool_add php php-cli php-cli "the pages' PHP on the command line"
     fi
+    # The otp logs over TLS (1.10.245): rsyslog's TLS driver - gnutls, the one
+    # otp's README names - where rsyslog is and the driver is not.
+    if command -v rsyslogd >/dev/null 2>&1 && [[ -n "$PKG" ]] && \
+            ! ls /usr/lib64/rsyslog/lmnsd_gtls.so /usr/lib/rsyslog/lmnsd_gtls.so \
+                 /usr/lib/*-linux-gnu/rsyslog/lmnsd_gtls.so >/dev/null 2>&1; then
+        pkg_add rsyslog-gnutls rsyslog-gnutls
+        ls /usr/lib64/rsyslog/lmnsd_gtls.so /usr/lib/rsyslog/lmnsd_gtls.so \
+           /usr/lib/*-linux-gnu/rsyslog/lmnsd_gtls.so >/dev/null 2>&1 \
+            && good "rsyslog-gnutls installed - the otp logs can arrive over TLS"
+    fi
     # colorama makes the colours of the command line right everywhere;
     # nothing needs it - without it isemon writes the escapes itself.
     if ! python3 -c 'import colorama' 2>/dev/null && [[ -n "$PKG" ]]; then

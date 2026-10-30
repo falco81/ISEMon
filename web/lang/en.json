@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.243",
+  "version": "1.10.245",
   "made": "2026-10-30",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -355,6 +355,10 @@
   "s.a-certificate-for-the-dashboard.17d7d6d2": {
    "source": "A certificate for the dashboard",
    "text": "A certificate for the dashboard"
+  },
+  "s.a-certificate-pasted-here.690f5be6": {
+   "source": "a certificate pasted here",
+   "text": "a certificate pasted here"
   },
   "s.a-certificate-request-for-the-dashboard.e1743b96": {
    "source": "A certificate request for the dashboard",
@@ -2832,6 +2836,10 @@
    "source": "Any key already stored for it is replaced",
    "text": "Any key already stored for it is replaced"
   },
+  "s.any-node-with-a-certificate-from.61debf77": {
+   "source": "any node with a certificate from otp's authority",
+   "text": "any node with a certificate from otp's authority"
+  },
   "s.any-of-them.c214c8ea": {
    "source": "any of them",
    "text": "any of them"
@@ -2855,6 +2863,10 @@
   "s.any.c5fe0200": {
    "source": "any",
    "text": "any"
+  },
+  "s.anybody-isemon-checks-nobody.3addf58b": {
+   "source": "anybody - isemon checks nobody",
+   "text": "anybody - isemon checks nobody"
   },
   "s.anyconnect-logins-ever.b249d45c": {
    "source": "AnyConnect logins ever",
@@ -2963,6 +2975,10 @@
   "s.apply.cfea419c": {
    "source": "Apply",
    "text": "Apply"
+  },
+  "s.archive.ebfb55f4": {
+   "source": "archive",
+   "text": "archive"
   },
   "s.are-counted-towards-a-ban-the.8abdb495": {
    "source": "are counted towards a ban; the rest are recorded and nothing more.",
@@ -3268,6 +3284,10 @@
    "source": "at least one for each processor",
    "text": "at least one for each processor"
   },
+  "s.at-least-one-name-or-address.8fa15fe6": {
+   "source": "at least one name or address otp's nodes reach this machine by",
+   "text": "at least one name or address otp's nodes reach this machine by"
+  },
   "s.at-least-since.af6cccbc": {
    "source": "at least since",
    "text": "at least since"
@@ -3423,6 +3443,10 @@
   "s.authorisation-profile.4921662c": {
    "source": "Authorisation profile",
    "text": "Authorisation profile"
+  },
+  "s.authority-trusted-for-the-nodes.fd5e660e": {
+   "source": "Authority trusted for the nodes",
+   "text": "Authority trusted for the nodes"
   },
   "s.authority.66f5c871": {
    "source": "authority",
@@ -3792,6 +3816,10 @@
    "source": "-----BEGIN CERTIFICATE----- … -----BEGIN PRIVATE KEY-----",
    "text": "-----BEGIN CERTIFICATE----- … -----BEGIN PRIVATE KEY-----"
   },
+  "s.begin-certificate-end-certificate.e4a2a6f2": {
+   "source": "-----BEGIN CERTIFICATE----- … -----END CERTIFICATE-----",
+   "text": "-----BEGIN CERTIFICATE----- … -----END CERTIFICATE-----"
+  },
   "s.begin-certificate-miid-end-certificate.44a2a77c": {
    "source": "-----BEGIN CERTIFICATE----- MIID... -----END CERTIFICATE-----",
    "text": "-----BEGIN CERTIFICATE----- MIID... -----END CERTIFICATE-----"
@@ -3803,6 +3831,10 @@
   "s.begin-openssh-private-key.cf5fc5bc": {
    "source": "-----BEGIN OPENSSH PRIVATE KEY-----",
    "text": "-----BEGIN OPENSSH PRIVATE KEY-----"
+  },
+  "s.begin-private-key-end-private-key.91e92244": {
+   "source": "-----BEGIN PRIVATE KEY----- … -----END PRIVATE KEY-----",
+   "text": "-----BEGIN PRIVATE KEY----- … -----END PRIVATE KEY-----"
   },
   "s.begin-private-key.f908016d": {
    "source": "-----BEGIN PRIVATE KEY-----",
@@ -3827,6 +3859,10 @@
   "s.behind.fb6dbd81": {
    "source": "behind",
    "text": "behind"
+  },
+  "s.being-changed.7966772d": {
+   "source": "being changed…",
+   "text": "being changed…"
   },
   "s.being-in-this-group-means-being.190138a0": {
    "source": "Being in this group means being able to look at every page as read only does, and also to ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall, no letting everybody in at once. Somebody in this group and the full admin group is a full admin. More than one, separated by semicolons.",
@@ -4448,6 +4484,10 @@
    "source": "Change my password",
    "text": "Change my password"
   },
+  "s.change-nodes.0e7ff95c": {
+   "source": "Change nodes…",
+   "text": "Change nodes…"
+  },
   "s.change-of-authorisation.44a4a0cf": {
    "source": "Change of authorisation",
    "text": "Change of authorisation"
@@ -4460,9 +4500,17 @@
    "source": "Change the network and restart?",
    "text": "Change the network and restart?"
   },
+  "s.change-the-nodes.06419834": {
+   "source": "Change the nodes",
+   "text": "Change the nodes"
+  },
   "s.change-the-password-first.764dbe7c": {
    "source": "change the password first",
    "text": "change the password first"
+  },
+  "s.change-the-port-the-mode-or.8cc2b672": {
+   "source": "change the port, the mode or the nodes of the encrypted input, keeping its certificate",
+   "text": "change the port, the mode or the nodes of the encrypted input, keeping its certificate"
   },
   "s.change-the-rule.c1c9f3c1": {
    "source": "Change the rule",
@@ -4615,6 +4663,14 @@
   "s.choose-tab-or-enter-takes-it.70673594": {
    "source": "↑ ↓ choose · Tab or Enter takes it · Esc closes · Enter on its own searches",
    "text": "↑ ↓ choose · Tab or Enter takes it · Esc closes · Enter on its own searches"
+  },
+  "s.choose-the-file-first-isemon-tls.b12a1d59": {
+   "source": "choose the file first - isemon-tls.zip",
+   "text": "choose the file first - isemon-tls.zip"
+  },
+  "s.choose-the-file.ef9cfa06": {
+   "source": "Choose the file…",
+   "text": "Choose the file…"
   },
   "s.choose-the-files-first-or-paste.ffb1a8bf": {
    "source": "choose the files first, or paste the PEM",
@@ -5860,6 +5916,10 @@
    "source": "- done",
    "text": "- done"
   },
+  "s.done.e2bcda84": {
+   "source": "Done.",
+   "text": "Done."
+  },
   "s.done.e5fd9cfe": {
    "source": "done",
    "text": "done"
@@ -5903,6 +5963,10 @@
   "s.download-everything-configured-here-as-one.c814e255": {
    "source": "Download everything configured here as one JSON file — the settings, the accounts and what they may do, what is never banned, and who is banned now. No passwords, no ssh key and no certificate: this is the file that can be mailed, committed or pasted into a ticket. A machine built from it comes up correct in every way except that it cannot reach the router or ask the domain anything until those are typed in, and nobody can sign in until somebody sets a password — the file says so when it is loaded.",
    "text": "Download everything configured here as one JSON file — the settings, the accounts and what they may do, what is never banned, and who is banned now. No passwords, no ssh key and no certificate: this is the file that can be mailed, committed or pasted into a ticket. A machine built from it comes up correct in every way except that it cannot reach the router or ask the domain anything until those are typed in, and nobody can sign in until somebody sets a password — the file says so when it is loaded."
+  },
+  "s.download-isemon-ca-crt.86b2df08": {
+   "source": "Download isemon-ca.crt",
+   "text": "Download isemon-ca.crt"
   },
   "s.download-it-with-the-passwords-and.190d7fe5": {
    "source": "Download it with the passwords and keys?",
@@ -6411,6 +6475,10 @@
   "s.enabled.3ea3f980": {
    "source": "enabled",
    "text": "enabled"
+  },
+  "s.encrypted-receiving-tls.5e48e1d1": {
+   "source": "Encrypted receiving (TLS)",
+   "text": "Encrypted receiving (TLS)"
   },
   "s.end-certificate.8f539f9d": {
    "source": "-----END CERTIFICATE-----",
@@ -8208,6 +8276,14 @@
    "source": "firewall",
    "text": "firewall"
   },
+  "s.firewalld-does-not-let-it-in.f046239e": {
+   "source": "firewalld does not let it in",
+   "text": "firewalld does not let it in"
+  },
+  "s.firewalld-lets-it-in.beb4774f": {
+   "source": "firewalld lets it in",
+   "text": "firewalld lets it in"
+  },
   "s.firewalld-looks-after-this-machine-s.bffac124": {
    "source": "firewalld looks after this machine’s firewall: isemon leaves it to it. To manage it here: dnf install iptables-services; systemctl disable --now firewalld; systemctl enable --now iptables ip6tables.",
    "text": "firewalld looks after this machine’s firewall: isemon leaves it to it. To manage it here: dnf install iptables-services; systemctl disable --now firewalld; systemctl enable --now iptables ip6tables."
@@ -8691,6 +8767,10 @@
   "s.from-the-eduroam-logs.b0ab5c8d": {
    "source": "from the eduroam logs",
    "text": "from the eduroam logs"
+  },
+  "s.from-the-file-otp-made.22ce812e": {
+   "source": "from the file otp made",
+   "text": "from the file otp made"
   },
   "s.from-the-find-box.005a3dd5": {
    "source": "from the find box",
@@ -10816,6 +10896,10 @@
    "source": "isemon by its menus, on this screen or over SSH: every action is the isemon command it shows, plus the live log",
    "text": "isemon by its menus, on this screen or over SSH: every action is the isemon command it shows, plus the live log"
   },
+  "s.isemon-ca-crt.1a26cc9c": {
+   "source": "isemon-ca.crt",
+   "text": "isemon-ca.crt"
+  },
   "s.isemon-check.6086fbd1": {
    "source": "isemon --check",
    "text": "isemon --check"
@@ -10840,6 +10924,14 @@
    "source": "isemon.example.cz",
    "text": "isemon.example.cz"
   },
+  "s.isemon-example-net-192-0-2.68738790": {
+   "source": "isemon.example.net 192.0.2.10",
+   "text": "isemon.example.net 192.0.2.10"
+  },
+  "s.isemon-example-net.2ff1a381": {
+   "source": "isemon.example.net",
+   "text": "isemon.example.net"
+  },
   "s.isemon-failed.dd46cc72": {
    "source": "isemon --failed",
    "text": "isemon --failed"
@@ -10863,6 +10955,10 @@
   "s.isemon-looks-after-its-rules.8d2337f2": {
    "source": "isemon looks after its rules",
    "text": "isemon looks after its rules"
+  },
+  "s.isemon-makes-an-authority-of-its.07a41c48": {
+   "source": "isemon makes an authority of its own and a certificate from it. Its authority is then pasted into otp as \"isemon has one from its own CA\".",
+   "text": "isemon makes an authority of its own and a certificate from it. Its authority is then pasted into otp as \"isemon has one from its own CA\"."
   },
   "s.isemon-nightly.d3683098": {
    "source": "isemon\\nightly",
@@ -10904,6 +11000,26 @@
    "source": "isemon running for",
    "text": "isemon running for"
   },
+  "s.isemon-s-authority-is-on-the.02758b57": {
+   "source": "isemon's authority is on the clipboard",
+   "text": "isemon's authority is on the clipboard"
+  },
+  "s.isemon-s-authority.7b9555c8": {
+   "source": "isemon's authority",
+   "text": "isemon's authority"
+  },
+  "s.isemon-s-certificate-was-made-here.a797f990": {
+   "source": "isemon's certificate was made here by an authority of this machine's own. otp checks isemon by it: paste it into otp - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\".",
+   "text": "isemon's certificate was made here by an authority of this machine's own. otp checks isemon by it: paste it into otp - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\"."
+  },
+  "s.isemon-s-certificate.9665d2f1": {
+   "source": "isemon's certificate",
+   "text": "isemon's certificate"
+  },
+  "s.isemon-s-firewall-lets-the-log.d640d4d7": {
+   "source": "isemon's firewall lets the log ports in from the log senders - see Settings → Firewall",
+   "text": "isemon's firewall lets the log ports in from the log senders - see Settings → Firewall"
+  },
   "s.isemon-service.141f5596": {
    "source": "isemon.service",
    "text": "isemon.service"
@@ -10927,6 +11043,10 @@
   "s.isemon-stops-looking-after-it-nginx.095231f5": {
    "source": "isemon stops looking after it (nginx keeps what it has)",
    "text": "isemon stops looking after it (nginx keeps what it has)"
+  },
+  "s.isemon-tls-zip-from-otp-settings.b6fe94ed": {
+   "source": "isemon-tls.zip, from otp → Settings → isemon → Encrypted sending → Encrypt… → \"otp makes isemon a certificate\" → Make the file for isemon… It carries otp's authority and the nodes too.",
+   "text": "isemon-tls.zip, from otp → Settings → isemon → Encrypted sending → Encrypt… → \"otp makes isemon a certificate\" → Make the file for isemon… It carries otp's authority and the nodes too."
   },
   "s.isemon-upgrade-path.b85365f5": {
    "source": "isemon-upgrade.path",
@@ -11307,6 +11427,10 @@
   "s.its-passphrase-if-the-private-key.4e70924f": {
    "source": "Its passphrase, if the private key has one",
    "text": "Its passphrase, if the private key has one"
+  },
+  "s.its-passphrase.8e4ad551": {
+   "source": "Its passphrase",
+   "text": "Its passphrase"
   },
   "s.its-password.eed05453": {
    "source": "Its password",
@@ -11808,6 +11932,10 @@
    "source": "Last attempt",
    "text": "Last attempt"
   },
+  "s.last-change.24ea1f77": {
+   "source": "Last change",
+   "text": "Last change"
+  },
   "s.last-correction.e85bc2d3": {
    "source": "Last correction",
    "text": "Last correction"
@@ -12295,6 +12423,10 @@
   "s.listed.adcc7aee": {
    "source": "listed",
    "text": "listed"
+  },
+  "s.listening.dc353487": {
+   "source": "Listening",
+   "text": "Listening"
   },
   "s.lists-somebody-else-keeps.a2636409": {
    "source": "Lists somebody else keeps",
@@ -12796,9 +12928,17 @@
    "source": "Made here, and its key never leaves this machine except when you download it. Put the",
    "text": "Made here, and its key never leaves this machine except when you download it. Put the"
   },
+  "s.made-here-by-isemon-s-own.a6c4f8b0": {
+   "source": "made here, by isemon's own authority",
+   "text": "made here, by isemon's own authority"
+  },
   "s.made-here.827209b5": {
    "source": "made here",
    "text": "made here"
+  },
+  "s.made-here.cba81f98": {
+   "source": "Made here",
+   "text": "Made here"
   },
   "s.made-if-it-is-not-there.a34adf55": {
    "source": "Made if it is not there.",
@@ -12823,6 +12963,10 @@
   "s.main.b28b7af6": {
    "source": "main",
    "text": "main"
+  },
+  "s.make-a-certificate-here-for-the.dea53ab1": {
+   "source": "make a certificate here for the names otp reaches this machine by (comma or space between them), by an authority of this machine's own, and put it in; that authority's certificate is printed (or written to --out), to paste into otp",
+   "text": "make a certificate here for the names otp reaches this machine by (comma or space between them), by an authority of this machine's own, and put it in; that authority's certificate is printed (or written to --out), to paste into otp"
   },
   "s.make-a-certificate.be2f9de3": {
    "source": "Make a certificate",
@@ -12935,6 +13079,10 @@
   "s.make-those-logs-be-read-again.9f7631ab": {
    "source": "make those logs be read again: the daemon carries on from where it is in each file. To read them from the beginning and apply what they earn, use",
    "text": "make those logs be read again: the daemon carries on from where it is in each file. To read them from the beginning and apply what they earn, use"
+  },
+  "s.make.5821eb27": {
+   "source": "make",
+   "text": "make"
   },
   "s.makes-you-ban-admin.a2a0d42c": {
    "source": "makes you ban admin",
@@ -13404,6 +13552,26 @@
    "source": "muted",
    "text": "muted"
   },
+  "s.mutual-tls-any-node-with-a.27287a09": {
+   "source": "mutual TLS - any node with a certificate from otp's authority",
+   "text": "mutual TLS - any node with a certificate from otp's authority"
+  },
+  "s.mutual-tls-isemon-takes-otp-s.18446127": {
+   "source": "Mutual TLS - isemon takes otp's nodes only",
+   "text": "Mutual TLS - isemon takes otp's nodes only"
+  },
+  "s.mutual-tls-only-the-nodes-named.15b57088": {
+   "source": "mutual TLS - only the nodes named",
+   "text": "mutual TLS - only the nodes named"
+  },
+  "s.mutual-tls-otp-s-authority-is.22c2d5ed": {
+   "source": "mutual TLS: otp's authority is needed, to know the nodes by - or switch mutual TLS off",
+   "text": "mutual TLS: otp's authority is needed, to know the nodes by - or switch mutual TLS off"
+  },
+  "s.mutual-tls.e81e5c0b": {
+   "source": "Mutual TLS",
+   "text": "Mutual TLS"
+  },
   "s.myanmar.928b7c48": {
    "source": "Myanmar",
    "text": "Myanmar"
@@ -13579,6 +13747,10 @@
   "s.needed-when-the.44f9217d": {
    "source": "Needed when the",
    "text": "Needed when the"
+  },
+  "s.needed-with-mutual-tls-otp-high.66e0a8e8": {
+   "source": "Needed with mutual TLS: otp → High availability → the cluster's authority, or ca.pem from the file otp made.",
+   "text": "Needed with mutual TLS: otp → High availability → the cluster's authority, or ca.pem from the file otp made."
   },
   "s.negotiation.7db5a228": {
    "source": "negotiation",
@@ -13896,6 +14068,10 @@
    "source": "no file arrived",
    "text": "no file arrived"
   },
+  "s.no-file-chosen.ce063033": {
+   "source": "no file chosen",
+   "text": "no file chosen"
+  },
   "s.no-firewall-carries-it.4e1a06e0": {
    "source": "no firewall carries it",
    "text": "no firewall carries it"
@@ -14104,6 +14280,10 @@
    "source": "no such version",
    "text": "no such version"
   },
+  "s.no-tls-driver-yet-rsyslog-gnutls.790d06ca": {
+   "source": ", no TLS driver yet - rsyslog-gnutls is installed with the first setup",
+   "text": ", no TLS driver yet - rsyslog-gnutls is installed with the first setup"
+  },
   "s.no-token-line-exists-for-this.03aa6ca8": {
    "source": "No token line exists for this attempt anywhere, because nothing got as far as the thing that writes them.",
    "text": "No token line exists for this attempt anywhere, because nothing got as far as the thing that writes them."
@@ -14236,6 +14416,14 @@
    "source": "node",
    "text": "node"
   },
+  "s.nodes-allowed.fc297c5d": {
+   "source": "Nodes allowed",
+   "text": "Nodes allowed"
+  },
+  "s.nodes.9e325452": {
+   "source": "Nodes",
+   "text": "Nodes"
+  },
   "s.none-are-chosen.ae3b2bc2": {
    "source": "none are chosen",
    "text": "none are chosen"
@@ -14248,13 +14436,25 @@
    "source": "none chosen",
    "text": "none chosen"
   },
+  "s.none-found.bcc1d293": {
+   "source": "none found",
+   "text": "none found"
+  },
   "s.none-given.827de89e": {
    "source": "none given",
    "text": "none given"
   },
+  "s.none-here.c8fd7cc9": {
+   "source": "none here",
+   "text": "none here"
+  },
   "s.none-imported.69d43e0b": {
    "source": "none imported",
    "text": "none imported"
+  },
+  "s.none-is-there-yet-and-mutual.20f440f2": {
+   "source": "- none is there yet, and mutual TLS needs one",
+   "text": "- none is there yet, and mutual TLS needs one"
   },
   "s.none-of-the-ones-switched-on.37bcfcfb": {
    "source": "none of the ones switched on",
@@ -14539,6 +14739,10 @@
   "s.not-read-yet.dde0369d": {
    "source": "Not read yet",
    "text": "Not read yet"
+  },
+  "s.not-read.65f453ff": {
+   "source": "not read",
+   "text": "not read"
   },
   "s.not-read.d6b203a2": {
    "source": "Not read.",
@@ -15300,6 +15504,10 @@
    "source": "off — or give the OPNsense a certificate this machine trusts and leave it on.",
    "text": "off — or give the OPNsense a certificate this machine trusts and leave it on."
   },
+  "s.off-otp-still-checks-that-it.336deeb9": {
+   "source": "Off, otp still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.",
+   "text": "Off, otp still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port."
+  },
   "s.off-switched-off.527c6dd0": {
    "source": "off switched off",
    "text": "off switched off"
@@ -15315,6 +15523,10 @@
   "s.off.da7a6873": {
    "source": "off",
    "text": "off"
+  },
+  "s.off.e3de5ab0": {
+   "source": "Off",
+   "text": "Off"
   },
   "s.offer-going-back-to-an-older.fb586e89": {
    "source": "Offer going back to an older version",
@@ -15420,6 +15632,10 @@
    "source": "on is true or false",
    "text": "on is true or false"
   },
+  "s.on-isemon-s.cb04b780": {
+   "source": "on - isemon's",
+   "text": "on - isemon's"
+  },
   "s.on-it-a-server-answering-with.e6db1a4b": {
    "source": "on it); a server answering with any other is refused - somebody in between, or the server reinstalled.",
    "text": "on it); a server answering with any other is refused - somebody in between, or the server reinstalled."
@@ -15463,6 +15679,18 @@
   "s.on-set-by-hand.d0511b5b": {
    "source": "on, set by hand",
    "text": "on, set by hand"
+  },
+  "s.on-set-up-by-hand-not.950eea98": {
+   "source": "On - set up by hand, not by isemon",
+   "text": "On - set up by hand, not by isemon"
+  },
+  "s.on-set-up-by-hand.b4878be5": {
+   "source": "on - set up by hand",
+   "text": "on - set up by hand"
+  },
+  "s.on-set-up-by-isemon.6a8d8711": {
+   "source": "On - set up by isemon",
+   "text": "On - set up by isemon"
   },
   "s.on-the-accounts-in-the-file.beeb6ee2": {
    "source": "On, the accounts in the file are made here, with whatever they may do. If the file was downloaded with the passwords in it they can sign in straight away; if it was not, they exist with no password and somebody has to set one. Off, the accounts already on this machine are the only ones there are.",
@@ -15744,6 +15972,10 @@
    "source": "one for each processor",
    "text": "one for each processor"
   },
+  "s.one-from-your-own-ca-or.dce330b9": {
+   "source": "One from your own CA or a public one: the certificate, its key without a passphrase, and the chain if there is one.",
+   "text": "One from your own CA or a public one: the certificate, its key without a passphrase, and the chain if there is one."
+  },
   "s.one-has-all-of-them-so.c20d106c": {
    "source": "one has all of them, so a machine built from it needs nothing typed in at all — and is a file that gets into your firewall, so keep it the way you keep the keys themselves.",
    "text": "one has all of them, so a machine built from it needs nothing typed in at all — and is a file that gets into your firewall, so keep it the way you keep the keys themselves."
@@ -15927,6 +16159,10 @@
   "s.only-a-full-administrator-may-restart.eb8ca587": {
    "source": "Only a full administrator may restart this server or switch it off.",
    "text": "Only a full administrator may restart this server or switch it off."
+  },
+  "s.only-a-full-administrator-may-see.c8e299ee": {
+   "source": "Only a full administrator may see or change the encrypted receiving.",
+   "text": "Only a full administrator may see or change the encrypted receiving."
   },
   "s.only-a-full-administrator-may-switch.0b9e7a97": {
    "source": "Only a full administrator may switch it.",
@@ -16320,6 +16556,14 @@
    "source": "Open this record where it is listed, and light the row.",
    "text": "Open this record where it is listed, and light the row."
   },
+  "s.open.5fc7e38b": {
+   "source": "open",
+   "text": "open"
+  },
+  "s.open.cf9b7706": {
+   "source": "Open",
+   "text": "Open"
+  },
   "s.opens-it-without-the-mouse.c34436d6": {
    "source": "opens it without the mouse.",
    "text": "opens it without the mouse."
@@ -16363,6 +16607,10 @@
   "s.opnssh.b8763af9": {
    "source": "opnssh",
    "text": "opnssh"
+  },
+  "s.optional-the-intermediate-certificates-between-it.6457235f": {
+   "source": "Optional: the intermediate certificates between it and the root.",
+   "text": "Optional: the intermediate certificates between it and the root."
   },
   "s.optional.48a7b888": {
    "source": "optional",
@@ -16524,6 +16772,14 @@
    "source": "otp mailed a code after the directory password, and the one typed into the VPN’s second window was it.",
    "text": "otp mailed a code after the directory password, and the one typed into the VPN’s second window was it."
   },
+  "s.otp-s-authority.35354348": {
+   "source": "otp's authority",
+   "text": "otp's authority"
+  },
+  "s.otp-s-nodes-can-send-their.db1557fb": {
+   "source": "otp's nodes can send their totp.cgi and radius-detail lines here encrypted (syslog over TLS, RFC 5425). With mutual TLS only otp's own nodes may send. The plain input on 514 keeps working for any node not switched over yet, and what arrives is filed in the same folders - nothing about reading the logs changes.",
+   "text": "otp's nodes can send their totp.cgi and radius-detail lines here encrypted (syslog over TLS, RFC 5425). With mutual TLS only otp's own nodes may send. The plain input on 514 keeps working for any node not switched over yet, and what arrives is filed in the same folders - nothing about reading the logs changes."
+  },
   "s.otp-sent-a-code-by-sms.81bdf6cf": {
    "source": "otp sent a code by SMS after the directory password, and the one typed into the VPN’s second window was it.",
    "text": "otp sent a code by SMS after the directory password, and the one typed into the VPN’s second window was it."
@@ -16535,6 +16791,18 @@
   "s.otp.ff5e98ca": {
    "source": "OTP",
    "text": "OTP"
+  },
+  "s.otp1-example-net-otp2-example-net.206949c4": {
+   "source": "otp1.example.net otp2.example.net",
+   "text": "otp1.example.net otp2.example.net"
+  },
+  "s.otp1-example-net.5224f9c5": {
+   "source": "otp1.example.net",
+   "text": "otp1.example.net"
+  },
+  "s.otp2-example-net.b24641c5": {
+   "source": "otp2.example.net",
+   "text": "otp2.example.net"
   },
   "s.our-country-ranges-come-off.51f00d96": {
    "source": "Our country ranges come off",
@@ -16844,6 +17112,10 @@
    "source": "past",
    "text": "past"
   },
+  "s.paste-a-certificate.ef5051bd": {
+   "source": "Paste a certificate",
+   "text": "Paste a certificate"
+  },
   "s.paste-a-file-made-by-either.bfb2ae20": {
    "source": "Paste a file made by either of the download buttons, or choose it below. The settings in it are checked one by one exactly as if they had been typed here, and a single bad value stops the whole thing rather than leaving half of it applied. Afterwards you are told what the file carried, and what it could not.",
    "text": "Paste a file made by either of the download buttons, or choose it below. The settings in it are checked one by one exactly as if they had been typed here, and a single bad value stops the whole thing rather than leaving half of it applied. Afterwards you are told what the file carried, and what it could not."
@@ -17084,6 +17356,10 @@
    "source": "plain LDAP",
    "text": "plain LDAP"
   },
+  "s.plain-receiving.a3e9a0ab": {
+   "source": "Plain receiving",
+   "text": "Plain receiving"
+  },
   "s.plain.68c46e84": {
    "source": "plain",
    "text": "plain"
@@ -17187,6 +17463,10 @@
   "s.pool.51a4b13b": {
    "source": "pool",
    "text": "pool"
+  },
+  "s.port-and-mode.b48624df": {
+   "source": "Port and mode",
+   "text": "Port and mode"
   },
   "s.port-kind.6cbfefc7": {
    "source": "Port kind",
@@ -17539,6 +17819,10 @@
   "s.put-in-save-to-keep-it.32310d40": {
    "source": "put in — save to keep it",
    "text": "put in — save to keep it"
+  },
+  "s.put-in-the-file-otp-made.9f14e8f2": {
+   "source": "put in the file otp made (isemon-tls.zip, Settings → isemon → Encrypted sending): shown first, then asked unless --yes; the port, mode and nodes otp's file says unless given here (its passphrase: --passphrase-file, ISEMON_ZIP_PASSPHRASE, else asked)",
+   "text": "put in the file otp made (isemon-tls.zip, Settings → isemon → Encrypted sending): shown first, then asked unless --yes; the port, mode and nodes otp's file says unless given here (its passphrase: --passphrase-file, ISEMON_ZIP_PASSPHRASE, else asked)"
   },
   "s.put-in-waits-for-the-server.987347b1": {
    "source": "put in: waits for the server’s next start",
@@ -18600,6 +18884,10 @@
    "source": "root did not put it in",
    "text": "root did not put it in"
   },
+  "s.root-is-putting-it-in-a.fb1a3ed8": {
+   "source": "Root is putting it in - a few seconds, a minute when rsyslog-gnutls has to be installed first.",
+   "text": "Root is putting it in - a few seconds, a minute when rsyslog-gnutls has to be installed first."
+  },
   "s.root-may-sign-in.f4b2fb79": {
    "source": "Root may sign in",
    "text": "Root may sign in"
@@ -18607,6 +18895,10 @@
   "s.root-no-longer-signs-in-with.934cf2b1": {
    "source": "Root no longer signs in with",
    "text": "Root no longer signs in with"
+  },
+  "s.root-puts-it-in-it-takes.4ae0dbc6": {
+   "source": "root puts it in - it takes a few seconds, a minute when rsyslog-gnutls has to be installed first",
+   "text": "root puts it in - it takes a few seconds, a minute when rsyslog-gnutls has to be installed first"
   },
   "s.root-s-half-of-this-is.0898ea2a": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade once.",
@@ -18624,6 +18916,10 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there.",
    "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there."
   },
+  "s.root-s-half-of-this-is.f0a52aae": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.245 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
+   "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.245 package (or later) once. Until then the encrypted receiving is neither read nor changed here."
+  },
   "s.root-s-half-of-this-server.2295f614": {
    "source": "Root's half of this server does not do updates of the system yet (install.sh --upgrade puts it in).",
    "text": "Root's half of this server does not do updates of the system yet (install.sh --upgrade puts it in)."
@@ -18635,6 +18931,10 @@
   "s.root-said.9873d2f0": {
    "source": "Root said:",
    "text": "Root said:"
+  },
+  "s.root-takes-the-encrypted-input-away.84f71c60": {
+   "source": "root takes the encrypted input away within seconds; the plain one stays as it is",
+   "text": "root takes the encrypted input away within seconds; the plain one stays as it is"
   },
   "s.root.dc76e9f0": {
    "source": "root",
@@ -18719,6 +19019,14 @@
   "s.rsa4096.02021644": {
    "source": "rsa4096",
    "text": "rsa4096"
+  },
+  "s.rsyslog-s-encrypted-input-for-otp.dfdb0ed1": {
+   "source": "rsyslog's encrypted input for otp's logs, read afresh: on or off, its port, its mode and nodes, the certificate, whether rsyslog listens, the firewall, the plain input on 514 kept, the last change (Settings - The OTP logs - Encrypted receiving)",
+   "text": "rsyslog's encrypted input for otp's logs, read afresh: on or off, its port, its mode and nodes, the certificate, whether rsyslog listens, the firewall, the plain input on 514 kept, the last change (Settings - The OTP logs - Encrypted receiving)"
+  },
+  "s.rsyslog-stops-taking-otp-s-lines.e02e77b5": {
+   "source": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.",
+   "text": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept."
   },
   "s.rsyslog.4ddf35f1": {
    "source": "rsyslog",
@@ -19392,6 +19700,14 @@
    "source": "set type address",
    "text": "set type address"
   },
+  "s.set-up-encrypted-receiving.2daec2e7": {
+   "source": "Set up encrypted receiving",
+   "text": "Set up encrypted receiving"
+  },
+  "s.set-up.bb8fa05e": {
+   "source": "Set up…",
+   "text": "Set up…"
+  },
   "s.set-up.eafa3ec6": {
    "source": "set up",
    "text": "set up"
@@ -19399,6 +19715,10 @@
   "s.set.448ab73b": {
    "source": "Set",
    "text": "Set"
+  },
+  "s.set.65c10dc3": {
+   "source": "set",
+   "text": "set"
   },
   "s.setting-both-mean-the-same-thing.323b2dbf": {
    "source": "setting. Both mean the same thing and neither wins over the other.",
@@ -20420,6 +20740,30 @@
    "source": "stays",
    "text": "stays"
   },
+  "s.step-1-of-3-where-isemon.d7adb085": {
+   "source": "Step 1 of 3 - where isemon's certificate comes from. otp checks it every time a node sends.",
+   "text": "Step 1 of 3 - where isemon's certificate comes from. otp checks it every time a node sends."
+  },
+  "s.step-2-of-3-a-certificate.578a01e7": {
+   "source": "Step 2 of 3 - a certificate from your own CA or a public one, with the names otp's nodes reach this machine by.",
+   "text": "Step 2 of 3 - a certificate from your own CA or a public one, with the names otp's nodes reach this machine by."
+  },
+  "s.step-2-of-3-isemon-makes.14b7d536": {
+   "source": "Step 2 of 3 - isemon makes an authority of its own and a certificate from it. Afterwards its authority is shown, to paste into otp.",
+   "text": "Step 2 of 3 - isemon makes an authority of its own and a certificate from it. Afterwards its authority is shown, to paste into otp."
+  },
+  "s.step-2-of-3-the-file.73c36994": {
+   "source": "Step 2 of 3 - the file otp made for isemon (isemon-tls.zip), and the passphrase otp showed when it made it. It is opened on the server; the key in it is never sent back to the page.",
+   "text": "Step 2 of 3 - the file otp made for isemon (isemon-tls.zip), and the passphrase otp showed when it made it. It is opened on the server; the key in it is never sent back to the page."
+  },
+  "s.step-2-of-3-the-file.c2ab1510": {
+   "source": "Step 2 of 3 - the file is open. Its key stays on the server and goes to root once; nothing of it is kept in the database.",
+   "text": "Step 2 of 3 - the file is open. Its key stays on the server and goes to root once; nothing of it is kept in the database."
+  },
+  "s.step-3-of-3-which-of.a17506a2": {
+   "source": "Step 3 of 3 - which of otp's nodes may send, and on which port. The plain input on 514 stays as it is.",
+   "text": "Step 3 of 3 - which of otp's nodes may send, and on which port. The plain input on 514 stays as it is."
+  },
   "s.step-it-now.37081a92": {
    "source": "Step it now",
    "text": "Step it now"
@@ -20608,6 +20952,10 @@
    "source": "switch, controller or head end",
    "text": "switch, controller or head end"
   },
+  "s.switch-it-off.728aff98": {
+   "source": "Switch it off",
+   "text": "Switch it off"
+  },
   "s.switch-it-on-above-and-save.dca5b457": {
    "source": "Switch it on above and save, and the URL appears here.",
    "text": "Switch it on above and save, and the URL appears here."
@@ -20624,6 +20972,10 @@
    "source": "Switch off",
    "text": "Switch off"
   },
+  "s.switch-off.db1822a3": {
+   "source": "Switch off…",
+   "text": "Switch off…"
+  },
   "s.switch-on-and-carry-them.916c906c": {
    "source": "Switch on and carry them",
    "text": "Switch on and carry them"
@@ -20636,6 +20988,14 @@
    "source": "Switch on",
    "text": "Switch on"
   },
+  "s.switch-otp-s-nodes-back-to.0159256a": {
+   "source": "Switch otp's nodes back to plain sending first, or their lines stop arriving.",
+   "text": "Switch otp's nodes back to plain sending first, or their lines stop arriving."
+  },
+  "s.switch-over-the-nodes-send-over.5ae428af": {
+   "source": "Switch over: the nodes send over TLS from then on. The plain input here stays for any node not switched over.",
+   "text": "Switch over: the nodes send over TLS from then on. The plain input here stays for any node not switched over."
+  },
   "s.switch-port.b3b618bd": {
    "source": "Switch port",
    "text": "Switch port"
@@ -20643,6 +21003,14 @@
   "s.switch-ssh-on.a3353c2d": {
    "source": "Switch ssh on",
    "text": "Switch ssh on"
+  },
+  "s.switch-the-encrypted-input-off-the.43d5622e": {
+   "source": "switch the encrypted input off; the plain one on 514 stays. Asks first unless --yes",
+   "text": "switch the encrypted input off; the plain one on 514 stays. Asks first unless --yes"
+  },
+  "s.switch-the-encrypted-receiving-off.4dbb8603": {
+   "source": "Switch the encrypted receiving off",
+   "text": "Switch the encrypted receiving off"
   },
   "s.switch-the-list-on-and-save.96bc3e60": {
    "source": "Switch the list on and save first: until then the URL below answers nothing.",
@@ -20687,6 +21055,10 @@
   "s.switched-off.1a633fff": {
    "source": "switched off",
    "text": "switched off"
+  },
+  "s.switched-off.3f4705b7": {
+   "source": "Switched off.",
+   "text": "Switched off."
   },
   "s.switched-off.a18609ea": {
    "source": "Switched off",
@@ -21108,6 +21480,10 @@
    "source": "TB",
    "text": "TB"
   },
+  "s.tcp-otp-sends-to-6514-unless.3d2c51f3": {
+   "source": "TCP; otp sends to 6514 unless told otherwise. Not 514 - that one is the plain logs'.",
+   "text": "TCP; otp sends to 6514 unless told otherwise. Not 514 - that one is the plain logs'."
+  },
   "s.tcp-udp-icmp-6.58de7c79": {
    "source": "tcp, udp, icmp, 6",
    "text": "tcp, udp, icmp, 6"
@@ -21232,9 +21608,17 @@
    "source": "that file could not be read",
    "text": "that file could not be read"
   },
+  "s.that-file-is-far-bigger-than.68efbff7": {
+   "source": "that file is far bigger than the one otp makes",
+   "text": "that file is far bigger than the one otp makes"
+  },
   "s.that-file-is-far-bigger-than.6c5d0539": {
    "source": "that file is far bigger than a key",
    "text": "that file is far bigger than a key"
+  },
+  "s.that-file-is-far-bigger-than.ae8cf70c": {
+   "source": "that file is far bigger than a certificate",
+   "text": "that file is far bigger than a certificate"
   },
   "s.that-file-is-too-big.3e63d759": {
    "source": "that file is too big",
@@ -21832,6 +22216,10 @@
    "source": "the authority was stored",
    "text": "the authority was stored"
   },
+  "s.the-authority.21a3082e": {
+   "source": "The authority",
+   "text": "The authority"
+  },
   "s.the-automation-that-ran.52314a5d": {
    "source": "the automation that ran",
    "text": "the automation that ran"
@@ -22008,6 +22396,14 @@
    "source": "The certificate of the authority that signed the server’s.",
    "text": "The certificate of the authority that signed the server’s."
   },
+  "s.the-certificate-of-the-authority-that.edfb503a": {
+   "source": "The certificate of the authority that made isemon's certificate here - to paste into otp.",
+   "text": "The certificate of the authority that made isemon's certificate here - to paste into otp."
+  },
+  "s.the-certificate-pem-begin-certificate.addf3af4": {
+   "source": "the certificate: PEM, -----BEGIN CERTIFICATE-----",
+   "text": "the certificate: PEM, -----BEGIN CERTIFICATE-----"
+  },
   "s.the-certificate-the-authority-signed-for.b2f4bbcf": {
    "source": "The certificate the authority signed for the router - with its private key, flag",
    "text": "The certificate the authority signed for the router - with its private key, flag"
@@ -22032,9 +22428,17 @@
    "source": "the certificate was stored",
    "text": "the certificate was stored"
   },
+  "s.the-certificate.a2525335": {
+   "source": "The certificate",
+   "text": "The certificate"
+  },
   "s.the-chain-isemon-in-and-its.355a2e82": {
    "source": "The chain ISEMON-IN and its jump go; the rest of the firewall stays exactly as it is. Whatever only ISEMON-IN let in is then up to your own rules.",
    "text": "The chain ISEMON-IN and its jump go; the rest of the firewall stays exactly as it is. Whatever only ISEMON-IN let in is then up to your own rules."
+  },
+  "s.the-chain.1ada512d": {
+   "source": "The chain",
+   "text": "The chain"
   },
   "s.the-change-of-the-firewall-and.9e878a1f": {
    "source": "the change of the firewall and of who may reach which page",
@@ -22764,6 +23168,10 @@
    "source": "the file on this machine",
    "text": "the file on this machine"
   },
+  "s.the-file-otp-made.6a2d47d5": {
+   "source": "The file otp made",
+   "text": "The file otp made"
+  },
   "s.the-file-said-it-was-a.7b2b61de": {
    "source": "The file said it was a complete one, but these were not in it:",
    "text": "The file said it was a complete one, but these were not in it:"
@@ -23272,6 +23680,10 @@
    "source": "the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4",
    "text": "the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4"
   },
+  "s.the-key-a-pem-private-key.b28c0bb2": {
+   "source": "the key: a PEM private key without a passphrase",
+   "text": "the key: a PEM private key without a passphrase"
+  },
   "s.the-key-goes-into-root-s.8674b156": {
    "source": "the key goes into root's authorized_keys again",
    "text": "the key goes into root's authorized_keys again"
@@ -23764,6 +24176,10 @@
    "source": "The name",
    "text": "The name"
   },
+  "s.the-names-and-addresses-otp-s.5877b843": {
+   "source": "The names and addresses otp's nodes reach this machine by - \"isemon's address\" in otp's wizard - one per line.",
+   "text": "The names and addresses otp's nodes reach this machine by - \"isemon's address\" in otp's wizard - one per line."
+  },
   "s.the-names-asked-for.09e76ba8": {
    "source": "The names asked for",
    "text": "The names asked for"
@@ -23780,9 +24196,17 @@
    "source": "The names failing at the",
    "text": "The names failing at the"
   },
+  "s.the-names-in-the-nodes-certificates.1fec620e": {
+   "source": "The names in the nodes' certificates, one per line. Empty: any node with a certificate from otp's authority.",
+   "text": "The names in the nodes' certificates, one per line. Empty: any node with a certificate from otp's authority."
+  },
   "s.the-names-that-are-not-names.2f00a327": {
    "source": "The names that are not names",
    "text": "The names that are not names"
+  },
+  "s.the-names.7d5e4108": {
+   "source": "The names",
+   "text": "The names"
   },
   "s.the-nat-rules-mikrotik.b8e072d0": {
    "source": "the NAT rules (MikroTik)",
@@ -23935,6 +24359,10 @@
   "s.the-one-list-nothing-in-this.df00ca2b": {
    "source": "The one list nothing in this daemon may overrule. An address, a range or a whole country on it is never banned — not by the counting, not by a public list, not by somebody pressing",
    "text": "The one list nothing in this daemon may overrule. An address, a range or a whole country on it is never banned — not by the counting, not by a public list, not by somebody pressing"
+  },
+  "s.the-one-otp-showed-beside-the.cbcd89db": {
+   "source": "The one otp showed beside the file. Used here to open it, and not kept.",
+   "text": "The one otp showed beside the file. Used here to open it, and not kept."
   },
   "s.the-one-pinned.10a1a1a5": {
    "source": "(the one pinned)",
@@ -24219,6 +24647,10 @@
   "s.the-port-it-went-to-also.64091fca": {
    "source": "the port it went to (also: port)",
    "text": "the port it went to (also: port)"
+  },
+  "s.the-port-mutual-tls-and-the.e3acddea": {
+   "source": "The port, mutual TLS and the nodes that may send - the certificate stays as it is.",
+   "text": "The port, mutual TLS and the nodes that may send - the certificate stays as it is."
   },
   "s.the-port-of-its-web-interface.9d2837ea": {
    "source": "The port of its web interface and API, usually 443.",
@@ -25544,6 +25976,10 @@
    "source": "Then, here: fill the settings in,",
    "text": "Then, here: fill the settings in,"
   },
+  "s.then-on-otp-settings-isemon-encrypted.916db68b": {
+   "source": "Then, on otp - Settings → isemon → Encrypted sending:",
+   "text": "Then, on otp - Settings → isemon → Encrypted sending:"
+  },
   "s.then-the-last-step-again-every.c260b782": {
    "source": "· then the last step again, every time after",
    "text": "· then the last step again, every time after"
@@ -26436,6 +26872,10 @@
    "source": "TLS, its certificate pinned (api-ssl, 8729)",
    "text": "TLS, its certificate pinned (api-ssl, 8729)"
   },
+  "s.tls-one-way-otp-checks-isemon.ec7d8ad3": {
+   "source": "TLS one way - otp checks isemon, isemon checks nobody",
+   "text": "TLS one way - otp checks isemon, isemon checks nobody"
+  },
   "s.tls-settings.1dc141e2": {
    "source": "TLS settings",
    "text": "TLS settings"
@@ -26695,6 +27135,10 @@
   "s.try-again.042c862e": {
    "source": "Try again",
    "text": "Try again"
+  },
+  "s.try-it-on-every-node-each.3dfae5d5": {
+   "source": "Try it on every node: each sends a test line here over TLS.",
+   "text": "Try it on every node: each sends a test line here over TLS."
   },
   "s.try-it.0aa14a4d": {
    "source": "try it",
@@ -26968,6 +27412,10 @@
    "source": "Unfold this subnet",
    "text": "Unfold this subnet"
   },
+  "s.unfold.1e0eecbd": {
+   "source": "unfold",
+   "text": "unfold"
+  },
   "s.unfolded.20153d67": {
    "source": "unfolded",
    "text": "unfolded"
@@ -26987,6 +27435,10 @@
   "s.unknown-endpoint.61f7c139": {
    "source": "unknown endpoint",
    "text": "unknown endpoint"
+  },
+  "s.unknown.50d8b4a9": {
+   "source": "unknown",
+   "text": "unknown"
   },
   "s.unless-logins-at-the-firewall-itself.d5e89c7b": {
    "source": "unless Logins at the firewall itself is switched on under Banning, and then only a sign-in refused from an address on the internet. Switched off, not one file is opened.",
@@ -28020,6 +28472,10 @@
    "source": "What NPS said to the machines that were refused and did NOT get on afterwards. The ordinary MAB-then-802.1X refusals are left out, as they are on the cards beside it.",
    "text": "What NPS said to the machines that were refused and did NOT get on afterwards. The ordinary MAB-then-802.1X refusals are left out, as they are on the cards beside it."
   },
+  "s.what-otp-chose-is-filled-in.3c6a0263": {
+   "source": "What otp chose is filled in on the next step; it can be changed there.",
+   "text": "What otp chose is filled in on the next step; it can be changed there."
+  },
   "s.what-people-type-in-the-browser.74c6b876": {
    "source": "What people type in the browser.",
    "text": "What people type in the browser."
@@ -28031,6 +28487,10 @@
   "s.what-root-said.ef1e7b10": {
    "source": "What root said:",
    "text": "What root said:"
+  },
+  "s.what-rsyslog-said-about-tls-lately.4617a295": {
+   "source": "what rsyslog said about TLS lately",
+   "text": "what rsyslog said about TLS lately"
   },
   "s.what-set-it-off.cf5a84d5": {
    "source": "what set it off",
@@ -28688,6 +29148,10 @@
    "source": "Where in the directory",
    "text": "Where in the directory"
   },
+  "s.where-isemon-s-certificate-comes-from.a12cbfa7": {
+   "source": "Where isemon's certificate comes from - the file otp made, one made here, or one pasted - and which of otp's nodes may send.",
+   "text": "Where isemon's certificate comes from - the file otp made, one made here, or one pasted - and which of otp's nodes may send."
+  },
   "s.where-it-comes-from.799d8f14": {
    "source": "Where it comes from",
    "text": "Where it comes from"
@@ -29308,6 +29772,10 @@
    "source": "Which of NPS’s answers are eduroam’s",
    "text": "Which of NPS’s answers are eduroam’s"
   },
+  "s.which-of-otp-s-nodes-may.24e25f80": {
+   "source": "Which of otp's nodes may send, on which port. isemon's certificate stays as it is.",
+   "text": "Which of otp's nodes may send, on which port. isemon's certificate stays as it is."
+  },
   "s.which-of-ours.b98f2332": {
    "source": "Which of ours",
    "text": "Which of ours"
@@ -29796,9 +30264,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "with --downgrade-check: what changed in each older version as well"
   },
-  "s.with-erase-reboot-poweroff-os-update.30d671dd": {
-   "source": "with --erase, --reboot, --poweroff, --os-update or --root-key-drop: do not ask first",
-   "text": "with --erase, --reboot, --poweroff, --os-update or --root-key-drop: do not ask first"
+  "s.with-erase-reboot-poweroff-os-update.87b3cc92": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import or --otp-tls-off: do not ask first",
+   "text": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import or --otp-tls-off: do not ask first"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -29848,6 +30316,22 @@
    "source": "with --os-update: when the update needs a restart, ask (the default: isemon --reboot afterwards) or restart by itself (auto)",
    "text": "with --os-update: when the update needs a restart, ask (the default: isemon --reboot afterwards) or restart by itself (auto)"
   },
+  "s.with-otp-tls-import-make-or.8debf838": {
+   "source": "with --otp-tls-import, -make or -set: the port it listens on (6514 unless said)",
+   "text": "with --otp-tls-import, -make or -set: the port it listens on (6514 unless said)"
+  },
+  "s.with-otp-tls-import-make-or.8e3ac753": {
+   "source": "with --otp-tls-import, -make or -set: otp's nodes, as their certificates name them (\"otp1 otp2\"; \"\" for any node of otp's authority)",
+   "text": "with --otp-tls-import, -make or -set: otp's nodes, as their certificates name them (\"otp1 otp2\"; \"\" for any node of otp's authority)"
+  },
+  "s.with-otp-tls-import-make-or.f5ec94d7": {
+   "source": "with --otp-tls-import, -make or -set: mutual TLS - only otp's nodes may send (yes), or anybody, otp checking isemon only (no)",
+   "text": "with --otp-tls-import, -make or -set: mutual TLS - only otp's nodes may send (yes), or anybody, otp checking isemon only (no)"
+  },
+  "s.with-otp-tls-make-or-set.d163d362": {
+   "source": "with --otp-tls-make or -set: otp's authority (its ca.pem), which mutual TLS knows the nodes by",
+   "text": "with --otp-tls-make or -set: otp's authority (its ca.pem), which mutual TLS knows the nodes by"
+  },
   "s.with-passed-which-of-them-vpn.6fec38da": {
    "source": "with --passed: which of them (vpn, tacacs, commands, acl, all). A command run on a switch and a firewall list handed to a session are not logins, so they are left out unless asked for",
    "text": "with --passed: which of them (vpn, tacacs, commands, acl, all). A command run on a switch and a firewall list handed to a session are not logins, so they are left out unless asked for"
@@ -29872,17 +30356,17 @@
    "source": "with --rescan: weigh what is already recorded without reading the files again",
    "text": "with --rescan: weigh what is already recorded without reading the files again"
   },
-  "s.with-restore-bundle-the-password-of.4dfc5688": {
-   "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key",
-   "text": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key"
+  "s.with-restore-bundle-the-password-of.67cdca0e": {
+   "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key; with --otp-tls-import: the passphrase of the file otp made",
+   "text": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key; with --otp-tls-import: the passphrase of the file otp made"
   },
   "s.with-root-key-drop-it-may.89652220": {
    "source": "with --root-key-drop: it may be the last key root signs in with",
    "text": "with --root-key-drop: it may be the last key root signs in with"
   },
-  "s.with-root-key-make-the-file.65805e88": {
-   "source": "with --root-key-make: the file for the private half - made 0600, never written over",
-   "text": "with --root-key-make: the file for the private half - made 0600, never written over"
+  "s.with-root-key-make-the-file.b7e3ea9e": {
+   "source": "with --root-key-make: the file for the private half - made 0600, never written over; with --otp-tls-make: the file for this machine's authority, to paste into otp",
+   "text": "with --root-key-make: the file for the private half - made 0600, never written over; with --otp-tls-make: the file for this machine's authority, to paste into otp"
   },
   "s.with-status-every-file-of-a.ace58746": {
    "source": "with --status: every file of a firewall's log on a line of its own, rather than one line for each folder of them",
@@ -29935,6 +30419,10 @@
   "s.without-a-ladder-whether-each-return.794e0149": {
    "source": "Without a ladder, whether each return doubles the last length.",
    "text": "Without a ladder, whether each return doubles the last length."
+  },
+  "s.without-a-passphrase-it-goes-to.3e39ddfc": {
+   "source": "Without a passphrase. It goes to root once and is kept only in rsyslog's folder.",
+   "text": "Without a passphrase. It goes to root once and is kept only in rsyslog's folder."
   },
   "s.without-an-fmc-cannot-use-a.aeb91c8e": {
    "source": "(without an FMC) cannot use a feed of its own; cdFMC in Security Cloud Control can.",
@@ -30746,6 +31234,10 @@
    "source": "{0} days ago",
    "text": "{0} days ago"
   },
+  "p.days-left.4fe42d8b": {
+   "source": "{0} - {1} days left",
+   "text": "{0} - {1} days left"
+  },
   "p.days-left.5a316ee5": {
    "source": "{0} days left",
    "text": "{0} days left"
@@ -31438,6 +31930,10 @@
    "source": "It could not be asked: {0}",
    "text": "It could not be asked: {0}"
   },
+  "p.it-has-run-out.3f525cb0": {
+   "source": "{0} - it has run out",
+   "text": "{0} - it has run out"
+  },
   "p.it-is-deleted-at-with-its.a8496a45": {
    "source": "It is deleted at {0}, with its checksum and its RESTORE.md.",
    "text": "It is deleted at {0}, with its checksum and its RESTORE.md."
@@ -31497,6 +31993,10 @@
   "p.keep-out.c9595afd": {
    "source": "Keep {0} out",
    "text": "Keep {0} out"
+  },
+  "p.kept-as-it-is.6854aa83": {
+   "source": "{0} - kept as it is",
+   "text": "{0} - kept as it is"
   },
   "p.kept-day-s-for-what-was.fdf31664": {
    "source": "kept {0} day(s) for what was let through and {1} day(s) for the rest",
@@ -32126,6 +32626,10 @@
    "source": "only the country list ({0})",
    "text": "only the country list ({0})"
   },
+  "p.only-to-replace-the-authority-there.69d0b00c": {
+   "source": "Only to replace the authority there now{0}. otp → High availability → the cluster's authority, or ca.pem from the file otp made.",
+   "text": "Only to replace the authority there now{0}. otp → High availability → the cluster's authority, or ca.pem from the file otp made."
+  },
   "p.only-watched-carried-nowhere.b942058e": {
    "source": "{0} · only watched: carried nowhere",
    "text": "{0} · only watched: carried nowhere"
@@ -32474,6 +32978,10 @@
    "source": "{0} row(s)",
    "text": "{0} row(s)"
   },
+  "p.rsyslog.81d686b1": {
+   "source": "rsyslog {0}{1}",
+   "text": "rsyslog {0}{1}"
+  },
   "p.rule-s-permit-deny.d24b4458": {
    "source": "{0} rule(s) · {1} permit · {2} deny",
    "text": "{0} rule(s) · {1} permit · {2} deny"
@@ -32809,6 +33317,10 @@
   "p.tcp-from-anywhere-the-way-in.68852f87": {
    "source": "tcp {0} from anywhere - the way in to this machine. Turned off, keep a rule of your own for it.",
    "text": "tcp {0} from anywhere - the way in to this machine. Turned off, keep a rule of your own for it."
+  },
+  "p.tcp.d3c8732d": {
+   "source": "{0}/tcp, {1}",
+   "text": "{0}/tcp, {1}"
   },
   "p.that-account-s-group-may-change.1f3c0bd0": {
    "source": "That account’s group may change things ({0}): give it one that may only read and use the API.",
@@ -33422,6 +33934,10 @@
    "source": "({0} times in a row)",
    "text": "({0} times in a row)"
   },
+  "p.tls-by.0e5b3c73": {
+   "source": ", TLS by {0}",
+   "text": ", TLS by {0}"
+  },
   "p.toast-show.e7c4d6aa": {
    "source": "toast show{0}",
    "text": "toast show{0}"
@@ -33952,6 +34468,14 @@
    "source": "-----BEGIN CERTIFICATE-----<br>…<br>-----BEGIN PRIVATE KEY-----",
    "text": "-----BEGIN CERTIFICATE-----<br>…<br>-----BEGIN PRIVATE KEY-----"
   },
+  "r.begin-certificate-end-certificate.ccaf30d3": {
+   "source": "-----BEGIN CERTIFICATE-----<br>…<br>-----END CERTIFICATE-----",
+   "text": "-----BEGIN CERTIFICATE-----<br>…<br>-----END CERTIFICATE-----"
+  },
+  "r.begin-private-key-end-private-key.f27dfcc5": {
+   "source": "-----BEGIN PRIVATE KEY-----<br>…<br>-----END PRIVATE KEY-----",
+   "text": "-----BEGIN PRIVATE KEY-----<br>…<br>-----END PRIVATE KEY-----"
+  },
   "r.being-in-this-group-means-being.9e361128": {
    "source": "Being in this group means being able to change everything: ban, unban, the router, settings, accounts. Press <b>Find the groups</b> to pick it from the directory rather than typing it. More than one, separated by semicolons.",
    "text": "Being in this group means being able to change everything: ban, unban, the router, settings, accounts. Press <b>Find the groups</b> to pick it from the directory rather than typing it. More than one, separated by semicolons."
@@ -34256,6 +34780,10 @@
    "source": "ISE calls it <code>{0}</code>. The characters on the end are its version: edit the ACL and they change, so the same list under two names is the same list before and after an edit.",
    "text": "ISE calls it <code>{0}</code>. The characters on the end are its version: edit the ACL and they change, so the same list under two names is the same list before and after an edit."
   },
+  "r.isemon-example-net-192-0-2.9b7a51b9": {
+   "source": "isemon.example.net<br>192.0.2.10",
+   "text": "isemon.example.net<br>192.0.2.10"
+  },
   "r.it-answered-from-the-name-is.1de87a04": {
    "source": "It answered from <b>{0}</b> — the name is what somebody typed into ISE, the address is what is on the network.",
    "text": "It answered from <b>{0}</b> — the name is what somebody typed into ISE, the address is what is on the network."
@@ -34452,6 +34980,10 @@
    "source": "Only <b>{0}</b> ({1}): the cards, the chart, the lists and the search, all of them for this one firewall.",
    "text": "Only <b>{0}</b> ({1}): the cards, the chart, the lists and the search, all of them for this one firewall."
   },
+  "r.otp1-example-net-otp2-example-net.1517eb4d": {
+   "source": "otp1.example.net<br>otp2.example.net",
+   "text": "otp1.example.net<br>otp2.example.net"
+  },
   "r.passed-802-1x-mab.0113d160": {
    "source": "<i></i>passed · 802.1X / MAB",
    "text": "<i></i>passed · 802.1X / MAB"
@@ -34555,6 +35087,10 @@
   "r.root-no-longer-signs-in-with.c3b654aa": {
    "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
    "text": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}"
+  },
+  "r.rsyslog-stops-taking-otp-s-lines.5e5b3a5b": {
+   "source": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving.",
+   "text": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving."
   },
   "r.said-again-is-the-last-key.881cae52": {
    "source": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",

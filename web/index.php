@@ -417,6 +417,8 @@ if (isset($_GET['api'])) {
         'rbackup'      => '/api/rbackup',
         /* Root's SSH keys (1.10.239). */
         'sshkeys'      => '/api/sshkeys',
+        /* The otp logs over TLS (1.10.245). */
+        'otptls'       => '/api/otptls',
         'dashboard' => '/api/dashboard',
         /* One door's own shape, counted by what matters behind that door. */
         'door'      => '/api/door',
@@ -502,6 +504,7 @@ if (isset($_GET['api'])) {
         'trial'        => '/api/trial',
         'rbackup'      => '/api/rbackup',
         'sshkeys'      => '/api/sshkeys',
+        'otptls'       => '/api/otptls',
         'console-login' => '/api/console-login',
         'win-reread'   => '/api/windows/reread',
         'win-rollup'   => '/api/windows/rollup',
@@ -3869,6 +3872,31 @@ function srcText(el) {
   #pane-sshkeys .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
   #pane-sshkeys .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
   .modal .sk-made textarea{width:100%;box-sizing:border-box}
+  /* The otp logs over TLS (1.10.245): a card on The OTP logs, drawn as the
+     SSH keys of root are */
+  #otptls-card{margin-top:16px}
+  #ot-host > .note{margin:0 0 12px}
+  #ot-host .pw-head{margin-top:4px}
+  #ot-host .net-facts{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+  #ot-host .ot-warn{color:var(--warn)} #ot-host .ot-bad{color:var(--crit);font-weight:700}
+  #ot-host .ot-good{color:var(--ok)}
+  #ot-host details.fold{margin:12px 0 0}
+  #ot-host pre.lines{white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:340px;overflow:auto;
+    background:var(--panel2);border:0;border-radius:0 0 12px 12px;padding:10px 12px;margin:0}
+  #ot-host .btnrow{margin-top:14px}
+  #ot-host .ot-then{margin:12px 0 0;padding-left:20px;color:var(--tx-mut);font-size:12.5px}
+  #ot-host .ot-then li{margin:2px 0}
+  #ot-host .note.good ul{margin:4px 0 0;padding-left:18px}
+  #otptls-card .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  #otptls-card .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
+  .modal .ot-wiz textarea{width:100%;box-sizing:border-box}
+  .modal .ot-wiz .rb-kind-tile.on{border-color:var(--info)}
+  .modal .ot-wiz .subpanel{margin:12px 0}
+  .modal .ot-wiz .note.bad{background:var(--crit-bg);border-radius:10px;padding:10px 12px}
+  .modal .ot-wiz .note.good{background:var(--ok-bg);border-radius:10px;padding:10px 12px}
+  .modal .ot-wiz .ot-file{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .modal .ot-wiz .ot-file .btn + span{font-size:12.5px;color:var(--tx-dim)}
+  .modal .ot-wiz .ot-pem-row{display:flex;justify-content:flex-end;margin-top:2px}
   .modal .sk-made .btnrow{margin:12px 0 16px}
   #ou-host .ou-reboot{border-color:rgba(210,153,34,.55)}
   #ou-host .ou-reboot .btn{margin-top:4px}
@@ -4987,6 +5015,17 @@ function srcText(el) {
         the token server itself; banning on it would ban the server. Switched off, not one file
         is opened and nothing anywhere behaves differently.</p>
       <div id="sect-otp"></div>
+    </div>
+    <!-- Encrypted receiving (1.10.245; for otp 1.0.172's Settings → isemon →
+         Encrypted sending): rsyslog's TLS input on this machine, put in by
+         root's helper. The plain input on 514 is never touched. -->
+    <div class="card full wr" id="otptls-card">
+      <h2>Encrypted receiving (TLS)</h2>
+      <p class="note">otp's nodes can send their totp.cgi and radius-detail lines here encrypted
+        (syslog over TLS, RFC 5425). With mutual TLS only otp's own nodes may send. The plain
+        input on 514 keeps working for any node not switched over yet, and what arrives is filed
+        in the same folders - nothing about reading the logs changes.</p>
+      <div id="ot-host"></div>
     </div>
   </div>
 
@@ -28806,6 +28845,7 @@ function showPane(name, quietly) {
   if (name === 'time' && typeof loadNtp === 'function') loadNtp();
   if (name === 'power' && typeof loadPower === 'function') loadPower();
   if (name === 'sshkeys' && typeof loadSshKeys === 'function') loadSshKeys();
+  if (name === 'otp' && typeof loadOtpTls === 'function') loadOtpTls();
   if (name === 'osup' && typeof loadOsup === 'function') loadOsup();
   else if (typeof ouPoll === 'function') ouPoll(false);
   if (name === 'backup' && typeof loadRbackup === 'function') loadRbackup();
@@ -40437,6 +40477,490 @@ function skDrop(k) {
 /* Opened straight at this pane, it was switched to before this block was
    read: drawn now. */
 setTimeout(function () { if (paneLive('sshkeys')) loadSshKeys(); }, 0);
+</script>
+<script nonce="<?= h($nonce) ?>">
+/* ==========================================================================
+   Settings → The OTP logs → Encrypted receiving (1.10.245; for otp 1.0.172's
+   Settings → isemon → Encrypted sending)
+   --------------------------------------------------------------------------
+   rsyslog's TLS input for otp's lines, as root's helper reads it (asked in
+   otptls.ask, answered in otptls.json): drawn as the SSH keys of root are -
+   the facts, the buttons under them. A change is put in by root behind, and
+   followed here until it is done. The certificate comes from the file otp
+   made (opened on the server: its key never comes back to the page), is made
+   here from an authority of this machine's own, or is pasted. The plain
+   input on 514 is never touched. A full administrator's only.
+   ========================================================================== */
+var OT = {d: null, poll: null, asked: 0, ownCa: false, wiz: null};
+function loadOtpTls() {
+  var host = $('ot-host');
+  if (!host) return;
+  if (!ADMIN) {
+    clear(host);
+    host.appendChild(el('p', 'note', 'Only a full administrator may see or change the encrypted receiving.'));
+    return;
+  }
+  api('otptls').then(function (d) {
+    OT.d = d; drawOtpTls();
+    /* Read afresh when the pane is opened. */
+    if (d.helper && Date.now() - OT.asked > 20000) {
+      OT.asked = Date.now();
+      api('otptls', {action: 'refresh'}).then(function () { otPoll(true); }).catch(function () {});
+    }
+    otPoll(otPending());
+  }).catch(oops);
+}
+function otPending() { return !!(OT.d && ((OT.d.pending || []).length || OT.d.busy)); }
+function otChanging() { return !!(OT.d && (OT.d.pending || []).length); }
+function otPoll(on) {
+  if (on && !OT.poll) {
+    OT.poll = setInterval(function () {
+      if (!paneLive('otp')) { otPoll(false); return; }
+      api('otptls', undefined, {quiet: true}).then(function (d) {
+        OT.d = d; drawOtpTls();
+        if (!otPending()) { otPoll(false); otDone(); }
+      }).catch(function () {});
+    }, 1500);
+  }
+  if (!on && OT.poll) { clearInterval(OT.poll); OT.poll = null; }
+}
+/* A change asked of root: followed from now on. */
+function otAsked() {
+  api('otptls', undefined, {quiet: true}).then(function (d) { OT.d = d; drawOtpTls(); otPoll(true); })
+    .catch(function () { otPoll(true); });
+}
+/* A change that is done: a certificate made here wants its authority in otp. */
+function otDone() {
+  if (!OT.ownCa) return;
+  OT.ownCa = false;
+  var d = OT.d || {};
+  if (d.last && d.last.ok && d.own_ca && d.own_ca.pem && $('modal').hidden) otShowCa();
+}
+var OT_HOW = {otp: 'from the file otp made', made: 'made here, by isemon\'s own authority',
+              given: 'a certificate pasted here'};
+var OT_DID = {apply: 'set up', make: 'set up', set: 'changed', off: 'switched off'};
+function otMode(d) {
+  if (d.auth === 'x509/name') return 'mutual TLS - only the nodes named';
+  if (d.auth === 'x509/certvalid') return 'mutual TLS - any node with a certificate from otp\'s authority';
+  if (d.auth === 'anon') return 'TLS one way - otp checks isemon, isemon checks nobody';
+  return d.auth || '';
+}
+function otUntil(c) {
+  if (!c || !c.until) return '';
+  var days = c.until_t ? daysLeft(c.until_t) : null;
+  var words = c.until_t ? stamp(c.until_t) : c.until;
+  if (days === null) return words;
+  var cls = days < 0 ? 'ot-bad' : (days < 60 ? 'ot-warn' : '');
+  var said = days < 0 ? words + ' - it has run out' : (days < 60 ? words + ' - ' + days + ' days left' : words);
+  return el('span', cls, said);
+}
+function drawOtpTls() {
+  var host = $('ot-host');
+  if (!host || !OT.d) return;
+  var keepOpen = !!(host.querySelector('details.fold[open]'));
+  clear(host);
+  var d = OT.d, c = d.cert || {}, kept = d.kept || {}, last = d.last || {};
+  var changing = otChanging();
+  if (!d.helper) {
+    host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet '
+      + '(isemon-web.path): run ./install.sh --upgrade from the 1.10.245 package (or later) once. '
+      + 'Until then the encrypted receiving is neither read nor changed here.'));
+  }
+  if (changing) {
+    host.appendChild(el('p', 'note', 'Root is putting it in - a few seconds, a minute when rsyslog-gnutls has to be installed first.'));
+  } else if (d.error) {
+    var bad = el('div', 'note bad');
+    bad.appendChild(el('b', '', 'Root said:'));
+    bad.appendChild(noI18n(el('span', 'mono', d.error)));
+    host.appendChild(bad);
+  } else if (last.ok && last.at && Date.now() / 1000 - last.at < 900) {
+    var good = el('div', 'note good');
+    good.appendChild(el('b', '', last.do === 'off' ? 'Switched off.' : 'Done.'));
+    if ((d.said || []).length) {
+      var ul = el('ul');
+      d.said.forEach(function (x) { ul.appendChild(noI18n(el('li', '', x))); });
+      good.appendChild(ul);
+    }
+    host.appendChild(good);
+  }
+  /* The state, and the facts. */
+  var hd = el('div', 'pw-head');
+  var tone = !d.read ? '' : (d.on ? (d.listening === false || (d.trouble || []).length ? 'warn' : 'ok') : '');
+  hd.appendChild(el('span', 'dot' + (tone ? ' ' + tone : '')));
+  hd.appendChild(noI18n(el('b', '', location.hostname || 'this machine')));
+  if (!d.read) hd.appendChild(el('span', 'tag dim', d.helper ? 'reading…' : 'not read'));
+  else if (d.on && d.mine) hd.appendChild(el('span', 'tag ok', 'on - isemon\'s'));
+  else if (d.on) hd.appendChild(el('span', 'tag warn', 'on - set up by hand'));
+  else hd.appendChild(el('span', 'tag dim', 'off'));
+  if (changing) hd.appendChild(el('span', 'tag info', 'being changed…'));
+  host.appendChild(hd);
+  var state = !d.read ? '' : (d.on ? (d.mine ? 'On - set up by isemon' : 'On - set up by hand, not by isemon') : 'Off');
+  var peers = !d.on ? '' : (d.auth === 'x509/name' ? noI18n(el('span', 'mono', (d.peers || []).join(', ')))
+    : (d.auth === 'x509/certvalid' ? 'any node with a certificate from otp\'s authority'
+      : (d.auth === 'anon' ? 'anybody - isemon checks nobody' : '')));
+  var names = (c.names || []).slice();
+  if (c.cn) names.unshift(c.cn);
+  var fw = '';
+  if (d.on) {
+    if (d.fw === 'firewalld') fw = d.fw_open === true ? 'firewalld lets it in'
+      : (d.fw_open === false ? el('span', 'ot-warn', 'firewalld does not let it in') : 'unknown');
+    else if (d.fw === 'iptables') fw = 'isemon\'s firewall lets the log ports in from the log senders - see Settings → Firewall';
+    else fw = 'unknown';
+  }
+  var plain = (d.plain || []).map(function (p) { return p.proto + '/' + p.port + (p.file ? ' (' + p.file + ')' : ''); });
+  var lastWords = '';
+  if (kept.at) {
+    lastWords = (OT_DID[kept.do] || 'changed') + ' by ' + (kept.by || '?') + ', ' + ago(kept.at)
+      + (kept.how && OT_HOW[kept.how] && kept.do !== 'off' ? ' - ' + OT_HOW[kept.how] : '');
+  }
+  host.appendChild(netFacts([
+    ['State', state],
+    ['Port and mode', d.on && d.port ? d.port + '/tcp, ' + otMode(d) : ''],
+    ['Nodes allowed', peers],
+    ['isemon\'s certificate', c.subject ? noI18n(el('span', 'mono', names.length ? names.join(', ') : c.subject)) : (d.read ? 'none here' : '')],
+    ['Issued by', c.issuer ? noI18n(el('span', '', String(c.issuer).replace(/^CN=/, ''))) : ''],
+    ['Valid until', otUntil(c)],
+    ['Authority trusted for the nodes', (d.ca || []).length
+      ? noI18n(el('span', '', d.ca.map(function (x) { return String(x.subject || '?').replace(/^CN=/, ''); }).join('; ')))
+      : (d.on && d.auth !== 'anon' ? el('span', 'ot-warn', 'none') : '')],
+    ['Listening', !d.on ? '' : (d.listening === true ? el('span', 'ot-good', 'yes')
+      : (d.listening === false ? el('span', 'ot-bad', 'no') : 'unknown'))],
+    ['Firewall', fw],
+    ['rsyslog', d.version ? 'rsyslog ' + d.version + (d.driver_there ? ', TLS by ' + d.driver_there
+      : ', no TLS driver yet - rsyslog-gnutls is installed with the first setup') : ''],
+    ['Plain receiving', plain.length ? noI18n(el('span', 'mono', plain.join(', ') + ' - kept as it is')) : (d.read ? 'none found' : '')],
+    ['Last change', lastWords],
+    ['Read', d.at ? ago(d.at) : 'not yet']
+  ]));
+  if ((d.trouble || []).length) {
+    var more = el('details', 'fold');
+    var sum = el('summary', '', 'what rsyslog said about TLS lately');
+    sum.appendChild(el('span', 'n', String(d.trouble.length)));
+    more.appendChild(sum);
+    more.appendChild(noI18n(el('pre', 'lines', d.trouble.join('\n'))));
+    if (keepOpen) more.open = true;
+    host.appendChild(more);
+  }
+  /* What can be done. */
+  var row = el('div', 'btnrow');
+  var off = !d.helper || changing;
+  var setup = cmdButton('Set up…', 'lock', 'primary');
+  explain(setup, 'Where isemon\'s certificate comes from - the file otp made, one made here, or one pasted - and which of otp\'s nodes may send.');
+  setup.disabled = off;
+  setup.onclick = function () { otWizard(); };
+  row.appendChild(setup);
+  if (d.on) {
+    var ch = cmdButton('Change nodes…', 'gear', '');
+    explain(ch, 'The port, mutual TLS and the nodes that may send - the certificate stays as it is.');
+    ch.disabled = off;
+    ch.onclick = function () { otChange(); };
+    row.appendChild(ch);
+  }
+  if (d.own_ca && d.own_ca.pem) {
+    var ca = cmdButton('isemon\'s authority', 'shield', '');
+    explain(ca, 'The certificate of the authority that made isemon\'s certificate here - to paste into otp.');
+    ca.onclick = function () { otShowCa(); };
+    row.appendChild(ca);
+  }
+  var again = cmdButton('Read again', 'refresh', '');
+  again.disabled = !d.helper;
+  again.onclick = function () {
+    busy(again, true);
+    api('otptls', {action: 'refresh'}).then(function () { toast('asked again'); otAsked(); })
+      .catch(function (e) { busy(again, false); oops(e); });
+  };
+  row.appendChild(again);
+  if (d.on) {
+    var sw = cmdButton('Switch off…', 'forget', 'danger');
+    sw.disabled = off;
+    sw.onclick = function () { otOff(); };
+    row.appendChild(sw);
+  }
+  host.appendChild(row);
+  if (d.on && d.mine) {
+    host.appendChild(el('p', 'btnhelp', 'Then, on otp - Settings → isemon → Encrypted sending:'));
+    var ol = el('ol', 'ot-then');
+    ol.appendChild(el('li', '', 'Try it on every node: each sends a test line here over TLS.'));
+    ol.appendChild(el('li', '', 'Switch over: the nodes send over TLS from then on. The plain input here stays for any node not switched over.'));
+    host.appendChild(ol);
+  }
+  explainWhatWasDrawn($('otptls-card'));
+}
+/* A change, asked: followed until root has done it. */
+function otSend(body, b) {
+  if (b) busy(b, true);
+  return api('otptls', body).then(function (x) {
+    toast(x.message, 'good');
+    otAsked();
+    return x;
+  }).catch(function (e) { if (b) busy(b, false); throw e; });
+}
+function otOff() {
+  confirmThen('Switch the encrypted receiving off',
+    'rsyslog stops taking otp\'s lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp\'s nodes back to plain sending first, or their lines stop arriving.',
+    'Switch it off', function () { otSend({action: 'off'}).catch(oops); }, true);
+}
+/* isemon's own authority, to paste into otp. */
+function otShowCa() {
+  var ca = (OT.d && OT.d.own_ca) || {};
+  if (!ca.pem) return;
+  modal('isemon\'s authority', function (body) {
+    var box = el('div', 'sk-made ot-wiz');
+    box.appendChild(el('p', 'note', 'isemon\'s certificate was made here by an authority of this machine\'s own. otp checks isemon by it: paste it into otp - Settings → isemon → Encrypted sending → isemon\'s certificate → "isemon has one from its own CA".'));
+    var area = noI18n(el('textarea', 'wr-in mono'));
+    area.rows = 10; area.readOnly = true; area.value = ca.pem; area.spellcheck = false;
+    box.appendChild(area);
+    var row = el('div', 'btnrow');
+    var dl = cmdButton('Download isemon-ca.crt', 'download', 'primary');
+    dl.onclick = function () { saveText('isemon-ca.crt', ca.pem); };
+    var cp = cmdButton('Copy it', 'copy', '');
+    cp.onclick = function () { copyText(ca.pem, 'isemon\'s authority is on the clipboard'); };
+    row.appendChild(dl); row.appendChild(cp);
+    box.appendChild(row);
+    box.appendChild(netFacts([
+      ['The authority', noI18n(el('span', '', String(ca.subject || '').replace(/^CN=/, '')))],
+      ['Valid until', otUntil(ca)],
+      ['SHA-256', ca.fp ? noI18n(el('span', 'mono small', ca.fp)) : '']
+    ]));
+    body.appendChild(box);
+  }, [{words: 'Close', close: true}], 'medium');
+}
+/* A PEM box with a button that reads it from a file. */
+function otPemField(words, value, placeholder, help, onchange) {
+  var area = noI18n(rbArea(value, placeholder));
+  area.rows = 5;
+  area.oninput = function () { onchange(area.value); };
+  var f = wrField(words, area, help);
+  var row = el('div', 'ot-pem-row');
+  var pick = cmdButton('Read a file…', 'upload', 'small');
+  var input = el('input'); input.type = 'file'; input.hidden = true;
+  input.accept = '.pem,.crt,.cer,.key,.txt';
+  pick.onclick = function () { input.click(); };
+  input.onchange = function () {
+    var fl = input.files && input.files[0];
+    input.value = '';
+    if (!fl) return;
+    if (fl.size > 200000) { toast('that file is far bigger than a certificate', 'warn'); return; }
+    fl.text().then(function (t) { area.value = t.trim(); onchange(area.value); });
+  };
+  row.appendChild(pick); row.appendChild(input);
+  f.appendChild(row);
+  return f;
+}
+/* The port, mutual TLS, the nodes and otp's authority: the wizard's last
+   step, and Change nodes… */
+function otSettings(body, s, caToo, caHelp) {
+  var port = wrText(String(s.port || 6514), '6514', 'mono');
+  port.oninput = function () { s.port = port.value; };
+  body.appendChild(wrField('Port', port, 'TCP; otp sends to 6514 unless told otherwise. Not 514 - that one is the plain logs\'.'));
+  var caBox = null;
+  var mu = wrSwitch(s.mutual, function (v) { s.mutual = v; if (caBox) caBox.hidden = !v; nodes.hidden = !v; });
+  body.appendChild(wrField('Mutual TLS - isemon takes otp\'s nodes only', mu,
+    'Off, otp still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.'));
+  var area = noI18n(rbArea(s.peers, 'otp1.example.net\notp2.example.net'));
+  area.rows = 3;
+  area.oninput = function () { s.peers = area.value; };
+  var nodes = wrField('Nodes allowed', area, 'The names in the nodes\' certificates, one per line. Empty: any node with a certificate from otp\'s authority.');
+  nodes.hidden = !s.mutual;
+  body.appendChild(nodes);
+  if (caToo) {
+    caBox = otPemField('otp\'s authority', s.otpCa, '-----BEGIN CERTIFICATE-----\n…\n-----END CERTIFICATE-----',
+      caHelp, function (v) { s.otpCa = v; });
+    caBox.hidden = !s.mutual;
+    body.appendChild(caBox);
+  }
+}
+function otPeers(text) {
+  return String(text || '').split(/[\s,;]+/).filter(Boolean).join(' ');
+}
+/* Change nodes…: the certificate stays. */
+function otChange() {
+  var d = OT.d || {};
+  var s = {port: d.port || 6514, mutual: d.auth === 'x509/name' || d.auth === 'x509/certvalid',
+           peers: (d.peers || []).join('\n'), otpCa: ''};
+  var said;
+  modal('Change the nodes', function (body) {
+    var box = el('div', 'ot-wiz');
+    box.appendChild(el('p', 'note', 'Which of otp\'s nodes may send, on which port. isemon\'s certificate stays as it is.'));
+    otSettings(box, s, true, 'Only to replace the authority there now' + ((d.ca || []).length ? '' : ' - none is there yet, and mutual TLS needs one') + '. otp → High availability → the cluster\'s authority, or ca.pem from the file otp made.');
+    said = el('div', 'note bad'); said.hidden = true;
+    box.appendChild(said);
+    body.appendChild(box);
+  }, [{words: 'Cancel', close: true}, {words: 'Change it', cls: 'primary', icon: 'save', go: function (b) {
+    var q = {action: 'set', port: Number(s.port) || 0, mutual: !!s.mutual, peers: s.mutual ? otPeers(s.peers) : ''};
+    if (s.mutual && /BEGIN CERTIFICATE/.test(s.otpCa || '')) q.otp_ca = s.otpCa;
+    otSend(q, b).then(function () { closeModal(); }).catch(function (e) {
+      said.hidden = false; said.textContent = String(e && e.message || e);
+    });
+  }}], 'medium');
+}
+/* ---- Set up…: a wizard of three steps ----------------------------------- */
+var OT_WIZ_TITLE = 'Set up encrypted receiving';
+function otWizard() {
+  var d = OT.d || {};
+  OT.wiz = {step: 1, src: '', opened: null, pass: '', zip: '', zipName: '',
+            names: (d.suggest || []).join('\n'), cert: '', key: '', chain: '',
+            port: d.port || 6514, mutual: true, peers: (d.peers || []).join('\n'), otpCa: ''};
+  otWizStep(1);
+}
+function otWizForget() {
+  var w = OT.wiz;
+  if (!w || w.redrawing) return;
+  /* A key pasted, a passphrase typed: gone from the page when the popup closes. */
+  w.key = ''; w.pass = ''; w.zip = ''; w.cert = ''; w.chain = '';
+  OT.wiz = null;
+}
+function otWizStep(n) {
+  var w = OT.wiz;
+  if (!w) return;
+  w.step = n;
+  var buttons = [];
+  var said;
+  var build = function (body) {
+    var box = el('div', 'ot-wiz');
+    said = el('div', 'note bad'); said.hidden = true;
+    if (n === 1) otWizSource(box);
+    else if (n === 2 && w.src === 'otp') otWizFile(box);
+    else if (n === 2 && w.src === 'made') otWizMade(box);
+    else if (n === 2) otWizGiven(box);
+    else otWizSettings(box);
+    box.appendChild(said);
+    body.appendChild(box);
+  };
+  var fail = function (e) { if (said) { said.hidden = false; said.textContent = String(e && e.message || e); } };
+  if (n > 1) buttons.push({words: 'Back', icon: 'prev', left: true, go: function () { otWizStep(n - 1); }});
+  buttons.push({words: 'Cancel', close: true});
+  if (n === 2 && w.src === 'otp' && !w.opened) {
+    buttons.push({words: 'Open', cls: 'primary', icon: 'unfold', go: function (b) {
+      if (!w.zip) { fail('choose the file first - isemon-tls.zip'); return; }
+      busy(b, true);
+      api('otptls', {action: 'open', zip: w.zip, passphrase: w.pass}).then(function (x) {
+        w.opened = x; w.pass = ''; w.zip = '';
+        var cf = x.conf || {};
+        w.port = cf.port || 6514; w.mutual = !!cf.mutual; w.peers = (cf.peers || []).join('\n');
+        otWizStep(2);
+      }).catch(function (e) { busy(b, false); fail(e); });
+    }});
+  } else if (n === 2) {
+    buttons.push({words: 'Next', cls: 'primary', icon: 'next', go: function () {
+      if (w.src === 'made' && !otPeers(w.names)) { fail('at least one name or address otp\'s nodes reach this machine by'); return; }
+      if (w.src === 'given' && !/BEGIN CERTIFICATE/.test(w.cert)) { fail('the certificate: PEM, -----BEGIN CERTIFICATE-----'); return; }
+      if (w.src === 'given' && (!/PRIVATE KEY-----/.test(w.key) || /ENCRYPTED/.test(w.key))) { fail('the key: a PEM private key without a passphrase'); return; }
+      otWizStep(3);
+    }});
+  } else if (n === 3) {
+    buttons.push({words: 'Set it up', cls: 'primary', icon: 'lock', go: function (b) {
+      var q = {port: Number(w.port) || 0, mutual: !!w.mutual, peers: w.mutual ? otPeers(w.peers) : ''};
+      if (w.src === 'otp') { q.action = 'apply'; q.token = (w.opened || {}).token; }
+      else if (w.src === 'made') { q.action = 'make'; q.names = otPeers(w.names); q.otp_ca = w.mutual ? w.otpCa : ''; }
+      else { q.action = 'apply'; q.cert = w.cert; q.key = w.key; q.chain = w.chain; q.ca = w.mutual ? w.otpCa : ''; }
+      if (w.mutual && w.src !== 'otp' && !/BEGIN CERTIFICATE/.test(w.otpCa || '')) {
+        fail('mutual TLS: otp\'s authority is needed, to know the nodes by - or switch mutual TLS off');
+        return;
+      }
+      var made = w.src === 'made';
+      otSend(q, b).then(function () { OT.ownCa = made; closeModal(); }).catch(fail);
+    }});
+  }
+  w.redrawing = true;
+  try { modal(OT_WIZ_TITLE, build, buttons, 'medium'); } finally { w.redrawing = false; }
+  MODAL_CLOSE = otWizForget;
+}
+function otWizSource(box) {
+  var w = OT.wiz;
+  box.appendChild(el('p', 'note', 'Step 1 of 3 - where isemon\'s certificate comes from. otp checks it every time a node sends.'));
+  var g = el('div', 'rb-kinds');
+  [['otp', 'archive', 'The file otp made', 'isemon-tls.zip, from otp → Settings → isemon → Encrypted sending → Encrypt… → "otp makes isemon a certificate" → Make the file for isemon… It carries otp\'s authority and the nodes too.'],
+   ['made', 'key', 'Made here', 'isemon makes an authority of its own and a certificate from it. Its authority is then pasted into otp as "isemon has one from its own CA".'],
+   ['given', 'upload', 'Paste a certificate', 'One from your own CA or a public one: the certificate, its key without a passphrase, and the chain if there is one.']
+  ].forEach(function (k) {
+    var b = el('button', 'rb-kind-tile' + (w.src === k[0] ? ' on' : ''));
+    b.type = 'button';
+    var ic = el('span', 'rb-kind' + (k[0] === 'otp' ? ' k-sftp' : ''));
+    ic.innerHTML = iconMarkup(k[1], 20);
+    b.appendChild(ic);
+    var t = el('b', '', k[2]);
+    if (k[0] === 'otp') { t.appendChild(document.createTextNode(' ')); t.appendChild(el('span', 'tag ok', 'recommended')); }
+    b.appendChild(t);
+    b.appendChild(el('span', 'small muted', k[3]));
+    b.onclick = function () {
+      if (w.src !== k[0]) { w.opened = null; w.mutual = true; }
+      w.src = k[0];
+      otWizStep(2);
+    };
+    g.appendChild(b);
+  });
+  box.appendChild(g);
+}
+function otWizFile(box) {
+  var w = OT.wiz;
+  if (w.opened) {
+    var x = w.opened, c = x.cert || {}, ca = x.ca || {}, cf = x.conf || {};
+    box.appendChild(el('p', 'note good', 'Step 2 of 3 - the file is open. Its key stays on the server and goes to root once; nothing of it is kept in the database.'));
+    var p = el('div', 'subpanel');
+    p.appendChild(netFacts([
+      ['isemon\'s certificate', noI18n(el('span', 'mono', (c.names || []).length ? c.names.join(', ') : (c.subject || '')))],
+      ['Issued by', noI18n(el('span', '', String(c.issuer || '').replace(/^CN=/, '')))],
+      ['Valid until', c.until || ''],
+      ['otp\'s authority', noI18n(el('span', '', String(ca.subject || '').replace(/^CN=/, '')))],
+      ['Port', String(cf.port || 6514), true],
+      ['Mutual TLS', cf.mutual ? 'yes' : 'no'],
+      ['Nodes', (cf.peers || []).length ? noI18n(el('span', 'mono', cf.peers.join(', '))) : (cf.mutual ? 'any node with a certificate from otp\'s authority' : '')]
+    ]));
+    box.appendChild(p);
+    box.appendChild(el('p', 'btnhelp', 'What otp chose is filled in on the next step; it can be changed there.'));
+    return;
+  }
+  box.appendChild(el('p', 'note', 'Step 2 of 3 - the file otp made for isemon (isemon-tls.zip), and the passphrase otp showed when it made it. It is opened on the server; the key in it is never sent back to the page.'));
+  var f = el('div', 'ot-file');
+  var pick = cmdButton('Choose the file…', 'upload', '');
+  var name = noI18n(el('span', '', w.zipName || 'no file chosen'));
+  var input = el('input'); input.type = 'file'; input.hidden = true; input.accept = '.zip,application/zip';
+  pick.onclick = function () { input.click(); };
+  input.onchange = function () {
+    var fl = input.files && input.files[0];
+    input.value = '';
+    if (!fl) return;
+    if (fl.size > 1048576) { toast('that file is far bigger than the one otp makes', 'warn'); return; }
+    var r = new FileReader();
+    r.onload = function () {
+      var arr = new Uint8Array(r.result), bin = '';
+      for (var i = 0; i < arr.length; i += 8192) bin += String.fromCharCode.apply(null, arr.subarray(i, i + 8192));
+      w.zip = btoa(bin); w.zipName = fl.name;
+      name.textContent = fl.name;
+    };
+    r.onerror = function () { toast(fl.name + ' could not be read', 'bad'); };
+    r.readAsArrayBuffer(fl);
+  };
+  f.appendChild(pick); f.appendChild(name); f.appendChild(input);
+  box.appendChild(wrField('The file', f));
+  var pp = rbMask(w.pass, '');
+  pp.oninput = function () { w.pass = pp.value; };
+  box.appendChild(wrField('Its passphrase', pp, 'The one otp showed beside the file. Used here to open it, and not kept.'));
+}
+function otWizMade(box) {
+  var w = OT.wiz;
+  box.appendChild(el('p', 'note', 'Step 2 of 3 - isemon makes an authority of its own and a certificate from it. Afterwards its authority is shown, to paste into otp.'));
+  var area = noI18n(rbArea(w.names, 'isemon.example.net\n192.0.2.10'));
+  area.rows = 4;
+  area.oninput = function () { w.names = area.value; };
+  box.appendChild(wrField('The names', area, 'The names and addresses otp\'s nodes reach this machine by - "isemon\'s address" in otp\'s wizard - one per line.'));
+}
+function otWizGiven(box) {
+  var w = OT.wiz;
+  box.appendChild(el('p', 'note', 'Step 2 of 3 - a certificate from your own CA or a public one, with the names otp\'s nodes reach this machine by.'));
+  box.appendChild(otPemField('The certificate', w.cert, '-----BEGIN CERTIFICATE-----\n…\n-----END CERTIFICATE-----', '', function (v) { w.cert = v; }));
+  box.appendChild(otPemField('Its key', w.key, '-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----', 'Without a passphrase. It goes to root once and is kept only in rsyslog\'s folder.', function (v) { w.key = v; }));
+  box.appendChild(otPemField('The chain', w.chain, '-----BEGIN CERTIFICATE-----\n…\n-----END CERTIFICATE-----', 'Optional: the intermediate certificates between it and the root.', function (v) { w.chain = v; }));
+}
+function otWizSettings(box) {
+  var w = OT.wiz;
+  box.appendChild(el('p', 'note', 'Step 3 of 3 - which of otp\'s nodes may send, and on which port. The plain input on 514 stays as it is.'));
+  otSettings(box, w, w.src !== 'otp', 'Needed with mutual TLS: otp → High availability → the cluster\'s authority, or ca.pem from the file otp made.');
+}
+/* Opened straight at this pane, it was switched to before this block was
+   read: drawn now. */
+setTimeout(function () { if (paneLive('otp')) loadOtpTls(); }, 0);
 </script>
 </body>
 </html>

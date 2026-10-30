@@ -432,7 +432,10 @@ try:
     ok('the pane under Server, for a full admin',
        'class="admin-only" data-pane="sshkeys" data-icon="key"' in srv and
        '>SSH keys of root</button>' in srv)
-    ok('nothing of a cluster on it', any(w in php[php.index('Settings → SSH keys of root'):]
+    # Up to the otp logs over TLS (1.10.245), whose otp words are otp's own.
+    sk_text = php[php.index('Settings → SSH keys of root'):]
+    sk_text = sk_text.split('otptls.ask, answered in otptls.json')[0]
+    ok('nothing of a cluster on it', any(w in sk_text
                                          for w in ('both nodes', 'every node', 'Onto the nodes',
                                                    'Put it on again')), False)
     doc = (ROOT / 'docs' / 'ssh-keys-of-root.md').read_text()

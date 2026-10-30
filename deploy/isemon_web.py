@@ -44,8 +44,13 @@ in osup.ans - a look for updates or the update itself, started as a unit of
 its own (isemon_web.py --os-job ID check|upgrade) that writes how far it is
 into osup.json (see osup_part).
 
-  isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask and
-                           osup.ask (as root, from systemd)
+  isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask,
+                           osup.ask and otptls.ask (as root, from systemd)
+The otp logs over TLS (1.10.245): asked in otptls.ask, answered in
+otptls.json - rsyslog's encrypted input for otp's nodes, its certificate and
+key in /etc/pki/rsyslog/otp/ and /etc/rsyslog.d/10-otp-tls.conf, beside the
+plain input, which is never touched (see otptls_part).
+
   isemon_web.py --os-job ID check|upgrade
                            a look for updates or the update (started by osup.ask)
   isemon_web.py --status   what is in place here (JSON)
@@ -2418,6 +2423,571 @@ def osup_job(ident, kind):
     return 0
 
 
+# ---- the otp logs over TLS (1.10.245; for otp's Settings → isemon → Encrypted sending) ----
+# Asked in otptls.ask: how it is (read), the receiver put in with a
+# certificate given (apply: ca, cert, key - from the file otp made, or
+# pasted), one made here by an authority of this machine's own (make), the
+# nodes or the port changed with the certificate as it is (set), or taken
+# away (off); answered in otptls.json. What is written is root's alone:
+# /etc/pki/rsyslog/otp/ (0750; the keys 0600) and one rsyslog file,
+# /etc/rsyslog.d/10-otp-tls.conf, written here whole - never a file taken
+# from otp's zip as it is: the nodes' names and the mode are read from it on
+# the daemon's side and checked again here. rsyslog is asked (rsyslogd -N1)
+# before it is restarted, and every file is put back as it was when it says
+# no or does not listen after. The plain input on 514 is never touched: a
+# node not switched over yet goes on sending there.
+OTPTLS_ASK = 'otptls.ask'
+OTPTLS_FILE = 'otptls.json'
+OTPTLS_CONF = os.environ.get('ISEMON_OTPTLS_CONF', '/etc/rsyslog.d/10-otp-tls.conf')
+OTPTLS_DIR = os.environ.get('ISEMON_OTPTLS_DIR', '/etc/pki/rsyslog/otp')
+RSYSLOGD = os.environ.get('ISEMON_RSYSLOGD', 'rsyslogd')
+RSYSLOG_MODDIRS = os.environ.get('ISEMON_RSYSLOG_MODDIR', '/usr/lib64/rsyslog:/usr/lib/rsyslog:'
+                                 '/usr/lib/x86_64-linux-gnu/rsyslog:/usr/lib/aarch64-linux-gnu/rsyslog')
+OTPTLS_MARK = '# isemon: the otp logs over TLS'
+OTPTLS_FRESH_S = 600
+OTPTLS_NAME_RE = re.compile(r'^(?=.{1,253}\Z)(\*\.)?[A-Za-z0-9]([A-Za-z0-9_-]{0,62})'
+                            r'(\.[A-Za-z0-9]([A-Za-z0-9_-]{0,62}))*\.?\Z')
+OTPTLS_DRIVERS = {'gtls': ('lmnsd_gtls.so', 'rsyslog-gnutls'),
+                  'ossl': ('lmnsd_ossl.so', 'rsyslog-openssl')}
+
+
+def otptls_path(name):
+    return os.path.join(OTPTLS_DIR, name)
+
+
+def rsyslog_conf_files():
+    files = []
+    for one in RSYSLOG_FILES.split(':'):
+        if os.path.isdir(one):
+            files += sorted(os.path.join(one, n) for n in os.listdir(one) if n.endswith('.conf'))
+        elif os.path.isfile(one):
+            files.append(one)
+    return files
+
+
+def rsyslog_text(path):
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            text = f.read(1 << 20)
+    except OSError:
+        return ''
+    return '\n'.join(l for l in text.split('\n') if not l.strip().startswith('#'))
+
+
+def otptls_others():
+    """What the rest of rsyslog's files already say: whether imtcp is loaded,
+    whether the default TLS files are set, and the ports listened on."""
+    mine = os.path.realpath(OTPTLS_CONF)
+    out = {'imtcp': [], 'global': [], 'ports': []}
+    for path in rsyslog_conf_files():
+        if os.path.realpath(path) == mine:
+            continue
+        text = rsyslog_text(path)
+        if re.search(r'module\s*\(\s*load\s*=\s*"imtcp"', text) or \
+                re.search(r'(?m)^\s*\$ModLoad\s+imtcp\b', text):
+            out['imtcp'].append(path)
+        if re.search(r'DefaultNetstreamDriver(CAFile|CertFile|KeyFile)', text):
+            out['global'].append(path)
+    for p in rsyslog_ports():
+        if os.path.realpath(os.path.join(os.path.dirname(OTPTLS_CONF), p['file'])) != mine:
+            out['ports'].append(p)
+    return out
+
+
+def rsyslog_version():
+    """(8, 2310) of `rsyslogd -v`, or None."""
+    try:
+        got = subprocess.run([RSYSLOGD, '-v'], capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    m = re.search(r'rsyslogd\s+(\d+)\.(\d+)', got.stdout or '')
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def otptls_driver():
+    """The stream driver there is here: gtls (rsyslog-gnutls, what otp's
+    README names) or ossl (rsyslog-openssl, which install.sh puts in)."""
+    dirs = [d for d in RSYSLOG_MODDIRS.split(':') if d]
+    for name, (lib, _) in OTPTLS_DRIVERS.items():
+        if any(os.path.exists(os.path.join(d, lib)) for d in dirs):
+            return name
+    return ''
+
+
+def otptls_driver_get(said):
+    got = otptls_driver()
+    if got or NO_SERVICES:
+        return got or 'gtls'
+    for pm, args in (('dnf', ['install', '-y']), ('apt-get', ['install', '-y'])):
+        if shutil.which(pm):
+            try:
+                r = subprocess.run([pm] + args + ['rsyslog-gnutls'],
+                                   capture_output=True, text=True, timeout=600)
+            except (OSError, subprocess.TimeoutExpired):
+                break
+            if r.returncode == 0:
+                said.append('rsyslog-gnutls installed')
+            break
+    got = otptls_driver()
+    if not got:
+        raise Refused('rsyslog has no TLS driver here: install rsyslog-gnutls (or '
+                      'rsyslog-openssl) and try again')
+    return got
+
+
+def otptls_names(text, what, most=64):
+    names = [n.strip().rstrip('.') for n in re.split(r'[\s,;]+', str(text or '')) if n.strip()]
+    if len(names) > most:
+        raise Refused('%s: %d at most' % (what, most))
+    for n in names:
+        try:
+            plain(n, 'address')
+            continue
+        except ValueError:
+            pass
+        if not OTPTLS_NAME_RE.match(n):
+            raise Refused('%s: %r is not a name' % (what, n[:80]))
+    return list(dict.fromkeys(names))
+
+
+def otptls_port(v):
+    try:
+        port = int(v or 6514)
+    except (TypeError, ValueError):
+        raise Refused('the port is a number')
+    if not 1 <= port <= 65535 or port == 514:
+        raise Refused('the port is 1 to 65535, and not 514 - that one is the plain logs\'')
+    return port
+
+
+def cert_facts(pem):
+    """What a certificate says of itself."""
+    out = openssl(['x509', '-noout', '-nameopt', 'RFC2253', '-subject', '-issuer', '-enddate',
+                   '-startdate', '-fingerprint', '-sha256', '-ext', 'subjectAltName'],
+                  'the certificate', pem)
+    f = {'subject': '', 'issuer': '', 'until': '', 'from': '', 'fp': '', 'names': []}
+    for line in out.splitlines():
+        line = line.strip()
+        for key, word in (('subject', 'subject='), ('issuer', 'issuer='), ('until', 'notAfter='),
+                          ('from', 'notBefore='), ('fp', 'sha256 Fingerprint=')):
+            if line.startswith(word):
+                f[key] = line[len(word):].strip()
+        if line.startswith(('DNS:', 'IP Address:', 'IP:')):
+            f['names'] += [x.strip().split(':', 1)[1] for x in line.split(',') if ':' in x]
+    try:
+        import calendar
+        f['until_t'] = calendar.timegm(time.strptime(f['until'].replace(' GMT', ''),
+                                                     '%b %d %H:%M:%S %Y'))
+    except ValueError:
+        f['until_t'] = 0
+    cn = re.search(r'(?:^|,)CN=([^,]+)', f['subject'])
+    if cn and cn.group(1) not in f['names']:
+        f['cn'] = cn.group(1)
+    return f
+
+
+def pem_certs(text):
+    return [m.group(0) + '\n' for m in re.finditer(
+        r'-----BEGIN CERTIFICATE-----[A-Za-z0-9+/=\s]+?-----END CERTIFICATE-----', text or '')]
+
+
+def otptls_state():
+    try:
+        with open(otptls_path('.isemon.json')) as f:
+            got = json.load(f)
+        return got if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def otptls_conf_now():
+    """The file there now: whether it is isemon's, and what it says."""
+    try:
+        with open(OTPTLS_CONF, encoding='utf-8', errors='replace') as f:
+            text = f.read(65536)
+    except FileNotFoundError:
+        return {'there': False}
+    except OSError as e:
+        return {'there': True, 'said': str(e)[:200]}
+    body = '\n'.join(l for l in text.split('\n') if not l.strip().startswith('#'))
+    port = re.search(r'port\s*=\s*"([0-9]{1,5})"', body)
+    auth = re.search(r'AuthMode\s*=\s*"([a-z0-9/]+)"', body, re.I)
+    drv = re.search(r'StreamDriver\.Name\s*=\s*"([a-z]+)"', body, re.I)
+    peers = re.search(r'PermittedPeer\s*=\s*\[([^\]]*)\]', body, re.I) or \
+        re.search(r'PermittedPeer\s*=\s*"([^"]*)"', body, re.I)
+    return {'there': True, 'mine': OTPTLS_MARK in text,
+            'port': int(port.group(1)) if port else 0,
+            'auth': auth.group(1) if auth else '', 'driver': drv.group(1) if drv else '',
+            'peers': re.findall(r'"([^"]+)"', peers.group(0)) if peers else []}
+
+
+def listening(port):
+    if NO_SERVICES or not shutil.which('ss'):
+        return None
+    got = subprocess.run(['ss', '-Hltnp', 'sport = :%d' % port], capture_output=True, text=True)
+    return bool(got.stdout.strip()) if got.returncode == 0 else None
+
+
+def rsyslog_trouble(minutes=30):
+    """What rsyslog said lately about TLS - the cause of most of what goes wrong."""
+    if NO_SERVICES or not shutil.which('journalctl'):
+        return []
+    got = subprocess.run(['journalctl', '-u', 'rsyslog', '--since', '-%dmin' % minutes,
+                          '--no-pager', '-o', 'short-iso', '-n', '400'],
+                         capture_output=True, text=True, timeout=30)
+    hit = [l for l in got.stdout.splitlines() if re.search(
+        r'gtls|gnutls|ossl|openssl|tls|certificate|permitted|peer|netstream|imtcp|6514',
+        l, re.I) and not l.startswith('-- ')]
+    return [l[:300] for l in hit[-8:]]
+
+
+def fw_port_open(port):
+    """Whether firewalld lets the port in (None: not firewalld)."""
+    if fw_backend() != 'firewalld':
+        return None
+    got = subprocess.run(['firewall-cmd', '--query-port=%d/tcp' % port], capture_output=True)
+    return got.returncode == 0
+
+
+def otptls_read():
+    conf = otptls_conf_now()
+    st = otptls_state()
+    out = {'conf': conf, 'file': OTPTLS_CONF, 'dir': OTPTLS_DIR, 'version': '',
+           'driver_there': otptls_driver(), 'how': st.get('how') or '',
+           'fw': fw_backend(), 'others': []}
+    v = rsyslog_version()
+    out['version'] = '%d.%d' % v if v else ''
+    try:
+        out['others'] = [p for p in otptls_others()['ports']]
+    except Exception:                                   # noqa: BLE001
+        pass
+    for key, name in (('cert', 'isemon.crt'), ('ca', 'ca.pem'), ('own_ca', 'isemon-ca.crt')):
+        try:
+            with open(otptls_path(name)) as f:
+                pem = f.read(400000)
+            certs = pem_certs(pem)
+            if key == 'ca':
+                out['ca'] = [cert_facts(c) for c in certs[:6]]
+            else:
+                out[key] = cert_facts(certs[0]) if certs else {}
+                if key == 'own_ca':
+                    out['own_ca']['pem'] = certs[0] if certs else ''
+        except (OSError, Refused):
+            pass
+    if conf.get('there') and conf.get('port'):
+        out['listening'] = listening(conf['port'])
+        out['fw_open'] = fw_port_open(conf['port'])
+    out['trouble'] = rsyslog_trouble()
+    return out
+
+
+def otptls_text(port, auth, peers, driver, per_input, load):
+    lines = [
+        '# %s' % OTPTLS_CONF,
+        OTPTLS_MARK + ' - written by isemon (Settings → The OTP logs →',
+        '# Encrypted receiving). Changed there, not here: a hand edit is written over',
+        '# the next time it is set there. The plain input on 514 is not this file\'s:',
+        '# a node that still sends plain goes on arriving there.',
+        '#',
+        '# What arrives here is filed by the same rule as what arrives plain',
+        '# (11-otp.conf): /var/log/remote/<host>/totp.cgi.log and radius-detail.log.',
+        '']
+    files = ('CAFile', otptls_path('ca.pem')), ('CertFile', otptls_path('isemon.crt')), \
+        ('KeyFile', otptls_path('isemon.key'))
+    if not per_input:
+        lines += ['global('] + ['  DefaultNetstreamDriver%s="%s"' % f for f in files] + [')']
+    if load:
+        lines.append('module(load="imtcp")')
+    inp = ['input(type="imtcp" port="%d" name="otp-tls"' % port,
+           '      StreamDriver.Name="%s"' % driver,
+           '      StreamDriver.Mode="1"',
+           '      StreamDriver.AuthMode="%s"' % auth]
+    if per_input:
+        inp += ['      StreamDriver.%s="%s"' % f for f in files]
+    if auth == 'x509/name':
+        inp.append('      PermittedPeer=[%s]' % ', '.join('"%s"' % p for p in peers))
+    inp[-1] += ')'
+    return '\n'.join(lines + inp) + '\n'
+
+
+def otptls_ext(names):
+    alt = []
+    for n in names:
+        try:
+            plain(n, 'address')
+            alt.append('IP:' + n)
+        except ValueError:
+            alt.append('DNS:' + n)
+    return ('basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,'
+            'keyEncipherment\nextendedKeyUsage=serverAuth,clientAuth\nsubjectAltName=%s\n'
+            % ','.join(alt))
+
+
+def otptls_make(names, work):
+    """A certificate for these names from this machine's own authority - made
+    once, in OTPTLS_DIR, and kept: one made again is trusted by otp as it is.
+    Returns (cert, key, the authority's certificate)."""
+    ca_key, ca_crt = otptls_path('isemon-ca.key'), otptls_path('isemon-ca.crt')
+    os.makedirs(OTPTLS_DIR, mode=0o750, exist_ok=True)
+    if not (os.path.exists(ca_key) and os.path.exists(ca_crt)):
+        host = re.sub(r'[^A-Za-z0-9.-]', '', os.uname()[1])[:60] or 'isemon'
+        tk, tc = os.path.join(work, 'ca.key'), os.path.join(work, 'ca.crt')
+        openssl(['req', '-x509', '-newkey', 'rsa:3072', '-nodes', '-sha256', '-days', '3650',
+                 '-subj', '/CN=isemon %s - the otp logs' % host, '-keyout', tk, '-out', tc,
+                 '-addext', 'basicConstraints=critical,CA:TRUE,pathlen:0',
+                 '-addext', 'keyUsage=critical,keyCertSign,cRLSign'], 'the authority')
+        with open(tk) as f:
+            write_root(ca_key, f.read(), 0o600)
+        with open(tc) as f:
+            write_root(ca_crt, f.read(), 0o644)
+    k, csr, crt, ext = (os.path.join(work, n) for n in ('s.key', 's.csr', 's.crt', 's.ext'))
+    with open(ext, 'w') as f:
+        f.write(otptls_ext(names))
+    openssl(['req', '-new', '-newkey', 'rsa:3072', '-nodes', '-sha256', '-subj',
+             '/CN=%s' % names[0], '-keyout', k, '-out', csr], 'the key')
+    openssl(['x509', '-req', '-in', csr, '-CA', ca_crt, '-CAkey', ca_key, '-CAcreateserial',
+             '-CAserial', os.path.join(work, 'serial'), '-days', '825', '-sha256',
+             '-extfile', ext, '-out', crt], 'the certificate')
+    with open(crt) as f:
+        cert = f.read()
+    with open(k) as f:
+        key = f.read()
+    with open(ca_crt) as f:
+        own = f.read()
+    return cert, key, own
+
+
+def otptls_restart(port, said):
+    if NO_SERVICES:
+        return
+    got = subprocess.run(['systemctl', 'restart', 'rsyslog'], capture_output=True, text=True,
+                         timeout=120)
+    if got.returncode != 0:
+        raise Refused('rsyslog would not restart: %s' % (got.stderr or got.stdout).strip()[-300:])
+    if port:
+        end = time.time() + 12
+        while time.time() < end:
+            if listening(port) is not False:
+                said.append('rsyslog listens on %d/tcp' % port)
+                return
+            time.sleep(0.5)
+        raise Refused('rsyslog restarted but does not listen on %d/tcp: %s' % (
+            port, ' | '.join(rsyslog_trouble(2)[-3:]) or 'journalctl -u rsyslog says why'))
+
+
+def otptls_firewalld(port, add, st, said):
+    if fw_backend() != 'firewalld':
+        return
+    if add:
+        if fw_port_open(port):
+            return
+        for extra in ([], ['--permanent']):
+            subprocess.run(['firewall-cmd'] + extra + ['--add-port=%d/tcp' % port],
+                           capture_output=True)
+        st['fw_added'] = port
+        said.append('firewalld lets %d/tcp in' % port)
+    elif st.get('fw_added'):
+        for extra in ([], ['--permanent']):
+            subprocess.run(['firewall-cmd'] + extra + ['--remove-port=%d/tcp' % int(
+                st['fw_added'])], capture_output=True)
+        said.append('firewalld no longer lets %d/tcp in' % int(st['fw_added']))
+        st.pop('fw_added', None)
+
+
+def otptls_selinux(port, said):
+    if port == 6514 or NO_SERVICES or not shutil.which('semanage'):
+        return
+    got = subprocess.run(['getenforce'], capture_output=True, text=True) \
+        if shutil.which('getenforce') else None
+    if got is None or got.stdout.strip() == 'Disabled':
+        return
+    for how in ('-a', '-m'):
+        r = subprocess.run(['semanage', 'port', how, '-t', 'syslog_tls_port_t', '-p', 'tcp',
+                            str(port)], capture_output=True, text=True, timeout=120)
+        if r.returncode == 0:
+            said.append('SELinux lets rsyslog listen on %d/tcp' % port)
+            return
+
+
+def otptls_apply(r):
+    """The receiver put in - or changed (set), or taken away (off)."""
+    do = r.get('do')
+    said = []
+    v = rsyslog_version()
+    if do != 'off' and not NO_SERVICES and v is None:
+        raise Refused('rsyslog is not installed here (dnf install rsyslog)')
+    if do != 'off' and v is not None and v < (8, 2106):
+        raise Refused('rsyslog %d.%d cannot have an encrypted input beside the plain one: '
+                      '8.2106 or later is needed (AlmaLinux / RHEL 9)' % v)
+    per_input = v is None or v >= (8, 2108)
+    st = otptls_state()
+    now = otptls_conf_now()
+    paths = [OTPTLS_CONF, otptls_path('ca.pem'), otptls_path('isemon.crt'),
+             otptls_path('isemon.key'), otptls_path('.isemon.json')]
+    snap = snapshot(paths)
+    old_port = now.get('port') if now.get('there') else 0
+    # One set up by hand before: kept beside, once, never loaded again.
+    if now.get('there') and not now.get('mine') and \
+            not os.path.exists(OTPTLS_CONF + '.isemon-before'):
+        shutil.copy2(OTPTLS_CONF, OTPTLS_CONF + '.isemon-before')
+        said.append('the file there before is kept as %s.isemon-before' % OTPTLS_CONF)
+    restarted = False
+    try:
+        if do == 'off':
+            # The certificate and its key stay, to be switched on again.
+            try:
+                os.unlink(OTPTLS_CONF)
+            except FileNotFoundError:
+                pass
+            otptls_restart(0, said)
+            restarted = True
+            otptls_firewalld(old_port, False, st, said)
+            st.update(on=False, at=time.time())
+            if os.path.isdir(OTPTLS_DIR):
+                write_root(otptls_path('.isemon.json'), json.dumps(st), 0o600)
+            said.append('the encrypted input is taken away; the plain one is as it was')
+            return said
+        port = otptls_port(r.get('port'))
+        mutual = bool(r.get('mutual'))
+        peers = otptls_names(r.get('peers'), 'the nodes') if mutual else []
+        auth = 'x509/name' if peers else ('x509/certvalid' if mutual else 'anon')
+        others = otptls_others()
+        if any(int(p['port']) == port and p['proto'] == 'tcp' for p in others['ports']):
+            raise Refused('rsyslog listens on %d/tcp already (%s): choose another port' % (
+                port, ', '.join(sorted({p['file'] for p in others['ports']
+                                        if int(p['port']) == port}))))
+        if not per_input and others['global']:
+            raise Refused('rsyslog %d.%d takes the TLS files once for all of it, and %s sets '
+                          'them already: rsyslog 8.2108 or later takes them per input' % (
+                              v + (', '.join(others['global']),)))
+        os.makedirs(OTPTLS_DIR, mode=0o750, exist_ok=True)
+        os.chmod(OTPTLS_DIR, 0o750)
+        with tempfile.TemporaryDirectory(prefix='isemon-otptls-') as work:
+            if do == 'make':
+                names = otptls_names(r.get('names'), 'the names of this machine', 20)
+                if not names:
+                    raise Refused('the names the nodes reach this machine by: one at least')
+                cert, key, own = otptls_make(names, work)
+                trust = pem_certs(str(r.get('otp_ca') or ''))
+                if mutual and not trust:
+                    raise Refused('mutual TLS: otp\'s authority (its ca.pem) is needed, to '
+                                  'know the nodes by')
+                ca = ''.join(trust) + own
+                st.update(how='made', names=names, otp_ca=bool(trust))
+                said.append('a certificate made for %s, by this machine\'s own authority'
+                            % ', '.join(names))
+            elif do == 'apply':
+                got = pem_set(r.get('cert'), r.get('key'), r.get('chain'))
+                if not got:
+                    raise Refused('the certificate and its key')
+                cert, key = got['cert'] + got['chain'], got['key']
+                ca_text = str(r.get('ca') or '')
+                if ca_text.strip() and not CERT_RE.match(ca_text.strip()):
+                    raise Refused('the authority is not PEM (-----BEGIN CERTIFICATE-----)')
+                ca = ''.join(pem_certs(ca_text)) or ''.join(pem_certs(got['chain'])) or \
+                    pem_certs(cert)[0]
+                if mutual and not pem_certs(ca_text):
+                    raise Refused('mutual TLS: otp\'s authority (its ca.pem) is needed, to '
+                                  'know the nodes by')
+                st.update(how=str(r.get('how') or 'given')[:20], names=[],
+                          otp_ca=bool(pem_certs(ca_text)))
+            elif do == 'set':
+                if not (os.path.exists(otptls_path('isemon.crt')) and
+                        os.path.exists(otptls_path('isemon.key'))):
+                    raise Refused('there is no certificate here yet: set it up first')
+                cert = key = ca = None
+                extra = pem_certs(str(r.get('otp_ca') or ''))
+                if extra:
+                    with open(otptls_path('ca.pem')) as f:
+                        have = pem_certs(f.read())
+                    ca = ''.join(have + [c for c in extra if c not in have])
+                    st['otp_ca'] = True
+                if mutual and not st.get('otp_ca', True):
+                    raise Refused('mutual TLS: otp\'s authority (its ca.pem) is needed, to '
+                                  'know the nodes by - the certificate here was set up without '
+                                  'it')
+            else:
+                raise Refused('read, apply, make, set or off')
+            if cert is not None:
+                cert_facts(pem_certs(cert)[0])
+                write_root(otptls_path('isemon.key'), key, 0o600)
+                write_root(otptls_path('isemon.crt'), cert, 0o644)
+            if ca is not None:
+                write_root(otptls_path('ca.pem'), ca, 0o644)
+        driver = otptls_driver_get(said)
+        text = otptls_text(port, auth, peers, driver, per_input, not others['imtcp'])
+        write_root(OTPTLS_CONF, text, 0o644)
+        if shutil.which('restorecon') and not NO_SERVICES:
+            subprocess.run(['restorecon', '-R', os.path.dirname(OTPTLS_DIR)], capture_output=True)
+        if not NO_SERVICES or os.environ.get('ISEMON_RSYSLOGD'):
+            chk = subprocess.run([RSYSLOGD, '-N1'], capture_output=True, text=True, timeout=120)
+            if chk.returncode != 0:
+                bad = [l for l in (chk.stderr + chk.stdout).splitlines()
+                       if re.search(r'error|warn', l, re.I)][:3]
+                raise Refused('rsyslog does not take it, so nothing was changed: %s' % (
+                    ' | '.join(bad) or 'rsyslogd -N1 says why'))
+        otptls_selinux(port, said)
+        restarted = True
+        otptls_restart(port, said)
+        if old_port and old_port != port:
+            otptls_firewalld(old_port, False, st, said)
+        otptls_firewalld(port, True, st, said)
+        st.update(on=True, port=port, auth=auth, peers=peers, at=time.time())
+        write_root(otptls_path('.isemon.json'), json.dumps(st), 0o600)
+        said.append('rsyslog takes the otp logs over TLS on %d/tcp (%s)' % (port, {
+            'anon': 'it checks no node', 'x509/certvalid': 'from any node with a certificate '
+            'of otp\'s authority', 'x509/name': 'from %s' % ', '.join(peers)}[auth]))
+        return said
+    except BaseException:
+        put_back(snap)
+        if restarted:
+            try:
+                otptls_restart(0, [])
+            except Exception:                           # noqa: BLE001
+                pass
+        raise
+
+
+def otptls_part():
+    try:
+        raw = read_req(OTPTLS_ASK, 262144)
+    except FileNotFoundError:
+        return
+    except (Refused, OSError):
+        drop_entry(OTPTLS_ASK)            # a link or a folder in its place: never followed
+        return
+    drop_entry(OTPTLS_ASK)
+    out = {'at': time.time(), 'ok': False, 'id': ''}
+    try:
+        try:
+            r = json.loads(raw.decode('utf-8'))
+        except ValueError:
+            raise Refused('the request does not read')
+        if not isinstance(r, dict):
+            raise Refused('the request is not an object')
+        out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
+        if r.get('do') != 'read':
+            try:
+                at = float(r.get('at') or 0)
+            except (TypeError, ValueError):
+                at = 0.0
+            if abs(time.time() - at) > OTPTLS_FRESH_S:
+                raise Refused('that was asked too long ago - ask again on the page')
+            out['said'] = otptls_apply(r)
+        out['data'] = otptls_read()
+        out['ok'] = True
+    except Refused as e:
+        out['said'] = str(e)[:600]
+    except Exception as e:                              # noqa: BLE001 - said, never lost
+        out['said'] = 'it went wrong: %s' % str(e)[:300]
+    if not out['ok']:
+        try:
+            out['data'] = otptls_read()
+        except Exception:                               # noqa: BLE001
+            pass
+    write_here(OTPTLS_FILE, json.dumps(out))
+
+
 def status_read():
     """What this helper wrote last. It lies in the folder the isemon account
     owns, so nothing of it is trusted: what is used again (the DH choice) is
@@ -2455,6 +3025,10 @@ def serve():
         osup_part()
     except Exception as e:                              # noqa: BLE001
         print('isemon_web.py: the updates of the system: %s' % e, file=sys.stderr)
+    try:
+        otptls_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: the otp logs over TLS: %s' % e, file=sys.stderr)
     # One left by a run that was stopped half way (1.10.238) - a reboot, a
     # timeout during DH: taken away and said, or the daemon would wait on it
     # for ever and never ask again.

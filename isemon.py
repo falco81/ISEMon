@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.244'
+__version__ = '1.10.245'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -61555,6 +61555,11 @@ class Daemon(object):
             sshkeys_tick(self.webroot)
         except Exception as e:
             log('root\'s SSH keys: %s' % e, 'warn')
+        # ... and about the otp logs over TLS (1.10.245).
+        try:
+            otptls_tick(self.webroot)
+        except Exception as e:
+            log('the otp logs over TLS: %s' % e, 'warn')
 
     def _trials_now(self):
         try:
@@ -64858,6 +64863,418 @@ def sshkeys_api(wr, b, by):
             raise ValueError('there is no key made or given here')
         sshkeys_ask(wr, 'add', by, line=r['pub'])
         return {'ok': True, 'message': 'the key goes into root\'s authorized_keys again'}
+    raise ValueError('no such thing to do')
+
+
+# ---------------------------------------------------------------------------
+# The otp logs over TLS (1.10.245; for otp 1.0.172's Settings → isemon →
+# Encrypted sending)
+# ---------------------------------------------------------------------------
+# otp sends its totp.cgi and radius-detail lines over syslog; over TLS (RFC
+# 5425, 6514/tcp) they are encrypted, otp checks that it is isemon that
+# answers, and with mutual TLS isemon checks that it is one of otp's nodes
+# that sends. rsyslog receives them, as it does the plain ones: the input is
+# rsyslog's, put in by root's helper (isemon_web.py, asked in otptls.ask and
+# answered in otptls.json), and what arrives is filed by the same rule into
+# the same folders - nothing about reading them changes. The plain input on
+# 514 is never touched: a node not switched over yet goes on sending there.
+#
+# The certificate comes from the file otp's wizard makes (isemon-tls.zip,
+# every entry locked with AES-256 - opened here, in memory: its key goes to
+# root once and is kept nowhere else), is pasted, or is made by root from an
+# authority of this machine's own, whose certificate is then pasted into otp
+# ("isemon has one from its own CA"). Nothing secret is kept in the database:
+# what is remembered (meta 'otp_tls') is who set it up how, and when.
+OTPTLS_WORK = {'busy': False, 'since': 0.0, 'queue': [], 'now': {}, 'error': '', 'said': [],
+               'last': {}}
+OTPTLS_LOCK = threading.Lock()
+OTPTLS_OPENED = {}                  # token -> what a zip held, for ten minutes
+OTPTLS_STALE_S = 300
+OTPTLS_ZIP_MOST = 1 << 20
+
+
+def _aes_ecb(key, blocks):
+    """AES of the counter blocks (WinZip's CTR is little-endian, which
+    neither openssl enc nor hashlib does): by the cryptography module where
+    there is one, by openssl otherwise."""
+    try:
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+        enc = Cipher(algorithms.AES(key), modes.ECB()).encryptor()
+        return enc.update(blocks) + enc.finalize()
+    except ImportError:
+        pass
+    got = subprocess.run(['openssl', 'enc', '-aes-%d-ecb' % (len(key) * 8), '-nopad', '-nosalt',
+                          '-K', key.hex()], input=blocks, capture_output=True, timeout=60)
+    if got.returncode != 0 or len(got.stdout) != len(blocks):
+        raise ValueError('openssl could not decrypt it')
+    return got.stdout
+
+
+def _winzip_aes(raw, extra, password, crc, ae_crc):
+    """One entry of a WinZip AES zip (method 99), as 7-Zip and pyzipper
+    write it: PBKDF2-HMAC-SHA1, AES-CTR, HMAC-SHA1 over what is encrypted."""
+    import hmac
+    import struct
+    import zlib
+    strength = {1: 16, 2: 24, 3: 32}.get(extra['strength'])
+    if not strength:
+        raise ValueError('an AES strength this does not know')
+    salt_n = strength // 2
+    salt, check = raw[:salt_n], raw[salt_n:salt_n + 2]
+    body, mac = raw[salt_n + 2:-10], raw[-10:]
+    keys = hashlib.pbkdf2_hmac('sha1', password, salt, 1000, 2 * strength + 2)
+    enc_key, mac_key, pv = keys[:strength], keys[strength:2 * strength], keys[2 * strength:]
+    if not hmac.compare_digest(pv, check):
+        raise PermissionError('the passphrase is not the one the file was made with')
+    if not hmac.compare_digest(hmac.new(mac_key, body, 'sha1').digest()[:10], mac):
+        raise ValueError('the file is damaged (its check does not match)')
+    n = (len(body) + 15) // 16
+    stream = _aes_ecb(enc_key, b''.join(struct.pack('<QQ', i + 1, 0) for i in range(n)))
+    plain = bytes(a ^ b for a, b in zip(body, stream))
+    if extra['method'] == 8:
+        plain = zlib.decompress(plain, -15)
+    elif extra['method'] != 0:
+        raise ValueError('a compression this does not know (%d)' % extra['method'])
+    if ae_crc and (zlib.crc32(plain) & 0xffffffff) != crc:
+        raise ValueError('the file is damaged (its CRC does not match)')
+    return plain
+
+
+def otp_zip_open(data, password):
+    """{name: bytes} of the file otp made: AES-256 (WinZip's, which `unzip`
+    cannot open and 7-Zip can), the old ZipCrypto, or no lock at all."""
+    import io
+    import struct
+    import zipfile
+    if not isinstance(password, bytes):
+        password = str(password or '').encode('utf-8')
+    if len(data) > OTPTLS_ZIP_MOST:
+        raise ValueError('that is far bigger than the file otp makes')
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile:
+        raise ValueError('that is not a zip file (isemon-tls.zip, as otp makes it)')
+    out = {}
+    with zf:
+        for info in zf.infolist()[:20]:
+            name = info.filename.replace('\\', '/').split('/')[-1]
+            if not name or info.file_size > 262144:
+                continue
+            if info.compress_type == 99:
+                ex, i = None, 0
+                while i + 4 <= len(info.extra):
+                    hid, size = struct.unpack('<HH', info.extra[i:i + 4])
+                    if hid == 0x9901 and size >= 7:
+                        ver, _, strength, method = struct.unpack(
+                            '<H2sBH', info.extra[i + 4:i + 11])
+                        ex = {'ver': ver, 'strength': strength, 'method': method}
+                    i += 4 + size
+                if not ex:
+                    raise ValueError('%s: AES without its header' % name)
+                zf.fp.seek(info.header_offset)
+                head = zf.fp.read(30)
+                if head[:4] != b'PK\x03\x04':
+                    raise ValueError('the file is damaged')
+                n_name, n_extra = struct.unpack('<HH', head[26:30])
+                zf.fp.seek(info.header_offset + 30 + n_name + n_extra)
+                raw = zf.fp.read(info.compress_size)
+                out[name] = _winzip_aes(raw, ex, password, info.CRC, ex['ver'] == 1)
+            else:
+                try:
+                    out[name] = zf.read(info, pwd=password if info.flag_bits & 1 else None)
+                except RuntimeError:
+                    raise PermissionError('the passphrase is not the one the file was made with')
+                except (zipfile.BadZipFile, NotImplementedError, ValueError) as e:
+                    raise ValueError('%s: %s' % (name, e))
+    return out
+
+
+def _pem_facts(pem):
+    """What a certificate says of itself, read by openssl - {} when it is none."""
+    got = subprocess.run(['openssl', 'x509', '-noout', '-nameopt', 'RFC2253', '-subject',
+                          '-issuer', '-enddate', '-ext', 'subjectAltName'],
+                         input=pem, capture_output=True, text=True, timeout=20)
+    if got.returncode != 0:
+        return {}
+    f = {'subject': '', 'issuer': '', 'until': '', 'names': []}
+    for line in got.stdout.splitlines():
+        line = line.strip()
+        for key, word in (('subject', 'subject='), ('issuer', 'issuer='), ('until', 'notAfter=')):
+            if line.startswith(word):
+                f[key] = line[len(word):].strip()
+        if line.startswith(('DNS:', 'IP Address:')):
+            f['names'] += [x.strip().split(':', 1)[1] for x in line.split(',') if ':' in x]
+    return f
+
+
+def otptls_conf_facts(text):
+    """What otp's 10-otp-tls.conf says: the port, the mode and the nodes - read,
+    never put in as it is (root writes a file of its own)."""
+    body = '\n'.join(l for l in str(text or '').split('\n') if not l.strip().startswith('#'))
+    port = re.search(r'port\s*=\s*"([0-9]{1,5})"', body)
+    auth = re.search(r'AuthMode\s*=\s*"([A-Za-z0-9/]+)"', body)
+    peers = re.search(r'PermittedPeer\s*=\s*\[([^\]]*)\]', body) or \
+        re.search(r'PermittedPeer\s*=\s*("[^"]*")', body)
+    return {'port': int(port.group(1)) if port else 6514,
+            'mutual': bool(auth) and auth.group(1).lower() != 'anon',
+            'peers': re.findall(r'"([^"\s]{1,253})"', peers.group(1))[:64] if peers else []}
+
+
+def otptls_open_zip(data, password):
+    """The file otp made, opened and checked: what is in it, for the page,
+    and a token by which it is set up - its key stays here."""
+    try:
+        files = otp_zip_open(data, password)
+    except PermissionError as e:
+        raise ValueError(str(e))
+    need = [n for n in ('ca.pem', 'isemon.crt', 'isemon.key') if n not in files]
+    if need:
+        raise ValueError('%s missing from it - is it the file otp made for isemon '
+                         '(Make the file for isemon…)?' % ', '.join(need))
+    text = {n: files[n].decode('utf-8', 'replace') for n in ('ca.pem', 'isemon.crt',
+                                                             'isemon.key')}
+    if 'PRIVATE KEY-----' not in text['isemon.key'] or 'ENCRYPTED' in text['isemon.key']:
+        raise ValueError('isemon.key is not a private key without a passphrase')
+    cert = _pem_facts(text['isemon.crt'])
+    ca = _pem_facts(text['ca.pem'])
+    if not cert or not ca:
+        raise ValueError('the certificates in it do not read')
+    a = subprocess.run(['openssl', 'x509', '-noout', '-pubkey'], input=text['isemon.crt'],
+                       capture_output=True, text=True, timeout=20).stdout.strip()
+    b = subprocess.run(['openssl', 'pkey', '-pubout'], input=text['isemon.key'],
+                       capture_output=True, text=True, timeout=20).stdout.strip()
+    if not a or a != b:
+        raise ValueError('isemon.key is not the key of isemon.crt')
+    conf = otptls_conf_facts(files.get('10-otp-tls.conf', b'').decode('utf-8', 'replace'))
+    token = secrets.token_hex(12)
+    now = time.time()
+    for k in [k for k, v in OTPTLS_OPENED.items() if now - v['at'] > 600]:
+        OTPTLS_OPENED.pop(k, None)
+    OTPTLS_OPENED[token] = {'at': now, 'ca': text['ca.pem'], 'cert': text['isemon.crt'],
+                            'key': text['isemon.key']}
+    return {'token': token, 'cert': cert, 'ca': ca, 'conf': conf,
+            'files': sorted(files), 'readme': 'README.txt' in files}
+
+
+def otptls_root_ask(wr, data, wait=900):
+    ask_id = secrets.token_hex(8)
+    wr.write('otptls.ask', dict(data, id=ask_id, at=time.time()))
+    end = time.time() + wait
+    while time.time() < end:
+        got = wr.read('otptls.json')
+        if isinstance(got, dict) and got.get('id') == ask_id:
+            return got
+        time.sleep(0.4)
+    try:
+        if (wr.read('otptls.ask') or {}).get('id') == ask_id:
+            os.unlink(str(wr.folder() / 'otptls.ask'))
+    except OSError:
+        pass
+    raise WebRootError('root\'s helper did not answer in %d s - is isemon-web.path running? '
+                       '(systemctl status isemon-web.path; ./install.sh --upgrade puts in the '
+                       'one that is asked about the otp logs over TLS)' % wait)
+
+
+OTPTLS_WORDS = {'apply': 'set up the otp logs over TLS', 'make': 'set up the otp logs over TLS '
+                'with a certificate made here', 'set': 'changed the otp logs over TLS',
+                'off': 'switched the otp logs over TLS off'}
+
+
+def otptls_ask(wr, a):
+    """One job for root, done behind: a read, or a change."""
+    if not wr.helper_there():
+        raise WebRootError('root\'s half is not installed on this machine yet: run '
+                           './install.sh --upgrade (1.10.245 or later) once')
+    a = dict(a, id=secrets.token_hex(6), at=time.time())
+    with OTPTLS_LOCK:
+        if a['do'] != 'read' and (OTPTLS_WORK['busy'] and OTPTLS_WORK.get('doing') != 'read' or
+                                  any(x['do'] != 'read' for x in OTPTLS_WORK['queue'])):
+            raise WebRootError('a change is being made already - wait for it to end')
+        OTPTLS_WORK['queue'] = (OTPTLS_WORK['queue'] + [a])[-6:]
+    otptls_tick(wr)
+    return a['id']
+
+
+def otptls_tick(wr):
+    if OTPTLS_WORK['busy'] and time.time() - OTPTLS_WORK['since'] < 1200:
+        return
+    if not wr.helper_there() or not wr.folder().is_dir():
+        return
+    with OTPTLS_LOCK:
+        todo = [a for a in OTPTLS_WORK['queue'] if time.time() - a['at'] < 600]
+        OTPTLS_WORK['queue'] = []
+        if not todo:
+            return
+        reads = [a for a in todo if a['do'] == 'read']
+        todo = [a for a in todo if a['do'] != 'read'] + reads[-1:]
+        OTPTLS_WORK.update(busy=True, since=time.time(), doing=todo[0]['do'])
+
+    def go():
+        try:
+            for a in todo:
+                OTPTLS_WORK['doing'] = a['do']
+                ask = {k: v for k, v in a.items() if k not in ('by', 'id', 'at')}
+                err, got = '', {}
+                try:
+                    got = otptls_root_ask(wr, ask, 900 if a['do'] != 'read' else 60)
+                    if not got.get('ok'):
+                        err = str(got.get('said') or 'root\'s helper said no')
+                except (WebRootError, OSError) as e:
+                    err = str(e)[:400] or e.__class__.__name__
+                if isinstance(got.get('data'), dict):
+                    OTPTLS_WORK['now'] = dict(got['data'], at_read=time.time())
+                if a['do'] == 'read':
+                    if err or time.time() - float(OTPTLS_WORK['last'].get('at') or 0) > 120:
+                        OTPTLS_WORK['error'] = err
+                    continue
+                who = a.get('by') or 'somebody'
+                said = got.get('said') if isinstance(got.get('said'), list) else []
+                OTPTLS_WORK.update(error=err, said=said, last={
+                    'do': a['do'], 'ok': not err, 'at': time.time(), 'by': who})
+                if err:
+                    log('the otp logs over TLS: %s' % err, 'warn')
+                    wr.store.add_event('settings', 'the otp logs over TLS were not changed '
+                                       '(asked by %s): %s' % (who, err[:300]), 'warn',
+                                       who=a.get('by') or '')
+                    continue
+                wr.store.add_event('settings', '%s %s%s' % (
+                    who, OTPTLS_WORDS.get(a['do'], 'changed the otp logs over TLS'),
+                    (' - ' + '; '.join(said)[:400]) if said else ''), 'warn',
+                    who=a.get('by') or '')
+                kept = wr._meta('otp_tls', {})
+                kept.update(do=a['do'], by=who, at=time.time(), on=a['do'] != 'off')
+                if a['do'] in ('apply', 'make'):
+                    kept['how'] = a.get('how') or a['do']
+                wr._put('otp_tls', kept)
+                # The port is one more rsyslog listens on: isemon's firewall
+                # (where it is isemon's) lets it in from the log senders.
+                try:
+                    wr._asked_look = 0.0
+                    wr.look(fresh_s=0)
+                except Exception:                       # noqa: BLE001
+                    pass
+        except Exception as e:                          # noqa: BLE001
+            log('the otp logs over TLS: %s' % e, 'warn')
+        finally:
+            with OTPTLS_LOCK:
+                OTPTLS_WORK.update(busy=False, doing='')
+                more = bool(OTPTLS_WORK['queue'])
+        if more:
+            otptls_tick(wr)
+    threading.Thread(target=go, name='isemon-otptls', daemon=True).start()
+
+
+def otptls_suggest():
+    """The names the nodes may reach this machine by: its own, and its addresses."""
+    names = []
+    for n in (socket.getfqdn(), socket.gethostname()):
+        if n and n not in names and n != 'localhost':
+            names.append(n)
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None):
+            ip = info[4][0]
+            if ip not in names and not ip.startswith(('127.', '::1', 'fe80')):
+                names.append(ip)
+    except OSError:
+        pass
+    return names[:6]
+
+
+def otptls_view(wr):
+    now = OTPTLS_WORK.get('now') or {}
+    helper = wr.helper_there()
+    if helper and time.time() - float(now.get('at_read') or 0) > OTPTLS_STALE_S and \
+            not OTPTLS_WORK['busy'] and not OTPTLS_WORK['queue']:
+        try:
+            otptls_ask(wr, {'do': 'read'})
+        except (WebRootError, OSError):
+            pass
+    conf = now.get('conf') or {}
+    with OTPTLS_LOCK:
+        pending = [a['do'] for a in OTPTLS_WORK['queue'] if a['do'] != 'read']
+        if OTPTLS_WORK['busy'] and OTPTLS_WORK.get('doing') not in ('', 'read'):
+            pending.append(OTPTLS_WORK['doing'])
+    return {'ok': True, 'helper': helper, 'read': bool(now), 'at': now.get('at_read'),
+            'on': bool(conf.get('there')), 'mine': bool(conf.get('mine')),
+            'port': conf.get('port') or 0, 'auth': conf.get('auth') or '',
+            'driver': conf.get('driver') or '', 'peers': conf.get('peers') or [],
+            'file': now.get('file') or '', 'dir': now.get('dir') or '',
+            'version': now.get('version') or '', 'driver_there': now.get('driver_there') or '',
+            'cert': now.get('cert') or {}, 'ca': now.get('ca') or [],
+            'own_ca': now.get('own_ca') or {}, 'how': now.get('how') or '',
+            'listening': now.get('listening'), 'fw': now.get('fw') or '',
+            'fw_open': now.get('fw_open'), 'trouble': now.get('trouble') or [],
+            'plain': [p for p in now.get('others') or [] if str(p.get('port')) == '514'],
+            'others': now.get('others') or [],
+            'kept': wr._meta('otp_tls', {}), 'pending': pending, 'busy': OTPTLS_WORK['busy'],
+            'error': OTPTLS_WORK.get('error') or '', 'said': OTPTLS_WORK.get('said') or [],
+            'last': OTPTLS_WORK.get('last') or {}, 'suggest': otptls_suggest(),
+            't': time.time()}
+
+
+def _otptls_common(b):
+    try:
+        port = int(b.get('port') or 6514)
+    except (TypeError, ValueError):
+        raise ValueError('the port is a number')
+    if not 1 <= port <= 65535 or port == 514:
+        raise ValueError('the port is 1 to 65535, and not 514 - that one is the plain logs\'')
+    peers = b.get('peers')
+    if isinstance(peers, list):
+        peers = ' '.join(str(p) for p in peers)
+    return {'port': port, 'mutual': b.get('mutual') is True,
+            'peers': str(peers or '').strip()[:4000]}
+
+
+def otptls_api(wr, b, by):
+    """What the card asks for (POST /api/otptls)."""
+    act = str(b.get('action') or '')
+    if act == 'refresh':
+        otptls_ask(wr, {'do': 'read'})
+        return {'ok': True, 'message': 'asked again'}
+    if act == 'open':
+        try:
+            data = base64.b64decode(str(b.get('zip') or ''), validate=True)
+        except (ValueError, TypeError):
+            raise ValueError('the file did not arrive whole')
+        got = otptls_open_zip(data, str(b.get('passphrase') or ''))
+        return dict(got, ok=True)
+    if act in ('apply', 'make', 'set'):
+        ask = dict(_otptls_common(b), do=act, by=by)
+        if act == 'apply':
+            tok = str(b.get('token') or '')
+            if tok:
+                had = OTPTLS_OPENED.pop(tok, None)
+                if not had or time.time() - had['at'] > 600:
+                    raise ValueError('the file opened is no longer held (ten minutes): open it '
+                                     'again')
+                ask.update(ca=had['ca'], cert=had['cert'], key=had['key'], how='otp')
+            else:
+                key = str(b.get('key') or '')
+                if 'PRIVATE KEY-----' not in key or 'ENCRYPTED' in key:
+                    raise ValueError('the key: a PEM private key without a passphrase')
+                ask.update(cert=str(b.get('cert') or '')[:200000], key=key[:20000],
+                           chain=str(b.get('chain') or '')[:200000],
+                           ca=str(b.get('ca') or '')[:200000], how='given')
+        elif act == 'make':
+            names = b.get('names')
+            if isinstance(names, list):
+                names = ' '.join(str(n) for n in names)
+            ask.update(names=str(names or '')[:2000], otp_ca=str(b.get('otp_ca') or '')[:200000],
+                       how='made')
+        else:
+            ask['otp_ca'] = str(b.get('otp_ca') or '')[:200000]
+        if ask['mutual'] and act != 'set' and 'BEGIN CERTIFICATE' not in (
+                ask.get('ca') if act == 'apply' else ask.get('otp_ca') or ''):
+            raise ValueError('mutual TLS: otp\'s authority (its ca.pem) is needed, to know the '
+                             'nodes by')
+        otptls_ask(wr, ask)
+        return {'ok': True, 'message': 'root puts it in - it takes a few seconds, a minute when '
+                                       'rsyslog-gnutls has to be installed first'}
+    if act == 'off':
+        otptls_ask(wr, {'do': 'off', 'by': by})
+        return {'ok': True, 'message': 'root takes the encrypted input away within seconds; the '
+                                       'plain one stays as it is'}
     raise ValueError('no such thing to do')
 
 
@@ -71337,6 +71754,20 @@ class ApiHandler(BaseHTTPRequestHandler):
             except (WebRootError, ValueError, OSError) as e:
                 return self.fail(str(e))
 
+        # The otp logs over TLS (1.10.245): rsyslog's encrypted input, looked
+        # at and changed by a full administrator only, put in by root.
+        if path == '/api/otptls':
+            me = self.need_admin()
+            if not me:
+                return None
+            if method != 'POST':
+                return self.send_json(otptls_view(daemon.webroot))
+            try:
+                return self.send_json(otptls_api(daemon.webroot, self.body(),
+                                                 me.get('name') or ''))
+            except (WebRootError, ValueError, OSError) as e:
+                return self.fail(str(e))
+
         # This server's network, a restart or a power-off, and the changes
         # on trial (1.10.228): looked at by anybody signed in, changed by a
         # full administrator.
@@ -76968,6 +77399,457 @@ def cmd_root_key_make(args, pal, store):
     return 0
 
 
+# ---- Settings - The OTP logs - Encrypted receiving, from here (1.10.245) ------------
+# Through the same /api/otptls the card asks, so a full administrator's rights
+# and root's helper decide here what they decide there. A change is done by
+# root behind, within seconds (a minute when rsyslog-gnutls is installed
+# first): each command waits for it and says what root said. The file otp
+# made is opened by the daemon, in memory; its passphrase comes from a file
+# (--passphrase-file), ISEMON_ZIP_PASSPHRASE or a question - never from the
+# command line, and it is neither printed nor kept.
+OTPTLS_NO_HELPER = ('root\'s half of this is not installed on this machine yet '
+                    '(isemon-web.path): run ./install.sh --upgrade from the 1.10.245 package '
+                    '(or later) once. Until then rsyslog\'s encrypted input is neither read nor '
+                    'changed here')
+OTPTLS_MODES = {'x509/name': 'mutual TLS - only the nodes named',
+                'x509/certvalid': 'mutual TLS - any node with a certificate of otp\'s '
+                                  'authority',
+                'x509/fingerprint': 'mutual TLS - the nodes by fingerprint',
+                'anon': 'TLS - otp checks isemon, any sender is taken'}
+OTPTLS_HOW = {'otp': 'from the file otp made', 'made': 'made here, by this machine\'s '
+              'authority', 'given': 'given by hand'}
+
+
+def _ot_view(session):
+    return api_call('/api/otptls', timeout=30, session=session)
+
+
+def _ot_settle(pal, session, since=None, wait=300):
+    """The view once root has done what was asked - and, with `since`, once
+    the change asked at that moment is the last one. None when the daemon
+    does not answer."""
+    end = time.time() + wait
+    v = {}
+    while True:
+        status, v = _ot_view(session)
+        if not need_daemon(pal, status, v):
+            return None
+        done = not v.get('pending') and not v.get('busy')
+        fresh = since is None or float((v.get('last') or {}).get('at') or 0) >= since
+        if (done and fresh) or not v.get('helper') or time.time() > end:
+            return v
+        time.sleep(0.5)
+
+
+def _ot_nodes(text):
+    return [n for n in re.split(r'[\s,;]+', str(text or '').strip()) if n]
+
+
+def _ot_cert_lines(pal, key, f):
+    """A certificate as a few lines: its names, who issued it, until when."""
+    if not f:
+        pal.kv(key, '-')
+        return
+    pal.kv(key, ', '.join(f.get('names') or []) or f.get('cn') or f.get('subject') or '?')
+    if f.get('subject'):
+        pal.kv('  subject', f['subject'])
+    pal.kv('  issued by', f.get('issuer') or '?')
+    pal.kv('  until', f.get('until') or '?')
+
+
+def otptls_print(pal, v):
+    kept = v.get('kept') or {}
+    last = v.get('last') or {}
+    pal.title('The otp logs over TLS on %s' % socket.gethostname())
+    if not v.get('helper'):
+        pal.warn(OTPTLS_NO_HELPER)
+    if v.get('error'):
+        pal.bad('root said: %s' % v['error'])
+    if not v.get('read'):
+        pal.note('  not read yet' + (' - isemon --otp-tls again in a few seconds'
+                                     if v.get('helper') else ''))
+    if v.get('on'):
+        pal.kv('encrypted receiving', pal.ok_text('on') if v.get('mine') else pal.warn_text(
+            'on - set up by hand, not here (set here, it is written over; the old file is '
+            'kept beside it)'))
+    else:
+        pal.kv('encrypted receiving', 'off' if v.get('read') else '-')
+    if v.get('on'):
+        pal.kv('port', '%s/tcp' % (v.get('port') or '?'))
+        pal.kv('mode', OTPTLS_MODES.get(v.get('auth') or '', v.get('auth') or '?'))
+        pal.kv('nodes', ', '.join(v.get('peers') or []) or (
+            '(any)' if v.get('auth') != 'x509/name' else '-'))
+    if v.get('cert'):
+        _ot_cert_lines(pal, 'certificate', v['cert'])
+        if v.get('how'):
+            pal.kv('  how', OTPTLS_HOW.get(v['how'], v['how']))
+    elif v.get('read'):
+        pal.kv('certificate', 'none yet')
+    for i, c in enumerate(v.get('ca') or []):
+        pal.kv('authority' if i == 0 else '', '%s (until %s)' % (
+            c.get('subject') or '?', c.get('until') or '?'))
+    own = v.get('own_ca') or {}
+    if own.get('subject'):
+        pal.kv('this machine\'s authority', '%s (until %s)' % (own['subject'],
+                                                              own.get('until') or '?'))
+    if v.get('on'):
+        lis = v.get('listening')
+        pal.kv('rsyslog listens', 'not known' if lis is None else pal.yes_no(
+            lis, 'yes', pal.bad_text('no - rsyslog has not taken it (journalctl -u rsyslog)')))
+        fo = v.get('fw_open')
+        pal.kv('firewall', '%s%s' % (v.get('fw') or '?', '' if fo is None else (
+            ' - the port is open' if fo else ' - ' + pal.warn_text('the port is not open'))))
+    elif v.get('fw'):
+        pal.kv('firewall', v['fw'])
+    if v.get('version') or v.get('driver') or v.get('driver_there'):
+        pal.kv('rsyslog', '%s%s' % (v.get('version') or '?', (
+            ', TLS driver %s' % (v.get('driver') or v.get('driver_there')))
+            if (v.get('driver') or v.get('driver_there')) else
+            ', ' + pal.warn_text('no TLS driver yet (rsyslog-gnutls is installed when it is '
+                                 'set up)')))
+    plain = v.get('plain') or []
+    if plain:
+        pal.kv('plain 514, kept', ', '.join(sorted(set(
+            '%s/%s%s' % (p.get('port'), p.get('proto') or '?',
+                         ' (%s)' % p['file'] if p.get('file') else '') for p in plain))))
+    elif v.get('read'):
+        pal.kv('plain 514, kept', 'none read')
+    if v.get('file'):
+        pal.kv('the file', v['file'])
+    if last.get('do'):
+        pal.kv('the last change', '%s, by %s, %s - %s' % (
+            OTPTLS_WORDS.get(last['do'], last['do']), last.get('by') or '?',
+            human_age(time.time() - float(last.get('at') or 0)),
+            pal.ok_text('done') if last.get('ok') else pal.bad_text('not done')))
+        for line in v.get('said') or []:
+            pal.bullet(line, indent='    ')
+    elif kept.get('at'):
+        pal.kv('the last change', '%s, by %s, %s' % (
+            OTPTLS_WORDS.get(kept.get('do') or '', 'changed'), kept.get('by') or '?',
+            stamp(kept['at'])))
+    pal.kv('read', human_age(time.time() - float(v['at'])) if v.get('at') else 'not yet')
+    if v.get('pending') or v.get('busy'):
+        pal.note('  root is at it...')
+    if v.get('trouble'):
+        pal.blank()
+        pal.warn('what rsyslog said of TLS lately:')
+        for line in v['trouble']:
+            pal.note('    ' + line)
+    pal.blank()
+
+
+def cmd_otp_tls(args, pal, store):
+    """--otp-tls: rsyslog's encrypted input for otp's logs, read afresh
+    (Settings - The OTP logs - Encrypted receiving)."""
+    session = cli_session(store)
+    asked = time.time() - 1
+    status, v = _ot_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if v.get('helper'):
+        # The view asks for a read itself when the last is old; else asked here.
+        if not v.get('pending') and not v.get('busy'):
+            status, data = api_call('/api/otptls', 'POST', {'action': 'refresh'},
+                                    session=session)
+            if not need_daemon(pal, status, data):
+                return 1
+        end = time.time() + 30
+        while time.time() < end:
+            status, v = _ot_view(session)
+            if not need_daemon(pal, status, v):
+                return 1
+            if not v.get('busy') and (float(v.get('at') or 0) >= asked or v.get('error')):
+                break
+            time.sleep(0.4)
+    if as_json(args, v):
+        return 0
+    otptls_print(pal, v)
+    return 1 if v.get('error') or not v.get('helper') else 0
+
+
+def _ot_after(args, pal, session, since, words):
+    """What root said of the change just asked."""
+    v = _ot_settle(pal, session, since=since)
+    if v is None:
+        return 1, {}
+    last = v.get('last') or {}
+    if as_json(args, v):
+        return (0 if last.get('ok') and float(last.get('at') or 0) >= since else 1), v
+    if v.get('pending') or v.get('busy'):
+        pal.warn('asked; root has not done it yet - isemon --otp-tls in a minute')
+        return 1, v
+    if not v.get('helper'):
+        pal.bad(OTPTLS_NO_HELPER)
+        return 1, v
+    if not last.get('ok') or float(last.get('at') or 0) < since:
+        pal.bad('root said: %s' % (v.get('error') or 'nothing was changed'))
+        return 1, v
+    pal.good(words)
+    for line in v.get('said') or []:
+        pal.bullet(line)
+    return 0, v
+
+
+def _ot_wanted(args, v, conf=None):
+    """port, mutual and nodes: what is given here, else what otp's file
+    (or what is in place now) says."""
+    conf = conf or {}
+    port = args.otp_tls_port or conf.get('port') or (v.get('port') if v.get('on') else 0) \
+        or 6514
+    if args.otp_tls_mutual:
+        mutual = args.otp_tls_mutual == 'yes'
+    elif 'mutual' in conf:
+        mutual = bool(conf['mutual'])
+    else:
+        mutual = bool(v.get('on')) and (v.get('auth') or 'anon') != 'anon'
+    if args.otp_tls_nodes is not None:
+        peers = _ot_nodes(args.otp_tls_nodes)
+    elif 'peers' in conf:
+        peers = list(conf.get('peers') or [])
+    else:
+        peers = list(v.get('peers') or [])
+    return int(port), mutual, peers
+
+
+def _ot_ca(args):
+    """--otp-tls-ca FILE: otp's authority, PEM."""
+    if not args.otp_tls_ca:
+        return ''
+    p = Path(args.otp_tls_ca).expanduser()
+    if p.stat().st_size > 200000:
+        raise ValueError('%s is far bigger than a certificate' % p)
+    text = p.read_text(errors='replace')
+    if 'BEGIN CERTIFICATE' not in text:
+        raise ValueError('%s holds no certificate (PEM, -----BEGIN CERTIFICATE-----)' % p)
+    return text
+
+
+def _ot_mode_words(mutual, peers):
+    if not mutual:
+        return OTPTLS_MODES['anon']
+    return OTPTLS_MODES['x509/name' if peers else 'x509/certvalid']
+
+
+def _ot_yes(args, pal, question):
+    if args.yes:
+        return True
+    try:
+        said = input('  %s type yes to go ahead: ' % question).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        said = ''
+    if said != 'yes':
+        pal.note('  nothing was done')
+        return False
+    return True
+
+
+def _zip_passphrase(args):
+    """The passphrase of the file otp made: --passphrase-file, else
+    ISEMON_ZIP_PASSPHRASE in the environment, else asked when there is a
+    terminal - never the command line."""
+    if getattr(args, 'passphrase_file', None):
+        # Its name is not repeated: `--passphrase WORD` is taken by argparse
+        # for --passphrase-file, and WORD would be printed back.
+        try:
+            text = Path(args.passphrase_file).expanduser().read_text(errors='replace')
+        except OSError as e:
+            raise ValueError('the file of --passphrase-file cannot be read (%s)'
+                             % (e.strerror or e.__class__.__name__))
+        return text.split('\n')[0].rstrip('\r')
+    word = os.environ.get('ISEMON_ZIP_PASSPHRASE', '')
+    if not word and sys.stdin.isatty():
+        try:
+            word = getpass.getpass('  the passphrase of the file (as typed in otp\'s wizard): ')
+        except (EOFError, KeyboardInterrupt):
+            word = ''
+    return word
+
+
+def cmd_otp_tls_import(args, pal, store):
+    """--otp-tls-import ZIP: the file otp made (isemon-tls.zip) opened, shown,
+    and put in with the port, the mode and the nodes otp's file says - unless
+    given here. Asked first unless --yes."""
+    quiet = getattr(args, 'json', False)
+    if quiet and not args.yes:
+        print(json.dumps({'ok': False, 'error': '--json does not ask: with --yes'}))
+        return 1
+    try:
+        p = Path(args.otp_tls_import).expanduser()
+        if p.stat().st_size > OTPTLS_ZIP_MOST:
+            raise ValueError('%s is far bigger than the file otp makes' % p)
+        data = p.read_bytes()
+        passphrase = _zip_passphrase(args)
+    except (ValueError, OSError) as e:
+        pal.bad(str(e))
+        return 1
+    session = cli_session(store)
+    status, v = _ot_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    status, got = api_call('/api/otptls', 'POST', {
+        'action': 'open', 'zip': base64.b64encode(data).decode('ascii'),
+        'passphrase': passphrase}, session=session)
+    passphrase = ''
+    if not need_daemon(pal, status, got):
+        return 1
+    conf = got.get('conf') or {}
+    port, mutual, peers = _ot_wanted(args, v, conf)
+    if not quiet:
+        pal.title('The file otp made: %s' % p.name)
+        _ot_cert_lines(pal, 'certificate', got.get('cert') or {})
+        ca = got.get('ca') or {}
+        pal.kv('otp\'s authority', '%s (until %s)' % (ca.get('subject') or '?',
+                                                      ca.get('until') or '?'))
+        pal.kv('otp\'s file says', 'port %s, %s, nodes %s' % (
+            conf.get('port') or '?', 'mutual TLS' if conf.get('mutual') else 'not mutual',
+            ', '.join(conf.get('peers') or []) or '-'))
+        pal.blank()
+        pal.say('  Root puts the certificate and its key in (%s) and rsyslog receives '
+                'otp\'s logs encrypted on %d/tcp, %s%s. The plain input on 514 stays as it '
+                'is.' % (v.get('dir') or '/etc/pki/rsyslog/otp', port,
+                         _ot_mode_words(mutual, peers),
+                         (': ' + ', '.join(peers)) if mutual and peers else ''))
+        if v.get('on'):
+            pal.warn('It takes the place of the one in place now (port %s).' % v.get('port'))
+        if not v.get('helper'):
+            pal.bad(OTPTLS_NO_HELPER)
+            return 1
+        if not _ot_yes(args, pal, 'put it in?'):
+            return 1
+    asked = time.time() - 1
+    status, data = api_call('/api/otptls', 'POST', {
+        'action': 'apply', 'token': got.get('token') or '', 'port': port, 'mutual': mutual,
+        'peers': peers}, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    if not quiet:
+        pal.note('  %s' % (data.get('message') or 'asked'))
+    rc, _v = _ot_after(args, pal, session, asked, 'the otp logs are received over TLS on '
+                       '%d/tcp' % port)
+    return rc
+
+
+def cmd_otp_tls_make(args, pal, store):
+    """--otp-tls-make NAMES: a certificate for these names made here, by an
+    authority of this machine's own, and put in; that authority's
+    certificate printed (or written to --out), to paste into otp."""
+    names = _ot_nodes(args.otp_tls_make)
+    out = Path(args.out).expanduser() if args.out else None
+    if not names:
+        pal.bad('the names otp reaches this machine by: one at least')
+        return 1
+    if out is not None and os.path.lexists(str(out)):
+        pal.bad('%s is there already: nothing was made (a file is never written over)' % out)
+        return 1
+    try:
+        otp_ca = _ot_ca(args)
+    except (ValueError, OSError) as e:
+        pal.bad(str(e))
+        return 1
+    session = cli_session(store)
+    status, v = _ot_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    conf = {} if args.otp_tls_mutual else {'mutual': bool(otp_ca)}
+    port, mutual, peers = _ot_wanted(args, v, conf)
+    asked = time.time() - 1
+    status, data = api_call('/api/otptls', 'POST', {
+        'action': 'make', 'names': names, 'port': port, 'mutual': mutual, 'peers': peers,
+        'otp_ca': otp_ca}, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    if not getattr(args, 'json', False):
+        pal.note('  %s' % (data.get('message') or 'asked'))
+    rc, v = _ot_after(args, pal, session, asked, 'a certificate for %s made here and put in - '
+                      'the otp logs are received over TLS on %d/tcp' % (', '.join(names), port))
+    pem = (v.get('own_ca') or {}).get('pem') or ''
+    if rc or not pem or getattr(args, 'json', False):
+        return rc
+    if out is not None:
+        try:
+            fd = os.open(str(out), os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+            with os.fdopen(fd, 'w') as f:
+                f.write(pem)
+        except OSError as e:
+            pal.bad('%s cannot be written: %s - isemon --otp-tls --json has it as own_ca.pem'
+                    % (out, e.strerror or e))
+            return 1
+        pal.good('this machine\'s authority is in %s' % out)
+    else:
+        pal.blank()
+        pal.say('  This machine\'s authority - what otp is to trust:')
+        sys.stdout.write(pem if pem.endswith('\n') else pem + '\n')
+        sys.stdout.flush()
+    pal.note('  In otp: Settings → isemon → Encrypted sending → "isemon has one from its own '
+             'CA", and paste %s there.' % ('the certificate in %s' % out if out is not None
+                                           else 'the certificate above'))
+    return 0
+
+
+def cmd_otp_tls_set(args, pal, store):
+    """--otp-tls-set: the port, the mode and the nodes changed, the
+    certificate kept."""
+    try:
+        otp_ca = _ot_ca(args)
+    except (ValueError, OSError) as e:
+        pal.bad(str(e))
+        return 1
+    session = cli_session(store)
+    status, v = _ot_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if v.get('helper') and not v.get('cert') and v.get('read'):
+        pal.bad('there is no certificate here yet: isemon --otp-tls-import (the file otp '
+                'made) or isemon --otp-tls-make first')
+        return 1
+    port, mutual, peers = _ot_wanted(args, v)
+    asked = time.time() - 1
+    status, data = api_call('/api/otptls', 'POST', {
+        'action': 'set', 'port': port, 'mutual': mutual, 'peers': peers, 'otp_ca': otp_ca},
+        session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    if not getattr(args, 'json', False):
+        pal.note('  %s' % (data.get('message') or 'asked'))
+    rc, _v = _ot_after(args, pal, session, asked, 'changed: %d/tcp, %s%s' % (
+        port, _ot_mode_words(mutual, peers), (': ' + ', '.join(peers)) if mutual and peers
+        else ''))
+    return rc
+
+
+def cmd_otp_tls_off(args, pal, store):
+    """--otp-tls-off: the encrypted input taken away, asked first unless
+    --yes. The plain one on 514 stays; so do the certificate and its key."""
+    session = cli_session(store)
+    status, v = _ot_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if not v.get('helper'):
+        pal.bad(OTPTLS_NO_HELPER)
+        return 1
+    if v.get('read') and not v.get('on'):
+        if not as_json(args, v):
+            pal.note('  the otp logs are not received over TLS here: nothing to switch off')
+        return 0
+    if not args.yes:
+        if getattr(args, 'json', False):
+            print(json.dumps({'ok': False, 'error': '--json does not ask: with --yes'}))
+            return 1
+        pal.say('  rsyslog no longer receives otp\'s logs encrypted on %s/tcp: a node that '
+                'sends them there is not heard until it sends plain again. The plain input '
+                'on 514 stays as it is; the certificate and its key are kept.'
+                % (v.get('port') or '?'))
+        if not _ot_yes(args, pal, 'switch it off?'):
+            return 1
+    asked = time.time() - 1
+    status, data = api_call('/api/otptls', 'POST', {'action': 'off'}, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    rc, _v = _ot_after(args, pal, session, asked, 'switched off - the plain input on 514 is '
+                       'as it was')
+    return rc
+
+
 def cmd_web_status(args, pal, store):
     """What root has in place of what the pages asked: nginx, TLS, the
     firewall, and the last upgrade from the pages (1.10.222)."""
@@ -80150,6 +81032,7 @@ class Console(object):
                   danger=True)),
             ('6', 'System updates', self.os_updates),
             ('7', 'SSH keys of root', self.root_keys),
+            ('8', 'The otp logs over TLS', self.otp_tls),
         ])
 
     # ---- 9 > System updates (1.10.242) ----------------------------------------------
@@ -80288,6 +81171,132 @@ class Console(object):
                                'there is no such folder'))
         if out:
             self.act('--root-key-make', kind, '--out', out)
+
+    # ---- 9 > The otp logs over TLS (1.10.245) -----------------------------------------
+    def otp_tls(self):
+        what = self.choose('The otp logs over TLS', [
+            ('show', 'How it is: on or off, the port, the nodes, the certificate'),
+            ('import', 'Put in the file otp made (isemon-tls.zip)'),
+            ('make', 'Make a certificate here (otp then trusts this machine\'s authority)'),
+            ('set', 'Change the nodes, the port or the mode'),
+            ('off', 'Switch it off')],
+            'rsyslog\'s encrypted input for otp\'s logs (Settings → isemon → Encrypted sending '
+            'in otp), put in by root. The plain input on 514 is never touched. Only a full '
+            'administrator.')
+        if what == 'show':
+            self.act('--otp-tls')
+        elif what == 'import':
+            self.otp_tls_import()
+        elif what == 'make':
+            self.otp_tls_make()
+        elif what == 'set':
+            self.otp_tls_set()
+        elif what == 'off':
+            if self.confirm('Switch the otp logs over TLS off', 'rsyslog no longer receives '
+                            'otp\'s logs encrypted: a node that sends them so is not heard '
+                            'until it sends plain again. The plain input on 514 stays; the '
+                            'certificate and its key are kept.', 'Switch it off', danger=True):
+                self.act('--otp-tls-off', '--yes')
+
+    def _otp_tls_how(self, title, port='', nodes=None, mutual=None):
+        """The port, the mode and the nodes asked: the options for them, or
+        None when it was left."""
+        got = self.out('--otp-tls')
+        v = got if isinstance(got, dict) else {}
+        if not port:
+            port = str(v.get('port') or 6514)
+        if nodes is None:
+            nodes = ' '.join(v.get('peers') or [])
+        if mutual is None:
+            mutual = bool(v.get('on')) and (v.get('auth') or 'anon') != 'anon'
+        port = self.ask_one(title, 'the port', port, help_='The port rsyslog receives them '
+                            'on over TLS - 6514 is the usual one; never 514.',
+                            check=lambda x, _: None if x.isdigit() and 1 <= int(x) <= 65535
+                            and x != '514' else '1 to 65535, and not 514')
+        if not port:
+            return None
+        how = self.choose('Who may send', [
+            ('yes', 'Mutual TLS: only otp\'s nodes may send'),
+            ('no', 'otp checks isemon; any sender is taken')], cur=0 if mutual else 1)
+        if not how:
+            return None
+        args = ['--otp-tls-port', port, '--otp-tls-mutual', how]
+        if how == 'yes':
+            nodes = self.ask_one(title, 'the nodes', nodes, need=False, help_=(
+                'otp\'s nodes as their certificates name them, a space between them (otp1 '
+                'otp2). Empty: any node with a certificate of otp\'s authority.'))
+            if nodes is None:
+                return None
+            args += ['--otp-tls-nodes', nodes.strip()]
+        return args
+
+    def otp_tls_import(self):
+        path = self.ask_one('Put in the file otp made', 'the file', '/root/isemon-tls.zip',
+                            help_='isemon-tls.zip, as otp\'s Settings → isemon → Encrypted '
+                                  'sending → Make the file for isemon made it.',
+                            check=lambda v, _: None if os.path.isfile(os.path.expanduser(v))
+                            else 'there is no such file')
+        if not path:
+            return
+        word = self.ask_one('Its passphrase', 'the passphrase', secret=True,
+                            help_='The one typed in otp\'s wizard. It opens the file once, '
+                                  'in memory, and is kept nowhere.')
+        if not word:
+            return
+        how = self.choose('Put in the file otp made', [
+            ('file', 'As otp\'s file says (its port, its mode, its nodes)'),
+            ('own', 'Say the port, the mode and the nodes here')])
+        if not how:
+            return
+        more = []
+        if how == 'own':
+            more = self._otp_tls_how('Put in the file otp made')
+            if more is None:
+                return
+        if not self.confirm('Put in the file otp made', 'Root puts its certificate and key '
+                            'in and rsyslog receives otp\'s logs encrypted. One in place now '
+                            'is replaced; the plain input on 514 stays as it is.', 'Put it in'):
+            return
+        # By the environment, never on the command line.
+        self.act('--otp-tls-import', path, *(more + ['--yes']),
+                 env={'ISEMON_ZIP_PASSPHRASE': word})
+
+    def otp_tls_make(self):
+        names = self.ask_one('Make a certificate here', 'the names', ' '.join(
+            otptls_suggest()), help_='The names (and addresses) otp\'s nodes reach this '
+                                     'machine by, a space between them.')
+        if not names:
+            return
+        ca = self.ask_one('Make a certificate here', 'otp\'s authority', need=False, help_=(
+            'For mutual TLS: the file with otp\'s authority (its ca.pem), which the nodes are '
+            'known by. Empty: otp checks isemon only.'),
+            check=lambda v, _: None if not v or os.path.isfile(os.path.expanduser(v))
+            else 'there is no such file')
+        if ca is None:
+            return
+        more = self._otp_tls_how('Make a certificate here', mutual=bool(ca))
+        if more is None:
+            return
+        out = self.ask_one('This machine\'s authority', 'into the file',
+                           '/root/isemon-ca-%s.pem' % time.strftime('%Y%m%d'),
+                           help_='Its certificate, to paste into otp (Settings → isemon → '
+                                 'Encrypted sending → "isemon has one from its own CA"). A '
+                                 'file that is not there yet.',
+                           check=lambda v, _: (
+                               'it is there already: a file is never written over'
+                               if os.path.lexists(os.path.expanduser(v)) else
+                               None if os.path.isdir(os.path.dirname(
+                                   os.path.abspath(os.path.expanduser(v)))) else
+                               'there is no such folder'))
+        if not out:
+            return
+        self.act('--otp-tls-make', names, *(more + (['--otp-tls-ca', ca] if ca else []) +
+                                            ['--out', out]))
+
+    def otp_tls_set(self):
+        more = self._otp_tls_how('Change the otp logs over TLS')
+        if more is not None:
+            self.act('--otp-tls-set', *more)
 
     # ---- 10 upgrades --------------------------------------------------------------
     def m_upgrades(self):
@@ -80764,7 +81773,44 @@ def main(argv=None):
                           'printed once) and kept nowhere else')
     act.add_argument('--out', metavar='FILE',
                      help='with --root-key-make: the file for the private half - made 0600, '
-                          'never written over')
+                          'never written over; with --otp-tls-make: the file for this '
+                          'machine\'s authority, to paste into otp')
+    # Settings - The OTP logs - Encrypted receiving, from here (1.10.245).
+    act.add_argument('--otp-tls', action='store_true', dest='otp_tls',
+                     help='rsyslog\'s encrypted input for otp\'s logs, read afresh: on or '
+                          'off, its port, its mode and nodes, the certificate, whether rsyslog '
+                          'listens, the firewall, the plain input on 514 kept, the last change '
+                          '(Settings - The OTP logs - Encrypted receiving)')
+    act.add_argument('--otp-tls-import', metavar='ZIP', dest='otp_tls_import',
+                     help='put in the file otp made (isemon-tls.zip, Settings → isemon → '
+                          'Encrypted sending): shown first, then asked unless --yes; the port, '
+                          'mode and nodes otp\'s file says unless given here (its passphrase: '
+                          '--passphrase-file, ISEMON_ZIP_PASSPHRASE, else asked)')
+    act.add_argument('--otp-tls-make', metavar='NAMES', dest='otp_tls_make',
+                     help='make a certificate here for the names otp reaches this machine by '
+                          '(comma or space between them), by an authority of this machine\'s '
+                          'own, and put it in; that authority\'s certificate is printed (or '
+                          'written to --out), to paste into otp')
+    act.add_argument('--otp-tls-set', action='store_true', dest='otp_tls_set',
+                     help='change the port, the mode or the nodes of the encrypted input, '
+                          'keeping its certificate')
+    act.add_argument('--otp-tls-off', action='store_true', dest='otp_tls_off',
+                     help='switch the encrypted input off; the plain one on 514 stays. Asks '
+                          'first unless --yes')
+    act.add_argument('--otp-tls-port', metavar='N', type=int, dest='otp_tls_port',
+                     help='with --otp-tls-import, -make or -set: the port it listens on '
+                          '(6514 unless said)')
+    act.add_argument('--otp-tls-nodes', metavar='NAMES', dest='otp_tls_nodes',
+                     help='with --otp-tls-import, -make or -set: otp\'s nodes, as their '
+                          'certificates name them ("otp1 otp2"; "" for any node of otp\'s '
+                          'authority)')
+    act.add_argument('--otp-tls-mutual', metavar='yes|no', choices=('yes', 'no'),
+                     dest='otp_tls_mutual',
+                     help='with --otp-tls-import, -make or -set: mutual TLS - only otp\'s '
+                          'nodes may send (yes), or anybody, otp checking isemon only (no)')
+    act.add_argument('--otp-tls-ca', metavar='FILE', dest='otp_tls_ca',
+                     help='with --otp-tls-make or -set: otp\'s authority (its ca.pem), which '
+                          'mutual TLS knows the nodes by')
     act.add_argument('--full', action='store_true',
                      help='with --backup: a full backup - the copy with the keys in it '
                           '(settings.key, banfeed.key, known_hosts) and config.json to read')
@@ -80789,7 +81835,8 @@ def main(argv=None):
     act.add_argument('--passphrase-file', metavar='FILE', dest='passphrase_file',
                      help='with --restore-bundle: the password of the backups, one line (else '
                           'ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the '
-                          'passphrase of the private key')
+                          'passphrase of the private key; with --otp-tls-import: the '
+                          'passphrase of the file otp made')
     act.add_argument('--rbackup-now', action='store_true', dest='rbackup_now',
                      help='a backup to every destination switched on (Settings -> Backups), now')
     act.add_argument('--rbackup-status', action='store_true', dest='rbackup_status',
@@ -80799,8 +81846,9 @@ def main(argv=None):
                           'With no name it lists what there is. Never touches accounts, '
                           'settings or the whitelist')
     act.add_argument('--yes', action='store_true',
-                     help='with --erase, --reboot, --poweroff, --os-update or '
-                          '--root-key-drop: do not ask first')
+                     help='with --erase, --reboot, --poweroff, --os-update, '
+                          '--root-key-drop, --otp-tls-import or --otp-tls-off: do not ask '
+                          'first')
     act.add_argument('--stop-job', metavar='NAME', dest='stop_job',
                      help='ask one of the jobs from --jobs to stop. It stops after the '
                           'batch it is in and keeps what it has already done')
@@ -80913,6 +81961,9 @@ def main(argv=None):
         (args.root_keys, cmd_root_keys), (bool(args.root_key_add), cmd_root_key_add),
         (bool(args.root_key_drop), cmd_root_key_drop),
         (bool(args.root_key_make), cmd_root_key_make),
+        (args.otp_tls, cmd_otp_tls), (bool(args.otp_tls_import), cmd_otp_tls_import),
+        (bool(args.otp_tls_make), cmd_otp_tls_make), (args.otp_tls_set, cmd_otp_tls_set),
+        (args.otp_tls_off, cmd_otp_tls_off),
         (args.failed, cmd_failed), (args.passed, cmd_passed),
         (args.blocked, cmd_blocked), (args.events, cmd_events), (args.check, cmd_check),
         (bool(args.address), cmd_address), (bool(args.ban), cmd_ban),
