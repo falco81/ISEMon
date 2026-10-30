@@ -2692,6 +2692,13 @@ def otptls_read():
         out['listening'] = listening(conf['port'])
         out['fw_open'] = fw_port_open(conf['port'])
     out['trouble'] = rsyslog_trouble()
+    # Whatever is left in the folder - from a set-up refused half way, say -
+    # so that Remove… has something to take away (1.10.247).
+    try:
+        out['left'] = sorted(n for n in os.listdir(OTPTLS_DIR) if n != '.isemon.json')[:20] \
+            if os.path.isdir(OTPTLS_DIR) and not os.path.islink(OTPTLS_DIR) else []
+    except OSError:
+        out['left'] = []
     return out
 
 

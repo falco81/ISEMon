@@ -371,6 +371,13 @@ working.
 
 ## Version
 
+1.10.247
+
+- *Encrypted receiving (TLS)* on The OTP logs: **Switch off…** and **Remove…**
+  are always on the card - greyed, and saying why, when there is nothing for
+  them to do (they were left out then, and looked missing). Remove… is there
+  too for whatever a set-up refused half way left in `/etc/pki/rsyslog/otp/`.
+
 1.10.246
 
 - **The otp logs over TLS: rsyslog took no input** where imtcp is loaded by a

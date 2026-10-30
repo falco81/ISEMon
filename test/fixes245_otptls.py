@@ -402,6 +402,13 @@ try:
                                       r['data'].get('own_ca')), ({'there': False}, None, None))
     r = ask({'id': 'k2', 'do': 'remove'})
     ok('removed again: no fault', r['ok'])
+    PKI.mkdir(parents=True)
+    (PKI / 'isemon-ca.key').write_text('left from a set-up refused half way')
+    r = ask({'id': 'k3', 'do': 'read'})
+    ok('what is left in the folder is said (1.10.247), so Remove… has something to do',
+       (r['data']['conf'], r['data']['left']), ({'there': False}, ['isemon-ca.key']))
+    r = ask({'id': 'k4', 'do': 'remove'})
+    ok('...and taken away', (r['ok'], PKI.exists()), (True, False))
 
     # ------------------------------------------------------------------------
     print('\nThe daemon: the card\'s questions, done behind')
@@ -535,6 +542,9 @@ try:
                                               for e in store.events(limit=50)[0])),
        (False, {}, False, True))
     ok('...the page offers it', ("action: 'remove'" in page_, "'Remove…'" in page_), (True, True))
+    ok('...Switch off and Remove always on the card, greyed when there is nothing to do',
+       ("sw.disabled = off || !d.on;" in page_, "rm.disabled = off || !anything;" in page_,
+        "(d.left && d.left.length)" in page_), (True, True, True))
     stop.set()
 
     print('\nThe pages, the command line, the path unit')

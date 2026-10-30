@@ -40679,20 +40679,22 @@ function drawOtpTls() {
       .catch(function (e) { busy(again, false); oops(e); });
   };
   row.appendChild(again);
-  if (d.on) {
-    var sw = cmdButton('Switch off…', 'forget', 'danger');
-    explain(sw, 'The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes.');
-    sw.disabled = off;
-    sw.onclick = function () { otOff(); };
-    row.appendChild(sw);
-  }
-  if (d.on || (d.cert && d.cert.subject) || (d.own_ca && d.own_ca.pem) || (d.ca && d.ca.length)) {
-    var rm = cmdButton('Remove…', 'trash', 'danger');
-    explain(rm, 'The encrypted receiving taken away whole: the input, isemon\'s certificate and key, otp\'s authority and the one made here. The plain input on 514 stays.');
-    rm.disabled = off;
-    rm.onclick = function () { otRemove(); };
-    row.appendChild(rm);
-  }
+  /* Both always there (1.10.247) - greyed, and saying why, when there is
+     nothing for them to do. */
+  var sw = cmdButton('Switch off…', 'forget', 'danger');
+  explain(sw, d.on ? 'The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes.'
+    : 'Nothing to switch off: rsyslog has no encrypted input for otp here.');
+  sw.disabled = off || !d.on;
+  sw.onclick = function () { otOff(); };
+  row.appendChild(sw);
+  var anything = d.on || (d.cert && d.cert.subject) || (d.own_ca && d.own_ca.pem) || (d.ca && d.ca.length)
+    || (d.left && d.left.length);
+  var rm = cmdButton('Remove…', 'trash', 'danger');
+  explain(rm, anything ? 'The encrypted receiving taken away whole: the input, isemon\'s certificate and key, otp\'s authority and the one made here. The plain input on 514 stays.'
+    : 'Nothing to remove: no encrypted input, no certificate and no key of it are on this machine.');
+  rm.disabled = off || !anything;
+  rm.onclick = function () { otRemove(); };
+  row.appendChild(rm);
   host.appendChild(row);
   if (d.on && d.mine) {
     host.appendChild(el('p', 'btnhelp', 'Then, on otp - Settings → isemon → Encrypted sending:'));

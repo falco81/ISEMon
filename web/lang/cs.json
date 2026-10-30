@@ -15200,9 +15200,17 @@
    "source": "nothing to do",
    "text": "není co dělat"
   },
+  "s.nothing-to-remove-no-encrypted-input.9580ec2c": {
+   "source": "Nothing to remove: no encrypted input, no certificate and no key of it are on this machine.",
+   "text": "Není co odebrat: na tomto stroji není šifrovaný vstup ani jeho certifikát a klíč."
+  },
   "s.nothing-to-send-yet.0ddbccda": {
    "source": "nothing to send yet",
    "text": "zatím není co odeslat"
+  },
+  "s.nothing-to-switch-off-rsyslog-has.bb9fa8da": {
+   "source": "Nothing to switch off: rsyslog has no encrypted input for otp here.",
+   "text": "Není co vypnout: rsyslog tu nemá šifrovaný vstup pro otp."
   },
   "s.nothing-typed-inside-configure-terminal-is.27dafee3": {
    "source": "Nothing typed inside configure terminal is in this list — not because it was lost here, but because the device never sent it. A Cisco device asks the TACACS+ server about commands typed in configuration mode only with “aaa authorization config-commands”, and a tac_plus server writes them down only with “aaa accounting commands 15 default start-stop group tacacs+”. Without either, what was changed is not recorded anywhere.",

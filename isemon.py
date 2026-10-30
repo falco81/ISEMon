@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.246'
+__version__ = '1.10.247'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -65262,6 +65262,7 @@ def otptls_view(wr):
             'version': now.get('version') or '', 'driver_there': now.get('driver_there') or '',
             'cert': now.get('cert') or {}, 'ca': now.get('ca') or [],
             'own_ca': now.get('own_ca') or {}, 'how': now.get('how') or '',
+            'left': now.get('left') or [],
             'listening': now.get('listening'), 'fw': now.get('fw') or '',
             'fw_open': now.get('fw_open'), 'trouble': now.get('trouble') or [],
             'plain': [p for p in now.get('others') or [] if str(p.get('port')) == '514'],
