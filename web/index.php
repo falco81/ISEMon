@@ -3855,6 +3855,21 @@ function srcText(el) {
   #ou-host > .card + .card,#ou-host > .pw-grid + .card,#ou-host > .note + .card,#ou-host > .card + .pw-grid,
   #ou-host > .card + .note{margin-top:16px}
   #ou-host .pw-grid{margin-bottom:0}
+  /* SSH keys of root (1.10.239; here, 1.10.240: inside the pane they went with
+     its first drawing) */
+  #sk-host > .card + .card, #sk-host > .card + .pw-grid, #sk-host > .note + .card{margin-top:16px}
+  #sk-host > .note{margin:0 0 12px}
+  #sk-host .rb-panel .btnrow{flex-wrap:wrap;gap:8px}
+  #sk-host td.sk-act{white-space:nowrap;text-align:right}
+  #sk-host td.sk-act button + button{margin-left:8px}
+  #sk-host td .tag + .tag{margin-left:6px}
+  #sk-host .pw-grid{margin-top:16px;grid-template-columns:repeat(auto-fill,minmax(640px,1fr))}
+  #sk-host .pw-node .net-facts{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr)}
+  #sk-host .pw-node .net-fact .v.mono{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #pane-sshkeys .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  #pane-sshkeys .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
+  .modal .sk-made textarea{width:100%;box-sizing:border-box}
+  .modal .sk-made .btnrow{margin:12px 0 16px}
   #ou-host .ou-reboot{border-color:rgba(210,153,34,.55)}
   #ou-host .ou-reboot .btn{margin-top:4px}
   #ou-host .card h2 .right{display:inline-flex;gap:8px;align-items:center}
@@ -5848,22 +5863,7 @@ function srcText(el) {
         nowhere on the server; one of your own is put on by its public half. Every change is
         written into Events.</p>
     </div>
-    <div id="sk-host">
-      <style nonce="<?= h($nonce) ?>">
-        #sk-host > .card + .card, #sk-host > .card + .pw-grid, #sk-host > .note + .card{margin-top:16px}
-        #sk-host > .note{margin:0 0 12px}
-        #sk-host .rb-panel .btnrow{flex-wrap:wrap;gap:8px}
-        #sk-host td.sk-act{white-space:nowrap;text-align:right}
-        #sk-host td.sk-act button + button{margin-left:8px}
-        #sk-host td .tag + .tag{margin-left:6px}
-        #sk-host .pw-grid{margin-top:16px;grid-template-columns:repeat(auto-fill,minmax(520px,1fr))}
-        #sk-host .pw-node .net-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
-        #pane-sshkeys .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
-        #pane-sshkeys .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
-        .modal .sk-made textarea{width:100%;box-sizing:border-box}
-        .modal .sk-made .btnrow{margin:12px 0 16px}
-      </style>
-    </div>
+    <div id="sk-host"></div>
   </div>
 
   <!-- ---------- backups to another machine (1.10.228) ---------- -->
@@ -40103,9 +40103,7 @@ function skKind(k) {
 function drawSshKeys() {
   var host = $('sk-host');
   if (!host || !SK.d) return;
-  var style = host.querySelector('style');
   clear(host);
-  if (style) host.appendChild(style);
   var d = SK.d, sd = d.sshd || {}, keys = d.keys || [];
   if (!d.helper) {
     host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet '

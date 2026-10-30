@@ -371,6 +371,12 @@ working.
 
 ## Version
 
+1.10.240
+
+- **SSH keys of root: the server's card wide enough.** Its file,
+  `/root/.ssh/authorized_keys`, is on one line; the pane's own styles are in the
+  page's stylesheet, no longer inside the part of the pane that is drawn again.
+
 1.10.239
 
 - **Settings - System updates**, as otp has it: what dnf (or apt) has waiting
