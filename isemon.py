@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.241'
+__version__ = '1.10.242'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -76380,6 +76380,594 @@ def cmd_change(args, pal, store):
     return 0
 
 
+# ---- Settings - System updates, from here (1.10.242) ------------------------------
+# What the pane shows and asks, through the same /api/osup: what is waiting,
+# a look for updates, an update with its bar and the package manager's lines,
+# and Stop while it waits to begin. The daemon refuses here what it refuses
+# there, in the same words.
+OSUP_CLI_STATE = {'waiting': 'waits to begin', 'updating': 'updating',
+                  'rebooting': 'restarting', 'done': 'done', 'failed': 'failed'}
+
+
+def _osup_view_cli(session):
+    status, v = api_call('/api/osup', timeout=30, session=session)
+    return status, v
+
+
+def _new_lines(old, new):
+    """The lines of `new` not shown yet: what follows the part of `old` it
+    still holds (the window slides, so the old lines go off its top)."""
+    old, new = list(old or []), list(new or [])
+    for k in range(min(len(old), len(new)), 0, -1):
+        if old[-k:] == new[:k]:
+            return new[k:]
+    return new
+
+
+def osup_restart_words(ck):
+    """The page's 'A restart' fact."""
+    if not ck.get('checked'):
+        return ''
+    if ck.get('reboot_now'):
+        return 'needed now, before any update'
+    if ck.get('reboot_after') and ck.get('count'):
+        return 'needed after the update - %s' % ', '.join(ck.get('reboot_why') or [])
+    return 'not needed by these updates'
+
+
+def osup_print(pal, v, lines=True):
+    """--os-updates: what is waiting, and the update under way or the last."""
+    n = (v.get('nodes') or [{}])[0]
+    ck = n.get('check') or {}
+    plan = v.get('plan') or {}
+    row = n.get('row') or {}
+    pal.title('Updates of the system on %s' % (n.get('name') or socket.gethostname()))
+    if not v.get('helper'):
+        pal.bad(OSUP_NO_HELPER)
+    pal.kv('updates waiting', ('looking...' if ck.get('state') == 'running' else
+                               num_words(int(ck.get('count') or 0)) if ck.get('checked')
+                               else 'not looked yet'))
+    if ck.get('checked') and ck.get('security') is not None:
+        pal.kv('of them security', num_words(int(ck['security'])))
+    if ck.get('checked'):
+        words = osup_restart_words(ck)
+        pal.kv('a restart', pal.warn_text(words) if words.startswith('needed') else words)
+        pal.kv('looked', '%s (%s)' % (human_age(time.time() - float(ck['checked'])),
+                                      stamp(ck['checked'])))
+    if ck.get('pm'):
+        pal.kv('updated by', ck['pm'])
+    if ck.get('error'):
+        pal.bad('  %s' % ck['error'])
+    pk = ck.get('packages') or []
+    if pk and ck.get('state') != 'running':
+        pal.head('What is waiting')
+        for one in pk[:300]:
+            pal.bullet(one)
+        if len(pk) > 300:
+            pal.note('    ...and %d more' % (len(pk) - 300))
+    if plan.get('id'):
+        st = row.get('state') or 'waiting'
+        how = {'running': 'going on', 'done': 'done', 'failed': 'failed',
+               'cancelled': 'stopped'}.get(plan.get('state') or 'running', plan.get('state'))
+        pal.title('The update (%s)' % how)
+        pal.kv('started by', '%s, %s' % (plan.get('by') or '?', stamp(plan.get('at'))))
+        pal.kv('after it', 'restarted by itself when needed' if plan.get('reboot') == 'auto'
+               else 'a restart it needs is asked for')
+        if plan.get('state') == 'cancelled':
+            pal.kv('step', 'stopped before it began - nothing was updated')
+        else:
+            pal.kv('step', OSUP_CLI_STATE.get(st, st) + (
+                '  %s' % upgrade_bar(row.get('pct')) if st == 'updating' else ''))
+            said = row.get('said') or ''
+            if not said and plan.get('state') == 'running' and st == 'waiting':
+                said = 'begins within seconds - it can be stopped until then ' \
+                       '(isemon --os-update-stop)'
+            if said:
+                pal.kv('what happened', said)
+        if lines:
+            for line in (row.get('lines') or [])[-15:]:
+                pal.note('    ' + line)
+    if n.get('reboot') and not (v.get('power') or {}).get('id'):
+        pal.warn('this server needs a restart: a new kernel or libraries are in that only a '
+                 'restart brings into use - isemon --reboot')
+    if v.get('refused'):
+        pal.warn('an update may not begin now: %s' % v['refused'])
+    if (v.get('power') or {}).get('id'):
+        pal.note('  restarting - isemon --reboot shows nothing more; the server comes back by '
+                 'itself')
+    pal.blank()
+
+
+def cmd_os_updates(args, pal, store):
+    """--os-updates: what dnf (or apt) has waiting, and the update under way
+    or the last one (Settings - System updates)."""
+    session = cli_session(store)
+    status, v = _osup_view_cli(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if as_json(args, v):
+        return 0
+    osup_print(pal, v)
+    return 0
+
+
+def _osup_cli_follow_look(pal, session, quiet):
+    """A look for updates followed until it is over: its lines as they come.
+    The view at the end, or None when the daemon stopped answering."""
+    shown = []
+    while True:
+        status, v = _osup_view_cli(session)
+        if status != 200:
+            need_daemon(pal, status, v)
+            return None
+        ck = ((v.get('nodes') or [{}])[0]).get('check') or {}
+        lines = ck.get('lines') or []
+        if not quiet:
+            for line in _new_lines(shown, lines):
+                pal.note('    ' + line)
+        shown = lines
+        if ck.get('state') != 'running':
+            return v
+        time.sleep(1.5)
+
+
+def cmd_os_updates_check(args, pal, store):
+    """--os-updates-check: Look for updates, followed until it is done."""
+    session = cli_session(store)
+    status, data = api_call('/api/osup', 'POST', {'action': 'check'}, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    quiet = getattr(args, 'json', False)
+    if not quiet:
+        pal.note('  %s...' % (data.get('message') or 'looking for updates'))
+    try:
+        v = _osup_cli_follow_look(pal, session, quiet)
+    except KeyboardInterrupt:
+        pal.note('\n  no longer followed here; the look goes on (isemon --os-updates)')
+        return 0
+    if v is None:
+        return 1
+    if as_json(args, v):
+        return 0
+    osup_print(pal, v, lines=False)
+    ck = ((v.get('nodes') or [{}])[0]).get('check') or {}
+    return 1 if ck.get('state') == 'failed' else 0
+
+
+def cmd_os_update(args, pal, store):
+    """--os-update: every package of the system updated, as Update it now
+    does - asked first unless --yes, then followed with its bar and what the
+    package manager says until it is over. Ctrl+C stops the following, not
+    the update."""
+    session = cli_session(store)
+    status, v = _osup_view_cli(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    how = args.reboot_after or 'ask'
+    if not v.get('helper'):
+        pal.bad(OSUP_NO_HELPER)
+        return 1
+    if v.get('refused'):
+        pal.bad(v['refused'])
+        return 1
+    ck = ((v.get('nodes') or [{}])[0]).get('check') or {}
+    quiet = getattr(args, 'json', False)
+    if not args.yes:
+        pal.title('Update this server')
+        pal.say('  Every package of the system is updated.')
+        pal.say('  When it needs one, the server is restarted by itself.' if how == 'auto' else
+                '  A restart it needs is offered when it is done.')
+        if ck.get('reboot_after') and ck.get('count'):
+            pal.warn('This server needs a restart after this update: %s.'
+                     % ', '.join(ck.get('reboot_why') or []))
+        elif not ck.get('checked'):
+            pal.note('  (not looked for updates yet: isemon --os-updates-check says what is '
+                     'waiting)')
+        try:
+            said = input('  update this server now? type yes to go ahead: ').strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            said = ''
+        if said != 'yes':
+            pal.note('  nothing was done')
+            return 1
+    status, data = api_call('/api/osup', 'POST', {'action': 'start', 'reboot': how},
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    plan_id = (data.get('plan') or {}).get('id')
+    if not quiet:
+        pal.good(data.get('message') or 'asked')
+    shown, last, said_wait, restarting = [], None, False, False
+    try:
+        while True:
+            status, v = _osup_view_cli(session)
+            if status == 0 and restarting:
+                if not quiet:
+                    pal.good('updated - the server is restarting, as it needs; the update is '
+                             'done when it is up again (isemon --os-updates)')
+                return 0
+            if not need_daemon(pal, status, v):
+                return 1
+            plan = v.get('plan') or {}
+            n = (v.get('nodes') or [{}])[0]
+            row = n.get('row') or {}
+            if plan.get('id') != plan_id:
+                if not quiet:
+                    pal.note('  the update is not shown any more (hidden on the page) - '
+                             'isemon --os-updates')
+                return 0
+            st = row.get('state') or 'waiting'
+            if not quiet:
+                for line in _new_lines(shown, row.get('lines') or []):
+                    pal.note('    ' + line)
+            shown = row.get('lines') or []
+            if plan.get('state') == 'cancelled':
+                if as_json(args, v):
+                    return 1
+                pal.warn('stopped before it began - nothing was updated')
+                return 1
+            if plan.get('state') == 'running':
+                if st == 'waiting' and not said_wait and not quiet:
+                    left = max(0, int(float(v.get('grace') or 10) -
+                                      (time.time() - float(plan.get('at') or time.time()))))
+                    pal.note('  it begins in %d s - until then isemon --os-update-stop stops '
+                             'it' % left)
+                    said_wait = True
+                elif st == 'updating' and not quiet:
+                    words = '%s  %s' % (upgrade_bar(max(8, min(95, int(row.get('pct') or 0)))),
+                                        row.get('phase') or 'updating')
+                    if words != last:
+                        print('  ' + words)
+                        last = words
+                elif st == 'rebooting':
+                    restarting = True
+                    if last != 'rebooting' and not quiet:
+                        pal.note('  %s' % (row.get('said') or 'updated - restarting, as it needs'))
+                    last = 'rebooting'
+                time.sleep(1.5)
+                continue
+            # Over: done or failed.
+            if as_json(args, v):
+                return 0 if plan.get('state') == 'done' else 1
+            if plan.get('state') == 'done':
+                print('  ' + upgrade_bar(100) + '  done')
+                pal.good(row.get('said') or 'updated')
+                if n.get('reboot') and not (v.get('power') or {}).get('id'):
+                    pal.warn('it needs a restart to bring the new kernel or libraries into '
+                             'use: isemon --reboot')
+                return 0
+            pal.bad('the update failed: %s' % (row.get('said') or 'it failed'))
+            return 1
+    except KeyboardInterrupt:
+        pal.note('\n  no longer followed here; the update goes on (isemon --os-updates)')
+        return 0
+
+
+def cmd_os_update_stop(args, pal, store):
+    """--os-update-stop: an update stopped while it waits to begin."""
+    session = cli_session(store)
+    status, data = api_call('/api/osup', 'POST', {'action': 'cancel'}, session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    if as_json(args, data):
+        return 0
+    pal.good(data.get('message') or 'stopped')
+    return 0
+
+
+# ---- Settings - SSH keys of root, from here (1.10.242) ----------------------------
+# Through the same /api/sshkeys, so a full administrator's rights and root's
+# helper decide here what they decide there. What is asked is done by root
+# behind, within seconds: each command waits for it and says what root said.
+def _sk_view(session):
+    return api_call('/api/sshkeys', timeout=30, session=session)
+
+
+def _sk_settle(pal, session, since=None, wait=90):
+    """The keys once root has done what was asked (and, with `since`, read
+    them after that moment). None when the daemon does not answer."""
+    end = time.time() + wait
+    v = {}
+    while True:
+        status, v = _sk_view(session)
+        if not need_daemon(pal, status, v):
+            return None
+        done = not v.get('pending') and not v.get('busy')
+        fresh = since is None or float(v.get('at') or 0) >= since or v.get('error')
+        if (done and fresh) or not v.get('helper') or time.time() > end:
+            return v
+        time.sleep(0.5)
+
+
+def sk_kind_words(k):
+    t = str(k.get('type') or '?').upper()
+    return t + (' %s' % k['bits'] if k.get('bits') and t != 'ED25519' else '')
+
+
+def sk_print(pal, v):
+    keys = v.get('keys') or []
+    sd = v.get('sshd') or {}
+    kept = v.get('kept') or {}
+    pal.title('SSH keys of root on %s' % socket.gethostname())
+    if not v.get('helper'):
+        pal.warn('root\'s half of this is not installed on this machine yet (isemon-web.path): '
+                 'run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until '
+                 'then the keys are neither read nor changed here')
+    if v.get('error'):
+        pal.bad('root said: %s' % v['error'])
+    if sd.get('there') and sd.get('permit_root') == 'no':
+        pal.warn('sshd does not let root sign in at all (PermitRootLogin no) - the keys below '
+                 'are not used until it does')
+    if sd.get('there') and sd.get('pubkey') == 'no':
+        pal.warn('sshd takes no keys (PubkeyAuthentication no)')
+    if not keys:
+        pal.note('  ' + ('no key lets root in over SSH on this server' if v.get('at') else
+                         'not read'))
+    else:
+        rows = []
+        for k in keys:
+            marks = []
+            if kept.get('fp') and k.get('fp') == kept['fp']:
+                marks.append('made here' if kept.get('how') == 'made' else 'given here')
+            if k.get('options'):
+                marks.append('with options')
+            if k.get('readable') is False:
+                marks.append('not read')
+            rows.append([sk_kind_words(k), k.get('fp') or '-', k.get('comment') or '-',
+                         ', '.join(marks)])
+        print_table(pal, ['key', 'fingerprint', 'comment', ''], rows, indent=2)
+    pal.blank()
+    pal.kv('keys', str(len(keys)) if v.get('at') else '-')
+    pal.kv('root may sign in', (sd.get('permit_root') or '?') if sd.get('there') else (
+        'sshd is not here' if v.get('at') else '-'))
+    if sd.get('there'):
+        pal.kv('with a password', sd.get('password') or '?')
+        if sd.get('port'):
+            pal.kv('SSH port', str(sd['port']))
+    pal.kv('the file', v.get('file') or '/root/.ssh/authorized_keys')
+    pal.kv('read', human_age(time.time() - float(v['at'])) if v.get('at') else 'not yet')
+    if v.get('pending'):
+        pal.note('  being written...')
+    pal.blank()
+
+
+def cmd_root_keys(args, pal, store):
+    """--root-keys: the keys that may sign in as root, read afresh, and what
+    sshd makes of root (Settings - SSH keys of root)."""
+    session = cli_session(store)
+    status, v = _sk_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if v.get('helper'):
+        asked = time.time() - 1
+        status, data = api_call('/api/sshkeys', 'POST', {'action': 'refresh'}, session=session)
+        if not need_daemon(pal, status, data):
+            return 1
+        v = _sk_settle(pal, session, since=asked, wait=30)
+        if v is None:
+            return 1
+    if as_json(args, v):
+        return 0
+    sk_print(pal, v)
+    return 1 if v.get('error') or not v.get('helper') else 0
+
+
+def _sk_after(args, pal, session, words, blob=''):
+    """What root said of the change just asked: said, and the keys now."""
+    v = _sk_settle(pal, session)
+    if v is None:
+        return 1
+    if as_json(args, v):
+        return 1 if v.get('error') else 0
+    if v.get('pending') or v.get('busy'):
+        pal.warn('asked; root has not done it yet - isemon --root-keys in a minute')
+        return 1
+    if v.get('error'):
+        pal.bad('root said: %s' % v['error'])
+        return 1
+    pal.good(words)
+    for k in v.get('keys') or []:
+        if blob and blob in str(k.get('text') or ''):
+            pal.kv('fingerprint', k.get('fp') or '-')
+    pal.kv('root\'s keys now', str(len(v.get('keys') or [])))
+    return 0
+
+
+def _key_text(given):
+    """--root-key-add's LINE or FILE: what is in the file when it is one, a
+    private key whole, else its first line."""
+    p = Path(str(given)).expanduser()
+    text = str(given)
+    try:
+        if p.is_file():
+            if p.stat().st_size > 65536:
+                raise ValueError('that file is far bigger than a key')
+            text = p.read_text(errors='replace')
+    except OSError as e:
+        raise ValueError(str(e))
+    text = text.strip()
+    if 'PRIVATE KEY' in text:
+        return text, True
+    return (text.splitlines() or [''])[0].strip(), False
+
+
+def _key_passphrase(args):
+    """The passphrase of a private key: --passphrase-file, or
+    ISEMON_KEY_PASSPHRASE in the environment - never the command line."""
+    if getattr(args, 'passphrase_file', None):
+        return Path(args.passphrase_file).expanduser().read_text().split('\n')[0].rstrip('\r')
+    return os.environ.get('ISEMON_KEY_PASSPHRASE', '')
+
+
+def cmd_root_key_add(args, pal, store):
+    """--root-key-add LINE|FILE: a key put into root's authorized_keys - a
+    public line or .pub file, or a private key of which only the public half
+    goes in, as Add a key does."""
+    try:
+        text, private = _key_text(args.root_key_add)
+        passphrase = _key_passphrase(args) if private else ''
+    except (ValueError, OSError) as e:
+        pal.bad(str(e))
+        return 1
+    session = cli_session(store)
+    status, data = api_call('/api/sshkeys', 'POST', {'action': 'add', 'line': text,
+                                                     'passphrase': passphrase},
+                            session=session)
+    if status == 400 and private and not passphrase and 'passphrase' in str(
+            data.get('error') or '') and sys.stdin.isatty():
+        try:
+            passphrase = getpass.getpass('  the passphrase of the private key: ')
+        except (EOFError, KeyboardInterrupt):
+            passphrase = ''
+        if passphrase:
+            status, data = api_call('/api/sshkeys', 'POST', {'action': 'add', 'line': text,
+                                                             'passphrase': passphrase},
+                                    session=session)
+    passphrase = ''
+    if not need_daemon(pal, status, data):
+        return 1
+    if not getattr(args, 'json', False):
+        pal.note('  %s' % (data.get('message') or 'asked'))
+    blob = '' if private else (text.split() + ['', ''])[1]
+    return _sk_after(args, pal, session, 'the key is in root\'s authorized_keys' + (
+        ' - the private half was not kept' if private else ''), blob)
+
+
+def cmd_root_key_drop(args, pal, store):
+    """--root-key-drop FINGERPRINT: a key taken away, asked first unless
+    --yes; the last one root signs in with only with --last, and asked
+    again, as the page asks twice."""
+    fp = str(args.root_key_drop or '').strip()
+    session = cli_session(store)
+    status, v = _sk_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if v.get('helper'):
+        asked = time.time() - 1
+        status, data = api_call('/api/sshkeys', 'POST', {'action': 'refresh'}, session=session)
+        if not need_daemon(pal, status, data):
+            return 1
+        v = _sk_settle(pal, session, since=asked, wait=30)
+        if v is None:
+            return 1
+    keys = [k for k in v.get('keys') or [] if k.get('fp')]
+    k = ([x for x in keys if x['fp'] == fp] or [None])[0]
+    if not v.get('helper'):
+        pal.bad('root\'s half is not installed on this machine yet: run ./install.sh '
+                '--upgrade (1.10.239 or later) once')
+        return 1
+    if k is None:
+        pal.bad('no key of root has the fingerprint %s (isemon --root-keys lists them)' % fp)
+        return 1
+    last = len(keys) <= 1
+    who = fp + (' (%s)' % k['comment'] if k.get('comment') else '')
+    if last and not args.last:
+        pal.bad('%s is the last key root signs in with on this server. Unless root may sign '
+                'in with a password, nobody reaches it over SSH as root after this - '
+                '--last takes it away all the same' % who)
+        return 1
+    if not args.yes:
+        pal.say('  Root no longer signs in with %s on this server.' % who)
+        if last:
+            pal.warn('It is the last key root signs in with on this server. Unless root may '
+                     'sign in with a password, nobody reaches it over SSH as root after this.')
+        try:
+            said = input('  take the key away? type yes to go ahead: ').strip().lower()
+            if said == 'yes' and last:
+                pal.say('  Said again: %s is the last key root signs in with on this server. '
+                        'After it is gone, nobody reaches it over SSH as root with a key.' % fp)
+                said = input('  take the last key away anyway? type yes to go ahead: ') \
+                    .strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            said = ''
+        if said != 'yes':
+            pal.note('  nothing was done')
+            return 1
+    status, data = api_call('/api/sshkeys', 'POST', {'action': 'drop', 'fp': fp,
+                                                     'last_ok': bool(last and args.last)},
+                            session=session)
+    if not need_daemon(pal, status, data):
+        return 1
+    return _sk_after(args, pal, session, 'the key %s is taken away' % fp)
+
+
+def cmd_root_key_make(args, pal, store):
+    """--root-key-make ed25519|rsa4096: a key made as Make a key makes it.
+    Its public half goes into root's authorized_keys; its private half is
+    written once to --out (0600, never over a file there) or printed once,
+    and kept nowhere else."""
+    kind = args.root_key_make
+    out = Path(args.out).expanduser() if args.out else None
+    fd = None
+    if out is not None:
+        if os.path.lexists(str(out)):
+            pal.bad('%s is there already: nothing was made (a file is never written over)'
+                    % out)
+            return 1
+        try:
+            # Made empty first, so that the key is not made for a file that
+            # cannot be written - and never through a link put there meanwhile.
+            fd = os.open(str(out), os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            os.fchmod(fd, 0o600)
+        except OSError as e:
+            pal.bad('%s cannot be written: %s' % (out, e.strerror or e))
+            return 1
+    session = cli_session(store)
+    status, data = api_call('/api/sshkeys', 'POST', {'action': 'rk_make', 'kind': kind},
+                            session=session, timeout=180)
+    if status != 200 or not data.get('private'):
+        if fd is not None:
+            os.close(fd)
+            try:
+                os.unlink(str(out))
+            except OSError:
+                pass
+        if need_daemon(pal, status, data):
+            pal.bad(data.get('error') or 'no key came back')
+        return 1
+    private = data.pop('private')
+    if fd is not None:
+        with os.fdopen(fd, 'w') as f:
+            f.write(private if private.endswith('\n') else private + '\n')
+            f.flush()
+            os.fsync(f.fileno())
+        data['out'] = str(out)
+    private_shown = None if out is not None else private
+    private = ''
+    if getattr(args, 'json', False):
+        v = _sk_settle(pal, session) or {}
+        print(json.dumps(dict(data, private=private_shown, error=v.get('error') or '')
+                         if private_shown else dict(data, error=v.get('error') or ''),
+                         indent=2, ensure_ascii=False))
+        return 1 if v.get('error') else 0
+    pal.title('A new %s key for root' % ('Ed25519' if kind == 'ed25519' else 'RSA 4096'))
+    if out is not None:
+        pal.good('made - its private half is in %s (0600), and kept nowhere else' % out)
+    else:
+        pal.warn('made - keep the private half now, it is not shown again. Whoever holds it '
+                 'signs in to this server as root:')
+        sys.stdout.write(private_shown if private_shown.endswith('\n') else private_shown + '\n')
+        sys.stdout.flush()
+        private_shown = None
+    pal.kv('fingerprint', data.get('fp') or '-')
+    pal.kv('public half', data.get('pub') or '-')
+    pal.note('  then, on your machine: ssh -i %s root@%s' % (
+        out if out is not None else data.get('file') or 'the-key', socket.gethostname()))
+    v = _sk_settle(pal, session)
+    if v is None:
+        return 1
+    if v.get('error'):
+        pal.bad('root said: %s - isemon --root-keys, and the public half again with '
+                'isemon --root-key-add' % v['error'])
+        return 1
+    if (v.get('kept') or {}).get('on'):
+        pal.good('its public half is in root\'s authorized_keys')
+    else:
+        pal.warn('its public half is not in root\'s authorized_keys yet - isemon --root-keys '
+                 'in a minute')
+    return 0
+
+
 def cmd_web_status(args, pal, store):
     """What root has in place of what the pages asked: nginx, TLS, the
     firewall, and the last upgrade from the pages (1.10.222)."""
@@ -79560,7 +80148,146 @@ class Console(object):
              sure(['--poweroff', '--yes'], 'Switch the machine off', 'The machine switches '
                   'off and stays off until somebody switches it on.', 'Switch it off',
                   danger=True)),
+            ('6', 'System updates', self.os_updates),
+            ('7', 'SSH keys of root', self.root_keys),
         ])
+
+    # ---- 9 > System updates (1.10.242) ----------------------------------------------
+    def os_updates(self):
+        what = self.choose('System updates', [
+            ('show', 'What is waiting, and the update going on or the last'),
+            ('check', 'Look for updates now'),
+            ('update', 'Update this server'),
+            ('stop', 'Stop the update while it waits to begin')],
+            'dnf (or apt) updates every package of the system. Only a full administrator may '
+            'look for updates or update.')
+        if what == 'show':
+            self.act('--os-updates')
+        elif what == 'check':
+            self.live(lambda: self.show_live('--os-updates-check'))
+        elif what == 'update':
+            how = self.choose('After the update', [
+                ('ask', 'Ask me when a restart is needed'),
+                ('auto', 'Restart by itself when needed')])
+            if not how:
+                return
+            got = self.out('--os-updates') or {}
+            ck = ((got.get('nodes') or [{}])[0] if isinstance(got, dict) else {}).get(
+                'check') or {}
+            words = 'Every package of the system is updated. ' + (
+                'When it needs one, the server is restarted by itself.' if how == 'auto' else
+                'A restart it needs is offered when it is done.')
+            if ck.get('reboot_after') and ck.get('count'):
+                words += ' This server needs a restart after this update: %s.' % ', '.join(
+                    ck.get('reboot_why') or [])
+            if isinstance(got, dict) and got.get('refused'):
+                self.note('Update this server', 'Not now: %s.' % got['refused'], 'bad')
+                return
+            if self.confirm('Update this server', words, 'Update', danger=how == 'auto'):
+                self.live(lambda: self.show_live('--os-update', '--reboot-after', how, '--yes'))
+        elif what == 'stop':
+            if self.confirm('Stop the update', 'It has not begun: nothing is updated. Once the '
+                            'package manager is at work it is not stopped half way: it '
+                            'finishes.', 'Stop it', danger=True):
+                self.act('--os-update-stop')
+
+    # ---- 9 > SSH keys of root (1.10.242) --------------------------------------------
+    def root_keys(self):
+        what = self.choose('SSH keys of root', [
+            ('list', 'The keys that may sign in as root, and what sshd says'),
+            ('add', 'Add a key (a public line, a .pub file or a private key file)'),
+            ('drop', 'Take a key away'),
+            ('make', 'Make a key (its private half into a file)')],
+            'The lines of /root/.ssh/authorized_keys, read and changed by root. Only a full '
+            'administrator.')
+        if what == 'list':
+            self.act('--root-keys')
+        elif what == 'add':
+            self.root_key_add()
+        elif what == 'drop':
+            self.root_key_drop()
+        elif what == 'make':
+            self.root_key_make()
+
+    def root_key_add(self):
+        given = self.ask_one('Add a key for root', 'the key line or a file', help_=(
+            'One line of a .pub file (ssh-ed25519 AAAA... you@laptop), or the path of a .pub '
+            'file or of a private key file - of a private key only the public half is used '
+            'and nothing of it kept. Ed25519, ECDSA or RSA of 3072 bits and more.'))
+        if not given:
+            return
+        env = None
+        try:
+            p = Path(given).expanduser()
+            private = p.is_file() and p.stat().st_size <= 65536 and \
+                'PRIVATE KEY' in p.read_text(errors='replace')
+        except OSError:
+            private = False
+        if private:
+            word = self.ask_one('Its passphrase', 'the passphrase', need=False, secret=True,
+                                help_='Empty when the private key has none. It is used once '
+                                      'to read the public half, and kept nowhere.')
+            if word is None:
+                return
+            # By the environment, never on the command line.
+            env = {'ISEMON_KEY_PASSPHRASE': word} if word else None
+        self.act('--root-key-add', given, env=env,
+                 title='$ isemon --root-key-add %s' % (self._quote(given) if private or
+                                                      len(given) < 60 else given[:50] + '...'))
+
+    def root_key_drop(self):
+        got = self.out('--root-keys')
+        keys = [k for k in (got.get('keys') or [] if isinstance(got, dict) else [])
+                if isinstance(k, dict) and k.get('fp')]
+        if not keys:
+            self.note('Take a key away', 'No key of root is read here (isemon --root-keys).',
+                      'warn')
+            return
+        fp = self.choose('Take a key away', [
+            (k['fp'], '%s  %s  %s' % (sk_kind_words(k), k['fp'], k.get('comment') or ''))
+            for k in keys])
+        if not fp:
+            return
+        k = [x for x in keys if x['fp'] == fp][0]
+        last = len(keys) <= 1
+        who = fp + (' (%s)' % k['comment'] if k.get('comment') else '')
+        if not self.confirm('Take the key away', 'Root no longer signs in with %s on this '
+                            'server.%s' % (who, ' It is the last key root signs in with on '
+                                           'this server. Unless root may sign in with a '
+                                           'password, nobody reaches it over SSH as root '
+                                           'after this.' if last else ''),
+                            'Take it away', danger=True):
+            return
+        if last:
+            if not self.confirm('Take the last key away?', 'Said again: %s is the last key '
+                                'root signs in with on this server. After it is gone, nobody '
+                                'reaches it over SSH as root with a key.' % fp,
+                                'Take it away anyway', danger=True):
+                return
+            self.act('--root-key-drop', fp, '--last', '--yes')
+        else:
+            self.act('--root-key-drop', fp, '--yes')
+
+    def root_key_make(self):
+        kind = self.choose('Make a key for root', [
+            ('ed25519', 'Ed25519 (the strongest, and short)'),
+            ('rsa4096', 'RSA 4096 (where something old needs RSA)')],
+            'Its public half goes into root\'s authorized_keys of this server; its private '
+            'half is written once into a file of yours (0600) and kept nowhere else.')
+        if not kind:
+            return
+        out = self.ask_one('The private half', 'into the file', '/root/isemon-root-%s' %
+                           time.strftime('%Y%m%d'),
+                           help_='A file that is not there yet; made 0600. Whoever holds it '
+                                 'signs in to this server as root.',
+                           check=lambda v, _: (
+                               'it is there already: a file is never written over'
+                               if os.path.lexists(os.path.expanduser(v)) else
+                               None if os.path.isdir(os.path.dirname(
+                                   os.path.abspath(os.path.expanduser(v)))) else
+                               'there is no such folder'))
+        if out:
+            self.act('--root-key-make', kind, '--out', out)
 
     # ---- 10 upgrades --------------------------------------------------------------
     def m_upgrades(self):
@@ -79997,6 +80724,47 @@ def main(argv=None):
                           'its sources (Settings - Time)')
     act.add_argument('--time-step', action='store_true', dest='time_step',
                      help='step the clock to the time servers now (chronyc makestep)')
+    # Settings - System updates and SSH keys of root, from here (1.10.242).
+    act.add_argument('--os-updates', action='store_true', dest='os_updates',
+                     help='the updates of the system waiting here - how many, of them '
+                          'security, the packages, whether a restart will be needed - and an '
+                          'update under way or the last one (Settings - System updates)')
+    act.add_argument('--os-updates-check', action='store_true', dest='os_updates_check',
+                     help='look for updates of the system now (dnf or apt), followed until '
+                          'it is done')
+    act.add_argument('--os-update', action='store_true', dest='os_update',
+                     help='update every package of the system, followed with its bar and what '
+                          'the package manager says; asks first unless --yes')
+    act.add_argument('--reboot-after', metavar='ask|auto', choices=('ask', 'auto'),
+                     dest='reboot_after',
+                     help='with --os-update: when the update needs a restart, ask (the '
+                          'default: isemon --reboot afterwards) or restart by itself (auto)')
+    act.add_argument('--os-update-stop', action='store_true', dest='os_update_stop',
+                     help='stop an update of the system while it waits to begin; once the '
+                          'package manager is at work it finishes')
+    act.add_argument('--root-keys', action='store_true', dest='root_keys',
+                     help='the keys that may sign in to this server as root over SSH '
+                          '(/root/.ssh/authorized_keys), read afresh, and what sshd makes of '
+                          'root (Settings - SSH keys of root)')
+    act.add_argument('--root-key-add', metavar='LINE|FILE', dest='root_key_add',
+                     help='put a key into root\'s authorized_keys: a public key line, a .pub '
+                          'file, or a private key file of which only the public half goes in '
+                          '(its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else '
+                          'asked)')
+    act.add_argument('--root-key-drop', metavar='FINGERPRINT', dest='root_key_drop',
+                     help='take the key with this SHA256 fingerprint away from root; asks '
+                          'first unless --yes. The last key root signs in with only with --last '
+                          'too, and then asked again')
+    act.add_argument('--last', action='store_true',
+                     help='with --root-key-drop: it may be the last key root signs in with')
+    act.add_argument('--root-key-make', metavar='ed25519|rsa4096',
+                     choices=tuple(SSH_KEY_KINDS), dest='root_key_make',
+                     help='make a key for root: its public half goes into root\'s '
+                          'authorized_keys, its private half is written once to --out (or '
+                          'printed once) and kept nowhere else')
+    act.add_argument('--out', metavar='FILE',
+                     help='with --root-key-make: the file for the private half - made 0600, '
+                          'never written over')
     act.add_argument('--full', action='store_true',
                      help='with --backup: a full backup - the copy with the keys in it '
                           '(settings.key, banfeed.key, known_hosts) and config.json to read')
@@ -80020,7 +80788,8 @@ def main(argv=None):
                           '--yes, what is in it')
     act.add_argument('--passphrase-file', metavar='FILE', dest='passphrase_file',
                      help='with --restore-bundle: the password of the backups, one line (else '
-                          'ISEMON_BACKUP_PASSWORD, else asked)')
+                          'ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the '
+                          'passphrase of the private key')
     act.add_argument('--rbackup-now', action='store_true', dest='rbackup_now',
                      help='a backup to every destination switched on (Settings -> Backups), now')
     act.add_argument('--rbackup-status', action='store_true', dest='rbackup_status',
@@ -80030,7 +80799,8 @@ def main(argv=None):
                           'With no name it lists what there is. Never touches accounts, '
                           'settings or the whitelist')
     act.add_argument('--yes', action='store_true',
-                     help='with --erase, --reboot or --poweroff: do not ask first')
+                     help='with --erase, --reboot, --poweroff, --os-update or '
+                          '--root-key-drop: do not ask first')
     act.add_argument('--stop-job', metavar='NAME', dest='stop_job',
                      help='ask one of the jobs from --jobs to stop. It stops after the '
                           'batch it is in and keeps what it has already done')
@@ -80138,6 +80908,11 @@ def main(argv=None):
         (args.time or args.time_step, cmd_time),
         (args.net, cmd_net), (args.reboot or args.poweroff, cmd_power),
         (bool(args.change_keep or args.change_back), cmd_change),
+        (args.os_updates, cmd_os_updates), (args.os_updates_check, cmd_os_updates_check),
+        (args.os_update, cmd_os_update), (args.os_update_stop, cmd_os_update_stop),
+        (args.root_keys, cmd_root_keys), (bool(args.root_key_add), cmd_root_key_add),
+        (bool(args.root_key_drop), cmd_root_key_drop),
+        (bool(args.root_key_make), cmd_root_key_make),
         (args.failed, cmd_failed), (args.passed, cmd_passed),
         (args.blocked, cmd_blocked), (args.events, cmd_events), (args.check, cmd_check),
         (bool(args.address), cmd_address), (bool(args.ban), cmd_ban),

@@ -71,6 +71,31 @@ written into **Events**, with who asked for it.
 Only a full administrator sees the pane and may use it; a read-only account
 does not see it and is refused by the daemon.
 
+## On the command line
+
+The same, from a terminal (1.10.242), through the daemon - a full
+administrator's rights, root's helper and every check as on the page:
+
+    isemon --root-keys                   # the keys, read afresh, and what sshd says
+    isemon --root-keys --json
+    isemon --root-key-add 'ssh-ed25519 AAAA... you@laptop'
+    isemon --root-key-add ~/.ssh/id_ed25519.pub
+    isemon --root-key-add ~/.ssh/id_ed25519  # a private key: only its public half goes in
+    isemon --root-key-drop SHA256:...    # asks first; --yes does not
+    isemon --root-key-drop SHA256:... --last   # the last key: asked twice
+    isemon --root-key-make ed25519 --out /root/isemon-root
+    isemon --root-key-make rsa4096       # the private half printed, once
+
+The passphrase of a private key is read from `--passphrase-file FILE`, or
+`ISEMON_KEY_PASSPHRASE` in the environment, or asked on the terminal - never
+from the command line. `--root-key-make --out FILE` writes the private half
+into a new file, **0600**, and never over a file (or a link) that is there;
+without `--out` it is printed once. Either way it is kept nowhere else. The
+last key root signs in with is taken away only with `--last`, and asked again
+unless `--yes`. In `isemon --console` it is under *Network, time and power →
+SSH keys of root*; a private key's passphrase goes from there by the
+environment.
+
 ## Installing
 
 `./install.sh --upgrade` puts in the new helper and the line

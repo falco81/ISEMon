@@ -96,6 +96,25 @@ Before 1.10.239 the path unit did not watch `osup.ask`: until
 do updates yet, and nothing is asked. `install.sh --upgrade` only puts the new
 helper and path unit in; it updates no package of the system.
 
+## On the command line
+
+The same, from a terminal (1.10.242), through the daemon - so it refuses what
+the page refuses, in the same words, and only a full administrator's command
+line may ask:
+
+    isemon --os-updates                  # what is waiting, the update going on or the last
+    isemon --os-updates --json
+    isemon --os-updates-check            # look now, followed until it is done
+    isemon --os-update                   # asks first; --yes does not
+    isemon --os-update --reboot-after auto --yes
+    isemon --os-update-stop              # while it waits to begin
+
+`--os-update` follows the update with a bar and the package manager's lines
+until it is done or failed; Ctrl+C stops the following, not the update. When
+the update needs a restart and `--reboot-after auto` was not given, it says
+so: `isemon --reboot` restarts the server. In `isemon --console` it is under
+*Network, time and power → System updates*.
+
 ## By hand
 
     systemctl status isemon-web.path

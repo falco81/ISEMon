@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.241",
+  "version": "1.10.242",
   "made": "2026-10-30",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -12516,6 +12516,10 @@
    "source": "Look for a new version once a day",
    "text": "Look for a new version once a day"
   },
+  "s.look-for-updates-of-the-system.4838b846": {
+   "source": "look for updates of the system now (dnf or apt), followed until it is done",
+   "text": "look for updates of the system now (dnf or apt), followed until it is done"
+  },
   "s.look-for-updates.ad47ab51": {
    "source": "Look for updates",
    "text": "Look for updates"
@@ -12851,6 +12855,10 @@
   "s.make-a-fresh-pair-here-ed25519.63aac4c6": {
    "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server.",
    "text": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server."
+  },
+  "s.make-a-key-for-root-its.84dd16b6": {
+   "source": "make a key for root: its public half goes into root's authorized_keys, its private half is written once to --out (or printed once) and kept nowhere else",
+   "text": "make a key for root: its public half goes into root's authorized_keys, its private half is written once to --out (or printed once) and kept nowhere else"
   },
   "s.make-a-key-for-this-server.4d5d544e": {
    "source": "Make a key for this server",
@@ -17468,6 +17476,10 @@
    "source": "Put a dump back",
    "text": "Put a dump back"
   },
+  "s.put-a-key-into-root-s.6eb8df49": {
+   "source": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)",
+   "text": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)"
+  },
   "s.put-aside.21f6f651": {
    "source": "Put aside.",
    "text": "Put aside."
@@ -20472,6 +20484,10 @@
    "source": "stop an account signing in, without removing it",
    "text": "stop an account signing in, without removing it"
   },
+  "s.stop-an-update-of-the-system.23d70d8c": {
+   "source": "stop an update of the system while it waits to begin; once the package manager is at work it finishes",
+   "text": "stop an update of the system while it waits to begin; once the package manager is at work it finishes"
+  },
   "s.stop-it.df098732": {
    "source": "Stop it",
    "text": "Stop it"
@@ -20971,6 +20987,10 @@
   "s.take-the-key-away.ac56a594": {
    "source": "Take the key away",
    "text": "Take the key away"
+  },
+  "s.take-the-key-with-this-sha256.106afe23": {
+   "source": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again",
+   "text": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again"
   },
   "s.take-the-ladder-away-every-block.a184df67": {
    "source": "Take the ladder away; every block becomes the single length set above",
@@ -25132,6 +25152,10 @@
    "source": "The update",
    "text": "The update"
   },
+  "s.the-updates-of-the-system-waiting.ad67c1cf": {
+   "source": "the updates of the system waiting here - how many, of them security, the packages, whether a restart will be needed - and an update under way or the last one (Settings - System updates)",
+   "text": "the updates of the system waiting here - how many, of them security, the packages, whether a restart will be needed - and an update under way or the last one (Settings - System updates)"
+  },
   "s.the-uploaded-package-is-deleted-send.9cc567fc": {
    "source": "The uploaded package is deleted; send it again to upgrade.",
    "text": "The uploaded package is deleted; send it again to upgrade."
@@ -27067,6 +27091,10 @@
   "s.up.7c0a25c0": {
    "source": "up",
    "text": "up"
+  },
+  "s.update-every-package-of-the-system.77c3ef9d": {
+   "source": "update every package of the system, followed with its bar and what the package manager says; asks first unless --yes",
+   "text": "update every package of the system, followed with its bar and what the package manager says; asks first unless --yes"
   },
   "s.update-feeds.97469f7f": {
    "source": "Update Feeds",
@@ -29768,9 +29796,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "with --downgrade-check: what changed in each older version as well"
   },
-  "s.with-erase-reboot-or-poweroff-do.d6a10af1": {
-   "source": "with --erase, --reboot or --poweroff: do not ask first",
-   "text": "with --erase, --reboot or --poweroff: do not ask first"
+  "s.with-erase-reboot-poweroff-os-update.30d671dd": {
+   "source": "with --erase, --reboot, --poweroff, --os-update or --root-key-drop: do not ask first",
+   "text": "with --erase, --reboot, --poweroff, --os-update or --root-key-drop: do not ask first"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -29816,6 +29844,10 @@
    "source": "with options",
    "text": "with options"
   },
+  "s.with-os-update-when-the-update.2787a453": {
+   "source": "with --os-update: when the update needs a restart, ask (the default: isemon --reboot afterwards) or restart by itself (auto)",
+   "text": "with --os-update: when the update needs a restart, ask (the default: isemon --reboot afterwards) or restart by itself (auto)"
+  },
   "s.with-passed-which-of-them-vpn.6fec38da": {
    "source": "with --passed: which of them (vpn, tacacs, commands, acl, all). A command run on a switch and a firewall list handed to a session are not logins, so they are left out unless asked for",
    "text": "with --passed: which of them (vpn, tacacs, commands, acl, all). A command run on a switch and a firewall list handed to a session are not logins, so they are left out unless asked for"
@@ -29840,9 +29872,17 @@
    "source": "with --rescan: weigh what is already recorded without reading the files again",
    "text": "with --rescan: weigh what is already recorded without reading the files again"
   },
-  "s.with-restore-bundle-the-password-of.2c26d560": {
-   "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked)",
-   "text": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked)"
+  "s.with-restore-bundle-the-password-of.4dfc5688": {
+   "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key",
+   "text": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key"
+  },
+  "s.with-root-key-drop-it-may.89652220": {
+   "source": "with --root-key-drop: it may be the last key root signs in with",
+   "text": "with --root-key-drop: it may be the last key root signs in with"
+  },
+  "s.with-root-key-make-the-file.65805e88": {
+   "source": "with --root-key-make: the file for the private half - made 0600, never written over",
+   "text": "with --root-key-make: the file for the private half - made 0600, never written over"
   },
   "s.with-status-every-file-of-a.ace58746": {
    "source": "with --status: every file of a firewall's log on a line of its own, rather than one line for each folder of them",

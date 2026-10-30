@@ -371,6 +371,23 @@ working.
 
 ## Version
 
+1.10.242
+
+- **System updates and SSH keys of root on the command line and in the
+  console**, as on the pages and with the same refusals:
+  `isemon --os-updates` (what waits, `--json`), `--os-updates-check` (look
+  now, followed), `--os-update [--reboot-after ask|auto]` (asks first unless
+  `--yes`, then followed with a bar and what the package manager says;
+  Ctrl+C stops the following, not the update), `--os-update-stop` (one
+  waiting to begin); `isemon --root-keys` (`--json`), `--root-key-add
+  LINE|FILE` (a public line, a .pub, or a private key of which only the public
+  half goes in - its passphrase from `--passphrase-file`,
+  `ISEMON_KEY_PASSPHRASE` or asked), `--root-key-drop FINGERPRINT` (asks
+  first; the last key only with `--last` and asked twice), `--root-key-make
+  ed25519|rsa4096 [--out FILE]` (the private half once: into a new 0600 file,
+  or printed). In `isemon --console`: Network, time and power - 6 System
+  updates, 7 SSH keys of root.
+
 1.10.241
 
 - **Popups close only when they are closed.** A click beside a popup closes

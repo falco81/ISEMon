@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.241",
+  "version": "1.10.242",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -12516,6 +12516,10 @@
    "source": "Look for a new version once a day",
    "text": "Hledat novou verzi jednou denně"
   },
+  "s.look-for-updates-of-the-system.4838b846": {
+   "source": "look for updates of the system now (dnf or apt), followed until it is done",
+   "text": "zjistit aktualizace systému hned (dnf nebo apt), sledováno až do konce"
+  },
   "s.look-for-updates.ad47ab51": {
    "source": "Look for updates",
    "text": "Zjistit aktualizace"
@@ -12851,6 +12855,10 @@
   "s.make-a-fresh-pair-here-ed25519.63aac4c6": {
    "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server.",
    "text": "Vytvořit zde nový pár - Ed25519, nebo RSA 4096 tam, kde něco starého potřebuje RSA. Soukromá polovina se vám ukáže jednou; veřejná jde do authorized_keys roota na tomto serveru."
+  },
+  "s.make-a-key-for-root-its.84dd16b6": {
+   "source": "make a key for root: its public half goes into root's authorized_keys, its private half is written once to --out (or printed once) and kept nowhere else",
+   "text": "vytvořit klíč pro roota: jeho veřejná polovina jde do authorized_keys roota, soukromá se jednou zapíše do --out (nebo jednou vypíše) a nikde jinde se neuloží"
   },
   "s.make-a-key-for-this-server.4d5d544e": {
    "source": "Make a key for this server",
@@ -17468,6 +17476,10 @@
    "source": "Put a dump back",
    "text": "Obnovit dump"
   },
+  "s.put-a-key-into-root-s.6eb8df49": {
+   "source": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)",
+   "text": "vložit klíč do authorized_keys roota: řádek veřejného klíče, soubor .pub, nebo soubor soukromého klíče, z něhož jde dovnitř jen veřejná polovina (jeho heslo: --passphrase-file, ISEMON_KEY_PASSPHRASE, jinak se zeptá)"
+  },
   "s.put-aside.21f6f651": {
    "source": "Put aside.",
    "text": "Odloženo."
@@ -20472,6 +20484,10 @@
    "source": "stop an account signing in, without removing it",
    "text": "zakázat účtu přihlášení, aniž by byl odebrán"
   },
+  "s.stop-an-update-of-the-system.23d70d8c": {
+   "source": "stop an update of the system while it waits to begin; once the package manager is at work it finishes",
+   "text": "zastavit aktualizaci systému, dokud čeká na začátek; jakmile správce balíčků pracuje, dokončí ji"
+  },
   "s.stop-it.df098732": {
    "source": "Stop it",
    "text": "Zastavit"
@@ -20971,6 +20987,10 @@
   "s.take-the-key-away.ac56a594": {
    "source": "Take the key away",
    "text": "Odebrat klíč"
+  },
+  "s.take-the-key-with-this-sha256.106afe23": {
+   "source": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again",
+   "text": "odebrat rootovi klíč s tímto otiskem SHA256; nejdřív se zeptá, pokud není --yes. Poslední klíč, kterým se root přihlašuje, jen s --last a po druhém dotazu"
   },
   "s.take-the-ladder-away-every-block.a184df67": {
    "source": "Take the ladder away; every block becomes the single length set above",
@@ -25132,6 +25152,10 @@
    "source": "The update",
    "text": "Aktualizace"
   },
+  "s.the-updates-of-the-system-waiting.ad67c1cf": {
+   "source": "the updates of the system waiting here - how many, of them security, the packages, whether a restart will be needed - and an update under way or the last one (Settings - System updates)",
+   "text": "aktualizace systému, které tu čekají - kolik, z toho bezpečnostních, balíčky, zda bude potřeba restart - a probíhající nebo poslední aktualizace (Settings - System updates)"
+  },
   "s.the-uploaded-package-is-deleted-send.9cc567fc": {
    "source": "The uploaded package is deleted; send it again to upgrade.",
    "text": "Nahraný balíček se smaže; pro upgrade ho pošlete znovu."
@@ -27067,6 +27091,10 @@
   "s.up.7c0a25c0": {
    "source": "up",
    "text": "aktivní"
+  },
+  "s.update-every-package-of-the-system.77c3ef9d": {
+   "source": "update every package of the system, followed with its bar and what the package manager says; asks first unless --yes",
+   "text": "aktualizovat všechny balíčky systému, sledováno s ukazatelem a tím, co vypisuje správce balíčků; nejdřív se zeptá, pokud není --yes"
   },
   "s.update-feeds.97469f7f": {
    "source": "Update Feeds",
@@ -29768,9 +29796,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "s --downgrade-check: navíc co se změnilo v každé starší verzi"
   },
-  "s.with-erase-reboot-or-poweroff-do.d6a10af1": {
-   "source": "with --erase, --reboot or --poweroff: do not ask first",
-   "text": "s --erase, --reboot nebo --poweroff: nejdřív se neptat"
+  "s.with-erase-reboot-poweroff-os-update.30d671dd": {
+   "source": "with --erase, --reboot, --poweroff, --os-update or --root-key-drop: do not ask first",
+   "text": "s --erase, --reboot, --poweroff, --os-update nebo --root-key-drop: neptat se předem"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -29816,6 +29844,10 @@
    "source": "with options",
    "text": "s volbami"
   },
+  "s.with-os-update-when-the-update.2787a453": {
+   "source": "with --os-update: when the update needs a restart, ask (the default: isemon --reboot afterwards) or restart by itself (auto)",
+   "text": "s --os-update: když aktualizace potřebuje restart, zeptat se (výchozí: potom isemon --reboot), nebo restartovat sám (auto)"
+  },
   "s.with-passed-which-of-them-vpn.6fec38da": {
    "source": "with --passed: which of them (vpn, tacacs, commands, acl, all). A command run on a switch and a firewall list handed to a session are not logins, so they are left out unless asked for",
    "text": "s --passed: které z nich (vpn, tacacs, commands, acl, all). Příkaz spuštěný na switchi a seznam pro firewall předaný relaci nejsou přihlášení, proto jsou vynechány, pokud o ně výslovně nepožádáte"
@@ -29840,9 +29872,17 @@
    "source": "with --rescan: weigh what is already recorded without reading the files again",
    "text": "s --rescan: vyhodnotit to, co je už zaznamenáno, bez opětovného čtení souborů"
   },
-  "s.with-restore-bundle-the-password-of.2c26d560": {
-   "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked)",
-   "text": "s --restore-bundle: heslo záloh, jeden řádek (jinak ISEMON_BACKUP_PASSWORD, jinak se zeptá)"
+  "s.with-restore-bundle-the-password-of.4dfc5688": {
+   "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key",
+   "text": "s --restore-bundle: heslo záloh, jeden řádek (jinak ISEMON_BACKUP_PASSWORD, jinak se zeptá); s --root-key-add: heslo soukromého klíče"
+  },
+  "s.with-root-key-drop-it-may.89652220": {
+   "source": "with --root-key-drop: it may be the last key root signs in with",
+   "text": "s --root-key-drop: může jít o poslední klíč, kterým se root přihlašuje"
+  },
+  "s.with-root-key-make-the-file.65805e88": {
+   "source": "with --root-key-make: the file for the private half - made 0600, never written over",
+   "text": "s --root-key-make: soubor pro soukromou polovinu - vytvořený s právy 0600, nikdy nepřepsaný"
   },
   "s.with-status-every-file-of-a.ace58746": {
    "source": "with --status: every file of a firewall's log on a line of its own, rather than one line for each folder of them",
@@ -36074,9 +36114,17 @@
    "source": "with --erase: do not ask first",
    "text": "s --erase: předem se neptat"
   },
+  "s.with-erase-reboot-or-poweroff-do.d6a10af1": {
+   "source": "with --erase, --reboot or --poweroff: do not ask first",
+   "text": "s --erase, --reboot nebo --poweroff: nejdřív se neptat"
+  },
   "s.with-rescan-only-these-logs-comma.958df847": {
    "source": "with --rescan: only these logs, comma separated - ise, otp, eduroam, winsec, tacplus, nps, fwlog. Everything, as it always did, when this is left out. Naming one is how the logs that are never judged - a token server, eduroam, a domain, a tac_plus - are read again at all",
    "text": "s --rescan: jen tyto logy, oddělené čárkou - ise, otp, eduroam, winsec, tacplus, nps, fwlog. Pokud je vynecháno, vše, jako vždy. Jen jejich uvedením se vůbec znovu načtou logy, které se nikdy nehodnotí - tokenový server, eduroam, doména, tac_plus"
+  },
+  "s.with-restore-bundle-the-password-of.2c26d560": {
+   "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked)",
+   "text": "s --restore-bundle: heslo záloh, jeden řádek (jinak ISEMON_BACKUP_PASSWORD, jinak se zeptá)"
   },
   "s.without-what-was-let-through.fc056056": {
    "source": "without what was let through,",
