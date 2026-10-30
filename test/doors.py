@@ -3595,7 +3595,7 @@ ok('...and closing the popup spends the ticket',
    'MODAL_GEN = frame.gen;' in PAGE, True)
 ok('the directory\u2019s answer lands in the card that asked',
    'var where = dir;\n      if (!where.isConnected) return;' in PAGE, True)
-ok('one status question in flight at a time', 'if (TICK_BUSY && Date.now() - TICK_BUSY < 65000) return;'
+ok('one status question in flight at a time', 'if (TICK_BUSY && Date.now() - TICK_BUSY < (LAST_OK ? 65000 : 15000)) return;'
    in PAGE, True)
 ok('...and never stuck busy', 'TICK_BUSY = false;' in PAGE, True)
 ok('a job watcher forgets its misses once a poll works',

@@ -204,6 +204,21 @@ def ticker():
         time.sleep(0.3)
 
 
+def no_look():
+    """No look for updates going on, for a whole second: one ends an update
+    and is begun by the daemon a moment later, so a single glance can come
+    just before it."""
+    calm = [0.0]
+
+    def still():
+        if isemon.osup_check(store).get('state') == 'running':
+            calm[0] = 0.0
+            return False
+        calm[0] = calm[0] or time.time()
+        return time.time() - calm[0] >= 1.0
+    wait_for(still, secs=60)
+
+
 def run(fn, answers=(), **kw):
     """One command as `isemon` runs it: (exit code, what it printed).
     `answers` are what is typed at its questions, in turn."""
@@ -337,7 +352,7 @@ try:
 
     print('\nRestarted by itself when it needs it')
     pm(pk=PKGS[:1], slow=0.2, needs_after=True, needs=False)
-    wait_for(lambda: isemon.osup_check(store).get('state') != 'running')
+    no_look()
     rc, out = run(isemon.cmd_os_update, yes=True, reboot_after='auto')
     ok('updated and restarted by itself: followed to the end', rc, 0)
     ok('...the restart said', 'updated - restarting, as it needs' in out)
@@ -346,13 +361,13 @@ try:
        ('up again after the restart', 'auto'))
 
     print('\nAn update that fails')
-    wait_for(lambda: isemon.osup_check(store).get('state') != 'running')
+    no_look()
     pm(pk=PKGS, slow=0, fail=True, needs_after=False)
     rc, out = run(isemon.cmd_os_update, yes=True, json=True)
     v = json.loads(out)
     ok('--os-update --json: the view at the end, and it failed', (rc, v['plan']['state']),
        (1, 'failed'))
-    wait_for(lambda: isemon.osup_check(store).get('state') != 'running')
+    no_look()
     rc, out = run(isemon.cmd_os_update, yes=True)
     ok('failed: said, with what the package manager said',
        (rc, 'the update failed: fake-dnf ended with 1' in out, 'Error: Transaction' in out),

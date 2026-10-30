@@ -371,6 +371,13 @@ working.
 
 ## Version
 
+1.10.244
+
+- The test of the page's status question follows 1.10.243 (15 seconds until
+  the first answer, then a minute), and the test of `--os-update` waits for
+  the look for updates the daemon begins after an update before it asks for
+  the next one. Nothing else changed.
+
 1.10.243
 
 - **After an upgrade from the pages, *Load it again* loads a page that draws.**
