@@ -263,7 +263,9 @@ that they may see what the internet does not. Every other name the daemon looks
 up stays the machine's.
 
 The CA and the DNS APIs are reached over HTTPS, through the proxy in the
-service's environment (`https_proxy`) where there is one.
+service's environment (`https_proxy`) where there is one. From 1.10.268 each can go
+through *Settings → Proxy* instead, by a switch of its own (*the ACME CA*,
+*the DNS APIs*; both off by default) - see [proxy.md](proxy.md).
 
 ## No DNS server of your own, nothing open to the internet
 

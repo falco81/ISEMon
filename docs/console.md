@@ -103,7 +103,7 @@ the main menu.
 | 6 Accounts | `--users`, `--add-user --role [--must-change]`, `--passwd`, `--set-role --role`, `--disable-user`, `--enable-user`, `--del-user` |
 | 7 Settings | `--settings`, `--set KEY=VALUE` (`KEY=@env` for a secret), `--export` |
 | 8 The database and backups | `--database`, `--database test`, `--database setup`, `--backup`, `--backup --full`, `--dump`, `--restore FILE --yes`, `--erase WHAT --yes`, `--rbackup-status`, `--rbackup-now` |
-| 9 Network, time and power | `--change-keep net\|fw`, `--change-back net\|fw`, `--net`, `--time`, `--time-step`, `--reboot --yes`, `--poweroff --yes`, `--acme`, `--acme-order this` (Automatic certificates, 1.10.251) |
+| 9 Network, time and power | `--change-keep net\|fw`, `--change-back net\|fw`, `--net`, `--time`, `--time-step`, `--reboot --yes`, `--poweroff --yes`, `--acme`, `--acme-order this` (Automatic certificates, 1.10.251), `--proxy-test [URL]` (10, Proxy → Try it, 1.10.268) |
 | 10 Upgrades | `--upgrade-check`, `--upgrade-online VERSION --yes`, `--upgrade-follow`, `install.sh --upgrade` from a package file, `--web-status`, `--downgrade VERSION --yes`, `--maintenance on\|off` (Maintenance of this server; the bar says THIS SERVER IS IN MAINTENANCE while it is) |
 | 11 The service | `systemctl status / restart isemon`, `systemctl status nginx php-fpm`, `journalctl -u isemon -f`, the console at login |
 

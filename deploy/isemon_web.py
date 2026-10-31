@@ -42,7 +42,10 @@ sshd makes of root (see sshkeys_part).
 The updates of the operating system (1.10.239): asked in osup.ask, answered
 in osup.ans - a look for updates or the update itself, started as a unit of
 its own (isemon_web.py --os-job ID check|upgrade) that writes how far it is
-into osup.json (see osup_part).
+into osup.json (see osup_part). dnf and apt through Settings → Proxy
+(1.10.268): the proxy handed over in osup.ask, kept for the work in
+/run/isemon-osup-proxy.json (root's, 0600), read into the work's own
+environment and taken away - never on a command line.
 
   isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask,
                            osup.ask and otptls.ask (as root, from systemd)
@@ -2351,6 +2354,62 @@ OSUP_FILE = 'osup.json'
 OSUP_LOCK = os.environ.get('ISEMON_OSUP_LOCK', '/run/isemon-osup.lock')
 OSUP_PM = os.environ.get('ISEMON_OSUP_PM', '')      # tests: a fake package manager
 OSUP_ASK_LIVE_S = 300
+# The proxy dnf and apt go through (1.10.268; otp 1.0.166, Settings → Proxy):
+# handed over in osup.ask, kept here for the work, root's alone (0600), read
+# by the work into its own environment - never on a command line - and
+# taken away when the work is over.
+OSUP_PROXY = os.environ.get('ISEMON_OSUP_PROXY', '/run/isemon-osup-proxy.json')
+
+
+def osup_proxy_checked(r):
+    """The proxy of an ask: ('', '') for none; refused unless http(s)://."""
+    url = str(r.get('proxy') or '').strip()
+    if url and (not re.match(r'^https?://[^\s/]+/?\Z', url) or any(
+            c in url for c in '"\'\\`$;<>|&')):
+        raise Refused('the proxy is not an http:// address')
+    no = ','.join(w for w in re.split(r'[\s,;]+', re.sub(r'[^A-Za-z0-9.*:/\[\],;\s_-]', '',
+                                                          str(r.get('proxy_no') or ''))) if w)
+    return url, no[:2000]
+
+
+def osup_proxy_drop():
+    try:
+        os.unlink(OSUP_PROXY)
+    except FileNotFoundError:
+        pass
+    except OSError:
+        pass
+
+
+def osup_proxy_keep(url, no):
+    """Written for the work about to start, or taken away when there is none."""
+    if not url:
+        osup_proxy_drop()
+        return
+    fd = os.open(OSUP_PROXY + '.new', os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW,
+                 0o600)
+    with os.fdopen(fd, 'w') as f:
+        os.fchmod(f.fileno(), 0o600)
+        f.write(json.dumps({'url': url, 'no': no}))
+    os.replace(OSUP_PROXY + '.new', OSUP_PROXY)
+
+
+def osup_proxy_env(env):
+    """The work's own environment given the proxy, as dnf and apt read it."""
+    try:
+        st = os.lstat(OSUP_PROXY)
+        if not stat.S_ISREG(st.st_mode) or st.st_uid != os.getuid():
+            return env
+        with open(OSUP_PROXY) as f:
+            got = json.loads(f.read(8192) or '{}')
+    except (OSError, ValueError):
+        return env
+    if isinstance(got, dict) and got.get('url'):
+        for k in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY'):
+            env[k] = str(got['url'])
+        if got.get('no'):
+            env['no_proxy'] = env['NO_PROXY'] = str(got['no'])
+    return env
 
 
 def osup_pm():
@@ -2388,13 +2447,24 @@ def osup_running():
         os.close(fd)
 
 
-def osup_launch(ident, kind, security=False):
+def osup_launch(ident, kind, security=False, proxy=('', '')):
     if not ident:
         raise Refused('the ask has no id')
     if osup_running():
         raise Refused('an update or a look for updates is going on already')
     if not osup_pm():
         raise Refused('neither dnf nor apt-get is on this machine')
+    # The proxy for this work alone (1.10.268): kept only once nothing else
+    # runs, so a work going on keeps the one it began with.
+    osup_proxy_keep(*proxy)
+    try:
+        _osup_start(ident, kind, security)
+    except BaseException:
+        osup_proxy_drop()
+        raise
+
+
+def _osup_start(ident, kind, security):
     me = os.path.abspath(__file__)
     argv = [sys.executable, '-I', me, '--os-job', ident, kind] + (['security'] if security else [])
     if shutil.which('systemd-run') and not NO_SERVICES and os.path.isdir('/run/systemd/system'):
@@ -2439,7 +2509,7 @@ def osup_part():
             raise Refused('security: true or false')
         # Only the security updates (1.10.257, after otp 1.0.164): an upgrade only.
         security = bool(r.get('security')) and kind == 'upgrade'
-        osup_launch(out['id'], kind, security)
+        osup_launch(out['id'], kind, security, osup_proxy_checked(r))
         out['ok'] = True
         out['data'] = {'started': kind, 'pm': osup_pm(), 'security': security}
     except Refused as e:
@@ -2492,6 +2562,7 @@ def osup_job(ident, kind, security=False):
     try:
         fd = osup_lock_fd()
     except (OSError, Refused):
+        osup_proxy_drop()
         return 1
     try:
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -2518,6 +2589,13 @@ def osup_job(ident, kind, security=False):
 
     env = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C', 'LC_ALL': 'C',
            'DEBIAN_FRONTEND': 'noninteractive', 'HOME': '/root'}
+    # Settings → Proxy (1.10.268): read once, then the file is gone - the
+    # address with who signs in lives on only in this work's environment
+    # (root's alone to read, /proc/PID/environ).
+    osup_proxy_env(env)
+    osup_proxy_drop()
+    if env.get('https_proxy'):
+        state['proxy'] = True
 
     def stream(cmd, on_line=None, ok=(0,)):
         say('$ ' + ' '.join(cmd))

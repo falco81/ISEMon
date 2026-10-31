@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.266",
+  "version": "1.10.268",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -980,6 +980,10 @@
    "source": "A named group of addresses kept on the device itself. What is in it is not in the log — the device knows.",
    "text": "Pojmenovaná skupina adres uložená přímo v zařízení. Co obsahuje, v logu není — ví to jen zařízení."
   },
+  "s.a-net.b9f24a34": {
+   "source": "a net.",
+   "text": "síť."
+  },
   "s.a-network-device.e4071e38": {
    "source": "a network device",
    "text": "síťové zařízení"
@@ -1531,6 +1535,10 @@
   "s.a-tunnel-started-over-by-its.25bd2e13": {
    "source": "a tunnel started over by its peer",
    "text": "tunel znovu zahájený protistranou"
+  },
+  "s.a-tunnel-through-the-proxy.4cf878f7": {
+   "source": "a tunnel through the proxy",
+   "text": "tunel přes proxy"
   },
   "s.a-user-name.505713c8": {
    "source": "a user name",
@@ -2524,6 +2532,10 @@
    "source": "An address, a user name, a page, a setting…",
    "text": "Adresa, uživatelské jméno, stránka, nastavení…"
   },
+  "s.an-address-asked-from-this-server.0f4a0a39": {
+   "source": "An address asked from this server through the proxy as it is saved, or straight where none is set or the address is in the list. Each step is shown. Empty: where the new versions are looked for.",
+   "text": "Adresa dotázaná z tohoto serveru přes proxy, jak je uložená, nebo přímo, když žádná není nebo je adresa v seznamu. Ukáže se každý krok. Prázdné: kde se hledají nové verze."
+  },
   "s.an-address-folded-into-it.ff14edbe": {
    "source": "an address folded into it",
    "text": "adresa sloučená do něj"
@@ -2547,6 +2559,10 @@
   "s.an-address-or-a-network.46fdf1da": {
    "source": "An address or a network.",
    "text": "Adresa nebo síť."
+  },
+  "s.an-address-starting-https-or-http.54cbfff6": {
+   "source": "an address starting https:// (or http://)",
+   "text": "adresa začínající https:// (nebo http://)"
   },
   "s.an-address-that-fails-to-sign.301e1c56": {
    "source": "An address that fails to sign in often enough inside the window is caught by the counting, and the firewall is told to drop it. One that a public list already names goes on the first time it fails here at all — it is on somebody else’s list of known-bad",
@@ -2667,6 +2683,14 @@
   "s.an-hour.90335b64": {
    "source": "an hour",
    "text": "hodina"
+  },
+  "s.an-http-proxy-for-what-isemon.28a16156": {
+   "source": "An HTTP proxy for what isemon asks of the web - each use switched on by itself: the new versions, the system updates, ACME, the public lists, GeoIP.",
+   "text": "HTTP proxy pro to, co isemon stahuje z webu – každé použití se zapíná zvlášť: nové verze, aktualizace systému, ACME, veřejné seznamy, GeoIP."
+  },
+  "s.an-http-proxy-for-what-isemon.eed3c565": {
+   "source": "An HTTP proxy for what isemon asks of the web - each use switched on by itself below; a use switched off goes as it always went. The firewalls, Active Directory, the database, syslog, the backups and the dashboard never go through it.",
+   "text": "HTTP proxy pro to, co isemon stahuje z webu – každé použití se zapíná zvlášť níže; vypnuté použití jde jako vždy. Firewally, Active Directory, databáze, syslog, zálohy a dashboard přes ni nikdy nejdou."
   },
   "s.an-interface-an-address-a-mac.da199e7f": {
    "source": "an interface, an address, a MAC, a name…",
@@ -3376,6 +3400,10 @@
    "source": "Asked for",
    "text": "Vyžádáno"
   },
+  "s.asked-for.c9be844b": {
+   "source": "asked for",
+   "text": "dotaz na"
+  },
   "s.asked-it-is-done-within-seconds.5cdd5a68": {
    "source": "asked: it is done within seconds",
    "text": "požádáno: hotovo během několika sekund"
@@ -3647,6 +3675,14 @@
   "s.automatic-certificates-http-01.f48fd167": {
    "source": "Automatic certificates (HTTP-01)",
    "text": "Automatické certifikáty (HTTP-01)"
+  },
+  "s.automatic-certificates-the-acme-ca-through.a0faea49": {
+   "source": "Automatic certificates: the ACME CA through it",
+   "text": "Automatické certifikáty: ACME CA přes ni"
+  },
+  "s.automatic-certificates-the-dns-apis-through.52d76237": {
+   "source": "Automatic certificates: the DNS APIs through it",
+   "text": "Automatické certifikáty: DNS API přes ni"
   },
   "s.automatic-certificates.3dd0898d": {
    "source": "Automatic certificates",
@@ -5256,6 +5292,14 @@
    "source": "Connected since",
    "text": "Připojeno od"
   },
+  "s.connected-to-the-proxy.1b59db2a": {
+   "source": "connected to the proxy",
+   "text": "spojeno s proxy"
+  },
+  "s.connected-to.443e4551": {
+   "source": "connected to",
+   "text": "spojeno s"
+  },
   "s.connected.c5e23457": {
    "source": "connected",
    "text": "připojeno"
@@ -6079,6 +6123,10 @@
   "s.djibouti.60a8b0c6": {
    "source": "Djibouti",
    "text": "Džibutsko"
+  },
+  "s.dnf-or-apt-fetch-the-updates.94f1b943": {
+   "source": "dnf or apt fetch the updates of System updates through it - by hand and on a schedule.",
+   "text": "dnf nebo apt přes ni stahují aktualizace z Aktualizací systému – ručně i podle plánu."
   },
   "s.dnf-or-apt-updates-every-package.d3e81e76": {
    "source": "dnf (or apt) updates every package. The logs go on being read meanwhile; a restart it needs is offered at the end.",
@@ -8040,6 +8088,10 @@
    "source": "Example a.s.",
    "text": "Example a.s."
   },
+  "s.example-cz.35c6ba16": {
+   "source": ".example.cz",
+   "text": ".example.cz"
+  },
   "s.example-cz.7c652dd6": {
    "source": "example.cz",
    "text": "example.cz"
@@ -9316,6 +9368,10 @@
    "source": "geo",
    "text": "geo"
   },
+  "s.geoip-the-country-database-fetched-from.76e97254": {
+   "source": "GeoIP: the country database fetched from db-ip.com.",
+   "text": "GeoIP: databáze zemí stahovaná z db-ip.com."
+  },
   "s.geoip.98ee0730": {
    "source": "GeoIP",
    "text": "GeoIP"
@@ -9455,6 +9511,10 @@
   "s.go-on.4319a1b9": {
    "source": "Go on",
    "text": "Pokračovat"
+  },
+  "s.go-out-through-a-proxy.8d1bb7b1": {
+   "source": "Go out through a proxy",
+   "text": "Ven přes proxy"
   },
   "s.going-back-now.f34819d5": {
    "source": "going back now",
@@ -10500,6 +10560,10 @@
    "source": "HTTP basic authentication:",
    "text": "HTTP basic autentizace:"
   },
+  "s.http-proxy-example-cz-3128.b311936d": {
+   "source": "http://proxy.example.cz:3128",
+   "text": "http://proxy.example.cz:3128"
+  },
   "s.http.f40b27d6": {
    "source": "HTTP",
    "text": "HTTP"
@@ -11123,6 +11187,10 @@
   "s.is-ever-judged-here-while.771020b6": {
    "source": "is ever judged here - while",
    "text": "se zde posuzuje – dokud je"
+  },
+  "s.is-every-name-under-it.f5e80b6d": {
+   "source": "is every name under it,",
+   "text": "je každé jméno pod ní,"
   },
   "s.is-followed-the-way-the-nps.1f9ee256": {
    "source": ") is followed the way the NPS files are - the newest two, so the end of yesterday’s is not lost at midnight.",
@@ -12312,6 +12380,10 @@
    "source": "Kept out",
    "text": "Blokováno"
   },
+  "s.kept-sealed-like-the-other-passwords.a9f492ff": {
+   "source": "Kept sealed, like the other passwords.",
+   "text": "Uložené zapečetěné, jako ostatní hesla."
+  },
   "s.kept-sealed-type-a-new-one.a7f3eca7": {
    "source": "Kept, sealed. Type a new one to change it.",
    "text": "Uloženo, zapečetěné. Pro změnu napište nové."
@@ -13276,6 +13348,10 @@
    "source": "Looked at first, in this order: a DROP or REJECT here wins over what isemon lets in below. Each carries its note as the comment of the rule in iptables.",
    "text": "Posuzují se jako první, v tomto pořadí: DROP nebo REJECT zde vyhrává nad tím, co isemon pouští níže. Každé nese svou poznámku jako komentář pravidla v iptables."
   },
+  "s.looked-up.39ed5399": {
+   "source": "looked up",
+   "text": "vyhledáno"
+  },
   "s.looked.8db21b5c": {
    "source": "Looked",
    "text": "Zjišťováno"
@@ -14212,6 +14288,14 @@
    "source": "names a person",
    "text": "označuje osobu"
   },
+  "s.names-and-addresses-reached-without-it.24322725": {
+   "source": "Names and addresses reached without it, separated by commas: .example.cz is every name under it, 10.0.0.0/8 a net.",
+   "text": "Jména a adresy dosažené bez ní, oddělené čárkami: .example.cz je každé jméno pod ní, 10.0.0.0/8 síť."
+  },
+  "s.names-and-addresses-reached-without-it.aef01f11": {
+   "source": "Names and addresses reached without it, separated by commas:",
+   "text": "Jména a adresy dosažené bez ní, oddělené čárkami:"
+  },
   "s.names-behind-addresses.85fb3488": {
    "source": "names behind addresses",
    "text": "jména za adresami"
@@ -14600,6 +14684,10 @@
    "source": "no address",
    "text": "bez adresy"
   },
+  "s.no-answer-in-time-timed-out.68a65832": {
+   "source": "no answer in time (timed out)",
+   "text": "žádná odpověď včas (vypršel čas)"
+  },
   "s.no-backup-has-been-sent-yet.05f6e064": {
    "source": "No backup has been sent yet",
    "text": "Zatím nebyla odeslána žádná záloha"
@@ -14792,6 +14880,10 @@
    "source": "No place yet. Add the machine or the network people normally reach the switches from.",
    "text": "Zatím žádné místo. Přidejte počítač nebo síť, ze které se lidé ke switchům obvykle připojují."
   },
+  "s.no-proxy-is-set.ea83123b": {
+   "source": "no proxy is set",
+   "text": "není nastavená proxy"
+  },
   "s.no-refusal-is-from-a-watched.8ba4bebb": {
    "source": "no refusal is from a watched device",
    "text": "žádné odmítnutí nepochází ze sledovaného zařízení"
@@ -14871,6 +14963,10 @@
   "s.no-such-step.1b24ab1d": {
    "source": "no such step",
    "text": "takový krok neexistuje"
+  },
+  "s.no-such-thing-to-do.6d45d02e": {
+   "source": "no such thing to do",
+   "text": "nic takového udělat nelze"
   },
   "s.no-such-thing-to-name.3aaa0f29": {
    "source": "no such thing to name",
@@ -15344,6 +15440,10 @@
    "source": "Not reached it",
    "text": "Nedosaženo"
   },
+  "s.not-reached.be51277b": {
+   "source": "not reached",
+   "text": "nedosaženo"
+  },
   "s.not-read-yet.15c59711": {
    "source": "not read yet",
    "text": "zatím nenačteno"
@@ -15424,6 +15524,10 @@
    "source": "not translated",
    "text": "nepřekládáno"
   },
+  "s.not-tried-the-step-before-stopped.b4e99993": {
+   "source": "not tried - the step before stopped it",
+   "text": "nezkoušeno – zastavil to předchozí krok"
+  },
   "s.not-trusted-yet-try-reaching-it.235ce82c": {
    "source": "Not trusted yet — Try reaching it shows the fingerprint to trust.",
    "text": "Zatím neověřený – Zkusit spojení ukáže otisk k ověření."
@@ -15483,6 +15587,10 @@
   "s.nothing-after-this-says-the-session.89d6740e": {
    "source": "Nothing after this says the session ended, so everything this person did from here on is under this one until they sign in again. Commands are matched to a session by who, which device, which line of it and where from — TACACS+ gives nothing better, because ISE writes a different session id on every single record.",
    "text": "Nic dalšího neříká, že relace skončila, takže vše, co tato osoba od tohoto okamžiku dělala, spadá pod tuto relaci, dokud se znovu nepřihlásí. Příkazy se k relaci přiřazují podle toho, kdo, na kterém zařízení, na které jeho lince a odkud — TACACS+ nic lepšího nenabízí, protože ISE zapisuje u každého jednotlivého záznamu jiné ID relace."
+  },
+  "s.nothing-answers-on-that-port-connection.6d33d16e": {
+   "source": "nothing answers on that port (connection refused)",
+   "text": "na tom portu nic neodpovídá (spojení odmítnuto)"
   },
   "s.nothing-at-all-has-arrived-in.16db63f5": {
    "source": "Nothing at all has arrived in the last day.",
@@ -17800,6 +17908,10 @@
    "source": "passive",
    "text": "pasivní"
   },
+  "s.password-at-the-proxy.f48a6bae": {
+   "source": "Password at the proxy",
+   "text": "Heslo pro proxy"
+  },
   "s.password-checked.17ea1fd4": {
    "source": "password checked",
    "text": "heslo ověřeno"
@@ -18480,6 +18592,14 @@
    "source": "Proxy-Policy-Name",
    "text": "Proxy-Policy-Name"
   },
+  "s.proxy.d1cea344": {
+   "source": "Proxy",
+   "text": "Proxy"
+  },
+  "s.proxy.d799bae6": {
+   "source": "proxy",
+   "text": "proxy"
+  },
   "s.psycopg2-postgresql.226c3657": {
    "source": "psycopg2 (PostgreSQL)",
    "text": "psycopg2 (PostgreSQL)"
@@ -18507,6 +18627,10 @@
   "s.public-list.6b636a5e": {
    "source": "Public list",
    "text": "Veřejný seznam"
+  },
+  "s.public-lists-and-automatic-updates-the.95f9dec1": {
+   "source": "Public lists and Automatic updates: the blocklists fetched from the web.",
+   "text": "Veřejné seznamy a Automatické aktualizace: blocklisty stahované z webu."
   },
   "s.public-lists.c1e463ad": {
    "source": "Public lists",
@@ -18915,6 +19039,14 @@
   "s.reach-this-directory-sign-in-to.2f88db93": {
    "source": "Reach this directory, sign in to it as the reading account and read its base, and say which step failed if one does. It only reads.",
    "text": "Spojit se s tímto adresářem, přihlásit se k němu čtecím účtem a přečíst jeho základ, a v případě selhání uvést, který krok selhal. Pouze čte."
+  },
+  "s.reached-straight.02b6d9af": {
+   "source": "Reached straight",
+   "text": "Dosaženo přímo"
+  },
+  "s.reached-through-the-proxy.2cda6010": {
+   "source": "Reached through the proxy",
+   "text": "Dosaženo přes proxy"
   },
   "s.reached.82e8013e": {
    "source": "reached",
@@ -21728,6 +21860,10 @@
    "source": "stopped by protocol inspection",
    "text": "zastaveno inspekcí protokolu"
   },
+  "s.stopped-here.87383540": {
+   "source": "stopped here",
+   "text": "zastaveno zde"
+  },
   "s.stopped-nothing-was-updated.8f68e055": {
    "source": "stopped - nothing was updated",
    "text": "zastaveno - nic nebylo aktualizováno"
@@ -21747,6 +21883,14 @@
   "s.stored-but-could-not-be-read.826dec67": {
    "source": "stored, but could not be read",
    "text": "uloženo, ale nelze přečíst"
+  },
+  "s.straight-not-through-the-proxy.ee2c160f": {
+   "source": "Straight, not through the proxy",
+   "text": "Přímo, ne přes proxy"
+  },
+  "s.straight.6ec09feb": {
+   "source": "straight",
+   "text": "přímo"
   },
   "s.stratum.9f064f88": {
    "source": "Stratum",
@@ -22800,6 +22944,10 @@
    "source": "the ACL ISE sent, not used",
    "text": "ACL, které ISE poslal, nepoužito"
   },
+  "s.the-acme-ca-let-s-encrypt.911ae62e": {
+   "source": "The ACME CA (Let’s Encrypt or your own): the directory, the account, the orders, the certificates, the renewal window (ARI).",
+   "text": "ACME CA (Let’s Encrypt nebo vlastní): adresář, účet, objednávky, certifikáty, okno obnovy (ARI)."
+  },
   "s.the-acme-dns-server.1489e1fb": {
    "source": "The acme-dns server",
    "text": "Server acme-dns"
@@ -23472,6 +23620,10 @@
    "source": "the connection mark (MikroTik)",
    "text": "značka spojení (MikroTik)"
   },
+  "s.the-connection-was-closed-without-an.18e32a3e": {
+   "source": "the connection was closed without an answer",
+   "text": "spojení bylo uzavřeno bez odpovědi"
+  },
   "s.the-console.fb466da4": {
    "source": "The console",
    "text": "Konzole"
@@ -23511,6 +23663,10 @@
   "s.the-country-database-behind-every-flag.579c05e9": {
    "source": "The country database behind every flag on this page, and the country address list this keeps on the router.",
    "text": "Databáze zemí, ze které pochází každá vlajka na této stránce, a address list zemí, který se podle ní udržuje na routeru."
+  },
+  "s.the-country-database-geoip-through-it.f5211d5d": {
+   "source": "The country database (GeoIP) through it",
+   "text": "Databáze zemí (GeoIP) přes ni"
   },
   "s.the-country-database-has-been-fetched.b90e3b66": {
    "source": "The country database has been fetched and is on this machine. Every address on every page can be given a country, and a country list can be put on the router. It does not go stale in any way that matters: ranges move between countries slowly.",
@@ -23919,6 +24075,10 @@
   "s.the-display-name-out-of-the.f86dcc9a": {
    "source": "The display name out of the directory, and the distinguished name it was found under.",
    "text": "Zobrazované jméno z adresáře a rozlišující jméno (DN), pod kterým byl nalezen."
+  },
+  "s.the-dns-apis-that-put-the.b89549c3": {
+   "source": "The DNS APIs that put the TXT record in: deSEC, Cloudflare, acme-dns. RFC 2136 (nsupdate) is DNS, never through it.",
+   "text": "DNS API, která vkládají záznam TXT: deSEC, Cloudflare, acme-dns. RFC 2136 (nsupdate) je DNS, přes ni nikdy."
   },
   "s.the-dns-class.d711f55e": {
    "source": "the DNS class",
@@ -25056,6 +25216,10 @@
    "source": "The machines it has heard from on its own networks, IPv4 (ARP) and IPv6 (neighbour discovery): address, MAC and interface.",
    "text": "Stroje, které slyšel na svých sítích, IPv4 (ARP) i IPv6 (neighbour discovery): adresa, MAC a rozhraní."
   },
+  "s.the-makers-of-network-cards-ieee.1acfe591": {
+   "source": "The makers of network cards (IEEE’s registers of MAC prefixes), fetched from standards-oui.ieee.org.",
+   "text": "Výrobci síťových karet (registry prefixů MAC od IEEE), stahované ze standards-oui.ieee.org."
+  },
   "s.the-malware-it-is.ea3b5f0c": {
    "source": "the malware it is",
    "text": "o jaký malware jde"
@@ -25343,6 +25507,10 @@
   "s.the-new-network-waits-to-be.7c3d93ac": {
    "source": "the new network waits to be kept",
    "text": "nová síť čeká na potvrzení"
+  },
+  "s.the-new-versions-of-isemon-through.c77e686b": {
+   "source": "The new versions of isemon through it",
+   "text": "Nové verze isemonu přes ni"
   },
   "s.the-newest-of-them-was.520efbef": {
    "source": "The newest of them was",
@@ -25744,6 +25912,10 @@
    "source": "The port of its web interface, usually 443.",
    "text": "Port jeho webového rozhraní, obvykle 443."
   },
+  "s.the-port-of-the-address-is.6ab6a66f": {
+   "source": "the port of the address is not a number",
+   "text": "port adresy není číslo"
+  },
   "s.the-port-the-daemon-answers-on.6812fbf5": {
    "source": "The port the daemon answers on, for the dashboard to reach. It listens on localhost only. Changing it needs the same change in isemon-api.php.",
    "text": "Port, na kterém démon odpovídá, aby se k němu dashboard dostal. Naslouchá pouze na localhostu. Jeho změna vyžaduje stejnou změnu v isemon-api.php."
@@ -25812,6 +25984,42 @@
    "source": "The protocols and an OpenSSL cipher list of your own.",
    "text": "Vlastní protokoly a seznam šifer OpenSSL."
   },
+  "s.the-proxy-asks-for-a-user.07e1fd93": {
+   "source": "the proxy asks for a user name and a password (407) - they are wrong",
+   "text": "proxy vyžaduje uživatelské jméno a heslo (407) – jsou špatně"
+  },
+  "s.the-proxy-asks-for-a-user.8f6d6ea4": {
+   "source": "the proxy asks for a user name and a password (407) - they are missing",
+   "text": "proxy vyžaduje uživatelské jméno a heslo (407) – chybí"
+  },
+  "s.the-proxy-asks-for-a-user.ae0aed9b": {
+   "source": "the proxy asks for a user name and a password (407)",
+   "text": "proxy vyžaduje uživatelské jméno a heslo (407)"
+  },
+  "s.the-proxy-has-no-address.933aa558": {
+   "source": "the proxy has no address",
+   "text": "proxy nemá adresu"
+  },
+  "s.the-proxy-https-proxy-of-the.7e3b5ba8": {
+   "source": "the proxy · https_proxy of the service",
+   "text": "proxy · https_proxy služby"
+  },
+  "s.the-proxy-looked-up.1dc17342": {
+   "source": "the proxy looked up",
+   "text": "proxy vyhledána"
+  },
+  "s.the-proxy-with-a-password.3438f405": {
+   "source": "the proxy · with a password",
+   "text": "proxy · s heslem"
+  },
+  "s.the-proxy.3ecd33f3": {
+   "source": "the proxy",
+   "text": "proxy"
+  },
+  "s.the-proxy.d9dacd10": {
+   "source": "The proxy",
+   "text": "Proxy"
+  },
   "s.the-public-blacklists-that-were-fetched.0f02d008": {
    "source": "the public blacklists that were fetched",
    "text": "stažené veřejné blacklisty"
@@ -25827,6 +26035,10 @@
   "s.the-public-list-that-names-it.da5aa768": {
    "source": "the public list that names it",
    "text": "veřejný seznam, který ho uvádí"
+  },
+  "s.the-public-lists-through-it.fabc6ce0": {
+   "source": "The public lists through it",
+   "text": "Veřejné seznamy přes ni"
   },
   "s.the-public-lists.5fb19cdf": {
    "source": "the public lists",
@@ -25967,6 +26179,10 @@
   "s.the-red-bar-down-the-left.dedfc9a9": {
    "source": "The red bar down the left of a row means the same thing: that address is being kept out at this moment. A row with no bar is not banned.",
    "text": "Červený pruh na levé straně řádku znamená totéž: tato adresa je právě teď blokována. Řádek bez pruhu zablokovaný není."
+  },
+  "s.the-register-of-network-cards-through.f7cf8bb5": {
+   "source": "The register of network cards through it",
+   "text": "Registr síťových karet přes ni"
   },
   "s.the-remote-access-vpn-itself-is.14d2750d": {
    "source": "The remote-access VPN itself is not covered by this.",
@@ -26704,6 +26920,10 @@
    "source": "The update",
    "text": "Aktualizace"
   },
+  "s.the-updates-of-the-system-through.0e9ab20a": {
+   "source": "The updates of the system through it",
+   "text": "Aktualizace systému přes ni"
+  },
   "s.the-updates-of-the-system-waiting.ad67c1cf": {
    "source": "the updates of the system waiting here - how many, of them security, the packages, whether a restart will be needed - and an update under way or the last one (Settings - System updates)",
    "text": "aktualizace systému, které tu čekají - kolik, z toho bezpečnostních, balíčky, zda bude potřeba restart - a probíhající nebo poslední aktualizace (Settings - System updates)"
@@ -26915,6 +27135,10 @@
   "s.the-waiting-request.74bca48f": {
    "source": "The waiting request",
    "text": "Čekající žádost"
+  },
+  "s.the-way-out-through-the-proxy.59df9fd4": {
+   "source": "the way out through the proxy tried: an address of your own, or the upgrades' one, asked through the proxy of Settings - Proxy (or straight where none is set or the address is in its list) - each step with its time",
+   "text": "vyzkoušená cesta ven přes proxy: vlastní adresa, nebo ta pro upgrady, dotázaná přes proxy z Nastavení – Proxy (nebo přímo, když žádná není nebo je adresa v jejím seznamu) – každý krok s časem"
   },
   "s.the-web-filter-and-ssl-inspection.e2410898": {
    "source": "the web filter and SSL inspection",
@@ -27888,6 +28112,10 @@
    "source": "Through — the program",
    "text": "Přes — program"
   },
+  "s.through-the-proxy.94195a1d": {
+   "source": "through the proxy",
+   "text": "přes proxy"
+  },
   "s.through.55365880": {
    "source": "Through",
    "text": "Přes"
@@ -28327,6 +28555,10 @@
   "s.try.72677028": {
    "source": "Try",
    "text": "Zkusit"
+  },
+  "s.trying.8b85ec5c": {
+   "source": "trying…",
+   "text": "zkouší se…"
   },
   "s.ts.4402abb9": {
    "source": "ts",
@@ -28780,6 +29012,10 @@
    "source": "Upgrades and maintenance",
    "text": "Aktualizace a údržba"
   },
+  "s.upgrades-from-the-web-the-look.5bc814fb": {
+   "source": "Upgrades → From the web: the look for new versions (by hand and once a day) and their download.",
+   "text": "Upgrady → Z webu: hledání nových verzí (ručně a jednou denně) a jejich stažení."
+  },
   "s.upgrades.fc7c9106": {
    "source": "Upgrades",
    "text": "Aktualizace"
@@ -28891,6 +29127,10 @@
   "s.user-name-and-password.9411e4cf": {
    "source": "User name and password",
    "text": "Uživatelské jméno a heslo"
+  },
+  "s.user-name-at-the-proxy.e3f02244": {
+   "source": "User name at the proxy",
+   "text": "Uživatelské jméno pro proxy"
   },
   "s.user-name.6efc5596": {
    "source": "user name",
@@ -29179,6 +29419,10 @@
   "s.waits-to-begin.cd5e49e0": {
    "source": "waits to begin",
    "text": "čeká na začátek"
+  },
+  "s.wall.eb7ada76": {
+   "source": "wall",
+   "text": "wall"
   },
   "s.wallis-and-futuna.a187509a": {
    "source": "Wallis and Futuna",
@@ -30496,6 +30740,10 @@
    "source": "Where the NPS logs are",
    "text": "Kde jsou logy NPS"
   },
+  "s.where-the-proxy-asks-for-one.51a22b66": {
+   "source": "Where the proxy asks for one. Empty: none.",
+   "text": "Pokud ho proxy vyžaduje. Prázdné: žádné."
+  },
   "s.where-the-record-goes-example-cz.3647c9cb": {
    "source": "Where the record goes, example.cz . Empty: as the server finds it.",
    "text": "Kam jde záznam, example.cz . Prázdné: jak ji najde server."
@@ -30507,6 +30755,10 @@
   "s.where-the-refused-sessions-came-from.645177d8": {
    "source": "Where the refused sessions came from.",
    "text": "Odkud přišly odmítnuté relace."
+  },
+  "s.where-the-server-may-reach-the.299a1756": {
+   "source": "Where the server may reach the web only through an HTTP proxy. Each use goes through it only when switched on below - the new versions of isemon, the updates of the system (dnf, apt), Automatic certificates (the ACME CA, the DNS APIs), the public lists, the country database, the register of network cards; one switched off goes as it always went. The firewalls, Active Directory, the database, syslog, the backups and the dashboard never do.",
+   "text": "Kde server smí na web jen přes HTTP proxy. Každé použití jde přes ni jen, když je níže zapnuté – nové verze isemonu, aktualizace systému (dnf, apt), Automatické certifikáty (ACME CA, DNS API), veřejné seznamy, databáze zemí, registr síťových karet; vypnuté jde jako vždy. Firewally, Active Directory, databáze, syslog, zálohy a dashboard nikdy."
   },
   "s.where-the-sessions-went-by-the.2542ce84": {
    "source": "Where the sessions went, by the firewall’s own country database.",
@@ -31644,6 +31896,10 @@
    "source": "With The TXT records go into: the CNAME record below in your DNS, and the key allowed in that zone.",
    "text": "Se Záznamy TXT jdou do: záznam CNAME níže ve vašem DNS a klíč povolený v té zóně."
   },
+  "s.with-the-user-name-and-password.2163db5d": {
+   "source": "- with the user name and password",
+   "text": "– s uživatelským jménem a heslem"
+  },
   "s.with-this-on-a-name-is.31c5be46": {
    "source": "With this on, a name is looked for in the directory first. Somebody who is there signs in with their domain password and gets the role their groups say — and the local account of the same name is",
    "text": "Když je toto zapnuto, jméno se nejdřív hledá v adresáři. Kdo tam je, přihlásí se svým doménovým heslem a dostane roli podle svých skupin — a lokální účet téhož jména se"
@@ -32025,6 +32281,10 @@
   "p.a-token-not-a-name.7b19e5a3": {
    "source": "a token, not a name ({0}…)",
    "text": "token, ne jméno ({0}…)"
+  },
+  "p.a-tunnel-through-the-proxy-to.4ba9923a": {
+   "source": "a tunnel through the proxy to {0}:{1}",
+   "text": "tunel přes proxy k {0}:{1}"
   },
   "p.a-write-is-made-safe-in.2b5ad18e": {
    "source": "a write is made safe in {0} ms, which is an SSD",
@@ -32429,6 +32689,10 @@
   "p.config-system-external-resource-edit-isemon.4d4f4f73": {
    "source": "config system external-resource edit \"isemon-bans\" set type address set resource \"{0}\" {1} set refresh-rate {2} next end",
    "text": "config system external-resource edit \"isemon-bans\" set type address set resource \"{0}\" {1} set refresh-rate {2} next end"
+  },
+  "p.connected-to.b83d5ac3": {
+   "source": "connected to {0}",
+   "text": "spojeno s {0}"
   },
   "p.connected.000dbd74": {
    "source": "{0} connected{1}",
@@ -32962,6 +33226,10 @@
    "source": "HSTS {0} days",
    "text": "HSTS {0} {0:den|dny|dní}"
   },
+  "p.http-ms.5ec1d459": {
+   "source": "{0} - HTTP {1}, {2} ms",
+   "text": "{0} – HTTP {1}, {2} ms"
+  },
   "p.http.2a3e9423": {
    "source": "HTTP {0}",
    "text": "HTTP {0}"
@@ -33097,6 +33365,10 @@
   "p.is-gone.5be19cfd": {
    "source": "{0} is gone",
    "text": "{0} zmizelo"
+  },
+  "p.is-in-the-list-reached-straight.dade30a5": {
+   "source": "{0} is in the list reached straight",
+   "text": "{0} je v seznamu dosaženém přímo"
   },
   "p.is-in-use.2267de56": {
    "source": "— {0}% is in use",
@@ -33454,6 +33726,10 @@
    "source": "· looked back to {0} in the time a search is given — a shorter window, or a field (an address, a port, a kind), looks further",
    "text": "· prohledáno zpět do {0} v čase, který hledání má — kratší okno nebo pole (adresa, port, druh) hledá dál"
   },
+  "p.looked-up.51c1045d": {
+   "source": "{0} looked up",
+   "text": "{0} vyhledáno"
+  },
   "p.looked.bff935ee": {
    "source": "Looked {0}: {1}",
    "text": "Zkontrolováno {0}: {1}"
@@ -33630,6 +33906,10 @@
    "source": "No country here is called “{0}”",
    "text": "Žádná země zde se nejmenuje „{0}“"
   },
+  "p.no-http-answer.22f4d11b": {
+   "source": "no HTTP answer: {0}",
+   "text": "žádná odpověď HTTP: {0}"
+  },
   "p.no-isemon-package-there-looked.5d570a44": {
    "source": "No isemon package there (looked {0})",
    "text": "Žádný balíček isemon tam není (zkontrolováno {0})"
@@ -33689,6 +33969,10 @@
   "p.not-now.232e8fd0": {
    "source": "Not now: {0}",
    "text": "Teď ne: {0}"
+  },
+  "p.not-reached.39a78661": {
+   "source": "Not reached: {0}",
+   "text": "Nedosaženo: {0}"
   },
   "p.not-read.a35e60af": {
    "source": "· {0} not read",
@@ -34542,6 +34826,10 @@
    "source": "story-passed:{0}",
    "text": "story-passed:{0}"
   },
+  "p.straight-because.902cbcf2": {
+   "source": "straight because {0}",
+   "text": "přímo, protože {0}"
+  },
   "p.subnet-s-the-list-goes-from.990ec701": {
    "source": "subnet(s). The list goes from {0} line(s) to {1}.",
    "text": "podsítí. Seznam se zmenší z {0} řádků na {1}."
@@ -34717,6 +35005,10 @@
   "p.the-cards-the-chart-the-lists.0574284b": {
    "source": "({0}): the cards, the chart, the lists and the search, all of them for this one firewall.",
    "text": "({0}): karty, graf, seznamy i hledání, vše pouze pro tento jeden firewall."
+  },
+  "p.the-certificate-is-not-trusted.752639f2": {
+   "source": "the certificate is not trusted: {0}",
+   "text": "certifikát není důvěryhodný: {0}"
   },
   "p.the-certificate-it-had-before-acme.d96c83f1": {
    "source": "The certificate it had before ACME replaced it{0}{1}. Put back as it was; ACME no longer renews this one. The TLS settings stay.",
@@ -34950,6 +35242,10 @@
    "source": "The name given to {0} under Settings → The OTP logs → Where OTP sign-ins come from.",
    "text": "Název přidělený {0} v Nastavení → OTP logy → Odkud přicházejí OTP přihlášení."
   },
+  "p.the-name-is-not-known.a5018a5e": {
+   "source": "the name is not known ({0})",
+   "text": "jméno není známé ({0})"
+  },
   "p.the-name.1b681c2c": {
    "source": "The name “{0}”",
    "text": "Název „{0}“"
@@ -34993,6 +35289,14 @@
   "p.the-password-made-for.ebf753ab": {
    "source": "The password made for {0}",
    "text": "Heslo vytvořené pro {0}"
+  },
+  "p.the-proxy-looked-up.22445829": {
+   "source": "the proxy looked up ({0})",
+   "text": "proxy vyhledána ({0})"
+  },
+  "p.the-proxy-said.97a6434d": {
+   "source": "the proxy said {0} {1}",
+   "text": "proxy odpověděla {0} {1}"
   },
   "p.the-search-history-in-that-file.d3772a79": {
    "source": "the search history in that file: {0}",
@@ -35257,6 +35561,14 @@
   "p.tls-by.0e5b3c73": {
    "source": ", TLS by {0}",
    "text": ", TLS přes {0}"
+  },
+  "p.tls-failed.29ca07b0": {
+   "source": "TLS failed: {0}",
+   "text": "TLS selhalo: {0}"
+  },
+  "p.tls-the-certificate-of-checked.1e285b6a": {
+   "source": "TLS, the certificate of {0} checked",
+   "text": "TLS, certifikát {0} ověřen"
   },
   "p.toast-show.e7c4d6aa": {
    "source": "toast show{0}",
@@ -36084,6 +36396,10 @@
    "source": "How the ban finished: <b>ran out</b> means the clock reached the end on its own, and anything else is somebody having lifted it.",
    "text": "Jak blokace skončila: <b>vypršela</b> znamená, že odpočet sám doběhl do konce, cokoli jiného znamená, že ji někdo zrušil."
   },
+  "r.http-proxy-example-cz-3128.81651b94": {
+   "source": "<code>http://proxy.example.cz:3128</code>",
+   "text": "<code>http://proxy.example.cz:3128</code>"
+  },
   "r.https-auth-acme-dns-example-cz.623f517a": {
    "source": "<code>https://auth.acme-dns.example.cz</code>; _acme-challenge.NAME is a CNAME to the subdomain below.",
    "text": "<code>https://auth.acme-dns.example.cz</code>; _acme-challenge.JMÉNO je CNAME na subdoménu níže."
@@ -36187,6 +36503,10 @@
   "r.move.1e356f6d": {
    "source": "<kbd>↑</kbd><kbd>↓</kbd> move",
    "text": "<kbd>↑</kbd><kbd>↓</kbd> pohyb"
+  },
+  "r.names-and-addresses-reached-without-it.5e3291f1": {
+   "source": "Names and addresses reached without it, separated by commas: <code>.example.cz</code> is every name under it, <code>10.0.0.0/8</code> a net.",
+   "text": "Jména a adresy dosažené bez ní, oddělené čárkami: <code>.example.cz</code> je každé jméno pod ní, <code>10.0.0.0/8</code> síť."
   },
   "r.needed-when-the-directory-is-reached.fbea4307": {
    "source": "Needed when the directory is reached over TLS and its certificate was signed by your own authority rather than by a public one — which on a domain controller it almost always was.<br><br>Paste the authority’s certificate here, in PEM form, and the server’s certificate can be checked properly instead of the check being switched off.",

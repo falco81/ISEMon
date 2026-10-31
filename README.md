@@ -371,6 +371,35 @@ working.
 
 ## Version
 
+1.10.268
+
+- **Settings → Proxy** (under *Server*), as otp has it: an HTTP proxy, with a
+  user name and a password kept sealed, and a switch for each use of it - the
+  new versions of isemon (the look and the download), the updates of the
+  system (dnf or apt, by hand and on a schedule), Automatic certificates' ACME
+  CA (with ARI) and its DNS APIs (deSEC, Cloudflare, acme-dns), the public
+  lists, the country database (GeoIP) and the register of network cards. The
+  proxy and every use are off until switched on: a use goes through it only
+  when both are on, and otherwise exactly as it always went (`https_proxy` in
+  the service's environment still holds where it held). The use switches are
+  greyed while the proxy is off. dnf and apt get it from root's helper - in
+  its request, then in a file only root reads (`/run/isemon-osup-proxy.json`,
+  taken away as soon as the update has read it into its environment), never
+  on a command line. Names, `.domains` and nets reached straight are listed
+  (`proxy_no`); every request is asked against the list again, a redirect's
+  too, and a redirect to an address reached straight does not carry the
+  password along. The firewalls and routers, Active Directory, the database,
+  syslog, the backups' destinations, DNS and the dashboard's own API are never
+  offered. Every change is an event saying what the way out is now and which
+  uses go through it, never the password.
+- *Try it* always tries - straight where no proxy is set or the address is in
+  the list, through the proxy otherwise - and draws the way it went: this
+  server, the proxy, the address; each step with its time (the name looked up,
+  the connection, the tunnel, TLS and the certificate, the answer), what went
+  wrong in words (a 407: the user name or the password missing or wrong).
+  `isemon --proxy-test [URL]` and the console (*Network, time and power → 10*)
+  the same. See [docs/proxy.md](docs/proxy.md).
+
 1.10.267
 
 - *Upgrades and maintenance → From the web*: a little more room between Look
@@ -1006,8 +1035,8 @@ on and changes nothing on the machine.
 
 - **Settings, the menu on the left, in groups that say what is in them**:
   Logs read, Banning, The firewall, Access (Accounts, Active Directory,
-  Certificates and TLS, Firewall and access), Server (Network, Time, Restart
-  and power off), Data (The database, Backups, Export and import), Monitoring
+  Certificates and TLS, Firewall and access), Server (Network, Proxy, Time,
+  Restart and power off), Data (The database, Backups, Export and import), Monitoring
   and updates (Upgrades, About).
 - **Settings - Network** ([docs/network-and-power.md](docs/network-and-power.md)):
   this server's address with its prefix, gateway, DNS servers, search
@@ -1027,6 +1056,11 @@ on and changes nothing on the machine.
   (a restart) and the firewall and the lists to what they were.
 - **Settings - Restart and power off**: this server restarted or switched off,
   the page following it down and back up; `isemon --reboot`, `--poweroff`.
+- **Settings - Proxy** ([docs/proxy.md](docs/proxy.md)): an HTTP proxy (off
+  until switched on, the password sealed), each use switched on by itself -
+  the new versions, dnf or apt, ACME's CA and DNS APIs, the public lists,
+  GeoIP, the register of network cards; names, domains and nets reached straight;
+  *Try it* draws the way and times every step; `isemon --proxy-test [URL]`.
 - **Settings - Time** ([docs/time.md](docs/time.md)): the clock as chrony sees
   it - how far off, synchronised, the source, stratum, frequency, root delay
   and dispersion, leap, the zone - every source with its state and reach, and

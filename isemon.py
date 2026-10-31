@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.267'
+__version__ = '1.10.268'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -950,6 +950,22 @@ DEFAULTS = {
     'acme_dns_alias': '',
     'acme_dns_wait': 30,
     'acme_resolvers': '',
+    # Settings → Proxy (1.10.268; otp 1.0.166): off until switched on - and
+    # off, what the service's environment says (https_proxy) holds as before.
+    'proxy': 0,
+    'proxy_url': '',
+    'proxy_user': '',
+    'proxy_password': '',
+    'proxy_no': 'localhost, 127.0.0.1, ::1',
+    # ...and what goes through it, each use switched on by itself: off, that
+    # use goes as it always went, the proxy on or not.
+    'proxy_upgrade': 0,
+    'proxy_os': 0,
+    'proxy_acme': 0,
+    'proxy_acme_dns': 0,
+    'proxy_lists': 0,
+    'proxy_geo': 0,
+    'proxy_mac': 0,
     # On PostgreSQL, the firewall's lines, their counts and the domain's
     # events split into a part a day, so that a day that has aged goes in
     # one step. See `Storage.SPLIT`. Nothing on the other two engines.
@@ -1002,7 +1018,9 @@ SECRET_KEYS = ('mikrotik_password', 'mikrotik2_password', 'directory_password',
                'rbackup_password',
                # ACME's DNS-01 (1.10.251): the TSIG secret, the API tokens.
                'acme_dns_tsig_secret', 'acme_dns_token', 'acme_dns_key',
-               'acme_desec_token')
+               'acme_desec_token',
+               # Settings → Proxy (1.10.268): the password at the proxy.
+               'proxy_password')
 
 # The firewalls this can write to, in order. Two at most, and the second is
 # there for a pair in high availability: whichever of them is carrying the
@@ -2004,6 +2022,8 @@ def check_setting(key, value):
         raise ValueError('tidy_at is a time of day written as HH:MM')
     if str(key).startswith('acme'):
         acme_setting_checked(key, want)
+    if str(key).startswith('proxy'):
+        want = proxy_setting_checked(key, want)
     if key == 'update_at' and str(want).strip() and parse_hhmm(want) is None:
         raise ValueError('update_at is a time of day written as HH:MM, or empty')
     if key in ('never_block', 'banfeed_from'):
@@ -2217,6 +2237,32 @@ def acme_setting_checked(key, got):
                 ipaddress.ip_address(one)
             except ValueError:
                 raise ValueError('acme_resolvers: %r is not an address' % one[:60])
+
+
+def proxy_setting_checked(key, got):
+    """Settings → Proxy (1.10.268; otp 1.0.166): each the one shape it may
+    have - the address goes to dnf and apt as root, in the environment."""
+    if key not in ('proxy_url', 'proxy_user', 'proxy_no'):
+        return got
+    v = str(got if got is not None else '').strip()
+    if key == 'proxy_url' and v and \
+            not re.match(r'^https?://[A-Za-z0-9.\-]+(?::\d{1,5})?/?\Z|^https?://\[[0-9a-fA-F:]+\]'
+                         r'(?::\d{1,5})?/?\Z', v):
+        raise ValueError('proxy_url: http://host:port - the user name and the password go '
+                         'in the fields below, not in the address')
+    if key == 'proxy_url' and v:
+        try:
+            port = urllib.parse.urlsplit(v).port
+        except ValueError:
+            port = 0
+        if port is not None and not 0 < port < 65536:
+            raise ValueError('proxy_url: the port is a number from 1 to 65535')
+    if key == 'proxy_user' and re.search(r'[\s:@/]', str(got or '')):
+        raise ValueError('proxy_user: no spaces, no : @ or /')
+    if key == 'proxy_no' and v and \
+            not re.match(r'^[A-Za-z0-9.*:/\[\]_-]+([\s,;]+[A-Za-z0-9.*:/\[\]_-]+)*[\s,;]*\Z', v):
+        raise ValueError('proxy_no: names, .domains and addresses, separated by commas')
+    return v
 
 
 def check_settings_together(values):
@@ -51513,7 +51559,7 @@ class Daemon(object):
             try:
                 req = urllib.request.Request(
                     url, headers={'User-Agent': 'isemon/%s' % __version__})
-                with urllib.request.urlopen(req, timeout=180) as answer:
+                with url_open(req, 'mac', timeout=180) as answer:
                     # Capped, like the lists and the country database beside
                     # it: what comes back is somebody else's file and the
                     # whole of it is held in memory while it is read.
@@ -51630,7 +51676,7 @@ class Daemon(object):
             url = 'https://download.db-ip.com/free/dbip-country-lite-%s.csv.gz' % month
             try:
                 req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
-                with urllib.request.urlopen(req, timeout=180) as answer:
+                with url_open(req, 'geo', timeout=180) as answer:
                     kept = self.store.put_geo_streamed(ranges(lines_of(answer)))
                 if kept:
                     break
@@ -51982,7 +52028,7 @@ class Daemon(object):
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__,
                                                        'Accept': 'text/plain'})
-            with urllib.request.urlopen(req, timeout=90) as answer:
+            with url_open(req, 'lists', timeout=90) as answer:
                 # A piece at a time, for the reason in `lines_of`: two million
                 # lines read whole was more memory than this daemon is allowed.
                 kept = self.store.put_feed_streamed(which, ranges(lines_of(answer)))
@@ -56441,6 +56487,9 @@ class Daemon(object):
         'acme_dns_user': 'str', 'acme_dns_key': 'str', 'acme_dns_subdomain': 'str',
         'acme_desec_domain': 'str', 'acme_desec_token': 'str', 'acme_dns_alias': 'str',
         'acme_dns_wait': (0, 600), 'acme_resolvers': 'str',
+        'proxy': (0, 1), 'proxy_url': 'str', 'proxy_user': 'str', 'proxy_password': 'str',
+        'proxy_no': 'str', 'proxy_upgrade': (0, 1), 'proxy_os': (0, 1), 'proxy_acme': (0, 1),
+        'proxy_acme_dns': (0, 1), 'proxy_lists': (0, 1), 'proxy_geo': (0, 1), 'proxy_mac': (0, 1),
         'db_split': (0, 1), 'db_split_whole_days': (0, 1),
         'site_name': 'str', 'api_port': (1, 65535), 'debug': (0, 1),
         'debug_sql': (0, 1), 'debug_ldap': (0, 1), 'debug_api': (0, 1),
@@ -56748,6 +56797,18 @@ class Daemon(object):
         'acme_desec_domain': 'The domain at deSEC',
         'acme_desec_token': 'The deSEC API token',
         'acme_dns_alias': 'The TXT records go into',
+        'proxy': 'Go out through a proxy',
+        'proxy_url': 'The proxy',
+        'proxy_user': 'User name at the proxy',
+        'proxy_password': 'Password at the proxy',
+        'proxy_no': 'Straight, not through the proxy',
+        'proxy_upgrade': 'The new versions of isemon through it',
+        'proxy_os': 'The updates of the system through it',
+        'proxy_acme': 'Automatic certificates: the ACME CA through it',
+        'proxy_acme_dns': 'Automatic certificates: the DNS APIs through it',
+        'proxy_lists': 'The public lists through it',
+        'proxy_geo': 'The country database (GeoIP) through it',
+        'proxy_mac': 'The register of network cards through it',
         'db_engine': 'Everything is kept in',
         'db_host': 'The database server is at',
         'db_port': 'On port',
@@ -57926,6 +57987,28 @@ class Daemon(object):
                           '(<code>acme.example.net</code>), the name with a CNAME to it in your '
                           'DNS - <i>In your DNS</i> above says which. Empty: '
                           '_acme-challenge.NAME itself.',
+        'proxy': 'An HTTP proxy for what isemon asks of the web - each use switched on by '
+                 'itself below; a use switched off goes as it always went. The firewalls, '
+                 'Active Directory, the database, syslog, the backups and the dashboard never '
+                 'go through it.',
+        'proxy_url': '<code>http://proxy.example.cz:3128</code>',
+        'proxy_user': 'Where the proxy asks for one. Empty: none.',
+        'proxy_password': 'Kept sealed, like the other passwords.',
+        'proxy_no': 'Names and addresses reached without it, separated by commas: '
+                    '<code>.example.cz</code> is every name under it, <code>10.0.0.0/8</code> '
+                    'a net.',
+        'proxy_upgrade': 'Upgrades → From the web: the look for new versions (by hand and once a '
+                         'day) and their download.',
+        'proxy_os': 'dnf or apt fetch the updates of System updates through it - by hand and on a '
+                    'schedule.',
+        'proxy_acme': 'The ACME CA (Let’s Encrypt or your own): the directory, the account, the '
+                      'orders, the certificates, the renewal window (ARI).',
+        'proxy_acme_dns': 'The DNS APIs that put the TXT record in: deSEC, Cloudflare, acme-dns. '
+                          'RFC 2136 (nsupdate) is DNS, never through it.',
+        'proxy_lists': 'Public lists and Automatic updates: the blocklists fetched from the web.',
+        'proxy_geo': 'GeoIP: the country database fetched from db-ip.com.',
+        'proxy_mac': 'The makers of network cards (IEEE’s registers of MAC prefixes), fetched '
+                     'from standards-oui.ieee.org.',
         'db_engine': 'A file on this machine, or a database server. The file needs nothing '
                      'installing and is the faster of the two; a server is for keeping this '
                      'somewhere it is backed up and watched with everything else. Changing '
@@ -58212,6 +58295,13 @@ class Daemon(object):
             ACME_WORK['at'] = 0.0
             if getattr(self, 'webroot', None) is not None:
                 self.webroot_again('Automatic certificates')
+        # Settings → Proxy (1.10.268): what it is now, said - never the password.
+        if any(str(k).startswith('proxy') for k in changed):
+            said = 'the way out to the web: %s%s' % (
+                proxy_described(), ' (the password at the proxy changed)'
+                if 'proxy_password' in changed else '')
+            log(said)
+            self.store.add_event('settings', said, who=by)
         if 'ise' in changed or 'ise_paths' in changed or 'read_passed' in changed:
             # The files already followed left where they are (1.10.198), as
             # on a HUP; only one newly named starts where it was saved.
@@ -58706,6 +58796,12 @@ class Daemon(object):
                 if key == 'banfeed_password' and not (
                         int(CONFIG.get('banfeed') or 0)
                         and str(CONFIG.get('banfeed_auth') or 'none') == 'basic'):
+                    continue
+                # The proxy's password (1.10.268): only while the proxy is on
+                # and signed in to with a user name.
+                if key == 'proxy_password' and not (
+                        int(CONFIG.get('proxy') or 0)
+                        and str(CONFIG.get('proxy_user') or '').strip()):
                     continue
                 if key.endswith('_password') and not key.startswith('directory'):
                     fw = key[:-len('_password')]
@@ -64885,6 +64981,371 @@ class WebRoot(object):
 
 
 # ---------------------------------------------------------------------------
+# Going out through a proxy (1.10.268; after otp's Settings → Proxy, 1.0.166 -
+# 1.0.172)
+# ---------------------------------------------------------------------------
+# What isemon asks of the web itself, through an HTTP proxy where Settings →
+# Proxy has one - each use only where its own switch is on too (the proxy
+# off, or a use's switch off: that use goes exactly as it always went), and
+# never an address proxy_no lists:
+#
+#   upgrade   the new versions of isemon - the look and the download
+#             (Upgrades.online_get)
+#   os        the updates of the system - dnf or apt, by hand and on a
+#             schedule, handed to root's helper in its request and to the
+#             update in a file only root reads, never on a command line
+#   acme      Automatic certificates: the ACME CA (acme_fetch: the directory,
+#             the account, the orders, the certificates, ARI)
+#   acme_dns  Automatic certificates: the DNS APIs (deSEC, Cloudflare,
+#             acme-dns; _acme_api_call)
+#   lists     the public lists (Daemon._feed_fetch)
+#   geo       the country database from db-ip (Daemon.geo_fetch)
+#   mac       the registers of network cards from the IEEE (Daemon.mac_fetch)
+#
+# Never through it: the firewalls and routers (their APIs, ssh, RouterOS's
+# API), Active Directory (LDAP), the database, syslog, the backups'
+# destinations, DNS (the names of addresses, the ACME checks, nsupdate), the
+# time servers, ACME's Try port 80 (this server's own name), the dashboard's
+# own API and the command line's road to the daemon.
+#
+# Switched off, nothing changes: what the service's environment says
+# (https_proxy, as docs/upgrades.md had it) still holds where it held.
+PROXY_USES = ('upgrade', 'os', 'acme', 'acme_dns', 'lists', 'geo', 'mac')
+PROXY_USE_WORDS = {'upgrade': 'the new versions of isemon', 'os': 'the updates of the system',
+                   'acme': 'the ACME CA', 'acme_dns': 'the DNS APIs of ACME',
+                   'lists': 'the public lists', 'geo': 'the country database',
+                   'mac': 'the register of network cards'}
+
+
+def proxy_set():
+    """Settings → Proxy switched on, with an address."""
+    return bool(int(CONFIG.get('proxy') or 0)) and bool(str(CONFIG.get('proxy_url') or '').strip())
+
+
+def proxy_on(purpose=''):
+    """Whether this use goes through the proxy: the proxy on and the use's own
+    switch on. '' - the proxy itself (Try it)."""
+    if not proxy_set():
+        return False
+    if not purpose:
+        return True
+    if purpose not in PROXY_USES:
+        raise ValueError('no such use of the proxy: %s' % purpose)
+    return bool(int(CONFIG.get('proxy_' + purpose) or 0))
+
+
+def proxy_full(purpose=''):
+    """The proxy's address with its user and password in it, for urllib, dnf
+    and apt - '' where none is to be used. Never logged, never shown."""
+    if not proxy_on(purpose):
+        return ''
+    url = str(CONFIG.get('proxy_url') or '').strip().rstrip('/')
+    user = str(CONFIG.get('proxy_user') or '').strip()
+    if not user:
+        return url
+    pw = unseal_secret(CONFIG.get('proxy_password') or '') or ''
+    scheme, _, rest = url.partition('://')
+    return '%s://%s:%s@%s' % (scheme, urllib.parse.quote(user, safe=''),
+                              urllib.parse.quote(pw, safe=''), rest)
+
+
+def proxy_shown(url):
+    """A proxy's address as it may be said: host and port, never who signs in."""
+    try:
+        u = urllib.parse.urlsplit(str(url or ''))
+        return '%s:%d' % (u.hostname, u.port or 3128) if u.hostname else ''
+    except ValueError:
+        return ''
+
+
+def proxy_no_list():
+    return [w.strip().lower() for w in re.split(r'[\s,;]+', str(CONFIG.get('proxy_no') or ''))
+            if w.strip()]
+
+
+def proxy_skips(host):
+    """Whether this host is reached straight, as proxy_no says: a name, a
+    .domain (every name under it and itself), an address, a net, or *."""
+    host = str(host or '').strip('[]').lower().rstrip('.')
+    if not host:
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    for one in proxy_no_list():
+        if one == '*':
+            return True
+        if ip is not None and ('/' in one or re.match(r'^[0-9a-f.:\[\]]+\Z', one)):
+            try:
+                if ip in ipaddress.ip_network(one.strip('[]'), strict=False):
+                    return True
+            except ValueError:
+                pass
+            continue
+        one = one.lstrip('*').rstrip('.')
+        if one.startswith('.'):
+            if host.endswith(one) or host == one[1:]:
+                return True
+        elif host == one:
+            return True
+    return False
+
+
+class _ProxyOnly(urllib.request.ProxyHandler):
+    """ProxyHandler without its look at no_proxy in the environment: only
+    proxy_no says what goes straight - asked again for every request, a
+    redirect's too. The user and the password go in Proxy-Authorization
+    (and in CONNECT for HTTPS), never into anything said."""
+    def proxy_open(self, req, proxy, type):
+        if proxy_skips(urllib.parse.urlsplit(req.full_url).hostname or ''):
+            return None
+        proxy_type, user, password, hostport = urllib.request._parse_proxy(proxy)
+        if user is not None:
+            # Unredirected: a redirect to an address reached straight does
+            # not carry it along to the server there.
+            creds = base64.b64encode(('%s:%s' % (urllib.parse.unquote(user),
+                                                 urllib.parse.unquote(password or ''))).encode())
+            req.add_unredirected_header('Proxy-authorization', 'Basic ' + creds.decode('ascii'))
+        req.set_proxy(urllib.parse.unquote(hostport), proxy_type or req.type)
+        return None
+
+
+def url_open(req, purpose, timeout=30, context=None, handlers=()):
+    """urllib.request's open, through the proxy where it and this use of it
+    (PROXY_USES) are on and the host is not one reached straight. Else as
+    urllib always was here: the service's environment (https_proxy) holds."""
+    if purpose not in PROXY_USES:
+        raise ValueError('no such use of the proxy: %s' % purpose)
+    if not isinstance(req, urllib.request.Request):
+        req = urllib.request.Request(req)
+    chain = list(handlers)
+    if proxy_on(purpose):
+        proxy = proxy_full(purpose)
+        chain.append(_ProxyOnly({'http': proxy, 'https': proxy}))
+    if context is not None:
+        chain.append(urllib.request.HTTPSHandler(context=context))
+    return urllib.request.build_opener(*chain).open(req, timeout=timeout)
+
+
+def proxy_env_for(url):
+    """The proxy the service's environment gives this address, with the
+    setting off - '' where it gives none."""
+    try:
+        u = urllib.parse.urlsplit(url)
+        got = urllib.request.getproxies().get(u.scheme) or ''
+        if got and urllib.request.proxy_bypass(u.hostname or ''):
+            return ''
+        return got
+    except Exception:                                   # noqa: BLE001
+        return ''
+
+
+def proxy_default_url():
+    try:
+        return Upgrades.online_url() or 'https://github.com/'
+    except Exception:                                   # noqa: BLE001
+        return 'https://github.com/'
+
+
+def proxy_try(url=''):
+    """Settings → Proxy → Try it (otp 1.0.169-1.0.172): an address asked
+    through the proxy where one is set and the
+    address is not one reached straight, else straight - one step at a time:
+    the name looked up, the connection, the tunnel through the proxy, TLS and
+    the certificate, the answer. Always tried; each step with how long it
+    took. Nothing said holds the password."""
+    url = str(url or '').strip() or proxy_default_url()
+    if not re.match(r'^https?://[^\s/]+[^\s]*\Z', url):
+        raise ValueError('an address starting https:// (or http://)')
+    u = urllib.parse.urlsplit(url)
+    host = u.hostname or ''
+    if not host:
+        raise ValueError('an address starting https:// (or http://)')
+    tls_on = u.scheme == 'https'
+    try:
+        port = u.port or (443 if tls_on else 80)
+    except ValueError:
+        raise ValueError('the port of the address is not a number')
+    via, why, env = '', '', False
+    if not proxy_on():
+        why = 'no proxy is set' if not int(CONFIG.get('proxy') or 0) else \
+            'the proxy has no address'
+        via = proxy_env_for(url)
+        env = bool(via)
+    elif proxy_skips(host):
+        why = '%s is in the list reached straight' % host
+    else:
+        via = proxy_full()
+    px = urllib.parse.urlsplit(via) if via else None
+    out = {'url': url, 'host': host, 'port': port, 'mode': 'proxy' if via else 'direct',
+           'why_direct': '' if via else why, 'node': socket.gethostname() or 'isemon',
+           'steps': [], 'ok': False, 'from_env': env,
+           'proxy': proxy_shown(via) if via else '',
+           'proxy_auth': bool(px and px.username), 'at': time.time()}
+    began = time.time()
+    sock = [None]
+
+    def step(what, fn):
+        t0 = time.time()
+        try:
+            said = fn() or ''
+        except Exception as e:                          # noqa: BLE001
+            out['steps'].append({'what': what, 'ok': False, 'ms': int((time.time() - t0) * 1000),
+                                 'said': proxy_words(e)})
+            raise
+        out['steps'].append({'what': what, 'ok': True, 'ms': int((time.time() - t0) * 1000),
+                             'said': said})
+
+    def resolve(name, p):
+        got = socket.getaddrinfo(name, p, 0, socket.SOCK_STREAM)
+        addrs = []
+        for g in got:
+            if g[4][0] not in addrs:
+                addrs.append(g[4][0])
+        out.setdefault('addrs', {})[name] = addrs
+        return ', '.join(addrs[:4])
+
+    def connect(name, p):
+        sock[0] = socket.create_connection((name, p), timeout=10)
+        sock[0].settimeout(15)
+        peer = sock[0].getpeername()
+        return '%s port %d' % (peer[0], peer[1])
+
+    def read_head():
+        data = b''
+        while b'\r\n\r\n' not in data and len(data) < 65536:
+            chunk = sock[0].recv(4096)
+            if not chunk:
+                break
+            data += chunk
+        line = data.split(b'\r\n', 1)[0].decode('latin-1', 'replace')
+        m = re.match(r'^HTTP/\d(?:\.\d)?\s+(\d{3})\s*(.*)$', line)
+        if not m:
+            raise ValueError('no HTTP answer: %r' % line[:80] if line else
+                             'the connection was closed without an answer')
+        return int(m.group(1)), m.group(2).strip(), data
+
+    def auth_header():
+        if not (px and px.username):
+            return ''
+        creds = '%s:%s' % (urllib.parse.unquote(px.username),
+                           urllib.parse.unquote(px.password or ''))
+        return 'Proxy-Authorization: Basic %s\r\n' % base64.b64encode(creds.encode()).decode()
+
+    try:
+        if via:
+            step('the proxy looked up (%s)' % px.hostname,
+                 lambda: resolve(px.hostname, px.port or 3128))
+            step('connected to the proxy', lambda: connect(px.hostname, px.port or 3128))
+            if tls_on:
+                def tunnel():
+                    sock[0].sendall(_proxy_wire('CONNECT', '%s:%d' % (host, port),
+                                                '%s:%d' % (host, port), auth_header()))
+                    code, words, _ = read_head()
+                    if code == 407:
+                        raise ValueError(
+                            'the proxy asks for a user name and a password (407) - they are '
+                            'wrong' if px.username else 'the proxy asks for a user name and a '
+                            'password (407) - they are missing')
+                    if code != 200:
+                        raise ValueError('the proxy said %d %s' % (code, words))
+                    return '%d %s%s' % (code, words, ' - with the user name and password'
+                                        if px.username else '')
+                step('a tunnel through the proxy to %s:%d' % (host, port), tunnel)
+        else:
+            step('%s looked up' % host, lambda: resolve(host, port))
+            step('connected to %s' % host, lambda: connect(host, port))
+        if tls_on:
+            def handshake():
+                ctx = ssl.create_default_context()
+                sock[0] = ctx.wrap_socket(sock[0], server_hostname=host)
+                c = sock[0].getpeercert() or {}
+                subj = dict(x[0] for x in c.get('subject', ()) if x)
+                iss = dict(x[0] for x in c.get('issuer', ()) if x)
+                out['tls'] = {'version': sock[0].version(), 'cipher': (sock[0].cipher() or [''])[0],
+                              'subject': subj.get('commonName', ''),
+                              'issuer': iss.get('organizationName') or iss.get('commonName', ''),
+                              'until': c.get('notAfter', '')}
+                return '%s, %s - %s, by %s' % (out['tls']['version'], out['tls']['cipher'],
+                                               out['tls']['subject'], out['tls']['issuer'])
+            step('TLS, the certificate of %s checked' % host, handshake)
+
+        def ask():
+            path = (u.path or '/') + ('?' + u.query if u.query else '')
+            target = url if (via and not tls_on) else path
+            sock[0].sendall(_proxy_wire('HEAD', target, u.netloc.split('@')[-1],
+                                        auth_header() if (via and not tls_on) else '',
+                                        close=True))
+            code, words, _ = read_head()
+            out['status'] = code
+            if code == 407:
+                raise ValueError('the proxy asks for a user name and a password (407)')
+            return '%d %s' % (code, words)
+        step('asked for %s' % (u.path or '/'), ask)
+        out['ok'] = True
+    except Exception:                                   # noqa: BLE001
+        pass
+    finally:
+        try:
+            if sock[0]:
+                sock[0].close()
+        except OSError:
+            pass
+    out['ms'] = int((time.time() - began) * 1000)
+    return out
+
+
+def _proxy_wire(method, target, host, auth, close=False):
+    """One request's head as it goes on the wire (Try it)."""
+    lines = ['%s %s HTTP/1.1' % (method, target), 'Host: ' + host]
+    if auth:
+        lines.append(auth.rstrip('\r\n'))
+    lines.append('User-Agent: isemon/%s (+proxy check)' % __version__)
+    if close:
+        lines.append('Connection: close')
+    return ('\r\n'.join(lines) + '\r\n\r\n').encode('latin-1')
+
+
+def proxy_words(e):
+    """What went wrong, in words - never the address with who signs in."""
+    if isinstance(e, socket.gaierror):
+        said = 'the name is not known (%s)' % (e.strerror or e)
+    elif isinstance(e, ConnectionRefusedError):
+        said = 'nothing answers on that port (connection refused)'
+    elif isinstance(e, (socket.timeout, TimeoutError)):
+        said = 'no answer in time (timed out)'
+    elif isinstance(e, ssl.SSLCertVerificationError):
+        said = 'the certificate is not trusted: %s' % (e.verify_message or e)
+    elif isinstance(e, ssl.SSLError):
+        said = 'TLS failed: %s' % (e.reason or e)
+    elif isinstance(e, OSError) and e.strerror:
+        said = e.strerror
+    else:
+        said = str(getattr(e, 'reason', '') or e)
+    return re.sub(r'//[^/@\s]*@', '//', str(said))[:300]
+
+
+def proxy_described(cfg=None):
+    """Settings → Proxy as an event says it: never the password."""
+    c = CONFIG if cfg is None else cfg
+    if not int(c.get('proxy') or 0):
+        return 'off - isemon goes to the web as it always went'
+    url = str(c.get('proxy_url') or '').strip()
+    words = 'on, %s' % (proxy_shown(url) or 'no address yet')
+    user = str(c.get('proxy_user') or '').strip()
+    if user:
+        words += ', as %s%s' % (user, ' with a password' if c.get('proxy_password')
+                                else ' without a password')
+    words += '; straight: %s' % (', '.join(
+        w for w in re.split(r'[\s,;]+', str(c.get('proxy_no') or '')) if w) or 'nothing')
+    uses = [PROXY_USE_WORDS[u] for u in PROXY_USES if int(c.get('proxy_' + u) or 0)]
+    words += '; through it: %s' % (', '.join(uses) if uses else 'nothing yet - no use is '
+                                   'switched on')
+    return words
+
+
+# ---------------------------------------------------------------------------
 # Certificates by ACME: Let's Encrypt and the like (1.10.251; after otp's
 # Settings → Automatic certificates, 1.0.169 - 1.0.187)
 # ---------------------------------------------------------------------------
@@ -64978,11 +65439,14 @@ def _acme_ctx():
     return ctx
 
 
-def _acme_open(req, timeout=30, context=None):
+def _acme_open(req, timeout=30, context=None, purpose=''):
     """urllib's own, the proxy as the service's environment has it
-    (https_proxy), through ACME's DNS servers where they are set."""
+    (https_proxy), through ACME's DNS servers where they are set - or through
+    Settings → Proxy where it and this use of it are on (1.10.268)."""
     handlers = [urllib.request.HTTPSHandler(context=context)] if context else []
     with acme_dns_scope():
+        if purpose and proxy_on(purpose):
+            return url_open(req, purpose, timeout=timeout, context=context)
         return urllib.request.build_opener(*handlers).open(req, timeout=timeout)
 
 
@@ -65030,7 +65494,7 @@ def acme_fetch(url, data=None, method=None, accept='application/json', timeout=3
     if data is not None:
         req.add_header('Content-Type', 'application/jose+json')
     try:
-        with _acme_open(req, timeout=timeout, context=_acme_ctx()) as r:
+        with _acme_open(req, timeout=timeout, context=_acme_ctx(), purpose='acme') as r:
             return r.read(1 << 20), r.headers, r.status
     except urllib.error.HTTPError as e:
         return e.read(1 << 20), e.headers, e.code
@@ -66485,7 +66949,7 @@ def _acme_api_call(base, method, path, body, headers):
                                      'Content-Type': 'application/json',
                                      'User-Agent': 'isemon/%s (acme)' % __version__}))
     ctx = ssl.create_default_context() if base.startswith('https') else None
-    return _acme_open(req, timeout=30, context=ctx)
+    return _acme_open(req, timeout=30, context=ctx, purpose='acme_dns')
 
 
 def _cf(method, path, body=None):
@@ -71265,8 +71729,9 @@ class Upgrades(object):
     @staticmethod
     def online_get(url, limit=4 * 1024 * 1024, accept='*/*', timeout=30):
         """One answer from the web, over HTTPS only - and never sent on to
-        anything that is not HTTPS. The proxy, if the server needs one, is
-        https_proxy in the service's environment."""
+        anything that is not HTTPS. Through Settings → Proxy where it is on
+        (1.10.268); else the proxy, if any, is https_proxy in the service's
+        environment."""
         import urllib.request
         if not str(url).startswith('https://'):
             raise ValueError('only https:// addresses are asked: %s' % url)
@@ -71282,9 +71747,8 @@ class Upgrades(object):
                                      % newurl)
                 return urllib.request.HTTPRedirectHandler.redirect_request(
                     self, req_, fp, code, msg, headers, newurl)
-        opener = urllib.request.build_opener(
-            HttpsOnly, urllib.request.HTTPSHandler(context=ssl.create_default_context()))
-        with opener.open(req, timeout=timeout) as r:
+        with url_open(req, 'upgrade', timeout=timeout, context=ssl.create_default_context(),
+                      handlers=(HttpsOnly,)) as r:
             final = r.geturl()
             if not str(final).startswith('https://'):
                 raise ValueError('it was sent on to an address that is not https: %s' % final)
@@ -72892,6 +73356,11 @@ def _osup_job(daemon, kind, wait=60, security=False):
     ask = {'do': 'run', 'kind': kind, 'id': ask_id, 'at': time.time()}
     if security and kind == 'upgrade':
         ask['security'] = True
+    # dnf and apt through Settings → Proxy (1.10.268; otp 1.0.166): in the
+    # ask, which only root and this account read - never on a command line.
+    if proxy_on('os'):
+        ask['proxy'] = proxy_full('os')
+        ask['proxy_no'] = ','.join(proxy_no_list())[:2000]
     wr.write(OSUP_ASK, ask)
     end = time.time() + wait
     while time.time() < end:
@@ -74869,6 +75338,24 @@ class ApiHandler(BaseHTTPRequestHandler):
             except (WebRootError, ValueError, OSError) as e:
                 return self.fail(str(e))
 
+        # Settings - Proxy - Try it (1.10.268; otp 1.0.169): an address asked
+        # through the proxy as it is saved, step by step. A full administrator's.
+        if path == '/api/proxy':
+            me = self.need_admin()
+            if not me:
+                return None
+            if method != 'POST':
+                return self.send_json({'ok': True, 'on': proxy_on(),
+                                       'proxy': proxy_shown(proxy_full()) if proxy_on() else '',
+                                       'url': proxy_default_url()})
+            data = self.body()
+            if str(data.get('action') or '') != 'try':
+                return self.fail('no such thing to do')
+            try:
+                got = proxy_try(str(data.get('url') or ''))
+            except ValueError as e:
+                return self.fail(str(e))
+            return self.send_json(dict(got, ok=True, reached=got['ok']))
         # Root's SSH keys (1.10.239): looked at and changed by a full
         # administrator only, put in by root (isemon_web.py).
         if path == '/api/sshkeys':
@@ -80721,6 +81208,50 @@ def cmd_acme_order(args, pal, store):
     return 1
 
 
+# ---- Settings - Proxy - Try it, from here (1.10.268; otp 1.0.188's --proxy-test) ------
+def proxy_print(pal, x):
+    """The way an address was asked: this server, the proxy, the address -
+    each step with its time."""
+    via = x.get('mode') == 'proxy'
+    pal.title('The way out to %s: %s' % (x.get('url') or '?', 'through the proxy %s%s' % (
+        x.get('proxy') or '', ' (https_proxy of the service)' if x.get('from_env') else
+        (' with a password' if x.get('proxy_auth') else '')) if via else 'straight'))
+    if not via and x.get('why_direct'):
+        pal.note('  straight because %s' % x['why_direct'])
+    way = [x.get('node') or 'this server'] + ([x.get('proxy') or 'the proxy'] if via else []) + [
+        '%s:%s' % (x.get('host') or '?', x.get('port') or '?')]
+    pal.kv('the way', ' -> '.join(way))
+    for one in x.get('steps') or []:
+        line = '%s %-48s %6d ms' % ('ok ' if one.get('ok') else 'BAD', one.get('what') or '',
+                                     int(one.get('ms') or 0))
+        if one.get('ok'):
+            pal.say('  ' + line)
+        else:
+            pal.bad('  ' + line)
+        if one.get('said'):
+            pal.note('        %s' % one['said'])
+    if x.get('reached'):
+        pal.good('reached %s - HTTP %s, %d ms' % ('through the proxy' if via else 'straight',
+                                                 x.get('status'), int(x.get('ms') or 0)))
+    else:
+        bad = [s for s in x.get('steps') or [] if not s.get('ok')]
+        pal.bad('not reached: %s' % ((bad[0].get('said') if bad else '') or '?'))
+    pal.blank()
+
+
+def cmd_proxy_test(args, pal, store):
+    """--proxy-test [URL]: Settings - Proxy - Try it - an address asked the way
+    isemon goes through the proxy (empty: where the new versions are looked for)."""
+    status, x = api_call('/api/proxy', 'POST', {'action': 'try', 'url': args.proxy_test or ''},
+                         timeout=90, session=cli_session(store))
+    if not need_daemon(pal, status, x):
+        return 1
+    if as_json(args, x):
+        return 0 if x.get('reached') else 1
+    proxy_print(pal, x)
+    return 0 if x.get('reached') else 1
+
+
 def _ot_cert_lines(pal, key, f):
     """A certificate as a few lines: its names, who issued it, until when."""
     if not f:
@@ -84398,7 +84929,17 @@ class Console(object):
             ('7', 'SSH keys of root', self.root_keys),
             ('8', 'The otp logs over TLS', self.otp_tls),
             ('9', 'Automatic certificates (ACME)', self.acme_menu),
+            ('10', 'The way out (proxy): try it', self.proxy_try_menu),
         ])
+
+    # ---- 10 > the way out through the proxy (1.10.268) ------------------------------
+    def proxy_try_menu(self):
+        url = self.ask_one('The way out (proxy): try it', 'the address', help_=(
+            'An address asked through the proxy of '
+            'Settings - Proxy, or straight where none is set or the address is in its list. Empty: '
+            'where the new versions are looked for.'), need=False)
+        if url is not None:
+            self.act('--proxy-test', url.strip())
 
     # ---- 9 > Automatic certificates (1.10.251) ----------------------------------------
     def acme_menu(self):
@@ -85228,6 +85769,12 @@ def main(argv=None):
                      help='order the certificate from the ACME CA now, followed here; ACME '
                           'looks after it from then on (this server has one: this and all are '
                           'the same)')
+    # Settings - Proxy - Try it, from here (1.10.268; otp's --proxy-test).
+    act.add_argument('--proxy-test', metavar='URL', nargs='?', const='', dest='proxy_test',
+                     help='the way out through the proxy tried: an address of your own, or '
+                          'the upgrades\' one, asked through the proxy of Settings - Proxy (or '
+                          'straight where none is set or the address is in its list) - '
+                          'each step with its time')
     act.add_argument('--otp-tls-remove', action='store_true', dest='otp_tls_remove',
                      help='take the encrypted receiving away whole - the input, its '
                           'certificate, key and authorities; the plain one on 514 stays. '
@@ -85403,6 +85950,7 @@ def main(argv=None):
         (args.otp_tls_off, cmd_otp_tls_off),
         (args.otp_tls_remove, cmd_otp_tls_remove),
         (args.acme, cmd_acme), (bool(args.acme_order), cmd_acme_order),
+        (args.proxy_test is not None, cmd_proxy_test),
         (args.failed, cmd_failed), (args.passed, cmd_passed),
         (args.blocked, cmd_blocked), (args.events, cmd_events), (args.check, cmd_check),
         (bool(args.address), cmd_address), (bool(args.ban), cmd_ban),

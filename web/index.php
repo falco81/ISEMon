@@ -422,6 +422,8 @@ if (isset($_GET['api'])) {
         'otptls'       => '/api/otptls',
         /* Automatic certificates (1.10.251). */
         'acme'         => '/api/acme',
+        /* Settings → Proxy → Try it (1.10.268). */
+        'proxy'        => '/api/proxy',
         'dashboard' => '/api/dashboard',
         /* One door's own shape, counted by what matters behind that door. */
         'door'      => '/api/door',
@@ -510,6 +512,7 @@ if (isset($_GET['api'])) {
         'sshkeys'      => '/api/sshkeys',
         'otptls'       => '/api/otptls',
         'acme'         => '/api/acme',
+        'proxy'        => '/api/proxy',
         'console-login' => '/api/console-login',
         'win-reread'   => '/api/windows/reread',
         'win-rollup'   => '/api/windows/rollup',
@@ -4044,6 +4047,40 @@ function srcText(el) {
   .con-row.changed b{color:var(--info)}
   .con-says{margin:0;color:var(--tx-mut);font-size:12.5px}
   #up-web-card #sect-upgrade{padding-top:14px;border-top:1px solid var(--line)}
+  /* Proxy → Try it (1.10.268; otp 1.0.169): the way it went */
+  .wr .dot.bad{background:var(--crit)}
+  #px-host > .card{margin-top:14px}
+  .px-out{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+  .px-result{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel2)}
+  .px-verdict{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .px-verdict.ok b{color:var(--ok,#3fb950)} .px-verdict.bad b{color:var(--crit,#f85149)}
+  .px-path{display:flex;align-items:center;gap:0;flex-wrap:wrap;row-gap:12px}
+  .px-stop{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:150px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);text-align:center}
+  .px-stop .px-ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);color:var(--tx-mut)}
+  .px-stop.me .px-ic{color:var(--accent,#58a6ff)}
+  .px-stop.good{border-color:color-mix(in srgb,var(--ok,#3fb950) 55%,var(--line))}
+  .px-stop.good .px-ic{color:var(--ok,#3fb950)}
+  .px-stop.bad{border-color:color-mix(in srgb,var(--crit,#f85149) 55%,var(--line))}
+  .px-stop.bad .px-ic{color:var(--crit,#f85149)}
+  .px-stop b{font-size:12.5px;word-break:break-all}
+  .px-link{flex:1;min-width:90px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 6px}
+  .px-wire{display:block;width:100%;height:3px;border-radius:2px;background:var(--line)}
+  .px-link.ok .px-wire{background:var(--ok,#3fb950)}
+  .px-link.bad .px-wire{background:repeating-linear-gradient(90deg,var(--crit,#f85149) 0 8px,transparent 8px 14px)}
+  .px-link.going .px-wire{background:repeating-linear-gradient(90deg,var(--accent,#58a6ff) 0 10px,transparent 10px 20px);background-size:40px 3px;animation:px-run .8s linear infinite}
+  @keyframes px-run{from{background-position:0 0}to{background-position:40px 0}}
+  .px-lw{color:var(--tx-mut)}
+  .px-link.ok .px-lw{color:var(--ok,#3fb950)} .px-link.bad .px-lw{color:var(--crit,#f85149)}
+  .px-steps{display:flex;flex-direction:column;gap:6px}
+  .px-step{display:flex;gap:12px;align-items:flex-start;padding:8px 12px;border:1px solid var(--line);border-radius:8px}
+  .px-step .px-n{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--panel2)}
+  .px-step.ok .px-n{color:var(--ok,#3fb950);background:var(--ok-bg,rgba(63,185,80,.15))}
+  .px-step.bad .px-n{color:var(--crit,#f85149);background:rgba(248,81,73,.15)}
+  .px-step.off{opacity:.55}
+  .px-st{flex:1;min-width:0}
+  .px-st .mono{overflow-wrap:anywhere}
+  .px-ms{flex:none}
+  @media (max-width:700px){.px-link{min-width:100%;padding:4px 0}.px-stop{min-width:100%}}
   @media (max-width:760px){.fw-acc-row{grid-template-columns:1fr}.tls-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
     .cert-grid{grid-template-columns:1fr}}
 </style>
@@ -5071,6 +5108,7 @@ function srcText(el) {
     <button type="button" data-pane="fw"      data-icon="wall"   title="Who may reach the dashboard, the published ban list and the health check, and the machine's own firewall: what isemon needs let in by itself, and rules of your own. Nothing is changed until it is saved here; root puts it in.">Firewall and access</button>
     <div class="ctl-group">Server</div>
     <button type="button" data-pane="network" data-icon="net" title="This server's address, gateway, DNS servers, host name and IPv6 - put in by the server itself, on trial: unless it is kept within minutes it goes back to the old one by itself.">Network</button>
+    <button type="button" class="admin-only" data-pane="proxy" data-icon="globe" title="An HTTP proxy for what isemon asks of the web - each use switched on by itself: the new versions, the system updates, ACME, the public lists, GeoIP.">Proxy</button>
     <button type="button" data-pane="time" data-icon="clock" title="The clock of this server: chrony, its time servers, how far off it is - every time on these pages and every record read is worked out from it.">Time</button>
     <button type="button" data-pane="power" data-icon="power" title="Restart or switch off this server.">Restart and power off</button>
     <button type="button" data-pane="osup" data-icon="download" title="The operating system's packages updated by dnf (or apt), with what it says as it goes; a restart offered when one is needed.">System updates</button>
@@ -5981,6 +6019,18 @@ function srcText(el) {
         these minutes - and at once when the server comes up without its new address.</p>
       <div id="sect-nettrial"></div>
     </div>
+  </div>
+
+  <!-- ---------- going out through a proxy (1.10.268; after otp 1.0.166) ---------- -->
+  <div class="ctl-pane wr" id="pane-proxy" hidden>
+    <div class="ctl-head"><h2 class="ctl-title">Proxy</h2>
+      <p class="ctl-lede">Where the server may reach the web only through an HTTP proxy. Each use goes through
+        it only when switched on below - the new versions of isemon, the updates of the system (dnf, apt),
+        Automatic certificates (the ACME CA, the DNS APIs), the public lists, the country database, the
+        register of network cards; one switched off goes as it always went. The firewalls, Active Directory,
+        the database, syslog, the backups and the dashboard never do.</p></div>
+    <div class="card full"><h2>Settings</h2><div id="sect-proxy"></div></div>
+    <div id="px-host"></div>
   </div>
 
   <!-- ---------- the clock (1.10.228) ---------- -->
@@ -26011,6 +26061,9 @@ var PANES = {
             'osup_auto_day', 'osup_auto_at', 'osup_auto_reboot'],
   power:   ['power_auto', 'power_auto_every', 'power_auto_day', 'power_auto_at',
             'power_auto_needed'],
+  /* Settings → Proxy (1.10.268), as otp 1.0.166 has it. */
+  proxy:   ['proxy', 'proxy_url', 'proxy_user', 'proxy_password', 'proxy_no', 'proxy_upgrade',
+            'proxy_os', 'proxy_acme', 'proxy_acme_dns', 'proxy_lists', 'proxy_geo', 'proxy_mac'],
   /* Automatic certificates (1.10.251), drawn below the card of the certificate. */
   acme:    ['acme', 'acme_email', 'acme_ca', 'acme_url', 'acme_ca_pem', 'acme_name', 'acme_days',
             'acme_key', 'acme_account_key', 'acme_challenge', 'acme_dns', 'acme_dns_server', 'acme_dns_zone',
@@ -26780,6 +26833,11 @@ function drawSettings() {
    like one that is in play, it is how somebody sets a value, saves it, and
    spends a while working out why nothing happened. */
 var ONLY_WHEN = {
+  /* Settings → Proxy (1.10.268): as otp has them. */
+  proxy_url: ['proxy', '1'], proxy_user: ['proxy', '1'], proxy_password: ['proxy', '1'],
+  proxy_no: ['proxy', '1'], proxy_upgrade: ['proxy', '1'], proxy_os: ['proxy', '1'],
+  proxy_acme: ['proxy', '1'], proxy_acme_dns: ['proxy', '1'], proxy_lists: ['proxy', '1'],
+  proxy_geo: ['proxy', '1'], proxy_mac: ['proxy', '1'],
   /* Automatic certificates (1.10.251): as otp has them. */
   acme_email: ['acme', '1'], acme_ca: ['acme', '1'],
   acme_url: ['acme_ca', 'custom'], acme_ca_pem: ['acme_ca', 'custom'],
@@ -29107,6 +29165,7 @@ function showPane(name, quietly) {
   if (name === 'db') loadDb();
   if (name === 'fw') loadFw();
   if (name === 'tls') loadTls();
+  if (name === 'proxy' && typeof drawProxy === 'function') drawProxy();
   if (name === 'acme' && typeof loadAcme === 'function') loadAcme();
   else if (typeof acPoll === 'function') acPoll(false);
   if (name === 'upgrade') loadUpgrade();
@@ -39347,6 +39406,134 @@ function acmeAskFirst(d, go) {
 /* ---- Settings → Automatic certificates (1.10.251; after otp 1.0.169-1.0.187) ------
    The dashboard's certificate as a card: who orders it, what it has now, the
    last try step by step; port 80 tried as the CA will try it; In your DNS. */
+/* ---- Settings → Proxy → Try it (1.10.268; after otp 1.0.166-1.0.172) ------------
+   An address asked from this server through the proxy as it is saved, or
+   straight where none is set or the address is in
+   the list - and the way it went drawn: this server, the proxy, the address,
+   each step with its time. One server: one card, answered at once. */
+var PX = {going: false};
+function drawProxy() {
+  var host = $('px-host');
+  if (!host) return;
+  clear(host);
+  var c = el('div', 'card full');
+  c.appendChild(el('h2', '', 'Try it'));
+  c.appendChild(el('p', 'note', 'An address asked from this server through the proxy as it is saved, or straight where none is set or the address is in the list. Each step is shown. Empty: where the new versions are looked for.'));
+  var row = el('div', 'btnrow');
+  var url = el('input');
+  url.type = 'text';
+  url.id = 'px-url';
+  url.placeholder = 'https://github.com/';
+  url.style.flex = '1';
+  url.style.minWidth = '260px';
+  var go = cmdButton('Try it', 'play', 'primary admin-only');
+  go.id = 'px-go';
+  var said = el('div', 'px-out');
+  go.onclick = function () {
+    if (PX.going) return;
+    PX.going = true;
+    busy(go, true);
+    clear(said);
+    said.appendChild(pxPath(null));
+    api('proxy', {action: 'try', url: url.value.trim()}).then(function (x) {
+      PX.going = false;
+      busy(go, false);
+      x = Object.assign({}, x, {ok: !!x.reached});
+      clear(said);
+      said.appendChild(pxPath(x));
+      said.appendChild(pxSteps(x));
+    }).catch(function (e) {
+      PX.going = false;
+      busy(go, false);
+      clear(said);
+      said.appendChild(el('p', 'note bad', String(e && e.message || e)));
+    });
+  };
+  url.addEventListener('keydown', function (e) { if (e.key === 'Enter') go.click(); });
+  row.appendChild(url); row.appendChild(go);
+  c.appendChild(row);
+  c.appendChild(said);
+  host.appendChild(c);
+}
+/* The way it went, drawn: this server, the proxy (when it went through one),
+   the address - each link green, red, or still being tried. */
+function pxPath(x) {
+  var box = el('div', 'px-path' + (x ? (x.ok ? ' ok' : ' bad') : ' going'));
+  var steps = (x && x.steps) || [];
+  var failAt = steps.filter(function (s) { return !s.ok; })[0];
+  var stop = function (icon, title, sub, cls) {
+    var n = el('div', 'px-stop ' + (cls || ''));
+    var ic = el('span', 'px-ic');
+    ic.innerHTML = iconMarkup(icon, 22);
+    n.appendChild(ic);
+    n.appendChild(noI18n(el('b', 'mono', title)));
+    if (sub) n.appendChild(el('span', 'muted small', sub));
+    return n;
+  };
+  var link = function (state, words) {
+    var l = el('div', 'px-link ' + state);
+    l.appendChild(el('span', 'px-wire'));
+    if (words) l.appendChild(el('span', 'px-lw small', words));
+    return l;
+  };
+  if (!x) {
+    box.appendChild(stop('router', (STATUS && (STATUS.host || STATUS.hostname)) || 'isemon', 'this server', 'me'));
+    box.appendChild(link('going', 'trying…'));
+    box.appendChild(stop('globe', '…', '', ''));
+    return box;
+  }
+  var reached = function (re) { return steps.some(function (s) { return s.ok && re.test(s.what); }); };
+  box.appendChild(stop('router', x.node, 'this server', 'me'));
+  if (x.mode === 'proxy') {
+    var toProxy = reached(/^connected to the proxy/) ? 'ok' : 'bad';
+    box.appendChild(link(toProxy, toProxy === 'ok' ? 'connected' : 'not reached'));
+    box.appendChild(stop('wall', x.proxy, x.from_env ? 'the proxy · https_proxy of the service' : (x.proxy_auth ? 'the proxy · with a password' : 'the proxy'), toProxy === 'ok' ? 'good' : 'bad'));
+    var through = x.ok ? 'ok' : (toProxy === 'ok' ? 'bad' : 'off');
+    box.appendChild(link(through, through === 'ok' ? 'through the proxy' : (through === 'bad' ? 'stopped here' : '')));
+  } else {
+    var st = x.ok ? 'ok' : 'bad';
+    box.appendChild(link(st, 'straight'));
+  }
+  box.appendChild(stop(x.tls ? 'lock' : 'globe', x.host + ':' + x.port, x.tls ? x.tls.version + ' · ' + (x.tls.issuer || '') : '', x.ok ? 'good' : 'bad'));
+  var top = el('div', 'px-verdict ' + (x.ok ? 'ok' : 'bad'));
+  top.appendChild(el('span', 'dot ' + (x.ok ? 'ok' : 'bad')));
+  var words = x.ok
+    ? (x.mode === 'proxy' ? 'Reached through the proxy' : 'Reached straight') + ' - HTTP ' + x.status + ', ' + x.ms + ' ms'
+    : 'Not reached: ' + ((failAt && failAt.said) || '?');
+  top.appendChild(el('b', '', words));
+  if (x.mode === 'direct' && x.why_direct) top.appendChild(el('span', 'muted small', 'straight because ' + x.why_direct));
+  var wrap = el('div', 'px-result');
+  wrap.appendChild(top);
+  wrap.appendChild(box);
+  return wrap;
+}
+function pxSteps(x) {
+  var ul = el('div', 'px-steps');
+  var plan = x.mode === 'proxy'
+    ? ['the proxy looked up', 'connected to the proxy'].concat(/^https/.test(x.url) ? ['a tunnel through the proxy', 'TLS'] : []).concat(['asked for'])
+    : ['looked up', 'connected to'].concat(/^https/.test(x.url) ? ['TLS'] : []).concat(['asked for']);
+  var done = x.steps || [];
+  done.forEach(function (s) {
+    var r = el('div', 'px-step ' + (s.ok ? 'ok' : 'bad'));
+    r.appendChild(el('span', 'px-n', s.ok ? '✓' : '✗'));
+    var t = el('div', 'px-st');
+    t.appendChild(el('b', '', s.what));
+    if (s.said) t.appendChild(noI18n(el('div', 'muted small mono', s.said)));
+    r.appendChild(t);
+    r.appendChild(el('span', 'px-ms small muted', s.ms + ' ms'));
+    ul.appendChild(r);
+  });
+  for (var i = done.length; i < plan.length; i++) {
+    var r = el('div', 'px-step off');
+    r.appendChild(el('span', 'px-n', '○'));
+    var t = el('div', 'px-st');
+    t.appendChild(el('b', '', 'not tried - the step before stopped it'));
+    r.appendChild(t);
+    ul.appendChild(r);
+  }
+  return ul;
+}
+
 var AC = {d: null, probe: null, poll: null, stepsOpen: false};
 function loadAcme() {
   api('acme').then(function (d) { AC.d = d; drawAcme(); acPoll(d.work && d.work.busy); }).catch(oops);

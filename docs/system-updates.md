@@ -130,6 +130,13 @@ same way as for the network and the clock:
    `osup:check`, `osup:checkwant`, `osup:plan`, `osup:row`, `osup:seen`,
    `osup:cleared`).
 
+Through a proxy (1.10.268): with *Settings → Proxy* on and its switch *The
+updates of the system through it* (`proxy_os`, off by default) on, the ask carries `"proxy"` (with the user name and the password) and
+`"proxy_no"`; root's helper keeps them for the work in
+`/run/isemon-osup-proxy.json` (0600), and the work reads them into its own
+environment (`http_proxy`, `https_proxy`, `no_proxy`) and takes the file away
+before dnf or apt runs - never on a command line. See [proxy.md](proxy.md).
+
 Every start, end, failure and restart of an update is written into Events.
 
 Before 1.10.239 the path unit did not watch `osup.ask`: until

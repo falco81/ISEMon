@@ -79,8 +79,10 @@ pressed) at `upgrade_url` for `isemon-X.Y.Z.tar.gz` packages:
 | one package's address | that package |
 
 HTTPS only, and never followed on to anything that is not HTTPS. A proxy, if
-the server needs one, comes from `https_proxy` in the service's environment
-(`systemctl edit isemon`: `Environment=https_proxy=…`). The server needs to
+the server needs one, is *Settings → Proxy* with *The new versions of isemon
+through it* switched on ([proxy.md](proxy.md), 1.10.268); otherwise
+`https_proxy` in the service's environment (`systemctl edit isemon`:
+`Environment=https_proxy=…`). The server needs to
 reach the address (and `api.github.com`, `raw.githubusercontent.com` for
 GitHub); isemon's own firewall chain only ever filters what comes in.
 
