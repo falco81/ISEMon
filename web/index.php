@@ -3728,6 +3728,11 @@ function srcText(el) {
   .acme-dns table.dns-table td.dns-text > div{white-space:normal}
   .acme-dns table.dns-table td.dns-copy{width:1%;padding-left:0;padding-right:18px}
   .acme-dns table.dns-table td.dns-copy > button{vertical-align:middle}
+  .acme-dns table.dns-table th.dns-copy{width:1%;padding:0}
+  .acme-dns table.dns-table .dns-type{width:1%;white-space:nowrap;padding-right:18px}
+  .acme-dns table.dns-table .dns-st{width:230px;min-width:230px;max-width:230px;overflow-wrap:anywhere;
+    white-space:normal}
+  .acme-dns table.dns-table td.dns-cert{white-space:nowrap}
   .acme-steps-done{margin:6px 0}.acme-steps-done summary{cursor:pointer}
   .acme-steps-done .si-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
   /* The time one narrow column, the words left beside it (1.10.261, as
@@ -39532,9 +39537,15 @@ function acmeDnsGuide(d) {
      the other (1.10.262): the text's column as wide as its longest, with no
      measuring after it is drawn - which moved them on every redraw (each
      poll), and they flickered. */
-  var t = listTable(['Certificate', 'Record', '', 'Type', 'Points at / value', '', 'In DNS now'], rows, function (r) {
+  /* Widths that do not follow what is checked (1.10.263): "In DNS now" a
+     fixed column its words wrap in, Type as wide as its word, the text
+     columns as wide as their records - which do not change - and the first
+     column takes what is left. F5 and Check DNS moved every column. */
+  var t = listTable([{words: 'Certificate', cls: 'dns-cert'}, 'Record', {words: '', cls: 'dns-copy'},
+                     {words: 'Type', cls: 'dns-type'}, 'Points at / value', {words: '', cls: 'dns-copy'},
+                     {words: 'In DNS now', cls: 'dns-st'}], rows, function (r) {
     var tr = el('tr');
-    tr.appendChild(el('td', '', r.type === 'NS' ? 'its zone at deSEC' : 'the dashboard'));
+    tr.appendChild(el('td', 'dns-cert', r.type === 'NS' ? 'its zone at deSEC' : 'the dashboard'));
     var rec = el('td', 'mono small dns-text');
     var recCp = el('td', 'dns-copy');
     if (r.record) {
@@ -39545,7 +39556,7 @@ function acmeDnsGuide(d) {
     } else rec.appendChild(el('span', 'muted', r.why || ''));
     tr.appendChild(rec);
     tr.appendChild(recCp);
-    tr.appendChild(noI18n(el('td', 'mono small', r.type || '')));
+    tr.appendChild(noI18n(el('td', 'mono small dns-type', r.type || '')));
     var val = el('td', 'mono small dns-text');
     var valCp = el('td', 'dns-copy');
     if (r.type === 'CNAME' || r.type === 'NS' || (r.type === 'A' && r.value)) {
@@ -39557,7 +39568,7 @@ function acmeDnsGuide(d) {
     } else val.appendChild(el('span', 'muted', r.type === 'TXT' ? (r.value || r.why) : ''));
     tr.appendChild(val);
     tr.appendChild(valCp);
-    var stc = el('td', 'small');
+    var stc = el('td', 'small dns-st');
     if (r.check) {
       if (r.ok === undefined) stc.appendChild(el('span', 'muted', 'not checked yet'));
       else {

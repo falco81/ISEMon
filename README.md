@@ -371,6 +371,16 @@ working.
 
 ## Version
 
+1.10.263
+
+- *Automatic certificates → In your DNS*: F5 and *Check DNS* moved every
+  column of the table - their widths followed what each record's check said
+  ("not checked yet", a tag, the reason). "In DNS now" is a column of a fixed
+  width now, its words wrapped in it; Type as wide as its word; the records'
+  columns as wide as the records, which do not change; the first column takes
+  what is left. Measured in a browser: not a pixel moves on F5 or on a check
+  (it moved 20-27 px before).
+
 1.10.262
 
 - *Automatic certificates → In your DNS*: the copy buttons flickered at every
