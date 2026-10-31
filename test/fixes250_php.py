@@ -165,7 +165,7 @@ try:
     print('\nphp-fpm does not start on it')
     machine('8.3.8', '8.3', {'8.3': '8.3.8', 'remi-8.3': '8.3.36'}, fpm_fail=True)
     rc, out, calls, v, stream = run()
-    ok('back on the stream and the PHP it was, said', (v, stream, 'back on what it was' in out),
+    ok('back on the stream and the PHP it was, said', (v, stream, 'did not start as it should' in out),
        ('8.3.8', '8.3', True))
 
     print('\ndnf cannot move it')
@@ -177,9 +177,25 @@ try:
     machine('8.0.30', '', {'appstream': '8.0.30', 'remi-8.3': '8.3.36'})
     rc, out, calls, v, stream = run()
     ok('8.0: to 8.3.36', (v, stream), ('8.3.36', 'remi-8.3'))
+    machine('8.0.30', '', {'appstream': '8.0.30', 'remi-8.3': '8.3.30', '8.3': '8.3.19'})
+    rc, out, calls, v, stream = run()
+    ok('...Remi has not got the fixed one (1.10.253): PHP 8.3 all the same, the distribution\'s '
+       '(php:8.3, the fix backported)', (v, stream, 'from the distribution (php:8.3)' in out),
+       ('8.3.19', '8.3', True))
     machine('8.0.30', '', {'appstream': '8.0.30', 'remi-8.3': '8.3.30'})
     rc, out, calls, v, stream = run()
-    ok('...and back to no stream when Remi has not got it', (v, stream), ('8.0.30', ''))
+    ok('...nor the distribution 8.3: back to no stream, said', (v, stream,
+                                                               'could not be moved to 8.3' in out),
+       ('8.0.30', '', True))
+    machine('8.0.30', '', {'appstream': '8.0.30', 'remi-8.3': '8.3.36', '8.3': '8.3.19'},
+            no_net=True)
+    rc, out, calls, v, stream = run()
+    ok('...no way to Remi: the distribution\'s 8.3', (v, stream), ('8.3.19', '8.3'))
+    machine('8.0.30', '', {'appstream': '8.0.30', '8.3': '8.3.19'}, fpm_fail=True)
+    (work / 'no-remi-8.3').write_text('1')
+    rc, out, calls, v, stream = run()
+    ok('...php-fpm does not start on the distribution\'s 8.3: back on 8.0', (v, stream),
+       ('8.0.30', ''))
     machine('8.4.10', 'remi-8.4', {'remi-8.4': '8.4.27'})
     rc, out, calls, v, stream = run()
     ok('8.4.10: to 8.4.27, never down to 8.3', (v, stream), ('8.4.27', 'remi-8.4'))

@@ -84,6 +84,13 @@ own fixed package keeps its old number:
 5. php-fpm is restarted and PHP asked its version. Anything that does not
    work puts the old stream and its packages back, and is said.
 
+**When Remi has not got 8.3.36, or cannot be reached** (1.10.253): a PHP older
+than 8.3 goes to the distribution's own `php:8.3` stream all the same - the
+fix is backported there under a lower number - in the same careful way (what
+it offers looked at first, put back when it does not work). A PHP 8.3 or newer
+is left on its line; `dnf upgrade 'php*'` brings the distribution's fixed
+build.
+
 `--no-php-update` leaves PHP alone. Debian and Ubuntu are told, not changed
 (`ppa:ondrej/php`, `packages.sury.org`). The steps below are still what to do
 by hand, and step 4's guard stays worth having.

@@ -371,6 +371,24 @@ working.
 
 ## Version
 
+1.10.253
+
+- **PHP to 8.3 on every upgrade, Remi or not**: the PHP of the pages was moved
+  only when the Remi repository had the release with the php2shell fix (8.3.36)
+  - where it had not, or could not be reached, PHP stayed where it was, the
+  distribution's 8.0 included. Now, failing Remi, a PHP older than 8.3 goes to
+  the distribution's own `php:8.3` (AlmaLinux / RHEL AppStream - the fix
+  backported under its own number; `dnf updateinfo list --cve CVE-2026-109618`
+  says it is in): what the stream offers looked at first, every PHP package
+  moved, php-fpm restarted and asked, and the stream and the PHP it was on put
+  back when anything does not work. Never down: a PHP 8.3 or newer is left on
+  its line. What was tried, and why it did not take, is said on each line of
+  the upgrade (Settings - Upgrades, and /var/lib/isemon/upgrade/last.log).
+- The published ban list: a fetch noted while the last note was still being
+  written down was skipped until the next fetch - and lost to a restart before
+  it. It is written a moment later now, and the writing goes on until it has
+  every note made while it wrote.
+
 1.10.252
 
 - **isemon on the newest Python there is**: an upgrade (from the pages too)

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.252'
+__version__ = '1.10.253'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -50783,9 +50783,16 @@ class Daemon(object):
         # under this lock for the database's write - held by a lot of the
         # logs, or by a country list being replaced - lined every other
         # firewall's fetch up behind it, past their own time limits.
-        if written:
-            self.behind('banfeed-note', self._banfeed_write,
-                        'writing down who fetched the ban list')
+        # A note while the last writing is still finishing was skipped, and
+        # waited for the next fetch - lost to a restart before it (1.10.253):
+        # asked again a moment later, and the writing goes on until it has
+        # caught up with every note made while it wrote.
+        if written and not self.behind('banfeed-note', self._banfeed_write,
+                                       'writing down who fetched the ban list'):
+            again = threading.Timer(2.0, lambda: self.behind(
+                'banfeed-note', self._banfeed_write, 'writing down who fetched the ban list'))
+            again.daemon = True
+            again.start()
 
     # Writing the note down and forgetting it take turns on this, outside
     # `_banfeed_lock` (which the fetches take) and always before it.
@@ -50794,10 +50801,14 @@ class Daemon(object):
     def _banfeed_write(self):
         # What is known when it is written, not when it was asked for: a
         # "forget" in between is not undone by a note from before it.
-        with self._banfeed_db_lock:
-            with self._banfeed_lock:
-                said = json.dumps(dict(getattr(self, '_banfeed_seen', None) or {}))
-            self.store.set_meta('banfeed_seen', said)
+        for _ in range(5):
+            with self._banfeed_db_lock:
+                with self._banfeed_lock:
+                    ver = getattr(self, '_banfeed_ver', 0)
+                    said = json.dumps(dict(getattr(self, '_banfeed_seen', None) or {}))
+                self.store.set_meta('banfeed_seen', said)
+            if getattr(self, '_banfeed_ver', 0) == ver:
+                return
 
     def _banfeed_note(self, client, fmt, count, md5):
         now = time.time()
@@ -50817,6 +50828,7 @@ class Daemon(object):
                 % (who, fmt))
         if now - float(getattr(self, '_banfeed_noted', 0) or 0) >= self.BANFEED_NOTE_S or not was:
             self._banfeed_noted = now
+            self._banfeed_ver = getattr(self, '_banfeed_ver', 0) + 1
             return json.dumps(dict(seen))
         return None
 
