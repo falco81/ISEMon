@@ -3722,10 +3722,12 @@ function srcText(el) {
   .acme-dns{margin-top:14px}
   .acme-steps{margin:6px 0 12px 18px;padding:0;display:flex;flex-direction:column;gap:4px}
   .acme-dns td{vertical-align:middle}
-  .acme-dns .dns-val{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .acme-dns .dns-val > span:first-child{overflow-wrap:anywhere;min-width:0;flex:0 1 auto}
-  .acme-dns .dns-val > button{flex:none}
-  .acme-dns .dns-val > div{flex-basis:100%}
+  /* The text as wide as its longest, its copy button in a narrow column
+     right after it (1.10.262). */
+  .acme-dns table.dns-table td.dns-text{width:1%;white-space:nowrap;padding-right:6px}
+  .acme-dns table.dns-table td.dns-text > div{white-space:normal}
+  .acme-dns table.dns-table td.dns-copy{width:1%;padding-left:0;padding-right:18px}
+  .acme-dns table.dns-table td.dns-copy > button{vertical-align:middle}
   .acme-steps-done{margin:6px 0}.acme-steps-done summary{cursor:pointer}
   .acme-steps-done .si-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
   /* The time one narrow column, the words left beside it (1.10.261, as
@@ -39526,27 +39528,35 @@ function acmeDnsGuide(d) {
     var c = checked && checked[i] && checked[i].record === r.record ? checked[i] : {};
     return Object.assign({}, r, {ok: c.ok, said: c.said});
   });
-  var t = listTable(['Certificate', 'Record', 'Type', 'Points at / value', 'In DNS now'], rows, function (r) {
+  /* The copy buttons in columns of their own right after the text, one under
+     the other (1.10.262): the text's column as wide as its longest, with no
+     measuring after it is drawn - which moved them on every redraw (each
+     poll), and they flickered. */
+  var t = listTable(['Certificate', 'Record', '', 'Type', 'Points at / value', '', 'In DNS now'], rows, function (r) {
     var tr = el('tr');
     tr.appendChild(el('td', '', r.type === 'NS' ? 'its zone at deSEC' : 'the dashboard'));
-    var rec = el('td', 'mono small dns-cell');
+    var rec = el('td', 'mono small dns-text');
+    var recCp = el('td', 'dns-copy');
     if (r.record) {
       rec.appendChild(noI18n(el('span', '', r.record)));
       var cp = iconButton('copy', 'Copy');
       cp.onclick = function () { copyText(r.record, 'copied'); };
-      rec.appendChild(cp);
+      recCp.appendChild(cp);
     } else rec.appendChild(el('span', 'muted', r.why || ''));
     tr.appendChild(rec);
+    tr.appendChild(recCp);
     tr.appendChild(noI18n(el('td', 'mono small', r.type || '')));
-    var val = el('td', 'mono small dns-cell');
+    var val = el('td', 'mono small dns-text');
+    var valCp = el('td', 'dns-copy');
     if (r.type === 'CNAME' || r.type === 'NS' || (r.type === 'A' && r.value)) {
       val.appendChild(noI18n(el('span', '', r.value)));
       var cv = iconButton('copy', 'Copy');
       cv.onclick = function () { copyText(r.value, 'copied'); };
-      val.appendChild(cv);
+      valCp.appendChild(cv);
       if (r.type === 'A') val.appendChild(el('div', 'muted', 'or the public address in front of it'));
     } else val.appendChild(el('span', 'muted', r.type === 'TXT' ? (r.value || r.why) : ''));
     tr.appendChild(val);
+    tr.appendChild(valCp);
     var stc = el('td', 'small');
     if (r.check) {
       if (r.ok === undefined) stc.appendChild(el('span', 'muted', 'not checked yet'));
@@ -39556,30 +39566,12 @@ function acmeDnsGuide(d) {
       }
     } else stc.appendChild(el('span', 'muted', r.type === 'TXT' && !r.value ? 'isemon puts it in' : '–'));
     tr.appendChild(stc);
-    /* The text and its button in one box: the button at the column's edge. */
-    Array.prototype.forEach.call(tr.querySelectorAll('td.dns-cell'), function (td) {
-      var box = el('div', 'dns-val');
-      while (td.firstChild) box.appendChild(td.firstChild);
-      td.appendChild(box);
-    });
     return tr;
   });
   /* Its rows in the order the guide gives them, as otp's: no sorting. */
   t.querySelector('table').dataset.noSort = '1';
+  t.querySelector('table').classList.add('dns-table');
   card.appendChild(t);
-  /* The copy buttons right after the text, one under the other: the text of
-     a column as wide as its longest (otp 1.0.172). */
-  setTimeout(function () {
-    [1, 3].forEach(function (col) {
-      var spans = Array.prototype.map.call(t.querySelectorAll('tbody tr'), function (tr) {
-        var td = tr.children[col];
-        return td && td.querySelector('.dns-val > span:first-child');
-      }).filter(Boolean);
-      var w = 0;
-      spans.forEach(function (sp) { sp.style.width = ''; w = Math.max(w, sp.getBoundingClientRect().width); });
-      spans.forEach(function (sp) { sp.style.width = Math.ceil(w) + 'px'; });
-    });
-  }, 0);
   var row = el('div', 'btnrow');
   var chk = cmdButton('Check DNS', 'search', 'small');
   explain(chk, 'Each record looked up from this server now, through its DNS servers - as the CA will look. A record just put in may take a while to show (its TTL).');

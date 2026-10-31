@@ -371,6 +371,14 @@ working.
 
 ## Version
 
+1.10.262
+
+- *Automatic certificates → In your DNS*: the copy buttons flickered at every
+  refresh of the pane - they were moved into place by measuring the text after
+  each drawing. They sit in narrow columns of their own now, right after the
+  text, one under the other, the text's column as wide as its longest: nothing
+  moves when the card is drawn again.
+
 1.10.261
 
 - **Automatic certificates take every key Let's Encrypt accepts**, as upsmon
