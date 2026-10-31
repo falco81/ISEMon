@@ -3727,8 +3727,11 @@ function srcText(el) {
   .acme-dns .dns-val > button{flex:none}
   .acme-dns .dns-val > div{flex-basis:100%}
   .acme-steps-done{margin:6px 0}.acme-steps-done summary{cursor:pointer}
-  .acme-steps-done .si-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
-  .acme-steps-done .si-row .mono{flex:1;min-width:0;overflow-wrap:anywhere}
+  .acme-steps-done .si-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
+  /* The time one narrow column, the words left beside it (1.10.261, as
+     upsmon 4.1.7: +102 s broke into a line per character). */
+  .acme-steps-done .si-row .mono{flex:0 0 56px;white-space:nowrap;overflow-wrap:normal}
+  .acme-steps-done .si-row span:last-child{flex:1;min-width:0;text-align:left;overflow-wrap:anywhere}
   .set-item.tall textarea.mono{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);
     border-radius:8px;color:var(--tx);padding:8px 10px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .cert-state{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx-dim)}
@@ -25913,7 +25916,7 @@ var PANES = {
             'power_auto_needed'],
   /* Automatic certificates (1.10.251), drawn below the card of the certificate. */
   acme:    ['acme', 'acme_email', 'acme_ca', 'acme_url', 'acme_ca_pem', 'acme_name', 'acme_days',
-            'acme_key', 'acme_challenge', 'acme_dns', 'acme_dns_server', 'acme_dns_zone',
+            'acme_key', 'acme_account_key', 'acme_challenge', 'acme_dns', 'acme_dns_server', 'acme_dns_zone',
             'acme_dns_tsig_name', 'acme_dns_tsig_alg', 'acme_dns_tsig_secret', 'acme_dns_token',
             'acme_dns_url', 'acme_dns_user', 'acme_dns_key', 'acme_dns_subdomain',
             'acme_desec_domain', 'acme_desec_token', 'acme_dns_alias', 'acme_dns_wait',
@@ -26677,6 +26680,7 @@ var ONLY_WHEN = {
   acme_email: ['acme', '1'], acme_ca: ['acme', '1'],
   acme_url: ['acme_ca', 'custom'], acme_ca_pem: ['acme_ca', 'custom'],
   acme_days: ['acme', '1'], acme_key: ['acme', '1'], acme_name: ['acme', '1'],
+  acme_account_key: ['acme', '1'],
   acme_challenge: ['acme', '1'], acme_dns: ['acme_challenge', 'dns-01'],
   acme_dns_wait: ['acme_challenge', 'dns-01'],
   acme_dns_server: ['acme_dns', 'rfc2136'], acme_dns_zone: ['acme_dns', 'rfc2136'],
@@ -39333,11 +39337,27 @@ function drawAcme() {
   big.appendChild(noI18n(el('span', 'ntp-off', left !== null ? num(left) : '–')));
   if (left !== null) big.appendChild(el('span', 'muted small', ' days left'));
   c.appendChild(big);
+  /* When it is renewed (1.10.261): at a moment inside the CA's window
+     (ARI), else by the days left. */
+  var rn = acme && d.care && d.renews ? d.renews : null;
+  var rnv;
+  if (rn) {
+    rnv = el('span', '', acDay(rn.at));
+    explain(rnv, rn.how === 'ari'
+      ? 'The CA says when it would like it renewed (ARI): between ' + acDay(rn.start) + ' and ' + acDay(rn.end) + '. isemon picked a moment inside that window at random, and keeps it.'
+      : 'When fewer than “Renewed when fewer days are left than” days are left - a third of its life at most. The CA offers no renewal window (ARI).');
+  }
   c.appendChild(netFacts([
-    ['For', d.name || '', true], ['Issued by', d.issuer || '', true],
+    ['For', d.name || '', true], ['Issued by', d.issuer || '', true], ['Keys', d.keys || '', true],
     ['Good until', d.not_after ? acDay(d.not_after) : ''],
+    ['Renews', rn ? rnv : undefined],
     ['Last ordered', st.ordered_at ? ago(st.ordered_at) : 'never']
   ]));
+  /* The second certificate's order failed (1.10.261): the RSA one is in,
+     the ECDSA one is ordered again by itself. */
+  if (acme && d.dual && !d.second && st.second && st.second.ok === false) {
+    c.appendChild(acSaid({ok: false, error: st.second.said, at: st.second.at}, ''));
+  }
   if (st.ok === false && st.said) c.appendChild(acSaid({ok: false, error: st.said, at: st.failed_at}, ''));
   /* What the last order did, step by step (otp 1.0.175). */
   if ((st.steps || []).length) {
@@ -39404,6 +39424,8 @@ function drawAcme() {
   if (d.account && d.account.kid) {
     var a = el('p', 'muted small', 'The account at the CA: ');
     a.appendChild(noI18n(el('span', 'mono', d.account.kid)));
+    /* Its key (1.10.261, as upsmon 4.1.6). */
+    if (d.account.key) a.appendChild(noI18n(el('span', '', ' \u00b7 ' + d.account.key)));
     host.appendChild(a);
   }
   /* The name beside its box: what it stands for when it is empty. */
@@ -39631,7 +39653,9 @@ function tlsCard(d) {
     b.appendChild(bar);
     var facts = [['Issued by', info.self_signed ? el('span', '', 'itself (self-signed)')
                                : noI18n(el('span', '', String(info.issuer || '').replace(/^CN=/, '')))],
-                 ['Valid until', info.until ? stamp(info.until) : '–']];
+                 ['Valid until', info.until ? stamp(info.until) : '–'],
+                 /* Its key, and the second certificate's (1.10.261, as upsmon 4.1.6). */
+                 ['Key', (info.key || '–') + (d.kept2 && d.kept2.key ? ' + ' + d.kept2.key + ' (a second certificate beside it)' : '')]];
     if (info.names && info.names.length) facts.push(['Names', noI18n(el('span', '', info.names.join(', ')))]);
     if (d.managed && d.kept) {
       facts.push(['Chain', d.chain_n ? d.chain_n + ' between it and the root' : '–']);
@@ -39816,7 +39840,7 @@ function certSubjectFields(body, withDays) {
   var cn = wrText(location.hostname || '', 'isemon.example.cz', 'mono'); cn.id = 'cs-cn';
   var names = wrText('', 'blacklist.example.cz, 192.0.2.11', 'mono'); names.id = 'cs-names';
   var kind = wrSelect([['rsa2048', 'RSA 2048'], ['rsa3072', 'RSA 3072'], ['rsa4096', 'RSA 4096'],
-                       ['ec256', 'EC P-256']], 'rsa2048');
+                       ['ec256', 'EC P-256'], ['ec384', 'EC P-384']], 'rsa2048');
   kind.id = 'cs-kind';
   g.appendChild(wrField('The name (CN)', cn, 'What people type in the browser.'));
   g.appendChild(wrField('Other names', names, 'More names or addresses it is good for, by commas.'));

@@ -560,8 +560,12 @@ try:
     print('\nHTTP-01, end to end: switched on, ordered, put in as an uploaded one is')
     # The TLS settings of before - kept through ACME.
     wr.tls_do({'action': 'settings', 'preset': 'modern', 'hsts': 3600}, by='boss')
+    # One certificate, ECDSA P-256 (as before 1.10.261): this fake CA makes a
+    # new authorization at every order, so the two of Both would each be
+    # checked - dual-cert has fixes261_acme_keys.py.
     daemon.save_settings({'acme': 1, 'acme_ca': 'custom', 'acme_url': CA.url('/directory'),
-                          'acme_ca_pem': ROOT_PEM, 'acme_email': 'pki@example.net'}, by='boss')
+                          'acme_ca_pem': ROOT_PEM, 'acme_email': 'pki@example.net',
+                          'acme_key': 'ec'}, by='boss')
     s, d = call('/api/acme', 'POST', {'action': 'name', 'name': NAME}, session=admin)
     ok('Its name… kept as acme_name', (s, d.get('name'), d.get('named'), isemon.CONFIG['acme_name']),
        (200, NAME, True, NAME))
@@ -586,10 +590,11 @@ try:
     ok('the challenge is gone from the database once the CA has looked',
        [r['key'] for r in store.db.execute("SELECT key FROM meta WHERE key LIKE 'acme:chal:%'")], [])
     words = [x[1] for x in st.get('steps')]
-    ok('every step said, with its time', (words[0], 'the CA looks at http://%s/.well-known/'
+    ok('every step said, with its time', (words[0], words[1], 'the CA looks at http://%s/.well-known/'
                                          'acme-challenge/' % NAME in words, words[-1],
                                          all(isinstance(x[0], float) for x in st['steps'])),
-       ('ordered from the CA', True, 'the certificate is put in', True))
+       ('the key: ECDSA P-256', 'ordered from the CA', True,
+        'the certificate is put in', True))
     ok('...root\'s half not here: said, not waited for', any('root\'s half is not installed' in w
                                                          for w in words))
     ok('the request had the name alone', 'DNS:' + NAME in CA.last_csr and 'O = ' not in CA.last_csr)
@@ -620,14 +625,16 @@ try:
     ok('not due again: 90 days left', isemon.acme_due(wr, NAME), '')
 
     print('\nThe certificate lands in web_tls exactly as an uploaded one does')
-    upload_keys = set(tls)
+    # The ECDSA certificate beside it (1.10.261: Both is the default) is
+    # ACME's alone - an upload drops it.
+    upload_keys = set(tls) - set(isemon.TLS_SECOND)
     snap = dict(tls)
     wr.tls_do({'action': 'upload', 'pem': [tls['chain'], tls['cert'],
                                             isemon.unseal_secret(tls['key'])]}, by='boss')
     up = wr.tls_conf()
     ok('the same fields', set(up), upload_keys)
     ok('the same values but how and when', {k: up[k] for k in up if k not in ('how', 'since', 'key')},
-       {k: snap[k] for k in snap if k not in ('how', 'since', 'key')})
+       {k: snap[k] for k in snap if k not in ('how', 'since', 'key') + isemon.TLS_SECOND})
     ok('the upload said by hand: out of ACME\'s care, said in Events',
        (up['how'], isemon.acme_care(wr), 'ACME no longer renews the certificate' in events_text()),
        ('uploaded', False, True))

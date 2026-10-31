@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.260'
+__version__ = '1.10.261'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -928,7 +928,11 @@ DEFAULTS = {
     'acme_ca_pem': '',
     'acme_name': '',
     'acme_days': 30,
-    'acme_key': 'ec',
+    # Both certificates, RSA 2048 + ECDSA P-256 (1.10.261, as upsmon 4.1.6): what
+    # Let's Encrypt advises - for anybody who never saved it; 'ec' (ECDSA P-256)
+    # saved before stays what it was.
+    'acme_key': 'dual',
+    'acme_account_key': 'ec',
     'acme_challenge': 'http-01',
     'acme_dns': 'manual',
     'acme_dns_server': '',
@@ -56418,7 +56422,9 @@ class Daemon(object):
         'power_auto_needed': (0, 1),
         'acme': (0, 1), 'acme_ca': ('letsencrypt', 'letsencrypt-staging', 'custom'),
         'acme_email': 'str', 'acme_url': 'str', 'acme_ca_pem': 'str', 'acme_name': 'str',
-        'acme_days': (7, 60), 'acme_key': ('ec', 'rsa2048'),
+        'acme_days': (7, 60),
+        'acme_key': ('dual', 'dual-strong', 'ec', 'ec384', 'rsa2048', 'rsa3072', 'rsa4096'),
+        'acme_account_key': ('ec', 'ec384', 'rsa2048', 'rsa3072', 'rsa4096'),
         'acme_challenge': ('http-01', 'dns-01'),
         'acme_dns': ('manual', 'rfc2136', 'cloudflare', 'acmedns', 'desec'),
         'acme_dns_server': 'str', 'acme_dns_zone': 'str', 'acme_dns_tsig_name': 'str',
@@ -56717,6 +56723,7 @@ class Daemon(object):
         'acme_name': 'The DNS name of the certificate',
         'acme_days': 'Renewed when fewer days are left than',
         'acme_key': 'The key of the certificate',
+        'acme_account_key': 'The key of the ACME account',
         'acme_challenge': 'How the CA checks the name',
         'acme_dns': 'Who puts the TXT record in DNS',
         'acme_dns_server': 'The DNS server taking the updates',
@@ -57869,7 +57876,13 @@ class Daemon(object):
                      '<i>Its name\u2026</i> on the card above sets it too.',
         'acme_days': 'Let\u2019s Encrypt\u2019s certificates last 90 days; 30 is what it advises. '
                      'A certificate that lasts less is renewed at a third of its life.',
-        'acme_key': 'ECDSA is smaller and quicker; RSA for old clients.',
+        'acme_key': 'Let\u2019s Encrypt takes RSA keys of 2048, 3072 or 4096 bits and ECDSA keys on '
+                    'P-256 or P-384. Both - what Let\u2019s Encrypt advises - orders two '
+                    'certificates for the name: RSA served by default, the much smaller ECDSA '
+                    'one to the clients that say they take it.',
+        'acme_account_key': 'The key the account with the CA signs with - never one of a '
+                            'certificate. RSA 2048, 3072, 4096 or ECDSA P-256, P-384. A change '
+                            'makes a new account at the next order.',
         'acme_challenge': 'HTTP-01 needs port 80 of the name reachable from the internet (or from '
                           'the CA, for a CA of your own). DNS-01 needs nothing open: the CA reads '
                           'a TXT record.',
@@ -57987,7 +58000,13 @@ class Daemon(object):
         'acme_ca': {'letsencrypt': 'Let\u2019s Encrypt',
                     'letsencrypt-staging': 'Let\u2019s Encrypt - staging (to try it)',
                     'custom': 'another ACME CA (step-ca, an internal CA...)'},
-        'acme_key': {'ec': 'ECDSA P-256', 'rsa2048': 'RSA 2048'},
+        'acme_key': {'dual': 'Both: RSA 2048 + ECDSA P-256 (advised)',
+                     'dual-strong': 'Both: RSA 4096 + ECDSA P-384',
+                     'ec': 'ECDSA P-256', 'ec384': 'ECDSA P-384',
+                     'rsa2048': 'RSA 2048', 'rsa3072': 'RSA 3072', 'rsa4096': 'RSA 4096'},
+        'acme_account_key': {'ec': 'ECDSA P-256 (ES256)', 'ec384': 'ECDSA P-384 (ES384)',
+                             'rsa2048': 'RSA 2048 (RS256)', 'rsa3072': 'RSA 3072 (RS256)',
+                             'rsa4096': 'RSA 4096 (RS256)'},
         'rbackup_what': {'all': 'Everything, the logs too',
                          'config': 'The configuration only, without the logs'},
         'osup_auto_what': {'security': 'only the security updates', 'all': 'every update'},
@@ -63874,10 +63893,67 @@ def tls_new_key(kind):
     if kind in ('rsa2048', 'rsa3072', 'rsa4096'):
         return _openssl(['genpkey', '-algorithm', 'RSA', '-pkeyopt',
                          'rsa_keygen_bits:%s' % kind[3:]], 'making the key')
-    if kind == 'ec256':
-        return _openssl(['genpkey', '-algorithm', 'EC', '-pkeyopt', 'ec_paramgen_curve:P-256'],
-                        'making the key')
-    raise WebRootError('the key is RSA 2048, 3072 or 4096, or EC P-256')
+    if kind in ('ec256', 'ec384'):
+        return _openssl(['genpkey', '-algorithm', 'EC', '-pkeyopt',
+                         'ec_paramgen_curve:P-%s' % kind[2:]], 'making the key')
+    raise WebRootError('the key is RSA 2048, 3072 or 4096, or EC P-256 or P-384')
+
+
+def cert_key_kind(pem):
+    """The key of a certificate as tls_new_key names one: 'rsa2048' ...
+    'rsa4096', 'ec256', 'ec384' - or '' for anything else (1.10.261)."""
+    try:
+        text = _openssl(['x509', '-noout', '-text'], 'the certificate', pem)
+    except WebRootError:
+        return ''
+    m = re.search(r'Public-Key: \((\d+) bit\)', text)
+    bits = m.group(1) if m else ''
+    if 'id-ecPublicKey' in text:
+        return 'ec' + bits if bits in ('256', '384') else ''
+    if 'rsaEncryption' in text:
+        return 'rsa' + bits if bits else ''
+    return ''
+
+
+def cert_key_words(pem):
+    """A certificate's key as upsmon (4.1.6) shows it: 'RSA 2048 bit', 'EC
+    256 bit' - '' when it does not read."""
+    kind = cert_key_kind(pem)
+    if kind.startswith('rsa'):
+        return 'RSA %s bit' % kind[3:]
+    if kind.startswith('ec'):
+        return 'EC %s bit' % kind[2:]
+    return ''
+
+
+KEY_KIND_WORDS = {'ec256': 'ECDSA P-256', 'ec384': 'ECDSA P-384', 'rsa2048': 'RSA 2048',
+                  'rsa3072': 'RSA 3072', 'rsa4096': 'RSA 4096'}
+# The ECDSA certificate beside an RSA one (dual-cert, 1.10.261): in web_tls
+# as cert2, chain2 and key2 (sealed), put in by ACME only. Anything else that
+# puts a certificate in takes them away - one left there would go on being
+# answered with beside a certificate it has nothing to do with.
+TLS_SECOND = ('cert2', 'chain2', 'key2', 'cert2_for')
+
+
+def tls_drop_second(tls):
+    for k in TLS_SECOND:
+        tls.pop(k, None)
+    return tls
+
+
+def tls_second_for(cert):
+    """What ties the ECDSA certificate to its RSA one (as upsmon 4.1.6): one
+    put in beside another certificate than this is not handed to root."""
+    m = PEM_CERT_RE.search(str(cert or ''))
+    return hashlib.sha256((m.group(0) if m else str(cert or '')).strip().encode()).hexdigest()[:32]
+
+
+def tls_second(tls):
+    """The ECDSA certificate beside the RSA one, if it is that one's."""
+    if tls.get('cert') and tls.get('cert2') and tls.get('key2') and \
+            tls.get('cert2_for') == tls_second_for(tls['cert']):
+        return tls
+    return None
 
 
 def tls_make(asked, self_signed=False):
@@ -64265,6 +64341,10 @@ class WebRoot(object):
                 if key:
                     t.update(cert=tls['cert'], key=key, chain=tls.get('chain') or '',
                              root=tls.get('root') or '')
+                    # The ECDSA certificate beside it (dual-cert, 1.10.261).
+                    key2 = unseal_secret(tls['key2']) if tls_second(tls) else None
+                    if key2:
+                        t.update(cert2=tls['cert2'], key2=key2, chain2=tls.get('chain2') or '')
             out['tls'] = t
         # ACME by HTTP-01 (1.10.251): port 80 answers the CA for the name.
         if acme_on() and acme_http():
@@ -64434,24 +64514,39 @@ class WebRoot(object):
         if now.get('pem'):
             try:
                 facts = tls_sort([now['pem']])['facts']
+                facts['key'] = cert_key_words(now['pem'])
             except WebRootError as e:
                 facts = {'said': str(e)}
-        kept = None
+        kept = kept2 = None
         if tls.get('cert'):
             try:
                 kept = cert_facts(tls['cert'])
                 kept.pop('pubkey', None)
+                kept['kind'] = cert_key_kind(tls['cert'])
+                kept['key'] = cert_key_words(tls['cert'])
             except WebRootError as e:
                 kept = {'said': str(e)}
+        if tls_second(tls):
+            # The ECDSA certificate beside it (dual-cert, 1.10.261).
+            try:
+                kept2 = cert_facts(tls['cert2'])
+                kept2.pop('pubkey', None)
+                kept2['kind'] = cert_key_kind(tls['cert2'])
+                kept2['words'] = KEY_KIND_WORDS.get(kept2['kind'], 'ECDSA')
+                kept2['key'] = cert_key_words(tls['cert2'])
+            except WebRootError as e:
+                kept2 = {'said': str(e)}
         pend = tls.get('pending') or {}
         return {'ok': True, 'may': may, 'managed': bool(tls.get('managed')),
-                'kept': kept, 'chain_n': len(PEM_CERT_RE.findall(tls.get('chain') or '')),
+                'kept': kept, 'kept2': kept2,
+                'chain_n': len(PEM_CERT_RE.findall(tls.get('chain') or '')),
                 'root': bool(tls.get('root')),
                 'key_ok': (unseal_secret(tls['key']) is not None) if tls.get('key') else None,
                 'settings': {k: tls.get(k) for k in ('preset', 'protocols', 'ciphers', 'prefer',
                                                      'dh', 'hsts')},
                 'since': tls.get('since') or 0, 'by': tls.get('by') or '',
                 'now': {'facts': facts, 'path': now.get('path') or '',
+                        'path2': now.get('path2') or '',
                         'protocols': now.get('protocols') or '', 'ciphers': now.get('ciphers') or '',
                         'dhparam': now.get('dhparam') or '', 'hsts': now.get('hsts') or '',
                         'said': now.get('said') or ''},
@@ -64543,6 +64638,7 @@ class WebRoot(object):
             said = tls_check_chain(got['cert'], got['chain'], got['root'])
             tls.update(cert=got['cert'], chain=got['chain'], root=got['root'],
                        key=seal_secret(key), managed=True, since=time.time(), by=by, how=how)
+            tls_drop_second(tls)
             # One put in by hand is kept (otp 1.0.170): ACME does not replace
             # it at its next renewal - Automatic certificates → Look after it
             # gives it back.
@@ -64572,6 +64668,7 @@ class WebRoot(object):
                 return {'ok': True, 'message': msg, 'csr': made['pem']}
             tls.update(cert=made['pem'], chain='', root='', key=seal_secret(made['key']),
                        managed=True, since=time.time(), by=by, how='self-signed, made here')
+            tls_drop_second(tls)
             acme_by_hand(self, by, 'a certificate was put in by hand')
             tls.setdefault('preset', 'standard')
             tls.setdefault('protocols', TLS_PRESETS['standard']['protocols'])
@@ -64782,6 +64879,30 @@ class WebRoot(object):
 # by openssl). The certificate goes into web_tls exactly as an uploaded one
 # does, and root's helper puts it into nginx; the TLS settings (protocols,
 # ciphers, DH, HSTS) stay as they are. One server here: one certificate.
+#
+# As Let's Encrypt's integration guide has it (1.10.261): the certificate's
+# key RSA 2048, 3072 or 4096 or ECDSA P-256 or P-384 (acme_key), never the
+# account's (acme_account_key: ECDSA P-256 / P-384, RSA - ES256, ES384,
+# RS256); or both, as Let's Encrypt advises: an RSA certificate and an ECDSA
+# one beside it (dual-cert) - nginx answers a client that can take ECDSA with
+# that one, everybody else with the RSA one (as upsmon 4.1.6); renewed when the CA's renewal window (ARI, RFC 9773)
+# says so, at a moment picked at random inside it, else at a third of the
+# life left; the hourly look at a minute of this machine's own, a retry
+# after a failure 6 h +-10 % later; the chain served as the CA sends it; and
+# every request to the CA with a User-Agent that says who asks.
+ACME_UA = 'isemon/%s (ACME client; +https://github.com/falco81/ISEMon)' % __version__
+# acme_key -> the keys of the certificates, as tls_new_key names them: one,
+# or two - the RSA one served by default, the ECDSA one beside it. 'ec' is
+# P-256, as it was before 1.10.261.
+ACME_CERT_KEYS = {'dual': ('rsa2048', 'ec256'), 'dual-strong': ('rsa4096', 'ec384'),
+                  'ec': ('ec256',), 'ec384': ('ec384',), 'rsa2048': ('rsa2048',),
+                  'rsa3072': ('rsa3072',), 'rsa4096': ('rsa4096',)}
+# acme_account_key -> tls_new_key's name.
+ACME_ACCOUNT_KEYS = {'ec': 'ec256', 'ec384': 'ec384', 'rsa2048': 'rsa2048',
+                     'rsa3072': 'rsa3072', 'rsa4096': 'rsa4096'}
+ACME_ACCOUNT_WORDS = {'ec': 'ECDSA P-256', 'ec384': 'ECDSA P-384', 'rsa2048': 'RSA 2048',
+                      'rsa3072': 'RSA 3072', 'rsa4096': 'RSA 4096'}
+_ACME_RAND = secrets.SystemRandom()
 ACME_CAS = {'letsencrypt': 'https://acme-v02.api.letsencrypt.org/directory',
             'letsencrypt-staging': 'https://acme-staging-v02.api.letsencrypt.org/directory'}
 ACME_WORK = {'busy': False, 'at': 0.0, 'says': '', 'since': 0.0}
@@ -64856,6 +64977,47 @@ def _acme_account_gone(kind, said):
                                'revoked'))
 
 
+def acme_cert_kinds():
+    """The keys of the certificates ordered (acme_key), as tls_new_key names
+    them: one, or the RSA one and the ECDSA one beside it."""
+    return ACME_CERT_KEYS.get(str(CONFIG.get('acme_key') or 'dual'), ACME_CERT_KEYS['dual'])
+
+
+def acme_key_kind():
+    """The key of the (first) certificate ordered."""
+    return acme_cert_kinds()[0]
+
+
+def acme_dual_kind():
+    """The ECDSA key of the certificate ordered beside the RSA one, or None."""
+    kinds = acme_cert_kinds()
+    return kinds[1] if len(kinds) > 1 else None
+
+
+def acme_keys_words(kinds=None):
+    return ' + '.join(KEY_KIND_WORDS[k] for k in (kinds or acme_cert_kinds()))
+
+
+def acme_fetch(url, data=None, method=None, accept='application/json', timeout=30):
+    """One HTTP request to the CA - https only, with isemon's own User-Agent
+    (Let's Encrypt asks every client for one that says who it is). Returns
+    (body, headers, status); an HTTP error is an answer, not an exception."""
+    if not str(url).startswith('https://'):
+        raise AcmeError('the CA sent an address that is not https: %s' % str(url)[:200])
+    req = urllib.request.Request(url, data=data, method=method or ('POST' if data else 'GET'),
+                                 headers={'User-Agent': ACME_UA, 'Accept': accept})
+    if data is not None:
+        req.add_header('Content-Type', 'application/jose+json')
+    try:
+        with _acme_open(req, timeout=timeout, context=_acme_ctx()) as r:
+            return r.read(1 << 20), r.headers, r.status
+    except urllib.error.HTTPError as e:
+        return e.read(1 << 20), e.headers, e.code
+    except (OSError, ssl.SSLError, ValueError) as e:
+        raise AcmeError('the CA did not answer (%s): %s' % (
+            urlparse(url).hostname, getattr(e, 'reason', e)))
+
+
 def acme_say(text):
     """What is being done or waited for now, for the line above the card."""
     ACME_WORK['says'] = str(text)[:300]
@@ -64884,21 +65046,7 @@ class Acme(object):
 
     # -- HTTP ------------------------------------------------------------------------
     def _req(self, url, data=None, method=None, accept='application/json'):
-        if not str(url).startswith('https://'):
-            raise AcmeError('the CA sent an address that is not https: %s' % str(url)[:200])
-        req = urllib.request.Request(url, data=data, method=method or ('POST' if data else 'GET'),
-                                     headers={'User-Agent': 'isemon/%s (acme)' % __version__,
-                                              'Accept': accept})
-        if data is not None:
-            req.add_header('Content-Type', 'application/jose+json')
-        try:
-            with _acme_open(req, timeout=30, context=_acme_ctx()) as r:
-                body, headers, status = r.read(1 << 20), r.headers, r.status
-        except urllib.error.HTTPError as e:
-            body, headers, status = e.read(1 << 20), e.headers, e.code
-        except (OSError, ssl.SSLError, ValueError) as e:
-            raise AcmeError('the CA did not answer (%s): %s' % (
-                urlparse(url).hostname, getattr(e, 'reason', e)))
+        body, headers, status = acme_fetch(url, data, method, accept)
         if headers.get('Replay-Nonce'):
             self.nonce = headers['Replay-Nonce']
         return body, headers, status
@@ -64921,28 +65069,58 @@ class Acme(object):
                 f.write(self.key_pem)
         return p
 
+    def _alg(self):
+        """(JWS alg, digest, bytes of r and s) of the account key (1.10.261, as
+        upsmon 4.1.6): ES256, ES384 or RS256."""
+        kind = getattr(self, 'akind', 'ec')
+        if kind == 'ec384':
+            return 'ES384', '-sha384', 48
+        if kind.startswith('rsa'):
+            return 'RS256', '-sha256', 0
+        return 'ES256', '-sha256', 32
+
     def _jwk(self):
-        der = _acme_ossl(['pkey', '-in', self._key_file(), '-pubout', '-outform', 'DER'],
-                         'the account key')
-        point = der[-64:]
-        return {'crv': 'P-256', 'kty': 'EC', 'x': _b64u(point[:32]), 'y': _b64u(point[32:])}
+        if getattr(self, '_jwk_done', None):
+            return self._jwk_done
+        alg, _, size = self._alg()
+        if alg == 'RS256':
+            txt = _acme_ossl(['pkey', '-in', self._key_file(), '-noout', '-text_pub'],
+                             'the account key').decode()
+            m = re.search(r'(?s)Modulus:\s*\n(.*?)\n\S', txt)
+            e = re.search(r'Exponent:\s*(\d+)', txt)
+            if not m or not e:
+                raise AcmeError('the RSA account key does not read')
+            n = bytes.fromhex(re.sub(r'[^0-9a-fA-F]', '', m.group(1))).lstrip(b'\x00')
+            ev = int(e.group(1))
+            jwk = {'e': _b64u(ev.to_bytes((ev.bit_length() + 7) // 8, 'big')), 'kty': 'RSA',
+                   'n': _b64u(n)}
+        else:
+            der = _acme_ossl(['pkey', '-in', self._key_file(), '-pubout', '-outform', 'DER'],
+                             'the account key')
+            point = der[-2 * size:]
+            jwk = {'crv': 'P-384' if size == 48 else 'P-256', 'kty': 'EC',
+                   'x': _b64u(point[:size]), 'y': _b64u(point[size:])}
+        self._jwk_done = jwk
+        return jwk
 
     def thumbprint(self):
-        jwk = self._jwk()
+        # RFC 7638: the required members only, sorted - the JWK holds just those.
         return _b64u(hashlib.sha256(json.dumps(
-            {'crv': jwk['crv'], 'kty': jwk['kty'], 'x': jwk['x'], 'y': jwk['y']},
-            separators=(',', ':'), sort_keys=True).encode()).digest())
+            self._jwk(), separators=(',', ':'), sort_keys=True).encode()).digest())
 
     def _sign(self, data):
-        der = _acme_ossl(['dgst', '-sha256', '-sign', self._key_file()], 'signing for the CA',
+        alg, digest, size = self._alg()
+        der = _acme_ossl(['dgst', digest, '-sign', self._key_file()], 'signing for the CA',
                          data)
-        # DER SEQUENCE { INTEGER r, INTEGER s } -> r || s, 32 bytes each.
+        if alg == 'RS256':
+            return der                       # PKCS#1 v1.5, as JWS wants it
+        # DER SEQUENCE { INTEGER r, INTEGER s } -> r || s, `size` bytes each.
         i = 2 if der[1] < 0x80 else 3
 
         def integer(at):
             n = der[at + 1]
             v = der[at + 2:at + 2 + n].lstrip(b'\x00')
-            return v.rjust(32, b'\x00'), at + 2 + n
+            return v.rjust(size, b'\x00'), at + 2 + n
         r, i = integer(i)
         s, _ = integer(i)
         return r + s
@@ -64952,7 +65130,7 @@ class Acme(object):
         for attempt in (1, 2, 3):
             if not self.nonce:
                 self._req(self.dir['newNonce'], method='HEAD')
-            protected = {'alg': 'ES256', 'nonce': self.nonce, 'url': url}
+            protected = {'alg': self._alg()[0], 'nonce': self.nonce, 'url': url}
             if use_jwk or not self.kid:
                 protected['jwk'] = self._jwk()
             else:
@@ -65003,7 +65181,14 @@ class Acme(object):
         if not isinstance(row, dict):
             row = {}
         pem = unseal_secret(row.get('key') or '') if row.get('key') else ''
-        if row.get('directory') != self.dir_url or not pem:
+        # The kind of key asked for (1.10.261, as upsmon 4.1.6): another one
+        # than the account has makes a new account with a key of that kind.
+        # One kept before says no kind: it is ECDSA P-256.
+        self.akind = str(CONFIG.get('acme_account_key') or 'ec')
+        if self.akind not in ACME_ACCOUNT_KEYS:
+            self.akind = 'ec'
+        if row.get('directory') != self.dir_url or not pem or \
+                (row.get('kind') or 'ec') != self.akind:
             pem = ''
         if fresh:
             self.kid = None
@@ -65012,9 +65197,14 @@ class Acme(object):
             except OSError:
                 pass
         if not pem:
-            pem = _acme_ossl(['genpkey', '-algorithm', 'EC', '-pkeyopt',
-                              'ec_paramgen_curve:P-256'], 'the account key').decode()
+            pem = tls_new_key(ACME_ACCOUNT_KEYS[self.akind])
             row = {}
+            self.kid = None
+            self._jwk_done = None
+            try:
+                os.unlink(os.path.join(self.work, 'account.pem'))
+            except OSError:
+                pass
         self.key_pem = pem
         if row.get('kid'):
             self.kid = row['kid']
@@ -65029,7 +65219,7 @@ class Acme(object):
             raise AcmeError('the CA made no account')
         self.store.set_meta('acme:account', json.dumps({
             'key': seal_secret(pem), 'kid': self.kid, 'directory': self.dir_url,
-            'email': mail, 'at': time.time()}))
+            'email': mail, 'at': time.time(), 'kind': self.akind}))
 
     # -- an order --------------------------------------------------------------------
     def _poll(self, url, done, what, secs=90):
@@ -65047,10 +65237,29 @@ class Acme(object):
                 raise AcmeError('%s: the CA has not said in %d s (%s)' % (what, secs, st))
             time.sleep(float(os.environ.get('ISEMON_ACME_POLL') or 2))
 
-    def order(self, names, say, wr=None):
+    def ari(self):
+        """The CA's renewalInfo (ARI, RFC 9773), or ''."""
+        u = str(self.dir.get('renewalInfo') or '')
+        return u if u.startswith('https://') else ''
+
+    def order(self, names, say, wr=None, key_kind='ec256', replaces=''):
+        """One certificate with a new key of `key_kind` - (its key, the chain
+        as the CA sends it). `replaces`: the ARI CertID of the one it
+        renews (RFC 9773 §5), said only to a CA that has renewalInfo."""
         say('ordered from the CA')
-        got, headers = self.post_json(self.dir['newOrder'], {
-            'identifiers': [{'type': 'dns', 'value': n} for n in names]})
+        payload = {'identifiers': [{'type': 'dns', 'value': n} for n in names]}
+        if replaces and self.ari():
+            payload['replaces'] = replaces
+        try:
+            got, headers = self.post_json(self.dir['newOrder'], payload)
+        except AcmeError as e:
+            if 'replaces' not in payload:
+                raise
+            # A CA that will not take it (alreadyReplaced, a CertID it does
+            # not know): ordered without - a renewal all the same.
+            say('the CA did not take "replaces" (%s) - ordered without it' % str(e)[:160])
+            payload.pop('replaces')
+            got, headers = self.post_json(self.dir['newOrder'], payload)
         order_url = headers.get('Location')
         thumb = self.thumbprint()
         kind = 'http-01' if acme_http() else 'dns-01'
@@ -65094,8 +65303,32 @@ class Acme(object):
                 self._poll(az, ('valid',), 'the CA did not take %s' % name)
             finally:
                 self.store.drop_meta('acme:chal:' + token)
-        kind_key = 'ec256' if str(CONFIG.get('acme_key') or 'ec') == 'ec' else 'rsa2048'
-        key = tls_new_key(kind_key)
+        key, der = self.csr(names, key_kind)
+        say('the certificate is made')
+        o, _ = self.post_json(got['finalize'], {'csr': _b64u(der)})
+        if o.get('status') != 'valid':
+            o = self._poll(order_url, ('valid',), 'the order', 120)
+        if not o.get('certificate'):
+            raise AcmeError('the CA gave no certificate')
+        body, headers = self.post(o['certificate'], None)
+        # The chain served is the one the CA sends by default (Let's
+        # Encrypt: never pinned, never one of isemon's own); the others it
+        # offers (Link: rel="alternate") are left where they are.
+        others = [x for x in (headers.get_all('Link') or []) if 'rel="alternate"' in x or
+                  "rel=alternate" in x]
+        if others:
+            say('the CA offers %d other chain%s - its default one is kept'
+                % (len(others), '' if len(others) == 1 else 's'))
+        return key, body.decode('utf-8', 'replace')
+
+    def csr(self, names, kind):
+        """A new key of `kind` and the request (DER) for `names` - never the
+        account's key: a certificate's key is a key of its own (Let's
+        Encrypt), and one that came out the same is refused."""
+        if kind not in KEY_KIND_WORDS:
+            raise AcmeError('the key of the certificate is RSA 2048, 3072 or 4096 or ECDSA P-256 '
+                            'or P-384')
+        key = tls_new_key(kind)
         subj, sans, _cn = tls_subject({'cn': names[0], 'san': ' '.join(names[1:])})
         with tempfile.TemporaryDirectory(prefix='.isemon-acme-csr-', dir=str(STATE_DIR)) as t:
             os.chmod(t, 0o700)
@@ -65103,18 +65336,15 @@ class Acme(object):
             fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(fd, 'w') as f:
                 f.write(key)
+            mine = _acme_ossl(['pkey', '-in', kf, '-pubout'], 'the key')
+            if mine.strip() == _acme_ossl(['pkey', '-in', self._key_file(), '-pubout'],
+                                          'the account key').strip():
+                raise AcmeError('the certificate\'s key came out as the account\'s - refused')
             # The name alone (CN and SAN): an ACME CA checks only names and
             # takes no organisation, unit, city or country.
             der = _acme_ossl(['req', '-new', '-key', kf, '-subj', subj, '-addext',
                               'subjectAltName=' + sans, '-outform', 'DER'], 'the request')
-        say('the certificate is made')
-        o, _ = self.post_json(got['finalize'], {'csr': _b64u(der)})
-        if o.get('status') != 'valid':
-            o = self._poll(order_url, ('valid',), 'the order', 120)
-        if not o.get('certificate'):
-            raise AcmeError('the CA gave no certificate')
-        body, _ = self.post(o['certificate'], None)
-        return key, body.decode('utf-8', 'replace')
+        return key, der
 
 
 # ---- names, who looks after it, what it had before ----------------------------------
@@ -65234,7 +65464,8 @@ def acme_before(wr):
 
 def acme_put_back(wr, by):
     """The certificate from before ACME back in place, ACME no longer renewing
-    it; its TLS settings (protocols, ciphers, DH, HSTS) stay as they are now."""
+    it; its TLS settings (protocols, ciphers, DH, HSTS) stay as they are now.
+    Whole, as it was: an ECDSA certificate beside it only if it had one."""
     got = wr.store.meta_json('acme:before', {})
     if not isinstance(got, dict) or not got.get('cert'):
         raise AcmeError('there is no certificate from before ACME')
@@ -65243,8 +65474,10 @@ def acme_put_back(wr, by):
         raise AcmeError('the certificate from before ACME ran out on %s - put a new one in on '
                         'Certificates and TLS' % stamp(info.get('until')))
     with wr.lock:
-        tls = wr.tls_conf()
+        tls = tls_drop_second(wr.tls_conf())
         tls.update({k: got.get(k) or '' for k in ('cert', 'chain', 'root', 'key')})
+        if got.get('cert2') and got.get('key2'):
+            tls.update({k: got.get(k) or '' for k in TLS_SECOND})
         tls.update(how=got.get('how') or 'uploaded', managed=True, since=time.time(), by=by)
         wr._put('web_tls', tls)
     wr.store.set_meta('acme:care', json.dumps({'on': False, 'at': time.time(), 'by': by}))
@@ -65258,11 +65491,194 @@ def acme_put_back(wr, by):
         'root puts it in within seconds' if got.get('pushed') else got.get('said', ''))
 
 
+# ---- ARI: the CA's renewal window (RFC 9773; 1.10.261) -------------------------------
+# A CA whose directory has renewalInfo says, for each certificate, when it
+# would like it renewed: a window, {start, end}. A moment inside it is picked
+# at random - and kept, so it does not move at every look - and renewal is
+# due then; a new window (a CA that has to revoke early, say) picks anew. The
+# window is asked again as its Retry-After says (6 h when it says nothing).
+# A CA without it, or one that has not answered for two days, renews by the
+# days (acme_days, a third of the life at most), as before.
+ACME_ARI_STALE = 2 * 86400
+
+
+def _der_at(data, at):
+    """(tag, start of its content, end) of the DER element at `at`."""
+    tag, n = data[at], data[at + 1]
+    at += 2
+    if n & 0x80:
+        k = n & 0x7f
+        n = int.from_bytes(data[at:at + k], 'big')
+        at += k
+    if at + n > len(data):
+        raise ValueError('DER runs past its end')
+    return tag, at, at + n
+
+
+def _der_items(data, start, end):
+    out = []
+    while start < end:
+        one = _der_at(data, start)
+        out.append(one)
+        start = one[2]
+    return out
+
+
+def ari_cert_id(pem):
+    """The certificate's ARI CertID (RFC 9773 §4.1): base64url of its
+    Authority Key Identifier's keyIdentifier, '.', base64url of the bytes of
+    its serial number as DER has them. '' when it has no AKI."""
+    m = PEM_CERT_RE.search(str(pem or ''))
+    if not m:
+        return ''
+    try:
+        der = base64.b64decode(re.sub(r'-----[A-Z ]+-----|\s', '', m.group(0)))
+        _t, s, e = _der_at(der, 0)                      # Certificate
+        _t, s, e = _der_at(der, s)                      # tbsCertificate
+        items = _der_items(der, s, e)
+        i = 1 if items[0][0] == 0xa0 else 0             # [0] version
+        if items[i][0] != 0x02:
+            return ''
+        serial = der[items[i][1]:items[i][2]]
+        aki = b''
+        for tag, s2, _e2 in items:
+            if tag != 0xa3:                             # [3] extensions
+                continue
+            _t, s3, e3 = _der_at(der, s2)
+            for _t4, s4, e4 in _der_items(der, s3, e3):
+                parts = _der_items(der, s4, e4)
+                if parts and parts[0][0] == 0x06 and \
+                        der[parts[0][1]:parts[0][2]] == b'\x55\x1d\x23':
+                    # extnValue, an OCTET STRING holding the SEQUENCE.
+                    _t5, s5, e5 = _der_at(der, parts[-1][1])
+                    for t6, s6, e6 in _der_items(der, s5, e5):
+                        if t6 == 0x80:                  # [0] keyIdentifier
+                            aki = der[s6:e6]
+        if not aki or not serial:
+            return ''
+        return _b64u(aki) + '.' + _b64u(serial)
+    except (ValueError, IndexError):
+        return ''
+
+
+def _rfc3339(text):
+    import calendar
+    m = re.match(r'^(\d{4})-(\d\d)-(\d\d)[Tt ](\d\d):(\d\d):(\d\d)(\.\d+)?([Zz]|[+-]\d\d:\d\d)\Z',
+                 str(text or '').strip())
+    if not m:
+        raise ValueError('not an RFC 3339 time: %r' % str(text)[:40])
+    t = calendar.timegm(tuple(int(m.group(i)) for i in range(1, 7)) + (0, 0, 0))
+    if m.group(8) not in ('Z', 'z'):
+        sign = 1 if m.group(8)[0] == '+' else -1
+        t -= sign * (int(m.group(8)[1:3]) * 3600 + int(m.group(8)[4:6]) * 60)
+    return float(t)
+
+
+def acme_ari_row(store):
+    got = store.meta_json('acme:ari', {})
+    return got if isinstance(got, dict) else {}
+
+
+def acme_ari_learn(store, dir_url, ari_url):
+    """What the directory says of ARI, kept: whether to ask at all."""
+    row = acme_ari_row(store)
+    if row.get('dir') != dir_url or row.get('url') != ari_url:
+        row = {}
+    row.update(dir=dir_url, url=ari_url, dir_at=time.time())
+    store.set_meta('acme:ari', json.dumps(row))
+    return row
+
+
+def acme_ari_fetch(store, pem, say=None):
+    """The CA's window for the certificate `pem`, asked (an unauthenticated
+    GET, RFC 9773 §4.2) and kept with the moment picked inside it. None for a
+    CA without ARI or a certificate without an AKI; AcmeError when the CA
+    did not answer as it should - the days decide then."""
+    row = acme_ari_row(store)
+    cid = ari_cert_id(pem)
+    if not row.get('url') or not cid:
+        return None
+    now = time.time()
+    try:
+        body, headers, status = acme_fetch(row['url'].rstrip('/') + '/' + cid)
+        if status >= 400:
+            raise AcmeError('the CA said %d to renewalInfo' % status)
+        try:
+            win = json.loads(body.decode('utf-8'))['suggestedWindow']
+            start, end = _rfc3339(win['start']), _rfc3339(win['end'])
+        except (ValueError, KeyError, TypeError, AttributeError):
+            raise AcmeError('the CA\'s renewalInfo is not a window')
+        if end < start:
+            raise AcmeError('the CA\'s renewal window ends before it starts')
+    except AcmeError as e:
+        row.update(failed_at=now, said=str(e)[:300], next=now + 3600)
+        store.set_meta('acme:ari', json.dumps(row))
+        raise
+    try:
+        wait = float(headers.get('Retry-After') or 6 * 3600)
+    except ValueError:
+        wait = 6 * 3600
+    same = row.get('id') == cid and row.get('start') == start and row.get('end') == end and \
+        row.get('pick')
+    row.update(id=cid, start=start, end=end, checked=now, next=now + max(3600, min(wait, 86400)),
+               pick=row['pick'] if same else _ACME_RAND.uniform(start, end))
+    row.pop('failed_at', None)
+    row.pop('said', None)
+    if win.get('explanationURL') if isinstance(win, dict) else None:
+        row['explain'] = str(win['explanationURL'])[:300]
+    store.set_meta('acme:ari', json.dumps(row))
+    if say and not same:
+        say('the CA\'s renewal window (ARI): %s - %s; renewed at %s' % (
+            stamp(start), stamp(end), stamp(row['pick'])))
+    return row
+
+
+def acme_ari_for(store, pem):
+    """The kept window of `pem`, if it is that certificate's and fresh."""
+    row = acme_ari_row(store)
+    if not row.get('url') or not row.get('pick') or row.get('id') != ari_cert_id(pem) or \
+            time.time() - float(row.get('checked') or 0) > ACME_ARI_STALE:
+        return None
+    return row
+
+
+def acme_renews(wr):
+    """When the certificate from the CA is renewed: {'at', 'how': 'ari' or
+    'days'} - or None for one that is not ACME's."""
+    tls = wr.tls_conf()
+    if tls_how(tls) != 'ACME' or not tls.get('cert'):
+        return None
+    ari = acme_ari_for(wr.store, tls['cert'])
+    if ari:
+        return {'at': float(ari['pick']), 'how': 'ari', 'start': ari.get('start'),
+                'end': ari.get('end')}
+    try:
+        f = cert_facts(tls['cert'])
+    except WebRootError:
+        return None
+    if not f.get('until'):
+        return None
+    return {'at': float(f['until']) - acme_days_for(f) * 86400, 'how': 'days'}
+
+
+def acme_days_for(f):
+    """The days left at which a certificate is renewed by the days: acme_days,
+    a third of its life at most."""
+    days = float(CONFIG.get('acme_days') or 30)
+    # A third of its life at most (otp 1.0.187): a CA giving fewer days than
+    # acme_days (short-lived certificates, a test CA) had every new one due
+    # at once - ordered again every hour, until its limits refused them all.
+    life = (float(f.get('until') or 0) - float(f.get('from') or 0)) / 86400
+    if f.get('from') and life > 0:
+        days = min(days, life / 3)
+    return days
+
+
 def acme_due(wr, name):
     """Why the certificate is to be ordered now, or ''."""
     st = acme_state(wr.store)
-    if st.get('failed_at') and time.time() - float(st['failed_at']) < ACME_RETRY and \
-            st.get('name') == name:
+    if st.get('failed_at') and st.get('name') == name and \
+            time.time() < float(st.get('retry_at') or float(st['failed_at']) + ACME_RETRY):
         return ''
     tls = wr.tls_conf()
     if tls_how(tls) != 'ACME' or st.get('name') != name:
@@ -65272,27 +65688,65 @@ def acme_due(wr, name):
     except WebRootError:
         return 'its certificate does not read'
     left = (float(f.get('until') or 0) - time.time()) / 86400
-    days = float(CONFIG.get('acme_days') or 30)
-    # A third of its life at most (otp 1.0.187): a CA giving fewer days than
-    # acme_days (short-lived certificates, a test CA) had every new one due
-    # at once - ordered again every hour, until its limits refused them all.
-    life = (float(f.get('until') or 0) - float(f.get('from') or 0)) / 86400
-    if f.get('from') and life > 0:
-        days = min(days, life / 3)
-    if left < days:
+    ari = acme_ari_for(wr.store, tls['cert'])
+    if ari:
+        # The CA's window (ARI): at the moment picked inside it.
+        if time.time() >= float(ari['pick']):
+            return 'the CA\'s renewal window has come (ARI), %d days left' % int(left)
+        return ''
+    if left < acme_days_for(f):
         return '%d days left' % int(left)
     return ''
 
 
-def acme_install(wr, chain_pem, key, by):
-    """The certificate from the CA put where an uploaded one goes: sorted and
-    checked as one is, its key sealed, the one it had before kept to go back
-    to; the TLS settings left as they are. Returns its facts."""
+def acme_due_second(wr, name):
+    """Why the ECDSA certificate beside the RSA one is to be ordered by
+    itself now, or '': one asked for (acme_key: Both) that is not there, is of
+    the other curve, or runs out - after a second order that failed, at the
+    next look past its retry."""
+    want = acme_dual_kind()
+    tls = wr.tls_conf()
+    if not want or tls_how(tls) != 'ACME':
+        return ''
+    st = acme_state(wr.store)
+    if st.get('second_failed_at') and \
+            time.time() < float(st.get('second_retry_at') or
+                                float(st['second_failed_at']) + ACME_RETRY):
+        return ''
+    if not tls_second(tls):
+        return 'no %s certificate beside it yet' % KEY_KIND_WORDS[want]
+    if cert_key_kind(tls['cert2']) != want:
+        return 'the certificate beside it is not %s' % KEY_KIND_WORDS[want]
+    try:
+        f = cert_facts(tls['cert2'])
+    except WebRootError:
+        return 'the certificate beside it does not read'
+    if name not in (f.get('names') or []) and f.get('cn') != name:
+        return 'the certificate beside it is not for %s' % name
+    left = (float(f.get('until') or 0) - time.time()) / 86400
+    if left < acme_days_for(f):
+        return 'the certificate beside it has %d days left' % int(left)
+    return ''
+
+
+def _acme_sorted(chain_pem, key):
     got = tls_sort([chain_pem, key])
     if not got['key']:
         raise AcmeError('the CA\'s certificate is not the one of the key made for it')
-    f = got['facts']
     tls_check_chain(got['cert'], got['chain'], got['root'])
+    return got
+
+
+def acme_install(wr, chain_pem, key, by, second=None, name=''):
+    """The certificate from the CA put where an uploaded one goes: sorted and
+    checked as one is, its key sealed, the one it had before kept to go back
+    to; the TLS settings left as they are. `second`: the ECDSA certificate
+    beside it, (chain, key) - or 'keep' for the one there now, while it is
+    still good for `name` (the second order failed); None takes it away.
+    Returns its facts."""
+    got = _acme_sorted(chain_pem, key)
+    two = _acme_sorted(*second) if isinstance(second, tuple) else None
+    f = got['facts']
     with wr.lock:
         tls = wr.tls_conf()
         how = tls_how(tls)
@@ -65303,14 +65757,23 @@ def acme_install(wr, chain_pem, key, by):
                 info = cert_facts(tls['cert'])
             except WebRootError:
                 info = {}
-            wr.store.set_meta('acme:before', json.dumps({
-                'cert': tls.get('cert') or '', 'chain': tls.get('chain') or '',
-                'root': tls.get('root') or '', 'key': tls.get('key') or '', 'how': how,
-                'info': {'subject': info.get('subject'), 'issuer': info.get('issuer'),
-                         'until': info.get('until')}, 'at': time.time()}))
+            before = {'cert': tls.get('cert') or '', 'chain': tls.get('chain') or '',
+                      'root': tls.get('root') or '', 'key': tls.get('key') or '', 'how': how,
+                      'info': {'subject': info.get('subject'), 'issuer': info.get('issuer'),
+                               'until': info.get('until')}, 'at': time.time()}
+            if tls.get('cert2') and tls.get('key2'):
+                before.update({k: tls.get(k) or '' for k in TLS_SECOND})
+            wr.store.set_meta('acme:before', json.dumps(before))
+        keep = second == 'keep' and how == 'ACME' and acme_second_good(tls, name)
+        if not keep:
+            tls_drop_second(tls)
         tls.update(cert=got['cert'], chain=got['chain'], root=got['root'],
                    key=seal_secret(got['key']), managed=True, since=time.time(), by=by,
                    how='ACME')
+        if two:
+            tls.update(cert2=two['cert'], chain2=two['chain'], key2=seal_secret(two['key']))
+        if tls.get('cert2'):
+            tls['cert2_for'] = tls_second_for(got['cert'])
         tls.setdefault('preset', 'standard')
         tls.setdefault('protocols', TLS_PRESETS['standard']['protocols'])
         tls.setdefault('hsts', 63072000)
@@ -65319,9 +65782,51 @@ def acme_install(wr, chain_pem, key, by):
     return f
 
 
-def acme_order(wr, name, by, say=None):
-    """One certificate ordered and put in; the state kept, an event written -
-    and what was done on the way (otp 1.0.175), for the card."""
+def acme_second_good(tls, name):
+    """Whether the ECDSA certificate beside it is still one to answer with."""
+    if not tls_second(tls):
+        return False
+    try:
+        f = cert_facts(tls['cert2'])
+    except WebRootError:
+        return False
+    return float(f.get('until') or 0) > time.time() + 86400 and \
+        (not name or name in (f.get('names') or []) or f.get('cn') == name)
+
+
+def acme_install_second(wr, chain_pem, key, by):
+    """The ECDSA certificate beside the RSA one, by itself."""
+    two = _acme_sorted(chain_pem, key)
+    with wr.lock:
+        tls = wr.tls_conf()
+        if tls_how(tls) != 'ACME':
+            raise AcmeError('the certificate of the dashboard is no longer ACME\'s')
+        tls.update(cert2=two['cert'], chain2=two['chain'], key2=seal_secret(two['key']),
+                   cert2_for=tls_second_for(tls['cert']))
+        wr._put('web_tls', tls)
+    wr.push('the ECDSA certificate by ACME', by, force=True)
+    return two['facts']
+
+
+def acme_drop_second(wr, by):
+    """One key asked for (acme_key): the ECDSA certificate beside it taken away at
+    once (the next minute's look), the RSA one left as it is."""
+    with wr.lock:
+        tls = wr.tls_conf()
+        if not tls.get('cert2'):
+            return False
+        wr._put('web_tls', tls_drop_second(tls))
+    wr.store.add_event('control', 'the ECDSA certificate beside the RSA one was taken away '
+                       '(The key of the certificate asks for one key)', who=by)
+    wr.push('no ECDSA certificate beside it', by, force=True)
+    return True
+
+
+def acme_order(wr, name, by, say=None, only_second=False):
+    """One certificate ordered and put in - with the ECDSA one beside it when
+    acme_key asks for Both (or that one alone, `only_second`); the state
+    kept, an event written - and what was done on the way (otp 1.0.175),
+    for the card."""
     tell = say or (lambda t: None)
     steps = []
     store = wr.store
@@ -65332,39 +65837,111 @@ def acme_order(wr, name, by, say=None):
     if not ACME_NAME_RE.match(str(name or '')):
         raise AcmeError('%s is not a name a CA gives a certificate for (a full DNS name)'
                         % (str(name)[:80] or 'an empty name'))
-    st = {'name': name, 'at': time.time(), 'by': by, 'ca': acme_directory_url(), 'steps': steps}
+    old = acme_state(store)
+    if only_second:
+        st = dict(old, steps=steps)
+    else:
+        st = {'name': name, 'at': time.time(), 'by': by, 'ca': acme_directory_url(),
+              'steps': steps}
+    dual = acme_dual_kind()
     a = None
     try:
         a = Acme(store)
-        key, chain = a.order([name], say, wr)
+        acme_ari_learn(store, a.dir_url, a.ari())
+        tls = wr.tls_conf()
+        mine = tls_how(tls) == 'ACME'
+        if only_second:
+            return _acme_order_second(wr, a, name, by, say, st, dual,
+                                      ari_cert_id(tls.get('cert2')) if mine else '')
+        # Which keys are made (as upsmon 4.1.6 says them).
+        kinds = acme_cert_kinds()
+        say('the key%s: %s' % ('s' if len(kinds) > 1 else '', acme_keys_words(kinds)))
+        key, chain = a.order([name], say, wr, acme_key_kind(),
+                             ari_cert_id(tls.get('cert')) if mine else '')
+        second, said2 = None, ''
+        if dual:
+            try:
+                # The second certificate: the name is already proven, so the
+                # CA only signs - nginx offers it to the clients that take it.
+                say('a second certificate, with a %s key' % KEY_KIND_WORDS[dual])
+                second = a.order([name], say, wr, dual,
+                                 ari_cert_id(tls.get('cert2')) if mine else '')
+            except (AcmeError, WebRootError, ValueError, OSError) as e:
+                # The RSA one is put in all the same; the ECDSA one is asked
+                # again at the next look past its retry.
+                said2 = str(e)[:400]
+                second = 'keep'
+                say('no %s certificate came: %s - the RSA one is put in alone' % (
+                    KEY_KIND_WORDS[dual], said2))
         say('the certificate is put in')
-        f = acme_install(wr, chain, key, by)
+        f = acme_install(wr, chain, key, by, second, name)
         st.update(ok=True, not_after=f.get('until'), issuer=f.get('issuer'),
-                  ordered_at=time.time())
+                  ordered_at=time.time(), kind=acme_key_kind(),
+                  keys=acme_keys_words(kinds if isinstance(second, tuple) or not dual
+                                       else kinds[:1]))
+        if dual and isinstance(second, tuple):
+            st['second'] = {'kind': dual, 'ok': True, 'at': time.time()}
+        elif dual:
+            st['second'] = {'kind': dual, 'ok': False, 'said': said2, 'at': time.time()}
+            st.update(second_failed_at=time.time(), second_retry_at=time.time() + ACME_RETRY *
+                      _ACME_RAND.uniform(0.9, 1.1))
+        try:
+            acme_ari_fetch(store, wr.tls_conf().get('cert'), say)
+        except AcmeError as e:
+            say('the CA\'s renewal window was not had (%s) - renewed by the days' % e)
         st['steps'] = steps[-25:]
         store.set_meta('acme:state', json.dumps(st))
-        store.add_event('control', 'a certificate for %s came from the CA, good until %s'
-                        % (name, stamp(f.get('until')) if f.get('until') else '?'), 'info',
-                        who=by)
+        store.add_event('control', 'a certificate for %s came from the CA, good until %s%s'
+                        % (name, stamp(f.get('until')) if f.get('until') else '?',
+                           ('' if not dual else ' - and the %s one beside it' % KEY_KIND_WORDS[dual]
+                            if isinstance(second, tuple) else
+                            ' - but not the %s one beside it: %s' % (KEY_KIND_WORDS[dual], said2))),
+                        'info' if not dual or isinstance(second, tuple) else 'warn', who=by)
         return st
     except (AcmeError, WebRootError, ValueError, OSError) as e:
         if 'NXDOMAIN' in str(e) and not acme_http():
             e = AcmeError('%s - the CA does not find the record: In your DNS → Check DNS, with '
                           'DNS servers for ACME set to public ones (1.1.1.1), shows where the way '
                           'to it stops (the CNAME, or the delegation of its zone)' % e)
-        st.update(ok=False, failed_at=time.time(), said=str(e)[:600])
-        old = acme_state(store)
-        for k in ('not_after', 'issuer', 'ordered_at'):
-            if old.get(k):
-                st[k] = old[k]
+        if only_second:
+            st.update(second={'kind': dual, 'ok': False, 'said': str(e)[:400], 'at': time.time()},
+                      second_failed_at=time.time(),
+                      second_retry_at=time.time() + ACME_RETRY * _ACME_RAND.uniform(0.9, 1.1))
+        else:
+            st.update(ok=False, failed_at=time.time(), said=str(e)[:600],
+                      retry_at=time.time() + ACME_RETRY * _ACME_RAND.uniform(0.9, 1.1))
+            for k in ('not_after', 'issuer', 'ordered_at', 'kind', 'second'):
+                if old.get(k):
+                    st[k] = old[k]
         st['steps'] = steps[-25:]
         store.set_meta('acme:state', json.dumps(st))
-        store.add_event('control', 'no certificate for %s came from the CA: %s' % (name, e),
-                        'bad', who=by)
+        store.add_event('control', 'no %scertificate for %s came from the CA: %s' % (
+            (KEY_KIND_WORDS.get(dual, 'ECDSA') + ' ') if only_second else '', name, e),
+            'bad', who=by)
         raise AcmeError(str(e))
     finally:
         if a:
             a.close()
+
+
+def _acme_order_second(wr, a, name, by, say, st, dual, replaces):
+    """The ECDSA certificate beside the RSA one, ordered by itself."""
+    if not dual:
+        raise AcmeError('no ECDSA certificate is asked for beside it')
+    say('a second certificate, with a %s key' % KEY_KIND_WORDS[dual])
+    key, chain = a.order([name], say, wr, dual, replaces)
+    say('the %s certificate is put in beside the RSA one' % KEY_KIND_WORDS[dual])
+    f = acme_install_second(wr, chain, key, by)
+    st['second'] = {'kind': dual, 'ok': True, 'at': time.time()}
+    st.pop('second_failed_at', None)
+    st.pop('second_retry_at', None)
+    st['steps'] = st['steps'][-25:]
+    wr.store.set_meta('acme:state', json.dumps(st))
+    wr.store.add_event('control', 'the %s certificate for %s came from the CA, good until %s, '
+                       'beside the RSA one' % (KEY_KIND_WORDS[dual], name,
+                                               stamp(f.get('until')) if f.get('until') else '?'),
+                       'info', who=by)
+    return st
 
 
 def acme_root_ready(wr, say, wait=None):
@@ -65397,23 +65974,109 @@ def acme_root_ready(wr, say, wait=None):
                     '(isemon-web.path)')
 
 
+def acme_offset(store):
+    """This machine's own second of the hour for the hourly look (Let's
+    Encrypt: not every client at the same clock time) - picked at random
+    once, kept."""
+    try:
+        v = float(store.get_meta('acme:offset', '') or '')
+    except (TypeError, ValueError):
+        v = round(_ACME_RAND.uniform(0, 3600), 1)
+        try:
+            store.set_meta('acme:offset', '%.1f' % v)
+        except Exception:                               # noqa: BLE001
+            pass
+    return v % ACME_EVERY if ACME_EVERY > 0 else 0.0
+
+
+def acme_look_now(store, now=None):
+    """Whether the hourly look is due: at this machine's own minute of the
+    hour, once an hour - at once after a start or a change of the settings
+    (ACME_WORK['at'] 0)."""
+    now = time.time() if now is None else now
+    at = float(ACME_WORK.get('at') or 0)
+    if not at:
+        return True
+    off = acme_offset(store)
+    return now >= at - ((at - off) % ACME_EVERY) + ACME_EVERY
+
+
+ACME_LOOK = {'busy': False}
+
+
 def acme_tick(daemon):
-    """Every minute, looked at once an hour: what is due, ordered - in a
-    thread of its own."""
+    """Every minute, looked at once an hour (at a minute of this machine's
+    own): what is due, ordered - in a thread of its own. Where the CA has
+    ARI and its window is to be asked again, that is asked first, in a
+    thread of its own too."""
     acme_host_fqdn()
-    if not acme_on() or ACME_WORK['busy'] or time.time() - ACME_WORK['at'] < ACME_EVERY:
+    if not acme_on() or ACME_WORK['busy'] or ACME_LOOK['busy'] or \
+            not acme_look_now(daemon.store):
         return
     ACME_WORK['at'] = time.time()
     wr = daemon.webroot
     if not acme_care(wr):
         return
+    tls = wr.tls_conf()
+    # One key asked for (acme_key): the ECDSA one beside it goes at once.
+    if tls.get('cert2') and tls_how(tls) == 'ACME' and \
+            acme_dual_kind() is None:
+        acme_drop_second(wr, 'isemon (one key asked for)')
     name = acme_name(wr)
-    if not name or not acme_due(wr, name):
+    if not name:
         return
-    acme_start(wr, name, 'isemon (renewal)')
+    row = acme_ari_row(daemon.store)
+    now = time.time()
+    ask_dir = row.get('dir') != acme_directory_url() or now - float(row.get('dir_at') or 0) > 86400
+    ask_ari = bool(row.get('url')) and tls_how(tls) == 'ACME' and bool(tls.get('cert')) and \
+        (row.get('id') != ari_cert_id(tls['cert']) or now >= float(row.get('next') or 0))
+    if (ask_dir and tls_how(tls) == 'ACME') or ask_ari:
+        ACME_LOOK['busy'] = True
+
+        def look():
+            _ACME_DNS.on = True
+            try:
+                if ask_dir:
+                    d, _h = _acme_dir(acme_directory_url())
+                    acme_ari_learn(daemon.store, acme_directory_url(),
+                                   str(d.get('renewalInfo') or '')
+                                   if str(d.get('renewalInfo') or '').startswith('https://')
+                                   else '')
+                acme_ari_fetch(daemon.store, wr.tls_conf().get('cert'))
+            except Exception as e:                      # noqa: BLE001
+                log('ACME: the CA\'s renewal window was not had: %s' % e, 'warn')
+            try:
+                acme_due_go(wr, name)
+            except Exception as e:                      # noqa: BLE001
+                log('ACME: %s' % e, 'warn')
+            finally:
+                ACME_LOOK['busy'] = False
+        threading.Thread(target=look, name='isemon-acme-ari', daemon=True).start()
+        return
+    acme_due_go(wr, name)
 
 
-def acme_start(wr, name, by):
+def _acme_dir(url):
+    body, headers, status = acme_fetch(url)
+    if status >= 400:
+        raise AcmeError('the CA said %d to its directory' % status)
+    try:
+        got = json.loads(body.decode('utf-8'))
+    except ValueError:
+        raise AcmeError('the CA\'s directory is not JSON')
+    return (got if isinstance(got, dict) else {}), headers
+
+
+def acme_due_go(wr, name):
+    if ACME_WORK['busy']:
+        return
+    if acme_due(wr, name):
+        acme_start(wr, name, 'isemon (renewal)')
+    elif acme_due_second(wr, name):
+        acme_start(wr, name, 'isemon (renewal)', only_second=True)
+
+
+def acme_start(wr, name, by, only_second=False):
     if ACME_WORK['busy']:
         raise AcmeError('a certificate is being ordered already')
     ACME_WORK.update(busy=True, says='starting', since=time.time())
@@ -65421,7 +66084,7 @@ def acme_start(wr, name, by):
     def go():
         _ACME_DNS.on = True
         try:
-            acme_order(wr, name, by, acme_say)
+            acme_order(wr, name, by, acme_say, only_second=only_second)
         except AcmeError as e:
             log('ACME: %s' % e, 'warn')
         except Exception as e:                          # noqa: BLE001
@@ -65466,15 +66129,39 @@ def acme_view(wr):
     acc = store.meta_json('acme:account', {}) or {}
     manual = store.meta_json('acme:manual', {}) or {}
     name = acme_name(wr)
+    # The ECDSA certificate beside the RSA one (dual-cert, 1.10.261).
+    second = None
+    if tls.get('managed') and tls_second(tls):
+        try:
+            f2 = cert_facts(tls['cert2'])
+            k2 = cert_key_kind(tls['cert2'])
+            second = {'kind': k2, 'words': KEY_KIND_WORDS.get(k2, 'ECDSA'),
+                      'not_after': f2.get('until'), 'not_before': f2.get('from'),
+                      'subject': f2.get('subject')}
+        except WebRootError:
+            second = None
+    kind = cert_key_kind(pem) if pem else ''
+    ari = acme_ari_row(store)
     return {'ok': True, 'on': acme_on(), 'name': name,
+            'kind': kind, 'kind_words': KEY_KIND_WORDS.get(kind, ''), 'second': second,
+            # The keys as upsmon 4.1.6 shows them: 'RSA 2048 bit + EC 256 bit'.
+            'keys': ' + '.join(x for x in [cert_key_words(pem) if pem else '',
+                                           cert_key_words(tls['cert2']) if second else '']
+                               if x),
+            'dual': acme_dual_kind(), 'renews': acme_renews(wr),
+            'ari': {'offered': bool(ari.get('url')), 'said': ari.get('said') or '',
+                    'explain': ari.get('explain') or ''},
             'named': bool(str(CONFIG.get('acme_name') or '').strip()),
             'cert_name': acme_cert_name(wr), 'host': acme_host_fqdn(),
             'state': acme_state(store), 'how': tls_how(tls), 'subject': info.get('subject'),
             'issuer': info.get('issuer'), 'not_after': info.get('until'),
             'not_before': info.get('from'), 'care': acme_care(wr), 'before': acme_before(wr),
-            'due': acme_due(wr, name) if acme_on() and name else '',
+            'due': (acme_due(wr, name) or acme_due_second(wr, name)) if acme_on() and name
+            else '',
             'directory': acme_directory_url(),
-            'account': {'kid': acc.get('kid'), 'email': acc.get('email'), 'at': acc.get('at')},
+            'account': {'kid': acc.get('kid'), 'email': acc.get('email'), 'at': acc.get('at'),
+                        'key': ACME_ACCOUNT_WORDS.get(acc.get('kind') or 'ec', '')
+                        if acc.get('kid') else ''},
             'work': work, 'challenge': 'http-01' if acme_http() else 'dns-01',
             'helper': wr.helper_there(), 'dns_guide': acme_dns_guide(wr),
             'manual': {k: v for k, v in manual.items() if k in ('rr', 'txt', 'at', 'done')}
@@ -70924,13 +71611,14 @@ class NetPower(object):
             if ip6 not in names:
                 names.append(ip6)
         cn = named.get(facts.get('cn') or '', facts.get('cn') or '') or w.get('hostname')
-        text = _openssl(['x509', '-noout', '-text'], 'the certificate', tls['cert'])
-        kind = 'ec256' if 'id-ecPublicKey' in text else (
-            'rsa4096' if '4096 bit' in text else ('rsa3072' if '3072 bit' in text else 'rsa2048'))
+        kind = cert_key_kind(tls['cert'])
+        if kind not in KEY_KIND_WORDS:
+            kind = 'rsa2048'
         made = tls_make({'cn': cn, 'san': ' '.join(x for x in names if x != cn), 'key': kind,
                          'days': 825}, self_signed=True)
         tls.update(cert=made['pem'], chain='', root='', key=seal_secret(made['key']),
                    since=time.time(), by=by)
+        tls_drop_second(tls)
         wr._put('web_tls', tls)
         self.store.add_event('control', 'the dashboard\'s certificate that signs itself was made '
                                         'again for %s (the network changed)' % ', '.join(names[:6]),
@@ -79604,8 +80292,18 @@ def acme_print(pal, v):
     pal.kv('the certificate', '%s, from %s, until %s%s' % (
         v.get('how') or 'as nginx has it', (v.get('issuer') or '?'), stamp(v.get('not_after')),
         ' (%d days left)' % left if left is not None else ''))
+    if v.get('keys'):
+        pal.kv('keys', v['keys'])
+    two = v.get('second') or {}
+    if two:
+        pal.kv('beside it', '%s, until %s (dual-cert: nginx answers with it the clients that '
+                            'take ECDSA)' % (two.get('words') or 'ECDSA', stamp(two.get('not_after'))))
     pal.kv('looked after', 'ACME renews it' if v.get('care') else
            'its own certificate is kept (Look after it, or --acme-order, gives it to ACME)')
+    rn = v.get('renews') or {}
+    if rn.get('at') and v.get('care'):
+        pal.kv('renews', '%s (%s)' % (stamp(rn['at']), 'at a moment inside the CA\'s window, '
+                                      'ARI' if rn.get('how') == 'ari' else 'by the days left'))
     if v.get('due') and v.get('on') and v.get('care'):
         pal.kv('due', v['due'])
     st = v.get('state') or {}
@@ -79630,7 +80328,8 @@ def acme_print(pal, v):
             ' (ran out)' if b.get('ran_out') else ''))
     acc = v.get('account') or {}
     if acc.get('kid'):
-        pal.kv('the account', '%s, made %s' % (acc.get('email') or '(no mail)', stamp(acc.get('at'))))
+        pal.kv('the account', '%s, made %s%s' % (acc.get('email') or '(no mail)', stamp(acc.get('at')),
+                                                 (', ' + acc['key']) if acc.get('key') else ''))
     pal.blank()
 
 

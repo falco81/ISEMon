@@ -209,12 +209,34 @@ def pem_set(cert, key, chain='', root=''):
             'root': (root + '\n') if root else ''}
 
 
+def key_kind(cert):
+    """'rsa' or 'ec' - the key of a certificate, as openssl reads it."""
+    text = openssl(['x509', '-noout', '-text'], 'the certificate', cert)
+    if 'id-ecPublicKey' in text:
+        return 'ec'
+    if 'rsaEncryption' in text:
+        return 'rsa'
+    return ''
+
+
 def tls_checked(t):
     if t is None:
         return None
     if not isinstance(t, dict):
         raise Refused('the TLS is not an object')
     out = {'pem': pem_set(t.get('cert'), t.get('key'), t.get('chain'), t.get('root'))}
+    # The ECDSA certificate beside the RSA one (dual-cert, 1.10.261): checked
+    # as the first is - the key the certificate's own - and ECDSA, beside an
+    # RSA one: nginx keeps one certificate of each kind, so a second of the
+    # same kind would take the first one's place.
+    out['pem2'] = pem_set(t.get('cert2'), t.get('key2'), t.get('chain2'))
+    if out['pem2']:
+        if not out['pem']:
+            raise Refused('an ECDSA certificate beside it needs the first certificate')
+        if key_kind(out['pem2']['cert']) != 'ec':
+            raise Refused('the second certificate is ECDSA, beside an RSA one - this one is not')
+        if key_kind(out['pem']['cert']) != 'rsa':
+            raise Refused('a second certificate goes beside an RSA one - the first is not RSA')
     prot = t.get('protocols') or list(PROTOCOLS)
     if not isinstance(prot, list) or not prot or any(p not in PROTOCOLS for p in prot):
         raise Refused('the protocols are TLSv1.2 and/or TLSv1.3')
@@ -326,6 +348,48 @@ def set_directive(block, name, value):
     return '\n'.join(lines)
 
 
+def set_pairs(block, pairs):
+    """The server's ssl_certificate / ssl_certificate_key lines, one pair for
+    each of `pairs`, each certificate followed by its key - where the first
+    was, the others taken out (set_directive keeps one line of a name)."""
+    lines = block.split('\n')
+    depth, at = 0, []
+    for n, line in enumerate(lines):
+        if depth == 1 and re.match(r'^\s*ssl_certificate(_key)?\s', line):
+            at.append(n)
+        depth += line.count('{') - line.count('}')
+    if not at:
+        # None there yet: put in where set_directive puts a line (after
+        # server_name), and written over below.
+        lines = set_directive(block, 'ssl_certificate', pairs[0][0]).split('\n')
+        depth = 0
+        for n, line in enumerate(lines):
+            if depth == 1 and re.match(r'^\s*ssl_certificate\s', line):
+                at.append(n)
+            depth += line.count('{') - line.count('}')
+    first = at[0]
+    for n in reversed(at):
+        del lines[n]
+    new = []
+    for cert, key in pairs:
+        new.append('    %-25s %s;' % ('ssl_certificate', cert))
+        new.append('    %-25s %s;' % ('ssl_certificate_key', key))
+    lines[first:first] = new
+    return '\n'.join(lines)
+
+
+def directive_all(block, name):
+    """Every value of `name` among the server's own lines."""
+    depth, out = 0, []
+    for line in block.split('\n'):
+        if depth == 1:
+            m = re.match(r'^\s*%s\s+([^;]*);' % re.escape(name), line)
+            if m:
+                out.append(m.group(1).strip())
+        depth += line.count('{') - line.count('}')
+    return out
+
+
 def directive_now(block, name):
     """The value of `name` among the server's own lines, or ''."""
     depth = 0
@@ -359,6 +423,8 @@ def progress(words, step=None, expect=None):
 
 TLS_FILES = {'cert': os.path.join(CERT_DIR, 'isemon.pem'),
              'key': os.path.join(CERT_DIR, 'isemon.key'),
+             'cert2': os.path.join(CERT_DIR, 'isemon-ecdsa.pem'),
+             'key2': os.path.join(CERT_DIR, 'isemon-ecdsa.key'),
              'root': os.path.join(CERT_DIR, 'isemon-ca.pem'),
              'dh': os.path.join(CERT_DIR, 'isemon-dh.pem')}
 
@@ -401,8 +467,22 @@ def tls_into(block, t, dh_path):
                 shutil.copy2(TLS_FILES[k], keep)
         write_root(TLS_FILES['cert'], t['pem']['cert'] + t['pem']['chain'], 0o644)
         write_root(TLS_FILES['key'], t['pem']['key'], 0o600)
-        block = set_directive(block, 'ssl_certificate', TLS_FILES['cert'])
-        block = set_directive(block, 'ssl_certificate_key', TLS_FILES['key'])
+        pairs = [(TLS_FILES['cert'], TLS_FILES['key'])]
+        two = t.get('pem2')
+        if two:
+            # Dual-cert (1.10.261): the ECDSA pair after the RSA one; nginx
+            # answers with it the clients whose ciphers allow ECDSA.
+            write_root(TLS_FILES['cert2'], two['cert'] + two['chain'], 0o644)
+            write_root(TLS_FILES['key2'], two['key'], 0o600)
+            pairs.append((TLS_FILES['cert2'], TLS_FILES['key2']))
+        else:
+            # None asked for: one left from before goes, with its key.
+            for k in ('cert2', 'key2'):
+                try:
+                    os.unlink(TLS_FILES[k])
+                except FileNotFoundError:
+                    pass
+        block = set_pairs(block, pairs)
         if t['pem']['root']:
             write_root(TLS_FILES['root'], t['pem']['root'] + t['pem']['chain'], 0o644)
             block = set_directive(block, 'ssl_trusted_certificate', TLS_FILES['root'])
@@ -411,6 +491,14 @@ def tls_into(block, t, dh_path):
         subj = openssl(['x509', '-noout', '-subject', '-enddate'], 'the certificate',
                        t['pem']['cert']).strip().replace('\n', ', ')
         said.append('certificate: %s' % subj)
+        if two:
+            said.append('and the second one (ECDSA) beside it')
+            # Of no use where TLS 1.2 has no ECDSA suite to offer (TLS 1.3
+            # needs none): said, not refused - the RSA one still answers.
+            if 'TLSv1.2' in t['protocols'] and t['ciphers'] and \
+                    'Au=ECDSA' not in openssl(['ciphers', '-v', t['ciphers']], 'the ciphers'):
+                said.append('the cipher list has no ECDHE-ECDSA suite: TLS 1.2 clients get the '
+                            'RSA certificate alone')
     block = set_directive(block, 'ssl_protocols', ' '.join(t['protocols']))
     block = set_directive(block, 'ssl_ciphers', t['ciphers'] or CIPHERS_DEFAULT)
     block = set_directive(block, 'ssl_prefer_server_ciphers', 'on' if t['prefer'] else 'off')
@@ -641,6 +729,10 @@ def cert_now():
            'ciphers': directive_now(block, 'ssl_ciphers'),
            'dhparam': directive_now(block, 'ssl_dhparam'),
            'hsts': directive_now(block, 'add_header Strict-Transport-Security')}
+    # A second pair (dual-cert, 1.10.261): its file named, its key never read.
+    more = directive_all(block, 'ssl_certificate')[1:]
+    if more:
+        out['path2'] = more[0]
     if out['path']:
         try:
             with open(out['path']) as f:

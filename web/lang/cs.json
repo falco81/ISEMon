@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.258",
+  "version": "1.10.261",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -4212,6 +4212,14 @@
    "source": "Both of these controllers wrote this lockout down. A domain records a lockout on the controller that saw the last wrong password AND on the one holding the PDC emulator role, because lockouts are its business — so one lockout is two events, or more, and this is one row for the one thing that happened.",
    "text": "Toto uzamčení zapsaly oba řadiče domény. Doména zaznamená uzamčení účtu na řadiči, který viděl poslední špatné heslo, A na tom, který drží roli PDC emulátoru, protože uzamčení jsou jeho věc – jedno uzamčení jsou tedy dvě události nebo více a tohle je jeden řádek za jednu věc, která se stala."
   },
+  "s.both-rsa-2048-ecdsa-p-256.16d6329d": {
+   "source": "Both: RSA 2048 + ECDSA P-256 (advised)",
+   "text": "Oba: RSA 2048 + ECDSA P-256 (doporučeno)"
+  },
+  "s.both-rsa-4096-ecdsa-p-384.5efa5c1c": {
+   "source": "Both: RSA 4096 + ECDSA P-384",
+   "text": "Oba: RSA 4096 + ECDSA P-384"
+  },
   "s.both-sides-also-what-two-terms.120fd273": {
    "source": "both sides (also what two terms side by side mean)",
    "text": "obě strany (také význam dvou výrazů vedle sebe)"
@@ -6532,9 +6540,17 @@
    "source": "EC P-256",
    "text": "EC P-256"
   },
+  "s.ec-p-384.1400ffb0": {
+   "source": "EC P-384",
+   "text": "EC P-384"
+  },
   "s.ec256.429bc2b3": {
    "source": "ec256",
    "text": "ec256"
+  },
+  "s.ec384.b08afb67": {
+   "source": "ec384",
+   "text": "ec384"
   },
   "s.ecdhe-ecdsa-aes128-gcm-sha256-ecdhe.9d9f6e06": {
    "source": "ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256 ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-CHACHA20-POLY1305 ECDHE-RSA-CHACHA20-POLY1305",
@@ -6568,13 +6584,21 @@
    "source": "ECDHE with AES-GCM and ChaCha20 - what install.sh writes. Every browser of the last ten years.",
    "text": "ECDHE s AES-GCM a ChaCha20 – to, co zapisuje install.sh. Každý prohlížeč posledních deseti let."
   },
-  "s.ecdsa-is-smaller-and-quicker-rsa.a8452492": {
-   "source": "ECDSA is smaller and quicker; RSA for old clients.",
-   "text": "ECDSA je menší a rychlejší; RSA pro staré klienty."
+  "s.ecdsa-p-256-es256.f77ade81": {
+   "source": "ECDSA P-256 (ES256)",
+   "text": "ECDSA P-256 (ES256)"
   },
   "s.ecdsa-p-256.1545b7b3": {
    "source": "ECDSA P-256",
    "text": "ECDSA P-256"
+  },
+  "s.ecdsa-p-384-es384.8f13e3f5": {
+   "source": "ECDSA P-384 (ES384)",
+   "text": "ECDSA P-384 (ES384)"
+  },
+  "s.ecdsa-p-384.792268a1": {
+   "source": "ECDSA P-384",
+   "text": "ECDSA P-384"
   },
   "s.ecuador.09f199d2": {
    "source": "Ecuador",
@@ -12671,6 +12695,10 @@
   "s.let-s-encrypt-staging-to-try.104330af": {
    "source": "Let’s Encrypt - staging (to try it)",
    "text": "Let’s Encrypt – staging (na vyzkoušení)"
+  },
+  "s.let-s-encrypt-takes-rsa-keys.dd88a949": {
+   "source": "Let’s Encrypt takes RSA keys of 2048, 3072 or 4096 bits and ECDSA keys on P-256 or P-384. Both - what Let’s Encrypt advises - orders two certificates for the name: RSA served by default, the much smaller ECDSA one to the clients that say they take it.",
+   "text": "Let’s Encrypt přijímá klíče RSA o 2048, 3072 nebo 4096 bitech a klíče ECDSA na křivkách P-256 nebo P-384. Oba - jak Let’s Encrypt doporučuje - objedná pro jméno dva certifikáty: RSA se podává standardně, mnohem menší ECDSA klientům, kteří řeknou, že ho umí."
   },
   "s.let-s-encrypt.fb229ac4": {
    "source": "Let’s Encrypt",
@@ -19348,6 +19376,10 @@
    "source": "Renewed when fewer days are left than",
    "text": "Obnovit, když zbývá méně dní než"
   },
+  "s.renews.78906379": {
+   "source": "Renews",
+   "text": "Obnoví se"
+  },
   "s.replace-separately-banned-addresses-with-the.d8d0de58": {
    "source": "Replace separately banned addresses with the subnet that holds them. A scanner renting a /24 and working through it is forty rules doing the work of one, and the fortieth address is banned an hour after the first.",
    "text": "Nahradit jednotlivě zablokované adresy podsítí, která je obsahuje. Skener, který si pronajme /24 a postupně ji projde, znamená čtyřicet pravidel tam, kde by stačilo jedno, a čtyřicátá adresa je zablokována hodinu po první."
@@ -19736,13 +19768,25 @@
    "source": "RPC",
    "text": "RPC"
   },
+  "s.rsa-2048-rs256.cde072cc": {
+   "source": "RSA 2048 (RS256)",
+   "text": "RSA 2048 (RS256)"
+  },
   "s.rsa-2048.ed1588c1": {
    "source": "RSA 2048",
    "text": "RSA 2048"
   },
+  "s.rsa-3072-rs256.70eefab9": {
+   "source": "RSA 3072 (RS256)",
+   "text": "RSA 3072 (RS256)"
+  },
   "s.rsa-3072.e4512e73": {
    "source": "RSA 3072",
    "text": "RSA 3072"
+  },
+  "s.rsa-4096-rs256.742c55dd": {
+   "source": "RSA 4096 (RS256)",
+   "text": "RSA 4096 (RS256)"
   },
   "s.rsa-4096-where-something-old-needs.4fc0d88e": {
    "source": "RSA 4096 (where something old needs RSA)",
@@ -24616,6 +24660,10 @@
    "source": "The key kept now is replaced",
    "text": "Klíč uložený teď se nahradí"
   },
+  "s.the-key-of-the-acme-account.dddbe3bb": {
+   "source": "The key of the ACME account",
+   "text": "Klíč účtu ACME"
+  },
   "s.the-key-of-the-certificate.7484eea3": {
    "source": "The key of the certificate",
    "text": "Klíč certifikátu"
@@ -24623,6 +24671,10 @@
   "s.the-key-s-secret-base64-kept.fb95afbb": {
    "source": "The key’s secret (base64). Kept sealed; written to a file only isemon reads for the moment nsupdate runs.",
    "text": "Tajemství klíče (base64). Uložené zapečetěné; do souboru, který čte jen isemon, se zapíše jen na chvíli, kdy běží nsupdate."
+  },
+  "s.the-key-the-account-with-the.ea0725fb": {
+   "source": "The key the account with the CA signs with - never one of a certificate. RSA 2048, 3072, 4096 or ECDSA P-256, P-384. A change makes a new account at the next order.",
+   "text": "Klíč, kterým se podepisuje účet u CA - nikdy ne klíč certifikátu. RSA 2048, 3072, 4096 nebo ECDSA P-256, P-384. Změna při příští objednávce založí nový účet."
   },
   "s.the-key-the-server-proves-itself.4a4fd098": {
    "source": "The key the server proves itself with. Trusted once, after comparing its fingerprint with the server’s own (",
@@ -30092,6 +30144,10 @@
    "source": "When, as",
    "text": "Kdy, jako"
   },
+  "s.when-fewer-than-renewed-when-fewer.bd05a6ae": {
+   "source": "When fewer than “Renewed when fewer days are left than” days are left - a third of its life at most. The CA offers no renewal window (ARI).",
+   "text": "Až zbude méně dní, než říká „Obnovit, když zbývá méně dní než“ - nejvýš třetina jeho platnosti. CA nenabízí okno pro obnovení (ARI)."
+  },
   "s.when-how-many-and-the-password.ad59c6ce": {
    "source": "When, how many, and the password",
    "text": "Kdy, kolik a heslo"
@@ -31853,6 +31909,10 @@
   "p.a-refused.ca1186e0": {
    "source": "A refused {0} · {1}",
    "text": "Odmítnuto: {0} · {1}"
+  },
+  "p.a-second-certificate-beside-it.6cbe798d": {
+   "source": "+ {0} (a second certificate beside it)",
+   "text": "+ {0} (druhý certifikát vedle něj)"
   },
   "p.a-source-only-watched-counts-and.2bb79248": {
    "source": "{0}A source only watched counts and makes its bans as if it banned, and carries none of them: they are what it would be keeping out. Switched to on, every one of them still running is carried at once. \"Bans\" are the bans each source stands behind, kept whether it is on or off; \"Only this one\" those it alone stands behind, which letting its bans go lets back in; \"Carried\" those on the firewalls, in the published list and in the access list now. The groups on the Banned page are something else: how each ban was made - by the counting, through a public list, by hand.{1}",
@@ -34546,6 +34606,10 @@
    "source": "the busiest {0} source(s) below",
    "text": "{0} nejaktivnějších zdrojů níže"
   },
+  "p.the-ca-says-when-it-would.cc244969": {
+   "source": "The CA says when it would like it renewed (ARI): between {0} and {1}. isemon picked a moment inside that window at random, and keeps it.",
+   "text": "CA říká, kdy by ho chtěla obnovit (ARI): mezi {0} a {1}. isemon v tom okně náhodně vybral okamžik a drží se ho."
+  },
   "p.the-cards-the-chart-and-the.88f63c09": {
    "source": "The cards, the chart and the lists of the busiest are worked out behind the daemon and kept, so the page opens at once: this one took {0} and is worked out again every {1} at the least. The lists of lines on the other pages of this tab are always as they are this moment. Settings → The firewall log switches this off.",
    "text": "Karty, graf a seznamy nejaktivnějších se počítají na pozadí démona a uchovávají, takže se stránka otevře okamžitě: tento výpočet trval {0} a znovu se počítá nejméně každých {1}. Seznamy řádků na ostatních stránkách této záložky jsou vždy takové, jaké jsou v tuto chvíli. Vypíná se v Nastavení → Log firewallu."
@@ -36986,6 +37050,14 @@
    "source": "A certificate for {0}",
    "text": "Certifikát pro {0}"
   },
+  "p.an-ecdsa-certificate-beside-the-rsa.0df849db": {
+   "source": "An ECDSA certificate beside the RSA one ({0}, good until {1}): nginx answers with it the clients that take ECDSA, everybody else with the RSA one.{2}",
+   "text": "Certifikát ECDSA vedle RSA ({0}, platný do {1}): nginx jím odpovídá klientům, kteří ECDSA umí, všem ostatním tím RSA.{2}"
+  },
+  "p.and-beside-it-good-until.2a8d6a68": {
+   "source": "and {0} beside it, good until {1}",
+   "text": "a vedle něj {0}, platný do {1}"
+  },
   "p.and-that-group-may-change-things.aedef0b4": {
    "source": "— and that group may change things ({0}): give it one that may only read and use the API",
    "text": "— a ta skupina smí měnit věci ({0}): dejte mu skupinu, která smí jen číst a používat API"
@@ -37013,6 +37085,10 @@
   "p.did-not-restart-within-a-minute.ce82bd55": {
    "source": "{0} did not restart within a minute - see journalctl -u {1}",
    "text": "{0} se do minuty nerestartoval – viz journalctl -u {1}"
+  },
+  "p.dual-rsa.9f76d6f8": {
+   "source": "dual: RSA + {0}",
+   "text": "dual: RSA + {0}"
   },
   "p.due-looked-at-within-the-hour.002726f7": {
    "source": "Due: {0} - looked at within the hour.",
@@ -37302,6 +37378,10 @@
    "source": "Account (read-only)",
    "text": "Účet (jen pro čtení)"
   },
+  "s.also-an-ecdsa-certificate-dual-cert.a1b619c8": {
+   "source": "Also an ECDSA certificate (dual-cert)",
+   "text": "Také certifikát ECDSA (dual-cert)"
+  },
   "s.an-account-on-the-router-in.f43a11b3": {
    "source": "An account on the router in a group that may only read and use the API - \"What to type on the router\" makes one. Never the administrator’s.",
    "text": "Účet na routeru ve skupině, která smí jen číst a používat API – „Co zadat na routeru“ ho vytvoří. Nikdy ne účet administrátora."
@@ -37362,6 +37442,10 @@
    "source": "Being in this group means being able to change everything: ban, unban, the router, settings, accounts. Press Find the groups to pick it from the directory rather than typing it. More than one, comma separated.",
    "text": "Členství v této skupině znamená možnost měnit všechno: blokovat, odblokovat, router, nastavení, účty. Stiskněte Najít skupiny a vyberte ji z adresáře, místo abyste ji psali ručně. Více skupin oddělte čárkou."
   },
+  "s.beside-it.12d8e03f": {
+   "source": "Beside it",
+   "text": "Vedle něj"
+  },
   "s.both-of-them-folded-together-a.86247148": {
    "source": "Both of them, folded together: a site with two domains has an account",
    "text": "Oba sloučené dohromady: místo se dvěma doménami má účet"
@@ -37405,6 +37489,30 @@
   "s.do-what-test-cert-paste-download.878ccf03": {
    "source": "do what? test, cert, paste, download, forget or commands",
    "text": "co udělat? test, cert, paste, download, forget nebo commands"
+  },
+  "s.dual-cert-as-let-s-encrypt.66d3c8c6": {
+   "source": "Dual-cert, as Let’s Encrypt advises: nginx answers the clients that take ECDSA with this much smaller certificate, everybody else with the RSA one. Renewed with it.",
+   "text": "Dual-cert, jak radí Let’s Encrypt: nginx odpovídá klientům, kteří ECDSA umí, tímto mnohem menším certifikátem, všem ostatním tím RSA. Obnovuje se spolu s ním."
+  },
+  "s.ecdsa-is-smaller-and-quicker-rsa.9392292c": {
+   "source": "ECDSA is smaller and quicker; RSA for old clients. Never the key of the account at the CA.",
+   "text": "ECDSA je menší a rychlejší; RSA pro staré klienty. Nikdy to není klíč účtu u CA."
+  },
+  "s.ecdsa-is-smaller-and-quicker-rsa.a8452492": {
+   "source": "ECDSA is smaller and quicker; RSA for old clients.",
+   "text": "ECDSA je menší a rychlejší; RSA pro staré klienty."
+  },
+  "s.ecdsa-p-256-beside-it.a3f4b81a": {
+   "source": "ECDSA P-256 beside it",
+   "text": "ECDSA P-256 vedle něj"
+  },
+  "s.ecdsa-p-384-beside-it.3ba42739": {
+   "source": "ECDSA P-384 beside it",
+   "text": "ECDSA P-384 vedle něj"
+  },
+  "s.ecdsa.2ff063a2": {
+   "source": "ECDSA",
+   "text": "ECDSA"
   },
   "s.editing-the-columns-has-been-switched.0a609999": {
    "source": "Editing the columns has been switched off - the service restarted or this is a new sign-in - so that change was not kept. Switch it on again under your name.",
@@ -37562,6 +37670,10 @@
    "source": "Let its bans go…",
    "text": "Uvolnit jeho bany…"
   },
+  "s.let-s-encrypt-advises-an-rsa.ce49c0aa": {
+   "source": "Let’s Encrypt advises an RSA certificate for everybody and a much smaller ECDSA one beside it for the clients that take it - nginx picks it by itself.",
+   "text": "Let’s Encrypt radí certifikát RSA pro všechny a vedle něj mnohem menší ECDSA pro klienty, kteří ho umí - nginx si vybere sám."
+  },
   "s.let-this-account-change-things-ban.760f2f0d": {
    "source": "Let this account change things: ban, unban, settings, the router, accounts.",
    "text": "Povolit tomuto účtu měnit věci: blokace, odblokování, nastavení, router, účty."
@@ -37589,6 +37701,10 @@
   "s.nginx-keeps-the-files-it-has.ed950c40": {
    "source": "nginx keeps the files it has now; isemon no longer changes them.",
    "text": "nginx si ponechá soubory, které má teď; isemon je už nebude měnit."
+  },
+  "s.no-the-one-certificate.1975debf": {
+   "source": "No - the one certificate",
+   "text": "Ne - jen jeden certifikát"
   },
   "s.not-even-a-vpn-refusal-the.cc834eb4": {
    "source": "— not even a VPN refusal: the banning weighs ISE's VPN and nothing else. Switched off, not one file is opened and nothing anywhere behaves differently.",
@@ -37693,6 +37809,10 @@
   "s.rosapi-said-small-warn.6cc4b160": {
    "source": "rosapi-said small warn",
    "text": "rosapi-said small warn"
+  },
+  "s.rsa.ad1999e6": {
+   "source": "rsa*",
+   "text": "rsa*"
   },
   "s.set-leave-empty-to-keep-it.315d92e6": {
    "source": "set — leave empty to keep it",

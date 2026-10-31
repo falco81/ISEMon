@@ -371,6 +371,41 @@ working.
 
 ## Version
 
+1.10.261
+
+- **Automatic certificates take every key Let's Encrypt accepts**, as upsmon
+  4.1.6 has them: *The key of the certificate* is RSA 2048, 3072 or 4096, ECDSA
+  P-256 or P-384 - or, the new default for anybody who never saved it, **Both**
+  ("Both: RSA 2048 + ECDSA P-256", or "Both: RSA 4096 + ECDSA P-384"); ECDSA
+  P-256 saved before stays as it was. *The key of the ACME account* (new): ECDSA
+  P-256 (ES256), P-384 (ES384) or RSA 2048, 3072, 4096 (RS256) - never a
+  certificate's key; a change makes a new account at the next order. The keys
+  show on the card (*Keys*), on the certificate (*Key*) and beside the account;
+  the order's steps say which keys were made.
+- **Dual-cert**: Both orders a second, much smaller ECDSA certificate for the
+  same name right after the RSA one (the name is already proven); root's helper
+  puts both pairs into nginx (`isemon-ecdsa.pem` / `.key` beside
+  `isemon.pem` / `.key`), which answers the clients that take ECDSA with it
+  and everybody else with the RSA one. Renewed together; a second order that
+  fails keeps the RSA one and is asked again by itself after its retry;
+  one key chosen again, the ECDSA one goes at the next minute's look. An upload, a
+  self-signed one, *Let go* and *Back to the one before* leave none behind.
+  The card and Certificates and TLS show both.
+- **ARI (RFC 9773)**: where the CA's directory offers `renewalInfo`, the
+  certificate is renewed at a moment picked at random inside the window the
+  CA suggests (kept, picked anew when the window moves), and the new order
+  says which certificate it `replaces`; without it, or when it fails, by the
+  days as before (30 days left for a 90-day one, a third of the life of a
+  shorter one). The card says when it renews.
+- **No fixed clock time**: the hourly look comes at a minute of this machine's
+  own, and a retry after a failure 6 hours +-10 % later.
+- *What the last order did*: the time stays one narrow column and the words
+  sit left beside it (upsmon 4.1.7).
+- **A User-Agent on every request to the CA**:
+  `isemon/<version> (ACME client; +https://github.com/falco81/ISEMon)`. The
+  chain is the one the CA sends; one it offers besides (`Link:
+  rel="alternate"`) is left alone.
+
 1.10.260
 
 - **Backups to a Windows or Samba share did not start**: smbclient said "Could

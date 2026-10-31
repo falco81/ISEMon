@@ -21,16 +21,83 @@ there is one certificate - the dashboard's - and no VIP address, no other node.
 | `acme_email` | where the CA writes when a certificate runs out unrenewed |
 | `acme_name` | the DNS name of the certificate; empty: the name of the certificate it has now, else this machine's full host name |
 | `acme_days` | renewed when fewer days are left (7 - 60) |
-| `acme_key` | ECDSA P-256 or RSA 2048 |
+| `acme_key` | the certificate's key: *Both: RSA 2048 + ECDSA P-256* (`dual`, advised, the default), *Both: RSA 4096 + ECDSA P-384* (`dual-strong`), or one key - ECDSA P-256 (`ec`, the default before 1.10.261), ECDSA P-384, RSA 2048, 3072, 4096 |
+| `acme_account_key` | the key of the account at the CA: ECDSA P-256 (ES256, the default), P-384 (ES384), RSA 2048, 3072, 4096 (RS256) |
 | `acme_challenge` | HTTP-01 or DNS-01 |
 | `acme_resolvers` | DNS servers for ACME (below) |
 
-The account key (ECDSA P-256) is made once and kept sealed in the database;
-every request is signed with it (ES256, with openssl - nothing to install). An
+The account key (`acme_account_key`, ECDSA P-256 unless said) is made once and
+kept sealed in the database; every request is signed with it (ES256, ES384 or
+RS256, with openssl - nothing to install). Another kind chosen makes a new
+account, with a key of that kind, at the next order; an account kept before
+1.10.261 is ECDSA P-256 and stays as it is. An
 account the CA no longer knows (deleted, deactivated, a CA of the same address
 started anew) is made anew by itself, with a new key, and the request asked
 again. Every order is an event - who asked it (or `isemon (renewal)`), what
 came, or why nothing did.
+
+The certificate's key is a new one at every order, of the kind `acme_key` says,
+and **never the account's**: a key that came out as the account's would be
+refused before the request is made (Let's Encrypt asks for the two to be kept
+apart).
+
+## As Let's Encrypt's integration guide has it (1.10.261)
+
+- **Dual-cert.** Let's Encrypt advises an RSA certificate for everybody and a
+  much smaller ECDSA one for the clients that take it. *Both* (`acme_key`
+  `dual` or `dual-strong`) orders a second certificate for the same name right
+  after the RSA one - the name's authorization is valid already, so the CA only
+  signs. Both are kept in the
+  database (the second as `cert2`, `chain2` and `key2`, sealed like the
+  first), and root's helper puts both pairs into nginx, the RSA one first:
+
+  ```
+      ssl_certificate           /etc/nginx/certs/isemon.pem;
+      ssl_certificate_key       /etc/nginx/certs/isemon.key;
+      ssl_certificate           /etc/nginx/certs/isemon-ecdsa.pem;
+      ssl_certificate_key       /etc/nginx/certs/isemon-ecdsa.key;
+  ```
+
+  nginx answers a client whose ciphers allow ECDSA with the second, everybody
+  else with the first. The cipher lists isemon sets (its own, *intermediate*)
+  have the ECDHE-ECDSA suites as well as the ECDHE-RSA ones; TLS 1.3 needs
+  none. A list of your own without an ECDHE-ECDSA suite is said when it is put
+  in (TLS 1.2 clients then get the RSA one alone). The helper refuses an RSA
+  certificate as the second, a key that is not the certificate's own, and a
+  second pair without the first.
+
+  The two are renewed together. When the second order fails, the RSA one is
+  put in all the same (the ECDSA one it had stays while it is good), the card
+  and an event say so, and the ECDSA one is ordered by itself at the first look
+  after its retry (6 h). One key chosen again - or a certificate put in by hand:
+  upload, self-signed, *Let go* - the second pair goes: at the next minute's
+  look for the setting, at once for the others (and one left tied to another
+  certificate is never handed to root); *Back to the one before* puts the one
+  from before back whole. *Download* on Certificates and TLS exports the RSA
+  one.
+- **Renewal: ARI (RFC 9773).** Where the CA's directory offers `renewalInfo`
+  (Let's Encrypt does), isemon asks it for the certificate's window - by its
+  CertID, the Authority Key Identifier and the serial, without signing in -
+  and renews at a moment picked at random inside it. The moment is kept, so it
+  does not move at every look; a window the CA moves (a CA that has to revoke
+  early) picks a new one. The window is asked again as its `Retry-After` says
+  (6 h when it says nothing, an hour at least, a day at most), and the new
+  order names the certificate it `replaces`; a CA that will not take that is
+  asked again without. Without ARI, or once it has not answered for two days,
+  the days decide as before: `acme_days` left (30 for Let's Encrypt's 90-day
+  certificates), a third of the life of a shorter one. The card shows when it
+  renews (*Renews*), and why.
+- **No fixed clock time.** The hourly look comes at a second of the hour of
+  this machine's own, picked at random once and kept, so many servers do not
+  ask the CA at the same moment; a retry after a failure comes 6 hours +-10 %
+  later. A change of the settings is looked at within a minute, as before.
+- **The chain the CA sends** is the one served, as it comes: no intermediate is
+  pinned or written into isemon. Another chain the CA offers (`Link:
+  rel="alternate"`) is left alone - the default is kept, and *What the last
+  order did* says it was offered.
+- **The User-Agent** of every request to the CA - the directory, the nonces,
+  every signed request, renewalInfo, the certificate - is
+  `isemon/<version> (ACME client; +https://github.com/falco81/ISEMon)`.
 
 ## The page
 
@@ -38,8 +105,12 @@ The pane looks and works as otp's *Automatic certificates* (1.0.187) does, with
 one card where otp has one a node and one for the VIP address.
 
 - **The card of the dashboard**: the days left, the name, who issued it, until
-  when it is good, when it was last ordered; *What the last order did*, step by
-  step with the seconds; the last failure in words.
+  when it is good, its key, when it renews (by the CA's window or by the days),
+  when it was last ordered; *Keys* - `RSA 2048 bit + EC 256 bit` with both;
+  *What the last order did*, step by step with the seconds (which keys were
+  made among them); the last failure in words. Beside the account, its key.
+  On Certificates and TLS the certificate's *Key*, and the second one's
+  beside it.
 - While it is ordered, the line above the card says **what is waited for now**
   - root putting port 80's location in, *Wait for DNS to carry it* with the
   seconds left, deSEC's name servers (which have the record so far, how long),

@@ -24,6 +24,8 @@ opens it ([the-database.md](the-database.md)). Root writes:
 |---|---|
 | `/etc/nginx/certs/isemon.pem` | the certificate and the chain (nginx sends it as it is) |
 | `/etc/nginx/certs/isemon.key` | its key, 0600 |
+| `/etc/nginx/certs/isemon-ecdsa.pem` | dual-cert only: the ECDSA certificate beside the RSA one, and its chain ([automatic-certificates.md](automatic-certificates.md)) |
+| `/etc/nginx/certs/isemon-ecdsa.key` | its key, 0600 - both taken away when there is no second certificate |
 | `/etc/nginx/certs/isemon-ca.pem` | the root and the chain, for `ssl_trusted_certificate` |
 | `/etc/nginx/certs/isemon-dh.pem` | the DH parameters, when chosen |
 | `/etc/nginx/certs/isemon.pem.before-isemon` | the pair that was there, kept once, the first time |
@@ -32,6 +34,11 @@ The lines `ssl_certificate`, `ssl_certificate_key`, `ssl_trusted_certificate`,
 `ssl_protocols`, `ssl_ciphers`, `ssl_prefer_server_ciphers`, `ssl_dhparam`
 and `add_header Strict-Transport-Security` of the HTTPS server are set where
 they are (or added after `server_name`); nothing else in the vhost changes.
+With a second certificate (dual-cert, by ACME) there are two `ssl_certificate`
+and two `ssl_certificate_key` lines, the RSA pair first, each certificate
+followed by its key; without, exactly one pair. The card's *Key* says both
+(`RSA 2048 bit + EC 256 bit (a second certificate beside it)`); an upload or a
+self-signed certificate takes the second one away.
 `nginx -t` is asked before the reload, and every file goes back as it was
 when it says no.
 
