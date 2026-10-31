@@ -227,7 +227,7 @@ try:
        ['glibc', 'kernel-core', 'linux-firmware', 'linux-image-6.1.0-26-amd64', 'systemd'])
     a = ask({'do': 'run', 'kind': 'check', 'id': 'c1', 'at': time.time()})
     ok('a look asked: answered at once, under its id', (a['ok'], a['id'], a['data']),
-       (True, 'c1', {'started': 'check', 'pm': 'fake'}))
+       (True, 'c1', {'started': 'check', 'pm': 'fake', 'security': False}))
     ok('...the asking file taken away', (state / 'web' / 'osup.ask').exists(), False)
     ok('...the work done by a process of its own, into osup.json',
        wait_for(lambda: said().get('id') == 'c1' and said().get('state') == 'done'))

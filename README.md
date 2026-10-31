@@ -371,6 +371,30 @@ working.
 
 ## Version
 
+1.10.257
+
+- **Updates and restarts on a schedule**, as otp has them, for one server.
+  *System updates → On a schedule* (off until switched on): a look for
+  updates every day at a set time - for the cards, nothing put in - and the
+  updates put in by themselves in a window: only the security ones
+  (`dnf --security`, `unattended-upgrade` on apt) or all of them, every day,
+  week (on its day) or month (on the 1st), at a time; afterwards restarted by
+  itself where an update needs it, or the restart offered on the page.
+  *Restart and power off → On a schedule*: this server restarted in a
+  window, weekly or monthly - only when an update left it waiting for a
+  restart, or always - through the same restart as by hand. It waits while
+  an update, or the look for updates after it, is still going on, and goes
+  later in its window rather than giving the day up.
+- Each starts once in its window, never tried over and over: one that
+  cannot start (an upgrade of isemon, a restart, a network on trial or being
+  changed, an update already going on) is said in Events and waits for the
+  next window. Every scheduled run is an event: started, done, skipped and why.
+- An update by hand can be the security updates only too: *Which* on the
+  page, `isemon --os-update --security`, and in the console.
+- A setting that hangs on one that is greyed out is greyed out too: *On the
+  day* of a weekly update, restart or backup cannot be changed while the
+  schedule itself is off.
+
 1.10.256
 
 - *Download the certificate*: the popup fits without a scroll bar - the

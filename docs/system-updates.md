@@ -20,10 +20,17 @@ is asked for, root is asked nothing and nothing is kept.
   is waiting already (`dnf needs-restarting -r`, or Debian's
   `/var/run/reboot-required`); then *This server needs a restart* is offered
   at once, with *Restart this server*.
-- **Update this server** - *After the update*: *Ask me when a restart is
+- **Update this server** - *Which*: *Every update* or *Only the security
+  updates* (1.10.257); *After the update*: *Ask me when a restart is
   needed* or *Restart by itself when needed*. *Update it now* updates every
   package (`dnf -y --refresh upgrade`, or `apt-get -y upgrade` keeping the
-  configuration files as they are).
+  configuration files as they are) - or, the security updates only,
+  `dnf -y --refresh upgrade --security`, or `apt-get update` and
+  `unattended-upgrade -v` on apt (it takes the security sources only, as
+  Debian and Ubuntu set it up; without the `unattended-upgrades` package it
+  is refused, saying so).
+- **On a schedule** - the settings of the updates and the look on a schedule,
+  below.
 - **The update** - who started it and when, a bar, the step it is in (waits to
   begin, updating, restarting, done, failed), what happened. *Hide this* once
   it is over.
@@ -33,6 +40,39 @@ is asked for, root is asked nothing and nothing is kept.
 
 Anybody signed in may look; only a full administrator may look for updates,
 update, restart or clear the window.
+
+## On a schedule
+
+The card *On a schedule* (1.10.257, after otp 1.0.164-1.0.168), each part
+off until switched on:
+
+| Setting | What it does |
+|---|---|
+| *Look for updates every day* (`osup_check`) | a look at what dnf (or apt) has waiting, every day at *At* (`osup_check_at`, 06:15) - for the card; nothing is put in |
+| *Updates on a schedule* (`osup_auto`) | the updates put in by themselves in the window below, as *Update it now* does |
+| *Which* (`osup_auto_what`) | only the security updates (the default), or every update |
+| *How often* (`osup_auto_every`) | every day, every week on *On the day* (`osup_auto_day`, Monday - Sunday), or on the first of every month |
+| *At* (`osup_auto_at`) | when the window opens, `HH:MM` (04:45) - a quiet hour, away from the backups |
+| *After the update* (`osup_auto_reboot`) | restarted by itself where an update needs it (the default), or a restart offered on the page |
+
+A window is from its time to the end of its day. What is due starts **once**
+in it - the day it is for is kept (meta `osup:check:day`, `osup:auto:day`)
+before it is tried - and is never tried over and over: one that cannot start
+(an upgrade of isemon, a restart or a power-off, a network on trial or being
+changed, an update or a look already going on) is said in Events, *the update
+of the system on a schedule did not start: ...*, and waits for the next
+window. It waits the same ten seconds before it begins as one by hand, and
+can be stopped meanwhile. Every run is an event: the look started and what
+it found, the update started (by `isemon (on a schedule)`, *security updates
+only* where so), done or failed, and the restart.
+
+A restart on a schedule of its own is on *Restart and power off*
+([network-and-power.md](network-and-power.md)); it waits for an update going
+on and the look after it.
+
+While a switch is off the settings under it are greyed out on the page, and
+so is one that hangs on a greyed-out one: *On the day* while the schedule is
+off, or not weekly.
 
 ## When it begins, and stopping it
 
@@ -73,14 +113,15 @@ The daemon runs as `isemon` and may not install anything. It asks root the
 same way as for the network and the clock:
 
 1. It lays `/var/lib/isemon/web/osup.ask` down - `{"do": "run", "kind":
-   "check" | "upgrade", "id": ..., "at": ...}`.
+   "check" | "upgrade", "id": ..., "at": ...}`, and `"security": true` for
+   the security updates only (taken for an upgrade only).
 2. `isemon-web.path` (which watches `osup.ask` from 1.10.239 on) starts
    `isemon-web.service`, and `/usr/local/lib/isemon/isemon_web.py` checks the
    ask as root: only `run` with `check` or `upgrade`, an id, and made within
    the last five minutes - an ask left behind is never done later by
    surprise. It answers in `osup.ans` at once.
 3. The work itself runs outside root's own service, as a unit of its own
-   (`systemd-run ... isemon_web.py --os-job ID check|upgrade`), so a long
+   (`systemd-run ... isemon_web.py --os-job ID check|upgrade [security]`), so a long
    update holds no other ask up. It holds `/run/isemon-osup.lock` (opened
    without following a link) while it runs: one look or update at a time.
 4. The work writes how far it is, its phase and its last lines into
@@ -107,6 +148,7 @@ line may ask:
     isemon --os-updates-check            # look now, followed until it is done
     isemon --os-update                   # asks first; --yes does not
     isemon --os-update --reboot-after auto --yes
+    isemon --os-update --security        # only the security updates
     isemon --os-update-stop              # while it waits to begin
 
 `--os-update` follows the update with a bar and the package manager's lines

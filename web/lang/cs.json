@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.255",
+  "version": "1.10.257",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -487,6 +487,10 @@
   "s.a-database-server-is-installed-with.c3a82040": {
    "source": "A database server is installed with settings for a machine of any size, which is to say for a small one: PostgreSQL keeps 128 MB of the database in memory, and MariaDB likewise, on a machine of 32 GB. This reads what the machine the server runs on has — its memory, its processors, its disk — works the settings out for it, shows them beside what is there now, and puts them in when you say so.",
    "text": "Databázový server se instaluje s nastavením pro stroj jakékoli velikosti, tedy pro malý: PostgreSQL drží v paměti 128 MB databáze a MariaDB podobně, i na stroji s 32 GB. Tady se zjistí, co má stroj, na kterém server běží – paměť, procesory, disk –, spočítá se pro něj nastavení, ukáže se vedle toho současného a na váš pokyn se použije."
+  },
+  "s.a-day-a-week-or-a.eadd3eed": {
+   "source": "A day, a week or a month.",
+   "text": "Den, týden, nebo měsíc."
   },
   "s.a-day.6744c157": {
    "source": "a day",
@@ -1200,6 +1204,10 @@
    "source": "a quarter of the memory: the server’s own cache, where the indexes are read",
    "text": "čtvrtina paměti: vlastní cache serveru, ze které se čtou indexy"
   },
+  "s.a-quiet-hour-away-from-the.16f58df6": {
+   "source": "- a quiet hour, away from the backups.",
+   "text": "– v klidné hodině, mimo zálohy."
+  },
   "s.a-range-of-addresses-either-way.1d45e319": {
    "source": "a range of addresses, either way",
    "text": "rozsah adres, v obou směrech"
@@ -1259,6 +1267,14 @@
   "s.a-restart-it-needs-is-offered.6e1cc90a": {
    "source": "A restart it needs is offered when it is done.",
    "text": "Restart, který potřebuje, se nabídne po dokončení."
+  },
+  "s.a-restart-offered-on-the-page.5f7e3355": {
+   "source": "a restart offered on the page",
+   "text": "restart nabídnout na stránce"
+  },
+  "s.a-restart-on-a-schedule.2103b1fc": {
+   "source": "A restart on a schedule",
+   "text": "Restart podle plánu"
   },
   "s.a-restart.6a4bd134": {
    "source": "A restart",
@@ -1543,6 +1559,10 @@
   "s.a-vpn-tunnel-went-down.7e44d914": {
    "source": "a VPN tunnel went down",
    "text": "VPN tunel se rozpadl"
+  },
+  "s.a-week-or-a-month.89f0d283": {
+   "source": "A week or a month.",
+   "text": "Týden, nebo měsíc."
   },
   "s.a-week.60b480e4": {
    "source": "a week",
@@ -7136,6 +7156,10 @@
    "source": "every country",
    "text": "všechny země"
   },
+  "s.every-day.a3fd743a": {
+   "source": "every day",
+   "text": "každý den"
+  },
   "s.every-device.c613d05f": {
    "source": "every device",
    "text": "všechna zařízení"
@@ -7648,6 +7672,14 @@
    "source": "every tunnel group",
    "text": "všechny tunnel groupy"
   },
+  "s.every-update.052074a8": {
+   "source": "Every update",
+   "text": "Všechny aktualizace"
+  },
+  "s.every-update.e99cfbfd": {
+   "source": "every update",
+   "text": "všechny aktualizace"
+  },
   "s.every-vlan.e68e99cf": {
    "source": "every VLAN",
    "text": "všechny VLAN"
@@ -7659,6 +7691,10 @@
   "s.every-vpn-sign-in-a-windows.3253e4ba": {
    "source": "Every VPN sign-in a Windows NPS server refused, newest first, with NPS’s own reason in words. Written down and shown, and NEVER judged: the banning weighs ISE’s VPN and nothing else.",
    "text": "Každé přihlášení do VPN, které server Windows NPS odmítl, nejnovější první, s důvodem vlastními slovy NPS. Zaznamenává se a zobrazuje, ale NIKDY se nevyhodnocuje: blokování bere v úvahu VPN z ISE a nic jiného."
+  },
+  "s.every-week-on-the-day-below.cbe34cda": {
+   "source": "every week, on the day below",
+   "text": "každý týden, v den níže"
   },
   "s.every.5873f666": {
    "source": "every",
@@ -13112,6 +13148,10 @@
    "source": "Look for a new version once a day",
    "text": "Hledat novou verzi jednou denně"
   },
+  "s.look-for-updates-every-day.0bdc384e": {
+   "source": "Look for updates every day",
+   "text": "Zjišťovat aktualizace každý den"
+  },
   "s.look-for-updates-of-the-system.4838b846": {
    "source": "look for updates of the system now (dnf or apt), followed until it is done",
    "text": "zjistit aktualizace systému hned (dnf nebo apt), sledováno až do konce"
@@ -16096,6 +16136,10 @@
    "source": "On a public list",
    "text": "Na veřejném seznamu"
   },
+  "s.on-a-schedule.0728997a": {
+   "source": "On a schedule",
+   "text": "Podle plánu"
+  },
   "s.on-a-split-table-the-rows.cfb063b4": {
    "source": "On a split table, the rows are kept until the end of the day in which they age out, and the whole day then goes in one step. Off, they go as they age, a row at a time, which writes every one of them a second time on its way out and leaves the day already empty by the time it is let go. On keeps each kind of row up to a day longer than its setting says.",
    "text": "U rozdělené tabulky se řádky uchovávají do konce dne, ve kterém zestárnou, a celý den pak zmizí jedním krokem. Když je to vypnuté, mizí řádky postupně, jak stárnou, po jednom – každý se tak při odchodu zapisuje podruhé a den je už prázdný, když se pouští. Zapnuté uchovává každý druh řádků až o den déle, než říká jeho nastavení."
@@ -16220,6 +16264,10 @@
    "source": "on the command line this one is",
    "text": "na příkazovém řádku je to"
   },
+  "s.on-the-day.7066a520": {
+   "source": "On the day",
+   "text": "V den"
+  },
   "s.on-the-enrolment-page.6a5f85ea": {
    "source": "on the enrolment page",
    "text": "na stránce pro zakládání tokenů"
@@ -16239,6 +16287,10 @@
   "s.on-the-firewall.5cd3f464": {
    "source": "On the firewall:",
    "text": "Na firewallu:"
+  },
+  "s.on-the-first-of-every-month.33db1f18": {
+   "source": "on the first of every month",
+   "text": "prvního každý měsíc"
   },
   "s.on-the-left-puts-back-everything.c351f453": {
    "source": "on the left, puts back everything this does",
@@ -16335,6 +16387,10 @@
   "s.on-the-vpn-now.1f4ed627": {
    "source": "on the VPN now",
    "text": "nyní na VPN"
+  },
+  "s.on-this-machine-s-clock-it.29e2b59e": {
+   "source": "on this machine’s clock. It waits while an update of the system, or the look for updates after it, is still going on.",
+   "text": "podle hodin tohoto stroje. Počká, dokud ještě běží aktualizace systému nebo zjišťování aktualizací po ní."
   },
   "s.on-this-machine-s-clock.f3a5240b": {
    "source": "on this machine’s clock.",
@@ -16896,6 +16952,22 @@
    "source": "Only the lists that are switched on are fetched. A fetch that fails is tried again at the next round rather than given up on, and how many times in a row it has failed is kept — a list that has been refusing for a week is worth knowing about, and one that failed once last night is not.",
    "text": "Stahují se jen zapnuté seznamy. Neúspěšné stažení se zkusí znovu v dalším kole, místo aby se vzdalo, a uchovává se, kolikrát po sobě selhalo — o seznamu, který odmítá už týden, stojí za to vědět, o tom, který selhal jednou včera v noci, ne."
   },
+  "s.only-the-security-updates-are-put.8a0f7acc": {
+   "source": "Only the security updates are put in.",
+   "text": "Nainstalují se jen bezpečnostní aktualizace."
+  },
+  "s.only-the-security-updates-dnf-security.427d43e9": {
+   "source": "Only the security updates (dnf --security, unattended-upgrade on apt), or every update.",
+   "text": "Jen bezpečnostní aktualizace (dnf --security, na apt unattended-upgrade), nebo všechny."
+  },
+  "s.only-the-security-updates.3e677d22": {
+   "source": "only the security updates",
+   "text": "jen bezpečnostní aktualizace"
+  },
+  "s.only-the-security-updates.4236084c": {
+   "source": "Only the security updates",
+   "text": "Jen bezpečnostní"
+  },
   "s.only-the-start-of-it-is.abf9ef75": {
    "source": "· only the start of it is shown",
    "text": "· zobrazen je jen začátek"
@@ -16999,6 +17071,14 @@
   "s.only-what-was-handed-one-authorisation.d83b77f2": {
    "source": "Only what was handed one authorisation profile, or matched one network policy.",
    "text": "Jen to, co dostalo jeden autorizační profil nebo odpovídalo jedné síťové politice."
+  },
+  "s.only-when-an-update-left-it.bba963be": {
+   "source": "Only when an update left it waiting for a restart; off: every time.",
+   "text": "Jen když po aktualizaci čeká na restart; vypnuto: pokaždé."
+  },
+  "s.only-when-it-needs-one.7a33c8c5": {
+   "source": "Only when it needs one",
+   "text": "Jen když ho potřebuje"
   },
   "s.only-when-it-was-locked-with.beca5421": {
    "source": "Only when it was locked with another password than the one set here now.",
@@ -19404,6 +19484,10 @@
    "source": "restarted by itself when needed",
    "text": "restartuje se sám, když je potřeba"
   },
+  "s.restarted-by-itself-where-an-update.b00e92a8": {
+   "source": "restarted by itself where an update needs it",
+   "text": "restartovat samo, kde to aktualizace potřebuje"
+  },
   "s.restarted-by-itself.2eccbe1e": {
    "source": "restarted by itself",
    "text": "restartuje se sám"
@@ -20139,6 +20223,14 @@
   "s.security-rating.3bfe23e6": {
    "source": "Security Rating",
    "text": "Security Rating"
+  },
+  "s.security-updates-only.9ed01728": {
+   "source": "security updates only",
+   "text": "jen bezpečnostní aktualizace"
+  },
+  "s.security.8eec7bc4": {
+   "source": "security",
+   "text": "bezpečnostní"
   },
   "s.see-the-whole-list.dc60a824": {
    "source": "See the whole list…",
@@ -23556,6 +23648,14 @@
    "source": "The database",
    "text": "Databáze"
   },
+  "s.the-day-a-weekly-restart-goes.50a4e458": {
+   "source": "The day a weekly restart goes.",
+   "text": "Den, kdy proběhne týdenní restart."
+  },
+  "s.the-day-a-weekly-update-goes.3584e14d": {
+   "source": "The day a weekly update goes.",
+   "text": "Den, kdy proběhne týdenní aktualizace."
+  },
   "s.the-day-of-a-weekly-backup.cc15399f": {
    "source": "The day of a weekly backup: 1 is Monday, 7 Sunday.",
    "text": "Den týdenní zálohy: 1 je pondělí, 7 neděle."
@@ -26488,6 +26588,10 @@
    "source": "the updates of the system waiting here - how many, of them security, the packages, whether a restart will be needed - and an update under way or the last one (Settings - System updates)",
    "text": "aktualizace systému, které tu čekají - kolik, z toho bezpečnostních, balíčky, zda bude potřeba restart - a probíhající nebo poslední aktualizace (Settings - System updates)"
   },
+  "s.the-updates-put-in-by-themselves.35a616bf": {
+   "source": "The updates put in by themselves in the window below, as by hand - started once in it, never tried over and over. Off until switched on.",
+   "text": "Aktualizace se nainstalují samy v okně níže, jako ručně – spustí se v něm jednou, nikdy se nezkoušejí znovu a znovu. Vypnuto, dokud se nezapne."
+  },
   "s.the-uploaded-package-is-deleted-send.9cc567fc": {
    "source": "The uploaded package is deleted; send it again to upgrade.",
    "text": "Nahraný balíček se smaže; pro upgrade ho pošlete znovu."
@@ -27484,9 +27588,17 @@
    "source": "This server is restarting",
    "text": "Tento server se restartuje"
   },
+  "s.this-server-looks-what-dnf-or.bf15a0f0": {
+   "source": "This server looks what dnf (or apt) has waiting, every day at the time below - for the cards here. Nothing is put in.",
+   "text": "Tento server každý den v čas níže zjistí, co má dnf (nebo apt) připraveno – pro karty zde. Nic se neinstaluje."
+  },
   "s.this-server-needs-a-restart.b1c47909": {
    "source": "This server needs a restart",
    "text": "Tento server potřebuje restart"
+  },
+  "s.this-server-restarted-in-the-window.03129ca3": {
+   "source": "This server restarted in the window below - started once in it. Off until switched on.",
+   "text": "Tento server se restartuje v okně níže – spustí se v něm jednou. Vypnuto, dokud se nezapne."
   },
   "s.this-server-restarts-now-for-a.a6798a3c": {
    "source": "This server restarts now: for a minute or two nothing answers. The page follows it and comes back by itself.",
@@ -28511,6 +28623,10 @@
   "s.updated-by.c793ca7d": {
    "source": "Updated by",
    "text": "Aktualizuje"
+  },
+  "s.updates-on-a-schedule.73585821": {
+   "source": "Updates on a schedule",
+   "text": "Aktualizace podle plánu"
   },
   "s.updates-waiting.2b433b4f": {
    "source": "Updates waiting",
@@ -29968,6 +30084,14 @@
    "source": "When a device last fetched this ACL from ISE. A device fetches one only when it does not already hold it, so a widely used list may not have been fetched for months.",
    "text": "Kdy si naposledy nějaké zařízení stáhlo tento ACL z ISE. Zařízení si ho stahuje jen tehdy, když ho ještě nemá, takže široce používaný seznam nemusel být stažen celé měsíce."
   },
+  "s.when-as-hh-mm-a-quiet.c774b043": {
+   "source": "When, as HH:MM - a quiet hour, away from the backups.",
+   "text": "Kdy, jako HH:MM – v klidné hodině, mimo zálohy."
+  },
+  "s.when-as-hh-mm-on-this.75cb23df": {
+   "source": "When, as HH:MM on this machine’s clock. It waits while an update of the system, or the look for updates after it, is still going on.",
+   "text": "Kdy, jako HH:MM podle hodin tohoto stroje. Počká, dokud ještě běží aktualizace systému nebo zjišťování aktualizací po ní."
+  },
   "s.when-as-hh-mm-on-this.b218eb14": {
    "source": "When, as HH:MM on this machine’s clock.",
    "text": "Kdy, jako HH:MM podle hodin tohoto stroje."
@@ -30015,6 +30139,10 @@
   "s.when-the-router-s-connections-were.c50de2d2": {
    "source": "When the router’s connections were last read.",
    "text": "Kdy byla spojení routeru naposledy načtena."
+  },
+  "s.when-the-update-needs-a-restart.95274d08": {
+   "source": "When the update needs a restart - restarted by itself, or offered on the page.",
+   "text": "Když aktualizace potřebuje restart – restartovat samo, nebo nabídnout na stránce."
   },
   "s.when-this-account-was-made-and.e8533b59": {
    "source": "When this account was made, and by whom.",
@@ -30880,6 +31008,10 @@
    "source": "Which zone to read a log line that carries none. ISE writes the offset that was in force on every record — +02:00 — so nothing here touches the ISE logs, and none of this can move a VPN attempt by a second. The token log and the eduroam log write Sep 25 10:21:25 and nothing else, and a time like that is not a moment until somebody says where it was written: read in the wrong zone it is not refused, it is simply hours out, which is the one kind of wrong that looks right. Empty reads it in this machine’s own zone, which is what a site whose clocks agree wants and what this has always done. Set it where they do not agree, as a name out of the zone database — Europe/Prague , which knows when summer time starts — or as a fixed offset: +02:00 . Records already written keep the times they were written with; erasing that log’s records reads them again.",
    "text": "V jakém časovém pásmu číst řádek logu, který žádné neuvádí. ISE u každého záznamu zapisuje posun, který právě platil — +02:00 — takže nic zde se logů ISE netýká a nic z toho nemůže posunout pokus o VPN ani o sekundu. Tokenový log a log eduroam zapisují Sep 25 10:21:25 a nic dalšího, a takový čas není okamžikem, dokud někdo neřekne, kde byl zapsán: přečtený ve špatném pásmu není odmítnut, je prostě o hodiny vedle, což je jediný druh chyby, který vypadá správně. Prázdné čte v pásmu tohoto počítače, což chce prostředí, jehož hodiny se shodují, a co se tu dělalo vždy. Nastavte to tam, kde se neshodují, jako název z databáze časových pásem — Europe/Prague , který ví, kdy začíná letní čas — nebo jako pevný posun: +02:00 . Už zapsané záznamy si ponechají časy, se kterými byly zapsány; vymazání záznamů daného logu je načte znovu."
   },
+  "s.which.343e8057": {
+   "source": "Which",
+   "text": "Které"
+  },
   "s.while-this-is-on-the-edge.a722d2bb": {
    "source": "While this is on, the edge of any column’s heading can be dragged to size it and the heading itself to move it, and the right button on a heading hides a column, brings a hidden one back or adds an empty one for room; each change is kept the moment you let go. It is for this sign-in only: signing out, the sign-in running out or the service restarting turn it off again. Off, the tables are drawn as you left them and nothing can move them.",
    "text": "Když je toto zapnuto, lze tažením okraje záhlaví sloupce změnit jeho šířku a tažením samotného záhlaví sloupec přesunout; pravé tlačítko na záhlaví sloupec skryje, vrátí skrytý nebo přidá prázdnou mezeru; každá změna se uloží v okamžiku, kdy pustíte tlačítko. Platí jen pro toto přihlášení: odhlášení, vypršení přihlášení nebo restart služby režim opět vypnou. Vypnuto: tabulky se vykreslují tak, jak jste je nechali, a nic s nimi nelze pohnout."
@@ -31283,6 +31415,10 @@
   "s.with-options.74c47bca": {
    "source": "with options",
    "text": "s volbami"
+  },
+  "s.with-os-update-only-the-security.67957cc8": {
+   "source": "with --os-update: only the security updates (dnf --security, unattended-upgrade on apt)",
+   "text": "s --os-update: jen bezpečnostní aktualizace (dnf --security, na apt unattended-upgrade)"
   },
   "s.with-os-update-when-the-update.2787a453": {
    "source": "with --os-update: when the update needs a restart, ask (the default: isemon --reboot afterwards) or restart by itself (auto)",
@@ -35400,6 +35536,10 @@
    "source": "A refusal at the VPN through a Windows NPS - a FortiGate, an ASA or any gateway that asks NPS about a password - is counted and banned exactly as a refusal at the VPN through ISE is: the same bar, the same window, the same ladder.<br><br>NPS says which requests are a VPN by itself: the gateway asks on a Virtual port and for a network, not for a shell at a switch’s prompt. Wi-Fi and the sockets in the building are never judged. The list of devices under Logs is ISE’s and does not apply here. An EAP conversation the machine walked away from decided nothing and is not counted.",
    "text": "Odmítnutí na VPN přes Windows NPS – FortiGate, ASA nebo jakoukoli bránu, která se NPS ptá na heslo – se počítá a blokuje přesně stejně jako odmítnutí na VPN přes ISE: stejný práh, stejné okno, stejné stupně blokace.<br><br>NPS samo určuje, které požadavky jsou VPN: brána se ptá na portu Virtual a o přístup do sítě, ne o shell na promptu switche. Wi-Fi a zásuvky v budově se nikdy neposuzují. Seznam zařízení v sekci Logy patří ISE a zde neplatí. EAP konverzace, kterou počítač opustil, nic nerozhodla a nepočítá se."
   },
+  "r.a-restart-it-needs-is-offered.86e3a5ac": {
+   "source": "<br><br>A restart it needs is offered when it is done.",
+   "text": "<br><br>Restart, který potřebuje, se nabídne po dokončení."
+  },
   "r.a-second-address-list-on-the.5bb00e14": {
    "source": "A second address list on the same firewall, holding whole countries rather than individual offenders.<br><br>Nothing of the banning touches it and it touches nothing of the banning: what the firewall does with it — accept, drop, mangle, route — is a rule you write there, pointed at this list’s name.<br><br>Switch it on above, choose the countries, and it is refilled by itself whenever the country database is refreshed.",
    "text": "Druhý address list na stejném firewallu, který obsahuje celé země místo jednotlivých útočníků.<br><br>Blokování se ho nijak nedotýká a on se nedotýká blokování: co s ním firewall udělá — accept, drop, mangle, route — určuje pravidlo, které tam napíšete a nasměrujete na název tohoto listu.<br><br>Zapněte ho výše, zvolte země a bude se sám znovu plnit při každé aktualizaci databáze zemí."
@@ -35647,14 +35787,6 @@
   "r.every-one-of-these-came-from.67a57de6": {
    "source": "Every one of these came from a device that is not in <b>watch_devices</b>, so none of them is counted towards a ban. It is here because it is happening, not because it is about to earn anything.",
    "text": "Každá z těchto položek pochází ze zařízení, které není v <b>watch_devices</b>, takže se žádná nepočítá do blokace. Je zde proto, že se to děje, ne proto, že by se k něčemu schylovalo."
-  },
-  "r.every-package-of-the-system-is.0ef5761d": {
-   "source": "Every package of the system is updated.<br><br>When it needs one, the server is <b>restarted by itself</b>.",
-   "text": "Aktualizují se všechny balíčky systému.<br><br>Když je potřeba, server se <b>restartuje sám</b>."
-  },
-  "r.every-package-of-the-system-is.309a9133": {
-   "source": "Every package of the system is updated.<br><br>A restart it needs is offered when it is done.",
-   "text": "Aktualizují se všechny balíčky systému.<br><br>Restart, který potřebuje, se nabídne po dokončení."
   },
   "r.every-table-on-these-pages-can.67374c9e": {
    "source": "Every table on these pages can be laid out the way you read it. Press your name at the top right and switch on <b>Edit the columns</b>; then drag the edge of a column's heading to make it wider or narrower, and drag the heading itself to move the column. Twice on an edge puts that table's widths back. Each change is kept with your account the moment you let go, not in this browser, and comes back wherever you sign in; nobody else's tables change. The switch is for this sign-in only: signing out, the sign-in running out or the service restarting turn it off again, and the columns stay as you left them.",
@@ -36720,9 +36852,21 @@
    "source": "What this part is. On the file engine SQLite keeps three files, not one, which is why the number here and the number <code>du</code> reports are different.",
    "text": "O jakou část jde. U souborového enginu ukládá SQLite tři soubory, ne jeden, a proto se číslo zde liší od čísla, které hlásí <code>du</code>."
   },
+  "r.when-as-hh-mm-a-quiet.fbbf1a8b": {
+   "source": "When, as <code>HH:MM</code> - a quiet hour, away from the backups.",
+   "text": "Kdy, jako <code>HH:MM</code> – v klidné hodině, mimo zálohy."
+  },
   "r.when-as-hh-mm-on-this.4bb39301": {
    "source": "When, as <code>HH:MM</code> on this machine’s clock.",
    "text": "Kdy, jako <code>HH:MM</code> podle hodin tohoto stroje."
+  },
+  "r.when-as-hh-mm-on-this.f2e078a0": {
+   "source": "When, as <code>HH:MM</code> on this machine’s clock. It waits while an update of the system, or the look for updates after it, is still going on.",
+   "text": "Kdy, jako <code>HH:MM</code> podle hodin tohoto stroje. Počká, dokud ještě běží aktualizace systému nebo zjišťování aktualizací po ní."
+  },
+  "r.when-it-needs-one-the-server.30bb7ceb": {
+   "source": "<br><br>When it needs one, the server is <b>restarted by itself</b>.",
+   "text": "<br><br>Když je potřeba, server se <b>restartuje sám</b>."
   },
   "r.when-this-address-comes-back-by.5acd3fbf": {
    "source": "When this address comes back by itself. <b>for good</b> means it does not.",
@@ -37037,6 +37181,14 @@
   "r.every-log-that-is-switched-on.90bc7920": {
    "source": "Every log that is switched on is read from the beginning - its live file, every rotated copy and every day still in its folder - whichever kind of log it is. Untick one to leave it out. A log written without a zone in it (everything but ISE) that is read again after the zone it is read in was <b>changed</b> files each line a second time at the new moment: erase that module's records first in that case. Logins at the firewall, to network devices, to the domain and the VPN through a FreeRADIUS are weighed over the same span as well, where they are switched on under Banning.",
    "text": "Čte se od začátku každý zapnutý log – jeho živý soubor, každá zrotovaná kopie i každý den, který ještě je ve složce – ať je to jakýkoli druh logu. Odškrtnutím ho vynecháte. Log zapsaný bez časové zóny (všechno kromě ISE), který se čte znovu poté, co byla zóna, ve které se čte, <b>změněna</b>, uloží každý řádek podruhé v novém čase: v tom případě nejdřív smažte záznamy daného modulu. Přihlášení na firewallu, k síťovým zařízením, do domény a do VPN přes FreeRADIUS se posoudí za stejné období také, pokud jsou zapnuté v Banningu."
+  },
+  "r.every-package-of-the-system-is.0ef5761d": {
+   "source": "Every package of the system is updated.<br><br>When it needs one, the server is <b>restarted by itself</b>.",
+   "text": "Aktualizují se všechny balíčky systému.<br><br>Když je potřeba, server se <b>restartuje sám</b>."
+  },
+  "r.every-package-of-the-system-is.309a9133": {
+   "source": "Every package of the system is updated.<br><br>A restart it needs is offered when it is done.",
+   "text": "Aktualizují se všechny balíčky systému.<br><br>Restart, který potřebuje, se nabídne po dokončení."
   },
   "r.everything-the-directories-say-about-their.548cc5d1": {
    "source": "Everything the directories say about their accounts, in one place.<br><br> Both of them, folded together: a site with two domains has an account<br> in one of them and this does not need to know which.<br>",

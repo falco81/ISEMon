@@ -147,6 +147,33 @@ isemon --poweroff --yes
 
 Everything is in Events: who asked, and what the server did.
 
+### On a schedule
+
+The card *On a schedule* (1.10.257, after otp 1.0.164-1.0.168; off until
+switched on) restarts this server in a window of its own:
+
+| Setting | What it does |
+|---|---|
+| *A restart on a schedule* (`power_auto`) | the switch - off by default |
+| *How often* (`power_auto_every`) | every week, on *On the day* (`power_auto_day`, Monday - Sunday), or on the first of every month |
+| *At* (`power_auto_at`) | when the window opens, `HH:MM` on this machine's clock (05:40) |
+| *Only when it needs one* (`power_auto_needed`) | on (the default): only when an update left the server waiting for a restart (a kernel, glibc, systemd... - what *System updates* says); off: every time |
+
+The window is from that time to the end of its day. The restart starts once
+in it - the day it is for is kept (meta `power:auto:day`) before it is tried
+- and is the same restart as *Restart* (root's helper, `net.ask` with
+`power`): everything a restart by hand does and refuses applies. Not needed:
+said in Events (*the restart on a schedule: this server does not need one*),
+nothing restarted. Something going on - an upgrade of isemon, a restart or a
+power-off, a network on trial or being changed - said in Events (*the restart
+on a schedule did not start: ...*), and not tried again until the next window.
+
+It **waits** while an update of the system, or the look for updates after it,
+is still going on - whether a restart is needed is known only after it - and
+goes later in the same window once that is over, rather than giving the day up.
+While its switch is off, the settings under it are greyed out; *On the day*
+is greyed out while the restart is monthly, or switched off.
+
 ## For testing
 
 `isemon_web.py` takes the programs it calls from the environment, so a test

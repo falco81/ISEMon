@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.256'
+__version__ = '1.10.257'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -901,6 +901,23 @@ DEFAULTS = {
     # carries, with the keys and the pages' own settings), put back without
     # touching the logs a machine has.
     'rbackup_what': 'all',
+    # Updates and restarts on a schedule (1.10.257; after otp 1.0.164-1.0.168),
+    # Settings -> System updates and Restart and power off: a look for updates
+    # every day, the updates put in by themselves in a window, and a restart
+    # in a window. Each off until somebody switches it on there.
+    'osup_check': 0,
+    'osup_check_at': '06:15',
+    'osup_auto': 0,
+    'osup_auto_what': 'security',
+    'osup_auto_every': 'weekly',
+    'osup_auto_day': '7',
+    'osup_auto_at': '04:45',
+    'osup_auto_reboot': 'auto',
+    'power_auto': 0,
+    'power_auto_every': 'weekly',
+    'power_auto_day': '7',
+    'power_auto_at': '05:40',
+    'power_auto_needed': 1,
     # Certificates by ACME (1.10.251; after otp 1.0.169-1.0.187), Settings ->
     # Automatic certificates: the dashboard's certificate ordered from an ACME
     # CA and renewed by itself. Off until somebody switches it on there.
@@ -1027,6 +1044,9 @@ FW_KIND_WORDS = {
 }
 FW_KIND_PREFIX = {'mikrotik': '', 'opnsense-api': 'opn', 'opnsense-ssh': 'opnssh',
                   'pfsense-api': 'pfa', 'pfsense-ssh': 'pfssh'}
+# The days of a weekly schedule, as the pages name them (1.10.257).
+WEEKDAY_WORDS = {'1': 'Monday', '2': 'Tuesday', '3': 'Wednesday', '4': 'Thursday',
+                 '5': 'Friday', '6': 'Saturday', '7': 'Sunday'}
 # The kinds that sign in over ssh, and so have a key of their own.
 FW_SSH_KINDS = ('mikrotik', 'opnsense-ssh', 'pfsense-ssh')
 # The kinds whose lists are pf tables rather than RouterOS address lists.
@@ -1973,7 +1993,8 @@ def check_setting(key, value):
             except (ValueError, OverflowError):
                 raise ValueError('"%s" in the ladder is neither a number of minutes '
                                  'nor "forever"' % piece[:20])
-    if key in ('backup_at', 'rbackup_at') and parse_hhmm(want) is None:
+    if key in ('backup_at', 'rbackup_at', 'osup_check_at', 'osup_auto_at', 'power_auto_at') \
+            and parse_hhmm(want) is None:
         raise ValueError('%s is a time of day written as HH:MM' % key)
     if key == 'tidy_at' and parse_hhmm(want) is None:
         raise ValueError('tidy_at is a time of day written as HH:MM')
@@ -56388,6 +56409,13 @@ class Daemon(object):
         'rbackup_what': ('all', 'config'),
         'rbackup_day': (1, 7), 'rbackup_keep': (1, 1000), 'rbackup_keep_days': (0, 3650),
         'rbackup_password': 'str',
+        'osup_check': (0, 1), 'osup_check_at': 'str', 'osup_auto': (0, 1),
+        'osup_auto_what': ('security', 'all'), 'osup_auto_every': ('daily', 'weekly', 'monthly'),
+        'osup_auto_day': ('1', '2', '3', '4', '5', '6', '7'), 'osup_auto_at': 'str',
+        'osup_auto_reboot': ('ask', 'auto'),
+        'power_auto': (0, 1), 'power_auto_every': ('weekly', 'monthly'),
+        'power_auto_day': ('1', '2', '3', '4', '5', '6', '7'), 'power_auto_at': 'str',
+        'power_auto_needed': (0, 1),
         'acme': (0, 1), 'acme_ca': ('letsencrypt', 'letsencrypt-staging', 'custom'),
         'acme_email': 'str', 'acme_url': 'str', 'acme_ca_pem': 'str', 'acme_name': 'str',
         'acme_days': (7, 60), 'acme_key': ('ec', 'rsa2048'),
@@ -56668,6 +56696,19 @@ class Daemon(object):
         'rbackup_keep': 'Backups kept at each destination',
         'rbackup_keep_days': 'And none older than (days)',
         'rbackup_password': 'The password of the backups',
+        'osup_check': 'Look for updates every day',
+        'osup_check_at': 'At',
+        'osup_auto': 'Updates on a schedule',
+        'osup_auto_what': 'Which',
+        'osup_auto_every': 'How often',
+        'osup_auto_day': 'On the day',
+        'osup_auto_at': 'At',
+        'osup_auto_reboot': 'After the update',
+        'power_auto': 'A restart on a schedule',
+        'power_auto_every': 'How often',
+        'power_auto_day': 'On the day',
+        'power_auto_at': 'At',
+        'power_auto_needed': 'Only when it needs one',
         'acme': 'Certificates from an ACME CA',
         'acme_email': 'Mail of the account at the CA',
         'acme_ca': 'The CA',
@@ -57789,6 +57830,26 @@ class Daemon(object):
         'rbackup_keep': 'How many of this machine’s backups each destination keeps; the oldest '
                         'go first, the newest never.',
         'rbackup_keep_days': 'Older ones are taken away too - 0: only the count above decides.',
+        'osup_check': 'This server looks what dnf (or apt) has waiting, every day at the time '
+                      'below - for the cards here. Nothing is put in.',
+        'osup_check_at': 'When, as <code>HH:MM</code> on this machine’s clock.',
+        'osup_auto': 'The updates put in by themselves in the window below, as by hand - '
+                     'started once in it, never tried over and over. Off until switched on.',
+        'osup_auto_what': 'Only the security updates (dnf --security, unattended-upgrade on apt), '
+                          'or every update.',
+        'osup_auto_every': 'A day, a week or a month.',
+        'osup_auto_day': 'The day a weekly update goes.',
+        'osup_auto_at': 'When, as <code>HH:MM</code> - a quiet hour, away from the backups.',
+        'osup_auto_reboot': 'When the update needs a restart - restarted by itself, or offered '
+                            'on the page.',
+        'power_auto': 'This server restarted in the window below - started once in it. Off '
+                      'until switched on.',
+        'power_auto_every': 'A week or a month.',
+        'power_auto_day': 'The day a weekly restart goes.',
+        'power_auto_at': 'When, as <code>HH:MM</code> on this machine’s clock. It waits while an '
+                         'update of the system, or the look for updates after it, is still going '
+                         'on.',
+        'power_auto_needed': 'Only when an update left it waiting for a restart; off: every time.',
         'rbackup_password': 'Every backup is locked with it (AES-256, opened with isemon or with '
                             'openssl alone). Keep it apart from the backups as well - in a '
                             'password vault: without it nobody, you included, opens them. '
@@ -57929,6 +57990,15 @@ class Daemon(object):
         'acme_key': {'ec': 'ECDSA P-256', 'rsa2048': 'RSA 2048'},
         'rbackup_what': {'all': 'Everything, the logs too',
                          'config': 'The configuration only, without the logs'},
+        'osup_auto_what': {'security': 'only the security updates', 'all': 'every update'},
+        'osup_auto_every': {'daily': 'every day', 'weekly': 'every week, on the day below',
+                            'monthly': 'on the first of every month'},
+        'osup_auto_day': WEEKDAY_WORDS,
+        'osup_auto_reboot': {'auto': 'restarted by itself where an update needs it',
+                             'ask': 'a restart offered on the page'},
+        'power_auto_every': {'weekly': 'every week, on the day below',
+                             'monthly': 'on the first of every month'},
+        'power_auto_day': WEEKDAY_WORDS,
     }
 
     def settings_state(self, may_change=True):
@@ -61796,6 +61866,11 @@ class Daemon(object):
             osup_tick(self)
         except Exception as e:
             log('the update of the system: %s' % e, 'warn')
+        # ...and what is due on a schedule (1.10.257): nothing until switched on.
+        try:
+            osup_sched_tick(self)
+        except Exception as e:
+            log('the updates and restarts on a schedule: %s' % e, 'warn')
 
     def _directory_pass(self):
         try:
@@ -71740,7 +71815,7 @@ def osup_check_ask(daemon, by):
     osup_tick(daemon)
 
 
-def osup_start(daemon, reboot, by):
+def osup_start(daemon, reboot, by, security=False):
     store = daemon.store
     if not osup_helper():
         raise WebRootError(OSUP_NO_HELPER)
@@ -71755,10 +71830,11 @@ def osup_start(daemon, reboot, by):
         reboot = 'ask'
     me = socket.gethostname()
     plan = {'id': secrets.token_hex(6), 'order': [me], 'reboot': reboot, 'by': by,
-            'at': time.time(), 'state': 'running', 'from': me}
+            'at': time.time(), 'state': 'running', 'from': me, 'security': bool(security)}
     _osup_set(store, 'osup:plan', plan)
-    store.add_event('control', '%s started the update of the system%s' % (
-        by, ', restarted by itself when it needs it' if reboot == 'auto' else ''), 'warn',
+    store.add_event('control', '%s started the update of the system%s%s' % (
+        by, ' (security updates only)' if security else '',
+        ', restarted by itself when it needs it' if reboot == 'auto' else ''), 'warn',
         who=by)
     log('the update of the system was asked for by %s' % by, 'warn')
     return plan
@@ -71791,11 +71867,15 @@ def osup_hide(daemon):
         daemon.store.set_meta('osup:seen', str(plan['id']))
 
 
-def _osup_job(daemon, kind, wait=60):
-    """Root's helper asked to start the work; the work's id."""
+def _osup_job(daemon, kind, wait=60, security=False):
+    """Root's helper asked to start the work; the work's id. Only the
+    security updates, where asked (1.10.257)."""
     wr = daemon.webroot
     ask_id = secrets.token_hex(8)
-    wr.write(OSUP_ASK, {'do': 'run', 'kind': kind, 'id': ask_id, 'at': time.time()})
+    ask = {'do': 'run', 'kind': kind, 'id': ask_id, 'at': time.time()}
+    if security and kind == 'upgrade':
+        ask['security'] = True
+    wr.write(OSUP_ASK, ask)
     end = time.time() + wait
     while time.time() < end:
         got = wr.read(OSUP_ANS, 65536)
@@ -71914,7 +71994,7 @@ def _osup_go(daemon, what, ctx):
                 _osup_end(daemon, plan, row, False, why)
                 return
             try:
-                job = _osup_job(daemon, 'upgrade')
+                job = _osup_job(daemon, 'upgrade', security=bool(plan.get('security')))
                 osup_put(store, row, state='updating', job=job, began=time.time(), pct=1,
                          lines=[], said='the packages are being updated', boot=boot_time(),
                          boot_id=boot_id())
@@ -71955,6 +72035,15 @@ def _osup_follow_check(daemon, chk):
         boot_id=boot_id()))
     if got['state'] == 'failed':
         log('looking for updates of the system: %s' % (got['said'] or 'it failed'), 'warn')
+    if chk.get('by') == OSUP_SCHED_BY:
+        if got['state'] == 'done':
+            store.add_event('control', 'the look for updates on a schedule: %d waiting, %d of '
+                            'them security%s' % (got['count'], int(got['security'] or 0),
+                                                 ' - a restart is needed' if got['reboot_now']
+                                                 else ''), 'info', who=OSUP_SCHED_BY)
+        else:
+            store.add_event('control', 'the look for updates on a schedule failed: %s'
+                            % (got['said'] or 'it failed'), 'bad', who=OSUP_SCHED_BY)
 
 
 def _osup_follow(daemon, plan, row):
@@ -72005,6 +72094,108 @@ def _osup_end(daemon, plan, row, ok, said='', reboot=False):
     osup_want_check(store, OSUP_BY)
     plan.update(state='done', ended=time.time())
     _osup_set(store, 'osup:plan', plan)
+
+
+# ---- on a schedule (1.10.257; after otp 1.0.164-1.0.168) ----------------------------
+# A look for updates every day; the updates put in by themselves in a window
+# of their own - only the security ones, or all - restarted where needed or
+# the restart offered; and a restart of this server in a window, only when an
+# update left it waiting for one, or always. One server: no other node to
+# hand over to, nothing taken out of service first. Each starts once in its
+# window (the day it is for kept in meta 'osup:check:day', 'osup:auto:day',
+# 'power:auto:day', before it is tried); one that cannot start - something
+# going on - is said in the events and not tried over and over. The restart
+# waits while an update, or the look for updates after it, is still going
+# on: which restart is needed is known only after it (otp 1.0.168). Each is
+# off until somebody switches it on: nothing of this runs before.
+OSUP_SCHED_BY = 'isemon (on a schedule)'
+
+
+def sched_due(every, day, at, now=None, fallback='04:45'):
+    """(due now, the id of this window) for a schedule of HH:MM on a day:
+    from the time to the end of the day it is for."""
+    n = now or datetime.now()
+    want = parse_hhmm(at, parse_hhmm(fallback, 0))
+    try:
+        wday = int(day or 7)
+    except (TypeError, ValueError):
+        wday = 7
+    if every == 'weekly' and n.isoweekday() != wday:
+        return False, ''
+    if every == 'monthly' and n.day != 1:
+        return False, ''
+    return n.hour * 60 + n.minute >= want, n.strftime('%Y-%m-%d')
+
+
+def osup_settling(daemon):
+    """An update going on, or the look for updates (after it) asked for or
+    still going on - whether a restart is needed is not known yet."""
+    store = daemon.store
+    if osup_plan(store).get('state') == 'running' or OSUP_WORK['busy']:
+        return True
+    chk = osup_check(store)
+    if chk.get('state') == 'running':
+        return True
+    want = _osup_get(store, 'osup:checkwant')
+    return bool(want.get('id') and want['id'] not in (chk.get('asked') or []) and
+                time.time() - float(want.get('at') or 0) < 900)
+
+
+def osup_sched_tick(daemon, now=None):
+    """Every few seconds, behind the daemon's loop: what is due on a schedule."""
+    if not (int(CONFIG.get('osup_check') or 0) or int(CONFIG.get('osup_auto') or 0) or
+            int(CONFIG.get('power_auto') or 0)):
+        return
+    if not daemon.working():
+        return
+    store = daemon.store
+    by = OSUP_SCHED_BY
+    if int(CONFIG.get('osup_check') or 0):
+        due, day = sched_due('daily', '', CONFIG.get('osup_check_at'), now, '06:15')
+        if due and store.get_meta('osup:check:day', '') != day:
+            store.set_meta('osup:check:day', day)
+            try:
+                osup_check_ask(daemon, by)
+                store.add_event('control', 'the look for updates on a schedule started', 'info',
+                                who=by)
+            except (WebRootError, OSError) as e:
+                store.add_event('control', 'the look for updates on a schedule did not start: '
+                                '%s' % e, 'warn', who=by)
+    if int(CONFIG.get('osup_auto') or 0):
+        due, day = sched_due(CONFIG.get('osup_auto_every') or 'weekly',
+                             CONFIG.get('osup_auto_day'), CONFIG.get('osup_auto_at'), now)
+        if due and store.get_meta('osup:auto:day', '') != day:
+            store.set_meta('osup:auto:day', day)
+            try:
+                osup_start(daemon, CONFIG.get('osup_auto_reboot') or 'auto', by,
+                           security=(CONFIG.get('osup_auto_what') or 'security') == 'security')
+            except (WebRootError, OSError) as e:
+                store.add_event('control', 'the update of the system on a schedule did not '
+                                'start: %s' % e, 'bad', who=by)
+    if int(CONFIG.get('power_auto') or 0):
+        due, day = sched_due(CONFIG.get('power_auto_every') or 'weekly',
+                             CONFIG.get('power_auto_day'), CONFIG.get('power_auto_at'), now,
+                             '05:40')
+        # Not while an update or a look for updates is still going on: whether
+        # a restart is needed is known only after it (otp 1.0.168). The day
+        # is not given up meanwhile - it goes once that is over.
+        if due and store.get_meta('power:auto:day', '') != day and not osup_settling(daemon):
+            store.set_meta('power:auto:day', day)
+            if int(CONFIG.get('power_auto_needed', 1) or 0) and \
+                    not osup_view(daemon)['nodes'][0].get('reboot'):
+                store.add_event('control', 'the restart on a schedule: this server does not '
+                                'need one', 'info', who=by)
+                return
+            why = osup_refused(daemon)
+            try:
+                if why:
+                    raise WebRootError(why)
+                daemon.netpower.power_ask('reboot', by)
+                store.add_event('control', 'the restart on a schedule: this server restarts',
+                                'warn', who=by)
+            except (WebRootError, OSError) as e:
+                store.add_event('control', 'the restart on a schedule did not start: %s' % e,
+                                'bad', who=by)
 
 
 # This version's README, read once for what changed in each older version.
@@ -73754,7 +73945,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                     osup_check_ask(daemon, who)
                     return self.send_json({'ok': True, 'message': 'looking for updates'})
                 if act == 'start':
-                    plan = osup_start(daemon, str(data.get('reboot') or 'ask'), who)
+                    sec = data.get('security')
+                    if sec not in (None, True, False, 0, 1, '0', '1', 'true', 'false'):
+                        raise ValueError('security: true or false')
+                    plan = osup_start(daemon, str(data.get('reboot') or 'ask'), who,
+                                      security=sec in (True, 1, '1', 'true'))
                     return self.send_json({'ok': True, 'plan': plan, 'message': (
                         'the update begins in a few seconds - it can be stopped until then')})
                 if act == 'cancel':
@@ -78818,6 +79013,8 @@ def osup_print(pal, v, lines=True):
                'cancelled': 'stopped'}.get(plan.get('state') or 'running', plan.get('state'))
         pal.title('The update (%s)' % how)
         pal.kv('started by', '%s, %s' % (plan.get('by') or '?', stamp(plan.get('at'))))
+        pal.kv('which', 'only the security updates' if plan.get('security')
+               else 'every update')
         pal.kv('after it', 'restarted by itself when needed' if plan.get('reboot') == 'auto'
                else 'a restart it needs is asked for')
         if plan.get('state') == 'cancelled':
@@ -78911,6 +79108,7 @@ def cmd_os_update(args, pal, store):
     if not need_daemon(pal, status, v):
         return 1
     how = args.reboot_after or 'ask'
+    security = bool(getattr(args, 'security', False))
     if not v.get('helper'):
         pal.bad(OSUP_NO_HELPER)
         return 1
@@ -78921,7 +79119,8 @@ def cmd_os_update(args, pal, store):
     quiet = getattr(args, 'json', False)
     if not args.yes:
         pal.title('Update this server')
-        pal.say('  Every package of the system is updated.')
+        pal.say('  Only the security updates are put in.' if security else
+                '  Every package of the system is updated.')
         pal.say('  When it needs one, the server is restarted by itself.' if how == 'auto' else
                 '  A restart it needs is offered when it is done.')
         if ck.get('reboot_after') and ck.get('count'):
@@ -78937,8 +79136,8 @@ def cmd_os_update(args, pal, store):
         if said != 'yes':
             pal.note('  nothing was done')
             return 1
-    status, data = api_call('/api/osup', 'POST', {'action': 'start', 'reboot': how},
-                            session=session)
+    status, data = api_call('/api/osup', 'POST', {'action': 'start', 'reboot': how,
+                                                  'security': security}, session=session)
     if not need_daemon(pal, status, data):
         return 1
     plan_id = (data.get('plan') or {}).get('id')
@@ -83135,6 +83334,11 @@ class Console(object):
         elif what == 'check':
             self.live(lambda: self.show_live('--os-updates-check'))
         elif what == 'update':
+            which = self.choose('Which', [
+                ('all', 'Every update'),
+                ('security', 'Only the security updates')])
+            if not which:
+                return
             how = self.choose('After the update', [
                 ('ask', 'Ask me when a restart is needed'),
                 ('auto', 'Restart by itself when needed')])
@@ -83143,7 +83347,8 @@ class Console(object):
             got = self.out('--os-updates') or {}
             ck = ((got.get('nodes') or [{}])[0] if isinstance(got, dict) else {}).get(
                 'check') or {}
-            words = 'Every package of the system is updated. ' + (
+            words = ('Only the security updates are put in. ' if which == 'security' else
+                     'Every package of the system is updated. ') + (
                 'When it needs one, the server is restarted by itself.' if how == 'auto' else
                 'A restart it needs is offered when it is done.')
             if ck.get('reboot_after') and ck.get('count'):
@@ -83153,7 +83358,9 @@ class Console(object):
                 self.note('Update this server', 'Not now: %s.' % got['refused'], 'bad')
                 return
             if self.confirm('Update this server', words, 'Update', danger=how == 'auto'):
-                self.live(lambda: self.show_live('--os-update', '--reboot-after', how, '--yes'))
+                extra = ['--security'] if which == 'security' else []
+                self.live(lambda: self.show_live('--os-update', '--reboot-after', how,
+                                                 *(extra + ['--yes'])))
         elif what == 'stop':
             if self.confirm('Stop the update', 'It has not begun: nothing is updated. Once the '
                             'package manager is at work it is not stopped half way: it '
@@ -83841,6 +84048,9 @@ def main(argv=None):
                      dest='reboot_after',
                      help='with --os-update: when the update needs a restart, ask (the '
                           'default: isemon --reboot afterwards) or restart by itself (auto)')
+    act.add_argument('--security', action='store_true', dest='security',
+                     help='with --os-update: only the security updates (dnf --security, '
+                          'unattended-upgrade on apt)')
     act.add_argument('--os-update-stop', action='store_true', dest='os_update_stop',
                      help='stop an update of the system while it waits to begin; once the '
                           'package manager is at work it finishes')

@@ -5941,6 +5941,7 @@ function srcText(el) {
         up again.</p>
     </div>
     <div id="power-body"></div>
+    <div class="card full"><h2>On a schedule</h2><div id="sect-power"></div></div>
   </div>
 
   <!-- ---------- the updates of the operating system (1.10.239) ---------- -->
@@ -5952,6 +5953,7 @@ function srcText(el) {
         needed. A restart an update needs is offered when it is done, or made by itself.</p>
     </div>
     <div id="ou-host"></div>
+    <div class="card full"><h2>On a schedule</h2><div id="sect-osup"></div></div>
   </div>
 
   <!-- ---------- root's SSH keys (1.10.239) ---------- -->
@@ -25890,6 +25892,12 @@ var PANES = {
   /* Backups to another machine (1.10.228), drawn into Settings -> Backups. */
   backup:  ['rbackup', 'rbackup_what', 'rbackup_at', 'rbackup_every', 'rbackup_day', 'rbackup_keep',
             'rbackup_keep_days', 'rbackup_password'],
+  /* Updates and restarts on a schedule (1.10.257), as otp 1.0.164 draws them:
+     a card "On a schedule" in System updates and in Restart and power off. */
+  osup:    ['osup_check', 'osup_check_at', 'osup_auto', 'osup_auto_what', 'osup_auto_every',
+            'osup_auto_day', 'osup_auto_at', 'osup_auto_reboot'],
+  power:   ['power_auto', 'power_auto_every', 'power_auto_day', 'power_auto_at',
+            'power_auto_needed'],
   /* Automatic certificates (1.10.251), drawn below the card of the certificate. */
   acme:    ['acme', 'acme_email', 'acme_ca', 'acme_url', 'acme_ca_pem', 'acme_name', 'acme_days',
             'acme_key', 'acme_challenge', 'acme_dns', 'acme_dns_server', 'acme_dns_zone',
@@ -26670,6 +26678,12 @@ var ONLY_WHEN = {
   rbackup_at: ['rbackup', '1'],
   rbackup_every: ['rbackup', '1'],
   rbackup_day: ['rbackup_every', 'weekly'],
+  /* Updates and restarts on a schedule (1.10.257): as otp has them. */
+  osup_check_at: ['osup_check', '1'], osup_auto_what: ['osup_auto', '1'],
+  osup_auto_every: ['osup_auto', '1'], osup_auto_day: ['osup_auto_every', 'weekly'],
+  osup_auto_at: ['osup_auto', '1'], osup_auto_reboot: ['osup_auto', '1'],
+  power_auto_every: ['power_auto', '1'], power_auto_day: ['power_auto_every', 'weekly'],
+  power_auto_at: ['power_auto', '1'], power_auto_needed: ['power_auto', '1'],
   otp_paths: ['otp', '1'],
   otp_name: ['otp', '1'],
   eduroam_paths: ['eduroam', '1'],
@@ -26785,23 +26799,40 @@ var ONLY_WHEN = {
   debug_router: ['debug', '1']
 };
 function applyOnlyWhen() {
-  Object.keys(ONLY_WHEN).forEach(function (key) {
-    var item = document.querySelector('.set-item[data-key="' + key + '"]');
-    if (!item) return;
+  /* A setting is asleep when the one it depends on says so - and also when
+     that one is asleep itself (1.10.257, after otp 1.0.165): On the day of a
+     weekly restart was there to change with the restart switched off. The
+     reason given is the first one up the line that is off. */
+  var seen = {};
+  function wake(key, depth) {
+    if (seen[key]) return seen[key];
     var rule = ONLY_WHEN[key];
+    if (!rule || depth > 6) return (seen[key] = {live: true});
     var master = $('set-' + rule[0]);
-    if (!master) return;
+    if (!master) return (seen[key] = {live: true});
+    var up = wake(rule[0], depth + 1);
+    if (!up.live) return (seen[key] = up);
     var now = master._get ? String(master._get())
       : (master.type === 'checkbox' ? (master.checked ? '1' : '0') : String(master.value));
-    /* An empty wanted value means "only while the other one is empty" - which
-       is how the ladder takes over the single length below it. */
-    /* '' means "only while the other one is empty", '*' the opposite: only
-       while it has been filled in at all. */
+    /* '' means "only while the other one is empty" - which is how the ladder
+       takes over the single length below it - '*' the opposite: only while it
+       has been filled in at all. */
     var live = rule[1] === '' ? !now.trim()
       : (rule[1] === '*' ? !!now.trim()
          : (rule[1].slice(-4) === '-not' ? now !== rule[1].slice(0, -4) : now === rule[1]));
+    return (seen[key] = {live: live, rule: rule});
+  }
+  Object.keys(ONLY_WHEN).forEach(function (key) {
+    var item = document.querySelector('.set-item[data-key="' + key + '"]');
+    if (!item) return;
+    if (!$('set-' + ONLY_WHEN[key][0])) return;
+    var w = wake(key, 0);
+    var rule = w.rule || ONLY_WHEN[key];
+    var live = w.live;
     item.classList.toggle('asleep', !live);
     var says = item.querySelector('.asleep-why');
+    /* Written again on every pass: the reason may be another one up the line. */
+    if (says && !live && says.dataset.by !== rule[0] + '=' + rule[1]) { says.remove(); says = null; }
     if (!live && !says) {
       var other = settingByKey(rule[0]) || {};
       var name = other.name || rule[0];
@@ -26811,12 +26842,14 @@ function applyOnlyWhen() {
       var words = isBool(other) ? (name + ' is off')
         : (name + ' is not \u201c' + ((other.choice_words && other.choice_words[rule[1]])
                                          || rule[1]) + '\u201d');
-      item.appendChild(el('div', 'says asleep-why',
+      says = el('div', 'says asleep-why',
         rule[1] === '' ? 'Not in use: ' + name + ' is set, and that decides instead.'
           : (rule[1] === '*' ? 'Nothing to mark against until ' + name + ' is filled in.'
              : (rule[1].slice(-4) === '-not'
                 ? 'Not in use while ' + name + ' is \u201c' + rule[1].slice(0, -4) + '\u201d.'
-                : 'Not in use while ' + words + '.'))));
+                : 'Not in use while ' + words + '.')));
+      says.dataset.by = rule[0] + '=' + rule[1];
+      item.appendChild(says);
     } else if (live && says) {
       says.remove();
     }
@@ -37326,7 +37359,7 @@ function drawPowerAway() {
    waiting, the update of all of it with a bar and what the package manager
    says as it comes, and the restart it needs offered at the end. What it
    says is read from what root's work writes, not kept in the database. */
-var OU = {d: null, poll: null, hide: false, reboot: 'ask', asked: 0, away: 0, pkOpen: false};
+var OU = {d: null, poll: null, hide: false, reboot: 'ask', what: 'all', asked: 0, away: 0, pkOpen: false};
 try { OU.hide = localStorage.getItem('isemon-ou-hide') === '1'; } catch (e) { /* only a convenience */ }
 var OU_STATE = {waiting: ['waits to begin', 'dim'], updating: ['updating', 'info'],
                 rebooting: ['restarting', 'warn'], done: ['done', 'ok'], failed: ['failed', 'crit']};
@@ -37461,6 +37494,18 @@ function drawOsup(live) {
       segb.appendChild(b);
     });
     if (ck.reboot_after && ck.count) uc.appendChild(el('p', 'note warn', 'This server needs a restart after this update: ' + (ck.reboot_why || []).join(', ') + '.'));
+    /* Every update, or only the security ones (1.10.257, after otp 1.0.164). */
+    var segw = el('div', 'seg');
+    [['all', 'Every update'], ['security', 'Only the security updates']].forEach(function (o) {
+      var b = el('button', (OU.what || 'all') === o[0] ? 'on' : '', o[1]);
+      b.type = 'button';
+      b.onclick = function () { OU.what = o[0]; drawOsup(); };
+      segw.appendChild(b);
+    });
+    var fldw = el('div', 'wr-field ou-after');
+    fldw.appendChild(el('span', '', 'Which'));
+    fldw.appendChild(segw);
+    uc.appendChild(fldw);
     var fld = el('div', 'wr-field ou-after');
     fld.appendChild(el('span', '', 'After the update'));
     fld.appendChild(segb);
@@ -37469,11 +37514,12 @@ function drawOsup(live) {
     var start = cmdButton('Update it now', 'download', 'primary');
     start.disabled = !d.helper || power || !!d.refused || ck.state === 'running';
     start.onclick = function () {
-      confirmThen('Update this server', OU.reboot === 'auto'
-        ? 'Every package of the system is updated.<br><br>When it needs one, the server is <b>restarted by itself</b>.'
-        : 'Every package of the system is updated.<br><br>A restart it needs is offered when it is done.',
+      var sec = OU.what === 'security';
+      confirmThen('Update this server', (sec ? 'Only the security updates are put in.' : 'Every package of the system is updated.')
+        + (OU.reboot === 'auto' ? '<br><br>When it needs one, the server is <b>restarted by itself</b>.'
+          : '<br><br>A restart it needs is offered when it is done.'),
         'Update', function () {
-          api('osup', {action: 'start', reboot: OU.reboot}).then(function (x) { toast(x.message, 'good'); ouAsked(); loadOsup(); }).catch(oops);
+          api('osup', {action: 'start', reboot: OU.reboot, security: sec}).then(function (x) { toast(x.message, 'good'); ouAsked(); loadOsup(); }).catch(oops);
         }, false);
     };
     row2.appendChild(start);
@@ -37503,6 +37549,7 @@ function drawOsup(live) {
     var who = el('p', 'note');
     who.appendChild(document.createTextNode('Started by ' + (plan.by || '?') + ', ' + ago(plan.at)));
     who.appendChild(el('span', 'tag ' + ({done: 'ok', failed: 'crit', cancelled: 'dim'}[plan.state] || 'info'), how));
+    if (plan.security) who.appendChild(el('span', 'tag dim', 'security updates only'));
     if (plan.reboot === 'auto') who.appendChild(el('span', 'tag dim', 'restarted by itself when needed'));
     who.classList.add('ou-who');
     pc.appendChild(who);
