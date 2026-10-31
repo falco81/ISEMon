@@ -61,6 +61,7 @@ ASSUME_YES=""
 WITH_WEB="yes"
 WITH_SYSLOG="yes"
 PHP_UPDATE="yes"         # --no-php-update: the PHP of the pages left as it is
+PYTHON_UPDATE="yes"      # --no-python-update: isemon stays on the Python it runs on
 # Asked for by name. A plain --upgrade changes nothing of how the logs are
 # received or what PostgreSQL lets this program do (1.10.202): a machine
 # where that already works is left exactly as it is. A fresh install does
@@ -647,6 +648,102 @@ php_update() {
     return 0
 }
 
+# The Python isemon runs on (1.10.252): the newest the distribution offers
+# BESIDE its own - python3.14, 3.13, 3.12 or 3.11 on AlmaLinux / RHEL 9,
+# whose own python3 is 3.9 and is dnf's: that one is never changed. A newer
+# one is taken only when it imports what isemon needs (ssl, sqlite3 - and the
+# database's driver, its package for that Python put in) and runs
+# `isemon.py --version`; else the next older, else the one there is. What is
+# chosen is LIB_DIR/python, a link every unit and the `isemon` command run
+# through - put back by itself when isemon does not start on it.
+PY_LINK="$LIB_DIR/python"
+PY_BIN_DIR="${ISEMON_PY_BIN_DIR:-/usr/bin}"     # tests: a folder of their own
+PY_WAS=""
+PY_NEW=""
+py_mm() { "$1" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || true; }
+py_fits() {           # py_fits BIN MM ENGINE
+    local bin="$1" mm="$2" engine="$3"
+    "$bin" -I -c 'import ssl, sqlite3, hashlib, json, socket, ipaddress, zlib' >/dev/null 2>&1 \
+        || return 1
+    case "$engine" in
+        mariadb|mysql)
+            "$bin" -c 'import pymysql' >/dev/null 2>&1 \
+                || timeout 300 dnf install -y -q "python$mm-PyMySQL" >/dev/null 2>&1 || true
+            "$bin" -c 'import pymysql' >/dev/null 2>&1 || return 1;;
+        postgres|postgresql)
+            "$bin" -c 'import psycopg2' >/dev/null 2>&1 \
+                || timeout 300 dnf install -y -q "python$mm-psycopg2" >/dev/null 2>&1 || true
+            "$bin" -c 'import psycopg2' >/dev/null 2>&1 || return 1;;
+    esac
+    "$bin" -I "$SOURCE_DIR/isemon.py" --version >/dev/null 2>&1 || return 1
+    # The colours of the command line: nice, never needed.
+    "$bin" -c 'import colorama' >/dev/null 2>&1 \
+        || timeout 120 dnf install -y -q "python$mm-colorama" >/dev/null 2>&1 || true
+    return 0
+}
+python_pick() {       # python_pick ENGINE - sets PY_WAS and PY_NEW
+    local engine="$1" cur c bin
+    cur="$(readlink -f "$PY_LINK" 2>/dev/null || true)"
+    [[ -n "$cur" && -x "$cur" ]] || cur="$(command -v python3 || true)"
+    PY_WAS="$cur"; PY_NEW="$cur"
+    [[ -n "$PYTHON_UPDATE" && -n "$cur" ]] || return 0
+    local now; now="$(py_mm "$cur")"
+    if [[ "$PKG" != "dnf" ]]; then
+        return 0            # Debian, Ubuntu: their own python3 is a recent one
+    fi
+    for c in 3.14 3.13 3.12 3.11; do
+        version_ge "$now" "$c" && break        # nothing newer than what it runs on
+        bin="$PY_BIN_DIR/python$c"
+        if [[ -n "$DRY_RUN" ]]; then
+            note "[would look for] python$c and run isemon on it when it fits"
+            return 0
+        fi
+        if [[ ! -x "$bin" ]]; then
+            timeout 300 dnf install -y -q "python$c" >/dev/null 2>&1 || continue
+        fi
+        [[ -x "$bin" ]] || continue
+        if py_fits "$bin" "$c" "$engine"; then
+            PY_NEW="$bin"
+            break
+        fi
+        warn "python$c is there but does not run isemon here (a module, or the database's driver for it, is missing): an older one is looked for"
+    done
+    if [[ "$PY_NEW" == "$PY_WAS" ]]; then
+        good "isemon runs on Python $now ($PY_WAS)"
+    else
+        good "isemon runs on Python $(py_mm "$PY_NEW") from now on ($PY_NEW; it was $now) - the system's python3 is as it was"
+    fi
+}
+python_link() {       # LIB_DIR/python, and the isemon command through it
+    [[ -n "$PY_NEW" ]] || PY_NEW="$(command -v python3)"
+    run ln -sfn "$PY_NEW" "$PY_LINK"
+    if [[ -n "$DRY_RUN" ]]; then
+        note "[would write] $BIN_LINK, running $LIB_DIR/isemon.py on $PY_LINK"
+        return 0
+    fi
+    rm -f "$BIN_LINK"
+    printf '#!/bin/sh\n# isemon (1.10.252): the program, on the Python it is run on (%s).\nexec %s %s/isemon.py "$@"\n' \
+        "$PY_LINK" "$PY_LINK" "$LIB_DIR" > "$BIN_LINK"
+    chmod 0755 "$BIN_LINK"
+}
+python_back() {       # isemon did not start on the new one: the old one again
+    [[ -n "$PY_WAS" && "$PY_NEW" != "$PY_WAS" ]] || return 1
+    warn "isemon did not start on Python $(py_mm "$PY_NEW") - back on $(py_mm "$PY_WAS") ($PY_WAS)"
+    run ln -sfn "$PY_WAS" "$PY_LINK"
+    PY_NEW="$PY_WAS"
+    run systemctl restart isemon.service
+    sleep 2
+    for _ in 1 2 3 4 5 6 7 8; do
+        systemctl is-active --quiet isemon.service && return 0
+        sleep 1
+    done
+    return 1
+}
+config_engine() {
+    python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("db_engine") or "")' \
+        "$CONFIG_FILE" 2>/dev/null || true
+}
+
 # The php-fpm units there are: php-fpm on the RHEL family, php8.2-fpm and
 # the like on Debian and Ubuntu - which a restart of "php-fpm" never reached.
 php_fpm_units() {
@@ -727,6 +824,12 @@ Usage: sudo ./install.sh [options]
                           8.4.27 / 8.5.12 on those) is moved to PHP 8.3 from the
                           Remi repository (EPEL and Remi added), and back to
                           what it was if that does not work (RHEL family)
+  --no-python-update      keep isemon on the Python it runs on. Otherwise the
+                          newest Python the distribution offers beside its own
+                          (python3.14 ... python3.11 on AlmaLinux / RHEL 9) is
+                          put in and isemon run on it - when it imports what
+                          isemon needs and starts; the system's python3 (dnf's)
+                          is never changed
   --no-syslog             a fresh install: leave receiving the logs alone.
                           Otherwise rsyslog with its RELP and TLS modules is
                           installed where missing, what it makes under
@@ -783,6 +886,7 @@ while [[ $# -gt 0 ]]; do
         --with-syslog)     WITH_SYSLOG="yes"; SYSLOG_ASKED="yes"; shift;;
         --no-syslog)       WITH_SYSLOG=""; shift;;
         --no-php-update)   PHP_UPDATE=""; shift;;
+        --no-python-update) PYTHON_UPDATE=""; shift;;
         --db-rights)       DO_DB_RIGHTS="yes"; shift;;
         --log-from)        LOG_FROM="$2"; shift 2;;
         --with-db)         WITH_DB="$2"
@@ -1403,6 +1507,9 @@ if [[ -n "$DO_UPGRADE" ]]; then
         progress 1 "PHP"
         php_update
     fi
+    # The Python isemon runs on, the newest that fits (1.10.252).
+    progress 1 "Python"
+    python_pick "$(config_engine)"
     progress 1 "copying the program"
     [[ -d "$LIB_DIR" ]] || fail "$LIB_DIR does not exist — this looks like a first install, so run it without --upgrade"
     was="$(python3 "$LIB_DIR/isemon.py" --version 2>/dev/null || echo unknown)"
@@ -1542,6 +1649,7 @@ if [[ -n "$DO_UPGRADE" ]]; then
     # The unit and the rotation may have changed between versions; the config
     # file and the database never are.
     progress 6 "the units, and what the pages may ask of root"
+    python_link
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.service" "$UNIT_FILE"
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.logrotate" "$LOGROTATE_FILE"
     root_helpers
@@ -1562,6 +1670,7 @@ if [[ -n "$DO_UPGRADE" ]]; then
         systemctl is-active --quiet isemon.service && break
         sleep 1
     done
+    systemctl is-active --quiet isemon.service || python_back || true
     if systemctl is-active --quiet isemon.service; then
         progress 8 "checking it answers"
         good "isemon $VERSION is running."
@@ -1706,7 +1815,8 @@ if [[ -d "$SOURCE_DIR/test" ]]; then
     run rm -rf "$LIB_DIR/test"
     run cp -r "$SOURCE_DIR/test" "$LIB_DIR/test"
 fi
-run ln -sf "$LIB_DIR/isemon.py" "$BIN_LINK"
+python_pick "${WITH_DB:-sqlite}"
+python_link
 good "$BIN_LINK"
 
 not_a_link "$STATE_DIR" "$STATE_DIR/backups" "$STATE_DIR/dumps" "$LOG_DIR"
@@ -1878,6 +1988,7 @@ run systemctl enable isemon.service >/dev/null
 run systemctl restart isemon.service
 sleep 2
 if [[ -z "$DRY_RUN" ]]; then
+    systemctl is-active --quiet isemon.service || python_back || true
     if systemctl is-active --quiet isemon.service; then
         good "isemon.service is running"
     else

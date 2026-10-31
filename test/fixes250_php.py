@@ -115,7 +115,7 @@ good() { echo "GOOD $*"; }
 warn() { echo "WARN $*"; }
 note() { echo "NOTE $*"; }
 say()  { echo "SAY $*"; }
-PKG=%s; DRY_RUN=%s; PHP_UPDATE=%s
+PKG=%s; DRY_RUN=%s; PHP_UPDATE=%s; LIB_DIR=/nonexistent
 %s
 php_update
 ''' % (pkg, dry or '""', update or '""', funcs)

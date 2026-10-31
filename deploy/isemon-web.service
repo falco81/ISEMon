@@ -11,6 +11,6 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 -I /usr/local/lib/isemon/isemon_web.py
+ExecStart=/usr/local/lib/isemon/python -I /usr/local/lib/isemon/isemon_web.py
 # Making DH parameters of 4096 bits takes up to ten minutes.
 TimeoutStartSec=30min

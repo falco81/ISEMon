@@ -666,9 +666,10 @@ try:
        ('PathExists=/var/lib/isemon/web/request.json' in units['isemon-web.path'],
         'PathExists=/var/lib/isemon/upgrade/request.json' in units['isemon-upgrade.path']),
        (True, True))
+    # On the Python isemon runs on, LIB_DIR/python (1.10.252).
     ok('the services run the helpers with python -I',
-       ('python3 -I /usr/local/lib/isemon/isemon_web.py' in units['isemon-web.service'],
-        'python3 -I /usr/local/lib/isemon/isemon_upgrade.py' in units['isemon-upgrade.service']),
+       ('python -I /usr/local/lib/isemon/isemon_web.py' in units['isemon-web.service'],
+        'python -I /usr/local/lib/isemon/isemon_upgrade.py' in units['isemon-upgrade.service']),
        (True, True))
     ok('a release key ships', any((ROOT / 'deploy' / 'release-keys').glob('*.pub')))
     ok('the vhost this package ships is the one before (an upgrade touches nothing of it)',

@@ -9,7 +9,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /usr/local/lib/isemon/isemon.py
+ExecStart=/usr/local/lib/isemon/python /usr/local/lib/isemon/isemon.py
 # Reloading reopens the log file after logrotate and reads the config again;
 # the daemon handles SIGHUP.
 ExecReload=/bin/kill -HUP $MAINPID

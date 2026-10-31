@@ -10,6 +10,6 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 -I /usr/local/lib/isemon/isemon_upgrade.py
+ExecStart=/usr/local/lib/isemon/python -I /usr/local/lib/isemon/isemon_upgrade.py
 TimeoutStartSec=25min
 PrivateTmp=no

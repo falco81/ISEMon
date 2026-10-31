@@ -371,6 +371,22 @@ working.
 
 ## Version
 
+1.10.252
+
+- **isemon on the newest Python there is**: an upgrade (from the pages too)
+  and a fresh install put in the newest Python the distribution offers beside
+  its own - python3.14, 3.13, 3.12 or 3.11 on AlmaLinux / RHEL 9 (AppStream)
+  - and run isemon on it, when it imports what isemon needs (ssl, sqlite3, and
+  the database's driver: python3.X-PyMySQL or -psycopg2 put in for it) and
+  `isemon.py --version` runs on it; else the next older, else the one it ran
+  on. **The system's python3 (3.9, dnf's own) is never changed.** What is
+  chosen is `/usr/local/lib/isemon/python`, a link the three units
+  (isemon, isemon-web, isemon-upgrade) and the `isemon` command
+  (`/usr/local/bin/isemon`, now a small script) run through; when isemon does
+  not start on the new one, the link goes back to the one before and isemon
+  is started again. `--no-python-update` keeps the Python it runs on; Debian
+  and Ubuntu run on their own python3.
+
 1.10.251
 
 - **Settings - Automatic certificates** (ACME, off until switched on, for a
