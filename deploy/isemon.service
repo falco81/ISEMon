@@ -75,7 +75,11 @@ NoNewPrivileges=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# AF_NETLINK (1.10.260): smbclient - backups to a Windows or Samba share - reads
+# the network interfaces through it (getifaddrs) and refused to start without
+# it: "Could not determine network interfaces, you must use a interfaces config
+# line". It only reads them; the daemon changes nothing of the network.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 RestrictNamespaces=yes
 LockPersonality=yes
 # NOT MemoryDenyWriteExecute: ssh is started as a child process to reach the

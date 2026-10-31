@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.259'
+__version__ = '1.10.260'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -68375,6 +68375,12 @@ class RbSmb(object):
                 said = 'the server did not take the account and password (%s)' % said
             elif 'NT_STATUS_BAD_NETWORK_NAME' in said:
                 said = 'there is no share %s on %s' % (self.t['share'], self.t['host'])
+            elif 'could not determine network interfaces' in said.lower():
+                # The service before 1.10.260 kept smbclient from reading the
+                # network interfaces (AF_NETLINK not among its address families).
+                said = ('it could not read this machine\'s network interfaces - the service '
+                        'keeps it from them: ./install.sh --upgrade puts in the unit that '
+                        'lets it (1.10.260 or later)')
             elif 'protection' in said.lower() and 'unknown' in said.lower():
                 said = ('this smbclient does not know --client-protection: switch "SMB3 '
                         'encryption required" off or install a newer samba-client')

@@ -371,6 +371,15 @@ working.
 
 ## Version
 
+1.10.260
+
+- **Backups to a Windows or Samba share did not start**: smbclient said "Could
+  not determine network interfaces, you must use a interfaces config line" -
+  the daemon's unit kept it from reading them (it reads them through a netlink
+  socket, and AF_NETLINK was not among the unit's address families). The unit
+  lets it now, for reading only; `./install.sh --upgrade` puts it in. An
+  smbclient that says so anyway is told in words, with what to do.
+
 1.10.259
 
 - **F5 on a pane drew it half**: Automatic certificates, opened by its address
