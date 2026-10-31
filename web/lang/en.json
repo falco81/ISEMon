@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.248",
+  "version": "1.10.251",
   "made": "2026-10-31",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -1488,6 +1488,22 @@
    "source": "a TLS session resumed",
    "text": "a TLS session resumed"
   },
+  "s.a-token-at-cloudflare-my-profile.6dc69268": {
+   "source": "A token at Cloudflare (My Profile → API Tokens) with Zone - DNS - Edit for the zone, given below.",
+   "text": "A token at Cloudflare (My Profile → API Tokens) with Zone - DNS - Edit for the zone, given below."
+  },
+  "s.a-token-from-desec-token-management.bae68b9d": {
+   "source": "A token from deSEC (Token management) - one that may change this domain’s records. Kept sealed.",
+   "text": "A token from deSEC (Token management) - one that may change this domain’s records. Kept sealed."
+  },
+  "s.a-token-with-zone-dns-edit.2fe39805": {
+   "source": "A token with Zone - DNS - Edit for the zone. Kept sealed.",
+   "text": "A token with Zone - DNS - Edit for the zone. Kept sealed."
+  },
+  "s.a-tsig-key-the-dns-server.552efe43": {
+   "source": "A TSIG key the DNS server lets update the _acme-challenge records (tsig-keygen), given below with the server and the zone.",
+   "text": "A TSIG key the DNS server lets update the _acme-challenge records (tsig-keygen), given below with the server and the zone."
+  },
   "s.a-tunnel-started-over-by-its.25bd2e13": {
    "source": "a tunnel started over by its peer",
    "text": "a tunnel started over by its peer"
@@ -1572,6 +1588,14 @@
    "source": "(?![A-Za-z])",
    "text": "(?![A-Za-z])"
   },
+  "s.a-zone-the-records-go-into.b3f461b1": {
+   "source": "A zone the records go into instead of the name’s own ( acme.example.net ), the name with a CNAME to it in your DNS - In your DNS above says which. Empty: _acme-challenge.NAME itself.",
+   "text": "A zone the records go into instead of the name’s own ( acme.example.net ), the name with a CNAME to it in your DNS - In your DNS above says which. Empty: _acme-challenge.NAME itself."
+  },
+  "s.a-zone-the-records-go-into.d3135cc4": {
+   "source": "A zone the records go into instead of the name’s own (",
+   "text": "A zone the records go into instead of the name’s own ("
+  },
   "s.abcdefghjklmnpqrstuvwxyzabcdefghijkmnpqrstuvwxyz23456789.95f26180": {
    "source": "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789",
    "text": "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
@@ -1607,6 +1631,14 @@
   "s.above-is-set-to-the-chosen.3f7083e4": {
    "source": "above is set to the chosen hour, and even then only for what is fetched daily or less often. A machine that was switched off through that hour does not wait another whole day: once something is a day past due it goes whatever the clock says.",
    "text": "above is set to the chosen hour, and even then only for what is fetched daily or less often. A machine that was switched off through that hour does not wait another whole day: once something is a day past due it goes whatever the clock says."
+  },
+  "s.above-says-which-empty-acme-challenge.8f9618cb": {
+   "source": "above says which. Empty: _acme-challenge.NAME itself.",
+   "text": "above says which. Empty: _acme-challenge.NAME itself."
+  },
+  "s.above-says-which.ff84ab22": {
+   "source": "above says which.",
+   "text": "above says which."
   },
   "s.above-to-look-for-one-by.c5223767": {
    "source": "above to look for one by name.",
@@ -1772,6 +1804,58 @@
    "source": "acls",
    "text": "acls"
   },
+  "s.acme-challenge-name-is-a-cname.58d030e6": {
+   "source": "; _acme-challenge.NAME is a CNAME to the subdomain below.",
+   "text": "; _acme-challenge.NAME is a CNAME to the subdomain below."
+  },
+  "s.acme-dns-key.6f4a82ff": {
+   "source": "acme-dns key",
+   "text": "acme-dns key"
+  },
+  "s.acme-dns-subdomain.1de210dd": {
+   "source": "acme-dns subdomain",
+   "text": "acme-dns subdomain"
+  },
+  "s.acme-dns-user.6cf71594": {
+   "source": "acme-dns user",
+   "text": "acme-dns user"
+  },
+  "s.acme-example-net.944381db": {
+   "source": "acme.example.net",
+   "text": "acme.example.net"
+  },
+  "s.acme-leaves-it-alone.ce1236b2": {
+   "source": "ACME leaves it alone",
+   "text": "ACME leaves it alone"
+  },
+  "s.acme-no-longer-renews-it-either.31a89f8a": {
+   "source": "ACME no longer renews it either.",
+   "text": "ACME no longer renews it either."
+  },
+  "s.acme-renews-it.24be8eb7": {
+   "source": "ACME renews it",
+   "text": "ACME renews it"
+  },
+  "s.acme-renews-this-certificate.3f3ecfe6": {
+   "source": "ACME renews this certificate",
+   "text": "ACME renews this certificate"
+  },
+  "s.acme-renews-this-one-from-now.de38a192": {
+   "source": "ACME renews this one from now on - at the next look (within the hour) if it is not from the CA yet.",
+   "text": "ACME renews this one from now on - at the next look (within the hour) if it is not from the CA yet."
+  },
+  "s.acme-stops-renewing-this-one-the.e458b32e": {
+   "source": "ACME stops renewing this one; the certificate it has stays.",
+   "text": "ACME stops renewing this one; the certificate it has stays."
+  },
+  "s.acme.293abb6b": {
+   "source": "acme",
+   "text": "acme"
+  },
+  "s.acmedns.93b5bebb": {
+   "source": "acmedns",
+   "text": "acmedns"
+  },
   "s.across-the-forest.d0d9bbdd": {
    "source": "across the forest",
    "text": "across the forest"
@@ -1823,6 +1907,10 @@
   "s.add-a-destination.e4c6fd9f": {
    "source": "Add a destination",
    "text": "Add a destination"
+  },
+  "s.add-a-domain-there-a-free.3e2a1ae0": {
+   "source": "Add a domain there: a free one - yourname.dedyn.io - or one of your own whose DNS is at deSEC.",
+   "text": "Add a domain there: a free one - yourname.dedyn.io - or one of your own whose DNS is at deSEC."
   },
   "s.add-a-firewall.64e9226d": {
    "source": "Add a firewall",
@@ -2172,6 +2260,10 @@
    "source": "Allowed by",
    "text": "Allowed by"
   },
+  "s.allowed-to-update-acme-challenge-records.efff90cd": {
+   "source": "; allowed to update _acme-challenge records only.",
+   "text": "; allowed to update _acme-challenge records only."
+  },
   "s.allowed.77c7b490": {
    "source": "Allowed",
    "text": "Allowed"
@@ -2359,6 +2451,10 @@
   "s.an-accounting-record-the-session-this.c598df3f": {
    "source": "An accounting record: the session this belongs to was opened.",
    "text": "An accounting record: the session this belongs to was opened."
+  },
+  "s.an-acme-dns-server.07fa6de2": {
+   "source": "an acme-dns server",
+   "text": "an acme-dns server"
   },
   "s.an-address-a-country-a-reason.274099b4": {
    "source": "an address, a country, a reason…",
@@ -2744,6 +2840,10 @@
    "source": "And what goes into it",
    "text": "And what goes into it"
   },
+  "s.and-whether-the-txt-record-can.d8f386ad": {
+   "source": ", and whether the TXT record can be seen before the CA is asked -",
+   "text": ", and whether the TXT record can be seen before the CA is asked -"
+  },
   "s.and.8278d2ad": {
    "source": ", and",
    "text": ", and"
@@ -2771,6 +2871,10 @@
   "s.anon.61518fb1": {
    "source": "anon",
    "text": "anon"
+  },
+  "s.another-acme-ca-step-ca-an.c6ffb2ff": {
+   "source": "another ACME CA (step-ca, an internal CA...)",
+   "text": "another ACME CA (step-ca, an internal CA...)"
   },
   "s.another-folder-for-the-same-firewall.e0665661": {
    "source": "Another folder for the same firewall - the other unit of a pair",
@@ -3084,6 +3188,18 @@
    "source": "As the dashboard",
    "text": "As the dashboard"
   },
+  "s.as-the-dns-server-knows-it.3697dcb8": {
+   "source": "As the DNS server knows it,",
+   "text": "As the DNS server knows it,"
+  },
+  "s.as-the-dns-server-knows-it.90ee5118": {
+   "source": "As the DNS server knows it, isemon-acme. ; allowed to update _acme-challenge records only.",
+   "text": "As the DNS server knows it, isemon-acme. ; allowed to update _acme-challenge records only."
+  },
+  "s.as-the-key-was-made-tsig.e8eaa5f9": {
+   "source": "As the key was made (tsig-keygen makes hmac-sha256).",
+   "text": "As the key was made (tsig-keygen makes hmac-sha256)."
+  },
   "s.as-the-log-wrote-it.4d593e57": {
    "source": "As the log wrote it",
    "text": "As the log wrote it"
@@ -3287,6 +3403,10 @@
   "s.at-a-chosen-hour.f0cb1c7c": {
    "source": "At a chosen hour",
    "text": "At a chosen hour"
+  },
+  "s.at-every-order-renewals-too-the.4c52d3e6": {
+   "source": "At every order - renewals too - the TXT record is shown here: put it in your DNS, then say It is in DNS.",
+   "text": "At every order - renewals too - the TXT record is shown here: put it in your DNS, then say It is in DNS."
   },
   "s.at-its-first-failure-without-the.ab5d35df": {
    "source": ", at its first failure, without the counting. On a month of logs that is usually most of what this finds.",
@@ -3496,6 +3616,14 @@
    "source": "Auto",
    "text": "Auto"
   },
+  "s.automatic-certificates-http-01.f48fd167": {
+   "source": "Automatic certificates (HTTP-01)",
+   "text": "Automatic certificates (HTTP-01)"
+  },
+  "s.automatic-certificates.3dd0898d": {
+   "source": "Automatic certificates",
+   "text": "Automatic certificates"
+  },
   "s.automatic-slaac-dhcpv6.accadcb7": {
    "source": "automatic (SLAAC / DHCPv6)",
    "text": "automatic (SLAAC / DHCPv6)"
@@ -3523,6 +3651,10 @@
   "s.back-to-a-version-published-at.516e0220": {
    "source": "Back to a version published at the address above - only as far back as can still run on this database as it is. Nothing is copied or put back: the database is left exactly as it is, whatever its size, and the settings of later versions wait in it for the next upgrade. Root checks the package and the limit again before it puts it in.",
    "text": "Back to a version published at the address above - only as far back as can still run on this database as it is. Nothing is copied or put back: the database is left exactly as it is, whatever its size, and the settings of later versions wait in it for the next upgrade. Root checks the package and the limit again before it puts it in."
+  },
+  "s.back-to-the-one-before.a14ad78d": {
+   "source": "Back to the one before…",
+   "text": "Back to the one before…"
   },
   "s.back-up-now.527bf1aa": {
    "source": "Back up now",
@@ -3956,6 +4088,10 @@
    "source": "beside",
    "text": "beside"
   },
+  "s.better-a-cname-once-in-your.2ff365de": {
+   "source": "Better: a CNAME once in your DNS to a zone isemon can write to (deSEC is free) - then nothing is by hand any more.",
+   "text": "Better: a CNAME once in your DNS to a zone isemon can write to (deSEC is free) - then nothing is by hand any more."
+  },
   "s.bhutan.bb2254a8": {
    "source": "Bhutan",
    "text": "Bhutan"
@@ -4172,9 +4308,21 @@
    "source": "by DHCP",
    "text": "by DHCP"
   },
+  "s.by-hand-at-every-order.135cc958": {
+   "source": "by hand, at every order",
+   "text": "by hand, at every order"
+  },
   "s.by-hand-only.d6472806": {
    "source": "by hand only",
    "text": "by hand only"
+  },
+  "s.by-hand-the-order-waits-up.db0d0620": {
+   "source": "By hand the order waits up to an hour for you; the others renew by themselves.",
+   "text": "By hand the order waits up to an hour for you; the others renew by themselves."
+  },
+  "s.by-hand-the-record-is-shown.a658c334": {
+   "source": "by hand - the record is shown here, you put it in",
+   "text": "by hand - the record is shown here, you put it in"
   },
   "s.by-hand.db5bc9af": {
    "source": "by hand",
@@ -4332,6 +4480,10 @@
    "source": "card",
    "text": "card"
   },
+  "s.care.ec1deb95": {
+   "source": "care",
+   "text": "care"
+  },
   "s.carried-so-far.cfecaa9b": {
    "source": "Carried so far",
    "text": "Carried so far"
@@ -4447,6 +4599,10 @@
   "s.certificates-expired.03ee862d": {
    "source": "Certificates expired",
    "text": "Certificates expired"
+  },
+  "s.certificates-from-an-acme-ca.e5122ca8": {
+   "source": "Certificates from an ACME CA",
+   "text": "Certificates from an ACME CA"
   },
   "s.certificates-in-it.07804955": {
    "source": "Certificates in it",
@@ -4576,6 +4732,14 @@
    "source": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log.",
    "text": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log."
   },
+  "s.check-dns-here-then-order-it.2a250c0e": {
+   "source": "Check DNS here, then Order it now. Renewals go by themselves.",
+   "text": "Check DNS here, then Order it now. Renewals go by themselves."
+  },
+  "s.check-dns.827a376c": {
+   "source": "Check DNS",
+   "text": "Check DNS"
+  },
   "s.check-it-all.ce80abfc": {
    "source": "Check it all…",
    "text": "Check it all…"
@@ -4643,6 +4807,10 @@
   "s.checked-by.14a628e6": {
    "source": "Checked by",
    "text": "Checked by"
+  },
+  "s.checked-with-this-machine-s-dns.aa60ce4d": {
+   "source": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees.",
+   "text": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees."
   },
   "s.checked.75e4aedc": {
    "source": "checked",
@@ -4859,6 +5027,14 @@
   "s.close.da38860c": {
    "source": "close",
    "text": "close"
+  },
+  "s.cloudflare-with-an-api-token.209b3566": {
+   "source": "Cloudflare, with an API token",
+   "text": "Cloudflare, with an API token"
+  },
+  "s.cloudflare.f036f579": {
+   "source": "cloudflare",
+   "text": "cloudflare"
   },
   "s.cn-ru.733cb76c": {
    "source": "CN,RU",
@@ -5131,6 +5307,10 @@
   "s.copy-the-url.d2f64e4d": {
    "source": "Copy the URL",
    "text": "Copy the URL"
+  },
+  "s.copy-the-value.57a06172": {
+   "source": "Copy the value",
+   "text": "Copy the value"
   },
   "s.copy-the-whole-record.9c6e1e88": {
    "source": "Copy the whole record",
@@ -5456,6 +5636,10 @@
    "source": "days is a number of days",
    "text": "days is a number of days"
   },
+  "s.days-left.0575b7b5": {
+   "source": "days left",
+   "text": "days left"
+  },
   "s.days.5548ae4f": {
    "source": "days",
    "text": "days"
@@ -5619,6 +5803,14 @@
   "s.descending.48609391": {
    "source": "descending",
    "text": "descending"
+  },
+  "s.desec-io-free-with-an-api.0e8d8689": {
+   "source": "deSEC.io (free), with an API token - a CNAME in your DNS",
+   "text": "deSEC.io (free), with an API token - a CNAME in your DNS"
+  },
+  "s.desec.a524a6b5": {
+   "source": "desec",
+   "text": "desec"
   },
   "s.destination-country.6cd4a804": {
    "source": "Destination country",
@@ -5828,6 +6020,22 @@
    "source": "dnf (or apt) updates every package. The logs go on being read meanwhile; a restart it needs is offered at the end.",
    "text": "dnf (or apt) updates every package. The logs go on being read meanwhile; a restart it needs is offered at the end."
   },
+  "s.dns-01-a-txt-record-in.186d2f2a": {
+   "source": "DNS-01 - a TXT record in DNS (no port open to the internet)",
+   "text": "DNS-01 - a TXT record in DNS (no port open to the internet)"
+  },
+  "s.dns-01-by-hand-the-ca.fd7418f7": {
+   "source": "DNS-01 by hand: the CA reads a TXT record you put in at every order.",
+   "text": "DNS-01 by hand: the CA reads a TXT record you put in at every order."
+  },
+  "s.dns-01-the-ca-reads-a.70be8689": {
+   "source": "DNS-01: the CA reads a TXT record isemon puts in. What has to be in your DNS for it - once - is below.",
+   "text": "DNS-01: the CA reads a TXT record isemon puts in. What has to be in your DNS for it - once - is below."
+  },
+  "s.dns-01.e73a8ad2": {
+   "source": "DNS-01",
+   "text": "DNS-01"
+  },
   "s.dns-filter-lines-written-for-this.ff0b9f6a": {
    "source": "DNS filter lines written for this session",
    "text": "DNS filter lines written for this session"
@@ -5835,6 +6043,14 @@
   "s.dns-filter-only.923a43a1": {
    "source": "DNS filter only",
    "text": "DNS filter only"
+  },
+  "s.dns-name.eab9038c": {
+   "source": "DNS name",
+   "text": "DNS name"
+  },
+  "s.dns-servers-for-acme.a8ade03c": {
+   "source": "DNS servers for ACME",
+   "text": "DNS servers for ACME"
   },
   "s.dns-servers.9143628a": {
    "source": "DNS servers",
@@ -6260,6 +6476,10 @@
    "source": "Each reason NPS gave, and which account got it last.",
    "text": "Each reason NPS gave, and which account got it last."
   },
+  "s.each-record-looked-up-from-this.113119a4": {
+   "source": "Each record looked up from this server now, through its DNS servers - as the CA will look. A record just put in may take a while to show (its TTL).",
+   "text": "Each record looked up from this server now, through its DNS servers - as the CA will look. A record just put in may take a while to show (its TTL)."
+  },
   "s.eap-friendly-name.fd873623": {
    "source": "EAP-Friendly-Name",
    "text": "EAP-Friendly-Name"
@@ -6315,6 +6535,14 @@
   "s.ecdhe-with-aes-gcm-and-chacha20.f1fabbd8": {
    "source": "ECDHE with AES-GCM and ChaCha20 - what install.sh writes. Every browser of the last ten years.",
    "text": "ECDHE with AES-GCM and ChaCha20 - what install.sh writes. Every browser of the last ten years."
+  },
+  "s.ecdsa-is-smaller-and-quicker-rsa.a8452492": {
+   "source": "ECDSA is smaller and quicker; RSA for old clients.",
+   "text": "ECDSA is smaller and quicker; RSA for old clients."
+  },
+  "s.ecdsa-p-256.1545b7b3": {
+   "source": "ECDSA P-256",
+   "text": "ECDSA P-256"
   },
   "s.ecuador.09f199d2": {
    "source": "Ecuador",
@@ -6428,6 +6656,10 @@
    "source": "Empty: as far back as there is.",
    "text": "Empty: as far back as there is."
   },
+  "s.empty-as-the-server-finds-it.0d722904": {
+   "source": ". Empty: as the server finds it.",
+   "text": ". Empty: as the server finds it."
+  },
   "s.empty-column.7a386d42": {
    "source": "empty column",
    "text": "empty column"
@@ -6463,6 +6695,10 @@
   "s.empty-the-key-not-encrypted.89ca935a": {
    "source": "empty - the key not encrypted",
    "text": "empty - the key not encrypted"
+  },
+  "s.empty-the-name-of-the-certificate.5af49c9c": {
+   "source": "Empty: the name of the certificate it has now, else this server's full host name.",
+   "text": "Empty: the name of the certificate it has now, else this server's full host name."
   },
   "s.empty-the-password-of-the-backups.0ae72f9c": {
    "source": "empty: the password of the backups set here",
@@ -7708,6 +7944,10 @@
    "source": "example.cz",
    "text": "example.cz"
   },
+  "s.example-dedyn-io.13a7708c": {
+   "source": "example.dedyn.io",
+   "text": "example.dedyn.io"
+  },
   "s.example-local.506744a6": {
    "source": "example.local",
    "text": "example.local"
@@ -8556,6 +8796,10 @@
    "source": "For which firewall",
    "text": "For which firewall"
   },
+  "s.for.f7880600": {
+   "source": "For",
+   "text": "For"
+  },
   "s.forever.e07f8c4a": {
    "source": "forever",
    "text": "forever"
@@ -8671,6 +8915,10 @@
   "s.free-now.52786f8a": {
    "source": "Free now",
    "text": "Free now"
+  },
+  "s.free-or-one-of-your-own.046ca5c0": {
+   "source": "(free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name -",
+   "text": "(free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name -"
   },
   "s.freeradius-802-1x-lan.05220342": {
    "source": "FreeRADIUS 802.1X LAN",
@@ -8796,6 +9044,10 @@
    "source": "from the app",
    "text": "from the app"
   },
+  "s.from-the-ca.751b871b": {
+   "source": "from the CA",
+   "text": "from the CA"
+  },
   "s.from-the-eduroam-logs.b0ab5c8d": {
    "source": "from the eduroam logs",
    "text": "from the eduroam logs"
@@ -8819,6 +9071,14 @@
   "s.from-the-never-block-setting.c5e8f755": {
    "source": "from the never_block setting",
    "text": "from the never_block setting"
+  },
+  "s.from-the-registration-at-acme-dns.da025403": {
+   "source": "From the registration at acme-dns. Kept sealed.",
+   "text": "From the registration at acme-dns. Kept sealed."
+  },
+  "s.from-the-registration-at-acme-dns.e0386a5d": {
+   "source": "From the registration at acme-dns.",
+   "text": "From the registration at acme-dns."
   },
   "s.from-the-token-logs.0d2eb695": {
    "source": "from the token logs",
@@ -8988,9 +9248,17 @@
    "source": "- give it to its administrator.",
    "text": "- give it to its administrator."
   },
+  "s.give-its-name-first-its-name.e817bf31": {
+   "source": "Give its name first (Its name…).",
+   "text": "Give its name first (Its name…)."
+  },
   "s.give-the-disk-back.eb52259c": {
    "source": "Give the disk back",
    "text": "Give the disk back"
+  },
+  "s.give-the-order-up.08fbe92c": {
+   "source": "Give the order up",
+   "text": "Give the order up"
   },
   "s.give-the-password-here-instead-of.4a3e0f12": {
    "source": "give the password here instead of being asked (it goes in your shell history and the process list; being asked is better, and ISEMON_PASSWORD in the environment is the way for a script)",
@@ -9079,6 +9347,10 @@
   "s.go-lets-in-every-address-of.c8c641cc": {
    "source": "go lets in every address of it with no ban of its own; the ones it was folded from, if any, stay banned as themselves.",
    "text": "go lets in every address of it with no ban of its own; the ones it was folded from, if any, stay banned as themselves."
+  },
+  "s.go-on.4319a1b9": {
+   "source": "Go on",
+   "text": "Go on"
   },
   "s.going-back-now.f34819d5": {
    "source": "going back now",
@@ -9620,6 +9892,10 @@
    "source": "How long the RADIUS packets behind the token log are kept - what the token server was ASKED, beside what it answered. They are what makes \"the same account, from the same machine, every ninety seconds\" answerable, and they are far more of them than the answers. A ceiling of four hundred thousand rows sits under this.",
    "text": "How long the RADIUS packets behind the token log are kept - what the token server was ASKED, beside what it answered. They are what makes \"the same account, from the same machine, every ninety seconds\" answerable, and they are far more of them than the answers. A ceiling of four hundred thousand rows sits under this."
   },
+  "s.how-long-the-record-is-given.12b641f1": {
+   "source": "How long the record is given to reach every DNS server before the CA is asked.",
+   "text": "How long the record is given to reach every DNS server before the CA is asked."
+  },
   "s.how-long-the-session-lasted-s.4a77eb74": {
    "source": "how long the session lasted (s)",
    "text": "how long the session lasted (s)"
@@ -9976,6 +10252,14 @@
    "source": "how the bytes are counted",
    "text": "how the bytes are counted"
   },
+  "s.how-the-ca-checks-it.c011a6c2": {
+   "source": "How the CA checks it",
+   "text": "How the CA checks it"
+  },
+  "s.how-the-ca-checks-the-name.780cdeb0": {
+   "source": "How the CA checks the name",
+   "text": "How the CA checks the name"
+  },
   "s.how-the-code-came.9a8b5325": {
    "source": "How the code came",
    "text": "How the code came"
@@ -10084,6 +10368,22 @@
    "source": "HSTS",
    "text": "HSTS"
   },
+  "s.http-01-needs-port-80-of.d731fe6e": {
+   "source": "HTTP-01 needs port 80 of the name reachable from the internet (or from the CA, for a CA of your own). DNS-01 needs nothing open: the CA reads a TXT record.",
+   "text": "HTTP-01 needs port 80 of the name reachable from the internet (or from the CA, for a CA of your own). DNS-01 needs nothing open: the CA reads a TXT record."
+  },
+  "s.http-01-the-ca-asks-port.2ae9d7f0": {
+   "source": "HTTP-01: the CA asks port 80 of the name - so the name points at this server, and port 80 is open to the CA.",
+   "text": "HTTP-01: the CA asks port 80 of the name - so the name points at this server, and port 80 is open to the CA."
+  },
+  "s.http-01-the-ca-asks-port.b5aa9934": {
+   "source": "HTTP-01 - the CA asks port 80 of the name",
+   "text": "HTTP-01 - the CA asks port 80 of the name"
+  },
+  "s.http-01.aeb5a5e4": {
+   "source": "HTTP-01",
+   "text": "HTTP-01"
+  },
   "s.http-alt.75873cbd": {
    "source": "HTTP alt",
    "text": "HTTP alt"
@@ -10103,6 +10403,18 @@
   "s.https-alt.5c5e67dc": {
    "source": "HTTPS alt",
    "text": "HTTPS alt"
+  },
+  "s.https-auth-acme-dns-example-cz.4fd7c1f6": {
+   "source": "https://auth.acme-dns.example.cz",
+   "text": "https://auth.acme-dns.example.cz"
+  },
+  "s.https-auth-acme-dns-example-cz.87f9ac6e": {
+   "source": "https://auth.acme-dns.example.cz ; _acme-challenge.NAME is a CNAME to the subdomain below.",
+   "text": "https://auth.acme-dns.example.cz ; _acme-challenge.NAME is a CNAME to the subdomain below."
+  },
+  "s.https-ca-example-cz-acme-acme.1bfd5c07": {
+   "source": "https://ca.example.cz/acme/acme/directory",
+   "text": "https://ca.example.cz/acme/acme/directory"
   },
   "s.https-dns.e0ff83c3": {
    "source": "HTTPS, DNS",
@@ -10256,6 +10568,10 @@
    "source": "In an ordinary firewall policy from the internet side, put",
    "text": "In an ordinary firewall policy from the internet side, put"
   },
+  "s.in-dns-now.fa11c2c0": {
+   "source": "In DNS now",
+   "text": "In DNS now"
+  },
   "s.in-force.377013e3": {
    "source": "In force",
    "text": "In force"
@@ -10320,6 +10636,10 @@
    "source": "In the directory",
    "text": "In the directory"
   },
+  "s.in-the-dns-of-your-own.e2832a3a": {
+   "source": "In the DNS of your own domain put the CNAME record below - once; it stays for every renewal.",
+   "text": "In the DNS of your own domain put the CNAME record below - once; it stays for every renewal."
+  },
   "s.in-the-firewall-s-user-manager.e9f5f6db": {
    "source": "in the firewall’s user manager.",
    "text": "in the firewall’s user manager."
@@ -10363,6 +10683,14 @@
   "s.in-use.092a1ca8": {
    "source": "In use.",
    "text": "In use."
+  },
+  "s.in-your-dns-put-the-cname.03b0632c": {
+   "source": "In your DNS put the CNAME record below - once.",
+   "text": "In your DNS put the CNAME record below - once."
+  },
+  "s.in-your-dns.21cbd76f": {
+   "source": "In your DNS",
+   "text": "In your DNS"
   },
   "s.in.aef36502": {
    "source": "In",
@@ -10884,6 +11212,10 @@
    "source": "ise",
    "text": "ise"
   },
+  "s.isemon-acme.222a3588": {
+   "source": "isemon-acme.",
+   "text": "isemon-acme."
+  },
   "s.isemon-add-user-name-role-fulladmin.845ae7a7": {
    "source": "isemon --add-user name --role fulladmin",
    "text": "isemon --add-user name --role fulladmin"
@@ -11015,6 +11347,10 @@
   "s.isemon-puts-a-chain-of-its.503b6bb9": {
    "source": "isemon puts a chain of its own, ISEMON-IN, first in INPUT, for IPv4 and IPv6, and keeps it in /etc/sysconfig/iptables and ip6tables. Your own rules stay as they are; ISEMON-IN only adds to them - what it does not let in goes on to them. SSH stays open (a rule of isemon’s, which you can turn off).",
    "text": "isemon puts a chain of its own, ISEMON-IN, first in INPUT, for IPv4 and IPv6, and keeps it in /etc/sysconfig/iptables and ip6tables. Your own rules stay as they are; ISEMON-IN only adds to them - what it does not let in goes on to them. SSH stays open (a rule of isemon’s, which you can turn off)."
+  },
+  "s.isemon-puts-it-in.521ccbfe": {
+   "source": "isemon puts it in",
+   "text": "isemon puts it in"
   },
   "s.isemon-rescan-days-7.9e36b906": {
    "source": "isemon --rescan --days 7",
@@ -11176,6 +11512,10 @@
    "source": "It did not answer.",
    "text": "It did not answer."
   },
+  "s.it-did-not-go.ff03e98d": {
+   "source": "It did not go",
+   "text": "It did not go"
+  },
   "s.it-did-not-work.19a40b70": {
    "source": "it did not work",
    "text": "it did not work"
@@ -11259,6 +11599,10 @@
   "s.it-is-going-in-another-process.91ca4cd1": {
    "source": "It is going in another process - a terminal, most likely.",
    "text": "It is going in another process - a terminal, most likely."
+  },
+  "s.it-is-in-dns.e8e1238f": {
+   "source": "It is in DNS",
+   "text": "It is in DNS"
   },
   "s.it-is-never-a-way-in.d6c9d425": {
    "source": "It is never a way in.",
@@ -11352,9 +11696,17 @@
    "source": "Italy",
    "text": "Italy"
   },
+  "s.its-acme-directory.3f45b7e1": {
+   "source": "Its ACME directory",
+   "text": "Its ACME directory"
+  },
   "s.its-address.c54dbb70": {
    "source": "Its address",
    "text": "Its address"
+  },
+  "s.its-algorithm.355d7c79": {
+   "source": "Its algorithm",
+   "text": "Its algorithm"
   },
   "s.its-api-port.8b0b86a5": {
    "source": "Its API port",
@@ -11440,6 +11792,14 @@
    "source": "Its MAC",
    "text": "Its MAC"
   },
+  "s.its-name-is-not-known-yet.904d56f8": {
+   "source": "its name is not known yet",
+   "text": "its name is not known yet"
+  },
+  "s.its-name.d43ff9f3": {
+   "source": "Its name…",
+   "text": "Its name…"
+  },
   "s.its-networks.77daab32": {
    "source": "Its networks",
    "text": "Its networks"
@@ -11447,6 +11807,10 @@
   "s.its-operating-system.65a6b2ab": {
    "source": "its operating system",
    "text": "its operating system"
+  },
+  "s.its-own-certificate-is-kept.a37cf54b": {
+   "source": "its own certificate is kept",
+   "text": "its own certificate is kept"
   },
   "s.its-own-connection-its-own-account.5d64a3c1": {
    "source": "Its own connection, its own account that may only read, and its own settings: nothing here is the banning’s, and nothing is ever written to the router from here.",
@@ -11768,6 +12132,10 @@
    "source": "Kenya",
    "text": "Kenya"
   },
+  "s.kept-as-it-is-automatic-certificates.900fd20e": {
+   "source": "Kept as it is: Automatic certificates does not replace it (Look after it there gives it to ACME).",
+   "text": "Kept as it is: Automatic certificates does not replace it (Look after it there gives it to ACME)."
+  },
   "s.kept-in-sync-by-itself.d2dfeea8": {
    "source": "kept in sync by itself",
    "text": "kept in sync by itself"
@@ -11807,6 +12175,10 @@
   "s.kept-sealed-type-a-new-one.a7f3eca7": {
    "source": "Kept, sealed. Type a new one to change it.",
    "text": "Kept, sealed. Type a new one to change it."
+  },
+  "s.kept.1e61fe1e": {
+   "source": "kept",
+   "text": "kept"
   },
   "s.kerberos-policy-was-changed.d1f83219": {
    "source": "Kerberos policy was changed",
@@ -12032,6 +12404,10 @@
    "source": "Last one",
    "text": "Last one"
   },
+  "s.last-ordered.89920a76": {
+   "source": "Last ordered",
+   "text": "Last ordered"
+  },
   "s.last-read.c9ec82d6": {
    "source": "Last read",
    "text": "Last read"
@@ -12140,6 +12516,10 @@
    "source": "leasename",
    "text": "leasename"
   },
+  "s.leave-it-alone.3f3bb3ac": {
+   "source": "Leave it alone",
+   "text": "Leave it alone"
+  },
   "s.leave-it-empty-for-a-key.8623bcf0": {
    "source": "Leave it empty for a key that is not encrypted.",
    "text": "Leave it empty for a key that is not encrypted."
@@ -12235,6 +12615,22 @@
   "s.let-one-back-in-all-for.3e0109c6": {
    "source": "let one back in (\"all\" for everybody)",
    "text": "let one back in (\"all\" for everybody)"
+  },
+  "s.let-s-encrypt-its-staging-certificates.e8f40c00": {
+   "source": "Let’s Encrypt, its staging (certificates browsers do not trust - to try it), or another.",
+   "text": "Let’s Encrypt, its staging (certificates browsers do not trust - to try it), or another."
+  },
+  "s.let-s-encrypt-s-certificates-last.146f0eb3": {
+   "source": "Let’s Encrypt’s certificates last 90 days; 30 is what it advises. A certificate that lasts less is renewed at a third of its life.",
+   "text": "Let’s Encrypt’s certificates last 90 days; 30 is what it advises. A certificate that lasts less is renewed at a third of its life."
+  },
+  "s.let-s-encrypt-staging-to-try.104330af": {
+   "source": "Let’s Encrypt - staging (to try it)",
+   "text": "Let’s Encrypt - staging (to try it)"
+  },
+  "s.let-s-encrypt.fb229ac4": {
+   "source": "Let’s Encrypt",
+   "text": "Let’s Encrypt"
   },
   "s.let-the-bans-of-these-sources.3bb95fde": {
    "source": "Let the bans of these sources go",
@@ -12664,6 +13060,10 @@
    "source": "Look a name up",
    "text": "Look a name up"
   },
+  "s.look-after-it.37321878": {
+   "source": "Look after it",
+   "text": "Look after it"
+  },
   "s.look-at-every-page-ban-an.b961ca25": {
    "source": "Look at every page, ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall.",
    "text": "Look at every page, ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall."
@@ -13007,6 +13407,10 @@
   "s.made.e572f95f": {
    "source": "made",
    "text": "made"
+  },
+  "s.mail-of-the-account-at-the.cad7a82e": {
+   "source": "Mail of the account at the CA",
+   "text": "Mail of the account at the CA"
   },
   "s.main.b28b7af6": {
    "source": "main",
@@ -14008,10 +14412,6 @@
    "source": "nextstat",
    "text": "nextstat"
   },
-  "s.nginx-keeps-the-files-it-has.ed950c40": {
-   "source": "nginx keeps the files it has now; isemon no longer changes them.",
-   "text": "nginx keeps the files it has now; isemon no longer changes them."
-  },
   "s.nginx.58a3ed6f": {
    "source": "nginx",
    "text": "nginx"
@@ -14059,6 +14459,10 @@
   "s.no-backup-sent-yet.76d6a10d": {
    "source": "No backup sent yet.",
    "text": "No backup sent yet."
+  },
+  "s.no-certificate-of-isemon-s.6d119ae2": {
+   "source": "no certificate of isemon's",
+   "text": "no certificate of isemon's"
   },
   "s.no-certificate-yet-make-one-or.6251e374": {
    "source": "No certificate yet — make one, or let it pin the router’s own at the first connection.",
@@ -14287,6 +14691,10 @@
   "s.no-such-account.a7cb5e24": {
    "source": "no such account",
    "text": "no such account"
+  },
+  "s.no-such-challenge.4dea3352": {
+   "source": "no such challenge",
+   "text": "no such challenge"
   },
   "s.no-such-directory.073de13e": {
    "source": "no such directory",
@@ -14616,6 +15024,10 @@
    "source": "not checked (not safe)",
    "text": "not checked (not safe)"
   },
+  "s.not-checked-yet.c621dc72": {
+   "source": "not checked yet",
+   "text": "not checked yet"
+  },
   "s.not-checked.a60e9342": {
    "source": "NOT checked",
    "text": "NOT checked"
@@ -14659,6 +15071,10 @@
   "s.not-fetched.85e2b393": {
    "source": "not fetched",
    "text": "not fetched"
+  },
+  "s.not-from-the-ca.754c7346": {
+   "source": "not from the CA",
+   "text": "not from the CA"
   },
   "s.not-given.1d6edf47": {
    "source": "not given",
@@ -15232,6 +15648,10 @@
    "source": "Nothing to change: every setting is right for this machine",
    "text": "Nothing to change: every setting is right for this machine"
   },
+  "s.nothing-to-do-isemon-puts-it.00b01888": {
+   "source": "nothing to do: isemon puts it in and takes it away",
+   "text": "nothing to do: isemon puts it in and takes it away"
+  },
   "s.nothing-to-do.56764aea": {
    "source": "nothing to do",
    "text": "nothing to do"
@@ -15432,6 +15852,10 @@
    "source": "npsvpn",
    "text": "npsvpn"
   },
+  "s.ns1-example-cz.d5ad69c8": {
+   "source": "ns1.example.cz",
+   "text": "ns1.example.cz"
+  },
   "s.ntp-example-cz.11fcb552": {
    "source": "ntp.example.cz",
    "text": "ntp.example.cz"
@@ -15563,6 +15987,10 @@
   "s.off-otp-still-checks-that-it.336deeb9": {
    "source": "Off, otp still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.",
    "text": "Off, otp still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port."
+  },
+  "s.off-switch-it-on-below-say.be7a4e6d": {
+   "source": "Off - switch it on below, say the CA and how it checks the name, and save.",
+   "text": "Off - switch it on below, say the CA and how it checks the name, and save."
   },
   "s.off-switched-off.527c6dd0": {
    "source": "off switched off",
@@ -15760,6 +16188,10 @@
    "source": "on the banner in time, it goes back to what it was by itself.",
    "text": "on the banner in time, it goes back to what it was by itself."
   },
+  "s.on-the-card-above-sets-it.3e0d6225": {
+   "source": "on the card above sets it too.",
+   "text": "on the card above sets it too."
+  },
   "s.on-the-clipboard.9004a4e2": {
    "source": "on the clipboard",
    "text": "on the clipboard"
@@ -15915,6 +16347,10 @@
   "s.once-a-day.3c3defc3": {
    "source": "once a day",
    "text": "once a day"
+  },
+  "s.once-by-hand-in-your-dns.c315ca57": {
+   "source": "once, by hand, in your DNS",
+   "text": "once, by hand, in your DNS"
   },
   "s.once-everything-is-in-the-other.5feaa877": {
    "source": "Once everything is in the other database and it is the one in use, the one it came from is just a spare copy: the file may be deleted, or the server uninstalled. Going the other way is these same steps with the file chosen instead — which is what makes it safe to try a server at all.",
@@ -16111,6 +16547,10 @@
   "s.one-place-a-sign-in-from.f191e78b": {
    "source": "One place. A sign-in from anywhere else is marked.",
    "text": "One place. A sign-in from anywhere else is marked."
+  },
+  "s.one-put-in-here-by-hand.6f5f734f": {
+   "source": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back.",
+   "text": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back."
   },
   "s.one-row-is-one-account-being.b06da43d": {
    "source": "One row is one account being refused from one machine through one program. That is the answer a lockout leaves behind and no single Windows event holds it: the refusal says which machine, the credential event beside it says which program went and used the password. A mapped drive, a scheduled task, a telephone or a phone’s mail app is the usual answer.",
@@ -16776,6 +17216,10 @@
    "source": ", or scp). Then import it and give it to api-ssl, open to this machine alone:",
    "text": ", or scp). Then import it and give it to api-ssl, open to this machine alone:"
   },
+  "s.or-the-public-address-in-front.9557c2e2": {
+   "source": "or the public address in front of it",
+   "text": "or the public address in front of it"
+  },
   "s.or-the.345ba69c": {
    "source": ", or the",
    "text": ", or the"
@@ -16783,6 +17227,10 @@
   "s.or-until-untouched-for-min.7a51a102": {
    "source": "Or until untouched for (min)",
    "text": "Or until untouched for (min)"
+  },
+  "s.or-with-a-port.20a8c947": {
+   "source": "or with a port",
+   "text": "or with a port"
   },
   "s.or.1758356d": {
    "source": "or",
@@ -16795,6 +17243,34 @@
   "s.or.f579c523": {
    "source": "OR",
    "text": "OR"
+  },
+  "s.order-it-now-renewals-go-by.71bab7d9": {
+   "source": "Order it now. Renewals go by themselves.",
+   "text": "Order it now. Renewals go by themselves."
+  },
+  "s.order-it-now.945c00b8": {
+   "source": "Order it now",
+   "text": "Order it now"
+  },
+  "s.order-it.76abe9b1": {
+   "source": "Order it",
+   "text": "Order it"
+  },
+  "s.order-the-certificate-from-the-acme.17589346": {
+   "source": "order the certificate from the ACME CA now, followed here; ACME looks after it from then on (this server has one: this and all are the same)",
+   "text": "order the certificate from the ACME CA now, followed here; ACME looks after it from then on (this server has one: this and all are the same)"
+  },
+  "s.order.cce55e43": {
+   "source": "order",
+   "text": "order"
+  },
+  "s.ordered-from-the-ca-now-and.dc53bb57": {
+   "source": "Ordered from the CA now and put in as an uploaded one is. ACME renews it from then on.",
+   "text": "Ordered from the CA now and put in as an uploaded one is. ACME renews it from then on."
+  },
+  "s.ordering.e934c190": {
+   "source": "ordering…",
+   "text": "ordering…"
   },
   "s.ordinary-it-happened-and-nothing-was.3054fd80": {
    "source": "Ordinary — it happened and nothing was wrong with it.",
@@ -17440,6 +17916,10 @@
    "source": "placeholder",
    "text": "placeholder"
   },
+  "s.plain-ac-dns-table.7c5ce495": {
+   "source": "plain ac-dns-table",
+   "text": "plain ac-dns-table"
+  },
   "s.plain-ftp-the-password-and-the.c0c4165d": {
    "source": "Plain FTP: the password and the file go over unencrypted - only inside a network you trust (the file itself is locked).",
    "text": "Plain FTP: the password and the file go over unencrypted - only inside a network you trust (the file itself is locked)."
@@ -17504,6 +17984,10 @@
    "source": "pointer",
    "text": "pointer"
   },
+  "s.points-at-value.f2e6648f": {
+   "source": "Points at / value",
+   "text": "Points at / value"
+  },
   "s.poland.5ff03b72": {
    "source": "Poland",
    "text": "Poland"
@@ -17567,6 +18051,14 @@
   "s.pool.51a4b13b": {
    "source": "pool",
    "text": "pool"
+  },
+  "s.port-80-answers-as-the-ca.748803b8": {
+   "source": "Port 80 answers as the CA will ask it",
+   "text": "Port 80 answers as the CA will ask it"
+  },
+  "s.port-80-is-open-to-it.2f8132ad": {
+   "source": "Port 80 is open to it - the firewall in front of the server; isemon's own lets it in by itself (Firewall and access → Automatic certificates).",
+   "text": "Port 80 is open to it - the firewall in front of the server; isemon's own lets it in by itself (Firewall and access → Automatic certificates)."
   },
   "s.port-and-mode.b48624df": {
    "source": "Port and mode",
@@ -17739,6 +18231,10 @@
   "s.privileged.8c3639f9": {
    "source": "privileged",
    "text": "privileged"
+  },
+  "s.probe.a949c530": {
+   "source": "probe",
+   "text": "probe"
   },
   "s.process.c2e2d662": {
    "source": "process",
@@ -17964,6 +18460,10 @@
    "source": "Put sudo in front of pfctl, for an account that is not root but may run pfctl through sudo without a password.",
    "text": "Put sudo in front of pfctl, for an account that is not root but may run pfctl through sudo without a password."
   },
+  "s.put-the-certificate-from-before-acme.ecca6fc9": {
+   "source": "Put the certificate from before ACME back?",
+   "text": "Put the certificate from before ACME back?"
+  },
   "s.put-the-filters-back-as-they.c7053b89": {
    "source": "Put the filters back as they were and show the last 24 hours again.",
    "text": "Put the filters back as they were and show the last 24 hours again."
@@ -18015,6 +18515,10 @@
   "s.put-this-table-back-as-it.8475f36e": {
    "source": "Put this table back as it comes",
    "text": "Put this table back as it comes"
+  },
+  "s.put-this-txt-record-in-dns.d78d46ed": {
+   "source": "Put this TXT record in DNS",
+   "text": "Put this TXT record in DNS"
   },
   "s.put.7fd768e4": {
    "source": "Put",
@@ -18672,6 +19176,10 @@
    "source": "refused",
    "text": "refused"
   },
+  "s.register-at-the-acme-dns-server.d2616f98": {
+   "source": "Register at the acme-dns server (POST /register) - it gives a user, a key and a subdomain; give them below.",
+   "text": "Register at the acme-dns server (POST /register) - it gives a user, a key and a subdomain; give them below."
+  },
   "s.reject.2b03b592": {
    "source": "Reject",
    "text": "Reject"
@@ -18740,9 +19248,25 @@
    "source": "remport",
    "text": "remport"
   },
+  "s.renewed-by-acme-before-it-runs.d2856c48": {
+   "source": "Renewed by ACME before it runs out. A certificate put in by hand on Certificates and TLS takes it out of ACME’s care.",
+   "text": "Renewed by ACME before it runs out. A certificate put in by hand on Certificates and TLS takes it out of ACME’s care."
+  },
+  "s.renewed-by-acme.9fc90159": {
+   "source": "renewed by ACME",
+   "text": "renewed by ACME"
+  },
+  "s.renewed-when-fewer-days-are-left.505bbe85": {
+   "source": "Renewed when fewer days are left than",
+   "text": "Renewed when fewer days are left than"
+  },
   "s.replace-separately-banned-addresses-with-the.d8d0de58": {
    "source": "Replace separately banned addresses with the subnet that holds them. A scanner renting a /24 and working through it is forty rules doing the work of one, and the fortieth address is banned an hour after the first.",
    "text": "Replace separately banned addresses with the subnet that holds them. A scanner renting a /24 and working through it is forty rules doing the work of one, and the fortieth address is banned an hour after the first."
+  },
+  "s.replace-the-certificate-of-the-dashboard.df2c02a6": {
+   "source": "Replace the certificate of the dashboard?",
+   "text": "Replace the certificate of the dashboard?"
   },
   "s.replaces-everything.b4111148": {
    "source": "replaces everything",
@@ -18928,6 +19452,10 @@
    "source": "Reversible encryption",
    "text": "Reversible encryption"
   },
+  "s.rfc-2136-dynamic-update-with-a.e9b35bd2": {
+   "source": "RFC 2136 dynamic update with a TSIG key (BIND, PowerDNS, Knot...)",
+   "text": "RFC 2136 dynamic update with a TSIG key (BIND, PowerDNS, Knot...)"
+  },
   "s.rfc-7919-ffdhe2048-ready-at-once.3e4d2234": {
    "source": "RFC 7919 ffdhe2048 (ready at once)",
    "text": "RFC 7919 ffdhe2048 (ready at once)"
@@ -18939,6 +19467,10 @@
   "s.rfc-7919-ffdhe4096.0fb455bd": {
    "source": "RFC 7919 ffdhe4096",
    "text": "RFC 7919 ffdhe4096"
+  },
+  "s.rfc2136.db20b748": {
+   "source": "rfc2136",
+   "text": "rfc2136"
   },
   "s.right-a-step-out-of-time.457f2268": {
    "source": "right, a step out of time",
@@ -19868,6 +20400,10 @@
    "source": "Setting",
    "text": "Setting"
   },
+  "s.settings-automatic-certificates-renews-it-before.a9806e0a": {
+   "source": "Settings → Automatic certificates renews it before it runs out. Uploading one here, or making one self-signed, takes it out of ACME’s care - it is kept as it is.",
+   "text": "Settings → Automatic certificates renews it before it runs out. Uploading one here, or making one self-signed, takes it out of ACME’s care - it is kept as it is."
+  },
   "s.settings-changed.75ae9c89": {
    "source": "settings changed",
    "text": "settings changed"
@@ -20123,6 +20659,10 @@
   "s.sign-out.dc1649a1": {
    "source": "Sign out",
    "text": "Sign out"
+  },
+  "s.sign-up-at-desec-io-free.353597da": {
+   "source": "Sign up at desec.io (free) and confirm the mail.",
+   "text": "Sign up at desec.io (free) and confirm the mail."
   },
   "s.signed-by-an-authority-yours-given.5f15f050": {
    "source": "Signed by an authority - yours, given below, or one this machine trusts - and for the name it is checked for.",
@@ -21092,6 +21632,10 @@
    "source": "Switch it on above, choose the countries, and it is refilled by itself whenever the country database is refreshed.",
    "text": "Switch it on above, choose the countries, and it is refilled by itself whenever the country database is refreshed."
   },
+  "s.switch-it-on-below-first.a9ddb0b7": {
+   "source": "Switch it on below first.",
+   "text": "Switch it on below first."
+  },
   "s.switch-it-on-with-the-geolist.a13e5ab6": {
    "source": "switch it on with the geolist setting above",
    "text": "switch it on with the geolist setting above"
@@ -21616,6 +22160,10 @@
    "source": "TB",
    "text": "TB"
   },
+  "s.tcp-80-from-anywhere-the-acme.6d47ff77": {
+   "source": "tcp 80 from anywhere - the ACME CA checks the name on port 80 (Settings → Automatic certificates); nginx answers it there with /.well-known/acme-challenge/ and sends everything else to HTTPS",
+   "text": "tcp 80 from anywhere - the ACME CA checks the name on port 80 (Settings → Automatic certificates); nginx answers it there with /.well-known/acme-challenge/ and sends everything else to HTTPS"
+  },
   "s.tcp-otp-sends-to-6514-unless.3d2c51f3": {
    "source": "TCP; otp sends to 6514 unless told otherwise. Not 514 - that one is the plain logs'.",
    "text": "TCP; otp sends to 6514 unless told otherwise. Not 514 - that one is the plain logs'."
@@ -21904,6 +22452,10 @@
    "source": "The account and its key",
    "text": "The account and its key"
   },
+  "s.the-account-at-the-ca.3e3e80f2": {
+   "source": "The account at the CA:",
+   "text": "The account at the CA:"
+  },
   "s.the-account-exactly-as-the-token.44e90e87": {
    "source": "The account exactly as the token server wrote it, realm and all. The name in the column before it is the same account spelled the way the ISE logs spell it — one person, one name, everywhere on these pages.",
    "text": "The account exactly as the token server wrote it, realm and all. The name in the column before it is the same account spelled the way the ISE logs spell it — one person, one name, everywhere on these pages."
@@ -22039,6 +22591,10 @@
   "s.the-acl-ise-sent-not-used.f71d6a2d": {
    "source": "the ACL ISE sent, not used",
    "text": "the ACL ISE sent, not used"
+  },
+  "s.the-acme-dns-server.1489e1fb": {
+   "source": "The acme-dns server",
+   "text": "The acme-dns server"
   },
   "s.the-address-and-port-inside-the.fc563dec": {
    "source": "the address and port inside the destination was made (a dst-nat)",
@@ -22472,6 +23028,18 @@
    "source": "the burst rate",
    "text": "the burst rate"
   },
+  "s.the-ca-s-own-certificate.1bc13779": {
+   "source": "The CA’s own certificate",
+   "text": "The CA’s own certificate"
+  },
+  "s.the-ca-s-root-pem-where.288818d4": {
+   "source": "The CA’s root (PEM), where the system does not trust it already.",
+   "text": "The CA’s root (PEM), where the system does not trust it already."
+  },
+  "s.the-ca.c34688d3": {
+   "source": "The CA",
+   "text": "The CA"
+  },
   "s.the-canary-islands.0c2ad3fc": {
    "source": "the Canary Islands",
    "text": "the Canary Islands"
@@ -22515,6 +23083,10 @@
   "s.the-certificate-authority.4bb9e582": {
    "source": "The certificate authority",
    "text": "The certificate authority"
+  },
+  "s.the-certificate-by-acme-its-name.2f8a2060": {
+   "source": "the certificate by ACME: its name, its end, who looks after it, its last order step by step (Settings - Automatic certificates)",
+   "text": "the certificate by ACME: its name, its end, who looks after it, its last order step by step (Settings - Automatic certificates)"
   },
   "s.the-certificate-click-it-to-copy.7162e114": {
    "source": "The certificate. Click it to copy.",
@@ -22560,6 +23132,10 @@
    "source": "the certificate: PEM, -----BEGIN CERTIFICATE-----",
    "text": "the certificate: PEM, -----BEGIN CERTIFICATE-----"
   },
+  "s.the-certificate-put-in-on-certificates.07c1a55a": {
+   "source": "The certificate put in on Certificates and TLS (uploaded, from a request, self-signed) stays: ACME does not replace it. Look after it, or Order it now, gives it to ACME.",
+   "text": "The certificate put in on Certificates and TLS (uploaded, from a request, self-signed) stays: ACME does not replace it. Look after it, or Order it now, gives it to ACME."
+  },
   "s.the-certificate-the-authority-signed-for.b2f4bbcf": {
    "source": "The certificate the authority signed for the router - with its private key, flag",
    "text": "The certificate the authority signed for the router - with its private key, flag"
@@ -22571,6 +23147,10 @@
   "s.the-certificate-the-dashboard-answers-with.ae98b7b1": {
    "source": "The certificate the dashboard answers with, and how it speaks TLS. Upload one (PEM or PFX), make a request for your CA here, or make one that signs itself. The key is kept sealed in the database, so a copy of it carries the certificate too.",
    "text": "The certificate the dashboard answers with, and how it speaks TLS. Upload one (PEM or PFX), make a request for your CA here, or make one that signs itself. The key is kept sealed in the database, so a copy of it carries the certificate too."
+  },
+  "s.the-certificate-the-dashboard-answers-with.c28fc346": {
+   "source": "The certificate the dashboard answers with, ordered from Let's Encrypt or another ACME CA and renewed by itself well before it runs out. The CA checks the name by asking it on port 80 (HTTP-01), or by a record in DNS (DNS-01) for a server it cannot see from the internet. It goes in as an uploaded one does, and the TLS settings stay as they are.",
+   "text": "The certificate the dashboard answers with, ordered from Let's Encrypt or another ACME CA and renewed by itself well before it runs out. The CA checks the name by asking it on port 80 (HTTP-01), or by a record in DNS (DNS-01) for a server it cannot see from the internet. It goes in as an uploaded one does, and the TLS settings stay as they are."
   },
   "s.the-certificate-the-firewall-chose.45a65876": {
    "source": "the certificate the firewall chose",
@@ -22647,6 +23227,10 @@
   "s.the-clock-set-to-the-time.25fc92ab": {
    "source": "The clock set to the time servers at once (chronyc makestep), not slewed slowly - for a clock that is far off.",
    "text": "The clock set to the time servers at once (chronyc makestep), not slewed slowly - for a clock that is far off."
+  },
+  "s.the-cloudflare-api-token.74778b63": {
+   "source": "The Cloudflare API token",
+   "text": "The Cloudflare API token"
   },
   "s.the-cocos-islands.5e9e2326": {
    "source": "the Cocos Islands",
@@ -22880,6 +23464,14 @@
    "source": "The dashboard (HTTP, HTTPS)",
    "text": "The dashboard (HTTP, HTTPS)"
   },
+  "s.the-dashboard-s-certificate-ordered-from.07c50ca1": {
+   "source": "The dashboard's certificate ordered from Let's Encrypt (or another ACME CA) and renewed by itself.",
+   "text": "The dashboard's certificate ordered from Let's Encrypt (or another ACME CA) and renewed by itself."
+  },
+  "s.the-dashboard-s-certificate-ordered-from.c1bf34ba": {
+   "source": "The dashboard’s certificate ordered from the CA and renewed by itself. The CA checks the name: by HTTP-01 port 80 of the name must reach this server; by DNS-01 nothing has to be open. Off until switched on.",
+   "text": "The dashboard’s certificate ordered from the CA and renewed by itself. The CA checks the name: by HTTP-01 port 80 of the name must reach this server; by DNS-01 nothing has to be open. Off until switched on."
+  },
   "s.the-dashboard-s-notice-that-php.5451b0e5": {
    "source": "the dashboard's notice that PHP may have php2shell: hide puts it away until the daemon starts again (nothing is saved), show brings it back; alone, says which it is",
    "text": "the dashboard's notice that PHP may have php2shell: hide puts it away until the daemon starts again (nothing is saved), show brings it back; alone, says which it is"
@@ -22972,6 +23564,10 @@
    "source": "The description written on the group in the directory itself.",
    "text": "The description written on the group in the directory itself."
   },
+  "s.the-desec-api-token.0b2f55f3": {
+   "source": "The deSEC API token",
+   "text": "The deSEC API token"
+  },
   "s.the-device-that-asked.9c33361a": {
    "source": "the device that asked",
    "text": "the device that asked"
@@ -23047,6 +23643,14 @@
   "s.the-directory-is-not-being-asked.ad1c07f3": {
    "source": "The directory is not being asked about these accounts. Settings → The domain controllers → \"Ask the directory about the accounts in these logs\".",
    "text": "The directory is not being asked about these accounts. Settings → The domain controllers → \"Ask the directory about the accounts in these logs\"."
+  },
+  "s.the-directory-of-another-acme-ca.28161121": {
+   "source": "The directory of another ACME CA,",
+   "text": "The directory of another ACME CA,"
+  },
+  "s.the-directory-of-another-acme-ca.ca27a749": {
+   "source": "The directory of another ACME CA, https://ca.example.cz/acme/acme/directory .",
+   "text": "The directory of another ACME CA, https://ca.example.cz/acme/acme/directory ."
   },
   "s.the-directory-password-was-right-and.58cbcf6a": {
    "source": "The directory password was right and otp asked for the code from the app in a second window; nothing ever came back into it.",
@@ -23128,6 +23732,14 @@
    "source": "the DNS filter",
    "text": "the DNS filter"
   },
+  "s.the-dns-name-of-the-certificate.b5f0c4b8": {
+   "source": "The DNS name of the certificate",
+   "text": "The DNS name of the certificate"
+  },
+  "s.the-dns-name-the-certificate-is.1e40cac1": {
+   "source": "The DNS name the certificate is for. Empty: the name of the certificate it has now, else this server's full host name.",
+   "text": "The DNS name the certificate is for. Empty: the name of the certificate it has now, else this server's full host name."
+  },
   "s.the-dns-question-s-own-number.7e074a1b": {
    "source": "the DNS question’s own number",
    "text": "the DNS question’s own number"
@@ -23135,6 +23747,22 @@
   "s.the-dns-question.cbd4253c": {
    "source": "The DNS question",
    "text": "The DNS question"
+  },
+  "s.the-dns-server-taking-the-updates.230c7050": {
+   "source": "The DNS server taking the updates",
+   "text": "The DNS server taking the updates"
+  },
+  "s.the-dns-servers-asked-for-everything.9e20f0a3": {
+   "source": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API,",
+   "text": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API,"
+  },
+  "s.the-dns-servers-asked-for-everything.da12b3f9": {
+   "source": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API, Check DNS , Try port 80 , and whether the TXT record can be seen before the CA is asked - 1.1.1.1, 9.9.9.9 to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf).",
+   "text": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API, Check DNS , Try port 80 , and whether the TXT record can be seen before the CA is asked - 1.1.1.1, 9.9.9.9 to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf)."
+  },
+  "s.the-domain-at-desec.a0fb9d86": {
+   "source": "The domain at deSEC",
+   "text": "The domain at deSEC"
   },
   "s.the-domain-checked-a-password.feb46a46": {
    "source": "the domain checked a password",
@@ -23632,6 +24260,10 @@
    "source": "the full backup is being made; the download starts when it is ready",
    "text": "the full backup is being made; the download starts when it is ready"
   },
+  "s.the-full-dns-name-its-certificate.3acf2c66": {
+   "source": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01).",
+   "text": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01)."
+  },
   "s.the-full-path-to-this-object.56020a01": {
    "source": "The full path to this object in the directory. It is what the role settings really match on, and it is why they are separated by semicolons and not by commas.",
    "text": "The full path to this object in the directory. It is what the role settings really match on, and it is why they are separated by semicolons and not by commas."
@@ -23884,6 +24516,14 @@
    "source": "The key kept now is replaced",
    "text": "The key kept now is replaced"
   },
+  "s.the-key-of-the-certificate.7484eea3": {
+   "source": "The key of the certificate",
+   "text": "The key of the certificate"
+  },
+  "s.the-key-s-secret-base64-kept.fb95afbb": {
+   "source": "The key’s secret (base64). Kept sealed; written to a file only isemon reads for the moment nsupdate runs.",
+   "text": "The key’s secret (base64). Kept sealed; written to a file only isemon reads for the moment nsupdate runs."
+  },
   "s.the-key-the-server-proves-itself.4a4fd098": {
    "source": "The key the server proves itself with. Trusted once, after comparing its fingerprint with the server’s own (",
    "text": "The key the server proves itself with. Trusted once, after comparing its fingerprint with the server’s own ("
@@ -23987,6 +24627,10 @@
   "s.the-last-time-this-account-was.d6348e56": {
    "source": "The last time this account was used, and the address it was used from.",
    "text": "The last time this account was used, and the address it was used from."
+  },
+  "s.the-last-try-failed.19d64a1b": {
+   "source": "the last try failed",
+   "text": "the last try failed"
   },
   "s.the-last-upgrade-the-package-waiting.dd6c7e46": {
    "source": "the last upgrade, the package waiting, and what the web has",
@@ -24296,9 +24940,21 @@
    "source": "the name it gave itself",
    "text": "the name it gave itself"
   },
+  "s.the-name-of-the-certificate-is.8c581f60": {
+   "source": "The name of the certificate is not known yet: give it (Its name…).",
+   "text": "The name of the certificate is not known yet: give it (Its name…)."
+  },
+  "s.the-name-of-the-certificate.183dc52a": {
+   "source": "The name of the certificate",
+   "text": "The name of the certificate"
+  },
   "s.the-name-of-the-log-file.f1caeeb1": {
    "source": "The name of the log file in each",
    "text": "The name of the log file in each"
+  },
+  "s.the-name-of-the-tsig-key.1fb35a77": {
+   "source": "The name of the TSIG key",
+   "text": "The name of the TSIG key"
   },
   "s.the-name-offered.d2ba867e": {
    "source": "the name offered",
@@ -24307,6 +24963,14 @@
   "s.the-name-on-its-certificate.fc991ef9": {
    "source": "The name on its certificate",
    "text": "The name on its certificate"
+  },
+  "s.the-name-points-at-an-address.9feb55ec": {
+   "source": "the name points at an address that reaches port 80 of this server",
+   "text": "the name points at an address that reaches port 80 of this server"
+  },
+  "s.the-name-points-at-the-address.35dcbd2d": {
+   "source": "The name points at the address that reaches port 80 of this server - from the internet, or from your own CA.",
+   "text": "The name points at the address that reaches port 80 of this server - from the internet, or from your own CA."
   },
   "s.the-name-server-s-own-address.da4ff7d7": {
    "source": "The name server’s own address. An address, not a name — this is the thing that turns names into addresses, so it cannot be asked for one of its own.",
@@ -24324,6 +24988,14 @@
    "source": "the name that was asked for",
    "text": "the name that was asked for"
   },
+  "s.the-name-the-certificate-is-for.629166fa": {
+   "source": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name. Its name… on the card above sets it too.",
+   "text": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name. Its name… on the card above sets it too."
+  },
+  "s.the-name-the-certificate-is-for.d7449673": {
+   "source": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name.",
+   "text": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name."
+  },
   "s.the-name-the-client-asked-for.23567667": {
    "source": "the name the client asked for in TLS",
    "text": "the name the client asked for in TLS"
@@ -24339,6 +25011,10 @@
   "s.the-name-they-would-type.fbcca3ee": {
    "source": "The name they would type",
    "text": "The name they would type"
+  },
+  "s.the-name-with-a-cname-to.64f5589f": {
+   "source": "), the name with a CNAME to it in your DNS -",
+   "text": "), the name with a CNAME to it in your DNS -"
   },
   "s.the-name.b52db741": {
    "source": "the name",
@@ -24612,6 +25288,10 @@
    "source": "The OPNsense’s address",
    "text": "The OPNsense’s address"
   },
+  "s.the-order-waits-for-it-up.056011af": {
+   "source": "The order waits for it - up to an hour. Put it in, wait until DNS carries it, then say so. Take it away again once the certificate has come.",
+   "text": "The order waits for it - up to an hour. Put it in, wait until DNS carries it, then say so. Take it away again once the certificate has come."
+  },
   "s.the-other-address-list-this-daemon.962a4629": {
    "source": "The other address list this daemon keeps: whole countries, filled from the country database and pointed at by a rule you write yourself. It is counted on the firewall rather than read back, because a country list is tens of thousands of lines and the number is the only part anybody needs.",
    "text": "The other address list this daemon keeps: whole countries, filled from the country database and pointed at by a rule you write yourself. It is counted on the firewall rather than read back, because a country list is tens of thousands of lines and the number is the only part anybody needs."
@@ -24855,6 +25535,14 @@
   "s.the-port-there.99b6a942": {
    "source": "the port there",
    "text": "the port there"
+  },
+  "s.the-primary-dns-server-of-the.54c617b9": {
+   "source": "The primary DNS server of the zone,",
+   "text": "The primary DNS server of the zone,"
+  },
+  "s.the-primary-dns-server-of-the.dada5593": {
+   "source": "The primary DNS server of the zone, ns1.example.cz or with a port 10.0.0.53:53 .",
+   "text": "The primary DNS server of the zone, ns1.example.cz or with a port 10.0.0.53:53 ."
   },
   "s.the-private-half-as-a-file.fe722f5c": {
    "source": "The private half as a file, for keeping somewhere safe. That it was downloaded, and by whom, is written into Events.",
@@ -25704,6 +26392,10 @@
    "source": "the trustpoint",
    "text": "the trustpoint"
   },
+  "s.the-tsig-secret.4b26631a": {
+   "source": "The TSIG secret",
+   "text": "The TSIG secret"
+  },
   "s.the-tunnel-group-this-came-through.f45f240f": {
    "source": "The tunnel group this came through, as the head end named it — which is what says the VPN from the virtual desktops when one token server answers for both.",
    "text": "The tunnel group this came through, as the head end named it — which is what says the VPN from the virtual desktops when one token server answers for both."
@@ -25751,6 +26443,10 @@
   "s.the-two-to-paste-each-with.18ded4f9": {
    "source": "The two to paste, each with its own button:",
    "text": "The two to paste, each with its own button:"
+  },
+  "s.the-txt-records-go-into.048a2edd": {
+   "source": "The TXT records go into",
+   "text": "The TXT records go into"
   },
   "s.the-type-of-the-line.abbe9d92": {
    "source": "the type of the line",
@@ -26132,6 +26828,10 @@
    "source": ", the zone",
    "text": ", the zone"
   },
+  "s.the-zone.b83fbc83": {
+   "source": "The zone",
+   "text": "The zone"
+  },
   "s.the.93ef0dd8": {
    "source": "The",
    "text": "The"
@@ -26283,6 +26983,10 @@
   "s.there.02a81a8e": {
    "source": "There",
    "text": "There"
+  },
+  "s.there.490528f3": {
+   "source": "there",
+   "text": "there"
   },
   "s.these-are-the-server-s-settings.904f6d90": {
    "source": "These are the server’s settings, not this database’s: they are for every database on it. On this one there are also:",
@@ -27140,6 +27844,10 @@
    "source": "to pick it from the directory rather than typing it. More than one, separated by semicolons.",
    "text": "to pick it from the directory rather than typing it. More than one, separated by semicolons."
   },
+  "s.to-see-what-the-internet-sees.df683c5f": {
+   "source": "to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf).",
+   "text": "to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf)."
+  },
   "s.to-the-file.82e5d8f0": {
    "source": "to the file",
    "text": "to the file"
@@ -27175,6 +27883,10 @@
   "s.tokelau.a08c1ca2": {
    "source": "Tokelau",
    "text": "Tokelau"
+  },
+  "s.token-management-make-a-token-give.755c9737": {
+   "source": "Token management: make a token. Give it below as The deSEC API token, with The domain at deSEC, and save.",
+   "text": "Token management: make a token. Give it below as The deSEC API token, with The domain at deSEC, and save."
   },
   "s.token-server.6a52b548": {
    "source": "Token server",
@@ -27356,6 +28068,14 @@
    "source": "Try one person's sign-in from here, so you find out it works before you sign out.",
    "text": "Try one person's sign-in from here, so you find out it works before you sign out."
   },
+  "s.try-port-80-on-the-card.af32033a": {
+   "source": "Try port 80 on the card, then Order it now.",
+   "text": "Try port 80 on the card, then Order it now."
+  },
+  "s.try-port-80.26c1a283": {
+   "source": "Try port 80",
+   "text": "Try port 80"
+  },
   "s.try-reaching-it.1f463908": {
    "source": "Try reaching it",
    "text": "Try reaching it"
@@ -27371,6 +28091,10 @@
   "s.ts.4402abb9": {
    "source": "ts",
    "text": "ts"
+  },
+  "s.ttl.878260df": {
+   "source": "TTL",
+   "text": "TTL"
   },
   "s.tune-it-for-this-machine.7c29a319": {
    "source": "Tune it for this machine…",
@@ -27491,6 +28215,10 @@
   "s.two-shapes-of-the-same-file.8c6bfca6": {
    "source": "Two shapes of the same file: one safe to mail, one that carries the secrets too.",
    "text": "Two shapes of the same file: one safe to mail, one that carries the secrets too."
+  },
+  "s.txt.7475c2bd": {
+   "source": "TXT",
+   "text": "TXT"
   },
   "s.type-a-whole-address-and-it.1e63b9b0": {
    "source": "Type a whole address and it answers the question this dashboard is asked most: whether it is banned, what it has been trying, and the buttons to ban it for good, let it back in, or put it beyond banning — without going to a page first. Type part of an address and it lists the ones that start that way; type a user name and it lists the names being tried; type anything else and it finds the page, the card or the setting of that name.",
@@ -27988,6 +28716,10 @@
    "source": "valid",
    "text": "valid"
   },
+  "s.value.8dce170d": {
+   "source": "Value",
+   "text": "Value"
+  },
   "s.vanuatu.d16ad2dc": {
    "source": "Vanuatu",
    "text": "Vanuatu"
@@ -28171,6 +28903,10 @@
   "s.vrrp.b3aae70f": {
    "source": "VRRP",
    "text": "VRRP"
+  },
+  "s.wait-for-dns-to-carry-it.1df37c40": {
+   "source": "Wait for DNS to carry it (s)",
+   "text": "Wait for DNS to carry it (s)"
   },
   "s.wait.daaad336": {
    "source": "wait",
@@ -28896,6 +29632,10 @@
    "source": "What the intrusion policy, the antivirus and the file and malware policy, Security Intelligence and application control found, newest first.",
    "text": "What the intrusion policy, the antivirus and the file and malware policy, Security Intelligence and application control found, newest first."
   },
+  "s.what-the-last-order-did.9234fc41": {
+   "source": "What the last order did",
+   "text": "What the last order did"
+  },
   "s.what-the-list-looks-like-cisco.a313dfd4": {
    "source": "What the list looks like. Cisco FTD, FortiGate, OPNsense and pfSense all read one address or range per line and nothing else - choosing one shows how to set that firewall up; the plain list adds a few lines of comments for a person; JSON is for a script. The URL below carries the format, so one firewall of each kind can fetch its own.",
    "text": "What the list looks like. Cisco FTD, FortiGate, OPNsense and pfSense all read one address or range per line and nothing else - choosing one shows how to set that firewall up; the plain list adds a few lines of comments for a person; JSON is for a script. The URL below carries the format, so one firewall of each kind can fetch its own."
@@ -29444,6 +30184,10 @@
    "source": "Where the bans come from",
    "text": "Where the bans come from"
   },
+  "s.where-the-ca-writes-when-a.e7a2c04e": {
+   "source": "Where the CA writes when a certificate runs out unrenewed. Empty: none.",
+   "text": "Where the CA writes when a certificate runs out unrenewed. Empty: none."
+  },
   "s.where-the-controllers-write.5f3dacd5": {
    "source": "Where the controllers write",
    "text": "Where the controllers write"
@@ -29451,6 +30195,10 @@
   "s.where-the-country-database-puts-this.70538231": {
    "source": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything.",
    "text": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything."
+  },
+  "s.where-the-dns-of-your-domain.f60b54de": {
+   "source": "Where the DNS of your domain is not at Cloudflare: a zone that is, as The TXT records go into, and the CNAME record below in your DNS.",
+   "text": "Where the DNS of your domain is not at Cloudflare: a zone that is, as The TXT records go into, and the CNAME record below in your DNS."
   },
   "s.where-the-eduroam-servers-write.02ae0b85": {
    "source": "Where the eduroam servers write",
@@ -29483,6 +30231,14 @@
   "s.where-the-nps-logs-are.c4081d42": {
    "source": "Where the NPS logs are",
    "text": "Where the NPS logs are"
+  },
+  "s.where-the-record-goes-example-cz.3647c9cb": {
+   "source": "Where the record goes, example.cz . Empty: as the server finds it.",
+   "text": "Where the record goes, example.cz . Empty: as the server finds it."
+  },
+  "s.where-the-record-goes.4f650608": {
+   "source": "Where the record goes,",
+   "text": "Where the record goes,"
   },
   "s.where-the-refused-sessions-came-from.645177d8": {
    "source": "Where the refused sessions came from.",
@@ -30256,6 +31012,10 @@
    "source": "Who puts it in",
    "text": "Who puts it in"
   },
+  "s.who-puts-the-txt-record-in.b8d55627": {
+   "source": "Who puts the TXT record in DNS",
+   "text": "Who puts the TXT record in DNS"
+  },
   "s.who-ran-it.833a64a6": {
    "source": "who ran it",
    "text": "who ran it"
@@ -30604,6 +31364,10 @@
    "source": "with the password saved above, by HTTP basic authentication",
    "text": "with the password saved above, by HTTP basic authentication"
   },
+  "s.with-the-txt-records-go-into.6778a007": {
+   "source": "With The TXT records go into: the CNAME record below in your DNS, and the key allowed in that zone.",
+   "text": "With The TXT records go into: the CNAME record below in your DNS, and the key allowed in that zone."
+  },
   "s.with-this-on-a-name-is.31c5be46": {
    "source": "With this on, a name is looked for in the directory first. Somebody who is there signs in with their domain password and gets the role their groups say — and the local account of the same name is",
    "text": "With this on, a name is looked for in the directory first. Somebody who is there signs in with their domain password and gets the role their groups say — and the local account of the same name is"
@@ -30831,6 +31595,14 @@
   "s.your-accounts-every-setting-and-the.87910f11": {
    "source": "Your accounts, every setting and the whitelist are never touched by this.",
    "text": "Your accounts, every setting and the whitelist are never touched by this."
+  },
+  "s.your-domain-at-desec-example-dedyn.40fd5238": {
+   "source": "Your domain at deSEC, example.dedyn.io (free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name - In your DNS above says which.",
+   "text": "Your domain at deSEC, example.dedyn.io (free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name - In your DNS above says which."
+  },
+  "s.your-domain-at-desec.fb4ae8e2": {
+   "source": "Your domain at deSEC,",
+   "text": "Your domain at deSEC,"
   },
   "s.your-firewall-rules-filters-routes-and.43e38040": {
    "source": "your firewall rules, filters, routes and settings are",
@@ -31522,6 +32294,10 @@
    "source": "(dstip:{0} OR tranip:{1})",
    "text": "(dstip:{0} OR tranip:{1})"
   },
+  "p.due-looked-at-within-the-hour.002726f7": {
+   "source": "Due: {0} - looked at within the hour.",
+   "text": "Due: {0} - looked at within the hour."
+  },
   "p.dumps-kept-at-most.9fe2d756": {
    "source": "Dumps kept ({0} at most)",
    "text": "Dumps kept ({0} at most)"
@@ -31798,6 +32574,10 @@
    "source": "{0}{1} from {2}{3}{4}",
    "text": "{0}{1} from {2}{3}{4}"
   },
+  "p.from.c47d9c75": {
+   "source": "- from {0}",
+   "text": "- from {0}"
+  },
   "p.from.d012ee20": {
    "source": "from {0}",
    "text": "from {0}"
@@ -31825,6 +32605,10 @@
   "p.going-through-stored-event-s-with.39eae197": {
    "source": "going through {0} stored event(s) with the settings as they stand now",
    "text": "going through {0} stored event(s) with the settings as they stand now"
+  },
+  "p.good-until.e7d3e56d": {
+   "source": ", good until {0}",
+   "text": ", good until {0}"
   },
   "p.group-s-found.8fed6818": {
    "source": "{0} group(s) found",
@@ -32145,6 +32929,10 @@
   "p.it-could-not-be-asked.de814902": {
    "source": "It could not be asked: {0}",
    "text": "It could not be asked: {0}"
+  },
+  "p.it-has-one-put-in-on.da787712": {
+   "source": "It has one put in on Certificates and TLS ({0}{1}). The one from the CA takes its place once it comes, and ACME renews it from then on. The one it has is kept: Back to the one before puts it back. Its TLS settings stay as they are.",
+   "text": "It has one put in on Certificates and TLS ({0}{1}). The one from the CA takes its place once it comes, and ACME renews it from then on. The one it has is kept: Back to the one before puts it back. Its TLS settings stay as they are."
   },
   "p.it-has-run-out.3f525cb0": {
    "source": "{0} - it has run out",
@@ -32546,6 +33334,10 @@
    "source": "next {0}",
    "text": "next {0}"
   },
+  "p.nginx-keeps-the-files-it-has.babab939": {
+   "source": "nginx keeps the files it has now; isemon no longer changes them.{0}",
+   "text": "nginx keeps the files it has now; isemon no longer changes them.{0}"
+  },
   "p.no-account-called.a695490f": {
    "source": "{0} no account called",
    "text": "{0} no account called"
@@ -32821,6 +33613,10 @@
   "p.on-this-server.28ccf243": {
    "source": "{0} on this server.{1}",
    "text": "{0} on this server.{1}"
+  },
+  "p.once-in-the-zone-above-it.15345c1a": {
+   "source": "once, in the zone above it: {0} at deSEC",
+   "text": "once, in the zone above it: {0} at deSEC"
   },
   "p.one-name-tried-from-different-addresses.fcbac5bf": {
    "source": "One name tried from {0} different addresses is the shape of a password spray: one password against many places rather than many passwords against one. A name that has never got in here may be a name that does not exist.",
@@ -33634,6 +34430,10 @@
    "source": "({0}): the cards, the chart, the lists and the search, all of them for this one firewall.",
    "text": "({0}): the cards, the chart, the lists and the search, all of them for this one firewall."
   },
+  "p.the-certificate-it-had-before-acme.d96c83f1": {
+   "source": "The certificate it had before ACME replaced it{0}{1}. Put back as it was; ACME no longer renews this one. The TLS settings stay.",
+   "text": "The certificate it had before ACME replaced it{0}{1}. Put back as it was; ACME no longer renews this one. The TLS settings stay."
+  },
   "p.the-certificate-nginx-answers-with-on.55ba1792": {
    "source": "the certificate nginx answers with on this name{0}",
    "text": "the certificate nginx answers with on this name{0}"
@@ -33885,6 +34685,10 @@
   "p.the-oldest-is-from.7f7713a1": {
    "source": "the oldest is from {0}",
    "text": "the oldest is from {0}"
+  },
+  "p.the-one-from-the-ca-is.b04e99f8": {
+   "source": "The one from the CA is taken out and the one it had before - {0} - put back. ACME no longer renews this one (Look after it gives it back).",
+   "text": "The one from the CA is taken out and the one it had before - {0} - put back. ACME no longer renews this one (Look after it gives it back)."
   },
   "p.the-other-name-s-tried-from.da32bdd9": {
    "source": "The other {0} name(s) tried from this address, with how many times each:",
@@ -34612,6 +35416,10 @@
    "source": "A <b>second</b> firewall, kept saying exactly the same thing as the first. This is for a pair in high availability: whichever of the two is carrying the traffic at any moment has to already hold every address the other does, so both are written to in the same pass rather than one being filled when it takes over. They share the list names and every rule on this page — it is one blacklist on two machines, not two blacklists. What they do not share is how they are reached: each has its own address, its own account, its own port and its own ssh key.<br>One of them refusing does not stop the other being written to, and the Firewall page says which one is behind.",
    "text": "A <b>second</b> firewall, kept saying exactly the same thing as the first. This is for a pair in high availability: whichever of the two is carrying the traffic at any moment has to already hold every address the other does, so both are written to in the same pass rather than one being filled when it takes over. They share the list names and every rule on this page — it is one blacklist on two machines, not two blacklists. What they do not share is how they are reached: each has its own address, its own account, its own port and its own ssh key.<br>One of them refusing does not stop the other being written to, and the Firewall page says which one is behind."
   },
+  "r.a-zone-the-records-go-into.b20d79ab": {
+   "source": "A zone the records go into instead of the name’s own (<code>acme.example.net</code>), the name with a CNAME to it in your DNS - <i>In your DNS</i> above says which. Empty: _acme-challenge.NAME itself.",
+   "text": "A zone the records go into instead of the name’s own (<code>acme.example.net</code>), the name with a CNAME to it in your DNS - <i>In your DNS</i> above says which. Empty: _acme-challenge.NAME itself."
+  },
   "r.address-es-of-the-other-family.d4c1e19c": {
    "source": "<b>{0}</b> address(es) of the other family are not in this one — a router keeps IPv4 and IPv6 in two different access lists. The button below writes the other.",
    "text": "<b>{0}</b> address(es) of the other family are not in this one — a router keeps IPv4 and IPv6 in two different access lists. The button below writes the other."
@@ -34667,6 +35475,10 @@
   "r.answers-200-the-list-403-an.a9e75d9d": {
    "source": "Answers: <b>200</b> the list · <b>403</b> an address not allowed to fetch it{0}{1} · <b>404</b> nothing is published.",
    "text": "Answers: <b>200</b> the list · <b>403</b> an address not allowed to fetch it{0}{1} · <b>404</b> nothing is published."
+  },
+  "r.as-the-dns-server-knows-it.097bced0": {
+   "source": "As the DNS server knows it, <code>isemon-acme.</code>; allowed to update _acme-challenge records only.",
+   "text": "As the DNS server knows it, <code>isemon-acme.</code>; allowed to update _acme-challenge records only."
   },
   "r.as-the-firewall-names-it-search.568fe8b3": {
    "source": "{0}, as the firewall names it. Search with <code>{1}:{2}</code>, or <code>intf:</code> for either side.",
@@ -34983,6 +35795,10 @@
   "r.how-the-ban-finished-ran-out.e1a81606": {
    "source": "How the ban finished: <b>ran out</b> means the clock reached the end on its own, and anything else is somebody having lifted it.",
    "text": "How the ban finished: <b>ran out</b> means the clock reached the end on its own, and anything else is somebody having lifted it."
+  },
+  "r.https-auth-acme-dns-example-cz.623f517a": {
+   "source": "<code>https://auth.acme-dns.example.cz</code>; _acme-challenge.NAME is a CNAME to the subdomain below.",
+   "text": "<code>https://auth.acme-dns.example.cz</code>; _acme-challenge.NAME is a CNAME to the subdomain below."
   },
   "r.in-its-own-words.89e1d1e6": {
    "source": "{0}<br><br>In its own words: <code>{1}</code>",
@@ -35436,6 +36252,14 @@
    "source": "The directory groups this account is in. Open the whole record to read them:<br><br>{0}",
    "text": "The directory groups this account is in. Open the whole record to read them:<br><br>{0}"
   },
+  "r.the-directory-of-another-acme-ca.2ebacc81": {
+   "source": "The directory of another ACME CA, <code>https://ca.example.cz/acme/acme/directory</code>.",
+   "text": "The directory of another ACME CA, <code>https://ca.example.cz/acme/acme/directory</code>."
+  },
+  "r.the-dns-servers-asked-for-everything.fec4f12f": {
+   "source": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API, <i>Check DNS</i>, <i>Try port 80</i>, and whether the TXT record can be seen before the CA is asked - <code>1.1.1.1, 9.9.9.9</code> to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf).",
+   "text": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API, <i>Check DNS</i>, <i>Try port 80</i>, and whether the TXT record can be seen before the CA is asked - <code>1.1.1.1, 9.9.9.9</code> to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf)."
+  },
   "r.the-domain-the-record-named.31d341f5": {
    "source": "the domain the record named, <b>{0}</b>.",
    "text": "the domain the record named, <b>{0}</b>."
@@ -35552,6 +36376,10 @@
    "source": "The name <b>{0}</b> is one of those under <b>a name that does not exist</b> in Settings. Nobody has ever had it, so an attempt offering it is somebody guessing rather than somebody mistyping — which is what this application bans hardest on.",
    "text": "The name <b>{0}</b> is one of those under <b>a name that does not exist</b> in Settings. Nobody has ever had it, so an attempt offering it is somebody guessing rather than somebody mistyping — which is what this application bans hardest on."
   },
+  "r.the-name-the-certificate-is-for.6e35fdc9": {
+   "source": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name. <i>Its name…</i> on the card above sets it too.",
+   "text": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name. <i>Its name…</i> on the card above sets it too."
+  },
   "r.the-name-was-offered-from-this.dc6b9c8a": {
    "source": "The name <b>{0}</b> was offered from this address",
    "text": "The name <b>{0}</b> was offered from this address"
@@ -35607,6 +36435,10 @@
   "r.the-pfsense-appears-under-fetched-by.89467cb6": {
    "source": "The pfSense appears under <i>Fetched by</i> on the settings page. <b>Diagnostics → Tables</b> shows what the alias holds; from the command prompt:",
    "text": "The pfSense appears under <i>Fetched by</i> on the settings page. <b>Diagnostics → Tables</b> shows what the alias holds; from the command prompt:"
+  },
+  "r.the-primary-dns-server-of-the.2bd61e4c": {
+   "source": "The primary DNS server of the zone, <code>ns1.example.cz</code> or with a port <code>10.0.0.53:53</code>.",
+   "text": "The primary DNS server of the zone, <code>ns1.example.cz</code> or with a port <code>10.0.0.53:53</code>."
   },
   "r.the-private-half-leaves-this-machine.7fb48a55": {
    "source": "The private half leaves this machine as a file. Anybody holding it can sign in to the server as <code>{0}</code>. That it was downloaded, and by whom, is written into Events.",
@@ -35916,6 +36748,10 @@
    "source": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything. <b>ZZ</b> means the database has no country for it.",
    "text": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything. <b>ZZ</b> means the database has no country for it."
   },
+  "r.where-the-record-goes-example-cz.88abee2d": {
+   "source": "Where the record goes, <code>example.cz</code>. Empty: as the server finds it.",
+   "text": "Where the record goes, <code>example.cz</code>. Empty: as the server finds it."
+  },
   "r.whether-being-in-a-group-that.0297bfa0": {
    "source": "Whether being in a group that is inside one of those groups counts. Every directory of any age nests them, and without this somebody in <i>Helpdesk</i>, which is inside <i>ISE Watchers</i>, is in neither as far as this is concerned. It costs one more search per sign-in.",
    "text": "Whether being in a group that is inside one of those groups counts. Every directory of any age nests them, and without this somebody in <i>Helpdesk</i>, which is inside <i>ISE Watchers</i>, is in neither as far as this is concerned. It costs one more search per sign-in."
@@ -36003,6 +36839,10 @@
   "r.your-accounts-every-setting-and-the.99836ff2": {
    "source": "<b>Your accounts, every setting and the whitelist are never touched by this.</b> They are not options you could tick by mistake: they are not in the list at all. Neither is the ssh key for the router.",
    "text": "<b>Your accounts, every setting and the whitelist are never touched by this.</b> They are not options you could tick by mistake: they are not in the list at all. Neither is the ssh key for the router."
+  },
+  "r.your-domain-at-desec-example-dedyn.9aa3956d": {
+   "source": "Your domain at deSEC, <code>example.dedyn.io</code> (free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name - <i>In your DNS</i> above says which.",
+   "text": "Your domain at deSEC, <code>example.dedyn.io</code> (free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name - <i>In your DNS</i> above says which."
   },
   "r.your-servers-in-your-order-not.4fa07fb3": {
    "source": "<b>Your servers, in your order — not this machine's resolver.</b> A site keeps more than one reverse zone and they are not all on the same server: the offices in the domain controllers, the DMZ somewhere else. They are asked in the order written here and the first one that hands over a <b>name</b> is the answer. One that does not answer, refuses, or says it has never heard of the address is passed over — because the next one along may be the one holding that zone.",

@@ -81,6 +81,7 @@ one there was, to the byte.
 | DHCPv6 client | udp 546 from fe80::/10 | yes |
 | The dashboard | tcp 80,443 - from everybody when a page is for everybody, else from the networks the lists name | yes |
 | The logs arriving | every port rsyslog listens on (read off `/etc/rsyslog.conf` and `/etc/rsyslog.d/*.conf` by root: `imudp`, `imtcp`, `imptcp`, `imrelp`, and the old `$UDPServerRun` lines) - from anywhere, or only from the senders named | yes |
+| Automatic certificates (HTTP-01) | tcp 80 from anywhere, while *Settings → Automatic certificates* checks the name by HTTP-01: the CA asks from wherever it is ([automatic-certificates.md](automatic-certificates.md), 1.10.251) | yes |
 
 They follow what is set up: change a list, or tell rsyslog to listen on
 another port, and the rules change within a minute.

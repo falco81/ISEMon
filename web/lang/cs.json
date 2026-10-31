@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.248",
+  "version": "1.10.251",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -1488,6 +1488,22 @@
    "source": "a TLS session resumed",
    "text": "TLS relace obnovena"
   },
+  "s.a-token-at-cloudflare-my-profile.6dc69268": {
+   "source": "A token at Cloudflare (My Profile → API Tokens) with Zone - DNS - Edit for the zone, given below.",
+   "text": "Token u Cloudflare (My Profile → API Tokens) s oprávněním Zone - DNS - Edit pro zónu, zadaný níže."
+  },
+  "s.a-token-from-desec-token-management.bae68b9d": {
+   "source": "A token from deSEC (Token management) - one that may change this domain’s records. Kept sealed.",
+   "text": "Token od deSEC (Token management) – takový, který smí měnit záznamy této domény. Uložen zapečetěný."
+  },
+  "s.a-token-with-zone-dns-edit.2fe39805": {
+   "source": "A token with Zone - DNS - Edit for the zone. Kept sealed.",
+   "text": "Token s právem Zone – DNS – Edit pro zónu. Uložen zapečetěný."
+  },
+  "s.a-tsig-key-the-dns-server.552efe43": {
+   "source": "A TSIG key the DNS server lets update the _acme-challenge records (tsig-keygen), given below with the server and the zone.",
+   "text": "Klíč TSIG, kterým DNS server dovolí měnit záznamy _acme-challenge (tsig-keygen), zadaný níže se serverem a zónou."
+  },
   "s.a-tunnel-started-over-by-its.25bd2e13": {
    "source": "a tunnel started over by its peer",
    "text": "tunel znovu zahájený protistranou"
@@ -1572,6 +1588,14 @@
    "source": "(?![A-Za-z])",
    "text": "(?![A-Za-z])"
   },
+  "s.a-zone-the-records-go-into.b3f461b1": {
+   "source": "A zone the records go into instead of the name’s own ( acme.example.net ), the name with a CNAME to it in your DNS - In your DNS above says which. Empty: _acme-challenge.NAME itself.",
+   "text": "Zóna, do které jdou záznamy místo vlastní zóny jména ( acme.example.net ), jméno s CNAME na ni ve vašem DNS – Ve vašem DNS výše říká jaký. Prázdné: přímo _acme-challenge.JMÉNO."
+  },
+  "s.a-zone-the-records-go-into.d3135cc4": {
+   "source": "A zone the records go into instead of the name’s own (",
+   "text": "Zóna, do které jdou záznamy místo vlastní zóny jména ("
+  },
   "s.abcdefghjklmnpqrstuvwxyzabcdefghijkmnpqrstuvwxyz23456789.95f26180": {
    "source": "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789",
    "text": "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
@@ -1607,6 +1631,14 @@
   "s.above-is-set-to-the-chosen.3f7083e4": {
    "source": "above is set to the chosen hour, and even then only for what is fetched daily or less often. A machine that was switched off through that hour does not wait another whole day: once something is a day past due it goes whatever the clock says.",
    "text": "výše nastaveno na zvolenou hodinu, a i tehdy jen pro to, co se stahuje jednou denně nebo méně často. Stroj, který byl v tu hodinu vypnutý, nečeká další celý den: jakmile je něco o den po termínu, stáhne se bez ohledu na čas."
+  },
+  "s.above-says-which-empty-acme-challenge.8f9618cb": {
+   "source": "above says which. Empty: _acme-challenge.NAME itself.",
+   "text": "výše říká jaký. Prázdné: přímo _acme-challenge.JMÉNO."
+  },
+  "s.above-says-which.ff84ab22": {
+   "source": "above says which.",
+   "text": "výše říká jaký."
   },
   "s.above-to-look-for-one-by.c5223767": {
    "source": "above to look for one by name.",
@@ -1772,6 +1804,58 @@
    "source": "acls",
    "text": "acls"
   },
+  "s.acme-challenge-name-is-a-cname.58d030e6": {
+   "source": "; _acme-challenge.NAME is a CNAME to the subdomain below.",
+   "text": "; _acme-challenge.JMÉNO je CNAME na subdoménu níže."
+  },
+  "s.acme-dns-key.6f4a82ff": {
+   "source": "acme-dns key",
+   "text": "Klíč acme-dns"
+  },
+  "s.acme-dns-subdomain.1de210dd": {
+   "source": "acme-dns subdomain",
+   "text": "Subdoména acme-dns"
+  },
+  "s.acme-dns-user.6cf71594": {
+   "source": "acme-dns user",
+   "text": "Uživatel acme-dns"
+  },
+  "s.acme-example-net.944381db": {
+   "source": "acme.example.net",
+   "text": "acme.example.net"
+  },
+  "s.acme-leaves-it-alone.ce1236b2": {
+   "source": "ACME leaves it alone",
+   "text": "ACME ho nechává být"
+  },
+  "s.acme-no-longer-renews-it-either.31a89f8a": {
+   "source": "ACME no longer renews it either.",
+   "text": "Ani ACME ho už neobnovuje."
+  },
+  "s.acme-renews-it.24be8eb7": {
+   "source": "ACME renews it",
+   "text": "obnovuje ho ACME"
+  },
+  "s.acme-renews-this-certificate.3f3ecfe6": {
+   "source": "ACME renews this certificate",
+   "text": "Tento certifikát obnovuje ACME"
+  },
+  "s.acme-renews-this-one-from-now.de38a192": {
+   "source": "ACME renews this one from now on - at the next look (within the hour) if it is not from the CA yet.",
+   "text": "Od teď ho obnovuje ACME – při nejbližší kontrole (do hodiny), pokud ještě není od CA."
+  },
+  "s.acme-stops-renewing-this-one-the.e458b32e": {
+   "source": "ACME stops renewing this one; the certificate it has stays.",
+   "text": "ACME ho přestane obnovovat; certifikát, který má, zůstane."
+  },
+  "s.acme.293abb6b": {
+   "source": "acme",
+   "text": "acme"
+  },
+  "s.acmedns.93b5bebb": {
+   "source": "acmedns",
+   "text": "acmedns"
+  },
   "s.across-the-forest.d0d9bbdd": {
    "source": "across the forest",
    "text": "napříč celým lesem"
@@ -1823,6 +1907,10 @@
   "s.add-a-destination.e4c6fd9f": {
    "source": "Add a destination",
    "text": "Přidat úložiště"
+  },
+  "s.add-a-domain-there-a-free.3e2a1ae0": {
+   "source": "Add a domain there: a free one - yourname.dedyn.io - or one of your own whose DNS is at deSEC.",
+   "text": "Přidejte tam doménu: bezplatnou – vasejmeno.dedyn.io – nebo vlastní, jejíž DNS je u deSEC."
   },
   "s.add-a-firewall.64e9226d": {
    "source": "Add a firewall",
@@ -2172,6 +2260,10 @@
    "source": "Allowed by",
    "text": "Povoleno pravidlem"
   },
+  "s.allowed-to-update-acme-challenge-records.efff90cd": {
+   "source": "; allowed to update _acme-challenge records only.",
+   "text": "; smí měnit jen záznamy _acme-challenge."
+  },
   "s.allowed.77c7b490": {
    "source": "Allowed",
    "text": "Povolené"
@@ -2359,6 +2451,10 @@
   "s.an-accounting-record-the-session-this.c598df3f": {
    "source": "An accounting record: the session this belongs to was opened.",
    "text": "Účtovací záznam: relace, ke které patří, byla zahájena."
+  },
+  "s.an-acme-dns-server.07fa6de2": {
+   "source": "an acme-dns server",
+   "text": "server acme-dns"
   },
   "s.an-address-a-country-a-reason.274099b4": {
    "source": "an address, a country, a reason…",
@@ -2744,6 +2840,10 @@
    "source": "And what goes into it",
    "text": "A co do něj patří"
   },
+  "s.and-whether-the-txt-record-can.d8f386ad": {
+   "source": ", and whether the TXT record can be seen before the CA is asked -",
+   "text": "a zda je záznam TXT vidět dřív, než se zeptá CA –"
+  },
   "s.and.8278d2ad": {
    "source": ", and",
    "text": ", a"
@@ -2771,6 +2871,10 @@
   "s.anon.61518fb1": {
    "source": "anon",
    "text": "anon"
+  },
+  "s.another-acme-ca-step-ca-an.c6ffb2ff": {
+   "source": "another ACME CA (step-ca, an internal CA...)",
+   "text": "jiná ACME CA (step-ca, interní CA…)"
   },
   "s.another-folder-for-the-same-firewall.e0665661": {
    "source": "Another folder for the same firewall - the other unit of a pair",
@@ -3084,6 +3188,18 @@
    "source": "As the dashboard",
    "text": "Jako dashboard"
   },
+  "s.as-the-dns-server-knows-it.3697dcb8": {
+   "source": "As the DNS server knows it,",
+   "text": "Jak ho zná DNS server,"
+  },
+  "s.as-the-dns-server-knows-it.90ee5118": {
+   "source": "As the DNS server knows it, isemon-acme. ; allowed to update _acme-challenge records only.",
+   "text": "Jak ho zná DNS server, isemon-acme. ; smí měnit jen záznamy _acme-challenge."
+  },
+  "s.as-the-key-was-made-tsig.e8eaa5f9": {
+   "source": "As the key was made (tsig-keygen makes hmac-sha256).",
+   "text": "Jak byl klíč vytvořen (tsig-keygen vytváří hmac-sha256)."
+  },
   "s.as-the-log-wrote-it.4d593e57": {
    "source": "As the log wrote it",
    "text": "Jak to zapsal log"
@@ -3287,6 +3403,10 @@
   "s.at-a-chosen-hour.f0cb1c7c": {
    "source": "At a chosen hour",
    "text": "Ve zvolenou hodinu"
+  },
+  "s.at-every-order-renewals-too-the.4c52d3e6": {
+   "source": "At every order - renewals too - the TXT record is shown here: put it in your DNS, then say It is in DNS.",
+   "text": "Při každé objednávce – i obnově – se tu ukáže záznam TXT: vložte ho do DNS a pak potvrďte Je v DNS."
   },
   "s.at-its-first-failure-without-the.ab5d35df": {
    "source": ", at its first failure, without the counting. On a month of logs that is usually most of what this finds.",
@@ -3496,6 +3616,14 @@
    "source": "Auto",
    "text": "Auto"
   },
+  "s.automatic-certificates-http-01.f48fd167": {
+   "source": "Automatic certificates (HTTP-01)",
+   "text": "Automatické certifikáty (HTTP-01)"
+  },
+  "s.automatic-certificates.3dd0898d": {
+   "source": "Automatic certificates",
+   "text": "Automatické certifikáty"
+  },
   "s.automatic-slaac-dhcpv6.accadcb7": {
    "source": "automatic (SLAAC / DHCPv6)",
    "text": "automaticky (SLAAC / DHCPv6)"
@@ -3523,6 +3651,10 @@
   "s.back-to-a-version-published-at.516e0220": {
    "source": "Back to a version published at the address above - only as far back as can still run on this database as it is. Nothing is copied or put back: the database is left exactly as it is, whatever its size, and the settings of later versions wait in it for the next upgrade. Root checks the package and the limit again before it puts it in.",
    "text": "Návrat k verzi zveřejněné na adrese výše – jen tak daleko, aby ještě uměla běžet nad touto databází tak, jak je. Nic se nekopíruje ani neobnovuje: databáze zůstane přesně taková, jaká je, ať je jakkoli velká, a nastavení pozdějších verzí v ní počkají na další upgrade. Root balíček i hranici před nainstalováním zkontroluje znovu."
+  },
+  "s.back-to-the-one-before.a14ad78d": {
+   "source": "Back to the one before…",
+   "text": "Zpět k předchozímu…"
   },
   "s.back-up-now.527bf1aa": {
    "source": "Back up now",
@@ -3956,6 +4088,10 @@
    "source": "beside",
    "text": "vedle"
   },
+  "s.better-a-cname-once-in-your.2ff365de": {
+   "source": "Better: a CNAME once in your DNS to a zone isemon can write to (deSEC is free) - then nothing is by hand any more.",
+   "text": "Lepší: jednou CNAME ve vašem DNS na zónu, do které isemon smí zapisovat (deSEC je zdarma) – pak už nic není ručně."
+  },
   "s.bhutan.bb2254a8": {
    "source": "Bhutan",
    "text": "Bhútán"
@@ -4172,9 +4308,21 @@
    "source": "by DHCP",
    "text": "z DHCP"
   },
+  "s.by-hand-at-every-order.135cc958": {
+   "source": "by hand, at every order",
+   "text": "ručně, při každé objednávce"
+  },
   "s.by-hand-only.d6472806": {
    "source": "by hand only",
    "text": "jen ručně"
+  },
+  "s.by-hand-the-order-waits-up.db0d0620": {
+   "source": "By hand the order waits up to an hour for you; the others renew by themselves.",
+   "text": "Ručně objednávka čeká až hodinu na vás; ostatní způsoby obnovují samy."
+  },
+  "s.by-hand-the-record-is-shown.a658c334": {
+   "source": "by hand - the record is shown here, you put it in",
+   "text": "ručně – záznam se ukáže zde, vložíte ho sami"
   },
   "s.by-hand.db5bc9af": {
    "source": "by hand",
@@ -4332,6 +4480,10 @@
    "source": "card",
    "text": "karta"
   },
+  "s.care.ec1deb95": {
+   "source": "care",
+   "text": "care"
+  },
   "s.carried-so-far.cfecaa9b": {
    "source": "Carried so far",
    "text": "Přeneseno dosud"
@@ -4447,6 +4599,10 @@
   "s.certificates-expired.03ee862d": {
    "source": "Certificates expired",
    "text": "Prošlé certifikáty"
+  },
+  "s.certificates-from-an-acme-ca.e5122ca8": {
+   "source": "Certificates from an ACME CA",
+   "text": "Certifikáty od ACME CA"
   },
   "s.certificates-in-it.07804955": {
    "source": "Certificates in it",
@@ -4576,6 +4732,14 @@
    "source": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log.",
    "text": "Ke změně je potřeba účet, který to smí: vlastní účet tohoto programu, pokud to právo má, jinak správce toho serveru. Na ten se zeptá okno, použije se jen pro ten jeden požadavek a nikam se neukládá – ani do nastavení, ani do databáze, ani do žádného logu."
   },
+  "s.check-dns-here-then-order-it.2a250c0e": {
+   "source": "Check DNS here, then Order it now. Renewals go by themselves.",
+   "text": "Tady Zkontrolovat DNS, pak Objednat teď. Obnovy proběhnou samy."
+  },
+  "s.check-dns.827a376c": {
+   "source": "Check DNS",
+   "text": "Zkontrolovat DNS"
+  },
   "s.check-it-all.ce80abfc": {
    "source": "Check it all…",
    "text": "Zkontrolovat vše…"
@@ -4643,6 +4807,10 @@
   "s.checked-by.14a628e6": {
    "source": "Checked by",
    "text": "Zkontroloval"
+  },
+  "s.checked-with-this-machine-s-dns.aa60ce4d": {
+   "source": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees.",
+   "text": "Zkontrolováno přes DNS servery tohoto stroje – uvnitř vaší sítě mohou vidět, co internet nevidí. Nastavte DNS servery pro ACME (níže) na veřejné, 1.1.1.1, 9.9.9.9, abyste viděli, co vidí CA."
   },
   "s.checked.75e4aedc": {
    "source": "checked",
@@ -4859,6 +5027,14 @@
   "s.close.da38860c": {
    "source": "close",
    "text": "zavřít"
+  },
+  "s.cloudflare-with-an-api-token.209b3566": {
+   "source": "Cloudflare, with an API token",
+   "text": "Cloudflare, s API tokenem"
+  },
+  "s.cloudflare.f036f579": {
+   "source": "cloudflare",
+   "text": "cloudflare"
   },
   "s.cn-ru.733cb76c": {
    "source": "CN,RU",
@@ -5131,6 +5307,10 @@
   "s.copy-the-url.d2f64e4d": {
    "source": "Copy the URL",
    "text": "Zkopírovat URL"
+  },
+  "s.copy-the-value.57a06172": {
+   "source": "Copy the value",
+   "text": "Zkopírovat hodnotu"
   },
   "s.copy-the-whole-record.9c6e1e88": {
    "source": "Copy the whole record",
@@ -5456,6 +5636,10 @@
    "source": "days is a number of days",
    "text": "days je počet dní"
   },
+  "s.days-left.0575b7b5": {
+   "source": "days left",
+   "text": "dní zbývá"
+  },
   "s.days.5548ae4f": {
    "source": "days",
    "text": "dní"
@@ -5619,6 +5803,14 @@
   "s.descending.48609391": {
    "source": "descending",
    "text": "sestupně"
+  },
+  "s.desec-io-free-with-an-api.0e8d8689": {
+   "source": "deSEC.io (free), with an API token - a CNAME in your DNS",
+   "text": "deSEC.io (zdarma), s API tokenem – CNAME ve vašem DNS"
+  },
+  "s.desec.a524a6b5": {
+   "source": "desec",
+   "text": "desec"
   },
   "s.destination-country.6cd4a804": {
    "source": "Destination country",
@@ -5828,6 +6020,22 @@
    "source": "dnf (or apt) updates every package. The logs go on being read meanwhile; a restart it needs is offered at the end.",
    "text": "dnf (nebo apt) aktualizuje všechny balíčky. Logy se mezitím čtou dál; restart, který bude potřeba, se nabídne na konci."
   },
+  "s.dns-01-a-txt-record-in.186d2f2a": {
+   "source": "DNS-01 - a TXT record in DNS (no port open to the internet)",
+   "text": "DNS-01 – záznam TXT v DNS (žádný port otevřený do internetu)"
+  },
+  "s.dns-01-by-hand-the-ca.fd7418f7": {
+   "source": "DNS-01 by hand: the CA reads a TXT record you put in at every order.",
+   "text": "DNS-01 ručně: CA čte záznam TXT, který vložíte při každé objednávce."
+  },
+  "s.dns-01-the-ca-reads-a.70be8689": {
+   "source": "DNS-01: the CA reads a TXT record isemon puts in. What has to be in your DNS for it - once - is below.",
+   "text": "DNS-01: CA čte záznam TXT, který vloží isemon. Co pro to musí být ve vašem DNS – jednou – je níže."
+  },
+  "s.dns-01.e73a8ad2": {
+   "source": "DNS-01",
+   "text": "DNS-01"
+  },
   "s.dns-filter-lines-written-for-this.ff0b9f6a": {
    "source": "DNS filter lines written for this session",
    "text": "řádky DNS filtru zapsané pro tuto relaci"
@@ -5835,6 +6043,14 @@
   "s.dns-filter-only.923a43a1": {
    "source": "DNS filter only",
    "text": "jen DNS filtr"
+  },
+  "s.dns-name.eab9038c": {
+   "source": "DNS name",
+   "text": "DNS jméno"
+  },
+  "s.dns-servers-for-acme.a8ade03c": {
+   "source": "DNS servers for ACME",
+   "text": "DNS servery pro ACME"
   },
   "s.dns-servers.9143628a": {
    "source": "DNS servers",
@@ -6260,6 +6476,10 @@
    "source": "Each reason NPS gave, and which account got it last.",
    "text": "Každý důvod, který NPS uvedl, a který účet ho dostal naposledy."
   },
+  "s.each-record-looked-up-from-this.113119a4": {
+   "source": "Each record looked up from this server now, through its DNS servers - as the CA will look. A record just put in may take a while to show (its TTL).",
+   "text": "Každý záznam se teď vyhledá z tohoto serveru, přes jeho DNS servery – tak, jak se podívá CA. Právě vložený záznam se může chvíli neukazovat (jeho TTL)."
+  },
   "s.eap-friendly-name.fd873623": {
    "source": "EAP-Friendly-Name",
    "text": "EAP-Friendly-Name"
@@ -6315,6 +6535,14 @@
   "s.ecdhe-with-aes-gcm-and-chacha20.f1fabbd8": {
    "source": "ECDHE with AES-GCM and ChaCha20 - what install.sh writes. Every browser of the last ten years.",
    "text": "ECDHE s AES-GCM a ChaCha20 – to, co zapisuje install.sh. Každý prohlížeč posledních deseti let."
+  },
+  "s.ecdsa-is-smaller-and-quicker-rsa.a8452492": {
+   "source": "ECDSA is smaller and quicker; RSA for old clients.",
+   "text": "ECDSA je menší a rychlejší; RSA pro staré klienty."
+  },
+  "s.ecdsa-p-256.1545b7b3": {
+   "source": "ECDSA P-256",
+   "text": "ECDSA P-256"
   },
   "s.ecuador.09f199d2": {
    "source": "Ecuador",
@@ -6428,6 +6656,10 @@
    "source": "Empty: as far back as there is.",
    "text": "Prázdné: tak daleko, kam záznamy sahají."
   },
+  "s.empty-as-the-server-finds-it.0d722904": {
+   "source": ". Empty: as the server finds it.",
+   "text": ". Prázdné: jak ji najde server."
+  },
   "s.empty-column.7a386d42": {
    "source": "empty column",
    "text": "prázdný sloupec"
@@ -6463,6 +6695,10 @@
   "s.empty-the-key-not-encrypted.89ca935a": {
    "source": "empty - the key not encrypted",
    "text": "prázdné - klíč nešifrovaný"
+  },
+  "s.empty-the-name-of-the-certificate.5af49c9c": {
+   "source": "Empty: the name of the certificate it has now, else this server's full host name.",
+   "text": "Prázdné: jméno certifikátu, který má teď, jinak plné jméno tohoto serveru."
   },
   "s.empty-the-password-of-the-backups.0ae72f9c": {
    "source": "empty: the password of the backups set here",
@@ -7708,6 +7944,10 @@
    "source": "example.cz",
    "text": "example.cz"
   },
+  "s.example-dedyn-io.13a7708c": {
+   "source": "example.dedyn.io",
+   "text": "example.dedyn.io"
+  },
   "s.example-local.506744a6": {
    "source": "example.local",
    "text": "example.local"
@@ -8556,6 +8796,10 @@
    "source": "For which firewall",
    "text": "Pro který firewall"
   },
+  "s.for.f7880600": {
+   "source": "For",
+   "text": "Pro"
+  },
   "s.forever.e07f8c4a": {
    "source": "forever",
    "text": "navždy"
@@ -8671,6 +8915,10 @@
   "s.free-now.52786f8a": {
    "source": "Free now",
    "text": "Volno teď"
+  },
+  "s.free-or-one-of-your-own.046ca5c0": {
+   "source": "(free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name -",
+   "text": "(zdarma) nebo vlastní doména, jejíž DNS je tam. Záznamy jdou do ní; váš DNS má na ni pro to jméno CNAME –"
   },
   "s.freeradius-802-1x-lan.05220342": {
    "source": "FreeRADIUS 802.1X LAN",
@@ -8796,6 +9044,10 @@
    "source": "from the app",
    "text": "z aplikace"
   },
+  "s.from-the-ca.751b871b": {
+   "source": "from the CA",
+   "text": "od CA"
+  },
   "s.from-the-eduroam-logs.b0ab5c8d": {
    "source": "from the eduroam logs",
    "text": "z logů eduroam"
@@ -8819,6 +9071,14 @@
   "s.from-the-never-block-setting.c5e8f755": {
    "source": "from the never_block setting",
    "text": "z nastavení never_block"
+  },
+  "s.from-the-registration-at-acme-dns.da025403": {
+   "source": "From the registration at acme-dns. Kept sealed.",
+   "text": "Z registrace u acme-dns. Uložen zapečetěný."
+  },
+  "s.from-the-registration-at-acme-dns.e0386a5d": {
+   "source": "From the registration at acme-dns.",
+   "text": "Z registrace u acme-dns."
   },
   "s.from-the-token-logs.0d2eb695": {
    "source": "from the token logs",
@@ -8988,9 +9248,17 @@
    "source": "- give it to its administrator.",
    "text": "– předejte ho jeho správci."
   },
+  "s.give-its-name-first-its-name.e817bf31": {
+   "source": "Give its name first (Its name…).",
+   "text": "Nejdřív zadejte jeho jméno (Jeho jméno…)."
+  },
   "s.give-the-disk-back.eb52259c": {
    "source": "Give the disk back",
    "text": "Vrátit místo na disku"
+  },
+  "s.give-the-order-up.08fbe92c": {
+   "source": "Give the order up",
+   "text": "Vzdát objednávku"
   },
   "s.give-the-password-here-instead-of.4a3e0f12": {
    "source": "give the password here instead of being asked (it goes in your shell history and the process list; being asked is better, and ISEMON_PASSWORD in the environment is the way for a script)",
@@ -9079,6 +9347,10 @@
   "s.go-lets-in-every-address-of.c8c641cc": {
    "source": "go lets in every address of it with no ban of its own; the ones it was folded from, if any, stay banned as themselves.",
    "text": "uvolnění vpustí každou jeho adresu, která nemá vlastní blokaci; adresy, ze kterých byl složen, zůstanou blokované samy za sebe."
+  },
+  "s.go-on.4319a1b9": {
+   "source": "Go on",
+   "text": "Pokračovat"
   },
   "s.going-back-now.f34819d5": {
    "source": "going back now",
@@ -9620,6 +9892,10 @@
    "source": "How long the RADIUS packets behind the token log are kept - what the token server was ASKED, beside what it answered. They are what makes \"the same account, from the same machine, every ninety seconds\" answerable, and they are far more of them than the answers. A ceiling of four hundred thousand rows sits under this.",
    "text": "Jak dlouho se uchovávají RADIUS pakety za logem tokenového serveru - na co byl tokenový server DOTÁZÁN, vedle toho, co odpověděl. Díky nim lze odpovědět na „stejný účet ze stejného stroje každých devadesát sekund“ a je jich mnohem víc než odpovědí. Pod tím je strop čtyři sta tisíc řádků."
   },
+  "s.how-long-the-record-is-given.12b641f1": {
+   "source": "How long the record is given to reach every DNS server before the CA is asked.",
+   "text": "Jak dlouho má záznam na to, aby se dostal na všechny DNS servery, než se zeptá CA."
+  },
   "s.how-long-the-session-lasted-s.4a77eb74": {
    "source": "how long the session lasted (s)",
    "text": "jak dlouho relace trvala (s)"
@@ -9976,6 +10252,14 @@
    "source": "how the bytes are counted",
    "text": "jak se počítají bajty"
   },
+  "s.how-the-ca-checks-it.c011a6c2": {
+   "source": "How the CA checks it",
+   "text": "Jak ho CA ověřuje"
+  },
+  "s.how-the-ca-checks-the-name.780cdeb0": {
+   "source": "How the CA checks the name",
+   "text": "Jak CA ověří jméno"
+  },
   "s.how-the-code-came.9a8b5325": {
    "source": "How the code came",
    "text": "Jak kód přišel"
@@ -10084,6 +10368,22 @@
    "source": "HSTS",
    "text": "HSTS"
   },
+  "s.http-01-needs-port-80-of.d731fe6e": {
+   "source": "HTTP-01 needs port 80 of the name reachable from the internet (or from the CA, for a CA of your own). DNS-01 needs nothing open: the CA reads a TXT record.",
+   "text": "HTTP-01 potřebuje port 80 jména dostupný z internetu (nebo z CA, u vlastní CA). DNS-01 nepotřebuje nic otevřeného: CA přečte záznam TXT."
+  },
+  "s.http-01-the-ca-asks-port.2ae9d7f0": {
+   "source": "HTTP-01: the CA asks port 80 of the name - so the name points at this server, and port 80 is open to the CA.",
+   "text": "HTTP-01: CA se ptá na port 80 jména – jméno tedy ukazuje na tento server a port 80 je pro CA otevřený."
+  },
+  "s.http-01-the-ca-asks-port.b5aa9934": {
+   "source": "HTTP-01 - the CA asks port 80 of the name",
+   "text": "HTTP-01 – CA se zeptá na portu 80 jména"
+  },
+  "s.http-01.aeb5a5e4": {
+   "source": "HTTP-01",
+   "text": "HTTP-01"
+  },
   "s.http-alt.75873cbd": {
    "source": "HTTP alt",
    "text": "HTTP alt"
@@ -10103,6 +10403,18 @@
   "s.https-alt.5c5e67dc": {
    "source": "HTTPS alt",
    "text": "HTTPS alt"
+  },
+  "s.https-auth-acme-dns-example-cz.4fd7c1f6": {
+   "source": "https://auth.acme-dns.example.cz",
+   "text": "https://auth.acme-dns.example.cz"
+  },
+  "s.https-auth-acme-dns-example-cz.87f9ac6e": {
+   "source": "https://auth.acme-dns.example.cz ; _acme-challenge.NAME is a CNAME to the subdomain below.",
+   "text": "https://auth.acme-dns.example.cz ; _acme-challenge.JMÉNO je CNAME na subdoménu níže."
+  },
+  "s.https-ca-example-cz-acme-acme.1bfd5c07": {
+   "source": "https://ca.example.cz/acme/acme/directory",
+   "text": "https://ca.example.cz/acme/acme/directory"
   },
   "s.https-dns.e0ff83c3": {
    "source": "HTTPS, DNS",
@@ -10256,6 +10568,10 @@
    "source": "In an ordinary firewall policy from the internet side, put",
    "text": "Do běžné politiky firewallu ze strany internetu vložte"
   },
+  "s.in-dns-now.fa11c2c0": {
+   "source": "In DNS now",
+   "text": "Teď v DNS"
+  },
   "s.in-force.377013e3": {
    "source": "In force",
    "text": "Platí"
@@ -10320,6 +10636,10 @@
    "source": "In the directory",
    "text": "V adresáři"
   },
+  "s.in-the-dns-of-your-own.e2832a3a": {
+   "source": "In the DNS of your own domain put the CNAME record below - once; it stays for every renewal.",
+   "text": "Do DNS své vlastní domény vložte záznam CNAME níže – jednou; zůstává pro každé obnovení."
+  },
   "s.in-the-firewall-s-user-manager.e9f5f6db": {
    "source": "in the firewall’s user manager.",
    "text": "ve správě uživatelů firewallu."
@@ -10363,6 +10683,14 @@
   "s.in-use.092a1ca8": {
    "source": "In use.",
    "text": "Používá se."
+  },
+  "s.in-your-dns-put-the-cname.03b0632c": {
+   "source": "In your DNS put the CNAME record below - once.",
+   "text": "Do svého DNS vložte záznam CNAME níže – jednou."
+  },
+  "s.in-your-dns.21cbd76f": {
+   "source": "In your DNS",
+   "text": "Ve vašem DNS"
   },
   "s.in.aef36502": {
    "source": "In",
@@ -10884,6 +11212,10 @@
    "source": "ise",
    "text": "ise"
   },
+  "s.isemon-acme.222a3588": {
+   "source": "isemon-acme.",
+   "text": "isemon-acme."
+  },
   "s.isemon-add-user-name-role-fulladmin.845ae7a7": {
    "source": "isemon --add-user name --role fulladmin",
    "text": "isemon --add-user name --role fulladmin"
@@ -11015,6 +11347,10 @@
   "s.isemon-puts-a-chain-of-its.503b6bb9": {
    "source": "isemon puts a chain of its own, ISEMON-IN, first in INPUT, for IPv4 and IPv6, and keeps it in /etc/sysconfig/iptables and ip6tables. Your own rules stay as they are; ISEMON-IN only adds to them - what it does not let in goes on to them. SSH stays open (a rule of isemon’s, which you can turn off).",
    "text": "isemon vloží vlastní řetězec ISEMON-IN na první místo v INPUT, pro IPv4 i IPv6, a uloží ho do /etc/sysconfig/iptables a ip6tables. Vaše vlastní pravidla zůstanou, jak jsou; ISEMON-IN k nim jen přidává – co nepustí, pokračuje na ně. SSH zůstane otevřené (pravidlo isemonu, které můžete vypnout)."
+  },
+  "s.isemon-puts-it-in.521ccbfe": {
+   "source": "isemon puts it in",
+   "text": "vloží ho isemon"
   },
   "s.isemon-rescan-days-7.9e36b906": {
    "source": "isemon --rescan --days 7",
@@ -11176,6 +11512,10 @@
    "source": "It did not answer.",
    "text": "Neodpověděl."
   },
+  "s.it-did-not-go.ff03e98d": {
+   "source": "It did not go",
+   "text": "Neodešlo to"
+  },
   "s.it-did-not-work.19a40b70": {
    "source": "it did not work",
    "text": "nefungovalo to"
@@ -11259,6 +11599,10 @@
   "s.it-is-going-in-another-process.91ca4cd1": {
    "source": "It is going in another process - a terminal, most likely.",
    "text": "Běží v jiném procesu - nejspíš v terminálu."
+  },
+  "s.it-is-in-dns.e8e1238f": {
+   "source": "It is in DNS",
+   "text": "Je v DNS"
   },
   "s.it-is-never-a-way-in.d6c9d425": {
    "source": "It is never a way in.",
@@ -11352,9 +11696,17 @@
    "source": "Italy",
    "text": "Itálie"
   },
+  "s.its-acme-directory.3f45b7e1": {
+   "source": "Its ACME directory",
+   "text": "Jeho ACME directory"
+  },
   "s.its-address.c54dbb70": {
    "source": "Its address",
    "text": "Jeho adresa"
+  },
+  "s.its-algorithm.355d7c79": {
+   "source": "Its algorithm",
+   "text": "Jeho algoritmus"
   },
   "s.its-api-port.8b0b86a5": {
    "source": "Its API port",
@@ -11440,6 +11792,14 @@
    "source": "Its MAC",
    "text": "Jeho MAC"
   },
+  "s.its-name-is-not-known-yet.904d56f8": {
+   "source": "its name is not known yet",
+   "text": "jeho jméno zatím není známé"
+  },
+  "s.its-name.d43ff9f3": {
+   "source": "Its name…",
+   "text": "Jeho jméno…"
+  },
   "s.its-networks.77daab32": {
    "source": "Its networks",
    "text": "Jeho sítě"
@@ -11447,6 +11807,10 @@
   "s.its-operating-system.65a6b2ab": {
    "source": "its operating system",
    "text": "jeho operační systém"
+  },
+  "s.its-own-certificate-is-kept.a37cf54b": {
+   "source": "its own certificate is kept",
+   "text": "vlastní certifikát zůstává"
   },
   "s.its-own-connection-its-own-account.5d64a3c1": {
    "source": "Its own connection, its own account that may only read, and its own settings: nothing here is the banning’s, and nothing is ever written to the router from here.",
@@ -11768,6 +12132,10 @@
    "source": "Kenya",
    "text": "Keňa"
   },
+  "s.kept-as-it-is-automatic-certificates.900fd20e": {
+   "source": "Kept as it is: Automatic certificates does not replace it (Look after it there gives it to ACME).",
+   "text": "Zůstává, jak je: Automatické certifikáty ho nenahradí (Starat se o něj tam ho předá ACME)."
+  },
   "s.kept-in-sync-by-itself.d2dfeea8": {
    "source": "kept in sync by itself",
    "text": "synchronizováno automaticky"
@@ -11807,6 +12175,10 @@
   "s.kept-sealed-type-a-new-one.a7f3eca7": {
    "source": "Kept, sealed. Type a new one to change it.",
    "text": "Uloženo, zapečetěné. Pro změnu napište nové."
+  },
+  "s.kept.1e61fe1e": {
+   "source": "kept",
+   "text": "ponecháno"
   },
   "s.kerberos-policy-was-changed.d1f83219": {
    "source": "Kerberos policy was changed",
@@ -12032,6 +12404,10 @@
    "source": "Last one",
    "text": "Poslední"
   },
+  "s.last-ordered.89920a76": {
+   "source": "Last ordered",
+   "text": "Naposledy objednán"
+  },
   "s.last-read.c9ec82d6": {
    "source": "Last read",
    "text": "Naposledy načteno"
@@ -12140,6 +12516,10 @@
    "source": "leasename",
    "text": "leasename"
   },
+  "s.leave-it-alone.3f3bb3ac": {
+   "source": "Leave it alone",
+   "text": "Nechat být"
+  },
   "s.leave-it-empty-for-a-key.8623bcf0": {
    "source": "Leave it empty for a key that is not encrypted.",
    "text": "Nechte prázdné pro nešifrovaný klíč."
@@ -12235,6 +12615,22 @@
   "s.let-one-back-in-all-for.3e0109c6": {
    "source": "let one back in (\"all\" for everybody)",
    "text": "odblokovat jednu adresu („all“ pro všechny)"
+  },
+  "s.let-s-encrypt-its-staging-certificates.e8f40c00": {
+   "source": "Let’s Encrypt, its staging (certificates browsers do not trust - to try it), or another.",
+   "text": "Let’s Encrypt, jeho staging (certifikáty, kterým prohlížeče nevěří – na vyzkoušení), nebo jiná."
+  },
+  "s.let-s-encrypt-s-certificates-last.146f0eb3": {
+   "source": "Let’s Encrypt’s certificates last 90 days; 30 is what it advises. A certificate that lasts less is renewed at a third of its life.",
+   "text": "Certifikáty Let’s Encrypt platí 90 dní; 30 je jejich doporučení. Certifikát, který platí kratší dobu, se obnovuje ve třetině své platnosti."
+  },
+  "s.let-s-encrypt-staging-to-try.104330af": {
+   "source": "Let’s Encrypt - staging (to try it)",
+   "text": "Let’s Encrypt – staging (na vyzkoušení)"
+  },
+  "s.let-s-encrypt.fb229ac4": {
+   "source": "Let’s Encrypt",
+   "text": "Let’s Encrypt"
   },
   "s.let-the-bans-of-these-sources.3bb95fde": {
    "source": "Let the bans of these sources go",
@@ -12664,6 +13060,10 @@
    "source": "Look a name up",
    "text": "Vyhledat název"
   },
+  "s.look-after-it.37321878": {
+   "source": "Look after it",
+   "text": "Starat se o něj"
+  },
   "s.look-at-every-page-ban-an.b961ca25": {
    "source": "Look at every page, ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall.",
    "text": "Prohlížet všechny stránky, zablokovat adresu, pustit ji zpět a nahrát seznamy na firewall. Nic jiného: žádné nastavení, žádné účty, žádné odebírání našich položek z firewallu."
@@ -13007,6 +13407,10 @@
   "s.made.e572f95f": {
    "source": "made",
    "text": "vytvořeno"
+  },
+  "s.mail-of-the-account-at-the.cad7a82e": {
+   "source": "Mail of the account at the CA",
+   "text": "E-mail účtu u CA"
   },
   "s.main.b28b7af6": {
    "source": "main",
@@ -14008,10 +14412,6 @@
    "source": "nextstat",
    "text": "nextstat"
   },
-  "s.nginx-keeps-the-files-it-has.ed950c40": {
-   "source": "nginx keeps the files it has now; isemon no longer changes them.",
-   "text": "nginx si ponechá soubory, které má teď; isemon je už nebude měnit."
-  },
   "s.nginx.58a3ed6f": {
    "source": "nginx",
    "text": "nginx"
@@ -14059,6 +14459,10 @@
   "s.no-backup-sent-yet.76d6a10d": {
    "source": "No backup sent yet.",
    "text": "Zatím se žádná záloha neodeslala."
+  },
+  "s.no-certificate-of-isemon-s.6d119ae2": {
+   "source": "no certificate of isemon's",
+   "text": "žádný certifikát isemonu"
   },
   "s.no-certificate-yet-make-one-or.6251e374": {
    "source": "No certificate yet — make one, or let it pin the router’s own at the first connection.",
@@ -14287,6 +14691,10 @@
   "s.no-such-account.a7cb5e24": {
    "source": "no such account",
    "text": "takový účet neexistuje"
+  },
+  "s.no-such-challenge.4dea3352": {
+   "source": "no such challenge",
+   "text": "taková výzva není"
   },
   "s.no-such-directory.073de13e": {
    "source": "no such directory",
@@ -14616,6 +15024,10 @@
    "source": "not checked (not safe)",
    "text": "neověřuje se (nebezpečné)"
   },
+  "s.not-checked-yet.c621dc72": {
+   "source": "not checked yet",
+   "text": "zatím nezkontrolováno"
+  },
   "s.not-checked.a60e9342": {
    "source": "NOT checked",
    "text": "NEKONTROLOVÁNO"
@@ -14659,6 +15071,10 @@
   "s.not-fetched.85e2b393": {
    "source": "not fetched",
    "text": "nestaženo"
+  },
+  "s.not-from-the-ca.754c7346": {
+   "source": "not from the CA",
+   "text": "ne od CA"
   },
   "s.not-given.1d6edf47": {
    "source": "not given",
@@ -15232,6 +15648,10 @@
    "source": "Nothing to change: every setting is right for this machine",
    "text": "Není co měnit: všechna nastavení odpovídají tomuto stroji"
   },
+  "s.nothing-to-do-isemon-puts-it.00b01888": {
+   "source": "nothing to do: isemon puts it in and takes it away",
+   "text": "nic dělat: isemon ho vloží a zase odebere"
+  },
   "s.nothing-to-do.56764aea": {
    "source": "nothing to do",
    "text": "není co dělat"
@@ -15432,6 +15852,10 @@
    "source": "npsvpn",
    "text": "npsvpn"
   },
+  "s.ns1-example-cz.d5ad69c8": {
+   "source": "ns1.example.cz",
+   "text": "ns1.example.cz"
+  },
   "s.ntp-example-cz.11fcb552": {
    "source": "ntp.example.cz",
    "text": "ntp.example.cz"
@@ -15563,6 +15987,10 @@
   "s.off-otp-still-checks-that-it.336deeb9": {
    "source": "Off, otp still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.",
    "text": "Vypnuté: otp dál ověřuje, že odpovídá isemon, ale isemon přijímá řádky od kohokoli, kdo se k portu dostane."
+  },
+  "s.off-switch-it-on-below-say.be7a4e6d": {
+   "source": "Off - switch it on below, say the CA and how it checks the name, and save.",
+   "text": "Vypnuto – zapněte to níže, zadejte CA a jak ověřuje jméno, a uložte."
   },
   "s.off-switched-off.527c6dd0": {
    "source": "off switched off",
@@ -15760,6 +16188,10 @@
    "source": "on the banner in time, it goes back to what it was by itself.",
    "text": "na banneru včas, sama se vrátí do původního stavu."
   },
+  "s.on-the-card-above-sets-it.3e0d6225": {
+   "source": "on the card above sets it too.",
+   "text": "na kartě výše ho nastaví také."
+  },
   "s.on-the-clipboard.9004a4e2": {
    "source": "on the clipboard",
    "text": "ve schránce"
@@ -15915,6 +16347,10 @@
   "s.once-a-day.3c3defc3": {
    "source": "once a day",
    "text": "jednou denně"
+  },
+  "s.once-by-hand-in-your-dns.c315ca57": {
+   "source": "once, by hand, in your DNS",
+   "text": "jednou, ručně, ve vašem DNS"
   },
   "s.once-everything-is-in-the-other.5feaa877": {
    "source": "Once everything is in the other database and it is the one in use, the one it came from is just a spare copy: the file may be deleted, or the server uninstalled. Going the other way is these same steps with the file chosen instead — which is what makes it safe to try a server at all.",
@@ -16111,6 +16547,10 @@
   "s.one-place-a-sign-in-from.f191e78b": {
    "source": "One place. A sign-in from anywhere else is marked.",
    "text": "Jedno místo. Přihlášení odjinud se označí."
+  },
+  "s.one-put-in-here-by-hand.6f5f734f": {
+   "source": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back.",
+   "text": "Certifikát vložený sem ručně vyjme dashboard z péče ACME: zůstane, jak je, při příštím obnovení se nenahradí. Nastavení → Automatické certifikáty → Starat se o něj ho vrátí."
   },
   "s.one-row-is-one-account-being.b06da43d": {
    "source": "One row is one account being refused from one machine through one program. That is the answer a lockout leaves behind and no single Windows event holds it: the refusal says which machine, the credential event beside it says which program went and used the password. A mapped drive, a scheduled task, a telephone or a phone’s mail app is the usual answer.",
@@ -16776,6 +17216,10 @@
    "source": ", or scp). Then import it and give it to api-ssl, open to this machine alone:",
    "text": ", nebo scp). Pak ho naimportujte a přiřaďte api-ssl, otevřenému jen pro tento stroj:"
   },
+  "s.or-the-public-address-in-front.9557c2e2": {
+   "source": "or the public address in front of it",
+   "text": "nebo veřejná adresa před ním"
+  },
   "s.or-the.345ba69c": {
    "source": ", or the",
    "text": ", nebo"
@@ -16783,6 +17227,10 @@
   "s.or-until-untouched-for-min.7a51a102": {
    "source": "Or until untouched for (min)",
    "text": "Nebo dokud nebude nečinné (min)"
+  },
+  "s.or-with-a-port.20a8c947": {
+   "source": "or with a port",
+   "text": "nebo s portem"
   },
   "s.or.1758356d": {
    "source": "or",
@@ -16795,6 +17243,34 @@
   "s.or.f579c523": {
    "source": "OR",
    "text": "OR"
+  },
+  "s.order-it-now-renewals-go-by.71bab7d9": {
+   "source": "Order it now. Renewals go by themselves.",
+   "text": "Objednat teď. Obnovy proběhnou samy."
+  },
+  "s.order-it-now.945c00b8": {
+   "source": "Order it now",
+   "text": "Objednat teď"
+  },
+  "s.order-it.76abe9b1": {
+   "source": "Order it",
+   "text": "Objednat"
+  },
+  "s.order-the-certificate-from-the-acme.17589346": {
+   "source": "order the certificate from the ACME CA now, followed here; ACME looks after it from then on (this server has one: this and all are the same)",
+   "text": "objednat certifikát od ACME CA teď, sledované tady; od té doby se o něj stará ACME (tento server má jeden: this a all jsou totéž)"
+  },
+  "s.order.cce55e43": {
+   "source": "order",
+   "text": "order"
+  },
+  "s.ordered-from-the-ca-now-and.dc53bb57": {
+   "source": "Ordered from the CA now and put in as an uploaded one is. ACME renews it from then on.",
+   "text": "Objedná se od CA teď a vloží se tak jako nahraný. Od té doby ho obnovuje ACME."
+  },
+  "s.ordering.e934c190": {
+   "source": "ordering…",
+   "text": "objednává se…"
   },
   "s.ordinary-it-happened-and-nothing-was.3054fd80": {
    "source": "Ordinary — it happened and nothing was wrong with it.",
@@ -17440,6 +17916,10 @@
    "source": "placeholder",
    "text": "zástupný text"
   },
+  "s.plain-ac-dns-table.7c5ce495": {
+   "source": "plain ac-dns-table",
+   "text": "plain ac-dns-table"
+  },
   "s.plain-ftp-the-password-and-the.c0c4165d": {
    "source": "Plain FTP: the password and the file go over unencrypted - only inside a network you trust (the file itself is locked).",
    "text": "Obyčejné FTP: heslo i soubor jdou nešifrovaně – jen uvnitř sítě, které věříte (soubor sám je zamčený)."
@@ -17504,6 +17984,10 @@
    "source": "pointer",
    "text": "ukazatel"
   },
+  "s.points-at-value.f2e6648f": {
+   "source": "Points at / value",
+   "text": "Ukazuje na / hodnota"
+  },
   "s.poland.5ff03b72": {
    "source": "Poland",
    "text": "Polsko"
@@ -17567,6 +18051,14 @@
   "s.pool.51a4b13b": {
    "source": "pool",
    "text": "pool"
+  },
+  "s.port-80-answers-as-the-ca.748803b8": {
+   "source": "Port 80 answers as the CA will ask it",
+   "text": "Port 80 odpovídá, jak se CA zeptá"
+  },
+  "s.port-80-is-open-to-it.2f8132ad": {
+   "source": "Port 80 is open to it - the firewall in front of the server; isemon's own lets it in by itself (Firewall and access → Automatic certificates).",
+   "text": "Port 80 je pro ni otevřený – firewall před serverem; vlastní firewall isemonu ho pustí sám (Firewall a přístup → Automatické certifikáty)."
   },
   "s.port-and-mode.b48624df": {
    "source": "Port and mode",
@@ -17739,6 +18231,10 @@
   "s.privileged.8c3639f9": {
    "source": "privileged",
    "text": "privilegovaný"
+  },
+  "s.probe.a949c530": {
+   "source": "probe",
+   "text": "probe"
   },
   "s.process.c2e2d662": {
    "source": "process",
@@ -17964,6 +18460,10 @@
    "source": "Put sudo in front of pfctl, for an account that is not root but may run pfctl through sudo without a password.",
    "text": "Spouštět pfctl přes sudo, pro účet, který není root, ale smí pfctl spouštět přes sudo bez hesla."
   },
+  "s.put-the-certificate-from-before-acme.ecca6fc9": {
+   "source": "Put the certificate from before ACME back?",
+   "text": "Vrátit certifikát z doby před ACME?"
+  },
   "s.put-the-filters-back-as-they.c7053b89": {
    "source": "Put the filters back as they were and show the last 24 hours again.",
    "text": "Vrátit filtry do původního stavu a znovu zobrazit posledních 24 hodin."
@@ -18015,6 +18515,10 @@
   "s.put-this-table-back-as-it.8475f36e": {
    "source": "Put this table back as it comes",
    "text": "Vrátit tuto tabulku do výchozího stavu"
+  },
+  "s.put-this-txt-record-in-dns.d78d46ed": {
+   "source": "Put this TXT record in DNS",
+   "text": "Vložte tento záznam TXT do DNS"
   },
   "s.put.7fd768e4": {
    "source": "Put",
@@ -18672,6 +19176,10 @@
    "source": "refused",
    "text": "odmítnuto"
   },
+  "s.register-at-the-acme-dns-server.d2616f98": {
+   "source": "Register at the acme-dns server (POST /register) - it gives a user, a key and a subdomain; give them below.",
+   "text": "Zaregistrujte se na serveru acme-dns (POST /register) – dá uživatele, klíč a subdoménu; zadejte je níže."
+  },
   "s.reject.2b03b592": {
    "source": "Reject",
    "text": "Odmítnout"
@@ -18740,9 +19248,25 @@
    "source": "remport",
    "text": "remport"
   },
+  "s.renewed-by-acme-before-it-runs.d2856c48": {
+   "source": "Renewed by ACME before it runs out. A certificate put in by hand on Certificates and TLS takes it out of ACME’s care.",
+   "text": "Obnovuje ho ACME, než vyprší. Certifikát vložený ručně v Certifikáty a TLS ho z péče ACME vyjme."
+  },
+  "s.renewed-by-acme.9fc90159": {
+   "source": "renewed by ACME",
+   "text": "obnovuje ACME"
+  },
+  "s.renewed-when-fewer-days-are-left.505bbe85": {
+   "source": "Renewed when fewer days are left than",
+   "text": "Obnovit, když zbývá méně dní než"
+  },
   "s.replace-separately-banned-addresses-with-the.d8d0de58": {
    "source": "Replace separately banned addresses with the subnet that holds them. A scanner renting a /24 and working through it is forty rules doing the work of one, and the fortieth address is banned an hour after the first.",
    "text": "Nahradit jednotlivě zablokované adresy podsítí, která je obsahuje. Skener, který si pronajme /24 a postupně ji projde, znamená čtyřicet pravidel tam, kde by stačilo jedno, a čtyřicátá adresa je zablokována hodinu po první."
+  },
+  "s.replace-the-certificate-of-the-dashboard.df2c02a6": {
+   "source": "Replace the certificate of the dashboard?",
+   "text": "Nahradit certifikát dashboardu?"
   },
   "s.replaces-everything.b4111148": {
    "source": "replaces everything",
@@ -18928,6 +19452,10 @@
    "source": "Reversible encryption",
    "text": "Vratné šifrování"
   },
+  "s.rfc-2136-dynamic-update-with-a.e9b35bd2": {
+   "source": "RFC 2136 dynamic update with a TSIG key (BIND, PowerDNS, Knot...)",
+   "text": "dynamická aktualizace RFC 2136 s klíčem TSIG (BIND, PowerDNS, Knot…)"
+  },
   "s.rfc-7919-ffdhe2048-ready-at-once.3e4d2234": {
    "source": "RFC 7919 ffdhe2048 (ready at once)",
    "text": "RFC 7919 ffdhe2048 (hned připravené)"
@@ -18939,6 +19467,10 @@
   "s.rfc-7919-ffdhe4096.0fb455bd": {
    "source": "RFC 7919 ffdhe4096",
    "text": "RFC 7919 ffdhe4096"
+  },
+  "s.rfc2136.db20b748": {
+   "source": "rfc2136",
+   "text": "rfc2136"
   },
   "s.right-a-step-out-of-time.457f2268": {
    "source": "right, a step out of time",
@@ -19868,6 +20400,10 @@
    "source": "Setting",
    "text": "Nastavení"
   },
+  "s.settings-automatic-certificates-renews-it-before.a9806e0a": {
+   "source": "Settings → Automatic certificates renews it before it runs out. Uploading one here, or making one self-signed, takes it out of ACME’s care - it is kept as it is.",
+   "text": "Nastavení → Automatické certifikáty ho obnoví, než vyprší. Nahrání certifikátu zde nebo vytvoření self-signed ho z péče ACME vyjme – zůstane, jak je."
+  },
   "s.settings-changed.75ae9c89": {
    "source": "settings changed",
    "text": "nastavení změněno"
@@ -20123,6 +20659,10 @@
   "s.sign-out.dc1649a1": {
    "source": "Sign out",
    "text": "Odhlásit se"
+  },
+  "s.sign-up-at-desec-io-free.353597da": {
+   "source": "Sign up at desec.io (free) and confirm the mail.",
+   "text": "Zaregistrujte se na desec.io (zdarma) a potvrďte e-mail."
   },
   "s.signed-by-an-authority-yours-given.5f15f050": {
    "source": "Signed by an authority - yours, given below, or one this machine trusts - and for the name it is checked for.",
@@ -21092,6 +21632,10 @@
    "source": "Switch it on above, choose the countries, and it is refilled by itself whenever the country database is refreshed.",
    "text": "Zapněte to výše, vyberte země a seznam se bude sám znovu naplňovat pokaždé, když se obnoví databáze zemí."
   },
+  "s.switch-it-on-below-first.a9ddb0b7": {
+   "source": "Switch it on below first.",
+   "text": "Nejdřív ho níže zapněte."
+  },
   "s.switch-it-on-with-the-geolist.a13e5ab6": {
    "source": "switch it on with the geolist setting above",
    "text": "zapněte to nastavením geolist výše"
@@ -21616,6 +22160,10 @@
    "source": "TB",
    "text": "TB"
   },
+  "s.tcp-80-from-anywhere-the-acme.6d47ff77": {
+   "source": "tcp 80 from anywhere - the ACME CA checks the name on port 80 (Settings → Automatic certificates); nginx answers it there with /.well-known/acme-challenge/ and sends everything else to HTTPS",
+   "text": "tcp 80 odkudkoli – ACME CA ověřuje jméno na portu 80 (Nastavení → Automatické certifikáty); nginx jí tam odpoví na /.well-known/acme-challenge/ a vše ostatní pošle na HTTPS"
+  },
   "s.tcp-otp-sends-to-6514-unless.3d2c51f3": {
    "source": "TCP; otp sends to 6514 unless told otherwise. Not 514 - that one is the plain logs'.",
    "text": "TCP; otp posílá na 6514, pokud není řečeno jinak. Ne 514 - ten patří nešifrovaným logům."
@@ -21904,6 +22452,10 @@
    "source": "The account and its key",
    "text": "Účet a jeho klíč"
   },
+  "s.the-account-at-the-ca.3e3e80f2": {
+   "source": "The account at the CA:",
+   "text": "Účet u CA:"
+  },
   "s.the-account-exactly-as-the-token.44e90e87": {
    "source": "The account exactly as the token server wrote it, realm and all. The name in the column before it is the same account spelled the way the ISE logs spell it — one person, one name, everywhere on these pages.",
    "text": "Účet přesně tak, jak ho zapsal tokenový server, včetně realmu. Jméno ve sloupci před ním je tentýž účet zapsaný tak, jak ho zapisují logy ISE — jeden člověk, jedno jméno, všude na těchto stránkách."
@@ -22039,6 +22591,10 @@
   "s.the-acl-ise-sent-not-used.f71d6a2d": {
    "source": "the ACL ISE sent, not used",
    "text": "ACL, které ISE poslal, nepoužito"
+  },
+  "s.the-acme-dns-server.1489e1fb": {
+   "source": "The acme-dns server",
+   "text": "Server acme-dns"
   },
   "s.the-address-and-port-inside-the.fc563dec": {
    "source": "the address and port inside the destination was made (a dst-nat)",
@@ -22472,6 +23028,18 @@
    "source": "the burst rate",
    "text": "špičková rychlost"
   },
+  "s.the-ca-s-own-certificate.1bc13779": {
+   "source": "The CA’s own certificate",
+   "text": "Vlastní certifikát CA"
+  },
+  "s.the-ca-s-root-pem-where.288818d4": {
+   "source": "The CA’s root (PEM), where the system does not trust it already.",
+   "text": "Kořenový certifikát CA (PEM), pokud mu systém už nedůvěřuje."
+  },
+  "s.the-ca.c34688d3": {
+   "source": "The CA",
+   "text": "CA"
+  },
   "s.the-canary-islands.0c2ad3fc": {
    "source": "the Canary Islands",
    "text": "Kanárské ostrovy"
@@ -22515,6 +23083,10 @@
   "s.the-certificate-authority.4bb9e582": {
    "source": "The certificate authority",
    "text": "Certifikační autorita"
+  },
+  "s.the-certificate-by-acme-its-name.2f8a2060": {
+   "source": "the certificate by ACME: its name, its end, who looks after it, its last order step by step (Settings - Automatic certificates)",
+   "text": "certifikát od ACME: jeho jméno, konec, kdo se o něj stará, jeho poslední objednávka krok za krokem (Nastavení – Automatické certifikáty)"
   },
   "s.the-certificate-click-it-to-copy.7162e114": {
    "source": "The certificate. Click it to copy.",
@@ -22560,6 +23132,10 @@
    "source": "the certificate: PEM, -----BEGIN CERTIFICATE-----",
    "text": "certifikát: PEM, -----BEGIN CERTIFICATE-----"
   },
+  "s.the-certificate-put-in-on-certificates.07c1a55a": {
+   "source": "The certificate put in on Certificates and TLS (uploaded, from a request, self-signed) stays: ACME does not replace it. Look after it, or Order it now, gives it to ACME.",
+   "text": "Certifikát vložený v Certifikáty a TLS (nahraný, z žádosti, self-signed) zůstává: ACME ho nenahradí. Starat se o něj nebo Objednat teď ho předá ACME."
+  },
   "s.the-certificate-the-authority-signed-for.b2f4bbcf": {
    "source": "The certificate the authority signed for the router - with its private key, flag",
    "text": "Certifikát, který autorita podepsala pro router – s jeho privátním klíčem, příznak"
@@ -22571,6 +23147,10 @@
   "s.the-certificate-the-dashboard-answers-with.ae98b7b1": {
    "source": "The certificate the dashboard answers with, and how it speaks TLS. Upload one (PEM or PFX), make a request for your CA here, or make one that signs itself. The key is kept sealed in the database, so a copy of it carries the certificate too.",
    "text": "Certifikát, kterým dashboard odpovídá, a jak mluví TLS. Nahrajte ho (PEM nebo PFX), vytvořte zde žádost pro svou CA, nebo vytvořte certifikát podepsaný sám sebou. Klíč je v databázi zapečetěný, takže kopie databáze nese i certifikát."
+  },
+  "s.the-certificate-the-dashboard-answers-with.c28fc346": {
+   "source": "The certificate the dashboard answers with, ordered from Let's Encrypt or another ACME CA and renewed by itself well before it runs out. The CA checks the name by asking it on port 80 (HTTP-01), or by a record in DNS (DNS-01) for a server it cannot see from the internet. It goes in as an uploaded one does, and the TLS settings stay as they are.",
+   "text": "Certifikát, kterým dashboard odpovídá, objednaný od Let's Encrypt nebo jiné ACME CA a obnovovaný sám dlouho předtím, než vyprší. CA ověřuje jméno dotazem na portu 80 (HTTP-01), nebo záznamem v DNS (DNS-01) u serveru, který z internetu nevidí. Vloží se tak jako nahraný a nastavení TLS zůstává, jak je."
   },
   "s.the-certificate-the-firewall-chose.45a65876": {
    "source": "the certificate the firewall chose",
@@ -22647,6 +23227,10 @@
   "s.the-clock-set-to-the-time.25fc92ab": {
    "source": "The clock set to the time servers at once (chronyc makestep), not slewed slowly - for a clock that is far off.",
    "text": "Hodiny se nastaví podle časových serverů okamžitě (chronyc makestep), ne pomalým doladěním – pro hodiny, které jsou hodně mimo."
+  },
+  "s.the-cloudflare-api-token.74778b63": {
+   "source": "The Cloudflare API token",
+   "text": "API token Cloudflare"
   },
   "s.the-cocos-islands.5e9e2326": {
    "source": "the Cocos Islands",
@@ -22880,6 +23464,14 @@
    "source": "The dashboard (HTTP, HTTPS)",
    "text": "Dashboard (HTTP, HTTPS)"
   },
+  "s.the-dashboard-s-certificate-ordered-from.07c50ca1": {
+   "source": "The dashboard's certificate ordered from Let's Encrypt (or another ACME CA) and renewed by itself.",
+   "text": "Certifikát dashboardu objednaný od Let's Encrypt (nebo jiné ACME CA) a obnovovaný sám."
+  },
+  "s.the-dashboard-s-certificate-ordered-from.c1bf34ba": {
+   "source": "The dashboard’s certificate ordered from the CA and renewed by itself. The CA checks the name: by HTTP-01 port 80 of the name must reach this server; by DNS-01 nothing has to be open. Off until switched on.",
+   "text": "Certifikát dashboardu objednaný od CA a obnovovaný sám. CA ověřuje jméno: u HTTP-01 musí port 80 jména dosáhnout na tento server; u DNS-01 nemusí být otevřeno nic. Vypnuto, dokud se nezapne."
+  },
   "s.the-dashboard-s-notice-that-php.5451b0e5": {
    "source": "the dashboard's notice that PHP may have php2shell: hide puts it away until the daemon starts again (nothing is saved), show brings it back; alone, says which it is",
    "text": "hláška na dashboardu, že PHP může mít php2shell: hide ji skryje do dalšího startu démona (nic se neukládá), show ji vrátí; samotné řekne, jak to je"
@@ -22972,6 +23564,10 @@
    "source": "The description written on the group in the directory itself.",
    "text": "Popis zapsaný u skupiny přímo v adresáři."
   },
+  "s.the-desec-api-token.0b2f55f3": {
+   "source": "The deSEC API token",
+   "text": "API token deSEC"
+  },
   "s.the-device-that-asked.9c33361a": {
    "source": "the device that asked",
    "text": "zařízení, které se ptalo"
@@ -23047,6 +23643,14 @@
   "s.the-directory-is-not-being-asked.ad1c07f3": {
    "source": "The directory is not being asked about these accounts. Settings → The domain controllers → \"Ask the directory about the accounts in these logs\".",
    "text": "Na tyto účty se adresáře nedotazujeme. Nastavení → Řadiče domény → „Dotazovat se adresáře na účty v těchto lozích“."
+  },
+  "s.the-directory-of-another-acme-ca.28161121": {
+   "source": "The directory of another ACME CA,",
+   "text": "Adresář jiné ACME CA,"
+  },
+  "s.the-directory-of-another-acme-ca.ca27a749": {
+   "source": "The directory of another ACME CA, https://ca.example.cz/acme/acme/directory .",
+   "text": "Adresář jiné ACME CA, https://ca.example.cz/acme/acme/directory ."
   },
   "s.the-directory-password-was-right-and.58cbcf6a": {
    "source": "The directory password was right and otp asked for the code from the app in a second window; nothing ever came back into it.",
@@ -23128,6 +23732,14 @@
    "source": "the DNS filter",
    "text": "DNS filtr"
   },
+  "s.the-dns-name-of-the-certificate.b5f0c4b8": {
+   "source": "The DNS name of the certificate",
+   "text": "DNS jméno certifikátu"
+  },
+  "s.the-dns-name-the-certificate-is.1e40cac1": {
+   "source": "The DNS name the certificate is for. Empty: the name of the certificate it has now, else this server's full host name.",
+   "text": "DNS jméno, pro které je certifikát. Prázdné: jméno certifikátu, který má teď, jinak plné jméno tohoto serveru."
+  },
   "s.the-dns-question-s-own-number.7e074a1b": {
    "source": "the DNS question’s own number",
    "text": "vlastní číslo DNS dotazu"
@@ -23135,6 +23747,22 @@
   "s.the-dns-question.cbd4253c": {
    "source": "The DNS question",
    "text": "DNS dotaz"
+  },
+  "s.the-dns-server-taking-the-updates.230c7050": {
+   "source": "The DNS server taking the updates",
+   "text": "DNS server přijímající aktualizace"
+  },
+  "s.the-dns-servers-asked-for-everything.9e20f0a3": {
+   "source": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API,",
+   "text": "DNS servery, kterých se ptá vše na této stránce: adresa CA a DNS API,"
+  },
+  "s.the-dns-servers-asked-for-everything.da12b3f9": {
+   "source": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API, Check DNS , Try port 80 , and whether the TXT record can be seen before the CA is asked - 1.1.1.1, 9.9.9.9 to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf).",
+   "text": "DNS servery, kterých se ptá vše na této stránce: adresa CA a DNS API, Zkontrolovat DNS , Vyzkoušet port 80 a zda je záznam TXT vidět dřív, než se zeptá CA – 1.1.1.1, 9.9.9.9 , aby bylo vidět, co vidí internet. Prázdné: vlastní servery stroje (/etc/resolv.conf)."
+  },
+  "s.the-domain-at-desec.a0fb9d86": {
+   "source": "The domain at deSEC",
+   "text": "Doména u deSEC"
   },
   "s.the-domain-checked-a-password.feb46a46": {
    "source": "the domain checked a password",
@@ -23632,6 +24260,10 @@
    "source": "the full backup is being made; the download starts when it is ready",
    "text": "plná záloha se vytváří; stahování začne, až bude hotová"
   },
+  "s.the-full-dns-name-its-certificate.3acf2c66": {
+   "source": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01).",
+   "text": "Plné DNS jméno, pro které je jeho certifikát – jde do certifikátu jako jeho jméno (CN) a do alternativních jmen (SAN). CA ho vydá jen pro jméno, které ukazuje na tento server (HTTP-01), nebo jehož záznam TXT lze vložit (DNS-01)."
+  },
   "s.the-full-path-to-this-object.56020a01": {
    "source": "The full path to this object in the directory. It is what the role settings really match on, and it is why they are separated by semicolons and not by commas.",
    "text": "Úplná cesta k tomuto objektu v adresáři. Právě s ní se ve skutečnosti porovnává nastavení rolí, a proto se odděluje středníky, nikoli čárkami."
@@ -23884,6 +24516,14 @@
    "source": "The key kept now is replaced",
    "text": "Klíč uložený teď se nahradí"
   },
+  "s.the-key-of-the-certificate.7484eea3": {
+   "source": "The key of the certificate",
+   "text": "Klíč certifikátu"
+  },
+  "s.the-key-s-secret-base64-kept.fb95afbb": {
+   "source": "The key’s secret (base64). Kept sealed; written to a file only isemon reads for the moment nsupdate runs.",
+   "text": "Tajemství klíče (base64). Uložené zapečetěné; do souboru, který čte jen isemon, se zapíše jen na chvíli, kdy běží nsupdate."
+  },
   "s.the-key-the-server-proves-itself.4a4fd098": {
    "source": "The key the server proves itself with. Trusted once, after comparing its fingerprint with the server’s own (",
    "text": "Klíč, kterým se server prokazuje. Důvěřuje se mu jednou, po porovnání jeho otisku s vlastním otiskem serveru ("
@@ -23987,6 +24627,10 @@
   "s.the-last-time-this-account-was.d6348e56": {
    "source": "The last time this account was used, and the address it was used from.",
    "text": "Kdy byl tento účet naposledy použit a z jaké adresy."
+  },
+  "s.the-last-try-failed.19d64a1b": {
+   "source": "the last try failed",
+   "text": "poslední pokus selhal"
   },
   "s.the-last-upgrade-the-package-waiting.dd6c7e46": {
    "source": "the last upgrade, the package waiting, and what the web has",
@@ -24296,9 +24940,21 @@
    "source": "the name it gave itself",
    "text": "jméno, které si samo dalo"
   },
+  "s.the-name-of-the-certificate-is.8c581f60": {
+   "source": "The name of the certificate is not known yet: give it (Its name…).",
+   "text": "Jméno certifikátu zatím není známé: zadejte ho (Jeho jméno…)."
+  },
+  "s.the-name-of-the-certificate.183dc52a": {
+   "source": "The name of the certificate",
+   "text": "Jméno certifikátu"
+  },
   "s.the-name-of-the-log-file.f1caeeb1": {
    "source": "The name of the log file in each",
    "text": "Název souboru logu v každé"
+  },
+  "s.the-name-of-the-tsig-key.1fb35a77": {
+   "source": "The name of the TSIG key",
+   "text": "Název klíče TSIG"
   },
   "s.the-name-offered.d2ba867e": {
    "source": "the name offered",
@@ -24307,6 +24963,14 @@
   "s.the-name-on-its-certificate.fc991ef9": {
    "source": "The name on its certificate",
    "text": "Jméno na jeho certifikátu"
+  },
+  "s.the-name-points-at-an-address.9feb55ec": {
+   "source": "the name points at an address that reaches port 80 of this server",
+   "text": "jméno ukazuje na adresu, ze které se dá dosáhnout na port 80 tohoto serveru"
+  },
+  "s.the-name-points-at-the-address.35dcbd2d": {
+   "source": "The name points at the address that reaches port 80 of this server - from the internet, or from your own CA.",
+   "text": "Jméno ukazuje na adresu, ze které se dá dosáhnout na port 80 tohoto serveru – z internetu, nebo z vaší vlastní CA."
   },
   "s.the-name-server-s-own-address.da4ff7d7": {
    "source": "The name server’s own address. An address, not a name — this is the thing that turns names into addresses, so it cannot be asked for one of its own.",
@@ -24324,6 +24988,14 @@
    "source": "the name that was asked for",
    "text": "jméno, na které se dotazovalo"
   },
+  "s.the-name-the-certificate-is-for.629166fa": {
+   "source": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name. Its name… on the card above sets it too.",
+   "text": "Jméno, pro které je certifikát – to, které lidé píší. Prázdné: jméno certifikátu, který má teď, jinak plné jméno tohoto stroje. Jeho jméno… na kartě výše ho nastaví také."
+  },
+  "s.the-name-the-certificate-is-for.d7449673": {
+   "source": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name.",
+   "text": "Jméno, pro které je certifikát – to, které lidé píší. Prázdné: jméno certifikátu, který má teď, jinak plné jméno tohoto stroje."
+  },
   "s.the-name-the-client-asked-for.23567667": {
    "source": "the name the client asked for in TLS",
    "text": "jméno, o které klient požádal v TLS"
@@ -24339,6 +25011,10 @@
   "s.the-name-they-would-type.fbcca3ee": {
    "source": "The name they would type",
    "text": "Jméno, které by zadali"
+  },
+  "s.the-name-with-a-cname-to.64f5589f": {
+   "source": "), the name with a CNAME to it in your DNS -",
+   "text": "), jméno s CNAME na ni ve vašem DNS –"
   },
   "s.the-name.b52db741": {
    "source": "the name",
@@ -24612,6 +25288,10 @@
    "source": "The OPNsense’s address",
    "text": "Adresa OPNsense"
   },
+  "s.the-order-waits-for-it-up.056011af": {
+   "source": "The order waits for it - up to an hour. Put it in, wait until DNS carries it, then say so. Take it away again once the certificate has come.",
+   "text": "Objednávka na něj čeká – až hodinu. Vložte ho, počkejte, až ho DNS roznese, a pak to potvrďte. Jakmile certifikát přijde, záznam zase odstraňte."
+  },
   "s.the-other-address-list-this-daemon.962a4629": {
    "source": "The other address list this daemon keeps: whole countries, filled from the country database and pointed at by a rule you write yourself. It is counted on the firewall rather than read back, because a country list is tens of thousands of lines and the number is the only part anybody needs.",
    "text": "Druhý address list, který tento démon udržuje: celé země, naplněné z databáze zemí a použité v pravidle, které si napíšete sami. Na firewallu se počítá, místo aby se načítal zpět, protože seznam zemí má desítky tisíc řádků a počet je jediné, co kdo potřebuje."
@@ -24855,6 +25535,14 @@
   "s.the-port-there.99b6a942": {
    "source": "the port there",
    "text": "port tam"
+  },
+  "s.the-primary-dns-server-of-the.54c617b9": {
+   "source": "The primary DNS server of the zone,",
+   "text": "Primární DNS server zóny,"
+  },
+  "s.the-primary-dns-server-of-the.dada5593": {
+   "source": "The primary DNS server of the zone, ns1.example.cz or with a port 10.0.0.53:53 .",
+   "text": "Primární DNS server zóny, ns1.example.cz nebo s portem 10.0.0.53:53 ."
   },
   "s.the-private-half-as-a-file.fe722f5c": {
    "source": "The private half as a file, for keeping somewhere safe. That it was downloaded, and by whom, is written into Events.",
@@ -25704,6 +26392,10 @@
    "source": "the trustpoint",
    "text": "trustpoint"
   },
+  "s.the-tsig-secret.4b26631a": {
+   "source": "The TSIG secret",
+   "text": "Tajemství TSIG"
+  },
   "s.the-tunnel-group-this-came-through.f45f240f": {
    "source": "The tunnel group this came through, as the head end named it — which is what says the VPN from the virtual desktops when one token server answers for both.",
    "text": "Tunnel group, přes kterou to přišlo, jak ji pojmenoval koncentrátor — podle toho se pozná VPN z virtuálních desktopů, když jeden tokenový server odpovídá pro obě."
@@ -25751,6 +26443,10 @@
   "s.the-two-to-paste-each-with.18ded4f9": {
    "source": "The two to paste, each with its own button:",
    "text": "Dvě věci k vložení, každá s vlastním tlačítkem:"
+  },
+  "s.the-txt-records-go-into.048a2edd": {
+   "source": "The TXT records go into",
+   "text": "Záznamy TXT jdou do"
   },
   "s.the-type-of-the-line.abbe9d92": {
    "source": "the type of the line",
@@ -26132,6 +26828,10 @@
    "source": ", the zone",
    "text": ", pásmo"
   },
+  "s.the-zone.b83fbc83": {
+   "source": "The zone",
+   "text": "Zóna"
+  },
   "s.the.93ef0dd8": {
    "source": "The",
    "text": "Ten"
@@ -26283,6 +26983,10 @@
   "s.there.02a81a8e": {
    "source": "There",
    "text": "Tam"
+  },
+  "s.there.490528f3": {
+   "source": "there",
+   "text": "je tam"
   },
   "s.these-are-the-server-s-settings.904f6d90": {
    "source": "These are the server’s settings, not this database’s: they are for every database on it. On this one there are also:",
@@ -27140,6 +27844,10 @@
    "source": "to pick it from the directory rather than typing it. More than one, separated by semicolons.",
    "text": "pro výběr z adresáře místo psaní. Více hodnot oddělte středníkem."
   },
+  "s.to-see-what-the-internet-sees.df683c5f": {
+   "source": "to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf).",
+   "text": ", aby bylo vidět, co vidí internet. Prázdné: vlastní servery stroje (/etc/resolv.conf)."
+  },
   "s.to-the-file.82e5d8f0": {
    "source": "to the file",
    "text": "do souboru"
@@ -27175,6 +27883,10 @@
   "s.tokelau.a08c1ca2": {
    "source": "Tokelau",
    "text": "Tokelau"
+  },
+  "s.token-management-make-a-token-give.755c9737": {
+   "source": "Token management: make a token. Give it below as The deSEC API token, with The domain at deSEC, and save.",
+   "text": "Token management: vytvořte token. Zadejte ho níže jako API token deSEC spolu s doménou u deSEC a uložte."
   },
   "s.token-server.6a52b548": {
    "source": "Token server",
@@ -27356,6 +28068,14 @@
    "source": "Try one person's sign-in from here, so you find out it works before you sign out.",
    "text": "Vyzkoušejte odsud přihlášení jedné osoby, abyste věděli, že funguje, ještě než se odhlásíte."
   },
+  "s.try-port-80-on-the-card.af32033a": {
+   "source": "Try port 80 on the card, then Order it now.",
+   "text": "Vyzkoušet port 80 na kartě, pak Objednat teď."
+  },
+  "s.try-port-80.26c1a283": {
+   "source": "Try port 80",
+   "text": "Vyzkoušet port 80"
+  },
   "s.try-reaching-it.1f463908": {
    "source": "Try reaching it",
    "text": "Zkusit se k němu připojit"
@@ -27371,6 +28091,10 @@
   "s.ts.4402abb9": {
    "source": "ts",
    "text": "ts"
+  },
+  "s.ttl.878260df": {
+   "source": "TTL",
+   "text": "TTL"
   },
   "s.tune-it-for-this-machine.7c29a319": {
    "source": "Tune it for this machine…",
@@ -27491,6 +28215,10 @@
   "s.two-shapes-of-the-same-file.8c6bfca6": {
    "source": "Two shapes of the same file: one safe to mail, one that carries the secrets too.",
    "text": "Dvě podoby téhož souboru: jedna bezpečná k odeslání e-mailem, druhá obsahuje i tajné údaje."
+  },
+  "s.txt.7475c2bd": {
+   "source": "TXT",
+   "text": "TXT"
   },
   "s.type-a-whole-address-and-it.1e63b9b0": {
    "source": "Type a whole address and it answers the question this dashboard is asked most: whether it is banned, what it has been trying, and the buttons to ban it for good, let it back in, or put it beyond banning — without going to a page first. Type part of an address and it lists the ones that start that way; type a user name and it lists the names being tried; type anything else and it finds the page, the card or the setting of that name.",
@@ -27988,6 +28716,10 @@
    "source": "valid",
    "text": "platný"
   },
+  "s.value.8dce170d": {
+   "source": "Value",
+   "text": "Hodnota"
+  },
   "s.vanuatu.d16ad2dc": {
    "source": "Vanuatu",
    "text": "Vanuatu"
@@ -28171,6 +28903,10 @@
   "s.vrrp.b3aae70f": {
    "source": "VRRP",
    "text": "VRRP"
+  },
+  "s.wait-for-dns-to-carry-it.1df37c40": {
+   "source": "Wait for DNS to carry it (s)",
+   "text": "Počkat, než ho DNS roznese (s)"
   },
   "s.wait.daaad336": {
    "source": "wait",
@@ -28896,6 +29632,10 @@
    "source": "What the intrusion policy, the antivirus and the file and malware policy, Security Intelligence and application control found, newest first.",
    "text": "Co našla politika průniků, antivirus, politika pro soubory a malware, Security Intelligence a řízení aplikací, nejnovější první."
   },
+  "s.what-the-last-order-did.9234fc41": {
+   "source": "What the last order did",
+   "text": "Co udělala poslední objednávka"
+  },
   "s.what-the-list-looks-like-cisco.a313dfd4": {
    "source": "What the list looks like. Cisco FTD, FortiGate, OPNsense and pfSense all read one address or range per line and nothing else - choosing one shows how to set that firewall up; the plain list adds a few lines of comments for a person; JSON is for a script. The URL below carries the format, so one firewall of each kind can fetch its own.",
    "text": "Jak seznam vypadá. Cisco FTD, FortiGate, OPNsense i pfSense čtou jednu adresu nebo rozsah na řádek a nic jiného – volba jednoho z nich ukáže, jak ten firewall nastavit; prostý seznam přidává pár řádků komentářů pro člověka; JSON je pro skript. URL níže nese formát, takže si každý druh firewallu může stahovat svůj."
@@ -29444,6 +30184,10 @@
    "source": "Where the bans come from",
    "text": "Odkud bany pocházejí"
   },
+  "s.where-the-ca-writes-when-a.e7a2c04e": {
+   "source": "Where the CA writes when a certificate runs out unrenewed. Empty: none.",
+   "text": "Kam CA napíše, když certifikát vyprší neobnovený. Prázdné: nikam."
+  },
   "s.where-the-controllers-write.5f3dacd5": {
    "source": "Where the controllers write",
    "text": "Kam zapisují řadiče domény"
@@ -29451,6 +30195,10 @@
   "s.where-the-country-database-puts-this.70538231": {
    "source": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything.",
    "text": "Kam tuto adresu řadí databáze zemí. Zobrazuje se a nikdy se nevyhodnocuje — zemi si adresa nevybírá. Chcete-li proti nějaké zemi zasáhnout, použijte seznam zemí v Nastavení → GeoIP, který zahodí celou zemi dřív, než kdokoli v čemkoli selže."
+  },
+  "s.where-the-dns-of-your-domain.f60b54de": {
+   "source": "Where the DNS of your domain is not at Cloudflare: a zone that is, as The TXT records go into, and the CNAME record below in your DNS.",
+   "text": "Kde DNS vaší domény není u Cloudflare: zóna, která tam je, jako Záznamy TXT jdou do, a záznam CNAME níže ve vašem DNS."
   },
   "s.where-the-eduroam-servers-write.02ae0b85": {
    "source": "Where the eduroam servers write",
@@ -29483,6 +30231,14 @@
   "s.where-the-nps-logs-are.c4081d42": {
    "source": "Where the NPS logs are",
    "text": "Kde jsou logy NPS"
+  },
+  "s.where-the-record-goes-example-cz.3647c9cb": {
+   "source": "Where the record goes, example.cz . Empty: as the server finds it.",
+   "text": "Kam jde záznam, example.cz . Prázdné: jak ji najde server."
+  },
+  "s.where-the-record-goes.4f650608": {
+   "source": "Where the record goes,",
+   "text": "Kam jde záznam,"
   },
   "s.where-the-refused-sessions-came-from.645177d8": {
    "source": "Where the refused sessions came from.",
@@ -30256,6 +31012,10 @@
    "source": "Who puts it in",
    "text": "Kdo to provede"
   },
+  "s.who-puts-the-txt-record-in.b8d55627": {
+   "source": "Who puts the TXT record in DNS",
+   "text": "Kdo vloží záznam TXT do DNS"
+  },
   "s.who-ran-it.833a64a6": {
    "source": "who ran it",
    "text": "kdo to spustil"
@@ -30604,6 +31364,10 @@
    "source": "with the password saved above, by HTTP basic authentication",
    "text": "s heslem uloženým výše, pomocí HTTP basic autentizace"
   },
+  "s.with-the-txt-records-go-into.6778a007": {
+   "source": "With The TXT records go into: the CNAME record below in your DNS, and the key allowed in that zone.",
+   "text": "Se Záznamy TXT jdou do: záznam CNAME níže ve vašem DNS a klíč povolený v té zóně."
+  },
   "s.with-this-on-a-name-is.31c5be46": {
    "source": "With this on, a name is looked for in the directory first. Somebody who is there signs in with their domain password and gets the role their groups say — and the local account of the same name is",
    "text": "Když je toto zapnuto, jméno se nejdřív hledá v adresáři. Kdo tam je, přihlásí se svým doménovým heslem a dostane roli podle svých skupin — a lokální účet téhož jména se"
@@ -30831,6 +31595,14 @@
   "s.your-accounts-every-setting-and-the.87910f11": {
    "source": "Your accounts, every setting and the whitelist are never touched by this.",
    "text": "Vaše účty, všechna nastavení a whitelist tím nikdy nejsou dotčeny."
+  },
+  "s.your-domain-at-desec-example-dedyn.40fd5238": {
+   "source": "Your domain at deSEC, example.dedyn.io (free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name - In your DNS above says which.",
+   "text": "Vaše doména u deSEC, example.dedyn.io (zdarma) nebo vlastní doména, jejíž DNS je tam. Záznamy jdou do ní; váš DNS má na ni pro to jméno CNAME – Ve vašem DNS výše říká jaký."
+  },
+  "s.your-domain-at-desec.fb4ae8e2": {
+   "source": "Your domain at deSEC,",
+   "text": "Vaše doména u deSEC,"
   },
   "s.your-firewall-rules-filters-routes-and.43e38040": {
    "source": "your firewall rules, filters, routes and settings are",
@@ -31522,6 +32294,10 @@
    "source": "(dstip:{0} OR tranip:{1})",
    "text": "(dstip:{0} OR tranip:{1})"
   },
+  "p.due-looked-at-within-the-hour.002726f7": {
+   "source": "Due: {0} - looked at within the hour.",
+   "text": "Na řadě: {0} – podívá se na to do hodiny."
+  },
   "p.dumps-kept-at-most.9fe2d756": {
    "source": "Dumps kept ({0} at most)",
    "text": "Uchovávané dumpy (nejvýše {0})"
@@ -31798,6 +32574,10 @@
    "source": "{0}{1} from {2}{3}{4}",
    "text": "{0}{1} z {2}{3}{4}"
   },
+  "p.from.c47d9c75": {
+   "source": "- from {0}",
+   "text": "– od {0}"
+  },
   "p.from.d012ee20": {
    "source": "from {0}",
    "text": "z {0}"
@@ -31825,6 +32605,10 @@
   "p.going-through-stored-event-s-with.39eae197": {
    "source": "going through {0} stored event(s) with the settings as they stand now",
    "text": "prochází se {0} uložených událostí s nastavením, jak je nyní"
+  },
+  "p.good-until.e7d3e56d": {
+   "source": ", good until {0}",
+   "text": ", platný do {0}"
   },
   "p.group-s-found.8fed6818": {
    "source": "{0} group(s) found",
@@ -32145,6 +32929,10 @@
   "p.it-could-not-be-asked.de814902": {
    "source": "It could not be asked: {0}",
    "text": "Nebylo možné se dotázat: {0}"
+  },
+  "p.it-has-one-put-in-on.da787712": {
+   "source": "It has one put in on Certificates and TLS ({0}{1}). The one from the CA takes its place once it comes, and ACME renews it from then on. The one it has is kept: Back to the one before puts it back. Its TLS settings stay as they are.",
+   "text": "Má certifikát vložený v Certifikáty a TLS ({0}{1}). Ten od CA zaujme jeho místo, jakmile přijde, a od té doby ho obnovuje ACME. Ten, který má, se uchová: Zpět k předchozímu ho vrátí. Jeho nastavení TLS zůstává, jak je."
   },
   "p.it-has-run-out.3f525cb0": {
    "source": "{0} - it has run out",
@@ -32546,6 +33334,10 @@
    "source": "next {0}",
    "text": "další {0}"
   },
+  "p.nginx-keeps-the-files-it-has.babab939": {
+   "source": "nginx keeps the files it has now; isemon no longer changes them.{0}",
+   "text": "nginx si nechá soubory, které má teď; isemon je už nemění.{0}"
+  },
   "p.no-account-called.a695490f": {
    "source": "{0} no account called",
    "text": "{0} žádný účet s názvem"
@@ -32821,6 +33613,10 @@
   "p.on-this-server.28ccf243": {
    "source": "{0} on this server.{1}",
    "text": "{0} na tomto serveru.{1}"
+  },
+  "p.once-in-the-zone-above-it.15345c1a": {
+   "source": "once, in the zone above it: {0} at deSEC",
+   "text": "jednou, v nadřazené zóně: {0} u deSEC"
   },
   "p.one-name-tried-from-different-addresses.fcbac5bf": {
    "source": "One name tried from {0} different addresses is the shape of a password spray: one password against many places rather than many passwords against one. A name that has never got in here may be a name that does not exist.",
@@ -33634,6 +34430,10 @@
    "source": "({0}): the cards, the chart, the lists and the search, all of them for this one firewall.",
    "text": "({0}): karty, graf, seznamy i hledání, vše pouze pro tento jeden firewall."
   },
+  "p.the-certificate-it-had-before-acme.d96c83f1": {
+   "source": "The certificate it had before ACME replaced it{0}{1}. Put back as it was; ACME no longer renews this one. The TLS settings stay.",
+   "text": "Certifikát, který měl, než ho ACME nahradilo{0}{1}. Vrátí se, jak byl; ACME ho už neobnovuje. Nastavení TLS zůstává."
+  },
   "p.the-certificate-nginx-answers-with-on.55ba1792": {
    "source": "the certificate nginx answers with on this name{0}",
    "text": "certifikát, kterým nginx odpovídá na tomto jméně{0}"
@@ -33885,6 +34685,10 @@
   "p.the-oldest-is-from.7f7713a1": {
    "source": "the oldest is from {0}",
    "text": "nejstarší je z {0}"
+  },
+  "p.the-one-from-the-ca-is.b04e99f8": {
+   "source": "The one from the CA is taken out and the one it had before - {0} - put back. ACME no longer renews this one (Look after it gives it back).",
+   "text": "Ten od CA se vyjme a vrátí se ten, který měl předtím – {0}. ACME ho už neobnovuje (Starat se o něj ho vrátí)."
   },
   "p.the-other-name-s-tried-from.da32bdd9": {
    "source": "The other {0} name(s) tried from this address, with how many times each:",
@@ -34612,6 +35416,10 @@
    "source": "A <b>second</b> firewall, kept saying exactly the same thing as the first. This is for a pair in high availability: whichever of the two is carrying the traffic at any moment has to already hold every address the other does, so both are written to in the same pass rather than one being filled when it takes over. They share the list names and every rule on this page — it is one blacklist on two machines, not two blacklists. What they do not share is how they are reached: each has its own address, its own account, its own port and its own ssh key.<br>One of them refusing does not stop the other being written to, and the Firewall page says which one is behind.",
    "text": "<b>Druhý</b> firewall, který vždy říká přesně totéž co první. Je určen pro pár ve vysoké dostupnosti: ten z dvojice, který právě nese provoz, musí už mít každou adresu, kterou má druhý, takže se oba zapisují v jednom průchodu, místo aby se jeden plnil až při převzetí. Sdílejí názvy listů a všechna pravidla na této stránce — je to jeden blacklist na dvou strojích, ne dva blacklisty. Nesdílejí způsob připojení: každý má vlastní adresu, vlastní účet, vlastní port a vlastní ssh klíč.<br>Odmítnutí jednoho nebrání zápisu do druhého a stránka Firewall ukazuje, který z nich zaostává."
   },
+  "r.a-zone-the-records-go-into.b20d79ab": {
+   "source": "A zone the records go into instead of the name’s own (<code>acme.example.net</code>), the name with a CNAME to it in your DNS - <i>In your DNS</i> above says which. Empty: _acme-challenge.NAME itself.",
+   "text": "Zóna, do které jdou záznamy místo vlastní zóny jména (<code>acme.example.net</code>), jméno s CNAME na ni ve vašem DNS – <i>Ve vašem DNS</i> výše říká jaký. Prázdné: přímo _acme-challenge.JMÉNO."
+  },
   "r.address-es-of-the-other-family.d4c1e19c": {
    "source": "<b>{0}</b> address(es) of the other family are not in this one — a router keeps IPv4 and IPv6 in two different access lists. The button below writes the other.",
    "text": "<b>{0}</b> adres druhé rodiny v tomto není — router drží IPv4 a IPv6 ve dvou různých access listech. Tlačítko níže zapíše ten druhý."
@@ -34667,6 +35475,10 @@
   "r.answers-200-the-list-403-an.a9e75d9d": {
    "source": "Answers: <b>200</b> the list · <b>403</b> an address not allowed to fetch it{0}{1} · <b>404</b> nothing is published.",
    "text": "Odpovědi: <b>200</b> seznam · <b>403</b> adresa, která ho nesmí stahovat{0}{1} · <b>404</b> nic není publikováno."
+  },
+  "r.as-the-dns-server-knows-it.097bced0": {
+   "source": "As the DNS server knows it, <code>isemon-acme.</code>; allowed to update _acme-challenge records only.",
+   "text": "Jak ho zná DNS server, <code>isemon-acme.</code>; smí měnit jen záznamy _acme-challenge."
   },
   "r.as-the-firewall-names-it-search.568fe8b3": {
    "source": "{0}, as the firewall names it. Search with <code>{1}:{2}</code>, or <code>intf:</code> for either side.",
@@ -34983,6 +35795,10 @@
   "r.how-the-ban-finished-ran-out.e1a81606": {
    "source": "How the ban finished: <b>ran out</b> means the clock reached the end on its own, and anything else is somebody having lifted it.",
    "text": "Jak blokace skončila: <b>vypršela</b> znamená, že odpočet sám doběhl do konce, cokoli jiného znamená, že ji někdo zrušil."
+  },
+  "r.https-auth-acme-dns-example-cz.623f517a": {
+   "source": "<code>https://auth.acme-dns.example.cz</code>; _acme-challenge.NAME is a CNAME to the subdomain below.",
+   "text": "<code>https://auth.acme-dns.example.cz</code>; _acme-challenge.JMÉNO je CNAME na subdoménu níže."
   },
   "r.in-its-own-words.89e1d1e6": {
    "source": "{0}<br><br>In its own words: <code>{1}</code>",
@@ -35436,6 +36252,14 @@
    "source": "The directory groups this account is in. Open the whole record to read them:<br><br>{0}",
    "text": "Skupiny adresáře, ve kterých je tento účet. Přečtete si je po otevření celého záznamu:<br><br>{0}"
   },
+  "r.the-directory-of-another-acme-ca.2ebacc81": {
+   "source": "The directory of another ACME CA, <code>https://ca.example.cz/acme/acme/directory</code>.",
+   "text": "Directory jiné ACME CA, <code>https://ca.example.cz/acme/acme/directory</code>."
+  },
+  "r.the-dns-servers-asked-for-everything.fec4f12f": {
+   "source": "The DNS servers asked for everything on this page: the address of the CA and of the DNS API, <i>Check DNS</i>, <i>Try port 80</i>, and whether the TXT record can be seen before the CA is asked - <code>1.1.1.1, 9.9.9.9</code> to see what the internet sees. Empty: the machine’s own (/etc/resolv.conf).",
+   "text": "DNS servery, které se ptají na vše na této stránce: adresu CA a DNS API, <i>Zkontrolovat DNS</i>, <i>Vyzkoušet port 80</i> a zda je záznam TXT vidět, než se CA zeptá – <code>1.1.1.1, 9.9.9.9</code>, aby bylo vidět, co vidí internet. Prázdné: DNS stroje (/etc/resolv.conf)."
+  },
   "r.the-domain-the-record-named.31d341f5": {
    "source": "the domain the record named, <b>{0}</b>.",
    "text": "doména uvedená v záznamu, <b>{0}</b>."
@@ -35552,6 +36376,10 @@
    "source": "The name <b>{0}</b> is one of those under <b>a name that does not exist</b> in Settings. Nobody has ever had it, so an attempt offering it is somebody guessing rather than somebody mistyping — which is what this application bans hardest on.",
    "text": "Jméno <b>{0}</b> je jedním z těch, které jsou v Nastavení uvedeny pod <b>neexistujícím jménem</b>. Nikdy ho nikdo neměl, takže pokus, který ho použije, je někdo, kdo hádá, a ne někdo, kdo se překlepl — a právě za to tato aplikace blokuje nejtvrději."
   },
+  "r.the-name-the-certificate-is-for.6e35fdc9": {
+   "source": "The name the certificate is for - the one people type. Empty: the name of the certificate it has now, else this machine’s full host name. <i>Its name…</i> on the card above sets it too.",
+   "text": "Jméno, pro které je certifikát – to, které lidé píší. Prázdné: jméno certifikátu, který má teď, jinak plné jméno tohoto stroje. <i>Jeho jméno…</i> na kartě výše ho nastaví také."
+  },
   "r.the-name-was-offered-from-this.dc6b9c8a": {
    "source": "The name <b>{0}</b> was offered from this address",
    "text": "Z této adresy bylo zadáno jméno <b>{0}</b>"
@@ -35607,6 +36435,10 @@
   "r.the-pfsense-appears-under-fetched-by.89467cb6": {
    "source": "The pfSense appears under <i>Fetched by</i> on the settings page. <b>Diagnostics → Tables</b> shows what the alias holds; from the command prompt:",
    "text": "pfSense se objeví pod <i>Stahuje</i> na stránce nastavení. <b>Diagnostics → Tables</b> ukazuje, co alias obsahuje; z příkazového řádku:"
+  },
+  "r.the-primary-dns-server-of-the.2bd61e4c": {
+   "source": "The primary DNS server of the zone, <code>ns1.example.cz</code> or with a port <code>10.0.0.53:53</code>.",
+   "text": "Primární DNS server zóny, <code>ns1.example.cz</code> nebo s portem <code>10.0.0.53:53</code>."
   },
   "r.the-private-half-leaves-this-machine.7fb48a55": {
    "source": "The private half leaves this machine as a file. Anybody holding it can sign in to the server as <code>{0}</code>. That it was downloaded, and by whom, is written into Events.",
@@ -35916,6 +36748,10 @@
    "source": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything. <b>ZZ</b> means the database has no country for it.",
    "text": "Kam tuto adresu umisťuje databáze zemí. Pouze se zobrazuje a nikdy nevyhodnocuje — zemi si adresa nevybírá. Chcete-li podle země jednat, použijte seznam zemí v Nastavení → GeoIP, který zahodí celou zemi dřív, než kdokoli v čemkoli neuspěje. <b>ZZ</b> znamená, že databáze pro ni žádnou zemi nemá."
   },
+  "r.where-the-record-goes-example-cz.88abee2d": {
+   "source": "Where the record goes, <code>example.cz</code>. Empty: as the server finds it.",
+   "text": "Kam záznam patří, <code>example.cz</code>. Prázdné: jak ji server najde."
+  },
   "r.whether-being-in-a-group-that.0297bfa0": {
    "source": "Whether being in a group that is inside one of those groups counts. Every directory of any age nests them, and without this somebody in <i>Helpdesk</i>, which is inside <i>ISE Watchers</i>, is in neither as far as this is concerned. It costs one more search per sign-in.",
    "text": "Zda se počítá členství ve skupině, která je uvnitř jedné z těchto skupin. Každý adresář, který už nějakou dobu existuje, skupiny vnořuje, a bez této volby není někdo ve skupině <i>Helpdesk</i>, která je uvnitř <i>ISE Watchers</i>, z pohledu této aplikace v žádné z nich. Stojí to jedno hledání navíc při každém přihlášení."
@@ -36003,6 +36839,10 @@
   "r.your-accounts-every-setting-and-the.99836ff2": {
    "source": "<b>Your accounts, every setting and the whitelist are never touched by this.</b> They are not options you could tick by mistake: they are not in the list at all. Neither is the ssh key for the router.",
    "text": "<b>Vašich účtů, žádného nastavení ani whitelistu se toto nikdy nedotkne.</b> Nejsou to volby, které by šlo omylem zaškrtnout: v seznamu vůbec nejsou. Stejně tak ssh klíč pro router."
+  },
+  "r.your-domain-at-desec-example-dedyn.9aa3956d": {
+   "source": "Your domain at deSEC, <code>example.dedyn.io</code> (free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name - <i>In your DNS</i> above says which.",
+   "text": "Vaše doména u deSEC, <code>example.dedyn.io</code> (zdarma) nebo vlastní doména, jejíž DNS je tam. Záznamy jdou do ní; váš DNS má na ni pro to jméno CNAME – <i>Ve vašem DNS</i> výše říká jaký."
   },
   "r.your-servers-in-your-order-not.4fa07fb3": {
    "source": "<b>Your servers, in your order — not this machine's resolver.</b> A site keeps more than one reverse zone and they are not all on the same server: the offices in the domain controllers, the DMZ somewhere else. They are asked in the order written here and the first one that hands over a <b>name</b> is the answer. One that does not answer, refuses, or says it has never heard of the address is passed over — because the next one along may be the one holding that zone.",
@@ -36573,6 +37413,10 @@
   "s.newest.d0442824": {
    "source": "Newest",
    "text": "Nejnovější"
+  },
+  "s.nginx-keeps-the-files-it-has.ed950c40": {
+   "source": "nginx keeps the files it has now; isemon no longer changes them.",
+   "text": "nginx si ponechá soubory, které má teď; isemon je už nebude měnit."
   },
   "s.not-even-a-vpn-refusal-the.cc834eb4": {
    "source": "— not even a VPN refusal: the banning weighs ISE's VPN and nothing else. Switched off, not one file is opened and nothing anywhere behaves differently.",

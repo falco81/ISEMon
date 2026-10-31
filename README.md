@@ -371,6 +371,37 @@ working.
 
 ## Version
 
+1.10.251
+
+- **Settings - Automatic certificates** (ACME, off until switched on, for a
+  full administrator): the dashboard's certificate ordered from Let's Encrypt,
+  its staging or a CA of your own (step-ca, an internal ACME CA) and renewed
+  by itself when fewer than 30 days are left - a short-lived certificate at a
+  third of its life. It goes into Certificates and TLS exactly as an uploaded
+  one does; its TLS settings stay as they are. See
+  `docs/automatic-certificates.md`.
+- The CA checks the name by **HTTP-01** - root's helper puts
+  `/.well-known/acme-challenge/` into nginx's port-80 server for everybody
+  (whoever else the pages are for), handed to the new `acme.php`, and
+  isemon's own firewall lets tcp 80 in by itself (its own card, *Automatic
+  certificates (HTTP-01)*) - or by **DNS-01**: RFC 2136 (nsupdate, the TSIG
+  key in a 0600 file for the moment it runs, never on its command line),
+  Cloudflare, acme-dns, deSEC (its own name servers asked until both have the
+  record, then a minute more) or by hand (the record shown, the order waiting
+  up to an hour for *It is in DNS*). *DNS servers for ACME*; the card *In your
+  DNS* with *Check DNS*; *Try port 80*.
+- Who renews it: switching ACME on takes over a dashboard with no certificate
+  of isemon's or a self-signed one; one uploaded or answered to a request is
+  kept until *Look after it* or *Order it now*. Putting one in by hand on
+  Certificates and TLS takes it out of ACME's care (asked first). The one ACME
+  replaced is kept: *Back to the one before…*.
+- An account the CA no longer knows is made anew by itself and the request
+  asked again; what is being waited for is said as it goes; each order's
+  steps are kept on the card; every order is an event. The account key, the
+  TSIG secret and the tokens are kept sealed.
+- `isemon --acme`, `isemon --acme-order this` (followed); the console:
+  *Network, time and power → Automatic certificates (ACME)*.
+
 1.10.250
 
 - **PHP to the release with the php2shell fix, by the installer**: an upgrade

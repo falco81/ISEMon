@@ -6,6 +6,13 @@ administrator, put in place by root (`isemon_web.py`, see
 done there, nginx keeps the certificate `install.sh` made (or the one the site
 put in) and the TLS lines the vhost has.
 
+The certificate can also be ordered from an ACME CA (Let's Encrypt) and renewed
+by itself: *Settings → Automatic certificates*
+([automatic-certificates.md](automatic-certificates.md), 1.10.251). It goes in
+here exactly as an uploaded one does, and the card says who renews it. Uploading
+one or making one self-signed while ACME renews it takes it out of ACME's care -
+asked first.
+
 ## What is kept, and where
 
 The certificate, its chain and its root are kept in the database; **its key

@@ -1437,6 +1437,9 @@ if [[ -n "$DO_UPGRADE" ]]; then
         run install -D -m 0644 "$SOURCE_DIR/web/banfeed.php" "$WEB_DIR/banfeed.php"
         # The health check (1.10.222): what monitoring and a balancer ask.
         run install -D -m 0644 "$SOURCE_DIR/web/healthz.php" "$WEB_DIR/healthz.php"
+        # The answer to an ACME CA on port 80 (1.10.251): asked only once
+        # Settings - Automatic certificates is switched on.
+        run install -D -m 0644 "$SOURCE_DIR/web/acme.php" "$WEB_DIR/acme.php"
         # What PHP will accept on this page. Without it, putting a copy of
         # the database back is refused by PHP's own two-megabyte default
         # before it reaches anything that could explain why.
@@ -1892,6 +1895,7 @@ if [[ -n "$WITH_WEB" ]]; then
     run install -D -m 0644 "$SOURCE_DIR/web/isemon-api.php" "$WEB_DIR/isemon-api.php"
     run install -D -m 0644 "$SOURCE_DIR/web/banfeed.php" "$WEB_DIR/banfeed.php"
     run install -D -m 0644 "$SOURCE_DIR/web/healthz.php" "$WEB_DIR/healthz.php"
+    run install -D -m 0644 "$SOURCE_DIR/web/acme.php" "$WEB_DIR/acme.php"
     run install -D -m 0644 "$SOURCE_DIR/web/.user.ini" "$WEB_DIR/.user.ini"
     run install -D -m 0644 "$SOURCE_DIR/web/favicon.svg" "$WEB_DIR/favicon.svg"
     run rm -rf "$WEB_DIR/flags"

@@ -257,7 +257,22 @@ def checked(r):
     else:
         out['fw'] = None
     out['access'] = access_checked(r.get('access'))
+    # Automatic certificates by HTTP-01 (1.10.251): the names port 80
+    # answers the ACME CA for - DNS names and nothing else, for they go into
+    # server_name.
+    names = r.get('acme')
+    if names is None:
+        out['acme'] = None
+    else:
+        if not isinstance(names, list) or len(names) > 10 or \
+                not all(isinstance(n, str) and ACME_NAME_RE.match(n) for n in names):
+            raise Refused('the names of the ACME certificate are DNS names, 10 at most')
+        out['acme'] = [n.lower() for n in names]
     return out
+
+
+ACME_NAME_RE = re.compile(r'^(?=.{1,253}\Z)([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+'
+                          r'[A-Za-z]{2,63}\Z')
 
 
 # ---- nginx: finding things in a file somebody else may have written ------------
@@ -639,6 +654,99 @@ def cert_now():
     return out
 
 
+# ---- port 80 for the ACME CA (1.10.251; after otp_web.py 1.0.169) -------------------
+# The port-80 server sends /.well-known/acme-challenge/ to acme.php, which asks
+# the daemon for the answer kept in the database; everything else goes on to
+# HTTPS as before. The location is let in for everybody - the CA asks from
+# wherever it is - and the names the certificate is ordered for go into its
+# server_name. Between marks of isemon's, so it is found again; the
+# redirect of the server itself is moved into `location /`, for a `return`
+# of the server's own is done before any location is looked at.
+ACME_BEGIN = '    # isemon-acme-begin (Settings - Automatic certificates)'
+ACME_END = '    # isemon-acme-end'
+
+
+def http_block(text):
+    """(start, end) of the port-80 server { } of an nginx file."""
+    for m in re.finditer(r'(?m)^[ \t]*server[ \t]*\{', text):
+        depth, j = 0, m.end() - 1
+        while j < len(text):
+            if text[j] == '{':
+                depth += 1
+            elif text[j] == '}':
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        block = text[m.start():j + 1]
+        if re.search(r'(?m)^\s*listen\s+(\[::\]:)?80\b', block) and \
+                not re.search(r'(?m)^\s*listen\s+[^;]*\bssl\b', block):
+            return m.start(), j + 1
+    return None
+
+
+def acme_location(https_block, main):
+    """The location, its PHP as the HTTPS server's own .php location hands
+    files to PHP (the socket the site uses), the file under its root."""
+    root = directive_now(https_block, 'root') or '/var/www/isemon'
+    if not re.match(r'^/[A-Za-z0-9._/-]{1,200}$', root):
+        raise Refused('the root of the HTTPS server is not a plain path: %r' % root[:80])
+    php = [l for l in php_lines(https_block)
+           if not re.match(r'^\s*fastcgi_param\s+(SCRIPT_FILENAME|HTTPS)\s', l)
+           and not re.match(r'^\s*fastcgi_(index|read_timeout|send_timeout)\s', l)]
+    lines = [ACME_BEGIN,
+             '    # The CA\'s HTTP-01 question, answered by acme.php from what the daemon',
+             '    # keeps; for everybody - whoever else the pages are for.',
+             '    location ^~ /.well-known/acme-challenge/ {',
+             '        allow all;']
+    if 'zone=isemon_all:' in main:
+        lines.append('        limit_req zone=isemon_all burst=20 nodelay;')
+    lines += php
+    lines += ['        fastcgi_param  SCRIPT_FILENAME %s/acme.php;' % root.rstrip('/'),
+              '        fastcgi_read_timeout 10s;', '    }', ACME_END]
+    return lines
+
+
+def acme_into(main, names):
+    """The port-80 server given the location for the CA and the names in its
+    server_name. The file as it was when there is no port-80 server."""
+    where = http_block(main)
+    https = server_block(main)
+    if not where or not https:
+        return main, 'nginx: no port-80 server { } in %s - the CA cannot be answered on port ' \
+                     '80 (put one in, or use DNS-01)' % NGINX_MAIN
+    block = main[where[0]:where[1]]
+    lines = block.split('\n')
+    # What was put in before, taken out whole.
+    begin = [n for n, l in enumerate(lines) if l.strip().startswith('# isemon-acme-begin')]
+    end = [n for n, l in enumerate(lines) if l.strip() == '# isemon-acme-end']
+    if begin and end and begin[0] < end[-1]:
+        del lines[begin[0]:end[-1] + 1]
+    # A `return` of the server's own (the redirect to HTTPS) into location /.
+    depth, out = 0, []
+    for l in lines:
+        if depth == 1 and re.match(r'^\s*return\s+[^;]+;\s*(#.*)?$', l):
+            out += ['    location / {', '    ' + l.rstrip(), '    }']
+        else:
+            out.append(l)
+        depth += l.count('{') - l.count('}')
+    lines = out
+    # The location after server_name (or after the first line).
+    at = next((n + 1 for n, l in enumerate(lines) if re.match(r'^\s*server_name\s', l)), 1)
+    lines[at:at] = acme_location(main[https[0]:https[1]], main)
+    new = '\n'.join(lines)
+    m = re.search(r'(?m)^(\s*server_name\s+)([^;#]*);', new)
+    if m and names:
+        have = m.group(2).split()
+        want = have + [n for n in names if n not in have]
+        if want != have:
+            new = new[:m.start()] + m.group(1) + ' '.join(want) + ';' + new[m.end():]
+    if new == block:
+        return main, ''
+    return main[:where[0]] + new + main[where[1]:], \
+        'nginx: port 80 answers the ACME CA (%s)' % (', '.join(names) or 'no name yet')
+
+
 def nginx_part(r, last):
     """The server's TLS and lists, as asked. Returns (words, dh made)."""
     said, dh = [], (last.get('dh') or 'none')
@@ -667,6 +775,13 @@ def nginx_part(r, last):
                 main = f.read()
         except OSError as e:
             raise Refused('the dashboard\'s nginx file cannot be read (%s): %s' % (NGINX_MAIN, e))
+        if r.get('acme') is not None:
+            new_main, words = acme_into(main, r['acme'])
+            if words:
+                said.append(words)
+            if new_main != main:
+                write_root(NGINX_MAIN, new_main, 0o644)
+                main, changed = new_main, True
         where = server_block(main)
         if not where:
             raise Refused('no HTTPS server { } was found in %s' % NGINX_MAIN)

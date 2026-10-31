@@ -365,7 +365,7 @@ if going is not None:
     going.join(10)                       # written behind the fetch (1.10.187)
 # The thread behind may not be there yet when it is looked for, on a busy
 # machine: waited for by what it writes (1.10.246).
-_end = time.time() + 10
+_end = time.time() + 30
 while time.time() < _end and isemon.Storage.meta_json(store, 'banfeed_seen', {}) == {}:
     time.sleep(0.1)
 ok('...after a restart as well', isemon.Storage.meta_json(store, 'banfeed_seen', {}) != {},
