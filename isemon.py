@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.268'
+__version__ = '1.10.269'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -52578,13 +52578,16 @@ class Daemon(object):
         return unwrap_router_print(clean_terminal_text(
             self.mikrotik_run('/system identity print', fw=fw)))
 
-    def mikrotik_run(self, command, fw='mikrotik'):
+    def mikrotik_run(self, command, fw='mikrotik', timeout=None):
         host = str(CONFIG.get(fw_conf(fw, 'host')) or '').strip()
         if not host:
             raise ValueError('no address is set for %s' % fw_words(fw))
         if debugging('router'):
             log('%s -> %s' % (fw, command[:200]), 'debug')
-        out = ssh_run(self.mikrotik_cfg(fw), host, command)
+        cfg = self.mikrotik_cfg(fw)
+        if timeout:
+            cfg['timeout'] = timeout
+        out = ssh_run(cfg, host, command)
         return out if isinstance(out, str) else str(out or '')
 
     @staticmethod
@@ -52602,6 +52605,36 @@ class Daemon(object):
             return None
         return '/ipv6' if one.version == 6 else '/ip'
 
+    # Reading a list of tens of thousands of entries (1.10.269): only the
+    # three fields read here, not every one RouterOS keeps (its creation
+    # time, its flags, its id...) - a far shorter answer, far sooner - and
+    # five minutes for it rather than the 45 s of a short command: a big
+    # list read "for ever" and at times not at all.
+    MIKROTIK_READ_S = 300
+    MIKROTIK_PROPLIST = {}          # fw -> False once a RouterOS said no to proplist
+
+    def mikrotik_list_print(self, family, listed, fw='mikrotik'):
+        short = '%s firewall address-list print terse proplist=address,timeout,comment ' \
+                'where list=%s' % (family, listed)
+        whole = '%s firewall address-list print terse where list=%s' % (family, listed)
+        refused = r'(?i)expected end of command|syntax error|bad command|no such (item|argument)|' \
+                  r'input does not match'
+        if self.MIKROTIK_PROPLIST.get(fw) is not False:
+            try:
+                out = self.mikrotik_run(short, fw=fw, timeout=self.MIKROTIK_READ_S)
+            except RuntimeError as e:
+                if not re.search(refused, str(e)):
+                    raise
+                out = str(e)
+            # A RouterOS that does not know proplist says so in words (and
+            # not always with a code): then the whole print, as before.
+            if not re.search(refused, out or ''):
+                self.MIKROTIK_PROPLIST[fw] = True
+                return out
+            self.MIKROTIK_PROPLIST[fw] = False
+            log('%s: this RouterOS does not take proplist - its lists are read whole' % fw)
+        return self.mikrotik_run(whole, fw=fw, timeout=self.MIKROTIK_READ_S)
+
     def mikrotik_entries(self, listed=None, remember=True, mark=None, fw='mikrotik'):
         """What is in one list on one firewall, and which of them are ours."""
         listed = (self.fw_list_name(fw) if not listed
@@ -52616,9 +52649,7 @@ class Daemon(object):
                    if self.fw_is_pf(fw) else None)
         for family in (('/ip', '/ipv6') if pf_rows is None else ()):
             try:
-                lines.extend(self.mikrotik_run(
-                    '%s firewall address-list print terse where list=%s'
-                    % (family, listed), fw=fw).splitlines())
+                lines.extend(self.mikrotik_list_print(family, listed, fw).splitlines())
             except Exception as e:
                 # A router with no IPv6 package answers "no such command";
                 # that is an answer, not a fault, and the other list counts.

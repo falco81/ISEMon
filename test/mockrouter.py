@@ -83,7 +83,14 @@ def answer(command, state):
                 out.append(answer(one.strip(), state) or '')
         return ''.join(out)
 
-    m = re.match(r'^(/ip|/ipv6) firewall address-list print terse where list=(\S+)$', command)
+    # 1.10.269: only the fields read (proplist) - a RouterOS that does not
+    # know it says so, as an old one would.
+    m = re.match(r'^(/ip|/ipv6) firewall address-list print terse proplist=address,timeout,comment '
+                 r'where list=(\S+)$', command)
+    if m and os.environ.get('MOCK_ROUTER_NO_PROPLIST'):
+        return 'expected end of command (line 1 column 41)\n'
+    if not m:
+        m = re.match(r'^(/ip|/ipv6) firewall address-list print terse where list=(\S+)$', command)
     if m:
         family, listed = m.group(1), m.group(2)
         lines = []

@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.269
+
+- **A Mikrotik with a very big list read in time**: *What the firewall is
+  carrying* and every sync read a list with `print terse`, every field RouterOS
+  keeps of each entry (its creation time, its flags...), within the 45 s of a
+  short command - on a router with thousands of bans and a country list it
+  took "for ever" and at times did not come at all. The lists are read with
+  only the three fields used (`proplist=address,timeout,comment`), a far
+  shorter answer, and with five minutes for it; a RouterOS that does not know
+  proplist is read whole, as before, and remembered so. Short commands keep
+  their 45 s.
+
 1.10.268
 
 - **Settings → Proxy** (under *Server*), as otp has it: an HTTP proxy, with a
