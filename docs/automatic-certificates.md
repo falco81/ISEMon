@@ -34,8 +34,11 @@ came, or why nothing did.
 
 ## The page
 
-- **The card of the dashboard**: the days left, the name, who issued it, when it
-  was last ordered, how the CA checks it; *What the last order did*, step by
+The pane looks and works as otp's *Automatic certificates* (1.0.187) does, with
+one card where otp has one a node and one for the VIP address.
+
+- **The card of the dashboard**: the days left, the name, who issued it, until
+  when it is good, when it was last ordered; *What the last order did*, step by
   step with the seconds; the last failure in words.
 - While it is ordered, the line above the card says **what is waited for now**
   - root putting port 80's location in, *Wait for DNS to carry it* with the
@@ -43,11 +46,14 @@ came, or why nothing did.
   the minute for deSEC's other places, *It is in DNS* by hand.
 - *Try port 80* (HTTP-01): `http://NAME/.well-known/acme-challenge/` asked from
   this server, as the CA will - whether it reaches isemon. A firewall in front of
-  the server may still stop the CA from outside.
+  the server may still stop the CA from outside. What it found is shown on
+  the card - a port 80 that does not answer as well as one that does.
 - *Order it now*; *Look after it* / *Leave it alone*; *Its name…*; *Back to the
   one before…* (below).
-- **In your DNS**: what the name needs there for the way chosen, with the steps
-  and *Check DNS*, which looks each record up from this server as the CA will.
+- **In your DNS**: what the name needs there for the way chosen - the
+  certificate, the record, its type, what it points at and whether it is in DNS
+  now, each with a copy button - with the steps and *Check DNS*, which looks
+  each record up from this server as the CA will.
 
 ## Who renews it
 

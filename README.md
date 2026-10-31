@@ -371,6 +371,16 @@ working.
 
 ## Version
 
+1.10.258
+
+- **Automatic certificates as otp's**: the pane looks and works as otp's does -
+  its lock in the menu, the card as otp's cards (the facts as tiles, its tags
+  in the head, the bar of an order running, *Its name…* with a pencil), *In
+  your DNS* with the certificate's column and the copy buttons one under the
+  other, the settings in one grid, and *Its name…* asking as otp asks.
+- *Try port 80* that finds port 80 not answering says so on the card: it was
+  taken for a refusal and showed only "HTTP 200".
+
 1.10.257
 
 - **Updates and restarts on a schedule**, as otp has them, for one server.

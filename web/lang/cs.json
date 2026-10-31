@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.257",
+  "version": "1.10.258",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -6068,10 +6068,6 @@
    "source": "DNS-01: the CA reads a TXT record isemon puts in. What has to be in your DNS for it - once - is below.",
    "text": "DNS-01: CA čte záznam TXT, který vloží isemon. Co pro to musí být ve vašem DNS – jednou – je níže."
   },
-  "s.dns-01.e73a8ad2": {
-   "source": "DNS-01",
-   "text": "DNS-01"
-  },
   "s.dns-filter-lines-written-for-this.ff0b9f6a": {
    "source": "DNS filter lines written for this session",
    "text": "řádky DNS filtru zapsané pro tuto relaci"
@@ -10308,10 +10304,6 @@
    "source": "how the bytes are counted",
    "text": "jak se počítají bajty"
   },
-  "s.how-the-ca-checks-it.c011a6c2": {
-   "source": "How the CA checks it",
-   "text": "Jak ho CA ověřuje"
-  },
   "s.how-the-ca-checks-the-name.780cdeb0": {
    "source": "How the CA checks the name",
    "text": "Jak CA ověří jméno"
@@ -10435,10 +10427,6 @@
   "s.http-01-the-ca-asks-port.b5aa9934": {
    "source": "HTTP-01 - the CA asks port 80 of the name",
    "text": "HTTP-01 – CA se zeptá na portu 80 jména"
-  },
-  "s.http-01.aeb5a5e4": {
-   "source": "HTTP-01",
-   "text": "HTTP-01"
   },
   "s.http-alt.75873cbd": {
    "source": "HTTP alt",
@@ -11991,6 +11979,10 @@
   "s.its-wireguard-peers-where-each-was.9fbbe7d0": {
    "source": "Its WireGuard peers: where each was last heard from, when it last shook hands and what it has carried.",
    "text": "Jeho WireGuard protějšky: odkud byl každý naposledy slyšet, kdy naposledy proběhl handshake a co přenesl."
+  },
+  "s.its-zone-at-desec.ec2d963c": {
+   "source": "its zone at deSEC",
+   "text": "její zóna u deSEC"
   },
   "s.its.a06c46ed": {
    "source": "Its",
@@ -18016,10 +18008,6 @@
    "source": "placeholder",
    "text": "zástupný text"
   },
-  "s.plain-ac-dns-table.7c5ce495": {
-   "source": "plain ac-dns-table",
-   "text": "plain ac-dns-table"
-  },
   "s.plain-ftp-the-password-and-the.c0c4165d": {
    "source": "Plain FTP: the password and the file go over unencrypted - only inside a network you trust (the file itself is locked).",
    "text": "Obyčejné FTP: heslo i soubor jdou nešifrovaně – jen uvnitř sítě, které věříte (soubor sám je zamčený)."
@@ -23580,6 +23568,10 @@
    "source": "The dashboard",
    "text": "Dashboard"
   },
+  "s.the-dashboard.9321bfc1": {
+   "source": "the dashboard",
+   "text": "dashboard"
+  },
   "s.the-database-and-the-copies-kept.ef56814a": {
    "source": "the database and the copies kept beside it",
    "text": "databáze a kopie uložené vedle ní"
@@ -24364,9 +24356,9 @@
    "source": "the full backup is being made; the download starts when it is ready",
    "text": "plná záloha se vytváří; stahování začne, až bude hotová"
   },
-  "s.the-full-dns-name-its-certificate.3acf2c66": {
-   "source": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01).",
-   "text": "Plné DNS jméno, pro které je jeho certifikát – jde do certifikátu jako jeho jméno (CN) a do alternativních jmen (SAN). CA ho vydá jen pro jméno, které ukazuje na tento server (HTTP-01), nebo jehož záznam TXT lze vložit (DNS-01)."
+  "s.the-full-dns-name-its-certificate.5f498f42": {
+   "source": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at it (HTTP-01) or whose TXT record can be put in (DNS-01).",
+   "text": "Plné DNS jméno, pro které je certifikát – jde do certifikátu jako jeho jméno (CN) i do alternativních jmen (SAN). CA ho vydá jen pro jméno, které na něj ukazuje (HTTP-01), nebo jehož záznam TXT lze vložit (DNS-01)."
   },
   "s.the-full-path-to-this-object.56020a01": {
    "source": "The full path to this object in the directory. It is what the role settings really match on, and it is why they are separated by semicolons and not by commas.",
@@ -32430,10 +32422,6 @@
    "source": "(dstip:{0} OR tranip:{1})",
    "text": "(dstip:{0} OR tranip:{1})"
   },
-  "p.due-looked-at-within-the-hour.002726f7": {
-   "source": "Due: {0} - looked at within the hour.",
-   "text": "Na řadě: {0} – podívá se na to do hodiny."
-  },
   "p.dumps-kept-at-most.9fe2d756": {
    "source": "Dumps kept ({0} at most)",
    "text": "Uchovávané dumpy (nejvýše {0})"
@@ -33066,9 +33054,9 @@
    "source": "It could not be asked: {0}",
    "text": "Nebylo možné se dotázat: {0}"
   },
-  "p.it-has-one-put-in-on.da787712": {
-   "source": "It has one put in on Certificates and TLS ({0}{1}). The one from the CA takes its place once it comes, and ACME renews it from then on. The one it has is kept: Back to the one before puts it back. Its TLS settings stay as they are.",
-   "text": "Má certifikát vložený v Certifikáty a TLS ({0}{1}). Ten od CA zaujme jeho místo, jakmile přijde, a od té doby ho obnovuje ACME. Ten, který má, se uchová: Zpět k předchozímu ho vrátí. Jeho nastavení TLS zůstává, jak je."
+  "p.it-has-one-put-in-on.834fed8f": {
+   "source": "It has one put in on Certificates and TLS ({0}{1}). The one from the CA takes its place once it comes, and ACME renews it from then on. Its TLS settings stay as they are.",
+   "text": "Má certifikát vložený v Certifikáty a TLS ({0}{1}). Ten od CA ho nahradí, jakmile přijde, a ACME ho pak obnovuje. Jeho nastavení TLS zůstane."
   },
   "p.it-has-run-out.3f525cb0": {
    "source": "{0} - it has run out",
@@ -37026,6 +37014,10 @@
    "source": "{0} did not restart within a minute - see journalctl -u {1}",
    "text": "{0} se do minuty nerestartoval – viz journalctl -u {1}"
   },
+  "p.due-looked-at-within-the-hour.002726f7": {
+   "source": "Due: {0} - looked at within the hour.",
+   "text": "Na řadě: {0} – podívá se na to do hodiny."
+  },
   "p.eps-1-min-5-min.d17e6609": {
    "source": "EPS {0} · 1 min {1} · 5 min {2}{3}{4}",
    "text": "EPS {0} · 1 min {1} · 5 min {2}{3}{4}"
@@ -37061,6 +37053,10 @@
   "p.it-answered-routeros.a8e6a5de": {
    "source": "it answered: {0}, RouterOS {1}{2}{3}{4}{5}{6}",
    "text": "odpověděl: {0}, RouterOS {1}{2}{3}{4}{5}{6}"
+  },
+  "p.it-has-one-put-in-on.da787712": {
+   "source": "It has one put in on Certificates and TLS ({0}{1}). The one from the CA takes its place once it comes, and ACME renews it from then on. The one it has is kept: Back to the one before puts it back. Its TLS settings stay as they are.",
+   "text": "Má certifikát vložený v Certifikáty a TLS ({0}{1}). Ten od CA zaujme jeho místo, jakmile přijde, a od té doby ho obnovuje ACME. Ten, který má, se uchová: Zpět k předchozímu ho vrátí. Jeho nastavení TLS zůstává, jak je."
   },
   "p.it-is-worked-out-behind-the.f5a5049b": {
    "source": "{0}It is worked out behind the daemon and kept, so this wait is only the first time; from then on the page opens at once and says how old what it shows is.{1} This page fills in by itself.",
@@ -37394,6 +37390,10 @@
    "source": "Directory group",
    "text": "Skupina v adresáři"
   },
+  "s.dns-01.e73a8ad2": {
+   "source": "DNS-01",
+   "text": "DNS-01"
+  },
   "s.do-what-test-cert-forget-or.039c14fb": {
    "source": "do what? test, cert, forget or commands",
    "text": "co udělat? test, cert, forget nebo commands"
@@ -37482,6 +37482,10 @@
    "source": "How often to look at the firewall",
    "text": "Jak často se dívat na firewall"
   },
+  "s.how-the-ca-checks-it.c011a6c2": {
+   "source": "How the CA checks it",
+   "text": "Jak ho CA ověřuje"
+  },
   "s.how-to-set-it-up.a083bb1e": {
    "source": "How to set it up…",
    "text": "Jak jej nastavit…"
@@ -37489,6 +37493,10 @@
   "s.how-to-set-this-kind-of.6a13f188": {
    "source": "How to set this kind of firewall up for this machine, step by step: the account, the lists, the rule that drops what is on them.",
    "text": "Jak tento druh firewallu nastavit pro tento stroj, krok za krokem: účet, seznamy a pravidlo, které zahazuje, co na nich je."
+  },
+  "s.http-01.aeb5a5e4": {
+   "source": "HTTP-01",
+   "text": "HTTP-01"
   },
   "s.in-one-of-them-and-this.6c7ad560": {
    "source": "in one of them and this does not need to know which.",
@@ -37662,6 +37670,10 @@
    "source": "Pinned: the router’s api-ssl certificate is remembered by its fingerprint at the first connection - or made here and pinned before it - and a router answering with another one is refused. Without a certificate: encrypted, but nothing says it is that router (RouterOS speaks it when api-ssl has no certificate). Unencrypted: the password crosses the network in the clear - only on a network that is yours alone.",
    "text": "Připnutý: certifikát api-ssl routeru se při prvním připojení zapamatuje podle otisku – nebo se vytvoří zde a připne předem – a router, který odpoví jiným, se odmítne. Bez certifikátu: šifrované, ale nic nezaručuje, že jde o ten router (RouterOS to používá, když api-ssl nemá přiřazený certifikát). Nešifrovaně: heslo jde sítí v otevřené podobě – jen v síti, která je jen vaše."
   },
+  "s.plain-ac-dns-table.7c5ce495": {
+   "source": "plain ac-dns-table",
+   "text": "plain ac-dns-table"
+  },
   "s.read-more-of-it-through-its.825b2a1d": {
    "source": "Read more of it through its API",
    "text": "Číst z něj víc přes jeho API"
@@ -37765,6 +37777,10 @@
   "s.the-day.8c6452b7": {
    "source": "(the day)",
    "text": "(den)"
+  },
+  "s.the-full-dns-name-its-certificate.3acf2c66": {
+   "source": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01).",
+   "text": "Plné DNS jméno, pro které je jeho certifikát – jde do certifikátu jako jeho jméno (CN) a do alternativních jmen (SAN). CA ho vydá jen pro jméno, které ukazuje na tento server (HTTP-01), nebo jehož záznam TXT lze vložit (DNS-01)."
   },
   "s.the-ladder-as-written-a-list.256b4df9": {
    "source": "The ladder, as written: a list of minutes, and whether the last",

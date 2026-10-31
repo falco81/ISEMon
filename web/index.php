@@ -3701,23 +3701,32 @@ function srcText(el) {
   .cert-life-fill.warn{background:var(--warn)} .cert-life-fill.crit{background:var(--crit)}
   .cert-life-fill.dim{background:var(--tx-mut)}
   .cert-chips{display:flex;flex-wrap:wrap;gap:6px}
-  /* Automatic certificates (1.10.251; otp 1.0.170) */
-  .pw-grid.ac-grid{grid-template-columns:minmax(0,1fr)}
-  .ac-going{margin:0 0 14px}
-  .ac-manual{margin-bottom:16px}
-  .ac-said{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
-  .ac-said .dot{margin-top:6px;flex:none}
-  .ac-said.ok{border-color:rgba(63,185,80,.45)} .ac-said.bad{border-color:rgba(248,81,73,.45)}
+  /* Automatic certificates (1.10.251; as otp 1.0.187's since 1.10.258) */
+  .pw-grid.node-grid{grid-template-columns:repeat(auto-fill,minmax(520px,1fr))}
+  .node-grid .ntp-node .btnrow{margin-top:12px}
+  #ac-host .ntp-big{margin:4px 0 12px} #ac-host .ntp-off{font-size:26px;line-height:normal}
+  #pane-acme .card{padding:20px 22px}
+  #ac-host .net-fact .v.mono{font-size:13.5px}
+  #ac-host .card > .btnrow:not(:first-child){margin-top:16px}
+  #ac-host .node-grid .ntp-node > .btnrow{margin-top:12px}
+  #ac-host .pw-head{flex-wrap:nowrap}
+  #ac-host .dot{width:8px;height:8px}
+  .wr .dot.bad{background:var(--crit)} .wr .dot.dim{background:var(--tx-mut)}
+  .node-said{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+  .node-said .dot{margin-top:6px;flex:none}
+  .node-said.ok{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+  .node-said.bad{border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
+  @media (max-width:700px){.pw-grid.node-grid{grid-template-columns:1fr}}
   .acme-dns{margin-top:14px}
-  .acme-steps{margin:6px 0 12px 18px;padding:0;display:flex;flex-direction:column;gap:4px;color:var(--tx-dim)}
+  .acme-steps{margin:6px 0 12px 18px;padding:0;display:flex;flex-direction:column;gap:4px}
   .acme-dns td{vertical-align:middle}
   .acme-dns .dns-val{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .acme-dns .dns-val > span:first-child{overflow-wrap:anywhere;min-width:0;flex:0 1 auto}
   .acme-dns .dns-val > button{flex:none}
   .acme-dns .dns-val > div{flex-basis:100%}
-  .acme-steps-done{margin:10px 0 2px}.acme-steps-done summary{cursor:pointer}
-  .acme-steps-done .si-row{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)}
-  .acme-steps-done .si-row > span:first-child{white-space:nowrap;min-width:56px;text-align:right}
+  .acme-steps-done{margin:6px 0}.acme-steps-done summary{cursor:pointer}
+  .acme-steps-done .si-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
+  .acme-steps-done .si-row .mono{flex:1;min-width:0;overflow-wrap:anywhere}
   .set-item.tall textarea.mono{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);
     border-radius:8px;color:var(--tx);padding:8px 10px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .cert-state{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx-dim)}
@@ -3861,15 +3870,15 @@ function srcText(el) {
   /* The buttons as otp's: the one to press filled, the one that cannot be
      taken back red. */
   #pane-network .btn.primary,#pane-time .btn.primary,#pane-power .btn.primary,#pane-backup .btn.primary,
-  #pane-osup .btn.primary,
+  #pane-osup .btn.primary,#pane-acme .btn.primary,.box.ac-name .btn.primary,
   #pane-about .btn.primary,#pane-upgrade .btn.primary,.save-bar .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
   #pane-network .btn.primary:hover:not(:disabled),#pane-time .btn.primary:hover:not(:disabled),
   #pane-power .btn.primary:hover:not(:disabled),#pane-backup .btn.primary:hover:not(:disabled),
-  #pane-osup .btn.primary:hover:not(:disabled),
+  #pane-osup .btn.primary:hover:not(:disabled),#pane-acme .btn.primary:hover:not(:disabled),.box.ac-name .btn.primary:hover:not(:disabled),
   #pane-about .btn.primary:hover:not(:disabled),#pane-upgrade .btn.primary:hover:not(:disabled),
   .save-bar .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
   #pane-network .btn.primary svg,#pane-time .btn.primary svg,#pane-power .btn.primary svg,#pane-backup .btn.primary svg,
-  #pane-osup .btn.primary svg,
+  #pane-osup .btn.primary svg,#pane-acme .btn.primary svg,.box.ac-name .btn.primary svg,
   #pane-about .btn.primary svg,#pane-upgrade .btn.primary svg,.save-bar .btn.primary svg{opacity:1}
   #pane-network .btn.danger,#pane-time .btn.danger,#pane-power .btn.danger,#pane-backup .btn.danger,
   #pane-osup .btn.danger,
@@ -5006,7 +5015,7 @@ function srcText(el) {
     <button type="button" data-pane="dir"     data-icon="key"    title="Signing in with Active Directory: which server, how it is reached, and which groups get which role.">Active Directory</button>
     <button type="button" data-pane="dir2"    data-icon="people" title="A second directory, asked only who somebody is when the first one does not have that name. Nobody ever signs in against it.">A second directory</button>
     <button type="button" data-pane="tls"     data-icon="lock"   title="The certificate the dashboard answers with - uploaded, requested from your CA, or made here - and how it speaks TLS. Root puts it in, and nginx is asked before it is reloaded.">Certificates and TLS</button>
-    <button type="button" class="admin-only" data-pane="acme" data-icon="refresh" title="The dashboard's certificate ordered from Let's Encrypt (or another ACME CA) and renewed by itself.">Automatic certificates</button>
+    <button type="button" class="admin-only" data-pane="acme" data-icon="lock" title="The dashboard's certificate ordered from Let's Encrypt (or another ACME CA) and renewed by itself.">Automatic certificates</button>
     <button type="button" data-pane="fw"      data-icon="wall"   title="Who may reach the dashboard, the published ban list and the health check, and the machine's own firewall: what isemon needs let in by itself, and rules of your own. Nothing is changed until it is saved here; root puts it in.">Firewall and access</button>
     <div class="ctl-group">Server</div>
     <button type="button" data-pane="network" data-icon="net" title="This server's address, gateway, DNS servers, host name and IPv6 - put in by the server itself, on trial: unless it is kept within minutes it goes back to the old one by itself.">Network</button>
@@ -8330,6 +8339,8 @@ var ICONS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5h.01"/>',
   add: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
   play: '<path d="M7 5v14l11-7z"/>',
+  /* A pencil: change what this is called (otp's). */
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   next: '<path d="M9 18l6-6-6-6"/>',
   unfold: '<path d="M6 9l6 6 6-6"/>',
   prev: '<path d="M15 18l-6-6 6-6"/>',
@@ -25932,8 +25943,6 @@ var PANE_HEADS = {
        retain_failed_days: 'How long things are kept',
        tidy_daily: 'When the old rows are thrown away',
        backup_daily: 'The daily dump'},
-  acme: {acme: 'The CA', acme_name: 'The certificate',
-         acme_challenge: 'How the CA checks the name', acme_resolvers: 'DNS'},
   about: {site_name: 'This installation', debug: 'The debug log',
           debug_sql: 'And what goes into it'}
 };
@@ -39223,17 +39232,29 @@ function acPoll(on) {
   }, 2000);
   if (!on && AC.poll) { clearInterval(AC.poll); AC.poll = null; }
 }
-/* What a try found, in the card. */
-function acSaid(ok, words, error, at) {
-  var p = el('div', 'ac-said ' + (ok ? 'ok' : 'bad'));
-  p.appendChild(el('span', 'dot ' + (ok ? 'ok' : 'crit')));
+/* The look of otp's cards (1.10.258; otp 1.0.169): one card a certificate,
+   its state in the head, the facts as tiles, what can be done below. */
+function acCard(name, dot, tag, tagCls) {
+  var c = el('div', 'card ntp-node');
+  var head = el('div', 'pw-head');
+  head.appendChild(el('span', 'dot ' + dot));
+  head.appendChild(el('b', '', name));
+  if (tag) head.appendChild(el('span', 'tag ' + (tagCls || 'dim'), tag));
+  c.appendChild(head);
+  return c;
+}
+/* What a try found, in the card (otp's nodeSaid). */
+function acSaid(got, words) {
+  var p = el('div', 'node-said ' + (got.ok ? 'ok' : 'bad'));
+  p.appendChild(el('span', 'dot ' + (got.ok ? 'ok' : 'bad')));
   var t = el('div');
-  t.appendChild(el('b', '', ok ? words : 'It did not go'));
-  if (error) t.appendChild(noI18n(el('div', 'small muted', error)));
-  if (at) t.appendChild(el('div', 'small muted', ago(at)));
+  t.appendChild(el('b', '', got.error ? 'It did not go' : words));
+  if (got.error) t.appendChild(noI18n(el('div', 'small muted', got.error)));
+  t.appendChild(el('div', 'small muted', ago(got.at)));
   p.appendChild(t);
   return p;
 }
+function acDay(ts) { return new Date(ts * 1000).toLocaleDateString(numLang()); }
 function drawAcme() {
   var host = $('ac-host');
   if (!host || !AC.d) return;
@@ -39241,11 +39262,11 @@ function drawAcme() {
   var d = AC.d;
   if (!d.on) host.appendChild(el('p', 'note', 'Off - switch it on below, say the CA and how it checks the name, and save.'));
   if (d.work && d.work.busy) {
-    var g = el('div', 'going wide ac-going');
-    g.innerHTML = '<div class="bar"><span class="creeping"></span></div>';
-    /* What is being waited for now (otp 1.0.176). */
+    var g = el('div', 'going wide');
+    g.innerHTML = '<div class="bar"><span style="width:60%"></span></div>';
+    /* Which certificate, and what is being waited for now (otp 1.0.176). */
     var w = el('div', 'says');
-    w.appendChild(el('b', '', 'The dashboard'));
+    w.appendChild(el('b', '', 'the dashboard'));
     w.appendChild(document.createTextNode(': '));
     w.appendChild(el('span', '', d.work.says || 'ordering…'));
     g.appendChild(w);
@@ -39269,35 +39290,30 @@ function drawAcme() {
     mc.appendChild(mr);
     host.appendChild(mc);
   }
-  var grid = el('div', 'pw-grid ac-grid');
+  var grid = el('div', 'pw-grid node-grid');
   var st = d.state || {};
   var left = d.not_after ? Math.floor((d.not_after - Date.now() / 1000) / 86400) : null;
   var acme = d.how === 'ACME';
-  var c = el('div', 'card pw-node ac-card');
-  var head = el('div', 'pw-head');
-  head.appendChild(el('span', 'dot ' + (!acme ? '' : (st.ok === false ? 'warn' : (left !== null && left < 14 ? 'warn' : 'ok')))));
-  head.appendChild(el('b', '', 'The dashboard'));
-  head.appendChild(el('span', 'tag ' + (acme ? (st.ok === false ? 'warn' : 'ok') : 'dim'),
-    acme ? (st.ok === false ? 'the last try failed' : 'from the CA') : (d.how ? 'not from the CA' : 'no certificate of isemon\'s')));
+  var dot = !acme ? 'dim' : (st.ok === false ? 'warn' : (left !== null && left < 14 ? 'warn' : 'ok'));
+  var c = acCard('the dashboard', dot,
+    acme ? (st.ok === false ? 'the last try failed' : 'from the CA') : (d.how ? 'not from the CA' : 'no certificate of isemon\'s'),
+    acme ? (st.ok === false ? 'warn' : 'ok') : 'dim');
   /* Who looks after it (otp 1.0.170): ACME, or the certificate put in on
      Certificates and TLS is kept as it is. */
   var care = el('span', 'tag ' + (d.care ? 'info' : 'dim'), d.care ? 'ACME renews it' : 'its own certificate is kept');
   explain(care, d.care ? 'Renewed by ACME before it runs out. A certificate put in by hand on Certificates and TLS takes it out of ACME’s care.'
     : 'The certificate put in on Certificates and TLS (uploaded, from a request, self-signed) stays: ACME does not replace it. Look after it, or Order it now, gives it to ACME.');
-  head.appendChild(care);
-  c.appendChild(head);
+  c.querySelector('.pw-head').appendChild(care);
   var big = el('div', 'ntp-big');
   big.appendChild(noI18n(el('span', 'ntp-off', left !== null ? num(left) : '–')));
   if (left !== null) big.appendChild(el('span', 'muted small', ' days left'));
   c.appendChild(big);
   c.appendChild(netFacts([
-    ['For', d.name || '', true], ['Issued by', d.issuer ? String(d.issuer).replace(/^CN=/, '') : '', true],
-    ['Good until', d.not_after ? stamp(d.not_after) : ''],
-    ['Last ordered', st.ordered_at ? ago(st.ordered_at) : 'never'],
-    ['How the CA checks it', d.challenge === 'dns-01' ? 'DNS-01' : 'HTTP-01', true]
+    ['For', d.name || '', true], ['Issued by', d.issuer || '', true],
+    ['Good until', d.not_after ? acDay(d.not_after) : ''],
+    ['Last ordered', st.ordered_at ? ago(st.ordered_at) : 'never']
   ]));
-  if (d.on && d.care && d.due) c.appendChild(el('p', 'note small', 'Due: ' + d.due + ' - looked at within the hour.'));
-  if (st.ok === false && st.said) c.appendChild(acSaid(false, '', st.said, st.failed_at));
+  if (st.ok === false && st.said) c.appendChild(acSaid({ok: false, error: st.said, at: st.failed_at}, ''));
   /* What the last order did, step by step (otp 1.0.175). */
   if ((st.steps || []).length) {
     var det = el('details', 'acme-steps-done');
@@ -39314,7 +39330,7 @@ function drawAcme() {
     c.appendChild(det);
   }
   var pr = AC.probe;
-  if (pr) c.appendChild(acSaid(pr.ok, 'Port 80 answers as the CA will ask it', pr.ok ? '' : pr.said, pr.at));
+  if (pr) c.appendChild(acSaid({ok: pr.ok, at: pr.at, error: pr.ok ? '' : pr.said}, 'Port 80 answers as the CA will ask it'));
   var row = el('div', 'btnrow');
   var probe = cmdButton('Try port 80', 'play', 'small');
   probe.hidden = d.challenge === 'dns-01';
@@ -39324,7 +39340,7 @@ function drawAcme() {
   probe.onclick = function () {
     busy(probe, true);
     api('acme', {action: 'probe'}).then(function (x) {
-      busy(probe, false); AC.probe = x; drawAcme();
+      busy(probe, false); x = x.probe || x; x.at = Date.now() / 1000; AC.probe = x; drawAcme();
     }).catch(function (e) { busy(probe, false); oops(e); });
   };
   var order = cmdButton('Order it now', 'download', 'small primary');
@@ -39339,7 +39355,7 @@ function drawAcme() {
     };
     if (d.how && !acme) {
       confirmThen('Replace the certificate of the dashboard?',
-        htmlText('It has one put in on Certificates and TLS (' + d.how + (d.issuer ? ', ' + String(d.issuer).replace(/^CN=/, '').split(',')[0] : '') + '). The one from the CA takes its place once it comes, and ACME renews it from then on. The one it has is kept: Back to the one before puts it back. Its TLS settings stay as they are.'),
+        htmlText('It has one put in on Certificates and TLS (' + d.how + (d.issuer ? ', ' + String(d.issuer).replace(/^CN=/, '').split(',')[0] : '') + '). The one from the CA takes its place once it comes, and ACME renews it from then on. Its TLS settings stay as they are.'),
         'Order it', go, false);
     } else go();
   };
@@ -39351,7 +39367,7 @@ function drawAcme() {
     api('acme', {action: 'care', on: !d.care}).then(function (x) { AC.d = x; drawAcme(); })
       .catch(function (e) { busy(cb, false); oops(e); });
   };
-  var nm = cmdButton('Its name…', 'gear', 'small');
+  var nm = cmdButton('Its name…', 'edit', 'small');
   explain(nm, 'The DNS name the certificate is for. Empty: the name of the certificate it has now, else this server\'s full host name.');
   nm.onclick = function () { acmeNameAsk(d); };
   row.appendChild(probe); row.appendChild(order); row.appendChild(cb); row.appendChild(nm);
@@ -39376,7 +39392,7 @@ function drawAcme() {
 function acmePutBackButton(before, then) {
   var b = cmdButton('Back to the one before…', 'undo', 'small');
   var words = String(before.issuer || '').replace(/^CN=/, '').split(',')[0];
-  explain(b, 'The certificate it had before ACME replaced it' + (words ? ' - from ' + words : '') + (before.not_after ? ', good until ' + stamp(before.not_after) : '') + '. Put back as it was; ACME no longer renews this one. The TLS settings stay.');
+  explain(b, 'The certificate it had before ACME replaced it' + (words ? ' - from ' + words : '') + (before.not_after ? ', good until ' + acDay(before.not_after) : '') + '. Put back as it was; ACME no longer renews this one. The TLS settings stay.');
   b.onclick = function () {
     confirmThen('Put the certificate from before ACME back?', htmlText('The one from the CA is taken out and the one it had before - ' + (words || before.how || '') + ' - put back. ACME no longer renews this one (Look after it gives it back).'), 'Put it back', function () {
       busy(b, true);
@@ -39386,20 +39402,39 @@ function acmePutBackButton(before, then) {
   };
   return b;
 }
+/* Its name (otp 1.0.170), asked as otp asks it: one box, Enter keeps it. */
 function acmeNameAsk(d) {
-  var box = wrText(d.named ? d.name : '', d.cert_name || d.host || 'isemon.example.cz', 'mono');
+  var box = el('input', 'mono');
+  box.type = 'text';
   box.id = 'ac-name';
+  box.placeholder = 'isemon.example.cz';
+  box.autocomplete = 'off';
+  box.spellcheck = false;
+  box.value = d.named ? (d.name || '') : '';
+  box.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); $('modal-foot').querySelector('.btn.primary').click(); }
+  });
   modal('The name of the certificate', function (body) {
-    body.appendChild(el('p', 'note', 'The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01).'));
-    body.appendChild(wrField('DNS name', box, 'Empty: the name of the certificate it has now, else this server\'s full host name.'));
-  }, [{words: 'Cancel', close: true},
+    body.appendChild(el('p', 'note', 'The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at it (HTTP-01) or whose TXT record can be put in (DNS-01).'));
+    var g = el('div', 'formgrid');
+    var item = el('div', 'set-item');
+    var l = el('label', '', 'DNS name');
+    l.htmlFor = 'ac-name';
+    item.appendChild(l);
+    item.appendChild(box);
+    item.appendChild(saysBlock('Empty: the name of the certificate it has now, else this server\'s full host name.'));
+    g.appendChild(item);
+    body.appendChild(g);
+    setTimeout(function () { box.focus(); }, 60);
+  }, [{words: 'Close', close: true},
       {words: 'Keep it', cls: 'primary', icon: 'save', go: function (b) {
         busy(b, true);
-        api('acme', {action: 'name', name: ($('ac-name') || {}).value || ''}).then(function (x) {
+        api('acme', {action: 'name', name: box.value.trim()}).then(function (x) {
           closeModal(); AC.d = x; drawAcme(); toast('kept', 'good');
           if (typeof loadSettings === 'function') loadSettings();
         }).catch(function (e) { busy(b, false); oops(e); });
-      }}], true);
+      }}], 'medium');
+  $('modal-box').classList.add('ac-name');
 }
 
 /* In your DNS (otp 1.0.170): what the certificate needs there - by the way
@@ -39444,8 +39479,9 @@ function acmeDnsGuide(d) {
     var c = checked && checked[i] && checked[i].record === r.record ? checked[i] : {};
     return Object.assign({}, r, {ok: c.ok, said: c.said});
   });
-  var t = listTable(['Record', 'Type', 'Points at / value', 'In DNS now'], rows, function (r) {
+  var t = listTable(['Certificate', 'Record', 'Type', 'Points at / value', 'In DNS now'], rows, function (r) {
     var tr = el('tr');
+    tr.appendChild(el('td', '', r.type === 'NS' ? 'its zone at deSEC' : 'the dashboard'));
     var rec = el('td', 'mono small dns-cell');
     if (r.record) {
       rec.appendChild(noI18n(el('span', '', r.record)));
@@ -39473,15 +39509,30 @@ function acmeDnsGuide(d) {
       }
     } else stc.appendChild(el('span', 'muted', r.type === 'TXT' && !r.value ? 'isemon puts it in' : '–'));
     tr.appendChild(stc);
-    /* The text and its button in one box: the button right after the text. */
+    /* The text and its button in one box: the button at the column's edge. */
     Array.prototype.forEach.call(tr.querySelectorAll('td.dns-cell'), function (td) {
       var box = el('div', 'dns-val');
       while (td.firstChild) box.appendChild(td.firstChild);
       td.appendChild(box);
     });
     return tr;
-  }, 'plain ac-dns-table');
+  });
+  /* Its rows in the order the guide gives them, as otp's: no sorting. */
+  t.querySelector('table').dataset.noSort = '1';
   card.appendChild(t);
+  /* The copy buttons right after the text, one under the other: the text of
+     a column as wide as its longest (otp 1.0.172). */
+  setTimeout(function () {
+    [1, 3].forEach(function (col) {
+      var spans = Array.prototype.map.call(t.querySelectorAll('tbody tr'), function (tr) {
+        var td = tr.children[col];
+        return td && td.querySelector('.dns-val > span:first-child');
+      }).filter(Boolean);
+      var w = 0;
+      spans.forEach(function (sp) { sp.style.width = ''; w = Math.max(w, sp.getBoundingClientRect().width); });
+      spans.forEach(function (sp) { sp.style.width = Math.ceil(w) + 'px'; });
+    });
+  }, 0);
   var row = el('div', 'btnrow');
   var chk = cmdButton('Check DNS', 'search', 'small');
   explain(chk, 'Each record looked up from this server now, through its DNS servers - as the CA will look. A record just put in may take a while to show (its TTL).');

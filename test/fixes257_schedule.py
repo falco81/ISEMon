@@ -744,11 +744,12 @@ console.log(JSON.stringify(res));
 
     # ------------------------------------------------------------------------
     print('\nThe docs and the version')
-    ok('version 1.10.257', isemon.__version__, '1.10.257')
+    ok('version 1.10.257 or later', tuple(int(x) for x in isemon.__version__.split('.'))
+       >= (1, 10, 257))
     readme = (ROOT / 'README.md').read_text()
-    top = readme.split('## Version', 1)[1].strip().split('\n')
-    ok('README: its top entry is 1.10.257, its first line naming no other version',
-       (top[0], re.findall(r'\d+\.\d+\.\d+', top[2])), ('1.10.257', []))
+    entry = readme.split('## Version', 1)[1].split('\n1.10.257\n', 1)[1].strip().split('\n')
+    ok('README: the entry of 1.10.257, its first line naming no other version',
+       re.findall(r'\d+\.\d+\.\d+', entry[0]), [])
     doc = (ROOT / 'docs' / 'system-updates.md').read_text()
     ok('docs: System updates says the schedule and the security updates only',
        ('On a schedule' in doc, 'osup_auto_what' in doc, '--security' in doc), (True,) * 3)

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.257'
+__version__ = '1.10.258'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -65540,7 +65540,10 @@ def acme_api(wr, b, by):
         acme_care_set(wr, bool(b.get('on')), by)
         return acme_view(wr)
     if act == 'probe':
-        return acme_probe(wr)
+        # What it found under a key of its own (1.10.258): a port 80 that
+        # does not answer is an answer to show on the card, not an error -
+        # its 'ok': False at the top made the page take it for a refusal.
+        return {'ok': True, 'probe': acme_probe(wr)}
     if act == 'name':
         name = str(b.get('name') or '').strip().lower().rstrip('.')
         if name and not ACME_NAME_RE.match(name):

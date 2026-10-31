@@ -567,6 +567,12 @@ try:
        (200, NAME, True, NAME))
     s, d = call('/api/acme', 'POST', {'action': 'name', 'name': 'not a name'}, session=admin)
     ok('...a name that is none refused', s, 400)
+    # 1.10.258: what Try port 80 found under a key of its own - a port 80 that
+    # does not answer is shown on the card, not taken for a refusal.
+    s, d = call('/api/acme', 'POST', {'action': 'probe'}, session=admin)
+    ok('Try port 80: an answer to show, whatever it found',
+       (s, d.get('ok'), (d.get('probe') or {}).get('name'), 'said' in (d.get('probe') or {})),
+       (200, True, NAME, True))
     ok('root is asked for port 80: the names in the request', wr.request().get('acme'), [NAME])
     ok('the care: ACME looks after a dashboard with no certificate of isemon\'s', isemon.acme_care(wr))
     CA.bad_nonce_once = True
