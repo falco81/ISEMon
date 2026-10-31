@@ -181,14 +181,17 @@ try:
     ok('retention counts both kinds as this machine\'s', sorted(
         x['what'] for x in isemon.rb_remote_list(store, t['id'])), ['all', 'config'])
 
-    print('\nUpgrades: This server')
+    print('\nUpgrades and maintenance: the nodes (This server until 1.10.266)')
     v = daemon.upgrades.page(True)
     ok('the machine, the version and since when', (bool(v.get('host')), v.get('version'),
                                                    v.get('started') == daemon.started),
        (True, isemon.__version__, True))
-    ok('the card is at the top of the pane', page.index('id="up-me-card"') <
+    ok('the nodes are at the top of the pane', page.index('id="up-nodes-card"') <
        page.index('id="up-web-card"'))
-    ok('drawn with the rest of the pane', 'drawUpMe(d);' in page)
+    ok('drawn with the rest of the pane', 'drawUpNodes(d);' in page)
+    ok('...one node: this server, in service', [(n['name'], n['me'], n['maintenance']['on'])
+                                                for n in v['nodes']],
+       [(v['host'], True, False)])
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 

@@ -1,31 +1,50 @@
 # Upgrades: on the command line, or from the page
 
+*Settings → Monitoring and updates → Upgrades* is the pane **Upgrades and
+maintenance** (1.10.266, as otp's): *The nodes* (this server - its version,
+when it was heard from, in service or in maintenance, and the *Maintenance*
+button), *From the web*, *A new version*, *Going back to an older version*,
+*The upgrade*, *What root said last* and *On the command line*. Maintenance
+itself is [maintenance.md](maintenance.md).
+
 Two ways to put in a new version (isemon 1.10.222 and later). Both stay: use
 whichever suits you.
 
 | | Command line | The page |
 |---|---|---|
-| Where | on the machine, as root | *Settings → Monitoring and updates → Upgrades*, as a full administrator |
+| Where | on the machine, as root | *Settings → Monitoring and updates → Upgrades* (Upgrades and maintenance), as a full administrator |
 | How | `./install.sh --upgrade` | send the `.tar.gz`, press *Upgrade* |
 | What it checks | nothing - root trusts what it runs | the package is signed by a release key this machine trusts |
 | How far it is | install.sh's own words | a bar, the step install.sh is at, and its words |
 
 Either way the database, the settings and the accounts are kept, isemon
 restarts once for a few seconds, and the logs are read on from where they
-were.
+were. Either way this server is **in maintenance** while it is upgraded
+(1.10.266): its health check, `healthz.php`, says 503, so a load balancer or
+the monitoring leaves it alone, and it comes back into service once the new
+version answers.
 
 ## On the command line
 
 ```
+isemon --maintenance on --why "upgrade"    # out of service (optional)
 tar xzf isemon-X.Y.Z.tar.gz && cd isemon-X.Y.Z
-sudo ./install.sh --upgrade
+sudo ./install.sh --upgrade                # takes it out and back by itself as well
+isemon --maintenance off                   # back in service (if it was put out by hand)
 ```
+
+`install.sh --upgrade` puts the server into maintenance itself when it was
+in service and the version running knows maintenance (1.10.266 and later), and
+takes it out once the new version answers and `isemon --check` has run. Put
+into maintenance by hand first, it is left in it.
 
 ## From the page
 
 1. **Send the package** - `isemon-X.Y.Z.tar.gz` as released. It is checked at
    once (below) and waits; *What changed* shows its entry from the README.
-2. **Upgrade.** The package and a request are laid down in
+2. **Upgrade this server.** The server goes **into maintenance first** (why:
+   *upgrade to X.Y.Z*; already in maintenance, it stays so, with its own
+   why). The package and a request are laid down in
    `/var/lib/isemon/upgrade/`; systemd (`isemon-upgrade.path`) starts
    `isemon-upgrade.service`, which runs `/usr/local/lib/isemon/isemon_upgrade.py`
    **as root**. It is the only thing that unit can do.
@@ -34,9 +53,16 @@ sudo ./install.sh --upgrade
    started from the page), then *isemon is restarting - asking again…*
    while the daemon answering the page is the one restarting, and 100 % once
    it answers again. The page offers to load itself again in the new version.
-4. If it fails, the bar turns red and says why; *What install.sh said* is
+4. Root said done and the new version answers: **back in service** (an event:
+   *HOST is upgraded to X.Y.Z, checked, back in service*).
+5. If it fails, the bar turns red and says why; *What root said last* is
    the whole of it (`/var/lib/isemon/upgrade/last.log`). The program that was
-   there stays, or is put back by install.sh itself.
+   there stays, or is put back by install.sh itself. As otp decides it for a
+   node: where the version that was there still runs, the server comes **back
+   into service** - a failed upgrade must not leave a working server out;
+   where the new version runs and did not pass, it is **left in maintenance**,
+   why saying so, until somebody presses *Back in service*. A request root
+   never took (2 min), or root silent for half an hour, is a failure too.
 
 `isemon --web-status` and `isemon --upgrade-status` show the same on the
 command line.

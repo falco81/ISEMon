@@ -641,7 +641,7 @@ try:
     ok('three panes of their own', all('id="pane-%s"' % p in page for p in ('fw', 'tls', 'upgrade')))
     ok('the firewall waits for the save bar', "extraPending('fw'" in page and
        'EXTRA_SAVES[k].save()' in page)
-    ok('the upgrade has its bar', 'function upgradeBar(run, d)' in page and
+    ok('the upgrade has its bar', 'function upBar(pc, kind, words, wide)' in page and
        'isemon is restarting - asking again' in page)
     ok('a package goes as the file itself, never multipart',
        "'X-Isemon-Upgrade': '1', 'Content-Type': 'application/octet-stream'" in page and

@@ -9,7 +9,11 @@
  * access → The health check; as the dashboard unless set otherwise).
  *
  *   healthz.php            200 ok  |  503 <why>   (text/plain)
- *   healthz.php?json=1     {"ok":true,"database":true,"said":"ok"}
+ *   healthz.php?json=1     {"ok":true,"database":true,"maintenance":false,"said":"ok"}
+ *
+ * In maintenance (Settings → Upgrades and maintenance, isemon --maintenance
+ * on; 1.10.266) it says 503 "maintenance", so that a load balancer or the
+ * monitoring leaves this server alone until it is back in service.
  *
  * The version is not said: a page anybody on the list may ask is no place
  * to tell them which version is running.
@@ -32,13 +36,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET' && ($_SERVER['REQUEST_METHOD
 $health = isemon_get('/api/health', 5.0);
 $daemon = is_array($health);
 $db = $daemon && !empty($health['database']['ok']);
-$ok = $daemon && $db;
-$why = !$daemon ? 'the daemon is not answering' : (!$db ? 'the database is not open' : 'ok');
+// In maintenance (1.10.266, as otp's /healthz): taken out by hand or for an
+// upgrade - the balancer and the monitoring leave it alone until it is back.
+// Only that it is, never why: anybody on the list may ask.
+$maint = $daemon && !empty($health['maintenance']);
+$ok = $daemon && $db && !$maint;
+$why = !$daemon ? 'the daemon is not answering' : (!$db ? 'the database is not open'
+    : ($maint ? 'maintenance' : 'ok'));
 
 http_response_code($ok ? 200 : 503);
 if (isset($_GET['json'])) {
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['ok' => $ok, 'database' => $db, 'said' => $why]);
+    echo json_encode(['ok' => $ok, 'database' => $db, 'maintenance' => $maint, 'said' => $why]);
 } else {
     header('Content-Type: text/plain; charset=utf-8');
     echo $why, "\n";

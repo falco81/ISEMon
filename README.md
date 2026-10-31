@@ -371,6 +371,35 @@ working.
 
 ## Version
 
+1.10.266
+
+- **Settings → Upgrades and maintenance**, as otp's pane, for one server
+  ([docs/upgrades.md](docs/upgrades.md), [docs/maintenance.md](docs/maintenance.md)):
+  the same title, cards and order - *The nodes* (one row, this server: its
+  version, when it was heard from, IN SERVICE or IN MAINTENANCE, and a
+  *Maintenance* / *Back in service* button), *From the web*, *A new version*
+  (the package in a box of its own, *What changed* folded under it, *Upgrade
+  this server*, *Forget the package*), *Going back to an older version*, *The
+  upgrade* (the bars, a row for the node and its step), *What root said last*
+  and *On the command line*. The menu entry is otp's (Upgrades, under
+  Monitoring and updates, the arrow up); the setting reads *Look for a new
+  version every day*.
+- **Maintenance**: this server out of service - `healthz.php` says 503
+  (`maintenance`), so a load balancer or the monitoring leaves it alone -
+  while the logs are read and banning goes on and the pages keep working.
+  Kept with who, when and why in `/var/lib/isemon/maintenance.json`; survives
+  a restart; an event each way. The header says *THIS SERVER IS IN
+  MAINTENANCE* (only when it is, with why), the console's bar too.
+  `isemon --maintenance on|off|status [--why TEXT]`; `--status` and `--check`
+  say it; the console has *Upgrades → Maintenance of this server*.
+- **An upgrade from the page puts the server into maintenance first** and
+  back into service once the new version answers; failed with the old version
+  still running, it comes back into service, failed with the new one running,
+  it is left in maintenance with why (otp's rule). `install.sh --upgrade` by
+  hand does the same when it was in service. A backup being put back is
+  maintenance for as long as it takes. Nothing changes where maintenance is
+  never used.
+
 1.10.265
 
 - **Automatic certificates: "replaces" only from the account that ordered the

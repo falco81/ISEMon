@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.265'
+__version__ = '1.10.266'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -42929,6 +42929,13 @@ class Storage(object):
         return gone
 
     def restore_dump(self, path, say=None):
+        """`_restore_dump`, with this server in maintenance meanwhile
+        (1.10.266, as otp's restore): the health check says 503 until it
+        is done."""
+        with maintenance_while('a backup is being put back'):
+            return self._restore_dump(path, say=say)
+
+    def _restore_dump(self, path, say=None):
         """Replace everything in this database with what is in that dump.
 
         The engine's own program does the work, which is the point of a dump;
@@ -56691,7 +56698,7 @@ class Daemon(object):
         'db_split': 'Split the biggest tables by day (PostgreSQL)',
         'db_split_whole_days': 'Let the split tables go a whole day at a time',
         'backup_at': 'Dump it at (HH:MM)',
-        'upgrade_check': 'Look for a new version once a day',
+        'upgrade_check': 'Look for a new version every day',
         'upgrade_url': 'Where new versions are looked for',
         'downgrade_offered': 'Offer going back to an older version',
         'rbackup': 'Backups to the destinations on a schedule',
@@ -59623,6 +59630,8 @@ class Daemon(object):
             # The one verdict the header draws: worked out here out of
             # everything on this page rather than out of four of it. See
             # `health`.
+            # This server in maintenance (1.10.266): the header says so.
+            'maintenance': maintenance_view(),
             'health': self.health(
                 tails, (self.store.get_meta('mikrotik_trouble') or '')
                 if self.any_firewall() else ''),
@@ -61834,6 +61843,14 @@ class Daemon(object):
         except Exception as e:
             log('asking root after the restore: %s' % e, 'warn')
 
+    def _maintenance_loop(self):
+        while not self.stopping.is_set():
+            try:
+                maintenance_tick(self)
+            except Exception as e:                      # noqa: BLE001
+                log('maintenance after an upgrade: %s' % str(e)[:200], 'warn')
+            self.stopping.wait(3)
+
     def _web_pass(self):
         try:
             self.webroot.due()
@@ -62909,6 +62926,10 @@ class Daemon(object):
         self._fw_writer = FwWriter(self)
         self._fw_behind_thread = threading.get_ident()
         self.store.add_event('control', 'isemon %s started' % self.version)
+        # An upgrade's maintenance seen through (1.10.266): on a thread of
+        # its own, every few seconds, whatever the reading of the logs does.
+        threading.Thread(target=self._maintenance_loop, name='isemon-maintenance',
+                         daemon=True).start()
         last_house = last_feeds = last_router = last_settings = last_dir = 0.0
         last_weigh = 0.0
         last_fold = time.time()      # not on the first tick after a restart
@@ -70044,6 +70065,12 @@ def rb_open(path, password, work, room_for=0, progress=None):
 
 
 def rb_restore(store, path, password, by, daemon=None, progress=None):
+    """`_rb_restore`, with this server in maintenance meanwhile (1.10.266)."""
+    with maintenance_while('a backup is being put back'):
+        return _rb_restore(store, path, password, by, daemon, progress)
+
+
+def _rb_restore(store, path, password, by, daemon=None, progress=None):
     """Everything in a backup put back on this machine: the database (a copy
     of what it replaces made first, as every restore does) and the keys it
     carries. The new machine's config.json stays its own."""
@@ -70729,6 +70756,241 @@ def cmd_restore_bundle(args, pal, store):
     return 0
 
 
+# ---------------------------------------------------------------------------
+# Maintenance (1.10.266; after otp's, 1.0.37)
+# ---------------------------------------------------------------------------
+# This server out of service, and back. What isemon serves to anybody but
+# its own administrators is its health check (healthz.php, asked by a load
+# balancer or the monitoring): in maintenance it says 503, and so they leave
+# the server alone, as otp's /healthz does. The daemon goes on reading the
+# logs and banning - an attack does not wait for an upgrade - and these
+# pages go on working, so the server can be looked at and brought back.
+#
+# Kept in a file of this machine's own (STATE_DIR/maintenance.json), not in
+# the database: it survives a restart of the daemon, and putting a backup
+# back, switching the engine or importing another machine's export carries
+# no other machine's maintenance in - otp keeps a node's own row over a
+# restore for the same reason. Read at most every two seconds; the health
+# check asks it without a statement.
+#
+# An upgrade from the pages puts the server into maintenance first, and
+# takes it out once the new version answers and root said it was done; one
+# that fails while the version that was there still runs comes back into
+# service, one whose new version runs but did not pass is left in
+# maintenance with why - exactly otp's rule for each node. Putting a backup
+# back counts as maintenance for as long as it takes (not written down: it
+# ends with the restore). There is one server and no other node to hand
+# anything over to, so - as otp does on a server alone - a restart and the
+# system's updates do not go through maintenance.
+MAINT_NAME = 'maintenance.json'
+MAINT_SINCE = '1.10.266'              # older versions know nothing of it
+MAINT_CACHE = {'at': 0.0, 'row': None}
+MAINT_LOCK = threading.RLock()
+MAINT_HELD = {'n': 0, 'why': ''}
+MAINT_UPGRADE_S = 30 * 60             # an upgrade root has said nothing of for this long failed
+
+
+def maintenance_file():
+    return Path(STATE_DIR) / MAINT_NAME
+
+
+def maintenance_row():
+    """What the file says, {'on': False} when there is none."""
+    try:
+        fd = os.open(str(maintenance_file()), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return {'on': False}
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return {'on': False}
+        got = json.loads(os.read(fd, 65536).decode('utf-8', 'replace') or '{}')
+    except (OSError, ValueError):
+        return {'on': False}
+    finally:
+        os.close(fd)
+    if not isinstance(got, dict):
+        return {'on': False}
+    got['on'] = got.get('on') is True
+    return got
+
+
+def maintenance_now():
+    """This server's maintenance, read at most every two seconds - asked by
+    every health check and every poll of the pages' header."""
+    if MAINT_HELD['n'] > 0:
+        return {'on': True, 'why': MAINT_HELD['why'] or 'a backup is being put back',
+                'by': '', 'at': time.time(), 'held': True}
+    now = time.time()
+    if now - MAINT_CACHE['at'] > 2 or MAINT_CACHE['row'] is None:
+        MAINT_CACHE['row'] = maintenance_row()
+        MAINT_CACHE['at'] = now
+    return dict(MAINT_CACHE['row'])
+
+
+class maintenance_while(object):
+    """In maintenance for as long as something runs (a backup put back),
+    and out again after it - nothing written down, as otp's restore."""
+    def __init__(self, why):
+        self.why = why
+
+    def __enter__(self):
+        with MAINT_LOCK:
+            MAINT_HELD['n'] += 1
+            MAINT_HELD['why'] = self.why
+        return self
+
+    def __exit__(self, *_):
+        with MAINT_LOCK:
+            MAINT_HELD['n'] = max(0, MAINT_HELD['n'] - 1)
+        return False
+
+
+def maintenance_host():
+    return socket.gethostname().split('.')[0] or 'this server'
+
+
+def _maintenance_write(row):
+    with MAINT_LOCK:
+        where = write_replacing(maintenance_file(), json.dumps(row, default=str), 0o640)
+        # Written by root (isemon --maintenance with the daemon stopped):
+        # handed to whoever owns the folder, so the daemon can read it.
+        if os.geteuid() == 0:
+            try:
+                st = os.stat(str(Path(STATE_DIR)))
+                os.chown(str(where), st.st_uid, st.st_gid)
+            except OSError:
+                pass
+        MAINT_CACHE['at'] = 0.0
+        MAINT_CACHE['row'] = None
+    return row
+
+
+def maintenance_set(store, on, why='', by='', upgrade=None):
+    """Into maintenance or back into service, with who, when and why - and
+    an event saying so."""
+    row = {'on': bool(on), 'why': str(why or '')[:200] if on else '',
+           'by': str(by or '')[:100], 'at': time.time()}
+    if on and upgrade:
+        row['upgrade'] = upgrade
+    _maintenance_write(row)
+    name = maintenance_host()
+    words = ('%s: in maintenance - healthz.php says 503%s' % (name, (' - ' + row['why'])
+                                                              if row['why'] else '')
+             if on else '%s: back in service' % name)
+    if store is not None:
+        store.add_event('control', words, 'warn' if on else 'info', who=by or '')
+    log(words, 'warn' if on else 'info')
+    return row
+
+
+def maintenance_by_hand(store, on, why='', by=''):
+    """The Maintenance button, Back in service, isemon --maintenance."""
+    was = maintenance_row()
+    if not on and not was.get('on'):
+        return was
+    return maintenance_set(store, on, (why or 'by hand') if on else '', by)
+
+
+def maintenance_tick(daemon):
+    """An upgrade from the pages that put this server into maintenance,
+    seen through: back in service once the new version answers and root
+    said it was done; on a failure back too where the version that was
+    there still runs, left in maintenance where the new one runs and did
+    not pass. Every few seconds; reads two small files and nothing else."""
+    row = maintenance_row()
+    up = row.get('upgrade')
+    if not row.get('on') or not isinstance(up, dict):
+        return None
+    ups = getattr(daemon, 'upgrades', None)
+    if ups is None:
+        return None
+    st = ups.read_json('status.json') or {}
+    same = bool(up.get('id')) and st.get('id') == up.get('id')
+    now = time.time()
+    target = str(up.get('version') or '')
+    state = st.get('state') if same else None
+    if state == 'done':
+        if __version__ == target:
+            return _maintenance_upgraded(daemon.store, row, up)
+        if now - float(st.get('at') or now) > 120:
+            return _maintenance_upgrade_failed(
+                daemon.store, row, up, 'install.sh said it was done, but isemon %s is still '
+                'the version answering' % __version__)
+        return None
+    if state == 'failed':
+        return _maintenance_upgrade_failed(daemon.store, row, up, st.get('said') or (
+            'install.sh ended with %s' % st.get('rc')))
+    if state == 'running':
+        if now - float(st.get('at') or now) > MAINT_UPGRADE_S:
+            return _maintenance_upgrade_failed(daemon.store, row, up, 'root has said nothing '
+                                               'of it for %d min' % (MAINT_UPGRADE_S // 60))
+        return None
+    # Not taken by root at all.
+    if not ups.running() and now - float(up.get('at') or now) > 120:
+        return _maintenance_upgrade_failed(
+            daemon.store, row, up, 'isemon-upgrade.service never took the request - is '
+            'isemon-upgrade.path installed and running? (./install.sh --upgrade once on the '
+            'command line puts it in)')
+    return None
+
+
+def _maintenance_upgraded(store, row, up):
+    by = up.get('by') or ''
+    if up.get('was'):
+        # In maintenance before the upgrade began: left so.
+        keep = dict(row)
+        keep.pop('upgrade', None)
+        _maintenance_write(keep)
+    else:
+        maintenance_set(store, False, '', by)
+    store.add_event('control', '%s is %s %s%s' % (
+        maintenance_host(), 'back at' if up.get('back') else 'upgraded to', __version__,
+        ', checked, back in service' if not up.get('was') else ' - still in maintenance, as it '
+        'was before'), who=by)
+    return 'done'
+
+
+def _maintenance_upgrade_failed(store, row, up, said):
+    by = up.get('by') or ''
+    target = str(up.get('version') or '')
+    # Already running the new version, and it did not pass: kept out - it is
+    # the broken version that would be put in service. Still the version
+    # that was there: back in service - a failed upgrade must not leave a
+    # working server out. (otp 1.0.59, 1.0.61)
+    broken_new = __version__ == target and not up.get('same')
+    said = str(said)[:400]
+    if broken_new:
+        said = '%s - left in maintenance: it runs %s, which did not pass its checks' % (
+            said, __version__)
+    store.add_event('control', 'the upgrade of %s to %s failed: %s' % (
+        maintenance_host(), target, said), 'bad', who=by)
+    log('the upgrade to %s failed: %s' % (target, said), 'error')
+    if broken_new:
+        keep = dict(row)
+        keep.pop('upgrade', None)
+        keep.update(why=('the upgrade to %s failed: %s' % (target, said))[:200], at=time.time())
+        _maintenance_write(keep)
+    elif up.get('was'):
+        keep = dict(row)
+        keep.pop('upgrade', None)
+        _maintenance_write(keep)
+    else:
+        maintenance_set(store, False, '', by)
+    return 'failed'
+
+
+def maintenance_view():
+    """For the pages and --status: the row, and whether an upgrade holds it."""
+    m = maintenance_now()
+    out = {'on': bool(m.get('on')), 'why': m.get('why') or '', 'by': m.get('by') or '',
+           'at': m.get('at') or 0}
+    if m.get('held'):
+        out['held'] = True
+    if isinstance(m.get('upgrade'), dict):
+        out['upgrade'] = m['upgrade'].get('version') or ''
+    return out
+
+
 UPGRADE_PATH_UNIT = '/etc/systemd/system/isemon-upgrade.path'
 
 
@@ -70915,11 +71177,38 @@ class Upgrades(object):
                 # Root checks it again against its own copy's floor; this one
                 # (what the database has seen) can only raise it.
                 req.update(downgrade=True, floor=self.floor())
-            write_replacing(self.folder() / 'status.json', json.dumps({
-                'id': ident, 'state': 'running', 'version': pk['version'], 'at': time.time(),
-                'progress': {'pct': 1, 'words': 'waiting for root', 'step': 0, 'total': 0,
-                             'began': time.time()}}), 0o640)
-            write_replacing(self.folder() / 'request.json', json.dumps(req), 0o640)
+            # Out of service first (1.10.266, as otp does each node): the
+            # health check says 503 until the new version answers. Not for
+            # a version from before maintenance - nothing there would take
+            # it out again.
+            held = None
+            if self.ver_tuple(pk['version']) >= self.ver_tuple(MAINT_SINCE):
+                was = maintenance_row()
+                held = {'id': ident, 'version': pk['version'], 'was': bool(was.get('on')),
+                        'back': back, 'same': pk['version'] == __version__,
+                        'by': by or 'the page', 'at': time.time()}
+                if was.get('on'):
+                    keep = dict(was)
+                    keep['upgrade'] = held
+                    _maintenance_write(keep)
+                else:
+                    maintenance_set(self.daemon.store, True, '%s %s' % (
+                        'going back to' if back else 'upgrade to', pk['version']),
+                        by or 'the page', upgrade=held)
+            try:
+                write_replacing(self.folder() / 'status.json', json.dumps({
+                    'id': ident, 'state': 'running', 'version': pk['version'],
+                    'at': time.time(),
+                    'progress': {'pct': 1, 'words': 'waiting for root', 'step': 0, 'total': 0,
+                                 'began': time.time()}}), 0o640)
+                write_replacing(self.folder() / 'request.json', json.dumps(req), 0o640)
+            except OSError:
+                if held and not held['was']:
+                    maintenance_set(self.daemon.store, False, '', by or 'the page')
+                elif held:
+                    _maintenance_write({k: v for k, v in maintenance_row().items()
+                                        if k != 'upgrade'})
+                raise
             self.daemon.store.add_event('control', ('going back to isemon %s was started - the '
                                                     'database is left as it is' if back else
                                                     'an upgrade to isemon %s was started from the '
@@ -70952,7 +71241,13 @@ class Upgrades(object):
                                                 '/usr/local/lib/isemon/release-keys')) else [],
                 'run': st or None, 'log': [l for l in lines if l.strip()],
                 'running': self.running(), 'online': self.online_view(),
-                'back': self.back_view()}
+                'back': self.back_view(), 'maintenance': maintenance_view(),
+                # The nodes (1.10.266), as otp's pane lists them: one, this
+                # server - no other node, no VIP address to hand over.
+                'nodes': [{'name': socket.gethostname().split('.')[0], 'me': True,
+                           'alive': True, 'version': __version__, 'at': time.time(),
+                           'started': getattr(self.daemon, 'started', 0),
+                           'maintenance': maintenance_view()}]}
 
     # ---- new versions from the web (1.10.228) ---------------------------------
     # upgrade_url is asked once a day (upgrade_check) and when Look now is
@@ -73596,6 +73891,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             return self.send_json({'ok': True, 'version': __version__,
                                    'uptime': time.time() - self.daemon.started,
                                    'users': self.daemon.users_counted(),
+                                   # In maintenance (1.10.266): healthz.php
+                                   # says 503. Only whether - never why.
+                                   'maintenance': bool(maintenance_now().get('on')),
                                    'database': {
                                        'ok': not said, 'trouble': said,
                                        'engine': str(want.get('engine') or ''),
@@ -74739,6 +75037,16 @@ class ApiHandler(BaseHTTPRequestHandler):
             body = self.body()
             act = str(body.get('action') or '')
             try:
+                # This server out of service and back (1.10.266), as otp's
+                # Maintenance button on a node.
+                if act == 'maintenance':
+                    on = body.get('on') in (True, 1, '1', 'on', 'true')
+                    maintenance_by_hand(daemon.store, on, str(body.get('why') or '').strip(),
+                                        me.get('name') or '')
+                    out = daemon.upgrades.page(True)
+                    out['message'] = '%s: maintenance %s' % (maintenance_host(),
+                                                             'on' if on else 'off')
+                    return self.send_json(out)
                 if act == 'start':
                     daemon.upgrades.start(me.get('name') or '')
                     out = daemon.upgrades.page(True)
@@ -77612,6 +77920,8 @@ def cmd_status(args, pal, store):
         return 0
     pal.title('isemon %s on %s' % (data['version'], data['host']))
     pal.kv('running for', human_span(data['uptime']))
+    # In maintenance (1.10.266): said only when it is, with why.
+    pal.kv('state', maintenance_words(pal, data.get('maintenance')))
     # A change waiting to be kept (1.10.228).
     for line in NetPower.trial_words(data.get('trials') or []):
         pal.warn(line)
@@ -81158,6 +81468,48 @@ def cmd_upgrade_status(args, pal, store):
     return 0
 
 
+def maintenance_words(pal, m):
+    """In service, or in maintenance with why, who and since when."""
+    m = m if isinstance(m, dict) else {}
+    if not m.get('on'):
+        return pal.ok_text('in service')
+    bits = [b for b in (m.get('why'), m.get('by'),
+                        ('since ' + stamp(m['at'])) if m.get('at') else '') if b]
+    return pal.warn_text('IN MAINTENANCE') + ' - healthz.php says 503' + (
+        ' (%s)' % ' · '.join(bits) if bits else '')
+
+
+def cmd_maintenance(args, pal, store):
+    """isemon --maintenance on|off|status (1.10.266, as otp's): this server
+    out of service - healthz.php says 503 - and back."""
+    if args.maintenance == 'status':
+        row = maintenance_row()
+        if as_json(args, dict(maintenance_view(), on=bool(row.get('on')), why=row.get('why') or '',
+                              by=row.get('by') or '', at=row.get('at') or 0,
+                              node=maintenance_host())):
+            return 0 if not row.get('on') else 3
+        if row.get('on'):
+            print('%s: in maintenance since %s%s' % (
+                maintenance_host(), stamp(float(row.get('at') or 0)),
+                (' - ' + row['why']) if row.get('why') else ''))
+        else:
+            print('%s: in service' % maintenance_host())
+        return 0 if not row.get('on') else 3
+    on = args.maintenance == 'on'
+    why = (args.why or 'on the command line') if on else ''
+    status, data = api_call('/api/upgrade', 'POST', {'action': 'maintenance', 'on': on,
+                                                     'why': why},
+                            session=cli_session(store))
+    if status == 0:
+        # The daemon is not running: written here, read when it starts.
+        maintenance_by_hand(store, on, why, 'command line')
+    elif not need_daemon(pal, status, data):
+        return 1
+    pal.good('%s: %s' % (maintenance_host(), 'in maintenance - healthz.php says 503, the logs '
+                         'are read and banning goes on' if on else 'back in service'))
+    return 0
+
+
 def cmd_check(args, pal, store):
     """Is everything that should be running, running?"""
     bad = 0
@@ -81168,6 +81520,11 @@ def cmd_check(args, pal, store):
     else:
         pal.bad('  the daemon is NOT answering: %s' % (data.get('error') or status))
         bad += 1
+    # In maintenance (1.10.266): said, not counted as trouble - it was asked.
+    m = maintenance_row()
+    if m.get('on') or (status == 200 and data.get('maintenance')):
+        pal.warn('  this server is IN MAINTENANCE - healthz.php says 503%s'
+                 % ((' (%s)' % m['why']) if m.get('why') else ''))
     failed_name = str(CONFIG.get('ise_failed_name') or 'CISE_Failed_Attempts.log')
     # An installation that has said it has no ISE is not missing its logs.
     ise_on = (1 if CONFIG.get('ise') is None else int(CONFIG.get('ise') or 0))
@@ -81761,6 +82118,12 @@ class Console(object):
         if st.get('_answered') is False:
             out.append(('the daemon is not answering (isemon --status)', 'bad'))
             return out
+        # As otp's bar (1.0.133): only when it really is - the record is
+        # {'on': False, ...} when it is not - and with why. (1.10.266)
+        m = st.get('maintenance')
+        if isinstance(m, dict) and m.get('on') is True:
+            out.append(('THIS SERVER IS IN MAINTENANCE - healthz.php says 503%s' % (
+                (' (%s)' % m['why']) if m.get('why') else ''), 'warn'))
         if st.get('blacklist_on') is False:
             out.append(('BANNING IS OFF - nobody is being kept out', 'warn'))
         db = st.get('database') or {}
@@ -84444,6 +84807,24 @@ class Console(object):
                 return
             self.live(lambda: self.show_live('--downgrade', ver, '--yes'))
 
+        def maint():
+            # As otp's (Cluster - Maintenance of this node), for one server
+            # (1.10.266).
+            m = (self.st or {}).get('maintenance')
+            on = isinstance(m, dict) and m.get('on') is True
+            r = self.choose('Maintenance of this server', [
+                ('on', 'Into maintenance - healthz.php says 503'),
+                ('off', 'Back into service')], 'It is %s now.' % (
+                    'IN MAINTENANCE' if on else 'in service'), cur=1 if on else 0)
+            if r == 'on':
+                why = self.ask_one('Into maintenance', 'why', 'from the console', help_=(
+                    'Shown to the other administrators. The logs are read and banning goes '
+                    'on meanwhile.'))
+                if why is not None:
+                    self.act('--maintenance', 'on', '--why', why)
+            elif r == 'off':
+                self.act('--maintenance', 'off')
+
         return self.sub('Upgrades', [
             ('1', 'Look for a new version on the web now', lambda: self.act('--upgrade-check')),
             ('2', 'Upgrade from the web, with its progress', online),
@@ -84452,6 +84833,7 @@ class Console(object):
             ('4', 'Upgrade from a package file', install),
             ('5', 'What the last upgrade from the pages did', lambda: self.act('--web-status')),
             ('6', 'Go back to an older version', back),
+            ('7', 'Maintenance of this server', maint),
         ])
 
     @staticmethod
@@ -84677,7 +85059,8 @@ def main(argv=None):
     act.add_argument('--unban', metavar='ADDR', help='let one back in ("all" for everybody)')
     act.add_argument('--minutes', type=int, metavar='N', help='how long --ban lasts')
     act.add_argument('--forever', action='store_true', help='--ban with no end')
-    act.add_argument('--why', metavar='TEXT', help='the reason written beside it')
+    act.add_argument('--why', metavar='TEXT', help='the reason written beside it (a ban; '
+                     '--maintenance on)')
     act.add_argument('--whitelist', action='store_true',
                      help='the addresses nothing may ever ban')
     act.add_argument('--allow', metavar='ADDR', help='add one to the whitelist')
@@ -84739,6 +85122,10 @@ def main(argv=None):
     act.add_argument('--downgrade', metavar='VERSION', dest='downgrade',
                      help='go back to an older version from upgrade_url - only as far back as '
                           'is safe; the database is left as it is (--yes: do not ask)')
+    act.add_argument('--maintenance', choices=('on', 'off', 'status'),
+                     help='this server out of service (healthz.php says 503; the logs are '
+                          'read and banning goes on) or back; status says which (with --why '
+                          'TEXT: why, for the events)')
     act.add_argument('--upgrade-status', action='store_true', dest='upgrade_status',
                      help='the last upgrade, the package waiting, and what the web has')
 
@@ -85001,6 +85388,7 @@ def main(argv=None):
         (args.web_status, cmd_web_status),
         (args.upgrade_check, cmd_upgrade_check), (bool(args.upgrade_online), cmd_upgrade_online),
         (args.upgrade_follow, cmd_upgrade_follow), (args.upgrade_status, cmd_upgrade_status),
+        (bool(args.maintenance), cmd_maintenance),
         (args.downgrade_check, cmd_downgrade_check), (bool(args.downgrade), cmd_downgrade),
         (args.time or args.time_step, cmd_time),
         (args.net, cmd_net), (args.reboot or args.poweroff, cmd_power),

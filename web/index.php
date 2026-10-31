@@ -3793,6 +3793,38 @@ function srcText(el) {
     background:var(--panel2);font-size:11.5px;color:var(--tx-dim);overflow-x:auto}
   .tls-rows{border-top:1px solid var(--line)}
   /* ---- upgrades ---- */
+  /* Upgrades and maintenance as otp draws them (1.10.266): the package in a
+     box of its own, root's words in a block, the bars of the upgrade. */
+  #pane-upgrade .notice{padding:12px 14px;border-radius:10px;margin:0 0 16px;border:1px solid var(--line);
+    background:var(--panel2);font-size:14px}
+  #pane-upgrade .notice.good{border-color:rgba(63,185,80,.45);background:var(--ok-bg)}
+  #pane-upgrade .notice.bad{border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
+  #pane-upgrade .notice b{display:block;margin-bottom:2px}
+  #pane-upgrade pre.lines{white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:60vh;overflow:auto;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}
+  #pane-upgrade details.fold pre.lines{margin:0 8px 8px}
+  #pane-upgrade .up-bar{margin:6px 0 10px}
+  #pane-upgrade .up-bar.wide{margin:4px 0 14px}
+  #pane-upgrade td.up-how{min-width:180px;width:26%}
+  #pane-upgrade td.up-how .up-bar{margin:0}
+  #pane-upgrade .up-bar .says{font-size:12px;color:var(--tx-dim);margin-top:4px;overflow:hidden;text-overflow:ellipsis}
+  #pane-upgrade .up-bar.good .bar span{background:var(--ok)}
+  #pane-upgrade .up-bar.bad .bar span{background:var(--crit)}
+  #pane-upgrade table.up-plan-table{table-layout:fixed;width:100%}
+  #pane-upgrade table.up-plan-table th:nth-child(1),#pane-upgrade table.up-plan-table td:nth-child(1){width:12%}
+  #pane-upgrade table.up-plan-table th:nth-child(2),#pane-upgrade table.up-plan-table td:nth-child(2){width:16%}
+  #pane-upgrade table.up-plan-table th:nth-child(3),#pane-upgrade table.up-plan-table td:nth-child(3){width:24%}
+  #pane-upgrade table.up-plan-table th:nth-child(4),#pane-upgrade table.up-plan-table td:nth-child(4){width:38%}
+  #pane-upgrade table.up-plan-table th:nth-child(5),#pane-upgrade table.up-plan-table td:nth-child(5){width:10%}
+  #pane-upgrade table.up-plan-table td{vertical-align:top;overflow-wrap:anywhere}
+  #pane-upgrade #up-drop{margin-top:4px}
+  #pane-upgrade td.rowtools{text-align:right;white-space:nowrap}
+  /* This server in maintenance (1.10.266): a band under the header. */
+  .maintband{margin:0 0 14px;padding:10px 14px;border-radius:10px;border:1px solid rgba(210,153,34,.45);
+    background:var(--warn-bg);color:var(--warn);font-size:13.5px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .maintband b{letter-spacing:.4px;text-transform:uppercase}
+  .maintband .why{color:var(--tx-dim)}
+  .maintband .btn{margin-left:auto}
   .up-box{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding:12px 14px;border-radius:12px;
     background:var(--ok-bg);border:1px solid rgba(63,185,80,.35)}
   .up-lines{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-height:380px;
@@ -4248,6 +4280,9 @@ function srcText(el) {
 <!-- A change that could cut the server off, waiting to be kept (1.10.228):
      a new network, or a change of the firewall. -->
 <div id="trials" class="trials" hidden></div>
+<!-- This server in maintenance (1.10.266, as otp's header says it): only when
+     it really is, with why - its health check says 503 meanwhile. -->
+<div id="maint-band" class="maintband" hidden></div>
 
 <!-- What the directory says has changed since somebody remembered it. On
      every page rather than on the Domain page: an account appearing in the
@@ -5043,7 +5078,7 @@ function srcText(el) {
     <button type="button" data-pane="backup" data-icon="archive" title="Backups of everything to another machine - FTP, FTPS, SFTP, SCP, SMB or a folder - locked with a password, on a schedule, and putting one back.">Backups</button>
     <button type="button" data-pane="carry"   data-icon="download" title="Everything that makes this installation what it is, as one file to carry to another machine.">Export and import</button>
     <div class="ctl-group">Monitoring and updates</div>
-    <button type="button" data-pane="upgrade" data-icon="download" title="A new version of isemon, put in from this page: send the signed package, press Upgrade, and root runs its install.sh --upgrade.">Upgrades</button>
+    <button type="button" data-pane="upgrade" data-icon="up" title="A new version, put in from here; this server in and out of service.">Upgrades</button>
     <button type="button" data-pane="about"   data-icon="info"   title="Version, uptime, what is being read and how long the last read took.">About</button>
   </nav>
 
@@ -6081,45 +6116,45 @@ function srcText(el) {
     </div>
   </div>
 
-  <!-- ---------- upgrades (1.10.222) ---------- -->
+  <!-- ---------- upgrades and maintenance (1.10.222; as otp's, 1.10.266) ---------- -->
   <div class="ctl-pane wr" id="pane-upgrade" hidden>
-    <div class="ctl-head">
-      <h2 class="ctl-title">Upgrades</h2>
-      <p class="ctl-lede">A new version put in from this page: send the isemon-X.Y.Z.tar.gz as it was
-        released, press Upgrade, and root checks it and runs its own install.sh --upgrade - exactly as
-        on the command line, which stays the other way to do it.</p>
-    </div>
-    <div class="card full" id="up-me-card">
-      <h2>This server</h2>
-      <div id="up-me"></div>
+    <div class="ctl-head"><h2 class="ctl-title">Upgrades and maintenance</h2>
+      <p class="ctl-lede">A new version put in from here: send the package, and this server is
+        upgraded - taken out of service first, so the load balancer and the monitoring leave it
+        alone, and brought back only once it answers again. The command line (install.sh
+        --upgrade) works as it always has.</p></div>
+    <div class="card full" id="up-nodes-card">
+      <h2>The nodes</h2>
+      <p class="note">A server in maintenance says 503 on its health check (healthz.php), so a
+        load balancer or the monitoring leaves it alone; it goes on reading the logs and
+        banning, and these pages go on working.</p>
+      <div id="up-nodes"></div>
     </div>
     <div class="card full" id="up-web-card">
       <h2>From the web</h2>
       <p class="note">Where new versions are published - the address below - is looked at once a
-        day. A newer isemon found there is offered here, and put in with one press: fetched, its
+        day. A newer isemon found there is offered here, and put in with one click: fetched, its
         signature checked like a package sent by hand, then this server upgraded. Nothing is put
         in by itself.</p>
       <div id="up-web"></div>
-      <div id="sect-upgrade" style="margin-top:18px"></div>
+      <div id="sect-upgrade"></div>
     </div>
-    <div class="card full">
-      <h2>The package</h2>
-      <div class="facts" id="up-facts"></div>
-      <div class="wr-drop admin-only" id="up-drop">
-        <input type="file" id="up-file" accept=".gz,.tgz,application/gzip" hidden>
+    <div class="card full admin-only">
+      <h2>A new version</h2>
+      <p class="note">The .tar.gz of a new isemon, as it was released. It is checked before
+        anything else: it must be signed by a release key this server trusts, every file in it
+        must be the one signed, and it must not be older than what runs here. Root checks it
+        all again before it is put in.</p>
+      <div class="drop" id="up-drop">
+        <input type="file" id="up-file" accept=".gz,.tgz,application/gzip,application/octet-stream" hidden>
         <span id="up-drop-says">Drop the isemon-X.Y.Z.tar.gz here, or press to choose it</span>
       </div>
       <div id="up-pkg"></div>
-      <div id="up-ready"></div>
-      <div class="btnrow admin-only" style="margin-top:12px">
+      <div class="btnrow" style="margin-top:10px">
         <button class="btn cmd primary" id="up-start" data-icon="play" disabled>Upgrade this server</button>
-        <button class="btn cmd" id="up-forget" data-icon="forget" hidden>Throw the package away</button>
+        <button class="btn cmd" id="up-forget" data-icon="trash" hidden>Forget the package</button>
       </div>
-    </div>
-    <div class="card full" id="up-run-card" hidden>
-      <h2>The last upgrade</h2>
-      <div id="up-run"></div>
-      <details class="fw-other"><summary>What install.sh said</summary><pre class="up-lines" id="up-log">–</pre></details>
+      <div id="up-ready"></div>
     </div>
     <div class="card full" id="up-back-card" hidden>
       <h2>Going back to an older version</h2>
@@ -6128,6 +6163,29 @@ function srcText(el) {
         exactly as it is, whatever its size, and the settings of later versions wait in it for the
         next upgrade. Root checks the package and the limit again before it puts it in.</p>
       <div id="up-back"></div>
+    </div>
+    <div class="card full" id="up-plan-card" hidden>
+      <h2>The upgrade</h2>
+      <div id="up-plan"></div>
+      <p class="note small" id="up-retry" style="min-height:1.4em;margin:6px 0 0"></p>
+    </div>
+    <div class="card full">
+      <h2>What root said last <span class="mono small muted" id="up-log-node" data-no-i18n></span></h2>
+      <p class="note"><span>The output of install.sh, the last time this server was upgraded from these pages.</span>
+        <span class="mono" data-no-i18n>/var/lib/isemon/upgrade/last.log</span></p>
+      <details class="fold" id="up-log-fold">
+        <summary>the output</summary>
+        <pre class="lines" id="up-log">–</pre>
+      </details>
+    </div>
+    <div class="card full">
+      <h2>On the command line</h2>
+      <p class="note">The same, by hand, as root:</p>
+      <pre class="lines" data-no-i18n>isemon --maintenance on --why "upgrade"    # out of service
+tar xzf isemon-X.Y.Z.tar.gz && cd isemon-X.Y.Z
+./install.sh --upgrade                     # takes it out and back by itself as well
+isemon --maintenance off                   # back in service (if it was put out by hand)
+isemon --upgrade-status                    # an upgrade started on these pages</pre>
     </div>
   </div>
 
@@ -9937,6 +9995,28 @@ function logRow(l, inFolder) {
   return tr;
 }
 
+/* The band under the header while this server is in maintenance (1.10.266):
+   only when it is - never for {on: false}, the mistake otp's console bar
+   made (otp 1.0.133) - with why, who and since when. */
+function drawMaintBand(m) {
+  var band = $('maint-band');
+  if (!band) return;
+  var key = m ? [m.why, m.by, m.at].join('|') : '';
+  band.hidden = !m;
+  if (band._key === key) return;
+  band._key = key;
+  clear(band);
+  if (!m) return;
+  band.appendChild(el('b', '', 'This server is in maintenance'));
+  band.appendChild(el('span', '', 'its health check (healthz.php) says 503; the logs are read and banning goes on'));
+  var bits = [m.why, m.by].filter(function (x) { return x; });
+  if (bits.length) band.appendChild(noI18n(el('span', 'why', bits.join(' · '))));
+  if (m.at) band.appendChild(el('span', 'why', ago(m.at)));
+  var go = cmdButton('Upgrades and maintenance', 'up', 'small');
+  go.onclick = function () { showTab('settings'); showPane('upgrade'); };
+  band.appendChild(go);
+}
+
 function paintHeader(s, quiet) {
   paintPace(s && s.pace);
   /* The names that never existed come with every poll of the header, so a
@@ -9957,6 +10037,11 @@ function paintHeader(s, quiet) {
     kind = health.level;
     said = health.says || kind;
   } else if (s.blocked.now) { said = s.blocked.now + ' kept out'; }
+  /* In maintenance (1.10.266, as otp's pill): said, in yellow, unless
+     something worse is. */
+  var maint = s.maintenance && s.maintenance.on === true ? s.maintenance : null;
+  if (maint && kind !== 'crit') { kind = 'warn'; said = 'in maintenance'; }
+  drawMaintBand(maint);
   pill.className = 'pill ' + kind;
   words.textContent = said;
   pill.title = s.blacklist_on
@@ -40029,10 +40114,12 @@ function certPolicy(d) {
       }}], 'medium');
 }
 
-/* ---- Upgrades ------------------------------------------------------------ */
+/* ---- Upgrades and maintenance (1.10.222; as otp's pane, 1.10.266) -------- */
 var UP = {timer: null, last: null, misses: 0, restarting: false, loaded: ''};
-var UP_STATE = {running: ['going on', 'info'], done: ['done', 'ok'], failed: ['failed', 'crit'],
-                stuck: ['no word from root for half an hour', 'crit']};
+/* The steps of the one node there is, in otp's words. */
+var UP_STATE = {waiting: ['waiting', 'dim'], draining: ['taken out of service', 'warn'],
+                installing: ['being put in', 'info'], checking: ['checking', 'info'],
+                done: ['done', 'ok'], failed: ['failed', 'crit']};
 function upgradeSend(file) {
   return fetch('?api=upgrade-package', {method: 'POST', body: file, credentials: 'same-origin',
                headers: {'X-Isemon-Upgrade': '1', 'Content-Type': 'application/octet-stream'}})
@@ -40063,71 +40150,153 @@ function loadUpgrade(quiet) {
   api('upgrade', undefined, {quiet: !!quiet}).then(function (d) {
     UP.misses = 0;
     UP.restarting = false;
+    if ($('up-retry')) $('up-retry').textContent = '';
     if (!UP.loaded) UP.loaded = d.version;
     drawUpgrade(d);
   }).catch(function (e) {
     /* The daemon answering these pages is the one being restarted. */
     if (UP.last && UP.last.running && UP.misses++ < 200) {
       UP.restarting = true;
-      drawUpMe(UP.last);
-      drawUpgradeRun(UP.last);
+      if ($('up-retry')) $('up-retry').textContent = 'isemon is restarting - asking again…';
+      drawUpNodes(UP.last);
+      drawUpPlan(UP.last);
       upgradeAgain(2000);
       return;
     }
     oops(e);
   });
 }
-/* The bar: how far root is, the step install.sh is at, and how long it has
-   taken - and, while isemon itself restarts, that it is coming back. */
-function upgradeBar(run, d) {
-  var p = (run && run.progress) || {};
-  var state = run.state || 'running';
-  var pct = state === 'done' ? 100 : Math.max(1, Math.min(99, Number(p.pct) || 1));
-  var box = el('div', 'cert-prog');
-  if (state === 'failed' || state === 'stuck') box.style.borderColor = 'rgba(248,81,73,.45)';
-  var head = el('div', 'cert-prog-h');
-  var words = UP.restarting ? 'isemon is restarting - asking again…'
-    : (state === 'done' ? 'done' : (p.words || 'waiting for root'));
-  head.appendChild(el('span', '', words));
-  head.appendChild(noI18n(el('b', '', pct + ' %')));
-  box.appendChild(head);
-  var bar = el('div', 'cert-prog-bar');
+/* Into maintenance and back (1.10.266), as otp asks it of a node: taking it
+   out asks why, for the events; bringing it back asks nothing. */
+function maintenanceAsk(n, on, then) {
+  if (!on) {
+    api('upgrade', {action: 'maintenance', on: false}).then(function (r) { toast(r.message, 'good'); then(r); }).catch(oops);
+    return;
+  }
+  var why = null;
+  modal('Take ' + n.name + ' out of service', function (body) {
+    body.appendChild(el('p', 'note', 'Its health check (healthz.php) says 503: a load balancer and the monitoring leave it alone. It goes on reading the logs and banning, and its pages go on working.'));
+    why = wrText('', 'why - for the events', '');
+    why.id = 'maint-why';
+    body.appendChild(wrField('Why', why));
+  }, [{words: 'No, leave it', close: true},
+      {words: 'Take it out', cls: 'primary', icon: 'power', close: true, go: function () {
+        api('upgrade', {action: 'maintenance', on: true, why: (why && why.value) || ''})
+          .then(function (r) { toast(r.message, 'good'); then(r); }).catch(oops);
+      }}], true);
+}
+/* The nodes (1.10.266): otp's table, with the one this is - its version,
+   when it was heard from, in service or in maintenance, and the button. */
+function drawUpNodes(d) {
+  var host = $('up-nodes');
+  if (!host) return;
+  clear(host);
+  host.appendChild(listTable(['Node', 'Version', 'Heard from', 'State', ''], d.nodes || [], function (n) {
+    var tr = el('tr');
+    var nm = el('td');
+    nm.appendChild(noI18n(el('b', '', n.name || location.hostname)));
+    if (n.me) { nm.appendChild(document.createTextNode(' ')); nm.appendChild(el('span', 'tag info', 'this page')); }
+    tr.appendChild(nm);
+    tr.appendChild(noI18n(el('td', 'mono', n.version || '?')));
+    tr.appendChild(el('td', 'muted', UP.restarting ? 'restarting' : (n.at ? ago(n.at) : '–')));
+    var st = el('td');
+    var m = n.maintenance || {};
+    if (!n.alive) st.appendChild(el('span', 'tag crit', 'gone'));
+    else if (m.on) st.appendChild(el('span', 'tag warn', 'in maintenance'));
+    else st.appendChild(el('span', 'tag ok', 'in service'));
+    if (m.on && m.why) st.appendChild(el('span', 'sub', m.why + (m.by ? ' · ' + m.by : '') + (m.at ? ' · ' + ago(m.at) : '')));
+    tr.appendChild(st);
+    var tools = el('td', 'rowtools');
+    if (ADMIN && n.alive && !m.held) {
+      var b = cmdButton(m.on ? 'Back in service' : 'Maintenance', m.on ? 'play' : 'power', 'small');
+      b.onclick = function (ev) { ev.stopPropagation(); maintenanceAsk(n, !m.on, drawUpgrade); };
+      tools.appendChild(b);
+    }
+    tr.appendChild(tools);
+    return tr;
+  }, 'plain'));
+}
+/* The one node's step, out of what root says of the upgrade and of the
+   maintenance it put the server in. */
+function upStep(d) {
+  var run = d.run || {};
+  var m = d.maintenance || {};
+  if (run.state === 'done') return 'done';
+  if (run.state === 'failed' || run.state === 'stuck') return 'failed';
+  if (UP.restarting) return 'installing';
+  var p = run.progress || {};
+  if (Number(p.pct) >= 97) return 'checking';
+  if (!p.total && (!p.words || p.words === 'waiting for root')) return m.on ? 'draining' : 'waiting';
+  return 'installing';
+}
+function upBar(pc, kind, words, wide) {
+  var box = el('div', 'going up-bar' + (wide ? ' wide' : '') + (kind ? ' ' + kind : ''));
+  var bar = el('div', 'bar');
   var fill = el('span', '');
-  fill.style.width = pct + '%';
-  if (state === 'failed' || state === 'stuck') fill.style.background = 'var(--crit)';
-  if (state === 'done') fill.style.background = 'var(--ok)';
+  fill.style.width = Math.max(0, Math.min(100, pc)) + '%';
   bar.appendChild(fill);
   box.appendChild(bar);
-  var began = Number(p.began) || Number(run.at) || 0;
-  var gone = began ? Math.max(0, (state === 'running' ? Date.now() / 1000 : Number(run.at) || Date.now() / 1000) - began) : 0;
-  var mm = function (sec) { sec = Math.round(sec); return Math.floor(sec / 60) + ':' + ('0' + (sec % 60)).slice(-2); };
-  var bits = [];
-  if (p.total) bits.push('step ' + Math.min(p.step, p.total) + ' of ' + p.total + ' of install.sh');
-  if (gone) bits.push(mm(gone) + (state === 'running' ? ' so far, usually one to two minutes' : ''));
-  box.appendChild(el('div', 'cert-prog-s', bits.join(' · ')));
+  if (words) box.appendChild(wide ? el('div', 'says', words) : noI18n(el('div', 'says', words)));
   return box;
 }
-function drawUpgradeRun(d) {
+/* The upgrade (otp's card): to which version, by whom, how far - the whole
+   and the node - and what root said. */
+function drawUpPlan(d) {
   var run = d.run;
-  $('up-run-card').hidden = !run;
-  var host = $('up-run');
-  clear(host);
+  $('up-plan-card').hidden = !run;
+  var ph = $('up-plan');
+  clear(ph);
   if (!run) return;
-  var top = el('div', 'up-step');
-  var w = UP_STATE[run.state] || UP_STATE.running;
-  top.appendChild(el('span', 'tag ' + w[1], w[0]));
-  top.appendChild(el('span', '', 'to ' + (run.version || '?')));
-  if (run.at) top.appendChild(el('span', 'muted', ago(run.at)));
-  host.appendChild(top);
-  host.appendChild(upgradeBar(run, d));
-  if (run.state === 'failed' && run.said) host.appendChild(el('p', 'note bad', run.said));
-  else if (run.state === 'failed') host.appendChild(el('p', 'note bad', 'install.sh ended with '
-    + run.rc + ' - what it said is below. The program that was there stays, or is put back by '
-    + 'install.sh itself.'));
-  if (run.state === 'done' && d.version !== UP.loaded && UP.loaded) {
+  var state = run.state || 'running';
+  var step = upStep(d);
+  var p = run.progress || {};
+  var pc = state === 'done' ? 100 : (state === 'failed' || state === 'stuck' ? 100 : Math.max(1, Math.min(99, Number(p.pct) || 1)));
+  var back = !!(d.package && d.package.downgrade && d.package.version === run.version);
+  ph.appendChild(el('p', 'note', (back ? 'Going back to ' : 'To ') + (run.version || '?') + ' · started by '
+    + (run.by || (d.maintenance || {}).by || '?') + ' · ' + ago(Number(p.began) || run.at)
+    + ' · ' + ({running: 'going on', done: 'done', failed: 'failed', stuck: 'failed'})[state]));
+  var kind = step === 'failed' ? 'bad' : (step === 'done' ? 'good' : '');
+  ph.appendChild(upBar(pc, kind, num(pc) + ' % · ' + (step === 'done' ? 1 : 0) + ' of 1 node(s) done', true));
+  var nodes = d.nodes || [{name: d.host}];
+  var t = listTable(['Node', 'Step', 'How far', 'What happened', 'When'], [nodes[0]], function (n) {
+    var tr = el('tr');
+    tr.appendChild(noI18n(el('td', 'mono', n.name || d.host || '')));
+    var w = UP_STATE[step] || UP_STATE.waiting;
+    var c = el('td');
+    c.appendChild(el('span', 'tag ' + w[1], w[0]));
+    tr.appendChild(c);
+    var bt = el('td', 'up-how');
+    bt.appendChild(upBar(pc, kind, step === 'installing' && p.words && p.total
+      ? num(pc) + ' % · ' + p.words : num(pc) + ' %'));
+    tr.appendChild(bt);
+    var said = '';
+    if (UP.restarting) said = 'isemon is restarting - asking again…';
+    else if (state === 'failed') said = run.said || ('install.sh ended with ' + run.rc);
+    else if (state === 'stuck') said = 'no word from root for half an hour';
+    else if (state === 'done' && run.version && run.version !== d.version) said = 'install.sh said it was done, but isemon ' + d.version + ' is still the version answering - see what root said below, and the journal (journalctl -u isemon).';
+    else if (state === 'done') said = d.version + ', checked, back in service';
+    else if (step === 'draining') said = 'in maintenance; waiting for root';
+    else said = p.words || '';
+    var sc = el('td', 'small' + (state === 'failed' || state === 'stuck' ? ' bad' : ''), said);
+    if ((run.tail || []).length) {
+      var more = el('details', 'fold');
+      more.appendChild(el('summary', '', 'what install.sh said'));
+      more.appendChild(noI18n(el('pre', 'lines', run.tail.join('\n'))));
+      if (UP.tailOpen) more.open = true;
+      more.ontoggle = function () { UP.tailOpen = more.open; };
+      sc.appendChild(more);
+    }
+    tr.appendChild(sc);
+    tr.appendChild(el('td', 'muted', run.at ? ago(run.at) : '–'));
+    return tr;
+  }, 'plain');
+  (t.querySelector('table') || t).classList.add('up-plan-table');
+  ph.appendChild(t);
+  var m = d.maintenance || {};
+  if (state === 'failed' && m.on) ph.appendChild(el('p', 'note bad', 'Left in maintenance: ' + (m.why || '') + ' - Back in service, above, once it is put right.'));
+  if (state === 'done' && d.version !== UP.loaded && UP.loaded) {
     var r = el('p', 'note good');
-    r.appendChild(document.createTextNode('isemon ' + d.version + ' is running. This page is still the '
-      + 'one of ' + UP.loaded + '. '));
+    r.appendChild(document.createTextNode('This page is still the one of ' + UP.loaded + '. '));
     var a = cmdButton('Load it again', 'refresh', 'small primary');
     /* ...once the new version answers what the page asks first (1.10.243):
        loaded in the seconds after its start, the page's first question
@@ -40141,7 +40310,6 @@ function drawUpgradeRun(d) {
             setTimeout(again, 2000);
             return null;
           }
-          /* ...and its status, what the page draws everything from. */
           return api('status&logs=0', undefined, {quiet: true}).then(function () {
             location.reload();
           });
@@ -40152,18 +40320,8 @@ function drawUpgradeRun(d) {
       again();
     };
     r.appendChild(a);
-    host.appendChild(r);
-  } else if (run.state === 'done' && run.version && run.version !== d.version) {
-    /* Said done, and yet the old version answers: said so, not hidden. */
-    host.appendChild(el('p', 'note bad', 'install.sh said it was done, but isemon ' + d.version
-      + ' is still the version answering - see what install.sh said below, and the journal '
-      + '(journalctl -u isemon).'));
-  } else if (run.state === 'done') {
-    host.appendChild(el('p', 'note good', 'isemon ' + d.version + ' is running.'));
+    ph.appendChild(r);
   }
-  var lg = $('up-log');
-  lg.textContent = (d.log || []).length ? d.log.join('\n') : '–';
-  noI18n(lg);
 }
 /* New versions on the web (1.10.228): what the address had when it was last
    asked, and one press to put the newest in - as otp draws it. */
@@ -40320,73 +40478,41 @@ function upGoBack(p, button) {
         }).catch(oops).then(function () { busy(button, false); });
       }}], true);
 }
-/* This server, as the other pages of the same author have it at the top of
-   Upgrades (1.10.235): which machine, the version it runs, since when, and
-   whether it is running, being upgraded or restarting. */
-function drawUpMe(d) {
-  var host = $('up-me');
-  if (!host) return;
-  clear(host);
-  var state = UP.restarting ? ['restarting', 'warn'] : (d.running ? ['upgrading', 'info'] : ['running', 'ok']);
-  host.appendChild(listTable(['Machine', 'Version', 'Running since', 'State'], [d], function () {
-    var tr = el('tr');
-    var m = el('td');
-    m.appendChild(noI18n(el('b', '', d.host || location.hostname)));
-    m.appendChild(document.createTextNode(' '));
-    m.appendChild(el('span', 'tag info', 'this page'));
-    tr.appendChild(m);
-    tr.appendChild(noI18n(el('td', 'mono', d.version || '–')));
-    var since = el('td', 'muted');
-    since.textContent = d.started ? span((d.now || Date.now() / 1000) - d.started) : '–';
-    if (d.started) since.title = new Date(d.started * 1000).toLocaleString();
-    tr.appendChild(since);
-    var st = el('td');
-    st.appendChild(el('span', 'tag ' + state[1], state[0]));
-    tr.appendChild(st);
-    return tr;
-  }, 'plain'));
-}
 function drawUpgrade(d) {
   UP.last = d;
-  drawUpMe(d);
+  drawUpNodes(d);
   drawUpWeb(d);
   drawUpBack(d);
-  var facts = $('up-facts');
-  clear(facts);
-  var fact = function (k, v) {
-    var one = el('div', 'fact');
-    one.appendChild(el('span', 'k', k));
-    one.appendChild(noI18n(el('span', 'v', v)));
-    facts.appendChild(one);
-  };
-  fact('Running now', 'isemon ' + d.version);
-  fact('Packages are taken signed by', (d.keys || []).join(', ') || 'no key yet');
-  fact('Root’s half', d.unit ? 'isemon-upgrade.path' : 'not installed');
+  var running = !!d.running;
+  /* The package (otp's: a box of its own, what changed folded under it). */
   var pk = $('up-pkg');
   clear(pk);
   if (d.package) {
     var p = d.package;
-    var box = el('div', 'up-box');
-    box.appendChild(noI18n(el('b', '', 'isemon ' + p.version)));
+    var box = el('div', 'notice ' + (p.downgrade ? 'warn' : 'good'));
+    box.style.marginTop = '12px';
+    var head = el('b', '');
+    head.appendChild(noI18n(el('span', '', 'isemon ' + p.version)));
+    if (p.downgrade) head.appendChild(el('span', '', ' - older: ready to go back to'));
+    box.appendChild(head);
     box.appendChild(el('div', 'small', 'signed by ' + (p.signed_by || '?') + ' · ' + bytes(p.bytes)
-      + ' · ' + num(p.files) + ' files · sent by ' + (p.by || '?') + ' · ' + ago(p.at)));
-    if (p.installed && !p.newer) box.appendChild(el('div', 'small', 'the same version as the one running - putting it in again is a retry'));
+      + ' · sent by ' + (p.by || '?') + ' · ' + ago(p.at)));
+    if (p.installed && !p.newer && !p.downgrade) box.appendChild(el('div', 'small', 'the same version as the one running - putting it in again is a retry'));
     pk.appendChild(box);
     if (p.changelog) {
-      var det = el('details', 'fw-other');
+      var det = el('details', 'fold');
       det.appendChild(el('summary', '', 'What changed in ' + p.version));
-      det.appendChild(noI18n(el('pre', 'up-lines', p.changelog)));
+      det.appendChild(noI18n(el('pre', 'lines', p.changelog)));
       pk.appendChild(det);
     }
   }
-  var running = !!d.running;
   $('up-forget').hidden = !d.package || running;
   $('up-start').disabled = !d.package || running || !d.unit;
   /* A package waiting to go back to (1.10.232) says so on its button. */
   var backPk = !!(d.package && d.package.downgrade);
   if ($('up-start').dataset.back !== String(backPk)) {
     $('up-start').dataset.back = String(backPk);
-    setButtonIcon($('up-start'), backPk ? 'undo' : 'play', backPk ? 'Go back to this version' : 'Upgrade this server');
+    setButtonIcon($('up-start'), backPk ? 'undo' : 'play', backPk ? 'Go back on this server' : 'Upgrade this server');
     $('up-start').classList.toggle('danger', backPk);
     $('up-start').classList.toggle('primary', !backPk);
   }
@@ -40401,25 +40527,34 @@ function drawUpgrade(d) {
       + 'every package would be refused. ./install.sh --upgrade puts the key in.'));
   }
   $('up-drop').hidden = !d.may || running;
-  drawUpgradeRun(d);
+  drawUpPlan(d);
+  if ($('up-log-node')) $('up-log-node').textContent = d.host || '';
+  var lg = $('up-log');
+  lg.textContent = (d.log || []).length ? d.log.join('\n') : '–';
+  noI18n(lg);
   if (running) upgradeAgain(2000);
+  else upgradeAgain(15000);
   explainWhatWasDrawn($('pane-upgrade'));
 }
 if ($('up-drop')) {
   (function () {
     var box = $('up-drop');
     var idle = 'Drop the isemon-X.Y.Z.tar.gz here, or press to choose it';
+    var sending = false;
     function send(file) {
-      if (!file) return;
+      if (!file || sending) return;
+      sending = true;
       $('up-drop-says').textContent = 'checking ' + file.name + ' (' + bytes(file.size) + ')…';
       upgradeSend(file).then(function (d) {
+        sending = false;
         toast(d.message || 'checked', 'good');
         $('up-drop-says').textContent = idle;
         drawUpgrade(d);
       }).catch(function (e) {
+        sending = false;
         $('up-drop-says').textContent = idle;
         modal('The package was not taken', function (body) {
-          body.appendChild(el('p', 'note', String(e.message || e)));
+          body.appendChild(el('p', 'note bad', String(e.message || e)));
         }, null, true);
       });
     }
@@ -40439,16 +40574,17 @@ if ($('up-drop')) {
       var p = (UP.last || {}).package || {};
       if (p.downgrade) { upGoBack({version: p.version, waiting: true}, $('up-start')); return; }
       confirmThen('Upgrade this server to ' + htmlText(p.version || '?'),
-        'Root checks the package again and runs its install.sh --upgrade. isemon restarts once, '
-        + 'for a few seconds: these pages stop answering for that moment and the logs are read on '
-        + 'from where they were. The database, the settings and the accounts are kept.',
+        'This server is the only one: it is taken out of service first - healthz.php says 503 - '
+        + 'then root checks the package again and runs its install.sh --upgrade, and it is brought '
+        + 'back once the new version answers. isemon restarts once, for a few seconds: these pages '
+        + 'stop answering for that moment and the logs are read on from where they were.',
         'Upgrade', function () {
           api('upgrade', {action: 'start'}).then(function (r) {
             toast(r.message, 'good');
             UP.loaded = UP.loaded || (UP.last || {}).version || '';
             drawUpgrade(r);
           }).catch(oops);
-        });
+        }, true);
     };
     $('up-forget').onclick = function () {
       confirmThen('Throw the package away', 'The uploaded package is deleted; send it again to upgrade.',

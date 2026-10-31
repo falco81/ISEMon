@@ -1578,6 +1578,19 @@ if [[ -n "$DO_UPGRADE" ]]; then
         fail "an upgrade from the pages is running (isemon-upgrade.service); wait for it, then run this again"
     fi
     [[ -d "$LIB_DIR" ]] || fail "$LIB_DIR does not exist — this looks like a first install, so run it without --upgrade"
+    # Out of service while it is upgraded, and back once it answers (1.10.266,
+    # as otp's install.sh): healthz.php says 503 meanwhile. Only when it was
+    # in service and the version running knows maintenance; one from the
+    # pages has done it already, and one put in by hand is left as it was.
+    MAINT_MINE=""
+    if [[ -z "${ISEMON_UPGRADE_FROM_PAGES:-}" && -z "$DRY_RUN" ]] \
+            && systemctl is-active --quiet isemon.service 2>/dev/null \
+            && python3 -I "$SOURCE_DIR/isemon.py" --maintenance status >/dev/null 2>&1; then
+        if python3 -I "$SOURCE_DIR/isemon.py" --maintenance on --why "install.sh --upgrade" >/dev/null 2>&1; then
+            MAINT_MINE=1
+            say "in maintenance while it is upgraded: healthz.php says 503"
+        fi
+    fi
     # What isemon uses and this machine lacks, put in first (1.10.236).
     progress 1 "the packages isemon uses"
     ensure_packages upgrade
@@ -1758,6 +1771,14 @@ if [[ -n "$DO_UPGRADE" ]]; then
             web_group_tighten
         fi
         run "$BIN_LINK" --check || true
+        if [[ -n "$MAINT_MINE" ]]; then
+            for _ in 1 2 3 4 5; do
+                "$BIN_LINK" --maintenance off >/dev/null 2>&1 && { MAINT_MINE=""; break; }
+                sleep 2
+            done
+            if [[ -z "$MAINT_MINE" ]]; then good "back in service"
+            else warn "still in maintenance: isemon --maintenance off puts it back in service"; fi
+        fi
     else
         # Saying "look at the journal" is asking somebody to go and find what
         # this already knows. Show it.

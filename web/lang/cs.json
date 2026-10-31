@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.263",
+  "version": "1.10.266",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -1040,13 +1040,17 @@
    "source": "a new token was confirmed",
    "text": "nový token byl potvrzen"
   },
-  "s.a-new-version-of-isemon-put.f7e69738": {
-   "source": "A new version of isemon, put in from this page: send the signed package, press Upgrade, and root runs its install.sh --upgrade.",
-   "text": "Nová verze isemonu nainstalovaná z této stránky: pošlete podepsaný balíček, stiskněte Upgrade a root spustí jeho install.sh --upgrade."
+  "s.a-new-version-put-in-from.310890eb": {
+   "source": "A new version, put in from here; this server in and out of service.",
+   "text": "Nová verze, nasazená odtud; tento server mimo provoz a zpět."
   },
-  "s.a-new-version-put-in-from.99c24b6f": {
-   "source": "A new version put in from this page: send the isemon-X.Y.Z.tar.gz as it was released, press Upgrade, and root checks it and runs its own install.sh --upgrade - exactly as on the command line, which stays the other way to do it.",
-   "text": "Nová verze nainstalovaná z této stránky: pošlete isemon-X.Y.Z.tar.gz tak, jak byl vydán, stiskněte Upgrade a root ho zkontroluje a spustí jeho vlastní install.sh --upgrade – přesně jako na příkazové řádce, která zůstává druhou cestou."
+  "s.a-new-version-put-in-from.a89458f0": {
+   "source": "A new version put in from here: send the package, and this server is upgraded - taken out of service first, so the load balancer and the monitoring leave it alone, and brought back only once it answers again. The command line (install.sh --upgrade) works as it always has.",
+   "text": "Nová verze nasazená odtud: pošlete balíček a tento server se aktualizuje – nejdřív se vyřadí z provozu, takže ho balancer i monitoring nechají být, a vrátí se teprve, až zase odpovídá. Příkazová řádka (install.sh --upgrade) funguje jako vždy."
+  },
+  "s.a-new-version.bb5a8700": {
+   "source": "A new version",
+   "text": "Nová verze"
   },
   "s.a-newer-ban-of-the-same.2fc75ba1": {
    "source": "A newer ban of the same address took over from this one - by hand, or the counting reaching a higher rung - so this line was closed and the newer one carries on.",
@@ -1383,6 +1387,10 @@
   "s.a-self-signed-certificate-for-the.3b182f4c": {
    "source": "A self-signed certificate for the dashboard",
    "text": "Certifikát podepsaný sám sebou pro dashboard"
+  },
+  "s.a-server-in-maintenance-says-503.63454312": {
+   "source": "A server in maintenance says 503 on its health check (healthz.php), so a load balancer or the monitoring leaves it alone; it goes on reading the logs and banning, and these pages go on working.",
+   "text": "Server v údržbě vrací na kontrole stavu (healthz.php) 503, takže ho balancer i monitoring nechají být; dál čte logy a blokuje a tyto stránky fungují dál."
   },
   "s.a-service-runs-as.b7dbdc10": {
    "source": "A service runs as",
@@ -3660,6 +3668,10 @@
    "source": "Azerbaijan",
    "text": "Ázerbájdžán"
   },
+  "s.back-in-service.879b64e2": {
+   "source": "Back in service",
+   "text": "Zpět do provozu"
+  },
   "s.back-in-starts-every-address-at.ce0c6dc6": {
    "source": "back in, starts every address at the bottom of the ladder again, and takes our entries off the router to match.",
    "text": "zpět, vrací každou adresu na nejnižší stupeň blokace a odpovídajícím způsobem odebere naše záznamy z routeru."
@@ -4047,6 +4059,10 @@
   "s.being-in-this-group-means-being.ef2e5b78": {
    "source": "Being in this group means being able to change everything: ban, unban, the router, settings, accounts. Press Find the groups to pick it from the directory rather than typing it. More than one, separated by semicolons.",
    "text": "Členství v této skupině znamená možnost měnit všechno: blokovat, odblokovat, router, nastavení, účty. Stiskněte Najít skupiny a vyberte ji z adresáře, místo abyste ji psali ručně. Více skupin oddělte středníkem."
+  },
+  "s.being-put-in.cb48aa9f": {
+   "source": "being put in",
+   "text": "nasazuje se"
   },
   "s.being-worked-out-again-now.464189af": {
    "source": "being worked out again now",
@@ -4863,6 +4879,10 @@
   "s.checking-the-directory.9c27ee71": {
    "source": "Checking the directory",
    "text": "Kontroluji adresář"
+  },
+  "s.checking.28cfb479": {
+   "source": "checking",
+   "text": "kontroluje se"
   },
   "s.checks-passed.9cc46760": {
    "source": "checks passed",
@@ -6331,6 +6351,10 @@
   "s.dragover.365d5e5e": {
    "source": "dragover",
    "text": "dragover"
+  },
+  "s.draining.d4a53a10": {
+   "source": "draining",
+   "text": "vyřazuje se z provozu"
   },
   "s.drop-a-database-file-here-or.8c67dff3": {
    "source": "Drop a database file here, or press to choose one",
@@ -8908,6 +8932,10 @@
    "source": "Forget the key",
    "text": "Zapomenout klíč"
   },
+  "s.forget-the-package.a89b2272": {
+   "source": "Forget the package",
+   "text": "Zapomenout balíček"
+  },
   "s.forget-them.630c4150": {
    "source": "Forget them",
    "text": "Zapomenout je"
@@ -9376,6 +9404,10 @@
    "source": "globe",
    "text": "globe"
   },
+  "s.go-back-on-this-server.e25bd941": {
+   "source": "Go back on this server",
+   "text": "Vrátit tento server"
+  },
   "s.go-back-over-every-address-already.ddbded41": {
    "source": "Go back over every address already in the records and ask what it is called. Addresses are asked about as records arrive and as pages are drawn, so everything since this was switched on has an answer and nothing from before it does; this is the one pass that fills in the rest.",
    "text": "Projít všechny adresy, které už jsou v záznamech, a zjistit jejich jména. Na adresy se dotazuje, když přicházejí záznamy a když se vykreslují stránky, takže vše od zapnutí této funkce má odpověď a nic z doby předtím ne; toto je jediný průchod, který doplní zbytek."
@@ -9412,10 +9444,6 @@
    "source": "Go back to the authorities this machine trusts.",
    "text": "Vrátit se k autoritám, kterým tento stroj důvěřuje."
   },
-  "s.go-back-to-this-version.6ea7735b": {
-   "source": "Go back to this version",
-   "text": "Vrátit se k této verzi"
-  },
   "s.go-back.e84712fb": {
    "source": "Go back",
    "text": "Vrátit se"
@@ -9444,6 +9472,10 @@
    "source": "Going back to the old network",
    "text": "Návrat ke staré síti"
   },
+  "s.going-back-to.8624232b": {
+   "source": "Going back to",
+   "text": "Návrat na"
+  },
   "s.going-back.5796fbfa": {
    "source": "going back",
    "text": "vrací se"
@@ -9463,6 +9495,10 @@
   "s.going.1a198519": {
    "source": "going",
    "text": "probíhá"
+  },
+  "s.gone.a6dfdeaa": {
+   "source": "gone",
+   "text": "nedostupný"
   },
   "s.good-until.cd5037b6": {
    "source": "Good until",
@@ -9647,6 +9683,10 @@
   "s.heard-and-mcdonald-islands.f86cbcc2": {
    "source": "Heard and McDonald Islands",
    "text": "Heardův ostrov a McDonaldovy ostrovy"
+  },
+  "s.heard-from.2e71916b": {
+   "source": "Heard from",
+   "text": "Ozval se"
   },
   "s.heaviest.f9fcb8f6": {
    "source": "heaviest",
@@ -10652,6 +10692,14 @@
    "source": "In its own words:",
    "text": "Jeho vlastními slovy:"
   },
+  "s.in-maintenance-waiting-for-root.f7accbb1": {
+   "source": "in maintenance; waiting for root",
+   "text": "v údržbě; čeká se na roota"
+  },
+  "s.in-maintenance.d0a9c895": {
+   "source": "in maintenance",
+   "text": "v údržbě"
+  },
   "s.in-now.83a4aa3c": {
    "source": "In now",
    "text": "Dovnitř teď"
@@ -10667,6 +10715,10 @@
   "s.in-radius-log-that-are-a.9ea67d74": {
    "source": "in radius.log - that are a VPN gateway, comma separated, * a wildcard: vpn*, fortigate. A sign-in whose calling station is an address is the VPN whichever client asked. A VPN refusal is the only thing here that can earn a ban.",
    "text": "v radius.log – které jsou VPN branou, oddělené čárkami, * jako zástupný znak: vpn*, fortigate. Přihlášení, jehož volající stanice je adresa, je VPN, ať se ptal kterýkoli klient. Odmítnutí do VPN je to jediné zde, co může vést k banu."
+  },
+  "s.in-service.13e4db86": {
+   "source": "in service",
+   "text": "v provozu"
   },
   "s.in-settings-nobody-has-ever-had.100ecc8f": {
    "source": "in Settings: nobody has ever had it, so this is guessing rather than mistyping.",
@@ -10819,6 +10871,10 @@
   "s.install-the-rest-api-package.a6729543": {
    "source": "Install the REST API package",
    "text": "Nainstalujte balíček REST API"
+  },
+  "s.installing.9b8f6d88": {
+   "source": "installing",
+   "text": "nasazuje se"
   },
   "s.instead-a-whole-copy-which-goes.1173454e": {
    "source": "instead — a whole copy, which goes back into any engine, but several times the size of a dump. To have dumps:",
@@ -11392,6 +11448,10 @@
    "source": "isemon looks after its rules",
    "text": "isemon se stará o svá pravidla"
   },
+  "s.isemon-maintenance-on-why-upgrade-out.41022a6d": {
+   "source": "isemon --maintenance on --why \"upgrade\" # out of service tar xzf isemon-X.Y.Z.tar.gz && cd isemon-X.Y.Z ./install.sh --upgrade # takes it out and back by itself as well isemon --maintenance off # back in service (if it was put out by hand) isemon --upgrade-status # an upgrade started on these pages",
+   "text": "isemon --maintenance on --why \"upgrade\" # out of service tar xzf isemon-X.Y.Z.tar.gz && cd isemon-X.Y.Z ./install.sh --upgrade # takes it out and back by itself as well isemon --maintenance off # back in service (if it was put out by hand) isemon --upgrade-status # an upgrade started on these pages"
+  },
   "s.isemon-makes-an-authority-of-its.07a41c48": {
    "source": "isemon makes an authority of its own and a certificate from it. Its authority is then pasted into otp as \"isemon has one from its own CA\".",
    "text": "isemon vytvoří vlastní autoritu a od ní certifikát. Jeho autorita se pak vloží do otp jako \"isemon has one from its own CA\"."
@@ -11495,10 +11555,6 @@
   "s.isemon-tls-zip-from-otp-settings.b6fe94ed": {
    "source": "isemon-tls.zip, from otp → Settings → isemon → Encrypted sending → Encrypt… → \"otp makes isemon a certificate\" → Make the file for isemon… It carries otp's authority and the nodes too.",
    "text": "isemon-tls.zip, z otp → Settings → isemon → Encrypted sending → Encrypt… → \"otp makes isemon a certificate\" → Make the file for isemon… Obsahuje i autoritu otp a uzly."
-  },
-  "s.isemon-upgrade-path.b85365f5": {
-   "source": "isemon-upgrade.path",
-   "text": "isemon-upgrade.path"
   },
   "s.isemon-users.0feb94ea": {
    "source": "isemon --users",
@@ -11799,6 +11855,14 @@
   "s.its-every-source-is-switched-off.84feb249": {
    "source": "its every source is switched off",
    "text": "všechny jeho zdroje jsou vypnuté"
+  },
+  "s.its-health-check-healthz-php-says.27498752": {
+   "source": "Its health check (healthz.php) says 503: a load balancer and the monitoring leave it alone. It goes on reading the logs and banning, and its pages go on working.",
+   "text": "Jeho kontrola stavu (healthz.php) vrací 503: balancer i monitoring ho nechají být. Dál čte logy a blokuje a jeho stránky fungují dál."
+  },
+  "s.its-health-check-healthz-php-says.f55e53e4": {
+   "source": "its health check (healthz.php) says 503; the logs are read and banning goes on",
+   "text": "jeho kontrola stavu (healthz.php) vrací 503; logy se čtou a blokuje se dál"
   },
   "s.its-https-port.a9fcbca8": {
    "source": "Its HTTPS port",
@@ -13164,9 +13228,9 @@
    "source": "Look at what it would do",
    "text": "Ukázat, co by udělal"
   },
-  "s.look-for-a-new-version-once.f607af26": {
-   "source": "Look for a new version once a day",
-   "text": "Hledat novou verzi jednou denně"
+  "s.look-for-a-new-version-every.8c240090": {
+   "source": "Look for a new version every day",
+   "text": "Hledat novou verzi každý den"
   },
   "s.look-for-updates-every-day.0bdc384e": {
    "source": "Look for updates every day",
@@ -13491,6 +13555,14 @@
   "s.main.b28b7af6": {
    "source": "main",
    "text": "main"
+  },
+  "s.maintenance.5b30e2c5": {
+   "source": "maintenance",
+   "text": "údržba"
+  },
+  "s.maintenance.94de303b": {
+   "source": "Maintenance",
+   "text": "Údržba"
   },
   "s.make-a-certificate-here-for-the.dea53ab1": {
    "source": "make a certificate here for the names otp reaches this machine by (comma or space between them), by an authority of this machine's own, and put it in; that authority's certificate is printed (or written to --out), to paste into otp",
@@ -14636,10 +14708,6 @@
    "source": "No key yet — make one, or let it sign in with a password.",
    "text": "Zatím žádný klíč — vytvořte ho, nebo nechte přihlašování heslem."
   },
-  "s.no-key-yet.4eb24632": {
-   "source": "no key yet",
-   "text": "zatím žádný klíč"
-  },
   "s.no-ladder-every-block-is-the.7467b844": {
    "source": "No ladder — every block is the single length above",
    "text": "Bez stupňů — každá blokace má jedinou délku uvedenou výše"
@@ -15191,10 +15259,6 @@
   "s.not-in-use.736d0c06": {
    "source": "not in use",
    "text": "nepoužívá se"
-  },
-  "s.not-installed.d49fe2c4": {
-   "source": "not installed",
-   "text": "není nainstalovaný"
   },
   "s.not-keeping-up.62f0d407": {
    "source": "Not keeping up",
@@ -16116,6 +16180,10 @@
    "source": "Older ones are taken away too - 0: only the count above decides.",
    "text": "Starší se odeberou také – 0: rozhoduje jen počet výše."
   },
+  "s.older-ready-to-go-back-to.8079c702": {
+   "source": "- older: ready to go back to",
+   "text": "– starší: připraveno k návratu"
+  },
   "s.olomouc.10046f85": {
    "source": "Olomouc",
    "text": "Olomouc"
@@ -16283,6 +16351,10 @@
   "s.on-the-command-line-this-one.be675cd4": {
    "source": "on the command line this one is",
    "text": "na příkazovém řádku je to"
+  },
+  "s.on-the-command-line.0381f586": {
+   "source": "On the command line",
+   "text": "Z příkazové řádky"
   },
   "s.on-the-day.7066a520": {
    "source": "On the day",
@@ -17591,10 +17663,6 @@
   "s.package-on-a-pfsense.a3bd0b91": {
    "source": "package on a pfSense.",
    "text": "na pfSense."
-  },
-  "s.packages-are-taken-signed-by.e6fd9786": {
-   "source": "Packages are taken signed by",
-   "text": "Přijímají se balíčky podepsané"
   },
   "s.packetmark.1ecb8c18": {
    "source": "packetmark",
@@ -19640,10 +19708,6 @@
    "source": "Room it takes",
    "text": "Zabrané místo"
   },
-  "s.root-checks-the-package-again-and.b0d688ed": {
-   "source": "Root checks the package again and runs its install.sh --upgrade. isemon restarts once, for a few seconds: these pages stop answering for that moment and the logs are read on from where they were. The database, the settings and the accounts are kept.",
-   "text": "Root balíček znovu zkontroluje a spustí jeho install.sh --upgrade. isemon se jednou restartuje, na pár sekund: tyto stránky na tu chvíli přestanou odpovídat a logy se pak čtou dál od místa, kde byly. Databáze, nastavení i účty zůstanou zachovány."
-  },
   "s.root-delay-dispersion.e3bc6970": {
    "source": "Root delay / dispersion",
    "text": "Root delay / disperze"
@@ -19695,10 +19759,6 @@
   "s.root-s-half-of-this-server.2295f614": {
    "source": "Root's half of this server does not do updates of the system yet (install.sh --upgrade puts it in).",
    "text": "Rootova část tohoto serveru zatím aktualizace systému nedělá (vloží ji install.sh --upgrade)."
-  },
-  "s.root-s-half.eec0bc02": {
-   "source": "Root’s half",
-   "text": "Rootova část"
   },
   "s.root-said.9873d2f0": {
    "source": "Root said:",
@@ -19867,10 +19927,6 @@
   "s.running-on.68f7347e": {
    "source": "Running on",
    "text": "Běží na"
-  },
-  "s.running-since.180dbfb4": {
-   "source": "Running since",
-   "text": "Běží od"
   },
   "s.running.3c49d9cc": {
    "source": "running",
@@ -21028,10 +21084,6 @@
    "source": ", so an old local password cannot be a way in past a disabled domain account. Somebody who is",
    "text": ", aby staré místní heslo nemohlo být cestou dovnitř okolo zakázaného doménového účtu. Někdo, kdo je"
   },
-  "s.so-far-usually-one-to-two.3460e29f": {
-   "source": "so far, usually one to two minutes",
-   "text": "zatím, obvykle jedna až dvě minuty"
-  },
   "s.so-none-of-them-is-counted.b7075529": {
    "source": ", so none of them is counted towards a ban. It is here because it is happening, not because it is about to earn anything.",
    "text": ", takže žádný z nich se nezapočítává do blokace. Je tu proto, že se to děje, ne proto, že by si to mělo něco vysloužit."
@@ -22140,6 +22192,10 @@
    "source": "Take it off",
    "text": "Odebrat"
   },
+  "s.take-it-out.56748aa4": {
+   "source": "Take it out",
+   "text": "Odebrat"
+  },
   "s.take-one-off-it.37587b47": {
    "source": "take one off it",
    "text": "odebrat z něj položku"
@@ -22259,6 +22315,10 @@
   "s.taken-off.bb5f7e5f": {
    "source": "taken off",
    "text": "sundáno"
+  },
+  "s.taken-out-of-service.998775a4": {
+   "source": "taken out of service",
+   "text": "vyřazen z provozu"
   },
   "s.taken-out-save-to-keep-it.0676775d": {
    "source": "taken out — save to keep it",
@@ -24788,10 +24848,6 @@
    "source": "the last upgrade, the package waiting, and what the web has",
    "text": "poslední upgrade, čekající balíček a co je na webu"
   },
-  "s.the-last-upgrade.08608510": {
-   "source": "The last upgrade",
-   "text": "Poslední aktualizace"
-  },
   "s.the-last-week.eca69f38": {
    "source": "the last week",
    "text": "poslední týden"
@@ -25316,6 +25372,10 @@
    "source": "the node that wrote it",
    "text": "uzel, který to zapsal"
   },
+  "s.the-nodes.a8415f91": {
+   "source": "The nodes",
+   "text": "Uzly"
+  },
   "s.the-northern-mariana-islands.c446451c": {
    "source": "the Northern Mariana Islands",
    "text": "Severní Mariany"
@@ -25464,6 +25524,14 @@
    "source": "The OTP logs",
    "text": "Logy OTP"
   },
+  "s.the-output-of-install-sh-the.578c0214": {
+   "source": "The output of install.sh, the last time this server was upgraded from these pages.",
+   "text": "Výstup install.sh z poslední aktualizace tohoto serveru z těchto stránek."
+  },
+  "s.the-output.8fdb58e6": {
+   "source": "the output",
+   "text": "výstup"
+  },
   "s.the-pacific-islands.fa83e9c8": {
    "source": "the Pacific Islands",
    "text": "Tichomořské ostrovy"
@@ -25483,10 +25551,6 @@
   "s.the-package-was-not-taken.6b8e5b63": {
    "source": "The package was not taken",
    "text": "Balíček nebyl přijat"
-  },
-  "s.the-package.bac6d617": {
-   "source": "The package",
-   "text": "Balíček"
   },
   "s.the-packet-mark-mikrotik.cf11d8d5": {
    "source": "the packet mark (MikroTik)",
@@ -25852,9 +25916,9 @@
    "source": "The reason this entry is on the router, read out of the comment this daemon writes beside every entry it makes. An entry without one of those comments is somebody else’s and is never touched.",
    "text": "Důvod, proč je tento záznam na routeru, přečtený z komentáře, který tento démon zapisuje ke každému záznamu, jež vytvoří. Záznam bez takového komentáře patří někomu jinému a nikdy se ho nedotkne."
   },
-  "s.the-reason-written-beside-it.81d69028": {
-   "source": "the reason written beside it",
-   "text": "důvod zapsaný u ní"
+  "s.the-reason-written-beside-it-a.2074bf5c": {
+   "source": "the reason written beside it (a ban; --maintenance on)",
+   "text": "důvod zapsaný vedle (blokace; --maintenance on)"
   },
   "s.the-record-is-on-the-clipboard.bb2de0f3": {
    "source": "the record is on the clipboard",
@@ -26027,6 +26091,10 @@
   "s.the-same-but-only-where-five.94923e50": {
    "source": "The same, but only where five lists agree - about five thousand addresses. Fewer, and harder to argue with.",
    "text": "Totéž, ale jen tam, kde se shodne pět seznamů – asi pět tisíc adres. Méně, a hůř se s nimi polemizuje."
+  },
+  "s.the-same-by-hand-as-root.9ae08b73": {
+   "source": "The same, by hand, as root:",
+   "text": "Totéž ručně, jako root:"
   },
   "s.the-same-copy-with-the-keys.6ee3f9d8": {
    "source": "The same copy, with the keys kept beside the database in it: settings.key, which opens every password and private key in the database, banfeed.key and the routers’ host keys - and config.json to read. Put back on a new machine (Restore from this file), that machine is this one again, certificate, firewall and all, with nothing to type in. As secret as the key itself. From the shell: isemon --backup --full.",
@@ -26412,6 +26480,10 @@
    "source": "The tail of",
    "text": "Konec souboru"
   },
+  "s.the-tar-gz-of-a-new.43e8c676": {
+   "source": "The .tar.gz of a new isemon, as it was released. It is checked before anything else: it must be signed by a release key this server trusts, every file in it must be the one signed, and it must not be older than what runs here. Root checks it all again before it is put in.",
+   "text": "Soubor .tar.gz nové verze isemon, tak jak byl vydán. Nejdřív se zkontroluje: musí být podepsaný klíčem vydání, kterému tento server věří, každý soubor v něm musí být ten podepsaný a nesmí být starší než to, co tu běží. Root to celé zkontroluje znovu, než ho nasadí."
+  },
   "s.the-tcp-flags.9f146fce": {
    "source": "the TCP flags",
    "text": "příznaky TCP"
@@ -26635,6 +26707,10 @@
   "s.the-updates-put-in-by-themselves.35a616bf": {
    "source": "The updates put in by themselves in the window below, as by hand - started once in it, never tried over and over. Off until switched on.",
    "text": "Aktualizace se nainstalují samy v okně níže, jako ručně – spustí se v něm jednou, nikdy se nezkoušejí znovu a znovu. Vypnuto, dokud se nezapne."
+  },
+  "s.the-upgrade.eb29e19a": {
+   "source": "The upgrade",
+   "text": "Aktualizace"
   },
   "s.the-uploaded-package-is-deleted-send.9cc567fc": {
    "source": "The uploaded package is deleted; send it again to upgrade.",
@@ -27628,9 +27704,17 @@
    "source": "This server cannot put a version in by itself yet: isemon-upgrade.path is not installed. Upgrade it once on the command line (./install.sh --upgrade from the 1.10.222 package or later), which puts it in.",
    "text": "Tento server zatím neumí nainstalovat verzi sám: isemon-upgrade.path není nainstalovaný. Jednou ho upgradujte z příkazové řádky (./install.sh --upgrade z balíčku 1.10.222 nebo novějšího), který ho nainstaluje."
   },
+  "s.this-server-is-in-maintenance.06d15777": {
+   "source": "This server is in maintenance",
+   "text": "Tento server je v údržbě"
+  },
   "s.this-server-is-restarting.f4a119ba": {
    "source": "This server is restarting",
    "text": "Tento server se restartuje"
+  },
+  "s.this-server-is-the-only-one.1fd217f7": {
+   "source": "This server is the only one: it is taken out of service first - healthz.php says 503 - then root checks the package again and runs its install.sh --upgrade, and it is brought back once the new version answers. isemon restarts once, for a few seconds: these pages stop answering for that moment and the logs are read on from where they were.",
+   "text": "Tento server je jediný: nejdřív se vyřadí z provozu – healthz.php vrací 503 – pak root balíček znovu zkontroluje a spustí jeho install.sh --upgrade a server se vrátí do provozu, jakmile nová verze odpovídá. isemon se jednou restartuje, na pár sekund: tyto stránky na tu chvíli přestanou odpovídat a logy se čtou dál od místa, kde skončily."
   },
   "s.this-server-looks-what-dnf-or.bf15a0f0": {
    "source": "This server looks what dnf (or apt) has waiting, every day at the time below - for the cards here. Nothing is put in.",
@@ -27663,10 +27747,6 @@
   "s.this-server.086b51a0": {
    "source": "this server",
    "text": "tento server"
-  },
-  "s.this-server.d75b2349": {
-   "source": "This server",
-   "text": "Tento server"
   },
   "s.this-session-in-the-list.a5d2cc0c": {
    "source": "This session in the list",
@@ -28692,13 +28772,13 @@
    "source": "Upgrade",
    "text": "Aktualizovat"
   },
+  "s.upgrades-and-maintenance.0f141194": {
+   "source": "Upgrades and maintenance",
+   "text": "Aktualizace a údržba"
+  },
   "s.upgrades.fc7c9106": {
    "source": "Upgrades",
    "text": "Aktualizace"
-  },
-  "s.upgrading.501d5804": {
-   "source": "upgrading",
-   "text": "probíhá upgrade"
   },
   "s.upload-the-certificate.f0f5d1c9": {
    "source": "Upload the certificate…",
@@ -29332,9 +29412,9 @@
    "source": "What inspection stopped although a policy let it through: a protocol the inspection engine refused, and - where the management centre sends them - the file and intrusion policies. Press for the list.",
    "text": "Co inspekce zastavila, ačkoli to politika pustila: protokol, který inspekční engine odmítl, a - pokud je management centre posílá - politiky pro soubory a průniky. Stiskněte pro seznam."
   },
-  "s.what-install-sh-said.6395a99c": {
-   "source": "What install.sh said",
-   "text": "Co řekl install.sh"
+  "s.what-install-sh-said.4a29d242": {
+   "source": "what install.sh said",
+   "text": "co řekl install.sh"
   },
   "s.what-is-at-upgrade-url-now.3d36e2c7": {
    "source": "what is at upgrade_url now, and whether it is newer",
@@ -29587,6 +29667,10 @@
   "s.what-root-has-in-place-of.36ef59ee": {
    "source": "what root has in place of what Settings asked: nginx, TLS, the firewall, and the last upgrade from the pages",
    "text": "co má root nasazeno z toho, o co požádalo Nastavení: nginx, TLS, firewall a poslední upgrade ze stránek"
+  },
+  "s.what-root-said-last.64440234": {
+   "source": "What root said last",
+   "text": "Co naposledy řekl root"
   },
   "s.what-root-said.ef1e7b10": {
    "source": "What root said:",
@@ -30312,9 +30396,9 @@
    "source": "Where new versions are looked for",
    "text": "Kde se hledají nové verze"
   },
-  "s.where-new-versions-are-published-the.e54f6ba4": {
-   "source": "Where new versions are published - the address below - is looked at once a day. A newer isemon found there is offered here, and put in with one press: fetched, its signature checked like a package sent by hand, then this server upgraded. Nothing is put in by itself.",
-   "text": "Kde se vydávají nové verze – adresa níže – se kontroluje jednou denně. Novější isemon, který se tam najde, se tu nabídne a nainstaluje jedním stisknutím: stáhne se, jeho podpis se zkontroluje jako u ručně nahraného balíčku a tento server se pak upgraduje. Nic se nenainstaluje samo."
+  "s.where-new-versions-are-published-the.1565f8c8": {
+   "source": "Where new versions are published - the address below - is looked at once a day. A newer isemon found there is offered here, and put in with one click: fetched, its signature checked like a package sent by hand, then this server upgraded. Nothing is put in by itself.",
+   "text": "Místo, kde vycházejí nové verze – adresa níže – se kontroluje jednou denně. Novější isemon, které se tam najde, se nabídne tady a nainstaluje jedním kliknutím: stáhne se, ověří se jeho podpis stejně jako u ručně nahraného balíčku a pak se tento server aktualizuje. Samo se nic neinstaluje."
   },
   "s.where-on-it.06a45b83": {
    "source": "Where on it",
@@ -31279,6 +31363,10 @@
   "s.whose-searches.bb4d3ea3": {
    "source": "whose searches?",
    "text": "čí hledání?"
+  },
+  "s.why-for-the-events.411cc168": {
+   "source": "why - for the events",
+   "text": "proč – pro události"
   },
   "s.why-it-ended-or-was-refused.c1583f6f": {
    "source": "why it ended or was refused",
@@ -32290,6 +32378,10 @@
    "source": "{0} changed: {1}{2}",
    "text": "{0} změněno: {1}{2}"
   },
+  "p.checked-back-in-service.f4cfb4e7": {
+   "source": "{0}, checked, back in service",
+   "text": "{0}, zkontrolováno, zpět v provozu"
+  },
   "p.checking.6bf1aab3": {
    "source": "checking {0} ({1})…",
    "text": "kontroluji {0} ({1})…"
@@ -32942,13 +33034,13 @@
    "source": ", inside the VPN {0}",
    "text": ", uvnitř VPN {0}"
   },
-  "p.install-sh-ended-with-what-it.d4017fdd": {
-   "source": "install.sh ended with {0} - what it said is below. The program that was there stays, or is put back by install.sh itself.",
-   "text": "install.sh skončil s {0} – co řekl, je níže. Program, který tam byl, zůstává, nebo ho install.sh sám vrátí."
+  "p.install-sh-ended-with.639457f8": {
+   "source": "install.sh ended with {0}",
+   "text": "install.sh skončil s {0}"
   },
-  "p.install-sh-said-it-was-done.205313f1": {
-   "source": "install.sh said it was done, but isemon {0} is still the version answering - see what install.sh said below, and the journal (journalctl -u isemon).",
-   "text": "install.sh hlásil hotovo, ale odpovídá stále verze isemon {0} – viz níže, co install.sh řekl, a journal (journalctl -u isemon)."
+  "p.install-sh-said-it-was-done.a342886c": {
+   "source": "install.sh said it was done, but isemon {0} is still the version answering - see what root said below, and the journal (journalctl -u isemon).",
+   "text": "install.sh řekl, že je hotovo, ale odpovídá stále isemon {0} – viz, co řekl root níže, a žurnál (journalctl -u isemon)."
   },
   "p.install.6a243fd8": {
    "source": "{0} — install {1}",
@@ -33069,14 +33161,6 @@
   "p.isemon-backup.d84ba074": {
    "source": "isemon-backup-{0}",
    "text": "isemon-backup-{0}"
-  },
-  "p.isemon-is-running-this-page-is.9c79a3dc": {
-   "source": "isemon {0} is running. This page is still the one of {1}.",
-   "text": "Běží isemon {0}. Tato stránka je stále ta z {1}."
-  },
-  "p.isemon-is-running.88270f3a": {
-   "source": "isemon {0} is running.",
-   "text": "Běží isemon {0}."
   },
   "p.isemon-is-there-this-server-runs.177cccd2": {
    "source": "isemon {0} is there - this server runs {1} (looked {2})",
@@ -33253,6 +33337,10 @@
   "p.left-alone.d82de1d9": {
    "source": "; left alone: {0}",
    "text": "; ponecháno beze změny: {0}"
+  },
+  "p.left-in-maintenance-back-in-service.6cef864f": {
+   "source": "Left in maintenance: {0} - Back in service, above, once it is put right.",
+   "text": "Ponecháno v údržbě: {0} – Zpět do provozu, výše, až se to napraví."
   },
   "p.left.001884b8": {
    "source": "{0} left",
@@ -33677,6 +33765,10 @@
   "p.nowhere-known-yet.9d992c33": {
    "source": "Nowhere known yet.{0}",
    "text": "Zatím nikde známo.{0}"
+  },
+  "p.of-1-node-s-done.f86cc4a2": {
+   "source": "{0} % · {1} of 1 node(s) done",
+   "text": "{0} % · hotovo {1} z 1 uzlů"
   },
   "p.of-address-es.b3793d68": {
    "source": "{0} of {1} address(es)",
@@ -34314,9 +34406,9 @@
    "source": "{0} shown",
    "text": "{0} zobrazeno"
   },
-  "p.signed-by-files-sent-by.f0312596": {
-   "source": "signed by {0} · {1} · {2} files · sent by {3} · {4}",
-   "text": "podepsal {0} · {1} · {2} souborů · poslal {3} · {4}"
+  "p.signed-by-sent-by.5edd7026": {
+   "source": "signed by {0} · {1} · sent by {2} · {3}",
+   "text": "podepsal {0} · {1} · nahrál {2} · {3}"
   },
   "p.signed-in-the-domain.8b30ce38": {
    "source": "signed in · the domain{0}",
@@ -34406,6 +34498,10 @@
    "source": "Started by {0}, {1}",
    "text": "Spustil {0}, {1}"
   },
+  "p.started-by.a78488bd": {
+   "source": "{0}{1} · started by {2} · {3} · {4}",
+   "text": "{0}{1} · spustil {2} · {3} · {4}"
+  },
   "p.started-over.8ed3b487": {
    "source": "started over {0}×",
    "text": "spuštěno znovu {0}×"
@@ -34413,10 +34509,6 @@
   "p.started.fa323bb3": {
    "source": "Started {0}.",
    "text": "Začalo {0}."
-  },
-  "p.step-of-of-install-sh.7bce2a06": {
-   "source": "step {0} of {1} of install.sh",
-   "text": "krok {0} z {1} install.sh"
   },
   "p.step-of.9070eb21": {
    "source": "step {0} of {1}",
@@ -34493,6 +34585,10 @@
   "p.take-off-the-whitelist.c0de5804": {
    "source": "Take {0} off the whitelist",
    "text": "Odebrat {0} z whitelistu"
+  },
+  "p.take-out-of-service.c3161700": {
+   "source": "Take {0} out of service",
+   "text": "Vyřadit {0} z provozu"
   },
   "p.take-out-of-your-searches.915864f7": {
    "source": "Take “{0}” out of your searches",
@@ -35053,6 +35149,10 @@
   "p.this-one-and-other-s.da89176c": {
    "source": "— this one and {0} other(s)",
    "text": "— tento a {0} další"
+  },
+  "p.this-page-is-still-the-one.a49f25fd": {
+   "source": "This page is still the one of {0}.",
+   "text": "Tato stránka je stále ta z verze {0}."
   },
   "p.this-page-s-own-guard-is.1565fe83": {
    "source": "This page’s own guard is not in force either ({0}): see docs/php2shell.md - /etc/php.d/99-php2shell.ini for the whole of PHP, .user.ini beside index.php for this page - and restart php-fpm.",
@@ -37114,6 +37214,14 @@
    "source": "Imported: the columns of {0} table(s){1}{2}",
    "text": "Importováno: sloupce {0} tabulek{1}{2}"
   },
+  "p.install-sh-ended-with-what-it.d4017fdd": {
+   "source": "install.sh ended with {0} - what it said is below. The program that was there stays, or is put back by install.sh itself.",
+   "text": "install.sh skončil s {0} – co řekl, je níže. Program, který tam byl, zůstává, nebo ho install.sh sám vrátí."
+  },
+  "p.install-sh-said-it-was-done.205313f1": {
+   "source": "install.sh said it was done, but isemon {0} is still the version answering - see what install.sh said below, and the journal (journalctl -u isemon).",
+   "text": "install.sh hlásil hotovo, ale odpovídá stále verze isemon {0} – viz níže, co install.sh řekl, a journal (journalctl -u isemon)."
+  },
   "p.is-in-use.e7aca7eb": {
    "source": "— {0}% is in use{1}.",
    "text": "— využito {0} %{1}."
@@ -37121,6 +37229,14 @@
   "p.is-kept-out-because-the-range.ef9ae82e": {
    "source": "{0} is kept out because the range {1} is banned. Letting it in lets the whole range in.",
    "text": "{0} je blokována, protože rozsah {1} je zabanovaný. Vpuštěním se dovnitř pustí celý rozsah."
+  },
+  "p.isemon-is-running-this-page-is.9c79a3dc": {
+   "source": "isemon {0} is running. This page is still the one of {1}.",
+   "text": "Běží isemon {0}. Tato stránka je stále ta z {1}."
+  },
+  "p.isemon-is-running.88270f3a": {
+   "source": "isemon {0} is running.",
+   "text": "Běží isemon {0}."
   },
   "p.isemon-lang-max-age-31536000-samesite.65e9fd43": {
    "source": "isemon_lang={0}; max-age=31536000; SameSite=Strict{1}",
@@ -37173,6 +37289,14 @@
   "p.routeros.8a81790b": {
    "source": "(RouterOS {0}{1})",
    "text": "(RouterOS {0}{1})"
+  },
+  "p.signed-by-files-sent-by.f0312596": {
+   "source": "signed by {0} · {1} · {2} files · sent by {3} · {4}",
+   "text": "podepsal {0} · {1} · {2} souborů · poslal {3} · {4}"
+  },
+  "p.step-of-of-install-sh.7bce2a06": {
+   "source": "step {0} of {1} of install.sh",
+   "text": "krok {0} z {1} install.sh"
   },
   "p.switched-on-every-ban-made-while.48516f7b": {
    "source": "Switched on, every ban made while only watched and still running is carried at once — to the firewalls, into the published list and into the access list: {0}. They can be looked through first on the Banned page, under",
@@ -37349,6 +37473,14 @@
   "s.a-key-in-the-url-a.dc8c3c8a": {
    "source": "A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and it works for a FortiGate too.",
    "text": "Klíč v URL: dlouhý náhodný klíč, který URL obsahuje a který tlačítko Nový klíč změní. Je to jediná možnost pro FMC, které nemá kam zadat heslo pro feed, a funguje i pro FortiGate."
+  },
+  "s.a-new-version-of-isemon-put.f7e69738": {
+   "source": "A new version of isemon, put in from this page: send the signed package, press Upgrade, and root runs its install.sh --upgrade.",
+   "text": "Nová verze isemonu nainstalovaná z této stránky: pošlete podepsaný balíček, stiskněte Upgrade a root spustí jeho install.sh --upgrade."
+  },
+  "s.a-new-version-put-in-from.99c24b6f": {
+   "source": "A new version put in from this page: send the isemon-X.Y.Z.tar.gz as it was released, press Upgrade, and root checks it and runs its own install.sh --upgrade - exactly as on the command line, which stays the other way to do it.",
+   "text": "Nová verze nainstalovaná z této stránky: pošlete isemon-X.Y.Z.tar.gz tak, jak byl vydán, stiskněte Upgrade a root ho zkontroluje a spustí jeho vlastní install.sh --upgrade – přesně jako na příkazové řádce, která zůstává druhou cestou."
   },
   "s.a-number-of-minutes-in-words.437d9d4f": {
    "source": "A number of minutes, in words a person reads without counting.",
@@ -37578,6 +37710,10 @@
    "source": "fulladmin or readonly",
    "text": "fulladmin nebo readonly"
   },
+  "s.go-back-to-this-version.6ea7735b": {
+   "source": "Go back to this version",
+   "text": "Vrátit se k této verzi"
+  },
   "s.how-long-a-block-lasts-said.57775b76": {
    "source": "How long a block lasts, said as the settings actually work.",
    "text": "Jak dlouho blokace trvá, vyjádřeno tak, jak nastavení skutečně fungují."
@@ -37646,6 +37782,10 @@
    "source": "isemon's firewall lets the log ports in from the log senders - see Settings → Firewall",
    "text": "firewall isemonu pouští porty logů dovnitř od odesílatelů logů - viz Nastavení → Firewall"
   },
+  "s.isemon-upgrade-path.b85365f5": {
+   "source": "isemon-upgrade.path",
+   "text": "isemon-upgrade.path"
+  },
   "s.its-key-kept-here.8938ee6b": {
    "source": ", its key kept here",
    "text": ", jeho klíč je uložen zde"
@@ -37678,6 +37818,10 @@
    "source": "Let this account change things: ban, unban, settings, the router, accounts.",
    "text": "Povolit tomuto účtu měnit věci: blokace, odblokování, nastavení, router, účty."
   },
+  "s.look-for-a-new-version-once.f607af26": {
+   "source": "Look for a new version once a day",
+   "text": "Hledat novou verzi jednou denně"
+  },
   "s.make-full-admin.487dc74c": {
    "source": "Make full admin",
    "text": "Nastavit jako plného správce"
@@ -37702,6 +37846,10 @@
    "source": "nginx keeps the files it has now; isemon no longer changes them.",
    "text": "nginx si ponechá soubory, které má teď; isemon je už nebude měnit."
   },
+  "s.no-key-yet.4eb24632": {
+   "source": "no key yet",
+   "text": "zatím žádný klíč"
+  },
   "s.no-the-one-certificate.1975debf": {
    "source": "No - the one certificate",
    "text": "Ne - jen jeden certifikát"
@@ -37713,6 +37861,10 @@
   "s.not-gated-on-the-switch-the.d98e44c9": {
    "source": "Not gated on the switch: the switch says whether to go and fetch it,",
    "text": "Nezávisí na přepínači: přepínač určuje, zda se má databáze stáhnout,"
+  },
+  "s.not-installed.d49fe2c4": {
+   "source": "not installed",
+   "text": "není nainstalovaný"
   },
   "s.not-keeping-up.02c760ec": {
    "source": "· not keeping up",
@@ -37774,6 +37926,10 @@
    "source": "Or let this page do it: install.sh sets that up when PostgreSQL is on the same machine.",
    "text": "Nebo to nechte na této stránce: install.sh to nastaví, když PostgreSQL běží na stejném stroji."
   },
+  "s.packages-are-taken-signed-by.e6fd9786": {
+   "source": "Packages are taken signed by",
+   "text": "Přijímají se balíčky podepsané"
+  },
   "s.pfctl-t-isemon-bans-t-show.f86c3c9d": {
    "source": "pfctl -t isemon_bans -T show | head",
    "text": "pfctl -t isemon_bans -T show | head"
@@ -37806,6 +37962,14 @@
    "source": "refusals a controller wrote for it - in words, or None when too few",
    "text": "odmítnutím, která pro něj zapsal řadič - slovy, nebo None, když se jich"
   },
+  "s.root-checks-the-package-again-and.b0d688ed": {
+   "source": "Root checks the package again and runs its install.sh --upgrade. isemon restarts once, for a few seconds: these pages stop answering for that moment and the logs are read on from where they were. The database, the settings and the accounts are kept.",
+   "text": "Root balíček znovu zkontroluje a spustí jeho install.sh --upgrade. isemon se jednou restartuje, na pár sekund: tyto stránky na tu chvíli přestanou odpovídat a logy se pak čtou dál od místa, kde byly. Databáze, nastavení i účty zůstanou zachovány."
+  },
+  "s.root-s-half.eec0bc02": {
+   "source": "Root’s half",
+   "text": "Rootova část"
+  },
   "s.rosapi-said-small-warn.6cc4b160": {
    "source": "rosapi-said small warn",
    "text": "rosapi-said small warn"
@@ -37814,6 +37978,10 @@
    "source": "rsa*",
    "text": "rsa*"
   },
+  "s.running-since.180dbfb4": {
+   "source": "Running since",
+   "text": "Běží od"
+  },
   "s.set-leave-empty-to-keep-it.315d92e6": {
    "source": "set — leave empty to keep it",
    "text": "nastaveno — ponechte prázdné, aby zůstalo"
@@ -37821,6 +37989,10 @@
   "s.signing-in-to-a-switch-has.6163dce2": {
    "source": "Signing in to a switch has never earned a ban here through ISE either, and the address on one of these lines is as often as not the jump host the whole of the network staff comes through. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "Přihlášení ke switchi tady ani přes ISE nikdy nevedlo k blokaci a adresa na takovém řádku je stejně často jump host, přes který chodí celý síťový tým. Je-li vypnuto, neotevře se ani jeden soubor a nic se nikde nechová jinak."
+  },
+  "s.so-far-usually-one-to-two.3460e29f": {
+   "source": "so far, usually one to two minutes",
+   "text": "zatím, obvykle jedna až dvě minuty"
   },
   "s.step-is-for-good-10-60.ad863697": {
    "source": "step is for good. \"10, 60, 1440, forever\" is ten minutes the first",
@@ -37910,9 +38082,17 @@
    "source": "The ladder, as written: a list of minutes, and whether the last step is for good. \"10, 60, 1440, forever\" is ten minutes the first time, an hour the second, a day the third and for good after that. Empty means there is no ladder and the doubling below decides.",
    "text": "Stupně blokace tak, jak jsou zapsány: seznam minut a údaj, zda poslední stupeň platí natrvalo. „10, 60, 1440, forever“ znamená deset minut napoprvé, hodinu napodruhé, den napotřetí a poté natrvalo. Prázdné znamená, že žádné stupně blokace nejsou a rozhoduje zdvojování níže."
   },
+  "s.the-last-upgrade.08608510": {
+   "source": "The last upgrade",
+   "text": "Poslední aktualizace"
+  },
   "s.the-machines-it-has-heard-from.a6e1cd1c": {
    "source": "The machines it has heard from on its own networks: address, MAC and interface.",
    "text": "Stroje, které slyšel na svých sítích: adresa, MAC a rozhraní."
+  },
+  "s.the-package.bac6d617": {
+   "source": "The package",
+   "text": "Balíček"
   },
   "s.the-page-after-this-one-further.e41c803b": {
    "source": "The page after this one — further back in time. The filters above stay as they are.",
@@ -37929,6 +38109,10 @@
   "s.the-program-that-asked.907e8ee0": {
    "source": "the program that asked",
    "text": "program, který se ptal"
+  },
+  "s.the-reason-written-beside-it.81d69028": {
+   "source": "the reason written beside it",
+   "text": "důvod zapsaný u ní"
   },
   "s.the-rest-of-the-firewall-on.bbd6c05f": {
    "source": "The rest of the firewall on this machine (read only)",
@@ -37954,6 +38138,10 @@
    "source": "this browser will not let go of the clipboard",
    "text": "tento prohlížeč nepovoluje přístup ke schránce"
   },
+  "s.this-server.d75b2349": {
+   "source": "This server",
+   "text": "Tento server"
+  },
   "s.this-signs-in-over-ssh-and.c2cbee74": {
    "source": "This signs in over ssh and touches two address lists and nothing else. Give it an account that may write",
    "text": "Přihlašuje se přes ssh a pracuje se dvěma address listy a ničím jiným. Přidělte mu účet, který smí zapisovat"
@@ -37974,6 +38162,10 @@
    "source": "Two roles and no more. A",
    "text": "Dvě role a nic víc. Role"
   },
+  "s.upgrading.501d5804": {
+   "source": "upgrading",
+   "text": "probíhá upgrade"
+  },
   "s.user-name-and-password-http-basic.e412a052": {
    "source": "User name and password: HTTP basic authentication. A FortiGate sends them (the external threat feed’s own user name and password); an FMC cannot, so an FTD fed through an FMC needs one of the other two.",
    "text": "Uživatelské jméno a heslo: HTTP basic autentizace. FortiGate je posílá (vlastní uživatelské jméno a heslo externího threat feedu); FMC to neumí, takže FTD napájené přes FMC potřebuje jednu z dalších dvou možností."
@@ -37985,6 +38177,10 @@
   "s.what-crossed-the-firewall-out-of.4265ab2e": {
    "source": "What crossed the firewall, out of its own log: every session it let through or refused, what its web filter and its SSL inspection did, who signed in to its VPN and to the firewall itself. Nothing here is ever judged and nothing here can earn anybody a ban.",
    "text": "Co prošlo firewallem, podle jeho vlastního logu: každá relace, kterou pustil nebo odmítl, co udělal jeho webový filtr a SSL inspekce, kdo se přihlásil k jeho VPN a k samotnému firewallu. Nic zde se nikdy neposuzuje a nic zde nemůže nikomu vynést blokaci."
+  },
+  "s.what-install-sh-said.6395a99c": {
+   "source": "What install.sh said",
+   "text": "Co řekl install.sh"
   },
   "s.what-ise-nps-or-another-radius.1d0275a5": {
    "source": "What ISE, NPS or another RADIUS/TACACS+ server said about the",
@@ -38025,6 +38221,10 @@
   "s.what-to-type-on-the-router.2c04a415": {
    "source": "What to type on the router",
    "text": "Co zadat na routeru"
+  },
+  "s.where-new-versions-are-published-the.e54f6ba4": {
+   "source": "Where new versions are published - the address below - is looked at once a day. A newer isemon found there is offered here, and put in with one press: fetched, its signature checked like a package sent by hand, then this server upgraded. Nothing is put in by itself.",
+   "text": "Kde se vydávají nové verze – adresa níže – se kontroluje jednou denně. Novější isemon, který se tam najde, se tu nabídne a nainstaluje jedním stisknutím: stáhne se, jeho podpis se zkontroluje jako u ručně nahraného balíčku a tento server se pak upgraduje. Nic se nenainstaluje samo."
   },
   "s.where-the-ban-came-from-ise.6eb67f35": {
    "source": "where the ban came from: ise, nps, tacacs, fw, win, manual",
