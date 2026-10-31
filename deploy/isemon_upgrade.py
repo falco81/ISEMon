@@ -559,6 +559,7 @@ def serve_request():
 
     def say_status(state='running', **more):
         status(id=run['id'], state=state, version=run['version'], pid=os.getpid(),
+               by=run.get('by') or '',
                progress={'pct': run['pct'], 'words': run['words'], 'step': run['step'],
                          'total': run['total'], 'began': run['began']}, **more)
 
@@ -596,7 +597,9 @@ def serve_request():
         name = os.path.basename(str(r.get('file') or ''))
         if not re.match(r'^isemon-[0-9.]+\.tar\.gz$', name):
             raise Refused('the request names no package')
-        run.update(id=ident, version=str(r.get('version') or '')[:20])
+        run.update(id=ident, version=str(r.get('version') or '')[:20],
+                   # Who started it, for the page's "started by" (1.10.267).
+                   by=re.sub(r'[^A-Za-z0-9@._ -]', '', str(r.get('by') or ''))[:60])
         say_status()
         rc, info, _ = put_in(os.path.join(UPGRADE_DIR, name), ident,
                              str(r.get('sha') or ''), r.get('by') or 'the pages', log_to,

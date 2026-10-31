@@ -10868,6 +10868,10 @@
    "source": "Inspected and blocked",
    "text": "Inspected and blocked"
   },
+  "s.install-sh-by-hand.8f8810bc": {
+   "source": "install.sh by hand",
+   "text": "install.sh by hand"
+  },
   "s.install-the-rest-api-package.a6729543": {
    "source": "Install the REST API package",
    "text": "Install the REST API package"

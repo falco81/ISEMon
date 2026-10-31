@@ -371,6 +371,14 @@ working.
 
 ## Version
 
+1.10.267
+
+- *Upgrades and maintenance → From the web*: a little more room between Look
+  now and the line above the settings.
+- *The upgrade* said "started by ?": root's helper wrote over the record of who
+  had asked. Who started it is kept through the upgrade now; one started
+  with install.sh on the command line says so.
+
 1.10.266
 
 - **Settings → Upgrades and maintenance**, as otp's pane, for one server

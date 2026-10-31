@@ -3973,6 +3973,8 @@ function srcText(el) {
   .modal .ot-wiz .rb-kind-tile.on{border-color:var(--info)}
   /* The certificate exported (1.10.249). */
   .modal .box.ce-box{width:min(1180px,100%)}
+  /* From the web: the Look now row a breath above the settings' line (1.10.267). */
+  #up-web{margin-bottom:18px}
   .modal .ce-fmt{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
   @media (max-width:900px){.modal .ce-fmt{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .modal .ce-fmt .rb-kind-tile{padding:9px 10px;gap:4px}
@@ -40253,7 +40255,7 @@ function drawUpPlan(d) {
   var pc = state === 'done' ? 100 : (state === 'failed' || state === 'stuck' ? 100 : Math.max(1, Math.min(99, Number(p.pct) || 1)));
   var back = !!(d.package && d.package.downgrade && d.package.version === run.version);
   ph.appendChild(el('p', 'note', (back ? 'Going back to ' : 'To ') + (run.version || '?') + ' · started by '
-    + (run.by || (d.maintenance || {}).by || '?') + ' · ' + ago(Number(p.began) || run.at)
+    + (run.by || ((d.maintenance || {}).on && (d.maintenance || {}).by) || 'install.sh by hand') + ' · ' + ago(Number(p.began) || run.at)
     + ' · ' + ({running: 'going on', done: 'done', failed: 'failed', stuck: 'failed'})[state]));
   var kind = step === 'failed' ? 'bad' : (step === 'done' ? 'good' : '');
   ph.appendChild(upBar(pc, kind, num(pc) + ' % · ' + (step === 'done' ? 1 : 0) + ' of 1 node(s) done', true));

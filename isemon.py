@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.266'
+__version__ = '1.10.267'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -71198,7 +71198,7 @@ class Upgrades(object):
             try:
                 write_replacing(self.folder() / 'status.json', json.dumps({
                     'id': ident, 'state': 'running', 'version': pk['version'],
-                    'at': time.time(),
+                    'at': time.time(), 'by': str(by or '')[:60],
                     'progress': {'pct': 1, 'words': 'waiting for root', 'step': 0, 'total': 0,
                                  'began': time.time()}}), 0o640)
                 write_replacing(self.folder() / 'request.json', json.dumps(req), 0o640)
