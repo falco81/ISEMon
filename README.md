@@ -371,6 +371,13 @@ working.
 
 ## Version
 
+1.10.256
+
+- *Download the certificate*: the popup fits without a scroll bar - the
+  formats four to a row with shorter words, the chain and the password typed
+  twice on one row, the warning in one line - and "valid until" says the date
+  (it said the seconds since 1970 for a certificate isemon looks after).
+
 1.10.255
 
 - **PHP 8.2.35 to 8.3 as well**: a PHP that had the php2shell fix of its own

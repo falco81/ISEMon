@@ -3916,17 +3916,28 @@ function srcText(el) {
   .modal .ot-wiz textarea{width:100%;box-sizing:border-box}
   .modal .ot-wiz .rb-kind-tile.on{border-color:var(--info)}
   /* The certificate exported (1.10.249). */
-  .modal .ce-fmt{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+  .modal .box.ce-box{width:min(1180px,100%)}
+  .modal .ce-fmt{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  @media (max-width:900px){.modal .ce-fmt{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .modal .ce-fmt .rb-kind-tile{padding:9px 10px;gap:4px}
+  .modal .ce-fmt .rb-kind-tile .rb-kind{width:26px;height:26px}
+  .modal .ce-fmt .rb-kind-tile .rb-kind svg{width:16px;height:16px}
+  .modal .ce-fmt .rb-kind-tile b{font-size:13px;line-height:1.3}
+  .modal .ce-fmt .rb-kind-tile .small{font-size:11.5px;line-height:1.35}
+  .modal .ce-wiz > .note:first-child{margin-top:0}
+  .modal .ce-opts{display:grid;grid-template-columns:minmax(180px,.6fr) 1fr 1fr;gap:12px;align-items:start}
+  @media (max-width:900px){.modal .ce-opts{grid-template-columns:1fr}}
+  .modal .ce-opts .wr-field{margin:0}
   .modal .ce-fmt .rb-kind-tile.on{border-color:var(--info);box-shadow:inset 0 0 0 1px var(--info)}
   .modal .ce-fmt .rb-kind-tile:disabled{opacity:.45;cursor:not-allowed}
   .modal .ce-fmt .rb-kind-tile .tag{margin-left:6px}
-  .modal .ce-sec{margin-top:16px}
-  .modal .ce-sec h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx-dim)}
+  .modal .ce-sec{margin-top:12px}
+  .modal .ce-sec h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx-dim)}
   .modal .ce-pw{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media (max-width:640px){.modal .ce-pw{grid-template-columns:1fr}}
-  .modal .ce-name{font-size:12.5px;color:var(--tx-dim);margin-top:12px}
-  .modal .ce-wiz .note.warn{background:var(--warn-bg);border-radius:10px;padding:10px 12px;color:var(--warn);margin-top:12px}
-  .modal .ce-wiz .note.bad{background:var(--crit-bg);border-radius:10px;padding:10px 12px;margin-top:12px}
+  .modal .ce-name{font-size:12.5px;color:var(--tx-dim);margin-top:8px}
+  .modal .ce-wiz .note.warn{background:var(--warn-bg);border-radius:10px;padding:8px 12px;color:var(--warn);margin-top:10px;font-size:12.5px}
+  .modal .ce-wiz .note.bad{background:var(--crit-bg);border-radius:10px;padding:8px 12px;margin-top:10px;font-size:12.5px}
   .modal .ot-wiz .subpanel{margin:12px 0}
   .modal .ot-wiz .note.bad{background:var(--crit-bg);border-radius:10px;padding:10px 12px}
   .modal .ot-wiz .note.good{background:var(--ok-bg);border-radius:10px;padding:10px 12px}
@@ -41161,13 +41172,13 @@ function otShowCa() {
    password typed twice. The file is made by the daemon (openssl) and handed
    back once; the password goes with the request and is kept nowhere. */
 var CE_FMT = [
-  ['pem', 'log', 'PEM', 'The certificate and its chain, Base64 text (.pem) - for nginx, Apache, Linux.', false],
-  ['der', 'archive', 'DER', 'The certificate alone, binary (.cer) - Windows opens it with a double click.', false],
-  ['p7b', 'list', 'PKCS#7', 'The certificate and its chain in one file (.p7b) - Windows, Java keystores.', false],
-  ['pfx', 'lock', 'PFX / PKCS#12', 'The certificate, its chain and the private key under a password (.pfx) - Windows, IIS, Exchange, appliances.', true],
-  ['pfx_legacy', 'lock', 'PFX for older systems', 'The same, encrypted the old way (3DES, SHA-1) - Windows Server 2016 and older, Java 8.', true],
-  ['pem_key', 'key', 'PEM with the key', 'The certificate, its chain and the private key in one text file (.pem) - the key encrypted if a password is given.', true],
-  ['key', 'key', 'The private key', 'The private key alone (.key, PEM) - encrypted if a password is given.', true]
+  ['pem', 'log', 'PEM', 'Certificate and chain, text (.pem) - nginx, Apache, Linux.', false],
+  ['der', 'archive', 'DER', 'The certificate alone, binary (.cer) - Windows.', false],
+  ['p7b', 'list', 'PKCS#7', 'Certificate and chain in one file (.p7b) - Windows, Java.', false],
+  ['key', 'key', 'The private key', 'The key alone (.key, PEM), encrypted if a password is given.', true],
+  ['pfx', 'lock', 'PFX / PKCS#12', 'Certificate, chain and key under a password (.pfx) - Windows, IIS.', true],
+  ['pfx_legacy', 'lock', 'PFX for older systems', 'The same in 3DES / SHA-1 - Windows Server 2016 and older, Java 8.', true],
+  ['pem_key', 'key', 'PEM with the key', 'Certificate, chain and key in one text file (.pem).', true]
 ];
 function certExport(d) {
   api('web-tls-export').then(function (v) {
@@ -41178,7 +41189,12 @@ function certExport(d) {
       var head = el('p', 'note', '');
       head.appendChild(document.createTextNode('The certificate the pages answer with: '));
       head.appendChild(noI18n(el('b', '', facts.cn || facts.subject || '?')));
-      if (facts.until) { head.appendChild(document.createTextNode(' - valid until ')); head.appendChild(noI18n(el('span', '', facts.until))); }
+      if (facts.until) {
+        head.appendChild(document.createTextNode(' - valid until '));
+        /* A time in seconds as the certificate card shows it (1.10.256). */
+        head.appendChild(noI18n(el('span', '', typeof facts.until === 'number' || /^\d+$/.test(String(facts.until))
+          ? stamp(Number(facts.until)) : String(facts.until))));
+      }
       box.appendChild(head);
       var sec = el('div', 'ce-sec');
       sec.appendChild(el('h4', '', 'Format'));
@@ -41204,10 +41220,15 @@ function certExport(d) {
       var cur = CE_FMT.filter(function (f) { return f[0] === st.fmt; })[0];
       var opts = el('div', 'ce-sec');
       opts.appendChild(el('h4', '', 'Options'));
+      /* One row (1.10.256): the chain, and the password twice beside it. */
+      var row = el('div', 'ce-opts');
+      opts.appendChild(row);
       if (st.fmt !== 'der' && st.fmt !== 'key') {
         var sw = wrSwitch(st.chain, function (x) { st.chain = x; name.textContent = fileName(); }, false);
-        opts.appendChild(wrField('With the chain', sw, v.chain_n ? 'The ' + v.chain_n + ' certificate(s) between it and the root, so that a client that has only the root trusts it.'
-          : 'There is no chain kept with it - a self-signed certificate, or one uploaded alone.'));
+        row.appendChild(wrField('With the chain', sw, v.chain_n ? 'The ' + v.chain_n + ' certificate(s) up to the root.'
+          : 'None is kept with it.'));
+      } else {
+        row.appendChild(el('div', ''));
       }
       if (cur[4]) {
         var need = st.fmt.indexOf('pfx') === 0;
@@ -41218,14 +41239,12 @@ function certExport(d) {
         var pw2 = el('input', 'wr-in mono'); pw2.type = 'password'; pw2.autocomplete = 'new-password';
         pw2.id = 'ce-pw2'; pw2.value = st.pw2;
         pw2.oninput = function () { st.pw2 = pw2.value; check(); };
-        var two = el('div', 'ce-pw');
-        two.appendChild(wrField(need ? 'Password of the PFX' : 'Password for the key', pw,
-          need ? 'Asked for when the file is opened or imported. Kept nowhere - write it down.' : 'Leave it empty for a key that is not encrypted.'));
-        two.appendChild(wrField('The password again', pw2, ''));
-        opts.appendChild(two);
+        row.appendChild(wrField(need ? 'Password of the PFX' : 'Password for the key', pw,
+          need ? 'Asked for when it is imported. Kept nowhere.' : 'Empty: the key not encrypted.'));
+        row.appendChild(wrField('The password again', pw2, ''));
         var warn = el('div', 'note warn');
         warn.appendChild(el('b', '', 'The file carries the private key. '));
-        warn.appendChild(document.createTextNode('Whoever has it can pose as this server: keep it as safe as a password, and delete it once it is imported. The export is written to Events, with who made it.'));
+        warn.appendChild(document.createTextNode('Whoever has it can pose as this server - keep it safe and delete it once imported. The export is written to Events.'));
         opts.appendChild(warn);
       }
       var said = el('div', 'note bad'); said.id = 'ce-said'; said.hidden = true;
@@ -41257,7 +41276,7 @@ function certExport(d) {
       CE_CHECK = check;
     };
     /* The same title: drawn again in its own place. */
-    var redraw = function () { modal('Download the certificate', draw, buttons, 'medium'); };
+    var redraw = function () { modal('Download the certificate', draw, buttons, 'ce-box'); };
     var buttons = [{words: 'Cancel', close: true},
       {words: 'Download', cls: 'primary', icon: 'download', go: function (b) {
         if (CE_CHECK && !CE_CHECK()) {
@@ -41277,7 +41296,7 @@ function certExport(d) {
           if (s3) { s3.hidden = false; s3.textContent = String(e.message || e); } else oops(e);
         });
       }}];
-    modal('Download the certificate', draw, buttons, 'medium');
+    modal('Download the certificate', draw, buttons, 'ce-box');
   }).catch(oops);
 }
 var CE_CHECK = null;
