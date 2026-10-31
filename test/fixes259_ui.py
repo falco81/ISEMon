@@ -41,5 +41,11 @@ ok('...and given back only what that switched off',
    "else if (live && c.dataset.asleepOff) { c.disabled = false;" in body)
 ok('...the switch of one not in use cannot be clicked', '.set-item.asleep .sw{pointer-events:none}' in page)
 
+ok('1.10.264: paneLive defined with PANE, before any block that asks it from a timer',
+   page.index('function paneLive(name)') < min(page.index("paneLive('network')"),
+                                                page.index("paneLive('backup')")))
+ok('1.10.264: In your DNS a table of fixed proportions - nothing moves on F5 or Check DNS',
+   '.acme-dns table.dns-table{table-layout:fixed;width:100%}' in page)
+
 print('\n%d ok, %d failed' % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

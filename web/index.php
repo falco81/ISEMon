@@ -3722,17 +3722,20 @@ function srcText(el) {
   .acme-dns{margin-top:14px}
   .acme-steps{margin:6px 0 12px 18px;padding:0;display:flex;flex-direction:column;gap:4px}
   .acme-dns td{vertical-align:middle}
-  /* The text as wide as its longest, its copy button in a narrow column
-     right after it (1.10.262). */
-  .acme-dns table.dns-table td.dns-text{width:1%;white-space:nowrap;padding-right:6px}
-  .acme-dns table.dns-table td.dns-text > div{white-space:normal}
-  .acme-dns table.dns-table td.dns-copy{width:1%;padding-left:0;padding-right:18px}
-  .acme-dns table.dns-table td.dns-copy > button{vertical-align:middle}
-  .acme-dns table.dns-table th.dns-copy{width:1%;padding:0}
-  .acme-dns table.dns-table .dns-type{width:1%;white-space:nowrap;padding-right:18px}
-  .acme-dns table.dns-table .dns-st{width:230px;min-width:230px;max-width:230px;overflow-wrap:anywhere;
-    white-space:normal}
-  .acme-dns table.dns-table td.dns-cert{white-space:nowrap}
+  /* In your DNS (1.10.264): a table of fixed proportions across the card -
+     the widths never follow what is in it, so nothing moves on F5 or on
+     Check DNS; a long record wraps inside its own column. */
+  .acme-dns table.dns-table{table-layout:fixed;width:100%}
+  .acme-dns table.dns-table .dns-cert{width:14%}
+  .acme-dns table.dns-table .dns-rec{width:24%}
+  .acme-dns table.dns-table .dns-copy{width:6%;padding-left:0}
+  .acme-dns table.dns-table .dns-type{width:10%}
+  .acme-dns table.dns-table .dns-val{width:26%}
+  .acme-dns table.dns-table .dns-copy2{width:6%;padding-left:0}
+  .acme-dns table.dns-table .dns-st{width:14%}
+  .acme-dns table.dns-table td{overflow-wrap:anywhere;white-space:normal}
+  .acme-dns table.dns-table td.dns-rec,.acme-dns table.dns-table td.dns-val{word-break:break-all}
+  .acme-dns table.dns-table td.dns-copy > button,.acme-dns table.dns-table td.dns-copy2 > button{vertical-align:middle}
   .acme-steps-done{margin:6px 0}.acme-steps-done summary{cursor:pointer}
   .acme-steps-done .si-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
   /* The time one narrow column, the words left beside it (1.10.261, as
@@ -26057,6 +26060,13 @@ var NEEDS_NET = {feeds: 1, feeds_every_h: 1, geo: 1, geo_every_d: 1,
                  mac_vendors: 1, mac_vendors_every_d: 1};
 
 var PANE = 'logs';
+/* Whether this pane is the one shown (1.10.264: here, with PANE itself - the
+   blocks after this one ask it from timers that can run before a later
+   block is read, and it was not defined yet: "paneLive is not defined",
+   and the pane opened by its address was not drawn). */
+function paneLive(name) {
+  return TAB === 'settings' && PANE === name && $('pane-' + name) && !$('pane-' + name).hidden;
+}
 
 function loadSettings(fresh) {
   api('settings').then(function (d) {
@@ -38740,9 +38750,6 @@ function extraDone(key) {
   delete EXTRA_SAVES[key];
   markDirtyCount();
 }
-function paneLive(name) {
-  return TAB === 'settings' && PANE === name && $('pane-' + name) && !$('pane-' + name).hidden;
-}
 /* A promise of yes or no, from a popup. */
 function askThen(title, words, buttonWords, danger) {
   return new Promise(function (ok) {
@@ -39537,16 +39544,15 @@ function acmeDnsGuide(d) {
      the other (1.10.262): the text's column as wide as its longest, with no
      measuring after it is drawn - which moved them on every redraw (each
      poll), and they flickered. */
-  /* Widths that do not follow what is checked (1.10.263): "In DNS now" a
-     fixed column its words wrap in, Type as wide as its word, the text
-     columns as wide as their records - which do not change - and the first
-     column takes what is left. F5 and Check DNS moved every column. */
-  var t = listTable([{words: 'Certificate', cls: 'dns-cert'}, 'Record', {words: '', cls: 'dns-copy'},
-                     {words: 'Type', cls: 'dns-type'}, 'Points at / value', {words: '', cls: 'dns-copy'},
+  /* Fixed proportions across the card (1.10.264): nothing moves on F5 or
+     on Check DNS - the widths followed what each record's check said. */
+  var t = listTable([{words: 'Certificate', cls: 'dns-cert'}, {words: 'Record', cls: 'dns-rec'},
+                     {words: '', cls: 'dns-copy'}, {words: 'Type', cls: 'dns-type'},
+                     {words: 'Points at / value', cls: 'dns-val'}, {words: '', cls: 'dns-copy2'},
                      {words: 'In DNS now', cls: 'dns-st'}], rows, function (r) {
     var tr = el('tr');
     tr.appendChild(el('td', 'dns-cert', r.type === 'NS' ? 'its zone at deSEC' : 'the dashboard'));
-    var rec = el('td', 'mono small dns-text');
+    var rec = el('td', 'mono small dns-rec');
     var recCp = el('td', 'dns-copy');
     if (r.record) {
       rec.appendChild(noI18n(el('span', '', r.record)));
@@ -39557,8 +39563,8 @@ function acmeDnsGuide(d) {
     tr.appendChild(rec);
     tr.appendChild(recCp);
     tr.appendChild(noI18n(el('td', 'mono small dns-type', r.type || '')));
-    var val = el('td', 'mono small dns-text');
-    var valCp = el('td', 'dns-copy');
+    var val = el('td', 'mono small dns-val');
+    var valCp = el('td', 'dns-copy2');
     if (r.type === 'CNAME' || r.type === 'NS' || (r.type === 'A' && r.value)) {
       val.appendChild(noI18n(el('span', '', r.value)));
       var cv = iconButton('copy', 'Copy');

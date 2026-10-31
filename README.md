@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.264
+
+- *Automatic certificates → In your DNS*: a table of fixed proportions across
+  the card, laid out as before 1.10.262 - Certificate, Record and its copy
+  button, Type, Points at / value and its copy button, In DNS now - whose
+  widths never follow what is in it: nothing moves on F5 or on *Check DNS*. A
+  long record wraps inside its own column.
+- A pane opened by its address (F5) was at times not drawn, with "paneLive is
+  not defined" in the browser: blocks of the page asked it from timers that
+  can run before the later block defining it is read. It is defined with the
+  pane's own state now, before any of them.
+
 1.10.263
 
 - *Automatic certificates → In your DNS*: F5 and *Check DNS* moved every
