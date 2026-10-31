@@ -371,6 +371,24 @@ working.
 
 ## Version
 
+1.10.254
+
+- **PHP to 8.3, for real**: on the distribution's default PHP (8.0 on
+  AlmaLinux 9) no php stream is enabled, `dnf module list --enabled php` says
+  so with an error - and install.sh, which runs under `set -e`, stopped right
+  there: PHP was never moved. Every look at dnf now carries on whatever it
+  says. And where moving stopped short before, it goes on:
+  - the PHP of the pages is php-fpm's - asked itself (`php-fpm -v`) when
+    there is no `php` command;
+  - Remi without 8.3.36 yet: the newest 8.3 Remi has, when it is newer than
+    what runs (the next upgrade takes 8.3.36 when it is there);
+  - no way to Remi: the distribution's own `php:8.3` for a PHP older than 8.3;
+  - PHP 8.3 already, from the distribution: its stream brought up to date.
+  Every step says what it found - the PHP running, the stream enabled, the
+  repositories, what each stream offered - in Settings - Upgrades and in
+  /var/lib/isemon/upgrade/last.log. Checked under `set -euo pipefail`, as
+  install.sh runs.
+
 1.10.253
 
 - **PHP to 8.3 on every upgrade, Remi or not**: the PHP of the pages was moved

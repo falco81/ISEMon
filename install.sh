@@ -546,7 +546,20 @@ php_fix_of() {        # php_fix_of 8.3 -> 8.3.36
 version_ge() {        # version_ge A B: A >= B
     [[ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" == "$2" ]]
 }
-php_now() { php -r 'echo PHP_VERSION;' 2>/dev/null || true; }
+php_now() {          # the PHP of the pages: php's, else php-fpm's own (1.10.254)
+    local v="" f
+    if command -v php >/dev/null 2>&1; then
+        v="$(php -r 'echo PHP_VERSION;' 2>/dev/null || true)"
+    fi
+    if [[ -z "$v" ]]; then
+        for f in php-fpm /usr/sbin/php-fpm; do
+            command -v "$f" >/dev/null 2>&1 || continue
+            v="$("$f" -v 2>/dev/null | sed -n 's/^PHP \([0-9][0-9.]*\).*/\1/p' | head -1 || true)"
+            [[ -n "$v" ]] && break
+        done
+    fi
+    echo "$v"
+}
 php_is_fixed() {      # php_is_fixed VERSION
     local mm fix
     mm="$(echo "$1" | cut -d. -f1,2)"
@@ -566,29 +579,31 @@ php_stream_back() {   # php_stream_back STREAM - the stream it was on, and its p
     timeout 120 dnf -y -q module reset php >/dev/null 2>&1 || true
     [[ -n "$1" ]] && timeout 120 dnf -y -q module enable "php:$1" >/dev/null 2>&1 || true
 }
-# One stream tried (1.10.253): enabled, what it offers looked at before a
-# package is changed (the fixed release - "fixed" - or only PHP $target -
-# "line"), every PHP package moved to it, php-fpm restarted and asked. The
-# stream and the PHP it was on are put back when anything does not work.
-php_try() {           # php_try STREAM fixed|line TARGET FIX WAS UNTIL
-    local stream="$1" how="$2" target="$3" fix="$4" was="$5" until="$6" avail now
+# One stream tried (1.10.253, 1.10.254): enabled, what it offers looked at
+# before a package is changed - PHP $target, MIN or later (later than MIN
+# when STRICT) - every PHP package moved to it, php-fpm restarted and asked.
+# The stream and the PHP it was on are put back when anything does not work.
+# Called in an `if`, and every pipeline ends in `|| true`: install.sh runs
+# under set -e, and a dnf that lists nothing must not end the upgrade.
+php_try() {           # php_try STREAM TARGET MIN STRICT WAS UNTIL
+    local stream="$1" target="$2" min="$3" strict="$4" was="$5" until="$6" avail now
     timeout 120 dnf -y -q module reset php >/dev/null 2>&1 || true
-    if ! timeout 120 dnf -y -q module enable "php:$stream" >/dev/null 2>&1; then
+    if ! timeout 300 dnf -y -q module enable "php:$stream" >/dev/null 2>&1; then
         php_stream_back "$was"
         PHP_SAID="the stream php:$stream could not be enabled"
         return 1
     fi
     avail="$(timeout 300 dnf -q repoquery --latest-limit=1 --qf '%{version}' php-fpm 2>/dev/null \
-             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)"
-    if [[ -z "$avail" ]] || { [[ "$how" == fixed ]] && ! version_ge "$avail" "$fix"; } \
-            || { [[ "$how" == line ]] && [[ "$(echo "$avail" | cut -d. -f1,2)" != "$target" ]]; }; then
+             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1 || true)"
+    if [[ -z "$avail" || "$(echo "$avail" | cut -d. -f1,2)" != "$target" ]] \
+            || ! version_ge "$avail" "$min" || { [[ -n "$strict" ]] && [[ "$avail" == "$min" ]]; }; then
         php_stream_back "$was"
-        PHP_SAID="php:$stream offers PHP ${avail:-nothing}$([[ "$how" == fixed ]] && echo ", not $fix or later yet")"
+        PHP_SAID="php:$stream offers PHP ${avail:-nothing}"
         return 1
     fi
-    if (( SECONDS + 300 > until )); then
+    if (( SECONDS + 240 > until )); then
         php_stream_back "$was"
-        PHP_SAID="the repositories were slow to answer - run ./install.sh --upgrade again"
+        PHP_SAID="the repositories were slow to answer - run the upgrade again"
         return 1
     fi
     if ! timeout $((until - SECONDS)) dnf -y -q distro-sync 'php*' >/dev/null 2>&1; then
@@ -599,8 +614,8 @@ php_try() {           # php_try STREAM fixed|line TARGET FIX WAS UNTIL
         return 1
     fi
     now="$(php_now)"
-    if { [[ "$how" == fixed ]] && ! php_is_fixed "$now"; } \
-            || [[ "$(echo "$now" | cut -d. -f1,2)" != "$target" ]] || ! php_fpm_restart; then
+    if [[ "$(echo "$now" | cut -d. -f1,2)" != "$target" ]] || ! version_ge "$now" "$min" \
+            || ! php_fpm_restart; then
         php_stream_back "$was"
         timeout 600 dnf -y -q distro-sync 'php*' >/dev/null 2>&1 || true
         php_fpm_restart || true
@@ -610,12 +625,22 @@ php_try() {           # php_try STREAM fixed|line TARGET FIX WAS UNTIL
     PHP_SAID="$now"
     return 0
 }
+# The PHP of the pages to PHP 8.3 (1.10.250, 1.10.254), on every upgrade:
+#   1. Remi's 8.3 (EPEL and Remi added) - the release with the php2shell fix,
+#      8.3.36, or else the newest 8.3 Remi has, when it is newer than what
+#      runs;
+#   2. else the distribution's own php:8.3 (AlmaLinux / RHEL AppStream, the
+#      fix backported under its own number), for a PHP older than 8.3;
+#   3. a PHP 8.3 there already: its stream brought up to date (dnf upgrade).
+# Never down: 8.4 and 8.5 stay on their line. Every step says what it found.
 php_update() {
-    [[ -n "$PHP_UPDATE" ]] || return 0
-    command -v php >/dev/null 2>&1 || return 0
-    local v mm target fix el was
+    [[ -n "$PHP_UPDATE" ]] || { note "PHP: --no-php-update - left as it is"; return 0; }
+    local v mm target fix el was remi=""
     v="$(php_now)"
-    [[ -n "$v" ]] || return 0
+    if [[ -z "$v" ]]; then
+        note "PHP: neither php nor php-fpm answers here - nothing to move"
+        return 0
+    fi
     if php_is_fixed "$v"; then
         good "PHP $v has the php2shell fix - left as it is"
         return 0
@@ -625,26 +650,26 @@ php_update() {
     case "$mm" in 8.4|8.5) target="$mm";; esac
     fix="$(php_fix_of "$target")"
     if [[ -n "$DRY_RUN" ]]; then
-        note "[would move] PHP $v to PHP $target - $fix or later from the Remi repository, else the distribution's php:$target"
+        note "[would move] PHP $v to PHP $target - Remi's ($fix or the newest there), else the distribution's php:$target"
         return 0
     fi
     if [[ "$PKG" != "dnf" ]]; then
-        warn "PHP $v is below $fix (php2shell): update it by hand - your distribution's"
-        warn "  fixed package, or ppa:ondrej/php / packages.sury.org - then restart php-fpm"
+        warn "PHP $v: update it to $target by hand - your distribution's package, or"
+        warn "  ppa:ondrej/php / packages.sury.org - then restart php-fpm"
         return 0
     fi
     el="$(rpm -E '%rhel' 2>/dev/null || true)"
     if [[ ! "$el" =~ ^(8|9|10)$ ]]; then
-        warn "PHP $v is below $fix (php2shell): not a RHEL 8, 9 or 10 here - update PHP by hand"
+        warn "PHP $v: not a RHEL 8, 9 or 10 here - update PHP by hand"
         return 0
     fi
-    say "PHP $v is below $fix (php2shell): moving to PHP $target"
+    say "PHP $v runs the pages: to PHP $target ($fix has the php2shell fix)"
     # An upgrade from the pages has 25 minutes in all: the move and a way back
     # in what is left of 15 of them.
     local until=$((SECONDS + 900))
-    was="$(timeout 120 dnf -q module list --enabled php 2>/dev/null | awk '$1=="php"{print $2; exit}')"
+    was="$(timeout 120 dnf -q module list --enabled php 2>/dev/null | awk '$1=="php"{print $2; exit}' || true)"
+    say "  the php stream enabled now: ${was:-none, the default PHP of the distribution}"
     PHP_SAID=""
-    # 1. The release with the fix, from Remi (EPEL and Remi added).
     if ! rpm -q epel-release >/dev/null 2>&1; then
         timeout 300 dnf install -y -q epel-release >/dev/null 2>&1 || true
     fi
@@ -653,19 +678,32 @@ php_update() {
             >/dev/null 2>&1 || true
     fi
     if rpm -q epel-release >/dev/null 2>&1 && rpm -q remi-release >/dev/null 2>&1; then
-        if php_try "remi-$target" fixed "$target" "$fix" "$was" "$until"; then
-            good "PHP $PHP_SAID from the Remi repository (php:remi-$target) - php2shell fixed; php-fpm restarted"
-            return 0
-        fi
-        say "  Remi: $PHP_SAID"
+        remi=1
+        say "  the EPEL and Remi repositories are there"
     else
         say "  the EPEL and Remi repositories could not be added (no way to them from here?)"
     fi
-    # 2. Not there: PHP $target all the same, from the distribution
-    #    (AlmaLinux / RHEL AppStream php:8.3) - its own build has the fix
-    #    backported under a lower number (1.10.253). Never down.
+    if [[ -n "$remi" ]]; then
+        if php_try "remi-$target" "$target" "$fix" "" "$was" "$until"; then
+            good "PHP $PHP_SAID from the Remi repository (php:remi-$target) - php2shell fixed; php-fpm restarted"
+            return 0
+        fi
+        say "  Remi, $fix or later: $PHP_SAID"
+        # Not the fixed release yet: the newest 8.3 Remi has, newer than this.
+        if [[ "$mm" == "$target" ]]; then
+            php_try "remi-$target" "$target" "$v" 1 "$was" "$until" && {
+                good "PHP $PHP_SAID from the Remi repository (php:remi-$target), php-fpm restarted"
+                warn "  $PHP_SAID is not $fix yet: the next upgrade takes $fix when Remi has it"
+                return 0; }
+        elif php_try "remi-$target" "$target" "$target.0" "" "$was" "$until"; then
+            good "PHP $PHP_SAID from the Remi repository (php:remi-$target), php-fpm restarted"
+            warn "  $PHP_SAID is not $fix yet: the next upgrade takes $fix when Remi has it"
+            return 0
+        fi
+        say "  Remi, the newest $target: $PHP_SAID"
+    fi
     if ! version_ge "$mm" "$target"; then
-        if php_try "$target" line "$target" "$fix" "$was" "$until"; then
+        if php_try "$target" "$target" "$target.0" "" "$was" "$until"; then
             good "PHP $PHP_SAID from the distribution (php:$target), php-fpm restarted - its build carries"
             good "  the php2shell fix under its own number: dnf updateinfo list --cve CVE-2026-109618"
             return 0
@@ -673,8 +711,11 @@ php_update() {
         warn "PHP $v could not be moved to $target: $PHP_SAID"
         return 0
     fi
-    warn "PHP $v left as it is (it is PHP $mm already; the distribution backports the fix -"
-    warn "  dnf upgrade 'php*', and dnf updateinfo list --cve CVE-2026-109618 says whether it is in)"
+    # PHP 8.3 already, from the distribution: its newest build.
+    timeout 600 dnf -y -q upgrade 'php*' >/dev/null 2>&1 || true
+    php_fpm_restart || true
+    good "PHP $(php_now) - PHP $mm brought up to date from its stream (${was:-default}); the"
+    good "  distribution backports the php2shell fix: dnf updateinfo list --cve CVE-2026-109618"
     return 0
 }
 
