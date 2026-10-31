@@ -371,6 +371,21 @@ working.
 
 ## Version
 
+1.10.249
+
+- **Settings - Certificates and TLS - Download** opens a popup of the formats:
+  PEM (the certificate and its chain), DER (.cer), PKCS#7 (.p7b), **PFX /
+  PKCS#12** (AES-256, SHA-256) and a PFX for older systems (3DES, SHA-1 - what
+  Windows Server 2016 and Java 8 open), PEM with the private key, and the key
+  alone - with or without the chain. The private key goes out to a full
+  administrator only, under a password typed twice (8 characters at least; a
+  PFX always has one, a PEM key may be left unencrypted); the password goes
+  to openssl by the environment, never on its command line, and is kept
+  nowhere, and every export with the key is written to Events with who made
+  it. A certificate isemon does not hold the key of (nginx's own, never
+  uploaded or made here) is exported without it. Offered for that one too
+  now, not only for a certificate isemon looks after.
+
 1.10.248
 
 - *Encrypted receiving (TLS)*: the dot beside the machine's name is green when

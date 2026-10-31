@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.247",
-  "made": "2026-10-30",
+  "version": "1.10.248",
+  "made": "2026-10-31",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -215,6 +215,10 @@
   "s.7th.cb13d0ba": {
    "source": "7th",
    "text": "7th"
+  },
+  "s.8-characters-at-least.6904168b": {
+   "source": "8 characters at least",
+   "text": "8 characters at least"
   },
   "s.802-1x-and-mab-a-freeradius.e48d8508": {
    "source": "802.1X and MAB a FreeRADIUS server of this site's own refused: machines on sockets and radios. Never judged and never banned.",
@@ -639,6 +643,10 @@
   "s.a-full-admin-may-change-anything.ecdff4fc": {
    "source": "A full admin may change anything: ban, unban, settings, the router, accounts.",
    "text": "A full admin may change anything: ban, unban, settings, the router, accounts."
+  },
+  "s.a-full-administrator-only.50d7842f": {
+   "source": "a full administrator only",
+   "text": "a full administrator only"
   },
   "s.a-github-folder-https-github-com.77ffaca7": {
    "source": "A GitHub folder (https://github.com/OWNER/REPO/tree/BRANCH/FOLDER, read through GitHub’s API), a web page or a folder listing that links to isemon-X.Y.Z.tar.gz, or one package’s own address. HTTPS only. A package fetched from it is checked exactly as one sent by hand: signed by a release key this server trusts, every file the one signed.",
@@ -1123,6 +1131,10 @@
   "s.a-pfsense-fetches-the-list-itself.0c650c51": {
    "source": "A pfSense fetches the list itself into an alias of the type",
    "text": "A pfSense fetches the list itself into an alias of the type"
+  },
+  "s.a-pfx-carries-the-private-key.54eff603": {
+   "source": "A PFX carries the private key: a password of 8 characters at least.",
+   "text": "A PFX carries the private key: a password of 8 characters at least."
   },
   "s.a-policy-changed.722317d1": {
    "source": "a policy changed",
@@ -3211,6 +3223,10 @@
   "s.asked-for-more.bb03e36a": {
    "source": "asked for more",
    "text": "asked for more"
+  },
+  "s.asked-for-when-the-file-is.9a0ee9bf": {
+   "source": "Asked for when the file is opened or imported. Kept nowhere - write it down.",
+   "text": "Asked for when the file is opened or imported. Kept nowhere - write it down."
   },
   "s.asked-for.530645d0": {
    "source": "Asked for",
@@ -5584,6 +5600,14 @@
    "source": "Deploy → Deployment",
    "text": "Deploy → Deployment"
   },
+  "s.der.7d44c33c": {
+   "source": "der",
+   "text": "der"
+  },
+  "s.der.8a5f02aa": {
+   "source": "DER",
+   "text": "DER"
+  },
   "s.der.dfcd9e18": {
    "source": "(DER)",
    "text": "(DER)"
@@ -5995,6 +6019,10 @@
   "s.download-the-certificate-and-its-key.105c7505": {
    "source": "Download the certificate and its key as one file, isemon-api.pem, to import on the router. That it was downloaded, and by whom, is written into Events.",
    "text": "Download the certificate and its key as one file, isemon-api.pem, to import on the router. That it was downloaded, and by whom, is written into Events."
+  },
+  "s.download-the-certificate.2d75811f": {
+   "source": "Download the certificate",
+   "text": "Download the certificate"
   },
   "s.download-the-key.2f04cae7": {
    "source": "Download the key",
@@ -6431,6 +6459,10 @@
   "s.empty-the-country-list-on-the.5b2f12f1": {
    "source": "Empty the country list on the router",
    "text": "Empty the country list on the router"
+  },
+  "s.empty-the-key-not-encrypted.89ca935a": {
+   "source": "empty - the key not encrypted",
+   "text": "empty - the key not encrypted"
   },
   "s.empty-the-password-of-the-backups.0ae72f9c": {
    "source": "empty: the password of the backups set here",
@@ -10916,6 +10948,10 @@
    "source": "isemon --database test",
    "text": "isemon --database test"
   },
+  "s.isemon-does-not-hold-this-certificate.7fc251cd": {
+   "source": "isemon does not hold this certificate's private key (nginx's own, never uploaded or made here)",
+   "text": "isemon does not hold this certificate's private key (nginx's own, never uploaded or made here)"
+  },
   "s.isemon-erase-firewall.4e4d4d1c": {
    "source": "isemon --erase firewall",
    "text": "isemon --erase firewall"
@@ -10971,10 +11007,6 @@
   "s.isemon-passwd-name.4410ece3": {
    "source": "isemon --passwd name",
    "text": "isemon --passwd name"
-  },
-  "s.isemon-pem.a4023f6e": {
-   "source": "isemon.pem",
-   "text": "isemon.pem"
   },
   "s.isemon-ptr-fill.5e46ad21": {
    "source": "isemon --ptr-fill",
@@ -12107,6 +12139,10 @@
   "s.leasename.da212300": {
    "source": "leasename",
    "text": "leasename"
+  },
+  "s.leave-it-empty-for-a-key.8623bcf0": {
+   "source": "Leave it empty for a key that is not encrypted.",
+   "text": "Leave it empty for a key that is not encrypted."
   },
   "s.leave-it.e7c7e7b3": {
    "source": "Leave it",
@@ -16640,6 +16676,10 @@
    "source": "optional",
    "text": "optional"
   },
+  "s.options.6bf5da9c": {
+   "source": "Options",
+   "text": "Options"
+  },
   "s.or-a-file.ce4c15e3": {
    "source": "Or a file",
    "text": "Or a file"
@@ -17096,6 +17136,10 @@
    "source": "password checked",
    "text": "password checked"
   },
+  "s.password-for-the-key.4c51c361": {
+   "source": "Password for the key",
+   "text": "Password for the key"
+  },
   "s.password-has-expired.78c332b0": {
    "source": "password has expired",
    "text": "password has expired"
@@ -17103,6 +17147,10 @@
   "s.password-never-expires.9d6d5db5": {
    "source": "Password never expires",
    "text": "Password never expires"
+  },
+  "s.password-of-the-pfx.cd9e6e91": {
+   "source": "Password of the PFX",
+   "text": "Password of the PFX"
   },
   "s.password-policies-for-some-accounts.a5116177": {
    "source": "Password policies for SOME accounts",
@@ -17196,9 +17244,21 @@
    "source": "Peer",
    "text": "Peer"
   },
+  "s.pem-with-the-key.9225df8e": {
+   "source": "PEM with the key",
+   "text": "PEM with the key"
+  },
+  "s.pem.3f7673f0": {
+   "source": "PEM",
+   "text": "PEM"
+  },
   "s.pem.9cc3ab78": {
    "source": "(PEM)",
    "text": "(PEM)"
+  },
+  "s.pem.a5aa1156": {
+   "source": "pem",
+   "text": "pem"
   },
   "s.people-connecting-to-the-remote-access.351e168a": {
    "source": "People connecting to the remote-access VPN - the SSL VPN, FortiClient, AnyConnect: who signed in, who was refused and why, the address inside the VPN they were given, how long a session lasted and how much it carried.",
@@ -17280,6 +17340,18 @@
    "source": "pfssh",
    "text": "pfssh"
   },
+  "s.pfx-for-older-systems.c5d8f8f2": {
+   "source": "PFX for older systems",
+   "text": "PFX for older systems"
+  },
+  "s.pfx-pkcs-12.f3111922": {
+   "source": "PFX / PKCS#12",
+   "text": "PFX / PKCS#12"
+  },
+  "s.pfx.17967f3a": {
+   "source": "pfx",
+   "text": "pfx"
+  },
   "s.pfx.d4c631e4": {
    "source": "(PFX)",
    "text": "(PFX)"
@@ -17347,6 +17419,10 @@
   "s.pinned.33469d3f": {
    "source": "pinned",
    "text": "pinned"
+  },
+  "s.pkcs-7.38c2bc65": {
+   "source": "PKCS#7",
+   "text": "PKCS#7"
   },
   "s.pkg-static-add-https-github-com.e2ee4ebe": {
    "source": "pkg-static add https://github.com/jaredhendrickson13/pfsense-api/releases/latest/download/pfSense-2.8.1-pkg-RESTAPI.pkg",
@@ -19319,6 +19395,10 @@
   "s.saved-root-puts-the-time-servers.4c07ab7a": {
    "source": "saved; root puts the time servers in within seconds",
    "text": "saved; root puts the time servers in within seconds"
+  },
+  "s.saved-with-its-private-key-keep.30b5ba22": {
+   "source": "saved with its private key - keep it safe",
+   "text": "saved with its private key - keep it safe"
   },
   "s.saved-with-the-bar-at-the.e94478ad": {
    "source": "Saved with the bar at the bottom; root then puts them in within seconds.",
@@ -22408,9 +22488,17 @@
    "source": "the Central African Republic",
    "text": "the Central African Republic"
   },
-  "s.the-certificate-and-its-chain-as.76ef75f0": {
-   "source": "The certificate and its chain, as PEM - without the key",
-   "text": "The certificate and its chain, as PEM - without the key"
+  "s.the-certificate-alone-binary-cer-windows.82ba0b52": {
+   "source": "The certificate alone, binary (.cer) - Windows opens it with a double click.",
+   "text": "The certificate alone, binary (.cer) - Windows opens it with a double click."
+  },
+  "s.the-certificate-and-its-chain-base64.6c90251c": {
+   "source": "The certificate and its chain, Base64 text (.pem) - for nginx, Apache, Linux.",
+   "text": "The certificate and its chain, Base64 text (.pem) - for nginx, Apache, Linux."
+  },
+  "s.the-certificate-and-its-chain-in.609ceef5": {
+   "source": "The certificate and its chain in one file (.p7b) - Windows, Java keystores.",
+   "text": "The certificate and its chain in one file (.p7b) - Windows, Java keystores."
   },
   "s.the-certificate-and-its-private-key.df5c9823": {
    "source": "The certificate and its private key, as PEM - pasted, in any order - or a",
@@ -22432,6 +22520,10 @@
    "source": "The certificate. Click it to copy.",
    "text": "The certificate. Click it to copy."
   },
+  "s.the-certificate-in-the-format-chosen.5e12ab9f": {
+   "source": "The certificate in the format chosen - PEM, DER, PKCS#7 or PFX - with its private key if wanted",
+   "text": "The certificate in the format chosen - PEM, DER, PKCS#7 or PFX - with its private key if wanted"
+  },
   "s.the-certificate-is-gone.ee3ca037": {
    "source": "the certificate is gone",
    "text": "the certificate is gone"
@@ -22443,6 +22535,14 @@
   "s.the-certificate-it-chose.72978490": {
    "source": "the certificate it chose",
    "text": "the certificate it chose"
+  },
+  "s.the-certificate-its-chain-and-the.7f3b5e82": {
+   "source": "The certificate, its chain and the private key in one text file (.pem) - the key encrypted if a password is given.",
+   "text": "The certificate, its chain and the private key in one text file (.pem) - the key encrypted if a password is given."
+  },
+  "s.the-certificate-its-chain-and-the.81a3eb0d": {
+   "source": "The certificate, its chain and the private key under a password (.pfx) - Windows, IIS, Exchange, appliances.",
+   "text": "The certificate, its chain and the private key under a password (.pfx) - Windows, IIS, Exchange, appliances."
   },
   "s.the-certificate-its-key-and-the.29647c2c": {
    "source": "The certificate, its key and the pin are deleted from this machine. The next connection pins whatever the router answers with - for a certificate replaced on purpose.",
@@ -22475,6 +22575,10 @@
   "s.the-certificate-the-firewall-chose.45a65876": {
    "source": "the certificate the firewall chose",
    "text": "the certificate the firewall chose"
+  },
+  "s.the-certificate-the-pages-answer-with.7ea15f78": {
+   "source": "The certificate the pages answer with:",
+   "text": "The certificate the pages answer with:"
   },
   "s.the-certificate-was-stored-and-pinned.d8b2b889": {
    "source": "the certificate was stored and pinned",
@@ -23199,6 +23303,10 @@
   "s.the-fields-with-a-column-fast.40051c66": {
    "source": "The fields with a column — fast",
    "text": "The fields with a column — fast"
+  },
+  "s.the-file-carries-the-private-key.83277e9c": {
+   "source": "The file carries the private key.",
+   "text": "The file carries the private key."
   },
   "s.the-file-did-not-arrive-whole.0ff85bef": {
    "source": "the file did not arrive whole",
@@ -24588,9 +24696,17 @@
    "source": "The parts of the configuration commands changed - by the management centre deploying or by somebody on the command line: an ACL, a group policy, an interface. Commands that only looked are left out.",
    "text": "The parts of the configuration commands changed - by the management centre deploying or by somebody on the command line: an ACL, a group policy, an interface. Commands that only looked are left out."
   },
+  "s.the-password-again.68f6a785": {
+   "source": "The password again",
+   "text": "The password again"
+  },
   "s.the-password-basic-authentication.949c9f24": {
    "source": "The password (basic authentication)",
    "text": "The password (basic authentication)"
+  },
+  "s.the-password-for-the-key-8.db53c864": {
+   "source": "The password for the key: 8 characters at least, or none.",
+   "text": "The password for the key: 8 characters at least, or none."
   },
   "s.the-password-for.48603c93": {
    "source": "The password for",
@@ -24752,6 +24868,10 @@
    "source": "The private half leaves this machine as a file. Anybody holding it can sign in to that router as",
    "text": "The private half leaves this machine as a file. Anybody holding it can sign in to that router as"
   },
+  "s.the-private-key-alone-key-pem.f14d26c9": {
+   "source": "The private key alone (.key, PEM) - encrypted if a password is given.",
+   "text": "The private key alone (.key, PEM) - encrypted if a password is given."
+  },
   "s.the-private-key-is-deleted-from.391dbdf0": {
    "source": "The private key is deleted from this machine. Unless the server takes a password instead, backups will not reach it until a new key is made and put on it.",
    "text": "The private key is deleted from this machine. Unless the server takes a password instead, backups will not reach it until a new key is made and put on it."
@@ -24767,6 +24887,10 @@
   "s.the-private-key-is-on-the.64d2d79e": {
    "source": "the private key is on the clipboard",
    "text": "the private key is on the clipboard"
+  },
+  "s.the-private-key.9e82ea5f": {
+   "source": "The private key",
+   "text": "The private key"
   },
   "s.the-program-on-that-machine-that.a5d629a7": {
    "source": "The program on that machine that went and used the password.",
@@ -25071,6 +25195,10 @@
   "s.the-same-copy-with-the-keys.6ee3f9d8": {
    "source": "The same copy, with the keys kept beside the database in it: settings.key, which opens every password and private key in the database, banfeed.key and the routers’ host keys - and config.json to read. Put back on a new machine (Restore from this file), that machine is this one again, certificate, firewall and all, with nothing to type in. As secret as the key itself. From the shell: isemon --backup --full.",
    "text": "The same copy, with the keys kept beside the database in it: settings.key, which opens every password and private key in the database, banfeed.key and the routers’ host keys - and config.json to read. Put back on a new machine (Restore from this file), that machine is this one again, certificate, firewall and all, with nothing to type in. As secret as the key itself. From the shell: isemon --backup --full."
+  },
+  "s.the-same-encrypted-the-old-way.38337480": {
+   "source": "The same, encrypted the old way (3DES, SHA-1) - Windows Server 2016 and older, Java 8.",
+   "text": "The same, encrypted the old way (3DES, SHA-1) - Windows Server 2016 and older, Java 8."
   },
   "s.the-same-file-with-everything-in.b6498ae0": {
    "source": "The same file with everything in it: both passwords, the private half of the ssh key that reaches the router, the domain’s certificate, the key in the published ban list’s URL, and every account’s password as it is kept here. A machine built from this one needs nothing typed in at all. Which database to use is never carried — each machine keeps its own — and neither file holds anything read from the logs. It is also a file that gets somebody into your firewall, so it belongs where passwords belong and nowhere else.",
@@ -25616,6 +25744,10 @@
    "source": "The two firewalls hold exactly the same addresses of ours, which is what a pair is for: whichever of them takes the traffic is already dropping everything the other is.",
    "text": "The two firewalls hold exactly the same addresses of ours, which is what a pair is for: whichever of them takes the traffic is already dropping everything the other is."
   },
+  "s.the-two-passwords-are-not-the.83838bde": {
+   "source": "The two passwords are not the same.",
+   "text": "The two passwords are not the same."
+  },
   "s.the-two-to-paste-each-with.18ded4f9": {
    "source": "The two to paste, each with its own button:",
    "text": "The two to paste, each with its own button:"
@@ -26087,6 +26219,10 @@
   "s.there-is-no-certificate-to-download.6290444a": {
    "source": "there is no certificate to download",
    "text": "there is no certificate to download"
+  },
+  "s.there-is-no-chain-kept-with.edc688bd": {
+   "source": "There is no chain kept with it - a self-signed certificate, or one uploaded alone.",
+   "text": "There is no chain kept with it - a self-signed certificate, or one uploaded alone."
   },
   "s.there-is-no-clock-on-this.5a3941da": {
    "source": "There is no clock on this one. It stays until somebody takes it off.",
@@ -27843,6 +27979,10 @@
   "s.valid-until.c8214d35": {
    "source": "Valid until",
    "text": "Valid until"
+  },
+  "s.valid-until.e75d8233": {
+   "source": "- valid until",
+   "text": "- valid until"
   },
   "s.valid.bec26280": {
    "source": "valid",
@@ -30164,6 +30304,10 @@
    "source": "who",
    "text": "who"
   },
+  "s.whoever-has-it-can-pose-as.35973525": {
+   "source": "Whoever has it can pose as this server: keep it as safe as a password, and delete it once it is imported. The export is written to Events, with who made it.",
+   "text": "Whoever has it can pose as this server: keep it as safe as a password, and delete it once it is imported. The export is written to Events, with who made it."
+  },
   "s.whoever-is-signed-in-can-always.f86c03ed": {
    "source": "Whoever is signed in can always change their own password; nobody but a full admin can change anybody else’s.",
    "text": "Whoever is signed in can always change their own password; nobody but a full admin can change anybody else’s."
@@ -30439,6 +30583,10 @@
   "s.with-status-every-file-of-a.ace58746": {
    "source": "with --status: every file of a firewall's log on a line of its own, rather than one line for each folder of them",
    "text": "with --status: every file of a firewall's log on a line of its own, rather than one line for each folder of them"
+  },
+  "s.with-the-chain.5137079e": {
+   "source": "With the chain",
+   "text": "With the chain"
   },
   "s.with-the-key-in-the-url.a1df5dcf": {
    "source": ", with the key in the URL:",
@@ -33489,6 +33637,10 @@
   "p.the-certificate-nginx-answers-with-on.55ba1792": {
    "source": "the certificate nginx answers with on this name{0}",
    "text": "the certificate nginx answers with on this name{0}"
+  },
+  "p.the-certificate-s-between-it-and.408e4449": {
+   "source": "The {0} certificate(s) between it and the root, so that a client that has only the root trusts it.",
+   "text": "The {0} certificate(s) between it and the root, so that a client that has only the root trusts it."
   },
   "p.the-choices-in-that-file.a71eba7b": {
    "source": "the choices in that file: {0}",

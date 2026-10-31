@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.248'
+__version__ = '1.10.249'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -64297,6 +64297,141 @@ class WebRoot(object):
             return (tls.get('cert') or '') + (tls.get('chain') or '')
         return ''
 
+    # ---- the certificate exported, in the format asked (1.10.249) ------------------
+    EXPORT_FORMATS = {
+        'pem': ('PEM - the certificate and its chain', False, '.pem'),
+        'pem_key': ('PEM with the key - the certificate, its chain and the private key', True,
+                    '.pem'),
+        'der': ('DER - the certificate alone', False, '.cer'),
+        'p7b': ('PKCS#7 - the certificate and its chain', False, '.p7b'),
+        'pfx': ('PKCS#12 (PFX) - the certificate, its chain and the private key', True, '.pfx'),
+        'pfx_legacy': ('PKCS#12 (PFX) for older systems - Windows Server 2016 and older, '
+                       'Java 8', True, '.pfx'),
+        'key': ('The private key alone (PEM)', True, '.key'),
+    }
+
+    def tls_export_view(self):
+        """What can be exported: the certificate isemon looks after (with its
+        key), or the one nginx answers with now (without one)."""
+        tls = self.tls_conf()
+        managed = bool(tls.get('managed') and tls.get('cert'))
+        key = bool(managed and tls.get('key') and unseal_secret(tls['key']))
+        pem = (tls.get('cert') or '') if managed else \
+            ((self.look().get('cert') or {}).get('pem') or '')
+        return {'cert': bool(PEM_CERT_RE.search(pem or '')), 'key': key, 'managed': managed,
+                'chain_n': max(0, len(PEM_CERT_RE.findall(
+                    ((tls.get('chain') or '') + (tls.get('root') or '') if managed else pem)
+                    or '')) - (0 if managed else 1)),
+                'formats': [{'id': k, 'words': v[0], 'key': v[1], 'ext': v[2]}
+                            for k, v in self.EXPORT_FORMATS.items()]}
+
+    def tls_export(self, data, by='', admin=False):
+        """The certificate in the format asked, as bytes, with its file name.
+        A private key goes out only to a full administrator, and in a PFX (or
+        an encrypted PEM) under the password given - which goes to openssl by
+        the environment, never on its command line, and is kept nowhere."""
+        fmt = str(data.get('format') or 'pem')
+        if fmt not in self.EXPORT_FORMATS:
+            raise WebRootError('no such format')
+        words, with_key, ext = self.EXPORT_FORMATS[fmt]
+        chain = data.get('chain', True) is not False
+        password = str(data.get('password') or '')
+        tls = self.tls_conf()
+        managed = bool(tls.get('managed') and tls.get('cert'))
+        if managed:
+            cert = tls['cert'].strip() + '\n'
+            more = ''.join(m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
+                (tls.get('chain') or '') + (tls.get('root') or '')))
+        else:
+            certs = [m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
+                (self.look().get('cert') or {}).get('pem') or '')]
+            if not certs:
+                raise WebRootError('there is no certificate here to export yet')
+            cert, more = certs[0], ''.join(certs[1:])
+        if not chain:
+            more = ''
+        key = None
+        if with_key:
+            if not admin:
+                raise WebRootError('the private key is exported by a full administrator only')
+            key = unseal_secret(tls['key']) if managed and tls.get('key') else None
+            if not key:
+                raise WebRootError('isemon does not hold this certificate\'s private key (it is '
+                                   'nginx\'s own, never uploaded or made here): only the '
+                                   'certificate can be exported')
+            if fmt.startswith('pfx') and len(password) < 8:
+                raise WebRootError('a PFX carries the private key: a password of 8 characters '
+                                   'at least')
+            if fmt in ('pem_key', 'key') and password and len(password) < 8:
+                raise WebRootError('the password for the key: 8 characters at least, or none')
+            if len(password) > 1024 or '\x00' in password:
+                raise WebRootError('that password is not taken')
+        cn = re.sub(r'[^A-Za-z0-9._-]+', '-', str((cert_facts(cert) or {}).get('cn') or
+                                                  'isemon')).strip('-.')[:60] or 'isemon'
+        env = dict(os.environ, ISEMON_EXPORT_PW=password)
+
+        def ossl(args, data_in=None):
+            got = subprocess.run(['openssl'] + args, input=data_in, capture_output=True,
+                                 env=env, timeout=60)
+            if got.returncode != 0:
+                raise WebRootError('openssl: %s' % (got.stderr.decode('utf-8', 'replace')
+                                                    .strip().splitlines() or ['it failed'])[-1])
+            return got.stdout
+        with tempfile.TemporaryDirectory(prefix='.isemon-export-') as work:
+            os.chmod(work, 0o700)
+            cf = os.path.join(work, 'cert.pem')
+            with open(cf, 'w') as f:
+                f.write(cert)
+            kf = os.path.join(work, 'key.pem')
+            if key:
+                fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                with os.fdopen(fd, 'w') as f:
+                    f.write(key.strip() + '\n')
+
+            def key_pem():
+                if not password:
+                    return ossl(['pkey', '-in', kf])
+                return ossl(['pkey', '-in', kf, '-aes256', '-passout', 'env:ISEMON_EXPORT_PW'])
+            if fmt == 'pem':
+                out = (cert + more).encode()
+            elif fmt == 'der':
+                out = ossl(['x509', '-in', cf, '-outform', 'DER'])
+            elif fmt == 'p7b':
+                args = ['crl2pkcs7', '-nocrl', '-certfile', cf]
+                if more:
+                    mf = os.path.join(work, 'more.pem')
+                    with open(mf, 'w') as f:
+                        f.write(more)
+                    args += ['-certfile', mf]
+                out = ossl(args + ['-outform', 'DER'])
+            elif fmt == 'key':
+                out = key_pem()
+            elif fmt == 'pem_key':
+                out = (cert + more).encode() + key_pem()
+            else:
+                args = ['pkcs12', '-export', '-in', cf, '-inkey', kf, '-name', cn,
+                        '-passout', 'env:ISEMON_EXPORT_PW']
+                if more:
+                    mf = os.path.join(work, 'more.pem')
+                    with open(mf, 'w') as f:
+                        f.write(more)
+                    args += ['-certfile', mf]
+                if fmt == 'pfx_legacy':
+                    args += ['-keypbe', 'PBE-SHA1-3DES', '-certpbe', 'PBE-SHA1-3DES',
+                             '-macalg', 'sha1']
+                else:
+                    args += ['-keypbe', 'AES-256-CBC', '-certpbe', 'AES-256-CBC',
+                             '-macalg', 'sha256']
+                out = ossl(args)
+        if with_key:
+            self.store.add_event('settings', '%s exported the certificate of the pages with its '
+                                 'private key (%s%s)' % (by or 'somebody', words.split(' - ')[0],
+                                                         ', the key encrypted' if password
+                                                         else ', the key not encrypted'),
+                                 'warn', who=by)
+        return {'name': cn + ('.key' if fmt == 'key' else ext), 'data': out, 'what': fmt,
+                'words': words, 'key': with_key}
+
     def cert_days(self):
         """Days until the certificate the dashboard answers with runs out, or
         None when it is not known (look.json not there)."""
@@ -72024,6 +72159,24 @@ class ApiHandler(BaseHTTPRequestHandler):
             except (WebRootError, OSError, ValueError) as e:
                 return self.fail(str(e))
             return self.fail('nothing to do')
+
+        # The certificate in the format asked (1.10.249): PEM, DER, PKCS#7,
+        # PKCS#12 - with the private key for a full administrator only.
+        if path == '/api/web/tls/export':
+            me = self.need_login()
+            if not me:
+                return None
+            if method != 'POST':
+                return self.send_json(dict(daemon.webroot.tls_export_view(), ok=True,
+                                           admin=me.get('role') == 'fulladmin'))
+            try:
+                got = daemon.webroot.tls_export(self.body(), me.get('name') or '',
+                                                admin=me.get('role') == 'fulladmin')
+            except (WebRootError, OSError, subprocess.SubprocessError) as e:
+                return self.fail(str(e))
+            return self.send_json({'ok': True, 'name': got['name'], 'what': got['what'],
+                                   'b64': base64.b64encode(got['data']).decode('ascii'),
+                                   'key': got['key']})
 
         if path == '/api/web/tls/download':
             me = self.need_login()
