@@ -162,6 +162,24 @@ try:
     ok('php-fpm asked its version, and moved', (v, stream, 'PHP 8.0.30 runs the pages' in out),
        ('8.3.36', 'remi-8.3', True))
 
+    print('\nPHP 8.2.35 - the 8.2 with the fix - from php:remi-8.2 (1.10.255: to 8.3 all the same)')
+    machine('8.2.35', 'remi-8.2', {'remi-8.2': '8.2.35', 'remi-8.3': '8.3.36', '8.3': '8.3.19'},
+            epel_release=False)
+    (work / 'epel-release.rpm').write_text('1')
+    (work / 'remi-release.rpm').write_text('1')
+    rc, out, calls, v, stream = run()
+    ok('to Remi\'s 8.3.36, the upgrade went on', (rc, v, stream, 'RAN TO THE END' in out),
+       (0, '8.3.36', 'remi-8.3', True))
+    ok('...said it takes only an 8.3 with the fix', 'only an 8.3 with it is taken' in out)
+    machine('8.2.35', 'remi-8.2', {'remi-8.2': '8.2.35', 'remi-8.3': '8.3.30', '8.3': '8.3.19'})
+    rc, out, calls, v, stream = run()
+    ok('Remi\'s 8.3 without the fix: never in place of one with it - the distribution\'s '
+       'php:8.3 (backported)', (v, stream), ('8.3.19', '8.3'))
+    machine('8.2.35', 'remi-8.2', {'remi-8.2': '8.2.35', 'remi-8.3': '8.3.30'})
+    rc, out, calls, v, stream = run()
+    ok('...and no other 8.3: stays on 8.2.35, its stream back, said',
+       (v, stream, 'could not be moved to 8.3' in out), ('8.2.35', 'remi-8.2', True))
+
     print('\nAlready fixed')
     machine('8.3.36', 'remi-8.3', {'remi-8.3': '8.3.36'})
     rc, out, calls, v, stream = run()

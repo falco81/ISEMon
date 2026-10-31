@@ -641,14 +641,19 @@ php_update() {
         note "PHP: neither php nor php-fpm answers here - nothing to move"
         return 0
     fi
-    if php_is_fixed "$v"; then
-        good "PHP $v has the php2shell fix - left as it is"
-        return 0
-    fi
     mm="$(echo "$v" | cut -d. -f1,2)"
     target="$PHP_TARGET"
     case "$mm" in 8.4|8.5) target="$mm";; esac
     fix="$(php_fix_of "$target")"
+    # PHP 8.3 is where the pages are to be (1.10.255): an older line goes
+    # there even with the fix of its own (8.2.35) - but only to an 8.3 that
+    # has it too. On 8.3 or newer with the fix: left as it is.
+    local had_fix=""
+    php_is_fixed "$v" && had_fix=1
+    if [[ -n "$had_fix" ]] && version_ge "$mm" "$target"; then
+        good "PHP $v has the php2shell fix - left as it is"
+        return 0
+    fi
     if [[ -n "$DRY_RUN" ]]; then
         note "[would move] PHP $v to PHP $target - Remi's ($fix or the newest there), else the distribution's php:$target"
         return 0
@@ -663,7 +668,7 @@ php_update() {
         warn "PHP $v: not a RHEL 8, 9 or 10 here - update PHP by hand"
         return 0
     fi
-    say "PHP $v runs the pages: to PHP $target ($fix has the php2shell fix)"
+    say "PHP $v runs the pages: to PHP $target ($fix has the php2shell fix$([[ -n "$had_fix" ]] && echo "; $v has it too, so only an 8.3 with it is taken"))"
     # An upgrade from the pages has 25 minutes in all: the move and a way back
     # in what is left of 15 of them.
     local until=$((SECONDS + 900))
@@ -689,8 +694,11 @@ php_update() {
             return 0
         fi
         say "  Remi, $fix or later: $PHP_SAID"
-        # Not the fixed release yet: the newest 8.3 Remi has, newer than this.
-        if [[ "$mm" == "$target" ]]; then
+        # Not the fixed release yet: the newest 8.3 Remi has, newer than this
+        # - never in place of a PHP that has the fix.
+        if [[ -n "$had_fix" ]]; then
+            :
+        elif [[ "$mm" == "$target" ]]; then
             php_try "remi-$target" "$target" "$v" 1 "$was" "$until" && {
                 good "PHP $PHP_SAID from the Remi repository (php:remi-$target), php-fpm restarted"
                 warn "  $PHP_SAID is not $fix yet: the next upgrade takes $fix when Remi has it"
@@ -700,7 +708,7 @@ php_update() {
             warn "  $PHP_SAID is not $fix yet: the next upgrade takes $fix when Remi has it"
             return 0
         fi
-        say "  Remi, the newest $target: $PHP_SAID"
+        [[ -z "$had_fix" ]] && say "  Remi, the newest $target: $PHP_SAID"
     fi
     if ! version_ge "$mm" "$target"; then
         if php_try "$target" "$target" "$target.0" "" "$was" "$until"; then

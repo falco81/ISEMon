@@ -371,6 +371,16 @@ working.
 
 ## Version
 
+1.10.255
+
+- **PHP 8.2.35 to 8.3 as well**: a PHP that had the php2shell fix of its own
+  line (8.2.35, from php:remi-8.2) was left where it was - the pages are to
+  run on PHP 8.3, and now it goes there too. Only to an 8.3 that has the fix
+  as well: Remi's 8.3.36 or later, else the distribution's php:8.3 (the fix
+  backported); never Remi's 8.3 without it in place of a PHP with it. Nothing
+  of that there: it stays as it is, its stream put back, and says so. PHP 8.3
+  or newer with the fix is left alone, as before.
+
 1.10.254
 
 - **PHP to 8.3, for real**: on the distribution's default PHP (8.0 on
