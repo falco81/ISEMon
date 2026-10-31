@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.250
+
+- **PHP to the release with the php2shell fix, by the installer**: an upgrade
+  (from the pages too) and a fresh install with the pages move a PHP below
+  8.3.36 (8.4.27 / 8.5.12 on those) to PHP 8.3 from the Remi repository -
+  EPEL and Remi added, the stream php:remi-8.3, what Remi offers checked to be
+  8.3.36 or later before a package is changed, `dnf distro-sync 'php*'` with
+  the configuration kept, php-fpm restarted and asked its version. Anything
+  that does not work puts the stream and the PHP it was on back, and is said.
+  `--no-php-update` leaves PHP as it is; Debian and Ubuntu are told, not
+  changed. See [docs/php2shell.md](docs/php2shell.md).
+
 1.10.249
 
 - **Settings - Certificates and TLS - Download** opens a popup of the formats:

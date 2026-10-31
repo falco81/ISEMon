@@ -64,6 +64,30 @@ and `php:8.3` module streams - so **the fixed package keeps its old version
 number** (8.0.30, 8.2.33 ...). Do not wait for a package called 8.2.35; look
 for the CVE in its errata and changelog (step 7).
 
+## 3a. isemon 1.10.250 and later: the installer moves PHP itself
+
+`./install.sh --upgrade` (from the pages too) and a fresh install with the
+pages look at the PHP that serves them. Below the release with the fix -
+**8.3.36** (8.4.27, 8.5.12 where the machine is on those already) - it moves
+it to that release from the **Remi** repository, because the distribution's
+own fixed package keeps its old number:
+
+1. EPEL and Remi are added (`epel-release`, `remi-release-9.rpm`) where
+   they are not;
+2. the module stream is switched to `php:remi-8.3` (`remi-8.4` / `remi-8.5`
+   for a machine on those - never down);
+3. what Remi offers is looked at **before a package is changed** - not
+   8.3.36 or later yet: the stream it was on is put back and nothing else is
+   done;
+4. `dnf distro-sync 'php*'` - every PHP package there is, to Remi's build;
+   `php.ini` and `php-fpm.d` are kept as they are;
+5. php-fpm is restarted and PHP asked its version. Anything that does not
+   work puts the old stream and its packages back, and is said.
+
+`--no-php-update` leaves PHP alone. Debian and Ubuntu are told, not changed
+(`ppa:ondrej/php`, `packages.sury.org`). The steps below are still what to do
+by hand, and step 4's guard stays worth having.
+
 ## 4. Guard PHP as a whole, now
 
 Upload progress off for every PHP on the machine, and sessions strict - in

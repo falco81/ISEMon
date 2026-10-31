@@ -60,6 +60,7 @@ DRY_RUN=""
 ASSUME_YES=""
 WITH_WEB="yes"
 WITH_SYSLOG="yes"
+PHP_UPDATE="yes"         # --no-php-update: the PHP of the pages left as it is
 # Asked for by name. A plain --upgrade changes nothing of how the logs are
 # received or what PostgreSQL lets this program do (1.10.202): a machine
 # where that already works is left exactly as it is. A fresh install does
@@ -524,6 +525,128 @@ php2shell_said() {
     fi
 }
 
+# The PHP of the pages moved to a release with the php2shell fix (1.10.250):
+# 8.3.36 - or 8.4.27 / 8.5.12 where the machine is on those already. The
+# RHEL family backports the fix and keeps the old number (8.3.8 ...), so the
+# upstream release comes from the Remi repository (php:remi-8.3, which needs
+# EPEL): the module stream switched, what Remi offers checked to be the fixed
+# release BEFORE a package is changed, then `dnf distro-sync 'php*'` - every
+# PHP package there is, to Remi's build of it; the configuration is kept
+# (rpm leaves php.ini and php-fpm.d as they are). php-fpm restarted and asked
+# its version; anything that does not work and the stream it was on is put
+# back. --no-php-update leaves PHP alone; Debian and Ubuntu are said, not
+# changed.
+PHP_TARGET="8.3"
+php_fix_of() {        # php_fix_of 8.3 -> 8.3.36
+    case "$1" in
+        8.2) echo 8.2.35;; 8.3) echo 8.3.36;; 8.4) echo 8.4.27;; 8.5) echo 8.5.12;; *) echo "";;
+    esac
+}
+version_ge() {        # version_ge A B: A >= B
+    [[ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" == "$2" ]]
+}
+php_now() { php -r 'echo PHP_VERSION;' 2>/dev/null || true; }
+php_is_fixed() {      # php_is_fixed VERSION
+    local mm fix
+    mm="$(echo "$1" | cut -d. -f1,2)"
+    fix="$(php_fix_of "$mm")"
+    [[ -n "$fix" ]] && version_ge "$1" "$fix" && return 0
+    [[ -z "$fix" ]] && version_ge "$mm" "8.6" && return 0
+    return 1
+}
+php_fpm_restart() {
+    local u
+    for u in $(php_fpm_units); do
+        systemctl restart "$u" 2>/dev/null || return 1
+    done
+    return 0
+}
+php_stream_back() {   # php_stream_back STREAM - the stream it was on, and its packages
+    timeout 120 dnf -y -q module reset php >/dev/null 2>&1 || true
+    [[ -n "$1" ]] && timeout 120 dnf -y -q module enable "php:$1" >/dev/null 2>&1 || true
+}
+php_update() {
+    [[ -n "$PHP_UPDATE" ]] || return 0
+    command -v php >/dev/null 2>&1 || return 0
+    local v mm target fix el was avail now
+    v="$(php_now)"
+    [[ -n "$v" ]] || return 0
+    if php_is_fixed "$v"; then
+        good "PHP $v has the php2shell fix - left as it is"
+        return 0
+    fi
+    mm="$(echo "$v" | cut -d. -f1,2)"
+    target="$PHP_TARGET"
+    case "$mm" in 8.4|8.5) target="$mm";; esac
+    fix="$(php_fix_of "$target")"
+    if [[ -n "$DRY_RUN" ]]; then
+        note "[would move] PHP $v to PHP $target from the Remi repository ($fix or later)"
+        return 0
+    fi
+    if [[ "$PKG" != "dnf" ]]; then
+        warn "PHP $v is below $fix (php2shell): update it by hand - your distribution's"
+        warn "  fixed package, or ppa:ondrej/php / packages.sury.org - then restart php-fpm"
+        return 0
+    fi
+    el="$(rpm -E '%rhel' 2>/dev/null || true)"
+    if [[ ! "$el" =~ ^(8|9|10)$ ]]; then
+        warn "PHP $v is below $fix (php2shell): not a RHEL 8, 9 or 10 here - update PHP by hand"
+        return 0
+    fi
+    say "PHP $v is below $fix (php2shell): moving to PHP $target from the Remi repository"
+    # An upgrade from the pages has 25 minutes in all: the move and a way back
+    # in what is left of 15 of them.
+    local until=$((SECONDS + 900))
+    was="$(timeout 120 dnf -q module list --enabled php 2>/dev/null | awk '$1=="php"{print $2; exit}')"
+    if ! rpm -q epel-release >/dev/null 2>&1; then
+        timeout 300 dnf install -y -q epel-release >/dev/null 2>&1 || true
+    fi
+    if ! rpm -q remi-release >/dev/null 2>&1; then
+        timeout 300 dnf install -y -q "https://rpms.remirepo.net/enterprise/remi-release-$el.rpm" \
+            >/dev/null 2>&1 || true
+    fi
+    if ! rpm -q epel-release >/dev/null 2>&1 || ! rpm -q remi-release >/dev/null 2>&1; then
+        warn "the EPEL and Remi repositories could not be added (no way to them from here?):"
+        warn "  PHP $v left as it is - update it by hand (docs/php2shell.md)"
+        return 0
+    fi
+    timeout 120 dnf -y -q module reset php >/dev/null 2>&1 || true
+    if ! timeout 120 dnf -y -q module enable "php:remi-$target" >/dev/null 2>&1; then
+        php_stream_back "$was"
+        warn "the stream php:remi-$target could not be enabled: PHP $v left as it is"
+        return 0
+    fi
+    avail="$(timeout 300 dnf -q repoquery --latest-limit=1 --qf '%{version}' php-fpm 2>/dev/null \
+             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)"
+    if [[ -z "$avail" ]] || ! version_ge "$avail" "$fix"; then
+        php_stream_back "$was"
+        warn "Remi offers PHP ${avail:-nothing} for $target, not $fix or later yet: PHP $v left as it is"
+        return 0
+    fi
+    if (( SECONDS + 300 > until )); then
+        php_stream_back "$was"
+        warn "the repositories were slow to answer: PHP $v left as it is - run ./install.sh --upgrade again"
+        return 0
+    fi
+    if ! timeout $((until - SECONDS)) dnf -y -q distro-sync 'php*' >/dev/null 2>&1; then
+        php_stream_back "$was"
+        timeout 600 dnf -y -q distro-sync 'php*' >/dev/null 2>&1 || true
+        php_fpm_restart || true
+        warn "dnf could not move PHP to $avail: back on what it was ($(php_now))"
+        return 0
+    fi
+    now="$(php_now)"
+    if ! php_is_fixed "$now" || ! php_fpm_restart; then
+        php_stream_back "$was"
+        timeout 600 dnf -y -q distro-sync 'php*' >/dev/null 2>&1 || true
+        php_fpm_restart || true
+        warn "PHP $now did not start as it should: back on what it was ($(php_now))"
+        return 0
+    fi
+    good "PHP $now from the Remi repository (php:remi-$target) - php2shell fixed; php-fpm restarted"
+    return 0
+}
+
 # The php-fpm units there are: php-fpm on the RHEL family, php8.2-fpm and
 # the like on Debian and Ubuntu - which a restart of "php-fpm" never reached.
 php_fpm_units() {
@@ -599,6 +722,11 @@ Usage: sudo ./install.sh [options]
   --admin-user NAME       the first dashboard account (default $ADMIN_USER)
   --admin-password PASS   its password (otherwise one is made and printed)
   --cert FILE --key FILE  TLS certificate and key to copy into $CERT_DIR
+  --no-php-update         leave the PHP of the pages as it is. Otherwise a PHP
+                          below the release that fixes php2shell (8.3.36, or
+                          8.4.27 / 8.5.12 on those) is moved to PHP 8.3 from the
+                          Remi repository (EPEL and Remi added), and back to
+                          what it was if that does not work (RHEL family)
   --no-syslog             a fresh install: leave receiving the logs alone.
                           Otherwise rsyslog with its RELP and TLS modules is
                           installed where missing, what it makes under
@@ -654,6 +782,7 @@ while [[ $# -gt 0 ]]; do
         --key)             KEY_FILE="$2"; shift 2;;
         --with-syslog)     WITH_SYSLOG="yes"; SYSLOG_ASKED="yes"; shift;;
         --no-syslog)       WITH_SYSLOG=""; shift;;
+        --no-php-update)   PHP_UPDATE=""; shift;;
         --db-rights)       DO_DB_RIGHTS="yes"; shift;;
         --log-from)        LOG_FROM="$2"; shift 2;;
         --with-db)         WITH_DB="$2"
@@ -1269,6 +1398,11 @@ if [[ -n "$DO_UPGRADE" ]]; then
     # What isemon uses and this machine lacks, put in first (1.10.236).
     progress 1 "the packages isemon uses"
     ensure_packages upgrade
+    # The PHP of the pages, to the release with the php2shell fix (1.10.250).
+    if [[ -f "$WEB_DIR/index.php" ]]; then
+        progress 1 "PHP"
+        php_update
+    fi
     progress 1 "copying the program"
     [[ -d "$LIB_DIR" ]] || fail "$LIB_DIR does not exist — this looks like a first install, so run it without --upgrade"
     was="$(python3 "$LIB_DIR/isemon.py" --version 2>/dev/null || echo unknown)"
@@ -1504,6 +1638,7 @@ install_db_drivers
 # What else isemon uses (ssh, openssl, smbclient, chrony, colorama...): put in
 # when it is missing, never insisted on - see ensure_packages.
 ensure_packages fresh
+[[ -n "$WITH_WEB" ]] && php_update
 
 # ---- the account it runs as ------------------------------------------------
 step "The service account"
