@@ -2584,6 +2584,8 @@ function srcText(el) {
   /* a setting another setting has taken out of play */
   .set-item.asleep > label,.set-item.asleep > input,.set-item.asleep > select,
   .set-item.asleep > .sw,.set-item.asleep > div:not(.says){opacity:.45}
+  .set-item.asleep input,.set-item.asleep select,.set-item.asleep textarea,.set-item.asleep .sw{cursor:not-allowed}
+  .set-item.asleep .sw{pointer-events:none}
   .set-item .asleep-why{color:var(--warn);opacity:.85}
   /* The ladder: a step at a time, each one picked rather than typed. A dozen
      rows tall, so it takes a line of its own rather than leaving a ragged
@@ -26839,6 +26841,14 @@ function applyOnlyWhen() {
     var rule = w.rule || ONLY_WHEN[key];
     var live = w.live;
     item.classList.toggle('asleep', !live);
+    /* Asleep is not typed into (1.10.259, as otp): every box and choice of it
+       disabled - and given back only what this switched off, never one
+       disabled for another reason (an account that may only look). */
+    Array.prototype.forEach.call(item.querySelectorAll('input, select, textarea, button:not(.info)'),
+      function (c) {
+        if (!live && !c.disabled) { c.disabled = true; c.dataset.asleepOff = '1'; }
+        else if (live && c.dataset.asleepOff) { c.disabled = false; delete c.dataset.asleepOff; }
+      });
     var says = item.querySelector('.asleep-why');
     /* Written again on every pass: the reason may be another one up the line. */
     if (says && !live && says.dataset.by !== rule[0] + '=' + rule[1]) { says.remove(); says = null; }
@@ -28947,6 +28957,20 @@ if ($('dir-find')) {
 }
 
 /* ---- the rail ------------------------------------------------------------ */
+/* The menu scrolled to the pane's button when it is out of sight - opened
+   with F5 or a link far down the list, the list began at its top and the
+   pane's own entry was nowhere to be seen (1.10.259). Only the menu moves. */
+function navShowOn() {
+  var on = document.querySelector('#ctl-nav button[data-pane].on');
+  if (!on) return;
+  var box = on.parentElement;
+  while (box && box !== document.body && box.scrollHeight <= box.clientHeight + 1) box = box.parentElement;
+  if (!box || box === document.body) return;
+  var r = on.getBoundingClientRect(), br = box.getBoundingClientRect();
+  if (r.top < br.top || r.bottom > br.bottom) {
+    box.scrollTop += (r.top - br.top) - (box.clientHeight - r.height) / 2;
+  }
+}
 function showPane(name, quietly) {
   /* A group of settings that lives inside another pane - the second
      firewall inside the router's, the published list inside Banning - is
@@ -28958,6 +28982,7 @@ function showPane(name, quietly) {
   PANE = name;
   Array.prototype.forEach.call(document.querySelectorAll('#ctl-nav button[data-pane]'),
     function (b) { b.classList.toggle('on', b.dataset.pane === name); });
+  navShowOn();
   Array.prototype.forEach.call(document.querySelectorAll('.ctl-pane'), function (p) {
     p.hidden = p.id !== 'pane-' + name;
   });
@@ -41649,6 +41674,15 @@ function otWizSettings(box) {
 /* Opened straight at this pane, it was switched to before this block was
    read: drawn now. */
 setTimeout(function () { if (paneLive('otp')) loadOtpTls(); }, 0);
+/* ...and any other pane whose code comes in a later block - Automatic
+   certificates after F5 showed its settings alone (1.10.259): once every
+   script is read, the pane the address opened is shown again, with its
+   cards, and the menu at its button. */
+setTimeout(function () {
+  if (typeof TAB !== 'undefined' && TAB === 'settings' && PANE && $('pane-' + PANE)
+      && !$('pane-' + PANE).hidden && PANE !== 'otp') showPane(PANE, true);
+  else navShowOn();
+}, 0);
 </script>
 </body>
 </html>

@@ -371,6 +371,20 @@ working.
 
 ## Version
 
+1.10.259
+
+- **F5 on a pane drew it half**: Automatic certificates, opened by its address
+  (a reload, a link), showed its settings and none of its cards - its code
+  comes in a later block of the page than the code that opens the pane. Once
+  every script is read, the pane the address opened is shown again, whole.
+- **The menu scrolled to the pane's button**: opened by its address or from far
+  down the list, the menu began at its top and the pane's own entry was out of
+  sight; it is brought into view now (only the menu moves).
+- **A setting not in use cannot be typed into**, as otp has it: greyed out and
+  disabled - its boxes, choices and switch - with what decides it said
+  beneath, and given back as it was once it is in use again (one disabled for
+  another reason stays so).
+
 1.10.258
 
 - **Automatic certificates as otp's**: the pane looks and works as otp's does -

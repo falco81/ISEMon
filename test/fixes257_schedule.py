@@ -678,6 +678,7 @@ function Item(key) {
   var me = this;
   this.classList = {toggle: function (c, on) { if (on) me.cls[c] = 1; else delete me.cls[c]; }};
   this.querySelector = function () { return me.kids.filter(function (k) { return !k.gone; })[0] || null; };
+  this.querySelectorAll = function () { return []; };   // its boxes (1.10.259: disabled while asleep)
   this.appendChild = function (k) { me.kids.push(k); k.remove = function () { k.gone = true; }; };
 }
 var document = {querySelector: function (sel) { var m = /data-key="([^"]+)"/.exec(sel); return items[m[1]] || null; }};
