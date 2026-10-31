@@ -137,6 +137,7 @@ class CA(object):
     window = None           # (start, end)
     ari_asked = []
     reject_replaces = 0
+    owner = {}              # the CertID of each certificate -> the account that ordered it
     algs = []
     n = 0
 
@@ -307,6 +308,12 @@ class CAHandler(BaseHTTPRequestHandler):
             if payload.get('replaces') and CA.reject_replaces:
                 CA.reject_replaces -= 1
                 return self.problem('alreadyReplaced', 'that one was replaced already', 409)
+            # Let's Encrypt's rule (otp 1.0.199): `replaces` only from the
+            # account that ordered the certificate it names.
+            if payload.get('replaces') and CA.owner.get(payload['replaces']) not in (None, aid):
+                return self.problem('conflict', "Could not validate ARI 'replaces' field :: "
+                                    'requester account did not request the certificate being '
+                                    'replaced by this order', 409)
             oid = CA.new_id()
             azs = []
             for i in payload['identifiers']:
@@ -363,6 +370,10 @@ class CAHandler(BaseHTTPRequestHandler):
                 return self.problem('serverInternal', r2.stderr.decode()[:200], 500)
             cid = CA.new_id()
             CA.certs[cid] = (Path(t) / 'leaf.pem').read_text() + (work / 'mid.pem').read_text()
+            try:
+                CA.owner[isemon.ari_cert_id((Path(t) / 'leaf.pem').read_text())] = aid
+            except Exception:                           # noqa: BLE001
+                pass
             o.update(status='valid', certificate=CA.url('/cert/' + cid))
             return self.answer(200, o)
         if parts[0] == 'order':
@@ -812,6 +823,39 @@ try:
     st_ = order()
     ok('a CA that will not take "replaces": ordered again without it',
        (st_.get('ok'), [bool(o.get('replaces')) for o in CA.new_orders[n0:]]), (True, [True, False]))
+
+    print('\n"replaces" after the account changed (otp 1.0.199: the CA takes it only from '
+          'the account that ordered the certificate)')
+    ok('the account that ordered it is kept with it', store.meta_json('acme:state', {}).get('kid'),
+       store.meta_json('acme:account', {}).get('kid'))
+    was_kid = store.meta_json('acme:account', {}).get('kid')
+    daemon.save_settings({'acme_account_key': 'ec384'}, by='boss')
+    n0 = len(CA.new_orders)
+    st_ = order()
+    ok('another key of the account - another account: ordered, and the CA saw no "replaces"',
+       (st_.get('ok'), store.meta_json('acme:account', {}).get('kid') != was_kid,
+        [o.get('replaces') for o in CA.new_orders[n0:] if o.get('replaces')]), (True, True, []))
+    ok('...said in the order\'s steps', any('ordered by another account' in t for _t, t in st_['steps']))
+    ok('...the new account kept with the new certificate', st_.get('kid'),
+       store.meta_json('acme:account', {}).get('kid'))
+    # One from before 1.10.265: no account kept with it - and the key of the
+    # account changed back: "replaces" goes out, the CA refuses it, the order
+    # goes again without it.
+    s2 = store.meta_json('acme:state', {})
+    s2.pop('kid', None)
+    s2.pop('kid2', None)
+    store.set_meta('acme:state', json.dumps(s2))
+    daemon.save_settings({'acme_account_key': 'ec'}, by='boss')
+    n0 = len(CA.new_orders)
+    st_ = order()
+    reps = [bool(o.get('replaces')) for o in CA.new_orders[n0:]]
+    ok('no account kept with it: "replaces" refused by the CA, ordered again without it',
+       (st_.get('ok'), reps[:2]), (True, [True, False]))
+    ok('...said in the order\'s steps', any('does not take it as the renewal' in t
+                                             for _t, t in st_['steps']))
+    ok('...and the account kept with it from now on', st_.get('kid'),
+       store.meta_json('acme:account', {}).get('kid'))
+
     CA.ari_status = 500
     row = isemon.acme_ari_row(store)
     try:

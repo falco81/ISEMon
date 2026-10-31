@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.264'
+__version__ = '1.10.265'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -65242,22 +65242,37 @@ class Acme(object):
         u = str(self.dir.get('renewalInfo') or '')
         return u if u.startswith('https://') else ''
 
-    def order(self, names, say, wr=None, key_kind='ec256', replaces=''):
+    def order(self, names, say, wr=None, key_kind='ec256', replaces='', replaces_kid=None):
         """One certificate with a new key of `key_kind` - (its key, the chain
         as the CA sends it). `replaces`: the ARI CertID of the one it
-        renews (RFC 9773 §5), said only to a CA that has renewalInfo."""
+        renews (RFC 9773 §5), said only to a CA that has renewalInfo - and
+        only by the account that ordered it (1.10.265, as otp 1.0.199): the
+        CA takes `replaces` from that account alone ("requester account did
+        not request the certificate being replaced by this order"), and a
+        new key of the account, another CA or the account made again is
+        another account. `replaces_kid`: the account that ordered it, when
+        known."""
         say('ordered from the CA')
         payload = {'identifiers': [{'type': 'dns', 'value': n} for n in names]}
         if replaces and self.ari():
-            payload['replaces'] = replaces
+            if not self.kid:
+                self._account()
+            if replaces_kid and replaces_kid != self.kid:
+                say('the one before was ordered by another account at the CA - ordered as a '
+                    'new one, not as its renewal')
+            else:
+                payload['replaces'] = replaces
         try:
             got, headers = self.post_json(self.dir['newOrder'], payload)
         except AcmeError as e:
             if 'replaces' not in payload:
                 raise
             # A CA that will not take it (alreadyReplaced, a CertID it does
-            # not know): ordered without - a renewal all the same.
-            say('the CA did not take "replaces" (%s) - ordered without it' % str(e)[:160])
+            # not know, another account ordered it - one from before 1.10.265
+            # has no account kept with it): ordered without - a renewal all
+            # the same, only not counted as one.
+            say('the CA does not take it as the renewal of the one before (%s) - ordered as a '
+                'new one' % str(e)[:160])
             payload.pop('replaces')
             got, headers = self.post_json(self.dir['newOrder'], payload)
         order_url = headers.get('Location')
@@ -65852,12 +65867,13 @@ def acme_order(wr, name, by, say=None, only_second=False):
         mine = tls_how(tls) == 'ACME'
         if only_second:
             return _acme_order_second(wr, a, name, by, say, st, dual,
-                                      ari_cert_id(tls.get('cert2')) if mine else '')
+                                      ari_cert_id(tls.get('cert2')) if mine else '',
+                                      old.get('kid2') or old.get('kid'))
         # Which keys are made (as upsmon 4.1.6 says them).
         kinds = acme_cert_kinds()
         say('the key%s: %s' % ('s' if len(kinds) > 1 else '', acme_keys_words(kinds)))
         key, chain = a.order([name], say, wr, acme_key_kind(),
-                             ari_cert_id(tls.get('cert')) if mine else '')
+                             ari_cert_id(tls.get('cert')) if mine else '', old.get('kid'))
         second, said2 = None, ''
         if dual:
             try:
@@ -65865,7 +65881,8 @@ def acme_order(wr, name, by, say=None, only_second=False):
                 # CA only signs - nginx offers it to the clients that take it.
                 say('a second certificate, with a %s key' % KEY_KIND_WORDS[dual])
                 second = a.order([name], say, wr, dual,
-                                 ari_cert_id(tls.get('cert2')) if mine else '')
+                                 ari_cert_id(tls.get('cert2')) if mine else '',
+                                 old.get('kid2') or old.get('kid'))
             except (AcmeError, WebRootError, ValueError, OSError) as e:
                 # The RSA one is put in all the same; the ECDSA one is asked
                 # again at the next look past its retry.
@@ -65875,6 +65892,13 @@ def acme_order(wr, name, by, say=None, only_second=False):
                     KEY_KIND_WORDS[dual], said2))
         say('the certificate is put in')
         f = acme_install(wr, chain, key, by, second, name)
+        # The account that ordered it, kept with it (1.10.265): only that
+        # account may say a later order renews it.
+        st['kid'] = a.kid
+        if isinstance(second, tuple):
+            st['kid2'] = a.kid
+        elif old.get('kid2'):
+            st['kid2'] = old['kid2']
         st.update(ok=True, not_after=f.get('until'), issuer=f.get('issuer'),
                   ordered_at=time.time(), kind=acme_key_kind(),
                   keys=acme_keys_words(kinds if isinstance(second, tuple) or not dual
@@ -65910,7 +65934,7 @@ def acme_order(wr, name, by, say=None, only_second=False):
         else:
             st.update(ok=False, failed_at=time.time(), said=str(e)[:600],
                       retry_at=time.time() + ACME_RETRY * _ACME_RAND.uniform(0.9, 1.1))
-            for k in ('not_after', 'issuer', 'ordered_at', 'kind', 'second'):
+            for k in ('not_after', 'issuer', 'ordered_at', 'kind', 'second', 'kid', 'kid2'):
                 if old.get(k):
                     st[k] = old[k]
         st['steps'] = steps[-25:]
@@ -65924,12 +65948,13 @@ def acme_order(wr, name, by, say=None, only_second=False):
             a.close()
 
 
-def _acme_order_second(wr, a, name, by, say, st, dual, replaces):
+def _acme_order_second(wr, a, name, by, say, st, dual, replaces, replaces_kid=None):
     """The ECDSA certificate beside the RSA one, ordered by itself."""
     if not dual:
         raise AcmeError('no ECDSA certificate is asked for beside it')
     say('a second certificate, with a %s key' % KEY_KIND_WORDS[dual])
-    key, chain = a.order([name], say, wr, dual, replaces)
+    key, chain = a.order([name], say, wr, dual, replaces, replaces_kid)
+    st['kid2'] = a.kid
     say('the %s certificate is put in beside the RSA one' % KEY_KIND_WORDS[dual])
     f = acme_install_second(wr, chain, key, by)
     st['second'] = {'kind': dual, 'ok': True, 'at': time.time()}

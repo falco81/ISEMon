@@ -371,6 +371,22 @@ working.
 
 ## Version
 
+1.10.265
+
+- **Automatic certificates: "replaces" only from the account that ordered the
+  certificate** (as otp 1.0.199). A CA takes ARI's `replaces` (RFC 9773) only
+  from the ACME account that ordered the certificate it names - Let's Encrypt
+  refuses it otherwise ("requester account did not request the certificate
+  being replaced by this order", 409). A new key of the account, another CA or
+  the account made again is another account. The account that ordered each
+  certificate is now kept with it (the RSA one and the ECDSA one each), and a
+  renewal says `replaces` only when it is the same account; otherwise it is
+  ordered as a new certificate, and the order's steps say why. A certificate
+  from before this version has no account kept with it: the CA may refuse its
+  `replaces`, and the order goes again without it at once, as before - a
+  renewal never stops on it. Each of the two certificates names only its own
+  predecessor.
+
 1.10.264
 
 - *Automatic certificates → In your DNS*: a table of fixed proportions across
