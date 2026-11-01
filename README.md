@@ -371,6 +371,47 @@ working.
 
 ## Version
 
+1.10.270
+
+- **Twice the records a second on PostgreSQL**: a lot of records was one
+  transaction, but each record in it was still an INSERT of its own - a
+  round trip to the server each, half of what a record cost: the reader
+  stopped at about 2 500 records a second however fast the server, and a
+  site sending 5 000 fell further behind every second. Inside a lot the new
+  failed and passed rows are now held and written in one statement before
+  the lot is committed (`OwedRows`): about 5 600 - 6 200 a second on the same
+  machine, on an empty database and on one of eleven million rows alike.
+  Nothing reads around them - any statement naming `failed` or `passed`,
+  the counting towards a ban first of all, has them written first - and a
+  record is still known new or not as it is taken (the lot's sessions are
+  looked up together at its start); a lot whose rows are refused is taken
+  again a record at a time, as before. The same stream put through both
+  ways leaves the same rows, bans, ban history, events and counts
+  (`test/fixes270_lot.py`, on the file and on PostgreSQL). The file and
+  MariaDB write each row as before.
+- **A record read faster**: a record without a backslash in it - nearly
+  every one - is cut at its separators by the pattern alone, and whether it
+  carries a command to be kept without its secrets is looked up by name
+  rather than matched: 10 - 25 % less of a record's time, on every engine.
+  Python 3.14 itself reads them 10 - 25 % faster than 3.13.
+- **A second less at every start**: Python never keeps the compiled form of a
+  file it is given to run, so isemon.py - 85 000 lines - was compiled again
+  at each start of the daemon and of every `isemon` command (the console's
+  too): about a second on Python 3.14, more on older ones. The unit and the
+  command now start it through `isemon_main.py`, which runs it as `__main__`
+  from `/usr/local/lib/isemon/__pycache__/`, compiled by install.sh for the
+  Python isemon runs on (and again when it goes back to another), checked
+  against the file's hash: 0.2 s instead of 1 s. Everything else about it -
+  its name, `__file__`, its arguments, what it says and how it ends - is as
+  when isemon.py is run itself, and without the compiled form it is compiled
+  at the start as before.
+- **The panes that wait for root answer sooner**: *Firewall and access* and
+  *Certificates and TLS* asked every five seconds and so said "waiting for
+  root…" for up to five seconds after root was done (it is within one); while
+  root has a change of theirs to put in they ask every 0.7 s. *SSH keys* and
+  *The OTP logs over TLS* ask every 0.7 s while root has theirs to do (2 s and
+  1.5 s before). Nothing else asks more often.
+
 1.10.269
 
 - **A Mikrotik with a very big list read in time**: *What the firewall is

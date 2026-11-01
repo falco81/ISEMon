@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.269'
+__version__ = '1.10.270'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -4080,6 +4080,11 @@ def like_for(text):
 def ise_split(body):
     """One record's body, cut at the separators and not inside a value."""
     text = body or ''
+    if '\\' not in text:
+        # No backslash, so no comma that belongs to a value: every separator
+        # is one, and the pattern cuts there by itself - the same pieces, at
+        # a fraction of the cost a record (1.10.270).
+        return ISE_SEPARATOR.split(text)
     out, at = [], 0
     for m in ISE_SEPARATOR.finditer(text):
         slashes = 0
@@ -5017,6 +5022,14 @@ def ise_ap(fields):
 # whole, and anybody who may open a row read `username admin secret X` in
 # the list of every field.
 CMD_FIELD = re.compile(r'(?i)^(cmdset|command|cmd|cmd-arg|cmdav|cmdargav)$')
+CMD_FIELD_NAMES = frozenset(('cmdset', 'command', 'cmd', 'cmd-arg', 'cmdav', 'cmdargav'))
+
+
+def _cmd_name(key):
+    """A field's name as CMD_FIELD reads it - folded, and without the one
+    newline its `$` lets through at the end."""
+    key = str(key).lower()
+    return key[:-1] if key.endswith('\n') else key
 
 
 def command_field_kept(value):
@@ -5042,7 +5055,9 @@ def fields_kept(flat):
     them without its secrets. Everything else untouched."""
     if not isinstance(flat, dict):
         return flat
-    if not any(CMD_FIELD.match(str(k)) for k in flat):
+    # The names looked up rather than each matched (1.10.270): every record
+    # passes here, and the commands are in the few that carry one.
+    if CMD_FIELD_NAMES.isdisjoint(_cmd_name(k) for k in flat):
         return flat
     out = flat.__class__() if isinstance(flat, collections.OrderedDict) else {}
     for k, v in flat.items():
@@ -19971,6 +19986,49 @@ class Result(object):
 HINT_NAMED = re.compile(r'\s+(?:INDEXED BY\s+\w+|FORCE INDEX\s*\(\s*\w+\s*\))', re.I)
 
 
+# The tables whose new rows a lot of records writes together (1.10.270).
+OWED_TABLES = re.compile(r'\b(?:failed|passed)\b', re.I)
+
+
+class OwedRows(object):
+    """The failed and passed rows of a lot of records, written together.
+
+    A lot of records (`Daemon.take_records`) is one transaction already, but
+    each record in it was still an INSERT of its own - one round trip to the
+    server each, which on PostgreSQL was half of what a record cost: the
+    reader stopped at two to three thousand records a second, however fast
+    the server, and a site sending five thousand fell further behind every
+    second (1.10.270).
+
+    So inside a lot, on PostgreSQL, a new row is held here and the lot's rows
+    go in one statement (`execute_values`, or COPY for the bigger ones) before
+    the lot is committed - in the same transaction, so all of it or none of
+    it as before. Nothing reads around them: any statement on this
+    connection that names `failed` or `passed` - the counting towards a ban,
+    a join to a sign-in, an update of a row - has them written first, so
+    every question asked in the lot sees exactly what it saw when each row
+    was written at once. Whether a record is new is still known as it is
+    taken: the lot's sessions are looked up once, together, at its start
+    (`there`), and one not looked up then is asked on its own, as before.
+    """
+
+    __slots__ = ('db', 'rows', 'busy', 'asked', 'there', 'seen')
+
+    def __init__(self, db):
+        self.db = db
+        self.rows = {}               # the statement -> its rows, in order
+        self.busy = False            # a look of its own: written nothing first
+        self.asked = {'failed': set(), 'passed': set()}
+        self.there = {'failed': set(), 'passed': set()}
+        self.seen = {'failed': set(), 'passed': set()}
+
+    def pay(self):
+        rows, self.rows = self.rows, {}
+        for sql, lot in rows.items():
+            if lot:
+                self.db.executemany(sql, lot)
+
+
 class Db(object):
     """A connection, in the shape this program has always talked to.
 
@@ -19979,11 +20037,14 @@ class Db(object):
     nothing else has to know which engine it is talking to.
     """
 
-    __slots__ = ('raw', 'dialect', 'isolation_level', 'broken', 'in_tx', '_limit_s')
+    __slots__ = ('raw', 'dialect', 'isolation_level', 'broken', 'in_tx', '_limit_s', 'owed')
 
     def __init__(self, raw, dialect):
         self.raw = raw
         self.dialect = dialect
+        # The rows of a lot of records not written yet (1.10.270): see
+        # `OwedRows`. Written before any statement about their tables.
+        self.owed = None
         # The limit on one statement this connection has on the server now,
         # in seconds; 0 for none (1.10.175).
         self._limit_s = 0
@@ -20041,6 +20102,9 @@ class Db(object):
                      for a in args)
 
     def execute(self, sql, args=()):
+        owed = self.owed
+        if owed is not None and owed.rows and not owed.busy and OWED_TABLES.search(sql):
+            owed.pay()
         job = getattr(_ASKING, 'job', None)
         if job is None:
             return self._execute(sql, args)
@@ -20190,6 +20254,9 @@ class Db(object):
             Db._reconnects[0] = 0
 
     def executemany(self, sql, rows):
+        owed = self.owed
+        if owed is not None and owed.rows and not owed.busy and OWED_TABLES.search(sql):
+            owed.pay()
         if self.in_tx:
             self._asking(sql)
             try:
@@ -35191,49 +35258,122 @@ class Storage(object):
         the same record are read by the same thread but a replay is not, and a
         check followed by a write is a race however narrow it looks.
         """
+        args = (self.fits_ident(row['session'], 'an ISE session id'), row['ts'],
+                row.get('server'), row['ip'],
+                self.fits(row.get('username'), 'a user name'),
+                row.get('device'), row.get('nad'), row.get('tunnel'), row.get('service'),
+                row.get('protocol'), row.get('code'), row.get('reason'), row.get('country'),
+                row.get('kind'), row.get('mac'), row.get('port'), row.get('ssid'),
+                row.get('realm'), row.get('client'), row.get('asked_as'),
+                row.get('machine'),
+                self.pack_detail(row.get('detail')))
+        if getattr(self._local, 'owed', None) is not None:
+            return self.owe_row('failed', self.FAILED_INSERT, args, row)
         with self.db_write() as db:
-            cur = db.execute(
-                'INSERT OR IGNORE INTO failed (session, ts, server, ip, username, device, nad, '
-                'tunnel, service, protocol, code, reason, country, kind, mac, port, ssid, '
-                'realm, client, asked_as, machine, detail) '
-                'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                (self.fits_ident(row['session'], 'an ISE session id'), row['ts'],
-                 row.get('server'), row['ip'],
-                 self.fits(row.get('username'), 'a user name'),
-                 row.get('device'), row.get('nad'), row.get('tunnel'), row.get('service'),
-                 row.get('protocol'), row.get('code'), row.get('reason'), row.get('country'),
-                 row.get('kind'), row.get('mac'), row.get('port'), row.get('ssid'),
-                 row.get('realm'), row.get('client'), row.get('asked_as'),
-                 row.get('machine'),
-                 self.pack_detail(row.get('detail'))))
+            cur = db.execute(self.FAILED_INSERT, args)
             if cur.rowcount > 0:
                 self._writes += 1
                 self.seen_note('failed', row)
             return cur.rowcount > 0
 
+    FAILED_INSERT = (
+        'INSERT OR IGNORE INTO failed (session, ts, server, ip, username, device, nad, '
+        'tunnel, service, protocol, code, reason, country, kind, mac, port, ssid, '
+        'realm, client, asked_as, machine, detail) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    PASSED_INSERT = (
+        'INSERT OR IGNORE INTO passed (session, ts, server, ip, username, device, nad, '
+        'tunnel, service, protocol, profile, policy, groups, country, kind, subtype, '
+        'cpm, acl, tkey, cmd, verdict, mac, port, ssid, realm, client, asked_as, '
+        'machine, detail) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+
     def add_passed(self, row):
+        args = (self.fits_ident(row['session'], 'an ISE session id'), row['ts'],
+                row.get('server'), row.get('ip'),
+                self.fits(row.get('username'), 'a user name'),
+                row.get('device'), row.get('nad'), row.get('tunnel'), row.get('service'),
+                row.get('protocol'), row.get('profile'), row.get('policy'), row.get('groups'),
+                row.get('country'), row.get('kind') or 'vpn', row.get('subtype'),
+                row.get('cpm'), row.get('acl'), row.get('tkey'), row.get('cmd'),
+                row.get('verdict'), row.get('mac'), row.get('port'), row.get('ssid'),
+                row.get('realm'), row.get('client'), row.get('asked_as'),
+                row.get('machine'),
+                self.pack_detail(row.get('detail')))
+        if getattr(self._local, 'owed', None) is not None:
+            return self.owe_row('passed', self.PASSED_INSERT, args,
+                                dict(row, kind=row.get('kind') or 'vpn'))
         with self.db_write() as db:
-            cur = db.execute(
-                'INSERT OR IGNORE INTO passed (session, ts, server, ip, username, device, nad, '
-                'tunnel, service, protocol, profile, policy, groups, country, kind, subtype, '
-                'cpm, acl, tkey, cmd, verdict, mac, port, ssid, realm, client, asked_as, '
-                'machine, detail) '
-                'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                (self.fits_ident(row['session'], 'an ISE session id'), row['ts'],
-                 row.get('server'), row.get('ip'),
-                 self.fits(row.get('username'), 'a user name'),
-                 row.get('device'), row.get('nad'), row.get('tunnel'), row.get('service'),
-                 row.get('protocol'), row.get('profile'), row.get('policy'), row.get('groups'),
-                 row.get('country'), row.get('kind') or 'vpn', row.get('subtype'),
-                 row.get('cpm'), row.get('acl'), row.get('tkey'), row.get('cmd'),
-                 row.get('verdict'), row.get('mac'), row.get('port'), row.get('ssid'),
-                 row.get('realm'), row.get('client'), row.get('asked_as'),
-                 row.get('machine'),
-                 self.pack_detail(row.get('detail'))))
+            cur = db.execute(self.PASSED_INSERT, args)
             if cur.rowcount > 0:
                 self._writes += 1
                 self.seen_note('passed', dict(row, kind=row.get('kind') or 'vpn'))
             return cur.rowcount > 0
+
+    # ---- the rows of a lot, written together (1.10.270): see `OwedRows` ----
+    # Where it is done. The checks add the file, to hold it against the rows
+    # written one by one on a machine with no server.
+    OWE_ENGINES = ('postgres',)
+
+    def owe_begin(self, db, records):
+        """Inside a lot's transaction on PostgreSQL: its new failed and
+        passed rows held and written together. Its sessions are looked up
+        here, together, so that each record is still known new or not as it
+        is taken. None elsewhere - the file, MariaDB: each row is written as
+        it comes, as before."""
+        if self.dialect.name not in self.OWE_ENGINES:
+            return None
+        owe = OwedRows(db)
+        keys = []
+        for r in records:
+            sid = getattr(r, 'session', None)
+            if sid and isinstance(sid, str):
+                keys.append(self.fits_ident(sid, 'an ISE session id'))
+        keys = list(dict.fromkeys(keys))
+        for table in ('failed', 'passed'):
+            for at in range(0, len(keys), 500):
+                part = keys[at:at + 500]
+                rows = db.execute('SELECT session FROM %s WHERE session IN (%s)'
+                                  % (table, ','.join('?' * len(part))), tuple(part)).fetchall()
+                owe.there[table].update(str(row['session']) for row in rows)
+            owe.asked[table].update(keys)
+        db.owed = owe
+        self._local.owed = owe
+        return owe
+
+    def owe_end(self):
+        """The lot is over, written or undone: nothing held any more."""
+        owe = getattr(self._local, 'owed', None)
+        self._local.owed = None
+        if owe is not None and owe.db.owed is owe:
+            owe.db.owed = None
+
+    def owe_row(self, table, sql, args, row):
+        """One new row of a lot held to be written with the others; whether
+        it is new, as INSERT OR IGNORE would have said."""
+        owe = self._local.owed
+        key = args[0]
+        if key in owe.seen[table]:
+            return False
+        if key in owe.asked[table]:
+            there = key in owe.there[table]
+        else:
+            # Not among the lot's sessions (one made up of the record, as
+            # TACACS+'s is): asked on its own, as before - without writing
+            # the held ones first, which this look is not about.
+            owe.busy = True
+            try:
+                there = owe.db.execute('SELECT 1 AS one FROM %s WHERE session=?' % table,
+                                       (key,)).fetchone() is not None
+            finally:
+                owe.busy = False
+        if there:
+            return False
+        owe.seen[table].add(key)
+        owe.rows.setdefault(sql, []).append(args)
+        self._writes += 1
+        self.seen_note(table, row)
+        return True
 
     # The whole ISE record, kept beside every row, is what the popup shows
     # when somebody opens one - and it is nine tenths of what the database
@@ -48295,6 +48435,12 @@ class Daemon(object):
                              if getattr(r, 'failed', False)]
                     store.blocked_ahead(ahead)
                     store.let_back_in_ahead(ahead)
+                    # The lot's new failed and passed rows, written together
+                    # before it is committed (1.10.270) - not when it is
+                    # taken again carefully, a savepoint a record.
+                    owe = None if careful else store.owe_begin(
+                        db, [r for _, r in items[at:at + self.TAKE_LOT]
+                             if not isinstance(r, (FwEvent, WinEvent))])
                     # On PostgreSQL the savepoint a record is undone to is
                     # let go of and the next one made in one round trip
                     # rather than two: at thousands of records a second the
@@ -48388,6 +48534,11 @@ class Daemon(object):
                     # The hits of addresses still trying while banned, added
                     # up over the lot: written in its transaction. (1.10.175)
                     store.hits_flush()
+                    if owe is not None:
+                        try:
+                            owe.pay()
+                        except Exception as e:
+                            raise TakeCarefully(str(e)) from e
                 new += got
                 careful = False
             except TakeCarefully:
@@ -48453,6 +48604,7 @@ class Daemon(object):
                 self._taking_thread = None
                 self._times_journal = None
                 store._local.memo = None
+                store.owe_end()
             for n_alone, (kind, record) in enumerate(alone):
                 try:
                     if self.take_record(kind, record, judge=judge):

@@ -32,7 +32,7 @@ sudo ./install.sh --dry-run
 
 | What | Where |
 |---|---|
-| the daemon | `/usr/local/lib/isemon/isemon.py`, linked as `/usr/local/bin/isemon` |
+| the daemon | `/usr/local/lib/isemon/isemon.py`, run by `/usr/local/bin/isemon` and the unit through `isemon_main.py`, from its compiled form in `__pycache__/` (1.10.270) |
 | its settings | `/var/lib/isemon/isemon.db` — saved settings live in the database |
 | what it is set up with | `/etc/isemon/config.json` — read, and written only for the database settings (`db_*`); what is saved wins over it |
 | everything it records | `/var/lib/isemon/isemon.db` |

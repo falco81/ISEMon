@@ -800,16 +800,36 @@ python_link() {       # LIB_DIR/python, and the isemon command through it
         note "[would write] $BIN_LINK, running $LIB_DIR/isemon.py on $PY_LINK"
         return 0
     fi
+    # Started from its compiled form (1.10.270): see deploy/isemon_main.py.
+    run install -D -m 0644 "$SOURCE_DIR/deploy/isemon_main.py" "$LIB_DIR/isemon_main.py"
     rm -f "$BIN_LINK"
-    printf '#!/bin/sh\n# isemon (1.10.252): the program, on the Python it is run on (%s).\nexec %s %s/isemon.py "$@"\n' \
-        "$PY_LINK" "$PY_LINK" "$LIB_DIR" > "$BIN_LINK"
+    printf '#!/bin/sh\n# isemon (1.10.252): the program, on the Python it is run on (%s).\n# From its compiled form (1.10.270), isemon.py itself when that is not there.\n[ -f %s/isemon_main.py ] || exec %s %s/isemon.py "$@"\nexec %s %s/isemon_main.py "$@"\n' \
+        "$PY_LINK" "$LIB_DIR" "$PY_LINK" "$LIB_DIR" "$PY_LINK" "$LIB_DIR" > "$BIN_LINK"
     chmod 0755 "$BIN_LINK"
+    py_cache
+}
+py_cache() {          # isemon.py compiled for LIB_DIR/python (1.10.270)
+    # Checked against the file's hash rather than its time: an isemon.py put
+    # back by hand (`install -m 0755 isemon.py.<version> ...`) is never run
+    # from the compiled form of another. What does not compile here is
+    # compiled at each start, as before - nothing more.
+    if [[ -n "$DRY_RUN" ]]; then
+        note "[would compile] $LIB_DIR/isemon.py for $PY_LINK"
+        return 0
+    fi
+    "$PY_LINK" -c 'import py_compile, sys
+py_compile.compile(sys.argv[1], doraise=True,
+                   invalidation_mode=py_compile.PycInvalidationMode.CHECKED_HASH)' \
+        "$LIB_DIR/isemon.py" >/dev/null 2>&1 \
+        || warn "isemon.py could not be compiled ahead for $(py_mm "$PY_LINK") - it is compiled at each start"
+    return 0
 }
 python_back() {       # isemon did not start on the new one: the old one again
     [[ -n "$PY_WAS" && "$PY_NEW" != "$PY_WAS" ]] || return 1
     warn "isemon did not start on Python $(py_mm "$PY_NEW") - back on $(py_mm "$PY_WAS") ($PY_WAS)"
     run ln -sfn "$PY_WAS" "$PY_LINK"
     PY_NEW="$PY_WAS"
+    py_cache
     run systemctl restart isemon.service
     sleep 2
     for _ in 1 2 3 4 5 6 7 8; do

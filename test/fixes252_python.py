@@ -43,7 +43,7 @@ lib = work / 'lib'
 LOG = work / 'calls.log'
 for d in (bin_, pyd, lib):
     d.mkdir()
-for prog in ('timeout', 'cat', 'touch', 'rm', 'sort', 'head', 'tail', 'grep', 'awk', 'cut',
+for prog in ('timeout', 'cat', 'touch', 'rm', 'sort', 'head', 'tail', 'grep', 'awk', 'cut', 'install',
              'printf', 'echo', 'mkdir', 'ln', 'readlink', 'chmod', 'sleep', 'cp', 'basename'):
     real = shutil.which(prog)
     if real:

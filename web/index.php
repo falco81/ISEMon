@@ -39026,7 +39026,7 @@ function wrRootLine(r, what, quiet) {
     if (ADMIN) {
       var again = cmdButton('Try again', 'refresh', 'small');
       again.onclick = function () {
-        api('web-firewall', {action: 'retry'}).then(function (x) { toast(x.message, 'good'); }).catch(oops);
+        api('web-firewall', {action: 'retry'}).then(function (x) { toast(x.message, 'good'); loadFw(); }).catch(oops);
       };
       bad.appendChild(again);
     }
@@ -39079,18 +39079,31 @@ function fwSave() {
   }
   return ask.then(function (yes) { return yes ? go() : false; });
 }
+/* Asked again every five seconds - and while root has a change of it still to
+   put in, every 0.7 s (1.10.270): root is done within a second, and the pane
+   said "waiting for root…" for up to five more. */
+function rootWaits(d) {
+  var r = d && (d.root_state || d.root);
+  return !!(r && typeof r === 'object' && r.pending);
+}
+function paneAgain(key, again) {
+  var S = key === 'fw' ? FW : TLS;
+  return function () { S.timer = setTimeout(again, rootWaits(S.last) ? 700 : 5000); };
+}
 function loadFw() {
   api('web-firewall').then(drawFw).catch(oops);
-  clearInterval(FW.timer);
-  FW.timer = setInterval(function () {
-    if (!paneLive('fw')) { clearInterval(FW.timer); return; }
-    if (document.hidden) return;
-    if ($('modal') && !$('modal').hidden) return;
+  clearTimeout(FW.timer);
+  var next = paneAgain('fw', step);
+  function step() {
+    if (!paneLive('fw')) { FW.timer = null; return; }
+    if (document.hidden) return next();
+    if ($('modal') && !$('modal').hidden) return next();
     if (document.activeElement && document.activeElement.closest
         && document.activeElement.closest('#pane-fw')
-        && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-    api('web-firewall', undefined, {quiet: true}).then(drawFw).catch(function () {});
-  }, 5000);
+        && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return next();
+    api('web-firewall', undefined, {quiet: true}).then(drawFw).catch(function () {}).then(next);
+  }
+  FW.timer = setTimeout(step, 1000);
 }
 function fwFam(f) {
   f = Number(f) || 0;
@@ -39893,13 +39906,15 @@ function acmeDnsGuide(d) {
 var TLS = {last: null, timer: null};
 function loadTls() {
   api('web-tls').then(drawTls).catch(oops);
-  clearInterval(TLS.timer);
-  TLS.timer = setInterval(function () {
-    if (!paneLive('tls')) { clearInterval(TLS.timer); return; }
-    if (document.hidden) return;
-    if ($('modal') && !$('modal').hidden) return;
-    api('web-tls', undefined, {quiet: true}).then(drawTls).catch(function () {});
-  }, 5000);
+  clearTimeout(TLS.timer);
+  var next = paneAgain('tls', step);
+  function step() {
+    if (!paneLive('tls')) { TLS.timer = null; return; }
+    if (document.hidden) return next();
+    if ($('modal') && !$('modal').hidden) return next();
+    api('web-tls', undefined, {quiet: true}).then(drawTls).catch(function () {}).then(next);
+  }
+  TLS.timer = setTimeout(step, 1000);
 }
 function daysLeft(ts) { return ts ? Math.floor((ts - Date.now() / 1000) / 86400) : null; }
 function certTone(days) { return days === null ? 'dim' : (days < 0 ? 'crit' : (days < 21 ? 'warn' : 'ok')); }
@@ -41147,7 +41162,7 @@ function skPoll(on) {
       api('sshkeys', undefined, {quiet: true}).then(function (d) {
         SK.d = d; drawSshKeys(); if (!skPending()) skPoll(false);
       }).catch(function () {});
-    }, 2000);
+    }, 700);      /* only while root has it to do: 2 s before 1.10.270 */
   }
   if (!on && SK.poll) { clearInterval(SK.poll); SK.poll = null; }
 }
@@ -41420,7 +41435,7 @@ function otPoll(on) {
         OT.d = d; drawOtpTls();
         if (!otPending()) { otPoll(false); otDone(); }
       }).catch(function () {});
-    }, 1500);
+    }, 700);      /* only while root has it to do: 1.5 s before 1.10.270 */
   }
   if (!on && OT.poll) { clearInterval(OT.poll); OT.poll = null; }
 }
