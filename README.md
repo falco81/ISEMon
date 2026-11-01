@@ -371,6 +371,31 @@ working.
 
 ## Version
 
+1.10.277
+
+- **Settings → The database → Move to another database…: a wizard**. The five
+  buttons and the address boxes are one button now, and a wizard that asks a
+  step at a time, with Back and Next: the database in use, where everything
+  is to go (the file, MariaDB, PostgreSQL - a missing driver said on its
+  tile), how to reach it, what answered there (an administrator asked for
+  where the database or its account is not there yet; a database with
+  something in it emptied only when that is ticked), and what will happen.
+  Then one run does it all on the daemon: made there, emptied if asked, a
+  copy made of what is here, everything carried across, **every table counted
+  again there** - the move is not taken up if anything is short - and only
+  then the setting written and isemon started again on it; the page waits for
+  it and says so. Nothing changes for this installation before that last
+  step, and what is here stays as a spare. Moved in every direction in the
+  checks - the file to PostgreSQL to MariaDB to the file to MariaDB to
+  PostgreSQL to the file - with every record, ban, account and setting held
+  against what went in, and a record written there after each move.
+- **Not in high availability**: every isemon now says, once a minute, into
+  the database it uses that it is there. Where another machine has said so in
+  the last three minutes - two isemon on one database server, a pair - the
+  wizard does not go on (on the page and in the daemon alike): moving one of
+  them would split the pair, the other writing on into a database nobody
+  reads. It says which machine.
+
 1.10.276
 
 - **A kept password by its last two letters, a typed one as dots**: the

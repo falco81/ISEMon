@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.276",
+  "version": "1.10.277",
   "made": "2026-11-01",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -596,6 +596,10 @@
    "source": "a file is put back as a copy, not as a dump",
    "text": "a file is put back as a copy, not as a dump"
   },
+  "s.a-file-on-this-machine-nothing.bad330e0": {
+   "source": "A file on this machine. Nothing to install or run beside isemon; fine for most sites.",
+   "text": "A file on this machine. Nothing to install or run beside isemon; fine for most sites."
+  },
   "s.a-file-on-this-machine-or.c3e23fee": {
    "source": "A file on this machine, or a database server. The file needs nothing installing and is the faster of the two; a server is for keeping this somewhere it is backed up and watched with everything else. Changing this does not move anything - carry it across first, below.",
    "text": "A file on this machine, or a database server. The file needs nothing installing and is the faster of the two; a server is for keeping this somewhere it is backed up and watched with everything else. Changing this does not move anything - carry it across first, below."
@@ -887,6 +891,10 @@
   "s.a-mariadb-dump.55a87f15": {
    "source": "a MariaDB dump",
    "text": "a MariaDB dump"
+  },
+  "s.a-mariadb-or-mysql-server-here.ae28de33": {
+   "source": "A MariaDB (or MySQL) server, here or on another machine.",
+   "text": "A MariaDB (or MySQL) server, here or on another machine."
   },
   "s.a-member-of-a-watched-group.daa0cc16": {
    "source": "a member of a watched group signed in",
@@ -1183,6 +1191,10 @@
   "s.a-postgresql-installed-as-it-comes.7afd834b": {
    "source": "A PostgreSQL installed as it comes lets postgres in only on the machine itself, without a password. Give it one first, on the server:",
    "text": "A PostgreSQL installed as it comes lets postgres in only on the machine itself, without a password. Give it one first, on the server:"
+  },
+  "s.a-postgresql-server-here-or-on.a56cfe9e": {
+   "source": "A PostgreSQL server, here or on another machine - the one for very big databases.",
+   "text": "A PostgreSQL server, here or on another machine - the one for very big databases."
   },
   "s.a-privileged-service-was-called.1a931cdd": {
    "source": "a privileged service was called",
@@ -1607,6 +1619,10 @@
   "s.a-windows-or-samba-share-the.a4eab666": {
    "source": "A Windows or Samba share: the account, its domain, SMB3 encryption.",
    "text": "A Windows or Samba share: the account, its domain, SMB3 encryption."
+  },
+  "s.a-wizard-where-the-database-is.5e897cbb": {
+   "source": "A wizard: where the database is to go and how to reach it, step by step, and then one run that makes it there, carries everything across, checks every table and takes it up. Nothing changes for this installation until that last step.",
+   "text": "A wizard: where the database is to go and how to reach it, step by step, and then one run that makes it there, carries everything across, checks every table and takes it up. Nothing changes for this installation until that last step."
   },
   "s.a-word-on-its-own-any.ff82ec4d": {
    "source": "a word on its own: any line where an address, the name, the URL, the user, the policy, the service, the application, the category or the message has it",
@@ -2844,10 +2860,6 @@
    "source": ", and one of a pair being in trouble never stops the other being written to.",
    "text": ", and one of a pair being in trouble never stops the other being written to."
   },
-  "s.and-only-then.15ce705f": {
-   "source": ", and only then",
-   "text": ", and only then"
-  },
   "s.and-pasted-by-a-person-who.fa716020": {
    "source": ", and pasted by a person who is looking at it.",
    "text": ", and pasted by a person who is looking at it."
@@ -2943,6 +2955,10 @@
   "s.another-folder-for-the-same-firewall.e0665661": {
    "source": "Another folder for the same firewall - the other unit of a pair",
    "text": "Another folder for the same firewall - the other unit of a pair"
+  },
+  "s.another-isemon-uses-this-database-as.df423155": {
+   "source": "Another isemon uses this database as well - a pair in high availability:",
+   "text": "Another isemon uses this database as well - a pair in high availability:"
   },
   "s.another-packet-was-exactly-as-close.9aed3705": {
    "source": "Another packet was exactly as close to this attempt and fitted it exactly as well, and nothing in either log says which of the two caused it. The nearer one is shown. Everything above comes from that packet, so treat it as the likely one rather than the known one.",
@@ -3059,10 +3075,6 @@
   "s.anything-in-an-event.672b2160": {
    "source": "anything in an event…",
    "text": "anything in an event…"
-  },
-  "s.anything-missing.cb960242": {
-   "source": "Anything missing",
-   "text": "Anything missing"
   },
   "s.anything-under.ed00e72e": {
    "source": "Anything under",
@@ -4600,18 +4612,6 @@
    "source": "— carries all of them, and so does a copy of the database.",
    "text": "— carries all of them, and so does a copy of the database."
   },
-  "s.carry-everything-across.05a15b90": {
-   "source": "carry everything across",
-   "text": "carry everything across"
-  },
-  "s.carry-everything-across.b40d6b5d": {
-   "source": "Carry everything across…",
-   "text": "Carry everything across…"
-  },
-  "s.carry-it-across.509f3cb1": {
-   "source": "Carry it across",
-   "text": "Carry it across"
-  },
   "s.carry-what-they-have-been-watching.bdf5bb76": {
    "source": "Carry what they have been watching",
    "text": "Carry what they have been watching"
@@ -4843,10 +4843,6 @@
   "s.changing-the-network.a766af57": {
    "source": "Changing the network",
    "text": "Changing the network"
-  },
-  "s.changing-the-setting-moves-nothing-the.57f38b8a": {
-   "source": "Changing the setting moves nothing. The order is: fill the address in,",
-   "text": "Changing the setting moves nothing. The order is: fill the address in,"
   },
   "s.changing-them-takes-an-account-that.c762809b": {
    "source": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log.",
@@ -5419,10 +5415,6 @@
   "s.copied.3b348838": {
    "source": "copied",
    "text": "copied"
-  },
-  "s.copy-everything-that-is-here-into.be93daef": {
-   "source": "Copy everything that is here into that database: every record, every ban, every setting and every account. What is here is left exactly as it is.",
-   "text": "Copy everything that is here into that database: every record, every ban, every setting and every account. What is here is left exactly as it is."
   },
   "s.copy-it.b56def7b": {
    "source": "Copy it",
@@ -6292,6 +6284,10 @@
    "source": "Done by",
    "text": "Done by"
   },
+  "s.done-restart-isemon.d83d5253": {
+   "source": "Done - restart isemon",
+   "text": "Done - restart isemon"
+  },
   "s.done.5a8d6cac": {
    "source": "- done",
    "text": "- done"
@@ -6839,10 +6835,6 @@
   "s.empty-it.8cacde5e": {
    "source": "Empty it",
    "text": "Empty it"
-  },
-  "s.empty-it.8d8c801a": {
-   "source": "Empty it…",
-   "text": "Empty it…"
   },
   "s.empty-nothing-is-being-kept-out.a9de34e1": {
    "source": "(empty: nothing is being kept out)",
@@ -8095,14 +8087,6 @@
   "s.everything-this-page-put-in-goes.ee483f9f": {
    "source": "Everything this page put in goes back to what was there before the first time it was used. A setting somebody has changed since is left as it is.",
    "text": "Everything this page put in goes back to what was there before the first time it was used. A setting somebody has changed since is left as it is."
-  },
-  "s.everything-this-version-wants-is-there.bdc3bc17": {
-   "source": "Everything this version wants is there, with its columns and its indexes.",
-   "text": "Everything this version wants is there, with its columns and its indexes."
-  },
-  "s.everything-will-be-read-out-of.74bec2e8": {
-   "source": "Everything will be read out of the file on this machine from then on, and the server may be uninstalled once you are happy.",
-   "text": "Everything will be read out of the file on this machine from then on, and the server may be uninstalled once you are happy."
   },
   "s.everything-written-to-this-file-has.e30fe81c": {
    "source": "Everything written to this file has been read.",
@@ -10520,6 +10504,10 @@
    "source": "How to put it back",
    "text": "How to put it back"
   },
+  "s.how-to-reach-it.5fe1b8a7": {
+   "source": "How to reach it",
+   "text": "How to reach it"
+  },
   "s.how-to-search.5c9d45d5": {
    "source": "How to search",
    "text": "How to search"
@@ -10640,6 +10628,10 @@
    "source": "I have kept it",
    "text": "I have kept it"
   },
+  "s.i-understand-isemon-restarts-on-the.6ff6f5da": {
+   "source": "I understand: isemon restarts on the new database; what is here now stays as it is, as a spare.",
+   "text": "I understand: isemon restarts on the new database; what is here now stays as it is, as a spare."
+  },
   "s.i-will-set-them.191ae17e": {
    "source": "I will set them",
    "text": "I will set them"
@@ -10699,10 +10691,6 @@
   "s.if-the-account-is-root.bcac4fba": {
    "source": "if the account is root.",
    "text": "if the account is root."
-  },
-  "s.if-the-database-and-the-account.ebd49419": {
-   "source": "if the database and the account are not there yet,",
-   "text": "if the database and the account are not there yet,"
   },
   "s.if-the-file-from-the-popup.0d19ab36": {
    "source": "If the file from the popup was put on the server, take it away too, or MariaDB puts the settings back at its next start:",
@@ -10896,6 +10884,10 @@
    "source": "in this role, or take it out of it. It is a change like any other on this page — nothing happens until you save.",
    "text": "in this role, or take it out of it. It is a change like any other on this page — nothing happens until you save."
   },
+  "s.in-use-now.029412ec": {
+   "source": "in use now",
+   "text": "in use now"
+  },
   "s.in-use-now.04cd5a12": {
    "source": "In use now",
    "text": "In use now"
@@ -10923,10 +10915,6 @@
   "s.include-the-bans-on-a-clock.4df46362": {
    "source": "Include the bans on a clock",
    "text": "Include the bans on a clock"
-  },
-  "s.indexes-on-them.cbddab9f": {
-   "source": "Indexes on them",
-   "text": "Indexes on them"
   },
   "s.india.967ce367": {
    "source": "India",
@@ -11496,6 +11484,10 @@
    "source": "isemon-ca.crt",
    "text": "isemon-ca.crt"
   },
+  "s.isemon-can-only-be-pointed-at.53ee857d": {
+   "source": "isemon can only be pointed at a database that answers, may be written and has everything of isemon in it.",
+   "text": "isemon can only be pointed at a database that answers, may be written and has everything of isemon in it."
+  },
   "s.isemon-check.6086fbd1": {
    "source": "isemon --check",
    "text": "isemon --check"
@@ -11511,6 +11503,10 @@
   "s.isemon-database-test.bf6db391": {
    "source": "isemon --database test",
    "text": "isemon --database test"
+  },
+  "s.isemon-did-not-answer-again-within.2a51e2e5": {
+   "source": "isemon did not answer again within three minutes: look at journalctl -u isemon",
+   "text": "isemon did not answer again within three minutes: look at journalctl -u isemon"
   },
   "s.isemon-does-not-hold-this-certificate.7fc251cd": {
    "source": "isemon does not hold this certificate's private key (nginx's own, never uploaded or made here)",
@@ -11704,9 +11700,13 @@
    "source": "It answered",
    "text": "It answered"
   },
-  "s.it-answers-but-this-account-may.b46adc95": {
-   "source": "It answers, but this account may not make anything in it. Set it up, or give the account rights on that database.",
-   "text": "It answers, but this account may not make anything in it. Set it up, or give the account rights on that database."
+  "s.it-answers-and-everything-of-isemon.a8e80a34": {
+   "source": "It answers, and everything of isemon is in it.",
+   "text": "It answers, and everything of isemon is in it."
+  },
+  "s.it-answers-the-account-may-write.a70ede83": {
+   "source": "It answers, the account may write, and it is empty.",
+   "text": "It answers, the account may write, and it is empty."
   },
   "s.it-can-reach-the-vpn.1582f558": {
    "source": "· it can reach the VPN",
@@ -11751,6 +11751,10 @@
   "s.it-did-not-work.19a40b70": {
    "source": "it did not work",
    "text": "it did not work"
+  },
+  "s.it-did-not-work.6bdabe0e": {
+   "source": "It did not work",
+   "text": "It did not work"
   },
   "s.it-disagreed-with-the-events.35808eef": {
    "source": "it disagreed with the events",
@@ -11844,10 +11848,6 @@
    "source": "It is one of the names under",
    "text": "It is one of the names under"
   },
-  "s.it-is-reachable-and-empty-of.74b2745d": {
-   "source": "It is reachable and empty of ours, which is exactly what something to carry everything into should look like.",
-   "text": "It is reachable and empty of ours, which is exactly what something to carry everything into should look like."
-  },
   "s.it-is-the-half-of-the.a2c7fdca": {
    "source": "It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.",
    "text": "It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line."
@@ -11920,13 +11920,13 @@
    "source": "IT",
    "text": "IT"
   },
-  "s.it.6c5522ca": {
-   "source": "it",
-   "text": "it"
-  },
   "s.italy.ad79ef0f": {
    "source": "Italy",
    "text": "Italy"
+  },
+  "s.its-account.8c432b0c": {
+   "source": "Its account",
+   "text": "Its account"
   },
   "s.its-acme-directory.3f45b7e1": {
    "source": "Its ACME directory",
@@ -12776,10 +12776,6 @@
    "source": "Leave it alone",
    "text": "Leave it alone"
   },
-  "s.leave-it.e7c7e7b3": {
-   "source": "Leave it",
-   "text": "Leave it"
-  },
   "s.leave-this-machine-as-one-file.ad3591a3": {
    "source": "leave this machine as one file,",
    "text": "leave this machine as one file,"
@@ -12791,6 +12787,10 @@
   "s.lebanon.5caa7f81": {
    "source": "Lebanon",
    "text": "Lebanon"
+  },
+  "s.left-empty-a-long-one-is.8667d710": {
+   "source": "Left empty, a long one is made with the account and kept in the config file.",
+   "text": "Left empty, a long one is made with the account and kept in the config file."
   },
   "s.left-forgetting-old-records-under.7ce5dfa7": {
    "source": "left. Forgetting old records, under",
@@ -13616,6 +13616,10 @@
    "source": "Made by",
    "text": "Made by"
   },
+  "s.made-for-you.afb59aa9": {
+   "source": "(made for you)",
+   "text": "(made for you)"
+  },
   "s.made-give-the-certificate-to-the.9671a3e9": {
    "source": "made — give the certificate to the server",
    "text": "made — give the certificate to the server"
@@ -13663,6 +13667,10 @@
   "s.made-on-the-first-run.be24152c": {
    "source": "made on the first run",
    "text": "made on the first run"
+  },
+  "s.made-there-if-it-is-not.11971c08": {
+   "source": "Made there if it is not, with an administrator (next step).",
+   "text": "Made there if it is not, with an administrator (next step)."
   },
   "s.made.785c2d91": {
    "source": "Made",
@@ -13787,10 +13795,6 @@
   "s.make-the-alias.44390438": {
    "source": "Make the alias",
    "text": "Make the alias"
-  },
-  "s.make-the-database-and-the-account.2b39d72a": {
-   "source": "Make the database and the account on that server, and give that account rights on that one database and no other, with a password made here and shown once. The first time it asks for an administrator on the server, uses it for this one connection and stores it nowhere. Afterwards it needs none: it opens the database and puts its tables right, which is worth doing after every upgrade.",
-   "text": "Make the database and the account on that server, and give that account rights on that one database and no other, with a password made here and shown once. The first time it asks for an administrator on the server, uses it for this one connection and stores it nowhere. Afterwards it needs none: it opens the database and puts its tables right, which is worth doing after every upgrade."
   },
   "s.make-the-request.e070183e": {
    "source": "Make the request",
@@ -14092,6 +14096,10 @@
    "source": "middle",
    "text": "middle"
   },
+  "s.migrate.ce5070ef": {
+   "source": "migrate",
+   "text": "migrate"
+  },
   "s.miid.d48266d4": {
    "source": "MIID...",
    "text": "MIID..."
@@ -14220,9 +14228,21 @@
    "source": "Morocco",
    "text": "Morocco"
   },
+  "s.move-to-another-database.0e7e7a0c": {
+   "source": "Move to another database",
+   "text": "Move to another database"
+  },
+  "s.move-to-another-database.849ee9ed": {
+   "source": "Move to another database…",
+   "text": "Move to another database…"
+  },
   "s.move.379d6ce9": {
    "source": "move",
    "text": "move"
+  },
+  "s.moving.65cd4dd8": {
+   "source": "Moving",
+   "text": "Moving"
   },
   "s.mozambique.a40a9be0": {
    "source": "Mozambique",
@@ -14680,6 +14700,10 @@
    "source": "Next in line, after the one being worked out now.",
    "text": "Next in line, after the one being worked out now."
   },
+  "s.next-tries-it-exactly-as-isemon.d39a6b9a": {
+   "source": "Next tries it, exactly as isemon would - nothing is written.",
+   "text": "Next tries it, exactly as isemon would - nothing is written."
+  },
   "s.next.bc981983": {
    "source": "Next",
    "text": "Next"
@@ -14911,6 +14935,10 @@
   "s.no-older-version-is-there.d18ec671": {
    "source": "No older version is there.",
    "text": "No older version is there."
+  },
+  "s.no-other-isemon-uses-this-database.6dc4673c": {
+   "source": "No other isemon uses this database: it may be moved.",
+   "text": "No other isemon uses this database: it may be moved."
   },
   "s.no-password-is-saved-yet.68fe4be7": {
    "source": "no password is saved yet",
@@ -15676,6 +15704,10 @@
    "source": "Nothing changes for the firewalls",
    "text": "Nothing changes for the firewalls"
   },
+  "s.nothing-changes-until-the-last-step.03b8a85c": {
+   "source": "Nothing changes until the last step. Until then isemon goes on exactly as it is, and Close leaves everything as it was.",
+   "text": "Nothing changes until the last step. Until then isemon goes on exactly as it is, and Close leaves everything as it was."
+  },
   "s.nothing-else.1d39751a": {
    "source": "nothing else",
    "text": "nothing else"
@@ -15783,10 +15815,6 @@
   "s.nothing-in-the-banning-touches-this.d6e2d2b7": {
    "source": "Nothing in the banning touches this list, and nothing in this list touches the banning. What the router does with it — accept, drop, mangle — is the router’s business; this only keeps it filled. It is filled and emptied under Settings → GeoIP.",
    "text": "Nothing in the banning touches this list, and nothing in this list touches the banning. What the router does with it — accept, drop, mangle — is the router’s business; this only keeps it filled. It is filled and emptied under Settings → GeoIP."
-  },
-  "s.nothing-in-the-database-this-installation.908c8357": {
-   "source": "Nothing in the database this installation is running on is touched, and this is refused outright if the two are the same.",
-   "text": "Nothing in the database this installation is running on is touched, and this is refused outright if the two are the same."
   },
   "s.nothing-in-the-directory-answers-to.abe7d03e": {
    "source": "Nothing in the directory answers to this name.",
@@ -16028,9 +16056,9 @@
    "source": "nothing was run",
    "text": "nothing was run"
   },
-  "s.nothing-was-saved-and-nothing-was.93276d82": {
-   "source": "Nothing was saved and nothing was written: this opened it, asked what it is, counted what is in it and closed it again.",
-   "text": "Nothing was saved and nothing was written: this opened it, asked what it is, counted what is in it and closed it again."
+  "s.nothing-was-taken-up-isemon-goes.cf7c42c3": {
+   "source": "Nothing was taken up: isemon goes on with the database it had. Back to change what was asked, or Close.",
+   "text": "Nothing was taken up: isemon goes on with the database it had. Back to change what was asked, or Close."
   },
   "s.nothing-yet.76eb7251": {
    "source": "Nothing yet",
@@ -16692,10 +16720,6 @@
    "source": "once, by hand, in your DNS",
    "text": "once, by hand, in your DNS"
   },
-  "s.once-everything-is-in-the-other.5feaa877": {
-   "source": "Once everything is in the other database and it is the one in use, the one it came from is just a spare copy: the file may be deleted, or the server uninstalled. Going the other way is these same steps with the file chosen instead — which is what makes it safe to try a server at all.",
-   "text": "Once everything is in the other database and it is the one in use, the one it came from is just a spare copy: the file may be deleted, or the server uninstalled. Going the other way is these same steps with the file chosen instead — which is what makes it safe to try a server at all."
-  },
   "s.one-a-range-or-several-by.3aa5bc46": {
    "source": "One, a range, or several by commas. Empty: every port.",
    "text": "One, a range, or several by commas. Empty: every port."
@@ -17115,10 +17139,6 @@
   "s.only-machines-put-in-one-vlan.991fc51f": {
    "source": "Only machines put in one VLAN. A VLAN written as a number on some records and as a name on others is one VLAN here.",
    "text": "Only machines put in one VLAN. A VLAN written as a number on some records and as a name on others is one VLAN here."
-  },
-  "s.only-needed-the-first-time-or.86a95f44": {
-   "source": "Only needed the first time, or if the account below cannot get in. Leave it empty to check over a database that is already there.",
-   "text": "Only needed the first time, or if the account below cannot get in. Leave it empty to check over a database that is already there."
   },
   "s.only-one-access-service.80beb553": {
    "source": "Only one access service.",
@@ -18332,6 +18352,10 @@
    "source": "plug",
    "text": "plug"
   },
+  "s.point-it-there.f2eaf97b": {
+   "source": "Point it there",
+   "text": "Point it there"
+  },
   "s.point-your-own-firewall-rule-at.d79f8d24": {
    "source": "Point your own firewall rule at this name. Nothing here writes a rule for you: what the list is FOR is a decision that belongs on the router, in front of somebody who can see the rest of it.",
    "text": "Point your own firewall rule at this name. Nothing here writes a rule for you: what the list is FOR is a decision that belongs on the router, in front of somebody who can see the rest of it."
@@ -18512,10 +18536,6 @@
    "source": "Press a name for what the directory holds about it.",
    "text": "Press a name for what the directory holds about it."
   },
-  "s.press-ctrl-c-it-is-selected.7b2d89f9": {
-   "source": "press Ctrl+C — it is selected",
-   "text": "press Ctrl+C — it is selected"
-  },
   "s.press-for-everything-about-this-session.f0dd13ae": {
    "source": "Press for everything about this session.",
    "text": "Press for everything about this session."
@@ -18539,10 +18559,6 @@
   "s.press-remember-to-keep-what-it.2978b607": {
    "source": "press Remember to keep what it says now",
    "text": "press Remember to keep what it says now"
-  },
-  "s.press-this-again-later-and-it.db0ba02d": {
-   "source": "Press this again later and it does the other half of the job: if the account already gets in, nothing is made and no administrator is wanted — it opens the database and puts its tables right, adding whatever this version wants that an older one never made. Leave the two boxes empty for that.",
-   "text": "Press this again later and it does the other half of the job: if the account already gets in, nothing is made and no administrator is wanted — it opens the database and puts its tables right, adding whatever this version wants that an older one never made. Leave the two boxes empty for that."
   },
   "s.press-to-copy.f9180a5c": {
    "source": "Press to copy",
@@ -19052,9 +19068,9 @@
    "source": "Rather than for all of them — the rule above is not true of an account one of these covers.",
    "text": "Rather than for all of them — the rule above is not true of an account one of these covers."
   },
-  "s.rather-than-in-the-database-a.c4de72dd": {
-   "source": "rather than in the database — a database cannot hold the address of itself, and a machine whose database will not open still has to be able to be put right from this page.",
-   "text": "rather than in the database — a database cannot hold the address of itself, and a machine whose database will not open still has to be able to be put right from this page."
+  "s.rather-than-in-the-database-a.b55a69b2": {
+   "source": "rather than in the database - a database cannot hold the address of itself.",
+   "text": "rather than in the database - a database cannot hold the address of itself."
   },
   "s.rbackup.43bc7288": {
    "source": "rbackup",
@@ -19087,10 +19103,6 @@
   "s.reach-a-firewall-1-or-2.8390caa8": {
    "source": "reach a firewall (1 or 2) the way it is set up - Mikrotik, OPNsense or pfSense - and say what it answered. Nothing is written",
    "text": "reach a firewall (1 or 2) the way it is set up - Mikrotik, OPNsense or pfSense - and say what it answered. Nothing is written"
-  },
-  "s.reach-that-server-with-the-address.87a1f176": {
-   "source": "Reach that server with the address above, exactly as the daemon would, and say what answered. Nothing is saved and nothing is written.",
-   "text": "Reach that server with the address above, exactly as the daemon would, and say what answered. Nothing is saved and nothing is written."
   },
   "s.reach-the-directory-sign-in-to.93fbc4ee": {
    "source": "Reach the directory, sign in to it, read the base and the groups, and say which step failed if one does.",
@@ -19363,6 +19375,10 @@
   "s.reads-them-again-with-it.fff89c41": {
    "source": "reads them again with it.",
    "text": "reads them again with it."
+  },
+  "s.ready.20c7c552": {
+   "source": "Ready",
+   "text": "Ready"
   },
   "s.ready.75c05337": {
    "source": "ready",
@@ -20316,10 +20332,6 @@
    "source": "saved on this dashboard",
    "text": "saved on this dashboard"
   },
-  "s.saved-restart-the-daemon-to-take.7658a913": {
-   "source": "saved; restart the daemon to take it up: systemctl restart isemon",
-   "text": "saved; restart the daemon to take it up: systemctl restart isemon"
-  },
   "s.saved-root-puts-the-time-servers.4c07ab7a": {
    "source": "saved; root puts the time servers in within seconds",
    "text": "saved; root puts the time servers in within seconds"
@@ -20491,6 +20503,10 @@
   "s.seconds-to-the-next-figures.5cdc7b06": {
    "source": "seconds to the next figures",
    "text": "seconds to the next figures"
+  },
+  "s.secret.e5e9fa1b": {
+   "source": "secret",
+   "text": "secret"
   },
   "s.secure.73c048ec": {
    "source": "; Secure",
@@ -20704,14 +20720,6 @@
    "source": "set intf \"wan1\"",
    "text": "set intf \"wan1\""
   },
-  "s.set-it-up.088b14ed": {
-   "source": "Set it up…",
-   "text": "Set it up…"
-  },
-  "s.set-it-up.27ee2910": {
-   "source": "set it up",
-   "text": "set it up"
-  },
   "s.set-it-up.40fae241": {
    "source": "Set it up",
    "text": "Set it up"
@@ -20843,10 +20851,6 @@
   "s.settings.c7f73bb5": {
    "source": "Settings",
    "text": "Settings"
-  },
-  "s.setup.80437a44": {
-   "source": "setup",
-   "text": "setup"
   },
   "s.seychelles.3d2d7b1c": {
    "source": "Seychelles",
@@ -21728,25 +21732,13 @@
    "source": "Start the counting again?",
    "text": "Start the counting again?"
   },
-  "s.start-using-it-this-writes-one.15a69b56": {
-   "source": "Start using it. This writes one setting and restarts the daemon; nothing in either database is touched, and coming back is the same four steps the other way.",
-   "text": "Start using it. This writes one setting and restarts the daemon; nothing in either database is touched, and coming back is the same four steps the other way."
-  },
-  "s.start-using-it.6417e240": {
-   "source": "Start using it",
-   "text": "Start using it"
-  },
-  "s.start-using-it.673d6b3d": {
-   "source": "start using it",
-   "text": "start using it"
-  },
-  "s.start-using-it.b9ba9078": {
-   "source": "Start using it…",
-   "text": "Start using it…"
-  },
   "s.start.2b020927": {
    "source": "start",
    "text": "start"
+  },
+  "s.start.952f3754": {
+   "source": "Start",
+   "text": "Start"
   },
   "s.started-over-by-the-peer.04400023": {
    "source": "Started over by the peer",
@@ -22324,6 +22316,10 @@
    "source": "table",
    "text": "table"
   },
+  "s.tables-of-ours.ac237300": {
+   "source": "Tables of ours",
+   "text": "Tables of ours"
+  },
   "s.tables-there.bd12755f": {
    "source": "Tables there",
    "text": "Tables there"
@@ -22660,10 +22656,6 @@
    "source": "that address, and",
    "text": "that address, and"
   },
-  "s.that-administrator-is-used-for-this.07c7204c": {
-   "source": "That administrator is used for this one connection and is stored nowhere: not in the settings, not in the database, not in any log.",
-   "text": "That administrator is used for this one connection and is stored nowhere: not in the settings, not in the database, not in any log."
-  },
   "s.that-backup-is-not-ready-here.74f388ec": {
    "source": "that backup is not ready here (any more): make it again",
    "text": "that backup is not ready here (any more): make it again"
@@ -22924,10 +22916,6 @@
    "source": "The account this program signs in as. It needs rights on that one database and on no other, which is what making it from here gives it.",
    "text": "The account this program signs in as. It needs rights on that one database and on no other, which is what making it from here gives it."
   },
-  "s.the-account-this-program-will-use.13c195d6": {
-   "source": "The account this program will use is made with a password of its own, generated here — you do not have to invent one. It is written into the settings above, and shown once when this is done so you can keep a copy.",
-   "text": "The account this program will use is made with a password of its own, generated here — you do not have to invent one. It is written into the settings above, and shown once when this is done so you can keep a copy."
-  },
   "s.the-account-this-program-will-use.566310b1": {
    "source": "the account this program will use needs a password",
    "text": "the account this program will use needs a password"
@@ -23051,10 +23039,6 @@
   "s.the-address-has-not-been-looked.a6460bdb": {
    "source": "The address has not been looked at yet: Look now, above, lists what is there.",
    "text": "The address has not been looked at yet: Look now, above, lists what is there."
-  },
-  "s.the-address-is-saved-nothing-has.760c3022": {
-   "source": "The address is saved. Nothing has moved yet: carry everything across when you are ready.",
-   "text": "The address is saved. Nothing has moved yet: carry everything across when you are ready."
   },
   "s.the-address-it-came-from.22677d07": {
    "source": "the address it came from",
@@ -23916,6 +23900,14 @@
    "source": "the database and the copies kept beside it",
    "text": "the database and the copies kept beside it"
   },
+  "s.the-database-in-use-now.97329fc2": {
+   "source": "The database in use now",
+   "text": "The database in use now"
+  },
+  "s.the-database-in-use-will-not.c5d9318b": {
+   "source": "the database in use will not open, so there is nothing to carry out of it",
+   "text": "the database in use will not open, so there is nothing to carry out of it"
+  },
   "s.the-database-is-called.299d7cf0": {
    "source": "The database is called",
    "text": "The database is called"
@@ -23948,6 +23940,10 @@
    "source": "The database on that server. It may be made from here.",
    "text": "The database on that server. It may be made from here."
   },
+  "s.the-database-or-its-account-is.23365945": {
+   "source": "The database or its account is not there yet (or the password is not the one it has). An administrator on that server makes them - used for this one run and stored nowhere.",
+   "text": "The database or its account is not there yet (or the password is not the one it has). An administrator on that server makes them - used for this one run and stored nowhere."
+  },
   "s.the-database-s-own-disk.8ad39f84": {
    "source": "The database’s own disk",
    "text": "The database’s own disk"
@@ -23960,9 +23956,9 @@
    "source": "The database server’s own settings",
    "text": "The database server’s own settings"
   },
-  "s.the-database-set-up.3f36a7a0": {
-   "source": "The database, set up",
-   "text": "The database, set up"
+  "s.the-database-that-is-set-will.424b0076": {
+   "source": "The database that is set will not open, so there is nothing to carry out of it. The wizard points isemon at a database that has everything in it already - the one that went away, at its right address, or another.",
+   "text": "The database that is set will not open, so there is nothing to carry out of it. The wizard points isemon at a database that has everything in it already - the one that went away, at its right address, or another."
   },
   "s.the-database-this-is-set-to.1ef425cb": {
    "source": "the database this is set to use will not open, so there is nothing to carry out of it",
@@ -26632,10 +26628,6 @@
    "source": "the session started",
    "text": "the session started"
   },
-  "s.the-settings-above-say-which-database.7292667c": {
-   "source": "The settings above say which database to open and how to reach it, and they are the only settings kept in",
-   "text": "The settings above say which database to open and how to reach it, and they are the only settings kept in"
-  },
   "s.the-settings-put-back.9547a537": {
    "source": "The settings, put back",
    "text": "The settings, put back"
@@ -27820,10 +27812,6 @@
    "source": "This is as many as are fetched at once — there may be more. Type part of a name into",
    "text": "This is as many as are fetched at once — there may be more. Type part of a name into"
   },
-  "s.this-is-copying-the-whole-database.0f725190": {
-   "source": "This is copying the whole database. You can close this and it carries on; what it did ends up in Events either way.",
-   "text": "This is copying the whole database. You can close this and it carries on; what it did ends up in Events either way."
-  },
   "s.this-is-happening-on-the-router.d9235209": {
    "source": "This is happening on the router now. You can close this and it carries on; what it did ends up in Events either way.",
    "text": "This is happening on the router now. You can close this and it carries on; what it did ends up in Events either way."
@@ -27887,10 +27875,6 @@
   "s.this-machine.8ada74cb": {
    "source": "this machine",
    "text": "this machine"
-  },
-  "s.this-makes-the-database-and-the.6c84b7d6": {
-   "source": "This makes the database and the account on that server, and gives the account rights on that one database and no other. The first time, it needs an administrator on the server to do it — root on MariaDB, postgres on PostgreSQL, or anyone who may create a database.",
-   "text": "This makes the database and the account on that server, and gives the account rights on that one database and no other. The first time, it needs an administrator on the server to do it — root on MariaDB, postgres on PostgreSQL, or anyone who may create a database."
   },
   "s.this-many-of-those-from-one.21cea21e": {
    "source": ". This many of those from one address inside the window and it is kept out for good, without climbing any ladder — there is nothing to be patient about. 0 is off, and they are counted like anything else.",
@@ -28124,10 +28108,6 @@
    "source": "this",
    "text": "this"
   },
-  "s.those-columns-could-not-be-added.bf7997ce": {
-   "source": "Those columns could not be added. The daemon’s log says why; until they are there this database is not one this version can use.",
-   "text": "Those columns could not be added. The daemon’s log says why; until they are there this database is not one this version can use."
-  },
   "s.those-events-counted-ahead-of-time.40ce1caa": {
    "source": "those events, counted ahead of time for the Domain page",
    "text": "those events, counted ahead of time for the Domain page"
@@ -28219,10 +28199,6 @@
   "s.throw-away-the-changes-on-this.42a3bc3a": {
    "source": "Throw away the changes on this page and read the settings back from the daemon as they actually are.",
    "text": "Throw away the changes on this page and read the settings back from the daemon as they actually are."
-  },
-  "s.throw-away-what-is-in-the.85e79230": {
-   "source": "Throw away what is in the OTHER database, so that a move can be tried again. Never the one in use.",
-   "text": "Throw away what is in the OTHER database, so that a move can be tried again. Never the one in use."
   },
   "s.throw-it-away.081a29d4": {
    "source": "Throw it away",
@@ -28619,10 +28595,6 @@
   "s.try-it-on-every-node-each.3dfae5d5": {
    "source": "Try it on every node: each sends a test line here over TLS.",
    "text": "Try it on every node: each sends a test line here over TLS."
-  },
-  "s.try-it.0aa14a4d": {
-   "source": "try it",
-   "text": "try it"
   },
   "s.try-it.7ddd66b6": {
    "source": "Try it",
@@ -29508,6 +29480,10 @@
    "source": "wait",
    "text": "wait"
   },
+  "s.waited-for-s.92444adf": {
+   "source": "Waited for (s)",
+   "text": "Waited for (s)"
+  },
   "s.waiting-for-root.50f827fe": {
    "source": "waiting for root…",
    "text": "waiting for root…"
@@ -29676,6 +29652,10 @@
    "source": "what an SSD writes in a second in the background",
    "text": "what an SSD writes in a second in the background"
   },
+  "s.what-answered.3068b985": {
+   "source": "What answered",
+   "text": "What answered"
+  },
   "s.what-became-of-it-in-the.8c3694a4": {
    "source": "what became of it in the sandbox",
    "text": "what became of it in the sandbox"
@@ -29788,9 +29768,9 @@
    "source": "What is fetched, and when it is next due",
    "text": "What is fetched, and when it is next due"
   },
-  "s.what-is-here-is-not-touched.348cb535": {
-   "source": "What is here is not touched, and a copy of it is made first in any case. Nothing starts using the other database until you say so afterwards.",
-   "text": "What is here is not touched, and a copy of it is made first in any case. Nothing starts using the other database until you say so afterwards."
+  "s.what-is-here-now-is-left.7a98f528": {
+   "source": "What is here now is left exactly as it is, with a copy made beside it before anything is carried; afterwards it is a spare - the file may be deleted, or the server uninstalled. Going back is the same wizard the other way.",
+   "text": "What is here now is left exactly as it is, with a copy made beside it before anything is carried; afterwards it is a spare - the file may be deleted, or the server uninstalled. Going back is the same wizard the other way."
   },
   "s.what-is-in-it.fe2cf1ae": {
    "source": "What is in it",
@@ -30696,9 +30676,17 @@
    "source": ". Where an address is in more than one of them the narrowest wins, so a jump box named inside a subnet that is also named keeps its own name. Empty means nobody has said, and nothing is marked.",
    "text": ". Where an address is in more than one of them the narrowest wins, so a jump box named inside a subnet that is also named keeps its own name. Empty means nobody has said, and nothing is marked."
   },
+  "s.where-everything-is-kept-the-file.4376670e": {
+   "source": "Where everything is kept: the file on this machine, MariaDB or PostgreSQL. Its address is kept in",
+   "text": "Where everything is kept: the file on this machine, MariaDB or PostgreSQL. Its address is kept in"
+  },
   "s.where-everything-is-kept.c37a2e16": {
    "source": "Where everything is kept",
    "text": "Where everything is kept"
+  },
+  "s.where-everything-is-to-go.c5cfa601": {
+   "source": "Where everything is to go",
+   "text": "Where everything is to go"
   },
   "s.where-from.e6ad44f1": {
    "source": "Where from",
@@ -32538,10 +32526,6 @@
    "source": "…and {0} more",
    "text": "…and {0} more"
   },
-  "p.and-the-account-reaches-it.9d010546": {
-   "source": "And the account reaches it: {0}",
-   "text": "And the account reaches it: {0}"
-  },
   "p.answered-but-its-tables-could-not.eecdfb86": {
    "source": "{0} answered, but its tables could not be put right: {1}",
    "text": "{0} answered, but its tables could not be put right: {1}"
@@ -32710,10 +32694,6 @@
    "source": "{0} bursts of about {1} tries each, every burst inside a second or two, at uneven times — a program retrying the moment it is refused, not a person typing and not a timer.",
    "text": "{0} bursts of about {1} tries each, every burst inside a second or two, at uneven times — a program retrying the moment it is refused, not a person typing and not a timer."
   },
-  "p.but-the-account-cannot-reach-it.91e02407": {
-   "source": "But the account cannot reach it: {0}",
-   "text": "But the account cannot reach it: {0}"
-  },
   "p.by-policy.91c6bbe5": {
    "source": ", by policy {0}{1}",
    "text": ", by policy {0}{1}"
@@ -32741,10 +32721,6 @@
   "p.carried.c332138d": {
    "source": ", {0} carried",
    "text": ", {0} carried"
-  },
-  "p.carrying-everything-into.8e856bd2": {
-   "source": "Carrying everything into {0}",
-   "text": "Carrying everything into {0}"
   },
   "p.change-s-not-saved-yet.68a60bf7": {
    "source": "{0} change(s) not saved yet",
@@ -32966,10 +32942,6 @@
    "source": "{0} earns {1}",
    "text": "{0} earns {1}"
   },
-  "p.emptying.01d707d0": {
-   "source": "Emptying {0}",
-   "text": "Emptying {0}"
-  },
   "p.ended-in-the-lines-kept.41bac2e6": {
    "source": "· {0} ended in the lines kept",
    "text": "· {0} ended in the lines kept"
@@ -33046,10 +33018,6 @@
    "source": "Every field the firewall wrote ({0})",
    "text": "Every field the firewall wrote ({0})"
   },
-  "p.every-record-every-ban-every-setting.5d6f42d8": {
-   "source": "Every record, every ban, every setting, every account and the whole story of every ban is copied into {0}. On a large database this takes minutes; you can close this and it carries on.",
-   "text": "Every record, every ban, every setting, every account and the whole story of every ban is copied into {0}. On a large database this takes minutes; you can close this and it carries on."
-  },
   "p.every-table-has-laid-out-goes.df57fdee": {
    "source": "Every table {0} has laid out goes back as it comes. They see it the next time a page loads.",
    "text": "Every table {0} has laid out goes back as it comes. They see it the next time a page loads."
@@ -33061,6 +33029,14 @@
   "p.everything-about.efeadd74": {
    "source": "Everything about {0}",
    "text": "Everything about {0}"
+  },
+  "p.everything-is-in-and-it-is.30a2cb71": {
+   "source": "Everything is in {0} and it is taken up from the next start: restart isemon (systemctl restart isemon).",
+   "text": "Everything is in {0} and it is taken up from the next start: restart isemon (systemctl restart isemon)."
+  },
+  "p.everything-is-in-isemon-is-starting.dc36ef2d": {
+   "source": "Everything is in {0}; isemon is starting again on it - this page waits for it.",
+   "text": "Everything is in {0}; isemon is starting again on it - this page waits for it."
   },
   "p.everything-is-now-in-as-well.61006401": {
    "source": "everything is now in {0} as well",
@@ -33081,10 +33057,6 @@
   "p.everything-this-machine-knows-about-whether.8e3a6594": {
    "source": "{0}Everything this machine knows about {1}: whether it is kept out and why, what it has tried, and who has got in from it.",
    "text": "{0}Everything this machine knows about {1}: whether it is kept out and why, what it has tried, and who has got in from it."
-  },
-  "p.everything-will-be-read-out-of.2fb44ffe": {
-   "source": "Everything will be read out of {0} from then on, and the file on this machine may be deleted once you are happy. Carry everything across first if you have not — this does not move anything.",
-   "text": "Everything will be read out of {0} from then on, and the file on this machine may be deleted once you are happy. Carry everything across first if you have not — this does not move anything."
   },
   "p.f-md5-1.630ddf31": {
    "source": "{0}?f={1}{2}&md5=1{3}",
@@ -33334,6 +33306,10 @@
    "source": "How much the sessions it let through carried, both ways: out is what the side that started each session sent, in is what came back.{0}",
    "text": "How much the sessions it let through carried, both ways: out is what the side that started each session sent, in is what came back.{0}"
   },
+  "p.how-to-reach.e17320da": {
+   "source": "How to reach {0}",
+   "text": "How to reach {0}"
+  },
   "p.hsts-days.c0f0db11": {
    "source": "HSTS {0} days",
    "text": "HSTS {0} days"
@@ -33550,6 +33526,10 @@
    "source": "isemon-backup-{0}",
    "text": "isemon-backup-{0}"
   },
+  "p.isemon-is-pointed-at.1c04441d": {
+   "source": "isemon is pointed at {0}",
+   "text": "isemon is pointed at {0}"
+  },
   "p.isemon-is-there-this-server-runs.177cccd2": {
    "source": "isemon {0} is there - this server runs {1} (looked {2})",
    "text": "isemon {0} is there - this server runs {1} (looked {2})"
@@ -33562,6 +33542,10 @@
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
   },
+  "p.isemon-runs-on-now-the-database.f100ec05": {
+   "source": "isemon runs on {0} now. The database it came from is a spare: keep it until you are happy, then it may go.",
+   "text": "isemon runs on {0} now. The database it came from is a spare: keep it until you are happy, then it may go."
+  },
   "p.isemon-set.4e4102ba": {
    "source": "isemon --set {0}=…",
    "text": "isemon --set {0}=…"
@@ -33569,6 +33553,10 @@
   "p.isemon-settings-json.09b18ed4": {
    "source": "isemon-settings-{0}-{1}.json",
    "text": "isemon-settings-{0}-{1}.json"
+  },
+  "p.isemon-starts-again-on.9380f53e": {
+   "source": "isemon starts again on {0}",
+   "text": "isemon starts again on {0}"
   },
   "p.isemon.15f32881": {
    "source": "isemon {0}",
@@ -33610,10 +33598,6 @@
    "source": "— {0} It is notes rather than rows, so there is no number beside it.",
    "text": "— {0} It is notes rather than rows, so there is no number beside it."
   },
-  "p.it-is-saved-in-and-nowhere.42462bf9": {
-   "source": "It is saved in {0} and nowhere else, so nothing has to be typed in above. This is the only time it is shown — keep a copy if you want one, though nothing here needs it again.",
-   "text": "It is saved in {0} and nowhere else, so nothing has to be typed in above. This is the only time it is shown — keep a copy if you want one, though nothing here needs it again."
-  },
   "p.it-is-tried-again-at-the.5d7d19f5": {
    "source": "{0}{1}. It is tried again at the next round rather than given up on.",
    "text": "{0}{1}. It is tried again at the next round rather than given up on."
@@ -33633,6 +33617,10 @@
   "p.its-certificate.4470ad14": {
    "source": "· its certificate {0}{1}",
    "text": "· its certificate {0}{1}"
+  },
+  "p.its-driver-is-not-installed-here.e5a9232f": {
+   "source": "its driver is not installed here: {0}",
+   "text": "its driver is not installed here: {0}"
   },
   "p.its-extensions.124099b0": {
    "source": "Its extensions ({0}):",
@@ -33865,10 +33853,6 @@
   "p.made-by.fc9ab74f": {
    "source": "Made by {0}",
    "text": "Made by {0}"
-  },
-  "p.made-just-now.97ce43b3": {
-   "source": "Made just now: {0}.",
-   "text": "Made just now: {0}."
   },
   "p.made-on-a-night-when-the.d83c3a5e": {
    "source": "Made on a night when the program that dumps this engine was not on the machine, so a portable copy was made instead. It is a whole copy and goes back into any of the three, and it was taken off {0}.",
@@ -34149,10 +34133,6 @@
   "p.nothing-to-mark-against-until-is.fb1decab": {
    "source": "Nothing to mark against until {0} is filled in.",
    "text": "Nothing to mark against until {0} is filled in."
-  },
-  "p.now-on-the-daemon-is-restarting.42ca1200": {
-   "source": "now on {0}; the daemon is restarting",
-   "text": "now on {0}; the daemon is restarting"
   },
   "p.now.8034b4f5": {
    "source": "Now: {0} · {1}",
@@ -34782,10 +34762,6 @@
    "source": "{0} setting(s) saved",
    "text": "{0} setting(s) saved"
   },
-  "p.setting-up.d846bce0": {
-   "source": "Setting up {0}",
-   "text": "Setting up {0}"
-  },
   "p.settings-network.312f8e07": {
    "source": "{0}//{1}{2}{3}#settings/network",
    "text": "{0}//{1}{2}{3}#settings/network"
@@ -34894,10 +34870,6 @@
    "source": "SSL: {0}",
    "text": "SSL: {0}"
   },
-  "p.start-using.4a7d62d0": {
-   "source": "Start using {0}",
-   "text": "Start using {0}"
-  },
   "p.started-by.26ae5b97": {
    "source": "Started by {0}, {1}",
    "text": "Started by {0}, {1}"
@@ -34981,10 +34953,6 @@
   "p.table-s-laid-out-by-you.93f2033b": {
    "source": "{0} table(s) laid out by you",
    "text": "{0} table(s) laid out by you"
-  },
-  "p.table-s-thrown-away-it-is.606abac9": {
-   "source": "{0} table(s) thrown away; it is as good as new",
-   "text": "{0} table(s) thrown away; it is as good as new"
   },
   "p.take-off-the-whitelist-it-can.57307341": {
    "source": "Take {0} off the whitelist. It can be banned again from that moment, by the counting like anybody else.",
@@ -35398,10 +35366,6 @@
    "source": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\".",
    "text": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\"."
   },
-  "p.the-password-made-for.ebf753ab": {
-   "source": "The password made for {0}",
-   "text": "The password made for {0}"
-  },
   "p.the-proxy-looked-up.22445829": {
    "source": "the proxy looked up ({0})",
    "text": "the proxy looked up ({0})"
@@ -35614,14 +35578,6 @@
    "source": "This signed in to {0}’s API, asked its name, its version and its connections, and came back. Nothing was written and nothing was changed.",
    "text": "This signed in to {0}’s API, asked its name, its version and its connections, and came back. Nothing was written and nothing was changed."
   },
-  "p.this-throws-away-everything-in-the.e49e1832": {
-   "source": "This throws away everything in the OTHER database — the {0} above, not the one in use. It is for when a first attempt at moving left something in it and the move will not go on.",
-   "text": "This throws away everything in the OTHER database — the {0} above, not the one in use. It is for when a first attempt at moving left something in it and the move will not go on."
-  },
-  "p.this-writes-one-setting-into-and.a1634c2e": {
-   "source": "This writes one setting into {0} and restarts the daemon, which takes a few seconds. Nothing in either database is touched.",
-   "text": "This writes one setting into {0} and restarts the daemon, which takes a few seconds. Nothing in either database is touched."
-  },
   "p.those-settings-were-put-in-on.c35a9b7b": {
    "source": "those settings were put in on {0}, and the database in use is {1} now: nothing is put back",
    "text": "those settings were put in on {0}, and the database in use is {1} now: nothing is put back"
@@ -35633,6 +35589,10 @@
   "p.through-the-subnet.3a921efc": {
    "source": ", through the subnet {0}",
    "text": ", through the subnet {0}"
+  },
+  "p.throw-away-what-is-in-it.05da9eef": {
+   "source": "Throw away what is in it first - {0} record(s). Moving into a database that is not empty would mix two installations.",
+   "text": "Throw away what is in it first - {0} record(s). Moving into a database that is not empty would mix two installations."
   },
   "p.tidied-given-back.202c2d7d": {
    "source": "tidied: {0} → {1}, {2} given back",
@@ -36247,10 +36207,6 @@
   "r.changed-since-this-was-remembered-first.87e5828b": {
    "source": "Changed since this was remembered — <b>{0}</b>. First seen {1}.",
    "text": "Changed since this was remembered — <b>{0}</b>. First seen {1}."
-  },
-  "r.changing-the-setting-moves-nothing-the.6bf13585": {
-   "source": "Changing the setting moves nothing. The order is: fill the address in, <b>try it</b>, <b>set it up</b> if the database and the account are not there yet, <b>carry everything across</b>, and only then <b>start using it</b>. Until that last step this installation carries on exactly as it is, and what is in it is never touched by any of this.",
-   "text": "Changing the setting moves nothing. The order is: fill the address in, <b>try it</b>, <b>set it up</b> if the database and the account are not there yet, <b>carry everything across</b>, and only then <b>start using it</b>. Until that last step this installation carries on exactly as it is, and what is in it is never touched by any of this."
   },
   "r.cisco-ftd-and-asa-are-read.7b307028": {
    "source": "<b>Cisco FTD and ASA</b> are read from their own syslog messages - <code>%FTD-6-302014: Teardown TCP connection…</code> - however the syslog server files them: all in one file, or a file per message id (<code>%FTD-6-302014.log</code>), every one of which is followed. A session is counted once, when it ends, with how long it lasted, how much it carried (both ways together: FTD does not say which way) and why it ended; the line that opened it lends it its direction and its address translation. Refusals by access group or by a downloadable ACL, packets dropped on the way, the remote-access VPN and the site-to-site tunnels, failover, threat detection, and the management centre's file and intrusion events are all read. For a pair in failover give <b>one</b> firewall a folder for each unit: only the active unit's sessions are counted, and the standby's copies of them are left out. The time is the syslog header's, read in the zone of the firewall's clock - set beside each firewall below; an FTD writes UTC unless told otherwise, and one whose lines keep arriving whole hours old is said so here.",
@@ -37200,10 +37156,6 @@
    "source": "<br><br>The router’s country list is filled again from it straight afterwards, because a new database is the one moment that list is certainly out of date.",
    "text": "<br><br>The router’s country list is filled again from it straight afterwards, because a new database is the one moment that list is certainly out of date."
   },
-  "r.the-settings-above-say-which-database.4f8e6a11": {
-   "source": "The settings above say which database to open and how to reach it, and they are the only settings kept in <b>the config file</b> rather than in the database — a database cannot hold the address of itself, and a machine whose database will not open still has to be able to be put right from this page.",
-   "text": "The settings above say which database to open and how to reach it, and they are the only settings kept in <b>the config file</b> rather than in the database — a database cannot hold the address of itself, and a machine whose database will not open still has to be able to be put right from this page."
-  },
   "r.the-settings-that-say-which-database.91d59dfa": {
    "source": "the settings that say which database to use live in {0}, and this daemon could not write it ({1}). On the machine, as root:<br> chgrp {2} {3} && chmod 2770 {4}<br> mkdir -p /etc/systemd/system/isemon.service.d<br> printf '[Service]\\nReadWritePaths={5}\\n' > /etc/systemd/system/isemon.service.d/config-write.conf<br> systemctl daemon-reload && systemctl restart isemon<br>Or change it from the command line instead, which writes the file as root:<br> isemon --set db_engine=... --set db_host=...",
    "text": "the settings that say which database to use live in {0}, and this daemon could not write it ({1}). On the machine, as root:<br> chgrp {2} {3} && chmod 2770 {4}<br> mkdir -p /etc/systemd/system/isemon.service.d<br> printf '[Service]\\nReadWritePaths={5}\\n' > /etc/systemd/system/isemon.service.d/config-write.conf<br> systemctl daemon-reload && systemctl restart isemon<br>Or change it from the command line instead, which writes the file as root:<br> isemon --set db_engine=... --set db_host=..."
@@ -37467,6 +37419,10 @@
   "r.where-a-freeradius-server-of-the.80087117": {
    "source": "Where a <b>FreeRADIUS</b> server of the site's own answers the switches, the wireless or the VPN - MAB and 802.1X on the LAN and on Wi-Fi, and the VPN - this reads its <code>radius.log</code>: who was let in or refused, through which RADIUS client and from which machine, and what it said. Not eduroam, which has a pane of its own.",
    "text": "Where a <b>FreeRADIUS</b> server of the site's own answers the switches, the wireless or the VPN - MAB and 802.1X on the LAN and on Wi-Fi, and the VPN - this reads its <code>radius.log</code>: who was let in or refused, through which RADIUS client and from which machine, and what it said. Not eduroam, which has a pane of its own."
+  },
+  "r.where-everything-is-kept-the-file.6c80c07b": {
+   "source": "Where everything is kept: the file on this machine, MariaDB or PostgreSQL. Its address is kept in <b>the config file</b> rather than in the database - a database cannot hold the address of itself.",
+   "text": "Where everything is kept: the file on this machine, MariaDB or PostgreSQL. Its address is kept in <b>the config file</b> rather than in the database - a database cannot hold the address of itself."
   },
   "r.where-in-that-domain-to-look.5170559a": {
    "source": "Where in that domain to look: <code>DC=other,DC=int</code>, or an OU inside it.",

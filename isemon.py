@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.276'
+__version__ = '1.10.277'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -24757,6 +24757,201 @@ class DbTune(object):
                 'engine': self.engine, 'restart': self.restart_ready()}
 
 
+# ---- another database, by the wizard (1.10.277) -----------------------------------
+# Every isemon says, once a minute, into the database it uses: this machine,
+# now, this version. Two machines sharing one database server is the one way
+# isemon runs in high availability - and moving one of them to another
+# database would split the pair: the other would go on writing where nobody
+# reads any more. So the wizard is refused while another machine has said so
+# lately.
+DB_NODE_FRESH_S = 180
+
+
+def db_node_name():
+    return (socket.gethostname() or 'isemon').split('.')[0].lower() or 'isemon'
+
+
+def db_node_beat(store):
+    """This machine, said into the database it uses."""
+    store.set_meta('node:' + db_node_name(), json.dumps({
+        'at': time.time(), 'host': socket.gethostname() or '', 'version': __version__}))
+
+
+def db_nodes(store, now=None, within=DB_NODE_FRESH_S):
+    """The other machines that said lately that they use this database."""
+    now = now or time.time()
+    out = []
+    for key in store.meta_keys_from('node:'):
+        name = key[len('node:'):]
+        if name == db_node_name():
+            continue
+        try:
+            got = json.loads(store.get_meta(key, '') or '{}')
+        except ValueError:
+            continue
+        at = float(got.get('at') or 0) if isinstance(got, dict) else 0
+        if at and now - at <= within:
+            out.append({'name': name, 'host': got.get('host') or name, 'at': at,
+                        'version': got.get('version') or ''})
+    return sorted(out, key=lambda x: x['name'])
+
+
+class DbMoveError(ValueError):
+    pass
+
+
+# Kept facts a restore forgets on purpose, to be worked out again from the rows.
+DB_MOVE_FORGOTTEN = ('geo_size',)
+
+
+def db_move_refused(store, want):
+    """Why this installation may not be moved to `want`, or ''."""
+    nodes = db_nodes(store)
+    if nodes:
+        return ('this database is in use by another isemon as well (%s) - a pair in high '
+                'availability. Moving one of them would split the pair: the other would go '
+                'on writing into a database nobody reads. Stop the other one, or move them '
+                'both by hand, first.' % ', '.join(n['host'] for n in nodes))
+    if same_database(want, store.engine):
+        return 'that is the database everything is already in'
+    ready, why = DIALECTS[want['engine']].driver_ready()
+    if not ready:
+        return why
+    return ''
+
+
+def db_migrate(daemon, want, by, admin_user='', admin_password='', empty=False,
+               progress=None, switch=True):
+    """Everything into another database, and that one taken up: the steps
+    the wizard asked about, one after another, each checked before the next.
+    Nothing is changed for this installation until the last step - the
+    setting that says which database is opened - and that is written only
+    when every table is there with every row. (1.10.277)"""
+    store = daemon.store
+    name = want['engine']
+    word = ENGINE_WORDS.get(name, name)
+
+    def say(n, words):
+        if progress:
+            progress(n, 1000, words)
+    say(10, 'checked: nothing else uses this database')
+    why = db_move_refused(store, want)
+    if why:
+        raise DbMoveError(why)
+    if getattr(store, 'trouble', ''):
+        raise DbMoveError('the database in use will not open, so there is nothing to carry '
+                          'out of it')
+    made = ''
+    if name != 'sqlite':
+        say(30, 'reaching %s at %s' % (word, dialect_for(want).where()))
+        got = db_try(want) if want.get('password') else {'ok': False}
+        if not (got.get('ok') and got.get('writable')):
+            if not admin_user:
+                raise DbMoveError(got.get('trouble') or 'that account does not get in, and '
+                                  'no administrator was given to make it')
+            if not want.get('password'):
+                want['password'] = made = db_password_made()
+            say(60, 'the database and its account made on %s' % word)
+            try:
+                db_make(want, admin_user, admin_password)
+            except Exception as e:
+                raise DbMoveError(str(e).split('\n')[0][:200])
+    admin_user = admin_password = None
+    say(90, 'its tables made')
+    far = Storage(engine=want)
+    far.close()
+    got = db_try(want)
+    if not got.get('ok'):
+        raise DbMoveError(got.get('trouble') or 'it does not answer')
+    if not got.get('writable'):
+        raise DbMoveError('that account may not write to it')
+    if got.get('rows'):
+        if not empty:
+            raise DbMoveError('there are already %s record(s) in it: moving into a database '
+                              'that is not empty would mix two installations'
+                              % num_words(got['rows']))
+        say(110, 'what was in it thrown away (%s record(s))' % num_words(got['rows']))
+        far = Storage(engine=want)
+        try:
+            far.wipe()
+        finally:
+            far.close()
+    say(130, 'a copy made of what is here')
+    copy = store.backup(label='before-moving')
+    grand, have = 0, {}
+    spare = sqlite3.connect('file:%s?mode=ro' % copy, uri=True)
+    try:
+        for table in Dialect.schema_tables(SCHEMA):
+            try:
+                have[table] = int(spare.execute('SELECT COUNT(*) FROM %s' % table).fetchone()[0])
+            except sqlite3.Error:
+                have[table] = None
+        grand = sum(v for v in have.values() if v)
+    finally:
+        spare.close()
+    tally, said = {}, {'at': 0.0}
+
+    def along(i, tables, table, done, whole):
+        tally[table] = done
+        now = time.time()
+        if now - said['at'] < 1.0 and done < whole:
+            return
+        said['at'] = now
+        say(150 + int(700 * sum(tally.values()) / max(1, grand)),
+            'carried: %s - %s of %s' % (table, num_words(done), num_words(whole)))
+    far = Storage(engine=want)
+    try:
+        far.restore(copy, say=along)
+        say(860, 'every table counted again there')
+        short = []
+        for table, n in have.items():
+            if n is None:
+                continue
+            if table == 'meta':
+                # What a restore puts right afterwards: a key it forgets,
+                # being worked out again from the rows (`geo_size`), and keys
+                # it adds. Any other key missing there is something lost.
+                mine = {r[0] for r in sqlite3.connect('file:%s?mode=ro' % copy, uri=True)
+                        .execute('SELECT key FROM meta')}
+                theirs = {str(r['key']) for r in far.db.execute('SELECT %s AS key FROM meta'
+                                                                % far.dialect.ident('key'))}
+                lost = sorted(mine - theirs - set(DB_MOVE_FORGOTTEN))
+                if lost:
+                    short.append('meta: %s missing there' % ', '.join(lost[:5]))
+                continue
+            try:
+                there = int(far.db.execute('SELECT COUNT(*) AS n FROM %s'
+                                           % far.dialect.ident(table)).fetchone()['n'])
+            except Exception:
+                there = -1
+            if there != n:
+                short.append('%s: %s here, %s there' % (table, num_words(n), num_words(there)))
+        after = far.counts()
+    finally:
+        far.close()
+    if short:
+        raise DbMoveError('not everything arrived, so it is not taken up: ' + '; '.join(short[:5]))
+    store.add_event('settings', 'everything was carried into the %s at %s (%s row(s)); %s is a '
+                    'copy of what was here' % (word, dialect_for(want).where(), num_words(grand),
+                                               copy.name), 'warn', who=by)
+    out = {'engine': name, 'words': word, 'where': dialect_for(want).where(), 'rows': grand,
+           'copy': copy.name, 'counts': after, 'password_made': bool(made)}
+    if not switch:
+        return out
+    say(900, 'taken up: %s' % word)
+    put = {'db_engine': name}
+    if name != 'sqlite':
+        put.update({'db_host': want['host'], 'db_port': want['port'], 'db_name': want['name'],
+                    'db_user': want['user'], 'db_password': want['password'],
+                    'db_timeout_s': want.get('timeout') or 10})
+    daemon.save_settings(put, by=by)
+    log('everything was carried into the %s at %s and it is the one in use from the next start '
+        '(by %s)' % (word, dialect_for(want).where(), by), 'warn')
+    out['switched'] = True
+    say(1000, 'done')
+    return out
+
+
 def engine_asked(given, engine=None):
     """The database a request is about, out of what it typed rather than
     what is saved.
@@ -24769,6 +24964,10 @@ def engine_asked(given, engine=None):
     """
     values = dict(CONFIG)
     typed_password = False
+    # An empty object arrives as an empty list through the page's relay
+    # (PHP's json_decode): nothing given (1.10.277).
+    if isinstance(given, list) and not given:
+        given = None
     if given is not None and not isinstance(given, dict):
         raise ValueError('the database settings are a set of named values')
     for key, value in (given or {}).items():
@@ -63391,6 +63590,11 @@ class Daemon(object):
                 self.behind('web', self._web_pass)
                 # ...and the backups to other machines on their schedule (1.10.228).
                 self.behind('rbackup', lambda: rb_tick(self), 'the backups to other machines')
+                # ...and this machine said into the database it uses (1.10.277).
+                try:
+                    db_node_beat(self.store)
+                except Exception as e:
+                    log('saying this machine into the database: %s' % e, 'debug')
             # Cheap, and wanted soon after the packets arrive: an attempt
             # shown as a sign-in when it was a refusal is the one mistake
             # this page must not make for long.
@@ -74544,6 +74748,48 @@ class ApiHandler(BaseHTTPRequestHandler):
                                    label='carrying everything into %s' % word)
             return self.send_json({'ok': True, 'job': job['id']})
 
+        if act == 'check':
+            # The wizard's look before it goes (1.10.277): may it, and what
+            # answers there.
+            why = db_move_refused(store, want)
+            got = db_try(want) if (name == 'sqlite' or want.get('password')) else {
+                'ok': False, 'none_typed': True,
+                'trouble': 'no password typed: the account is made, with one made for it, by '
+                           'an administrator on that server'}
+            got['reached'] = bool(got.pop('ok', False))
+            got.update({'ok': True, 'engine': name, 'words': word, 'refused': why,
+                        'where': dialect_for(want).where()})
+            return self.send_json(got)
+
+        if act == 'migrate':
+            # Every step, one after another, as one job (1.10.277).
+            why = db_move_refused(store, want)
+            if why:
+                return self.fail(why)
+            if getattr(store, 'trouble', ''):
+                return self.fail('the database in use will not open, so there is nothing to '
+                                 'carry out of it')
+            who = str(data.get('admin_user') or '').strip()
+            code = str(data.get('admin_password') or '')
+            empty = bool(data.get('empty'))
+            restart_too = bool(data.get('restart'))
+            by = me['name']
+
+            def work(progress):
+                got = db_migrate(daemon, want, by, who, code, empty, progress)
+                under = bool(os.environ.get('INVOCATION_ID'))
+                got['restarting'] = bool(under and restart_too)
+                got['under_systemd'] = under
+                got['message'] = ('everything is in %s and it is taken up%s'
+                                  % (word, ': isemon starts again on it' if got['restarting']
+                                     else ' - restart isemon to start on it'))
+                if got['restarting']:
+                    threading.Timer(3.0, lambda: os.kill(os.getpid(), signal.SIGTERM)).start()
+                return got
+            job = daemon.job_start('db-move', work, by=by, key='migrate',
+                                   label='moving everything into %s' % word)
+            return self.send_json({'ok': True, 'job': job['id']})
+
         if act == 'use':
             # A setting, and nothing else. What is in either database is not
             # touched: this says which one is opened next time, and the next
@@ -77854,6 +78100,14 @@ class ApiHandler(BaseHTTPRequestHandler):
                 said['counts'] = daemon.held('db-counts', 15, store.counts)
             except sqlite3.Error:
                 said['counts'] = {}
+            # Other machines on this database: a pair in high availability,
+            # which the wizard will not split (1.10.277).
+            try:
+                said['nodes'] = db_nodes(store)
+            except Exception:
+                said['nodes'] = []
+            said['node'] = db_node_name()
+            said['drivers_ready'] = {one: DIALECTS[one].driver_ready()[0] for one in ENGINES}
             return self.send_json(said)
 
         if path == '/api/db/tune' and method != 'POST':

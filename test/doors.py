@@ -3585,7 +3585,9 @@ ok('emptying a host makes it forget what it had drawn',
 ok('...and anything saying "ago" is redrawn once a minute',
    "'@' + Math.floor(Date.now() / 60000)" in PAGE, True)
 ok('every popup that asks the daemon holds a ticket',
-   PAGE.count('var ticket = modalTicket();'), 15)   # + the time window picker (1.10.152)
+   PAGE.count('var ticket = modalTicket();'), 17)   # + the time window picker (1.10.152)
+#                                                   + the database wizard's three, - the old
+#                                                     Trying popup (1.10.277)
 #                                                   + the database server's four (1.10.173)
 ok('...and draws only while its ticket is current', PAGE.count('modalStill(ticket)') >= 5, True)
 # 1.10.241: a popup underneath gets its own ticket back; the last closed

@@ -2754,6 +2754,24 @@ function srcText(el) {
   .modal .box.narrow{width:min(560px,100%)}
   .modal .box.medium{width:min(860px,100%)}
   .modal .box.large{width:min(1120px,100%)}
+  /* The wizard (1.10.277). */
+  .wiz-steps{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
+  .wiz-step{display:flex;align-items:center;gap:6px;padding:5px 10px 5px 6px;border:1px solid var(--line);
+    border-radius:999px;font-size:12.5px;color:var(--tx-dim)}
+  .wiz-step b{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;
+    background:var(--panel2);color:var(--tx-dim)}
+  .wiz-step.on{border-color:var(--info);color:var(--tx)} .wiz-step.on b{background:var(--info);color:#fff}
+  .wiz-step.done{color:var(--ok)} .wiz-step.done b{background:var(--ok-bg);color:var(--ok)}
+  .wiz-page h4{margin:0 0 10px;font-size:15px}
+  .wiz-page .set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 18px;margin:8px 0}
+  .wiz-tile.on{border-color:var(--info);box-shadow:0 0 0 1px var(--info)}
+  .wiz-tile:disabled{opacity:.5;cursor:not-allowed}
+  .wiz-list{margin:6px 0 14px 18px;padding:0;line-height:1.7}
+  .wiz .tickrow{display:flex;gap:8px;align-items:flex-start;margin:12px 0;cursor:pointer}
+  .wiz .tickrow input{margin-top:3px}
+  .wiz .joblines{margin-top:10px;max-height:200px;overflow:auto;font-size:12.5px;color:var(--tx-dim)}
+  .wiz .note.bad{color:var(--crit);background:var(--crit-bg);border-radius:10px;padding:10px 12px}
+  .wiz .note.good{color:var(--ok)}
   /* The database server's own settings (1.10.173). */
   .tune-machine{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 2px}
   .tune-machine .set-item{flex:1 1 150px;margin:0}
@@ -6439,32 +6457,17 @@ isemon --upgrade-status                    # an upgrade started on these pages</
     </div>
     <div class="card full" id="db-engine-card">
       <h2>Which one it is <span class="right" id="db-engine-now"></span></h2>
-      <p class="note">The settings above say which database to open and how to reach it, and
-        they are the only settings kept in <b id="db-engine-file">the config file</b> rather
-        than in the database — a database cannot hold the address of itself, and a machine
-        whose database will not open still has to be able to be put right from this page.</p>
-      <p class="note">Changing the setting moves nothing. The order is: fill the address in,
-        <b>try it</b>, <b>set it up</b> if the database and the account are not there yet,
-        <b>carry everything across</b>, and only then <b>start using it</b>. Until that last
-        step this installation carries on exactly as it is, and what is in it is never
-        touched by any of this.</p>
+      <p class="note">Where everything is kept: the file on this machine, MariaDB or
+        PostgreSQL. Its address is kept in <b id="db-engine-file">the config file</b> rather
+        than in the database - a database cannot hold the address of itself.</p>
       <div id="db-engine-says"></div>
       <div class="btnrow admin-only" style="margin-top:12px">
-        <button class="btn cmd" id="db-engine-test" data-icon="check"
-                title="Reach that server with the address above, exactly as the daemon would, and say what answered. Nothing is saved and nothing is written.">Try it</button>
-        <button class="btn cmd" id="db-engine-setup" data-icon="key"
-                title="Make the database and the account on that server, and give that account rights on that one database and no other, with a password made here and shown once. The first time it asks for an administrator on the server, uses it for this one connection and stores it nowhere. Afterwards it needs none: it opens the database and puts its tables right, which is worth doing after every upgrade.">Set it up…</button>
-        <button class="btn cmd primary" id="db-engine-move" data-icon="save"
-                title="Copy everything that is here into that database: every record, every ban, every setting and every account. What is here is left exactly as it is.">Carry everything across…</button>
-        <button class="btn cmd danger" id="db-engine-empty" data-icon="forget"
-                title="Throw away what is in the OTHER database, so that a move can be tried again. Never the one in use.">Empty it…</button>
-        <button class="btn cmd" id="db-engine-use" data-icon="power"
-                title="Start using it. This writes one setting and restarts the daemon; nothing in either database is touched, and coming back is the same four steps the other way.">Start using it…</button>
+        <button class="btn cmd primary" id="db-wizard-open" data-icon="db"
+                title="A wizard: where the database is to go and how to reach it, step by step, and then one run that makes it there, carries everything across, checks every table and takes it up. Nothing changes for this installation until that last step.">Move to another database…</button>
       </div>
-      <p class="btnhelp">Once everything is in the other database and it is the one in use,
-        the one it came from is just a spare copy: the file may be deleted, or the server
-        uninstalled. Going the other way is these same steps with the file chosen instead —
-        which is what makes it safe to try a server at all.</p>
+      <p class="btnhelp">What is here now is left exactly as it is, with a copy made beside it
+        before anything is carried; afterwards it is a spare - the file may be deleted, or the
+        server uninstalled. Going back is the same wizard the other way.</p>
     </div>
     <div class="card full">
       <h2>The disk it is on</h2>
@@ -26168,8 +26171,8 @@ var PANES = {
             'directory2_verify', 'directory2_base', 'directory2_bind', 'directory2_password',
             'directory2_user_attr', 'directory2_realms'],
   upgrade: ['upgrade_check', 'upgrade_url', 'downgrade_offered'],
-  db:      ['db_engine', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password',
-            'db_timeout_s', 'db_split', 'db_split_whole_days',
+  /* Which database and its address: asked by the wizard (1.10.277). */
+  db:      ['db_split', 'db_split_whole_days',
             'retain_failed_days', 'retain_passed_days', 'retain_events_days',
             'retain_eduroam_days', 'retain_otp_days', 'retain_names_days',
             'tidy_daily', 'tidy_at', 'backup_daily',
@@ -33661,15 +33664,8 @@ function loadEngine() {
 }
 
 function engineButtons() {
-  var chosen = engineChosen();
-  var live = String(ENGINE.engine || 'sqlite');
-  var file = chosen === 'sqlite';
-  var same = chosen === live;
-  if ($('db-engine-setup')) $('db-engine-setup').disabled = file;
-  if ($('db-engine-test')) $('db-engine-test').disabled = false;
-  if ($('db-engine-move')) $('db-engine-move').disabled = same;
-  if ($('db-engine-empty')) $('db-engine-empty').disabled = same;
-  if ($('db-engine-use')) $('db-engine-use').disabled = same && !ENGINE.trouble;
+  /* The wizard has one button, and it is always there for an administrator
+     (1.10.277). */
 }
 
 function engineFacts(d) {
@@ -33687,214 +33683,382 @@ function engineFacts(d) {
 }
 
 function wireEngine() {
-  if (!$('db-engine-test')) return;
-  $('db-engine-test').onclick = function (button) {
-    busy($('db-engine-test'), true);
-    engineAsk('test').then(function (d) {
-      modal('Trying ' + d.words, function (body) {
-        body.appendChild(el('p', 'note', 'Nothing was saved and nothing was written: this '
-          + 'opened it, asked what it is, counted what is in it and closed it again.'));
-        body.appendChild(engineFacts(d));
-        if (!d.reached) {
-          body.appendChild(el('p', 'note bad', String(d.trouble || '')));
-        } else if (!d.writable) {
-          body.appendChild(el('p', 'note bad', 'It answers, but this account may not make '
-            + 'anything in it. Set it up, or give the account rights on that database.'));
-        } else if (!d.ours) {
-          body.appendChild(el('p', 'note', 'It is reachable and empty of ours, which is '
-            + 'exactly what something to carry everything into should look like.'));
-        }
-      }, [{words: 'Close', close: true}]);
-    }).catch(oops).then(function () { busy($('db-engine-test'), false); });
-  };
+  if ($('db-wizard-open')) $('db-wizard-open').onclick = dbWizard;
+}
 
-  $('db-engine-setup').onclick = function () {
-    var who, word;
-    modal('Setting up ' + engineWord(engineChosen()), function (body) {
-      body.appendChild(el('p', 'note', 'This makes the database and the account on that '
-        + 'server, and gives the account rights on that one database and no other. The '
-        + 'first time, it needs an administrator on the server to do it \u2014 root on '
-        + 'MariaDB, postgres on PostgreSQL, or anyone who may create a database.'));
-      body.appendChild(el('p', 'note', 'That administrator is used for this one connection '
-        + 'and is stored nowhere: not in the settings, not in the database, not in any log.'));
-      body.appendChild(el('p', 'note', 'The account this program will use is made with a '
-        + 'password of its own, generated here \u2014 you do not have to invent one. It is '
-        + 'written into the settings above, and shown once when this is done so you can keep '
-        + 'a copy.'));
-      body.appendChild(el('p', 'note', 'Press this again later and it does the other half of '
-        + 'the job: if the account already gets in, nothing is made and no administrator is '
-        + 'wanted \u2014 it opens the database and puts its tables right, adding whatever '
-        + 'this version wants that an older one never made. Leave the two boxes empty for '
-        + 'that.'));
-      var one = el('div', 'set-item');
-      one.appendChild(el('label', '', 'An administrator on that server'));
-      who = el('input');
-      who.type = 'text';
-      who.autocomplete = 'off';
-      who.placeholder = engineChosen() === 'postgres' ? 'postgres' : 'root';
-      one.appendChild(who);
-      one.appendChild(el('div', 'says', 'Only needed the first time, or if the account '
-        + 'below cannot get in. Leave it empty to check over a database that is already '
-        + 'there.'));
-      body.appendChild(one);
-      var two = el('div', 'set-item');
-      two.appendChild(el('label', '', 'Its password'));
-      word = el('input');
-      word.type = 'password';
-      word.autocomplete = 'off';
-      two.appendChild(word);
-      body.appendChild(two);
-      setTimeout(function () { who.focus(); }, 60);
-    }, [{words: 'Set it up', cls: 'primary', icon: 'key', go: function () {
-      var ticket = modalTicket();
-      engineAsk('setup', {admin_user: who.value, admin_password: word.value})
-        .then(function (d) {
-          /* The answer carries a password shown once, so it is never
-             dropped: closed meanwhile, the popup is opened again for it
-             rather than the answer being drawn into whatever popup is up. */
-          if (!modalStill(ticket)) {
-            modal('The database, set up', function () {}, [{words: 'Close', close: true}]);
-          }
-          var body = $('modal-body');
-          clear(body);
-          (d.made || []).forEach(function (line) {
-            body.appendChild(el('p', d.existed ? 'note' : 'note good',
-                                (d.existed ? '' : 'made ') + line));
-          });
-          body.appendChild(el('p', 'note', d.reached
-            ? 'And the account reaches it: ' + (d.says || '')
-            : 'But the account cannot reach it: ' + (d.says || '')));
-          /* What the pass over the tables found and did. It is the same one
-             this program makes on every start; asking for it is the point
-             of pressing this a second time. */
-          var shape = d.shape || {};
-          var facts = [['Where', d.where || ''],
-                       ['Tables there', num(shape.tables || 0)],
-                       ['Indexes on them', num(shape.indexes || 0)],
-                       ['Records in it', num(d.rows || 0)]];
-          facts.push(['Anything missing', (shape.missing || []).length
-            ? shape.missing.join(', ') : 'no']);
-          body.appendChild(peekFacts(facts));
-          /* The names of what was just made are a list, sometimes of
-             fifteen. A line reads better than a box that tall. */
-          if ((shape.added || []).length) {
-            body.appendChild(el('p', 'note good',
-              'Made just now: ' + shape.added.join(', ') + '.'));
-          }
-          if ((shape.missing || []).length) {
-            body.appendChild(el('p', 'note bad', 'Those columns could not be added. The '
-              + 'daemon\u2019s log says why; until they are there this database is not one '
-              + 'this version can use.'));
-          } else if (d.existed && !(shape.added || []).length) {
-            body.appendChild(el('p', 'note good', 'Everything this version wants is there, '
-              + 'with its columns and its indexes.'));
-          }
-          /* The one time it is shown. It is in config.json from now on and
-             nowhere else, so somebody who wants a copy has to take it here. */
-          if (d.password) {
-            body.appendChild(el('h4', '', 'The password made for ' + (d.user || 'it')));
-            var box = el('div', 'set-item');
-            var pw = el('input');
-            pw.type = 'text';
-            pw.readOnly = true;
-            pw.className = 'mono';
-            pw.value = d.password;
-            pw.onclick = function () { pw.select(); };
-            box.appendChild(pw);
-            body.appendChild(box);
-            var row = el('div', 'btnrow');
-            var copy = cmdButton('Copy it', 'copy', 'small');
-            copy.onclick = function () {
-              pw.select();
-              var done = false;
-              try { done = document.execCommand('copy'); } catch (e) { done = false; }
-              if (!done && navigator.clipboard) {
-                navigator.clipboard.writeText(d.password).then(function () {
-                  toast('copied', 'good');
-                }, function () { toast('press Ctrl+C \u2014 it is selected', 'warn'); });
-              } else {
-                toast(done ? 'copied' : 'press Ctrl+C \u2014 it is selected',
-                      done ? 'good' : 'warn');
-              }
-            };
-            row.appendChild(copy);
-            body.appendChild(row);
-            body.appendChild(el('p', 'note', 'It is saved in '
-              + (d.kept_in || 'the config file') + ' and nowhere else, so nothing has to be '
-              + 'typed in above. This is the only time it is shown \u2014 keep a copy if you '
-              + 'want one, though nothing here needs it again.'));
-          }
-          body.appendChild(el('p', 'note', 'The address is saved. Nothing has moved yet: '
-            + 'carry everything across when you are ready.'));
-          loadSettings();
-        }).catch(function (e) {
-          var body = $('modal-body');
-          clear(body);
-          body.appendChild(el('p', 'note bad', String((e && e.message) || e)));
-        });
-    }}, {words: 'Close', close: true}]);
-  };
-
-  $('db-engine-move').onclick = function () {
-    var word = engineWord(engineChosen());
-    modal('Carrying everything into ' + word, function (body) {
-      body.appendChild(el('p', 'note', 'Every record, every ban, every setting, every '
-        + 'account and the whole story of every ban is copied into ' + word + '. On a large '
-        + 'database this takes minutes; you can close this and it carries on.'));
-      body.appendChild(el('p', 'note', 'What is here is not touched, and a copy of it is '
-        + 'made first in any case. Nothing starts using the other database until you say '
-        + 'so afterwards.'));
-    }, [{words: 'Carry it across', cls: 'primary', icon: 'save', go: function () {
-      engineAsk('move').then(function (d) {
-        watchJob(d.job, 'Carrying everything into ' + word, function () {
-          loadEngine();
-          loadDb();
-        }, 'This is copying the whole database. You can close this and it carries on; what '
-           + 'it did ends up in Events either way.');
-      }).catch(oops);
-    }}, {words: 'Leave it', close: true}]);
-  };
-
-  $('db-engine-empty').onclick = function () {
-    var word = engineWord(engineChosen());
-    modal('Emptying ' + word, function (body) {
-      body.appendChild(el('p', 'note bad', 'This throws away everything in the OTHER '
-        + 'database \u2014 the ' + word + ' above, not the one in use. It is for when a '
-        + 'first attempt at moving left something in it and the move will not go on.'));
-      body.appendChild(el('p', 'note', 'Nothing in the database this installation is '
-        + 'running on is touched, and this is refused outright if the two are the same.'));
-    }, [{words: 'Empty it', cls: 'danger', icon: 'forget', go: function () {
-      engineAsk('empty').then(function (d) {
-        toast(num(d.tables) + ' table(s) thrown away; it is as good as new', 'good');
+/* ---- Move to another database: the wizard (1.10.277) ----------------------
+   Where the database is to go and how to reach it, asked a step at a time with
+   Back and Next; then one job does it all on the daemon (`db_migrate`): made
+   there, emptied if asked, carried across, every table counted again, and only
+   then taken up - and isemon starts again on it. Not offered while another
+   isemon uses this database: a pair in high availability, which moving one of
+   them would split. */
+var WIZ = null;
+var WIZ_STEPS = ['Now', 'Where to', 'How to reach it', 'What answered', 'Ready', 'Moving'];
+var WIZ_PORT = {postgres: 5432, mariadb: 3306};
+var WIZ_SAYS = {
+  sqlite: 'A file on this machine. Nothing to install or run beside isemon; fine for most sites.',
+  mariadb: 'A MariaDB (or MySQL) server, here or on another machine.',
+  postgres: 'A PostgreSQL server, here or on another machine - the one for very big databases.'
+};
+function dbWizard() {
+  WIZ = {step: 0, to: '', host: '127.0.0.1', port: '', name: 'isemon', user: 'isemon',
+         password: '', timeout: 10, admin: '', adminPass: '', empty: false, sure: false,
+         check: null, job: null, said: [], result: null, error: '', back: false,
+         nodes: (ENGINE.nodes || []).slice(), live: String(ENGINE.engine || 'sqlite'),
+         repoint: !!ENGINE.trouble};
+  dbWizardDraw();
+}
+function dbWizardSettings() {
+  if (WIZ.to === 'sqlite') return null;     /* {} would arrive as [] through the relay */
+  return {db_host: WIZ.host, db_port: Number(WIZ.port) || WIZ_PORT[WIZ.to] || 0,
+          db_name: WIZ.name, db_user: WIZ.user, db_password: WIZ.password,
+          db_timeout_s: Number(WIZ.timeout) || 10};
+}
+function dbWizardField(label, value, set, holder, kind, says) {
+  var one = el('div', 'set-item');
+  one.appendChild(el('label', '', label));
+  var box = el('input');
+  box.type = kind === 'number' ? 'number' : 'text';
+  box.placeholder = holder || '';
+  box.spellcheck = false;
+  if (kind === 'secret') maskInput(box, value || ''); else box.value = value === undefined ? '' : String(value);
+  box.addEventListener('input', function () { set(box.value); dbWizardButtons(); });
+  one.appendChild(box);
+  if (says) one.appendChild(el('div', 'says', says));
+  return one;
+}
+function dbWizardCan() {
+  var w = WIZ, c = w.check || {};
+  if (w.step === 0) return !w.nodes.length;
+  if (w.step === 1) return !!w.to;
+  if (w.step === 2) return !!(w.host && w.name && w.user);
+  if (w.step === 3) {
+    if (c.refused) return false;
+    if (w.to !== 'sqlite' && !(c.reached && c.writable) && !w.repoint && !w.admin) return false;
+    if (w.repoint) return !!(c.reached && c.writable && c.ours);
+    if (c.reached && c.rows && !w.empty) return false;
+    return true;
+  }
+  if (w.step === 4) return w.sure;
+  return false;
+}
+function dbWizardButtons() {
+  var next = $('wiz-next');
+  if (next) next.disabled = !dbWizardCan();
+}
+function dbWizardGo(step) {
+  WIZ.step = step;
+  dbWizardDraw();
+}
+function dbWizardNext(button) {
+  var w = WIZ;
+  if (w.step === 1 && w.to === 'sqlite') return dbWizardCheck(button);
+  if (w.step === 2) return dbWizardCheck(button);
+  if (w.step === 4) return dbWizardStart(button);
+  dbWizardGo(w.step + 1);
+}
+function dbWizardBackTo() {
+  var w = WIZ;
+  if (w.step === 3 && w.to === 'sqlite') return 1;
+  return Math.max(0, w.step - 1);
+}
+function dbWizardCheck(button) {
+  busy(button, true);
+  var ticket = modalTicket();
+  api('db-engine', {act: 'check', to: WIZ.to, settings: dbWizardSettings()}).then(function (d) {
+    if (!modalStill(ticket)) return;     /* closed meanwhile: not opened again */
+    WIZ.check = d;
+    WIZ.empty = false;
+    busy(button, false);
+    dbWizardGo(3);
+  }).catch(function (e) { busy(button, false); oops(e); });
+}
+function dbWizardStart(button) {
+  var w = WIZ;
+  busy(button, true);
+  var body = w.repoint
+    ? {act: 'use', to: w.to, settings: dbWizardSettings(), restart: true}
+    : {act: 'migrate', to: w.to, settings: dbWizardSettings(), empty: w.empty, restart: true,
+       admin_user: w.admin || '', admin_password: w.adminPass || ''};
+  var ticket = modalTicket();
+  api('db-engine', body).then(function (d) {
+    w.adminPass = '';
+    if (!modalStill(ticket)) return;     /* closed meanwhile: it runs on, unwatched */
+    w.step = 5;
+    if (w.repoint) {
+      w.result = {switched: true, restarting: !!d.restarting, words: d.words,
+                  message: 'isemon is pointed at ' + d.words};
+      dbWizardDraw();
+      if (d.restarting) dbWizardBack();
+      return;
+    }
+    w.job = d.job;
+    dbWizardDraw();
+    dbWizardFollow();
+  }).catch(function (e) { busy(button, false); oops(e); });
+}
+function dbWizardFollow() {
+  var w = WIZ;
+  if (!w || !w.job) return;
+  var ticket = modalTicket();
+  api('job&id=' + encodeURIComponent(w.job), undefined, {quiet: true}).then(function (d) {
+    if (WIZ !== w || !modalStill(ticket)) return;
+    var j = d.job || {};
+    w.total = j.total || 1000;
+    w.doneN = j.done_n || 0;
+    if (j.last && w.said[w.said.length - 1] !== j.last) w.said.push(j.last);
+    if (!j.done) { dbWizardProgress(); setTimeout(dbWizardFollow, 800); return; }
+    if (j.error || !j.ok) {
+      w.error = j.error || 'it did not work';
+      w.job = null;
+      dbWizardDraw();
+      return;
+    }
+    w.result = j.result || {};
+    w.job = null;
+    dbWizardDraw();
+    if (w.result.restarting) dbWizardBack();
+  }).catch(function () { if (WIZ === w) setTimeout(dbWizardFollow, 1500); });
+}
+/* isemon starting again on the new one: asked until it answers on it. */
+function dbWizardBack() {
+  var w = WIZ, began = Date.now();
+  var again = function () {
+    if (WIZ !== w || $('modal').hidden) return;
+    api('db-engine', undefined, {quiet: true}).then(function (d) {
+      if (d.engine === w.to && !d.trouble) {
+        w.back = true;
+        ENGINE = d;
+        dbWizardDraw();
         loadEngine();
-      }).catch(oops);
-    }}, {words: 'Leave it', close: true}]);
+        return;
+      }
+      setTimeout(again, 2000);
+    }).catch(function () {
+      if (Date.now() - began < 180000) setTimeout(again, 2000);
+      else { w.error = 'isemon did not answer again within three minutes: look at journalctl -u isemon'; dbWizardDraw(); }
+    });
   };
-
-  $('db-engine-use').onclick = function () {
-    var chosen = engineChosen();
-    var word = engineWord(chosen);
-    modal('Start using ' + word, function (body) {
-      body.appendChild(el('p', 'note', 'This writes one setting into ' + (ENGINE.file || 'the '
-        + 'config file') + ' and restarts the daemon, which takes a few seconds. Nothing in '
-        + 'either database is touched.'));
-      body.appendChild(el('p', 'note', chosen === 'sqlite'
-        ? 'Everything will be read out of the file on this machine from then on, and the '
-          + 'server may be uninstalled once you are happy.'
-        : 'Everything will be read out of ' + word + ' from then on, and the file on this '
-          + 'machine may be deleted once you are happy. Carry everything across first if '
-          + 'you have not \u2014 this does not move anything.'));
-    }, [{words: 'Start using it', cls: 'primary', icon: 'power', go: function () {
-      engineAsk('use', {restart: true}).then(function (d) {
-        if (d.restarting) {
-          toast('now on ' + d.words + '; the daemon is restarting', 'good');
-          setTimeout(function () { location.reload(); }, 12000);
-        } else {
-          toast('saved; restart the daemon to take it up: systemctl restart isemon', 'good');
+  setTimeout(again, 3000);
+}
+function dbWizardProgress() {
+  var bar = $('wiz-bar'), said = $('wiz-said');
+  if (bar) bar.style.width = Math.min(100, Math.round(100 * (WIZ.doneN || 0) / (WIZ.total || 1000))) + '%';
+  if (said) {
+    clear(said);
+    WIZ.said.slice(-8).forEach(function (one) { said.appendChild(noI18n(el('div', '', one))); });
+  }
+}
+function dbWizardDraw() {
+  var w = WIZ, c = w.check || {};
+  var running = w.step === 5 && (w.job || (w.result && w.result.restarting && !w.back));
+  modal('Move to another database', function (body) {
+    var box = el('div', 'wiz');
+    body.appendChild(box);
+    var steps = el('div', 'wiz-steps');
+    WIZ_STEPS.forEach(function (name, i) {
+      var one = el('span', 'wiz-step' + (i === w.step ? ' on' : (i < w.step ? ' done' : '')));
+      one.appendChild(el('b', '', String(i + 1)));
+      one.appendChild(el('span', '', name));
+      steps.appendChild(one);
+    });
+    box.appendChild(steps);
+    var page = el('div', 'wiz-page');
+    box.appendChild(page);
+    if (w.step === 0) {
+      page.appendChild(el('h4', '', 'The database in use now'));
+      page.appendChild(peekFacts([
+        ['In use now', ENGINE.words || w.live],
+        ['Where', ENGINE.where || ''],
+        ['Holding', num((ENGINE.counts || {}).failed || 0) + ' failed attempt(s), '
+          + num((ENGINE.counts || {}).passed || 0) + ' login(s)'],
+        ['Room it takes', bytes(ENGINE.size || 0)]
+      ]));
+      if (w.nodes.length) {
+        var ha = el('p', 'note bad');
+        ha.appendChild(document.createTextNode('Another isemon uses this database as well - a '
+          + 'pair in high availability: '));
+        ha.appendChild(noI18n(el('b', '', w.nodes.map(function (n) { return n.host; }).join(', '))));
+        ha.appendChild(document.createTextNode('. Moving this one would split the pair - the '
+          + 'other would go on writing into a database nobody reads - so the wizard does not go '
+          + 'on. Stop the other one first (or move both by hand); once it has been quiet for '
+          + 'three minutes this is offered again.'));
+        page.appendChild(ha);
+      } else if (w.repoint) {
+        page.appendChild(el('p', 'note bad', 'The database that is set will not open, so there '
+          + 'is nothing to carry out of it. The wizard points isemon at a database that has '
+          + 'everything in it already - the one that went away, at its right address, or '
+          + 'another.'));
+      } else {
+        page.appendChild(el('p', 'note good', 'No other isemon uses this database: it may be '
+          + 'moved.'));
+        page.appendChild(el('p', 'note', 'Nothing changes until the last step. Until then '
+          + 'isemon goes on exactly as it is, and Close leaves everything as it was.'));
+      }
+    } else if (w.step === 1) {
+      page.appendChild(el('h4', '', 'Where everything is to go'));
+      var tiles = el('div', 'rb-kinds');
+      (ENGINE.engines || []).forEach(function (e) {
+        var drv = (ENGINE.drivers || {})[e.name] || {};
+        var same = e.name === 'sqlite' && w.live === 'sqlite' && !w.repoint;
+        var tile = el('button', 'rb-kind-tile wiz-tile' + (w.to === e.name ? ' on' : ''));
+        tile.type = 'button';
+        var ic = el('span', 'rb-kind');
+        ic.innerHTML = iconMarkup(e.name === 'sqlite' ? 'archive' : 'db', 18);
+        tile.appendChild(ic);
+        tile.appendChild(el('b', '', e.words));
+        tile.appendChild(el('span', 'small muted', WIZ_SAYS[e.name] || ''));
+        if (same) tile.appendChild(el('span', 'small muted', 'in use now'));
+        if (drv.ready === false && e.name !== 'sqlite') {
+          tile.appendChild(el('span', 'small bad', 'its driver is not installed here: '
+            + (drv.package || drv.says || '')));
         }
-      }).catch(oops);
-    }}, {words: 'Not yet', close: true}]);
-  };
+        tile.disabled = same || (drv.ready === false && e.name !== 'sqlite');
+        tile.onclick = function () {
+          if (w.to !== e.name) {
+            w.to = e.name;
+            w.port = WIZ_PORT[e.name] ? String(WIZ_PORT[e.name]) : '';
+            w.check = null;
+          }
+          dbWizardDraw();
+        };
+        tiles.appendChild(tile);
+      });
+      page.appendChild(tiles);
+    } else if (w.step === 2) {
+      page.appendChild(el('h4', '', 'How to reach ' + engineWord(w.to)));
+      var g = el('div', 'set-grid');
+      g.appendChild(dbWizardField('The server', w.host, function (v) { w.host = v.trim(); }, '127.0.0.1'));
+      g.appendChild(dbWizardField('Port', w.port, function (v) { w.port = v.trim(); },
+        String(WIZ_PORT[w.to] || ''), 'number'));
+      g.appendChild(dbWizardField('The database', w.name, function (v) { w.name = v.trim(); }, 'isemon',
+        '', 'Made there if it is not, with an administrator (next step).'));
+      g.appendChild(dbWizardField('Its account', w.user, function (v) { w.user = v.trim(); }, 'isemon'));
+      g.appendChild(dbWizardField('Its password', w.password, function (v) { w.password = v; }, '(made for you)',
+        'secret', 'Left empty, a long one is made with the account and kept in the config file.'));
+      g.appendChild(dbWizardField('Waited for (s)', w.timeout, function (v) { w.timeout = v; }, '10', 'number'));
+      page.appendChild(g);
+      page.appendChild(el('p', 'btnhelp', 'Next tries it, exactly as isemon would - nothing is '
+        + 'written.'));
+    } else if (w.step === 3) {
+      page.appendChild(el('h4', '', 'What answered'));
+      var facts = [['Where', c.where || ''], ['Reached', c.reached ? 'yes' : 'no']];
+      if (c.version) facts.push(['It says it is', c.version]);
+      if (c.reached) {
+        facts.push(['Records in it', num(c.rows || 0)]);
+        facts.push(['Tables of ours', num(c.ours || 0)]);
+        facts.push(['May this account write', c.writable ? 'yes' : 'NO']);
+      }
+      page.appendChild(peekFacts(facts));
+      if (c.refused) {
+        page.appendChild(noI18n(el('p', 'note bad', String(c.refused))));
+      } else if (w.repoint) {
+        page.appendChild(el('p', c.reached && c.writable && c.ours ? 'note good' : 'note bad',
+          c.reached && c.writable && c.ours ? 'It answers, and everything of isemon is in it.'
+            : 'isemon can only be pointed at a database that answers, may be written and has '
+              + 'everything of isemon in it.'));
+      } else {
+        if (w.to !== 'sqlite' && !(c.reached && c.writable)) {
+          if (c.trouble) page.appendChild(noI18n(el('p', c.none_typed ? 'note' : 'note bad', String(c.trouble))));
+          page.appendChild(el('p', 'note', 'The database or its account is not there yet (or '
+            + 'the password is not the one it has). An administrator on that server makes them - '
+            + 'used for this one run and stored nowhere.'));
+          var ga = el('div', 'set-grid');
+          ga.appendChild(dbWizardField('An administrator on that server', w.admin,
+            function (v) { w.admin = v.trim(); }, w.to === 'postgres' ? 'postgres' : 'root'));
+          ga.appendChild(dbWizardField('Its password', w.adminPass, function (v) { w.adminPass = v; },
+            '', 'secret'));
+          page.appendChild(ga);
+        }
+        if (c.reached && c.rows) {
+          var emp = el('label', 'tickrow');
+          var tick = el('input');
+          tick.type = 'checkbox';
+          tick.checked = w.empty;
+          tick.onchange = function () { w.empty = tick.checked; dbWizardButtons(); };
+          emp.appendChild(tick);
+          emp.appendChild(document.createTextNode(' Throw away what is in it first - '
+            + num(c.rows) + ' record(s). Moving into a database that is not empty would mix two '
+            + 'installations.'));
+          page.appendChild(emp);
+        } else if (c.reached && c.writable) {
+          page.appendChild(el('p', 'note good', 'It answers, the account may write, and it is '
+            + 'empty.'));
+        }
+      }
+    } else if (w.step === 4) {
+      page.appendChild(el('h4', '', 'Ready'));
+      var list = el('ol', 'wiz-list');
+      var add = function (t) { list.appendChild(el('li', '', t)); };
+      if (w.repoint) {
+        add('isemon is pointed at ' + engineWord(w.to) + ' (' + (c.where || '') + ').');
+        add('isemon starts again on it.');
+      } else {
+        if (w.to !== 'sqlite' && !(c.reached && c.writable)) add('The database and its account are made on ' + engineWord(w.to) + ', with the administrator given.');
+        if (w.empty) add('What is in it is thrown away (' + num(c.rows || 0) + ' record(s)).');
+        add('A copy of everything here is made beside it, first.');
+        add('Everything is carried into ' + engineWord(w.to) + ' (' + (c.where || '') + ').');
+        add('Every table is counted again there: if anything is short, nothing is taken up.');
+        add(engineWord(w.to) + ' is taken up, and isemon starts again on it.');
+      }
+      page.appendChild(list);
+      var sure = el('label', 'tickrow');
+      var t2 = el('input');
+      t2.type = 'checkbox';
+      t2.checked = w.sure;
+      t2.onchange = function () { w.sure = t2.checked; dbWizardButtons(); };
+      sure.appendChild(t2);
+      sure.appendChild(document.createTextNode(' I understand: isemon restarts on the new '
+        + 'database; what is here now stays as it is, as a spare.'));
+      page.appendChild(sure);
+    } else {
+      page.appendChild(el('h4', '', w.error ? 'It did not work' : (w.back ? 'Done'
+        : (w.result ? (w.result.restarting ? 'isemon starts again on ' + engineWord(w.to)
+                       : 'Done - restart isemon') : 'Moving'))));
+      var prog = el('div', 'prog' + (w.error ? ' bad' : (w.result ? ' done' : '')));
+      var fill = el('span');
+      fill.id = 'wiz-bar';
+      fill.style.width = w.result || w.error ? '100%' : Math.min(100, Math.round(100 * (w.doneN || 0) / (w.total || 1000))) + '%';
+      prog.appendChild(fill);
+      page.appendChild(prog);
+      var said = el('div', 'joblines');
+      said.id = 'wiz-said';
+      w.said.slice(-8).forEach(function (one) { said.appendChild(noI18n(el('div', '', one))); });
+      page.appendChild(said);
+      if (w.error) {
+        page.appendChild(noI18n(el('p', 'note bad', String(w.error))));
+        page.appendChild(el('p', 'note', 'Nothing was taken up: isemon goes on with the database '
+          + 'it had. Back to change what was asked, or Close.'));
+      } else if (w.back) {
+        page.appendChild(el('p', 'note good', 'isemon runs on ' + engineWord(w.to) + ' now. The '
+          + 'database it came from is a spare: keep it until you are happy, then it may go.'));
+      } else if (w.result && !w.result.restarting) {
+        page.appendChild(el('p', 'note', 'Everything is in ' + engineWord(w.to) + ' and it is '
+          + 'taken up from the next start: restart isemon (systemctl restart isemon).'));
+      } else if (w.result) {
+        page.appendChild(el('p', 'note', 'Everything is in ' + engineWord(w.to) + '; isemon is '
+          + 'starting again on it - this page waits for it.'));
+      }
+    }
+  }, [
+    {words: 'Back', icon: 'prev', left: true, go: function () {
+      if (w.step === 5) { w.error = ''; w.said = []; w.result = null; w.sure = false; dbWizardGo(4); return; }
+      dbWizardGo(dbWizardBackTo());
+    }},
+    {words: 'Close', close: true},
+    {words: w.step === 4 ? (w.repoint ? 'Point it there' : 'Start') : 'Next',
+     icon: w.step === 4 ? 'play' : 'next', cls: 'primary', go: function (b) { dbWizardNext(b); }}
+  ], 'large');
+  /* Ids on the buttons, and which of them there are on this step. */
+  var foot = Array.prototype.slice.call(document.querySelectorAll('#modal-foot button'));
+  var back = foot[0];
+  var next = foot[foot.length - 1];
+  if (next) next.id = 'wiz-next';
+  if (back) back.id = 'wiz-back';
+  if (back) back.hidden = w.step === 0 || running || (w.step === 5 && !w.error);
+  if (next) next.hidden = w.step === 5;
+  dbWizardButtons();
 }
 
 /* The two lists of files kept beside the database, which are the same table
@@ -34513,7 +34677,7 @@ $('db-dump-get').onclick = function () {
     rewrite of tables that are being replaced underneath it. */
 function dbBusyButtons(busyNow) {
   ['db-backup', 'db-dump-make', 'db-optimize', 'db-check', 'db-prune', 'db-tidy',
-   'db-restore', 'db-engine-move'].forEach(function (id) {
+   'db-restore', 'db-wizard-open'].forEach(function (id) {
     var b = $(id);
     if (b) b.disabled = busyNow;
   });
