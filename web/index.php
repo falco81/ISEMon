@@ -2754,24 +2754,79 @@ function srcText(el) {
   .modal .box.narrow{width:min(560px,100%)}
   .modal .box.medium{width:min(860px,100%)}
   .modal .box.large{width:min(1120px,100%)}
-  /* The wizard (1.10.277). */
-  .wiz-steps{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px}
-  .wiz-step{display:flex;align-items:center;gap:6px;padding:5px 10px 5px 6px;border:1px solid var(--line);
-    border-radius:999px;font-size:12.5px;color:var(--tx-dim)}
-  .wiz-step b{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;
-    background:var(--panel2);color:var(--tx-dim)}
-  .wiz-step.on{border-color:var(--info);color:var(--tx)} .wiz-step.on b{background:var(--info);color:#fff}
-  .wiz-step.done{color:var(--ok)} .wiz-step.done b{background:var(--ok-bg);color:var(--ok)}
-  .wiz-page h4{margin:0 0 10px;font-size:15px}
-  .wiz-page .set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 18px;margin:8px 0}
-  .wiz-tile.on{border-color:var(--info);box-shadow:0 0 0 1px var(--info)}
-  .wiz-tile:disabled{opacity:.5;cursor:not-allowed}
-  .wiz-list{margin:6px 0 14px 18px;padding:0;line-height:1.7}
-  .wiz .tickrow{display:flex;gap:8px;align-items:flex-start;margin:12px 0;cursor:pointer}
-  .wiz .tickrow input{margin-top:3px}
-  .wiz .joblines{margin-top:10px;max-height:200px;overflow:auto;font-size:12.5px;color:var(--tx-dim)}
-  .wiz .note.bad{color:var(--crit);background:var(--crit-bg);border-radius:10px;padding:10px 12px}
-  .wiz .note.good{color:var(--ok)}
+  /* Move to another database: the AI app 1.0.57's wizard, as it draws it
+     (1.10.278) - its popup, its steps, cards, fields, facts and buttons. */
+  #modal-box.mig-box{width:min(900px,100%);font-size:14.5px;line-height:1.5;border-radius:16px;
+    border:1px solid var(--line);background:var(--panel);box-shadow:0 26px 70px rgba(0,0,0,.6)}
+  #modal-box.mig-box .head{padding:18px 24px;gap:12px}
+  #modal-box.mig-box .head h3{font-size:17px;font-weight:650;line-height:1.5}
+  #modal-box.mig-box #modal-body{padding:20px 24px;gap:0}
+  #modal-box.mig-box #modal-foot{padding:14px 24px;gap:10px}
+  #modal-box.mig-box #modal-foot .btn{height:38px;min-height:38px;padding:0 16px;font-size:13.5px;
+    font-weight:600;line-height:1;border-radius:10px;gap:8px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--tx)}
+  #modal-box.mig-box #modal-foot .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  #modal-box.mig-box #modal-foot .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
+  #modal-box.mig-box #modal-foot .btn.primary svg{opacity:1}
+  #modal-box.mig-box #modal-foot .btn:disabled{opacity:.45;cursor:not-allowed}
+  #modal-box.mig-box #modal-foot .btn.left{margin-right:auto}
+  .mig{font-size:14.5px;line-height:1.5;color:var(--tx)}
+  .mig-steps{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px}
+  .mig-step{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border:1px solid var(--line);
+    border-radius:999px;color:var(--tx-mut);font-size:13px;line-height:1.5}
+  .mig-step b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;
+    background:var(--panel2);font-size:12px;font-weight:700;line-height:18px}
+  .mig-step.now{border-color:var(--accent,#4c8dff);color:var(--tx)}
+  .mig-step.now b{background:var(--accent,#4c8dff);color:#fff}
+  .mig-step.done{color:var(--tx)}
+  .mig-step.done b{background:color-mix(in srgb,var(--ok) 35%,var(--panel2));color:var(--tx)}
+  .mig p.note{color:var(--tx-dim);font-size:13px;line-height:1.5;margin:0 0 14px;max-width:none;
+    background:none;padding:0;border-radius:0}
+  .mig p.note.bad{color:var(--crit)} .mig p.note.good{color:var(--ok)}
+  .mig p.btnhelp{margin:6px 0 4px;font-size:12.5px;line-height:1.5;color:var(--tx-mut)}
+  .mig .small{font-size:12.5px;line-height:1.5} .mig .muted{color:var(--tx-dim)}
+  .mig .tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px;font-weight:700;
+    letter-spacing:.4px;text-transform:uppercase;line-height:1.35}
+  .mig .tag.dim{background:var(--panel2);color:var(--tx-dim)}
+  .mig .tag.warn{background:var(--warn-bg);color:var(--warn)}
+  .mig .tag.bad{background:var(--crit-bg);color:var(--crit)}
+  .mig-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:10px 0}
+  .mig-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:14px 16px;
+    border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--tx);cursor:pointer;
+    font:inherit;font-size:14.5px;line-height:1.5}
+  .mig-card b{font-weight:700}
+  .mig-card:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent,#4c8dff) 60%,var(--line))}
+  .mig-card.on{border-color:var(--accent,#4c8dff);box-shadow:0 0 0 1px var(--accent,#4c8dff) inset}
+  .mig-card.off{opacity:.55;cursor:not-allowed}
+  .mig-card .tag{max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left;line-height:1.35}
+  .mig-card > *{max-width:100%;min-width:0}
+  .mig .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px 18px;
+    align-items:start;margin:0}
+  .mig .set-item{display:flex;flex-direction:column;gap:6px;min-width:0;margin:0;padding:0;
+    background:none;border:0}
+  .mig .set-item label{font-size:13.5px;font-weight:650;letter-spacing:0;color:var(--tx);line-height:1.3;
+    text-transform:none;margin:0}
+  .mig .set-item input[type=text],.mig .set-item select{width:100%;box-sizing:border-box;height:38px;
+    padding:0 12px;font-size:13.5px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);
+    color:var(--tx);margin:0;line-height:1.2}
+  .mig .set-item input.mono,.mig input.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  .mig .set-item .says{font-size:12.5px;color:var(--tx-mut);line-height:1.5;margin:0}
+  .mig .set-item .sw{align-self:flex-start}
+  .mig .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 16px}
+  .mig .facts .fact{max-width:none;min-width:0;padding:10px 14px;border-radius:10px;background:var(--panel2);
+    border:1px solid var(--line)}
+  .mig .facts .fact.wide{grid-column:span 2}
+  .mig .facts .fact .k{display:block;color:var(--tx-mut);font-size:11px;font-weight:700;letter-spacing:.6px;
+    text-transform:uppercase;white-space:normal;line-height:1.35}
+  .mig .facts .fact .v{display:block;font-size:14.5px;font-weight:650;margin-top:4px;white-space:pre-wrap;
+    overflow:visible;line-height:1.5;overflow-wrap:anywhere}
+  .mig .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  .mig-plan{margin:12px 0 14px 18px;display:flex;flex-direction:column;gap:5px}
+  .mig .going{margin-top:10px;max-width:none}
+  .mig-going .says{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.45;margin-top:6px;
+    color:var(--tx-dim);font-size:12.5px}
+  .mig-going.failed .bar span{background:var(--crit)}
+  .mig-trouble{margin:6px 0 14px;word-break:break-word}
   /* The database server's own settings (1.10.173). */
   .tune-machine{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 2px}
   .tune-machine .set-item{flex:1 1 150px;margin:0}
@@ -26171,8 +26226,10 @@ var PANES = {
             'directory2_verify', 'directory2_base', 'directory2_bind', 'directory2_password',
             'directory2_user_attr', 'directory2_realms'],
   upgrade: ['upgrade_check', 'upgrade_url', 'downgrade_offered'],
-  /* Which database and its address: asked by the wizard (1.10.277). */
-  db:      ['db_split', 'db_split_whole_days',
+  /* Which database and its address (1.10.278, as the AI app 1.0.57): how the
+     one in use is reached is saved here; another one is the wizard's. */
+  db:      ['db_engine', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password',
+            'db_timeout_s', 'db_split', 'db_split_whole_days',
             'retain_failed_days', 'retain_passed_days', 'retain_events_days',
             'retain_eduroam_days', 'retain_otp_days', 'retain_names_days',
             'tidy_daily', 'tidy_at', 'backup_daily',
@@ -27513,6 +27570,10 @@ function settingItem(s) {
   }
   input.id = 'set-' + s.key;
   if (input.tagName === 'INPUT' || input.tagName === 'SELECT') input.disabled = !ADMIN;
+  /* Which engine is reached is Move to another database… alone (1.10.278, as
+     the AI app 1.0.57 has it): saved here, it would point isemon at an empty
+     database of another kind. How the one in use is reached is saved here. */
+  if (s.key === 'db_engine') input.disabled = true;
   input.addEventListener('input', function () { markDirty(item, s); });
   input.addEventListener('change', function () { markDirty(item, s); });
   /* The field itself, so that pointing at the box somebody is about to type
@@ -27520,6 +27581,13 @@ function settingItem(s) {
   if (!input.dataset.explains) explain(input, whole, story + '</span>');
   item.appendChild(input);
   if (s.says) item.appendChild(saysBlock(s.says));
+  if (s.key === 'db_engine' && ADMIN) {
+    var mv = cmdButton('Move to another database\u2026', 'db', 'small');
+    mv.id = 'db-wizard-here';
+    mv.style.marginTop = '8px';
+    mv.onclick = function () { if (typeof dbWizard === 'function') dbWizard(); };
+    item.appendChild(mv);
+  }
   return item;
 }
 
@@ -27599,6 +27667,9 @@ function markDirty(item, s) {
   var isNow = Array.isArray(now) ? now.join(',')
     : (isBool(s) ? String(now) : String(now));
   var changed = was !== isNow;
+  /* The engine is never saved by the save bar (1.10.278): Move to another
+     database… carries everything across first. */
+  if (s.key === 'db_engine') changed = false;
   item.classList.toggle('changed', changed);
   if (changed) DIRTY[s.key] = now; else delete DIRTY[s.key];
   markDirtyCount();
@@ -27726,6 +27797,9 @@ $('set-save').onclick = function () {
     });
     markDirtyCount();
     toast(d.message, 'good');
+    /* How the database is reached, changed: isemon starts again on it, and
+       the page is loaded again once it answers (1.10.278). */
+    if (d.restarting) { dbSettingsBack(); return; }
     /* Drawn again from what was saved, unless something was changed while
        the save was on its way, which is kept (1.10.192). */
     loadSettings(!Object.keys(DIRTY).length);
@@ -33682,6 +33756,21 @@ function engineFacts(d) {
   return peekFacts(facts);
 }
 
+/* The daemon starting again on the address of the database just saved:
+   asked until it answers, then the page is loaded again (1.10.278). */
+function dbSettingsBack() {
+  var began = Date.now();
+  var again = function () {
+    api('db-engine', undefined, {quiet: true}).then(function () {
+      location.reload();
+    }).catch(function () {
+      if (Date.now() - began < 180000) setTimeout(again, 2000);
+      else toast('isemon did not answer again within three minutes: look at journalctl -u isemon', 'bad');
+    });
+  };
+  setTimeout(again, 4000);
+}
+
 function wireEngine() {
   if ($('db-wizard-open')) $('db-wizard-open').onclick = dbWizard;
 }
@@ -33694,19 +33783,37 @@ function wireEngine() {
    isemon uses this database: a pair in high availability, which moving one of
    them would split. */
 var WIZ = null;
-var WIZ_STEPS = ['Now', 'Where to', 'How to reach it', 'What answered', 'Ready', 'Moving'];
+/* As the AI app 1.0.57 has it (1.10.278): where to, how to reach it, what is
+   there, go - and the move itself. How to reach it is not asked of the file. */
+var WIZ_STEPS = ['Where to', 'How to reach it', 'What is there', 'Go', 'Moving'];
 var WIZ_PORT = {postgres: 5432, mariadb: 3306};
 var WIZ_SAYS = {
-  sqlite: 'A file on this machine. Nothing to install or run beside isemon; fine for most sites.',
-  mariadb: 'A MariaDB (or MySQL) server, here or on another machine.',
-  postgres: 'A PostgreSQL server, here or on another machine - the one for very big databases.'
+  sqlite: 'SQLite - nothing to install or run, one file in the state folder. Right for most sites.',
+  mariadb: 'A server - on this machine or another. The database and its account are made by the wizard.',
+  postgres: 'A server - on this machine or another, the one for very big databases. The database and its account are made by the wizard.'
 };
+function dbWizardLive() { return String(ENGINE.engine || 'sqlite'); }
+function dbWizardDefaults() {
+  var live = dbWizardLive();
+  /* What the settings above say is where it starts: the same server and
+     account are the likeliest for the other engine too. */
+  var v = function (k, d) {
+    var x = settingByKey(k);
+    return x && x.value !== undefined && x.value !== null && x.value !== ''
+      && String(x.value).charAt(0) !== '•' ? x.value : d;
+  };
+  var server = live !== 'sqlite';
+  return {step: 0, to: live === 'sqlite' ? 'postgres' : 'sqlite',
+          host: server ? String(v('db_host', '127.0.0.1')) : '127.0.0.1', port: '',
+          name: server ? String(v('db_name', 'isemon')) : 'isemon',
+          user: server ? String(v('db_user', 'isemon')) : 'isemon',
+          password: '', timeout: v('db_timeout_s', 10), admin: '', adminPass: '',
+          empty: false, switchOver: true, check: null, job: null, said: [], result: null,
+          error: '', back: false, nodes: (ENGINE.nodes || []).slice(), live: live,
+          repoint: !!ENGINE.trouble};
+}
 function dbWizard() {
-  WIZ = {step: 0, to: '', host: '127.0.0.1', port: '', name: 'isemon', user: 'isemon',
-         password: '', timeout: 10, admin: '', adminPass: '', empty: false, sure: false,
-         check: null, job: null, said: [], result: null, error: '', back: false,
-         nodes: (ENGINE.nodes || []).slice(), live: String(ENGINE.engine || 'sqlite'),
-         repoint: !!ENGINE.trouble};
+  WIZ = dbWizardDefaults();
   dbWizardDraw();
 }
 function dbWizardSettings() {
@@ -33715,64 +33822,59 @@ function dbWizardSettings() {
           db_name: WIZ.name, db_user: WIZ.user, db_password: WIZ.password,
           db_timeout_s: Number(WIZ.timeout) || 10};
 }
-function dbWizardField(label, value, set, holder, kind, says) {
-  var one = el('div', 'set-item');
-  one.appendChild(el('label', '', label));
-  var box = el('input');
-  box.type = kind === 'number' ? 'number' : 'text';
+function dbWizardWhere() {
+  return (ENGINE.words || engineWord(WIZ.live)) + ' · ' + (ENGINE.where || '');
+}
+function dbWizardBox(value, holder, secret) {
+  var box = el('input', 'mono');
+  box.type = 'text';
   box.placeholder = holder || '';
   box.spellcheck = false;
-  if (kind === 'secret') maskInput(box, value || ''); else box.value = value === undefined ? '' : String(value);
-  box.addEventListener('input', function () { set(box.value); dbWizardButtons(); });
-  one.appendChild(box);
+  box.autocomplete = 'off';
+  if (secret) maskInput(box, value || ''); else box.value = value === undefined || value === null ? '' : String(value);
+  return box;
+}
+/* The AI app's own form field and facts (1.10.278): a label, the box, a line
+   under it; a value longer than 22 letters over two columns. */
+function dbWizardField(label, input, says) {
+  var one = el('div', 'set-item');
+  var l = el('label', '', label);
+  one.appendChild(l);
+  one.appendChild(input);
   if (says) one.appendChild(el('div', 'says', says));
   return one;
 }
-function dbWizardCan() {
-  var w = WIZ, c = w.check || {};
-  if (w.step === 0) return !w.nodes.length;
-  if (w.step === 1) return !!w.to;
-  if (w.step === 2) return !!(w.host && w.name && w.user);
-  if (w.step === 3) {
-    if (c.refused) return false;
-    if (w.to !== 'sqlite' && !(c.reached && c.writable) && !w.repoint && !w.admin) return false;
-    if (w.repoint) return !!(c.reached && c.writable && c.ours);
-    if (c.reached && c.rows && !w.empty) return false;
-    return true;
-  }
-  if (w.step === 4) return w.sure;
-  return false;
-}
-function dbWizardButtons() {
-  var next = $('wiz-next');
-  if (next) next.disabled = !dbWizardCan();
+function dbWizardFacts(pairs) {
+  var box = el('div', 'facts');
+  pairs.forEach(function (one) {
+    var cell = el('div', 'fact');
+    var vtext = one[1] && one[1].nodeType ? (one[1].textContent || '') : String(one[1] === undefined || one[1] === null ? '' : one[1]);
+    if (vtext.length > 22) cell.className = 'fact wide';
+    cell.appendChild(el('span', 'k', one[0]));
+    var v = el('span', 'v');
+    if (one[1] && one[1].nodeType) v.appendChild(one[1]); else v.textContent = vtext;
+    cell.appendChild(v);
+    box.appendChild(cell);
+  });
+  return box;
 }
 function dbWizardGo(step) {
   WIZ.step = step;
   dbWizardDraw();
 }
-function dbWizardNext(button) {
-  var w = WIZ;
-  if (w.step === 1 && w.to === 'sqlite') return dbWizardCheck(button);
-  if (w.step === 2) return dbWizardCheck(button);
-  if (w.step === 4) return dbWizardStart(button);
-  dbWizardGo(w.step + 1);
-}
-function dbWizardBackTo() {
-  var w = WIZ;
-  if (w.step === 3 && w.to === 'sqlite') return 1;
-  return Math.max(0, w.step - 1);
-}
 function dbWizardCheck(button) {
-  busy(button, true);
+  var w = WIZ;
+  if (button) busy(button, true);
   var ticket = modalTicket();
-  api('db-engine', {act: 'check', to: WIZ.to, settings: dbWizardSettings()}).then(function (d) {
-    if (!modalStill(ticket)) return;     /* closed meanwhile: not opened again */
-    WIZ.check = d;
-    WIZ.empty = false;
-    busy(button, false);
-    dbWizardGo(3);
-  }).catch(function (e) { busy(button, false); oops(e); });
+  api('db-engine', {act: 'check', to: w.to, settings: dbWizardSettings()}).then(function (d) {
+    if (WIZ !== w || !modalStill(ticket)) return;     /* closed meanwhile: not opened again */
+    w.check = d;
+    dbWizardDraw();
+  }).catch(function (e) {
+    if (WIZ !== w || !modalStill(ticket)) return;
+    w.check = {failed: true, trouble: String((e && e.message) || e)};
+    dbWizardDraw();
+  });
 }
 function dbWizardStart(button) {
   var w = WIZ;
@@ -33780,15 +33882,14 @@ function dbWizardStart(button) {
   var body = w.repoint
     ? {act: 'use', to: w.to, settings: dbWizardSettings(), restart: true}
     : {act: 'migrate', to: w.to, settings: dbWizardSettings(), empty: w.empty, restart: true,
-       admin_user: w.admin || '', admin_password: w.adminPass || ''};
+       switch: w.switchOver, admin_user: w.admin || '', admin_password: w.adminPass || ''};
   var ticket = modalTicket();
   api('db-engine', body).then(function (d) {
     w.adminPass = '';
     if (!modalStill(ticket)) return;     /* closed meanwhile: it runs on, unwatched */
-    w.step = 5;
+    w.step = 4;
     if (w.repoint) {
-      w.result = {switched: true, restarting: !!d.restarting, words: d.words,
-                  message: 'isemon is pointed at ' + d.words};
+      w.result = {switched: true, restarting: !!d.restarting, words: d.words};
       dbWizardDraw();
       if (d.restarting) dbWizardBack();
       return;
@@ -33819,9 +33920,11 @@ function dbWizardFollow() {
     w.job = null;
     dbWizardDraw();
     if (w.result.restarting) dbWizardBack();
+    else loadEngine();
   }).catch(function () { if (WIZ === w) setTimeout(dbWizardFollow, 1500); });
 }
-/* isemon starting again on the new one: asked until it answers on it. */
+/* isemon starting again on the new one: asked until it answers on it, and
+   then the page is loaded again on it. */
 function dbWizardBack() {
   var w = WIZ, began = Date.now();
   var again = function () {
@@ -33831,7 +33934,7 @@ function dbWizardBack() {
         w.back = true;
         ENGINE = d;
         dbWizardDraw();
-        loadEngine();
+        setTimeout(function () { location.reload(); }, 1500);
         return;
       }
       setTimeout(again, 2000);
@@ -33845,36 +33948,59 @@ function dbWizardBack() {
 function dbWizardProgress() {
   var bar = $('wiz-bar'), said = $('wiz-said');
   if (bar) bar.style.width = Math.min(100, Math.round(100 * (WIZ.doneN || 0) / (WIZ.total || 1000))) + '%';
-  if (said) {
-    clear(said);
-    WIZ.said.slice(-8).forEach(function (one) { said.appendChild(noI18n(el('div', '', one))); });
-  }
+  if (said) said.textContent = WIZ.said[WIZ.said.length - 1] || 'starting';
 }
 function dbWizardDraw() {
   var w = WIZ, c = w.check || {};
-  var running = w.step === 5 && (w.job || (w.result && w.result.restarting && !w.back));
+  var back = function (n) {
+    return {words: 'Back', icon: 'prev', left: true, go: function () { dbWizardGo(n); }};
+  };
+  var close = {words: 'Close', icon: 'close', close: true};
+  var buttons = [];
   modal('Move to another database', function (body) {
-    var box = el('div', 'wiz');
+    var box = el('div', 'mig');
     body.appendChild(box);
-    var steps = el('div', 'wiz-steps');
+    var steps = el('div', 'mig-steps');
     WIZ_STEPS.forEach(function (name, i) {
-      var one = el('span', 'wiz-step' + (i === w.step ? ' on' : (i < w.step ? ' done' : '')));
-      one.appendChild(el('b', '', String(i + 1)));
+      if (i === 1 && w.to === 'sqlite') return;
+      var one = el('span', 'mig-step' + (i === w.step ? ' now' : (i < w.step ? ' done' : '')));
+      one.appendChild(el('b', '', String(i + 1 - (w.to === 'sqlite' && i > 1 ? 1 : 0))));
       one.appendChild(el('span', '', name));
       steps.appendChild(one);
     });
     box.appendChild(steps);
-    var page = el('div', 'wiz-page');
-    box.appendChild(page);
+    var page = box;
+
     if (w.step === 0) {
-      page.appendChild(el('h4', '', 'The database in use now'));
-      page.appendChild(peekFacts([
-        ['In use now', ENGINE.words || w.live],
-        ['Where', ENGINE.where || ''],
-        ['Holding', num((ENGINE.counts || {}).failed || 0) + ' failed attempt(s), '
-          + num((ENGINE.counts || {}).passed || 0) + ' login(s)'],
-        ['Room it takes', bytes(ENGINE.size || 0)]
-      ]));
+      page.appendChild(el('p', 'note', 'Everything this installation holds - the records, the '
+        + 'bans, the settings, the accounts, the events - is in one database. This moves all of '
+        + 'it into another one. Nothing here changes until the very last step.'));
+      var cards = el('div', 'mig-cards');
+      ['sqlite', 'mariadb', 'postgres'].forEach(function (name) {
+        var drv = (ENGINE.drivers || {})[name] || {};
+        var inUse = name === w.live && w.live === 'sqlite' && !w.repoint;
+        var noDriver = name !== 'sqlite' && drv.ready === false;
+        var card = el('button', 'mig-card' + (w.to === name ? ' on' : '')
+          + (inUse || noDriver ? ' off' : ''));
+        card.type = 'button';
+        card.disabled = inUse || noDriver || !!w.nodes.length;
+        card.appendChild(el('b', '', engineWord(name)));
+        card.appendChild(el('span', 'small muted', WIZ_SAYS[name] || ''));
+        if (name === w.live) {
+          card.appendChild(el('span', 'tag ' + (inUse ? 'dim' : 'warn'), 'in use now'));
+          if (!inUse) card.appendChild(el('span', 'small muted', 'Another server or another '
+            + 'database of it can still be chosen.'));
+        }
+        if (noDriver) card.appendChild(el('span', 'tag bad', 'no driver: '
+          + (drv.package || drv.says || '')));
+        card.onclick = function () {
+          if (w.to !== name) { w.to = name; w.port = ''; w.check = null; }
+          dbWizardDraw();
+        };
+        cards.appendChild(card);
+      });
+      page.appendChild(cards);
+      page.appendChild(el('p', 'btnhelp', 'In use now: ' + dbWizardWhere()));
       if (w.nodes.length) {
         var ha = el('p', 'note bad');
         ha.appendChild(document.createTextNode('Another isemon uses this database as well - a '
@@ -33890,175 +34016,241 @@ function dbWizardDraw() {
           + 'is nothing to carry out of it. The wizard points isemon at a database that has '
           + 'everything in it already - the one that went away, at its right address, or '
           + 'another.'));
-      } else {
-        page.appendChild(el('p', 'note good', 'No other isemon uses this database: it may be '
-          + 'moved.'));
-        page.appendChild(el('p', 'note', 'Nothing changes until the last step. Until then '
-          + 'isemon goes on exactly as it is, and Close leaves everything as it was.'));
       }
+      var sameFile = w.to === w.live && w.live === 'sqlite' && !w.repoint;
+      buttons = [close, {words: 'Next', icon: 'next', cls: 'primary',
+        off: !!w.nodes.length || sameFile || !w.to,
+        go: function () { w.check = null; dbWizardGo(w.to === 'sqlite' ? 2 : 1); }}];
     } else if (w.step === 1) {
-      page.appendChild(el('h4', '', 'Where everything is to go'));
-      var tiles = el('div', 'rb-kinds');
-      (ENGINE.engines || []).forEach(function (e) {
-        var drv = (ENGINE.drivers || {})[e.name] || {};
-        var same = e.name === 'sqlite' && w.live === 'sqlite' && !w.repoint;
-        var tile = el('button', 'rb-kind-tile wiz-tile' + (w.to === e.name ? ' on' : ''));
-        tile.type = 'button';
-        var ic = el('span', 'rb-kind');
-        ic.innerHTML = iconMarkup(e.name === 'sqlite' ? 'archive' : 'db', 18);
-        tile.appendChild(ic);
-        tile.appendChild(el('b', '', e.words));
-        tile.appendChild(el('span', 'small muted', WIZ_SAYS[e.name] || ''));
-        if (same) tile.appendChild(el('span', 'small muted', 'in use now'));
-        if (drv.ready === false && e.name !== 'sqlite') {
-          tile.appendChild(el('span', 'small bad', 'its driver is not installed here: '
-            + (drv.package || drv.says || '')));
-        }
-        tile.disabled = same || (drv.ready === false && e.name !== 'sqlite');
-        tile.onclick = function () {
-          if (w.to !== e.name) {
-            w.to = e.name;
-            w.port = WIZ_PORT[e.name] ? String(WIZ_PORT[e.name]) : '';
-            w.check = null;
-          }
-          dbWizardDraw();
+      page.appendChild(el('p', 'note', 'How isemon reaches ' + engineWord(w.to) + '. The server '
+        + 'must be running; the database and the account need not exist yet - the next step '
+        + 'makes them.'));
+      var g = el('div', 'formgrid');
+      var fld = function (label, key, input, says) {
+        var take = function () {
+          w[key] = input._get ? input._get() : (key === 'password' ? input.value : input.value.trim());
+          w.check = null;
         };
-        tiles.appendChild(tile);
-      });
-      page.appendChild(tiles);
-    } else if (w.step === 2) {
-      page.appendChild(el('h4', '', 'How to reach ' + engineWord(w.to)));
-      var g = el('div', 'set-grid');
-      g.appendChild(dbWizardField('The server', w.host, function (v) { w.host = v.trim(); }, '127.0.0.1'));
-      g.appendChild(dbWizardField('Port', w.port, function (v) { w.port = v.trim(); },
-        String(WIZ_PORT[w.to] || ''), 'number'));
-      g.appendChild(dbWizardField('The database', w.name, function (v) { w.name = v.trim(); }, 'isemon',
-        '', 'Made there if it is not, with an administrator (next step).'));
-      g.appendChild(dbWizardField('Its account', w.user, function (v) { w.user = v.trim(); }, 'isemon'));
-      g.appendChild(dbWizardField('Its password', w.password, function (v) { w.password = v; }, '(made for you)',
-        'secret', 'Left empty, a long one is made with the account and kept in the config file.'));
-      g.appendChild(dbWizardField('Waited for (s)', w.timeout, function (v) { w.timeout = v; }, '10', 'number'));
+        input.addEventListener('input', take);
+        input.addEventListener('change', take);
+        g.appendChild(dbWizardField(label, input, says));
+      };
+      fld('Server', 'host', dbWizardBox(w.host, '127.0.0.1'), 'Its name or address.');
+      fld('Port', 'port', dbWizardBox(w.port, String(WIZ_PORT[w.to] || '')),
+          'Empty: the engine’s own (' + (WIZ_PORT[w.to] || '') + ').');
+      fld('Database', 'name', dbWizardBox(w.name, 'isemon'), 'Letters, digits and _ only. Made '
+          + 'there if it is not.');
+      fld('Account', 'user', dbWizardBox(w.user, 'isemon'), 'The account isemon signs in with.');
+      fld('Its password', 'password', dbWizardBox(w.password, 'empty: one is made and kept', true),
+          'Empty: a strong one is made when the account is made, and kept in config.json '
+          + '(root only).');
+      fld('Wait for it (s)', 'timeout', dbWizardBox(w.timeout, '10'),
+          'How long a connection is waited for.');
       page.appendChild(g);
-      page.appendChild(el('p', 'btnhelp', 'Next tries it, exactly as isemon would - nothing is '
-        + 'written.'));
-    } else if (w.step === 3) {
-      page.appendChild(el('h4', '', 'What answered'));
-      var facts = [['Where', c.where || ''], ['Reached', c.reached ? 'yes' : 'no']];
-      if (c.version) facts.push(['It says it is', c.version]);
-      if (c.reached) {
-        facts.push(['Records in it', num(c.rows || 0)]);
-        facts.push(['Tables of ours', num(c.ours || 0)]);
-        facts.push(['May this account write', c.writable ? 'yes' : 'NO']);
-      }
-      page.appendChild(peekFacts(facts));
-      if (c.refused) {
-        page.appendChild(noI18n(el('p', 'note bad', String(c.refused))));
-      } else if (w.repoint) {
-        page.appendChild(el('p', c.reached && c.writable && c.ours ? 'note good' : 'note bad',
-          c.reached && c.writable && c.ours ? 'It answers, and everything of isemon is in it.'
+      buttons = [back(0), close, {words: 'Next', icon: 'next', cls: 'primary', go: function () {
+        var re = /^[A-Za-z0-9_]{1,64}$/;
+        if (!re.test(w.name) || !re.test(w.user)) {
+          toast('the database and the account are letters, digits and _ only', 'bad');
+          return;
+        }
+        if (!w.host) { toast('the server is its name or address', 'bad'); return; }
+        dbWizardGo(2);
+      }}];
+    } else if (w.step === 2) {
+      var from = w.to === 'sqlite' ? 0 : 1;
+      if (!w.check) {
+        page.appendChild(el('p', 'note', 'Reaching it…'));
+        buttons = [back(from), close];
+        setTimeout(function () { if (WIZ === w && w.step === 2 && !w.check) dbWizardCheck(); }, 0);
+      } else {
+        var facts = [['Where', noI18n(el('span', 'mono', c.where || ''))]];
+        if (c.reached) {
+          if (c.version) facts.push(['It says it is', c.version]);
+          facts.push(['Records of ours in it', num(c.rows || 0)]);
+          facts.push(['Tables of ours', num(c.ours || 0)]);
+          facts.push(['May the account write', c.writable ? 'yes' : 'NO']);
+        } else if (c.where) {
+          facts.push(['Reached', c.none_typed ? 'not with that account yet' : 'no']);
+        }
+        page.appendChild(dbWizardFacts(facts));
+        var ready = !c.failed && !c.refused;
+        var needsAdmin = ready && !w.repoint && w.to !== 'sqlite' && !(c.reached && c.writable);
+        if (c.refused) page.appendChild(noI18n(el('p', 'note bad', String(c.refused))));
+        else if (c.failed) page.appendChild(noI18n(el('p', 'note bad', String(c.trouble || ''))));
+        if (w.repoint && ready) {
+          var fine = c.reached && c.writable && c.ours;
+          page.appendChild(el('p', fine ? 'note good' : 'note bad', fine
+            ? 'It answers, and everything of isemon is in it.'
             : 'isemon can only be pointed at a database that answers, may be written and has '
               + 'everything of isemon in it.'));
-      } else {
-        if (w.to !== 'sqlite' && !(c.reached && c.writable)) {
-          if (c.trouble) page.appendChild(noI18n(el('p', c.none_typed ? 'note' : 'note bad', String(c.trouble))));
-          page.appendChild(el('p', 'note', 'The database or its account is not there yet (or '
-            + 'the password is not the one it has). An administrator on that server makes them - '
-            + 'used for this one run and stored nowhere.'));
-          var ga = el('div', 'set-grid');
-          ga.appendChild(dbWizardField('An administrator on that server', w.admin,
-            function (v) { w.admin = v.trim(); }, w.to === 'postgres' ? 'postgres' : 'root'));
-          ga.appendChild(dbWizardField('Its password', w.adminPass, function (v) { w.adminPass = v; },
-            '', 'secret'));
+          if (!fine && c.trouble) page.appendChild(noI18n(el('p', 'btnhelp mig-trouble', String(c.trouble))));
+        }
+        if (needsAdmin) {
+          page.appendChild(el('p', 'note', 'The database and its account are made by an '
+            + 'administrator of that server - root on MariaDB, postgres on PostgreSQL, or anyone '
+            + 'who may create a database and an account. It is used for this one move and kept '
+            + 'nowhere: not in the settings, not in the database, not in any log.'));
+          if (c.trouble && !c.none_typed) {
+            page.appendChild(noI18n(el('p', 'btnhelp mig-trouble', 'With the account: ' + c.trouble)));
+          }
+          var ga = el('div', 'formgrid');
+          var au = dbWizardBox(w.admin, w.to === 'postgres' ? 'postgres' : 'root');
+          au.addEventListener('input', function () { w.admin = au.value.trim(); canNow(); });
+          var ap = dbWizardBox(w.adminPass, '', true);
+          var takePass = function () { w.adminPass = ap._get ? ap._get() : ap.value; };
+          ap.addEventListener('input', takePass);
+          ap.addEventListener('change', takePass);
+          ga.appendChild(dbWizardField('An administrator of that server', au));
+          ga.appendChild(dbWizardField('Its password', ap));
           page.appendChild(ga);
         }
-        if (c.reached && c.rows) {
-          var emp = el('label', 'tickrow');
-          var tick = el('input');
-          tick.type = 'checkbox';
-          tick.checked = w.empty;
-          tick.onchange = function () { w.empty = tick.checked; dbWizardButtons(); };
-          emp.appendChild(tick);
-          emp.appendChild(document.createTextNode(' Throw away what is in it first - '
-            + num(c.rows) + ' record(s). Moving into a database that is not empty would mix two '
-            + 'installations.'));
-          page.appendChild(emp);
-        } else if (c.reached && c.writable) {
-          page.appendChild(el('p', 'note good', 'It answers, the account may write, and it is '
-            + 'empty.'));
+        if (!w.repoint && ready && c.reached && c.rows) {
+          page.appendChild(el('p', 'note bad', 'There are ' + num(c.rows) + ' record(s) of ours '
+            + 'in it already - an earlier move, or another installation. Moving into it as it is '
+            + 'would mix the two.'));
+          page.appendChild(dbWizardField('Throw away what is in it first (never the one in use)',
+            wrSwitch(w.empty, function (on) { w.empty = on; canNow(); })));
+        } else if (!w.repoint && ready && c.reached && c.writable) {
+          page.appendChild(el('p', 'note good', 'Reachable, writable and empty of ours - exactly '
+            + 'what a move needs.'));
         }
+        var can = function () {
+          if (!ready) return false;
+          if (w.repoint) return !!(c.reached && c.writable && c.ours);
+          if (needsAdmin && !w.admin) return false;
+          return !(c.reached && c.rows && !w.empty);
+        };
+        var canNow = function () {
+          var next = $('wiz-next');
+          if (next) next.disabled = !can();
+        };
+        buttons = [back(from), close,
+          {words: 'Check again', icon: 'refresh', go: function (b) { w.check = null; dbWizardCheck(b); }},
+          {words: 'Next', icon: 'next', cls: 'primary', off: !can(), go: function () { dbWizardGo(3); }}];
       }
-    } else if (w.step === 4) {
-      page.appendChild(el('h4', '', 'Ready'));
-      var list = el('ol', 'wiz-list');
-      var add = function (t) { list.appendChild(el('li', '', t)); };
+    } else if (w.step === 3) {
+      var n = ENGINE.counts || {};
+      page.appendChild(dbWizardFacts([
+        ['Moved from', dbWizardWhere()],
+        ['Moved to', (function () {
+          var s = el('span');
+          s.appendChild(el('span', '', engineWord(w.to)));
+          s.appendChild(document.createTextNode(' \u00b7 '));
+          s.appendChild(noI18n(el('span', 'mono', c.where || '')));
+          return s;
+        })()],
+        ['What goes', w.repoint ? 'nothing - isemon is pointed at what is there'
+          : 'everything: ' + num(n.failed || 0) + ' failed attempt(s), ' + num(n.passed || 0)
+            + ' login(s), every ban, setting and account']
+      ]));
+      var plan = el('ol', 'mig-plan');
+      var add = function (t) { plan.appendChild(el('li', '', t)); };
       if (w.repoint) {
-        add('isemon is pointed at ' + engineWord(w.to) + ' (' + (c.where || '') + ').');
-        add('isemon starts again on it.');
+        add('isemon is pointed at ' + engineWord(w.to) + ' (' + (c.where || '') + ')');
+        add('isemon starts again on it');
       } else {
-        if (w.to !== 'sqlite' && !(c.reached && c.writable)) add('The database and its account are made on ' + engineWord(w.to) + ', with the administrator given.');
-        if (w.empty) add('What is in it is thrown away (' + num(c.rows || 0) + ' record(s)).');
-        add('A copy of everything here is made beside it, first.');
-        add('Everything is carried into ' + engineWord(w.to) + ' (' + (c.where || '') + ').');
-        add('Every table is counted again there: if anything is short, nothing is taken up.');
-        add(engineWord(w.to) + ' is taken up, and isemon starts again on it.');
+        if (w.to === 'sqlite') add('the file made in the state folder');
+        else if (!(c.reached && c.writable)) add('the database and its account made on '
+          + engineWord(w.to) + (w.password ? '' : ', with a password made here'));
+        else add('the other database reached');
+        add(w.empty ? 'what is in it thrown away first (' + num(c.rows || 0) + ' record(s))'
+          : 'it is checked to be empty');
+        add('a copy of everything here made (kept with the others - the way back)');
+        add('everything carried in');
+        add('every table counted on both sides - a move that lost anything stops here');
+        add(w.switchOver ? 'the address written into config.json and isemon started again on it'
+          : 'left at that: you switch over later');
       }
-      page.appendChild(list);
-      var sure = el('label', 'tickrow');
-      var t2 = el('input');
-      t2.type = 'checkbox';
-      t2.checked = w.sure;
-      t2.onchange = function () { w.sure = t2.checked; dbWizardButtons(); };
-      sure.appendChild(t2);
-      sure.appendChild(document.createTextNode(' I understand: isemon restarts on the new '
-        + 'database; what is here now stays as it is, as a spare.'));
-      page.appendChild(sure);
+      page.appendChild(plan);
+      if (!w.repoint) {
+        page.appendChild(dbWizardField('Switch over to it at the end',
+          wrSwitch(w.switchOver, function (on) { w.switchOver = on; dbWizardDraw(); }),
+          'Off: everything is carried in and checked, and this installation stays on the one in use.'));
+      }
+      page.appendChild(el('p', 'btnhelp', 'Until the switch nothing here changes and nothing is '
+        + 'written into config.json. What is here now stays exactly as it is - a spare: the file '
+        + 'may be deleted, or the server uninstalled, once you are happy.'));
+      buttons = [back(2), close, {words: w.repoint ? 'Point it there' : 'Start the move',
+        icon: 'power', cls: 'primary', go: function (b) { dbWizardStart(b); }}];
     } else {
-      page.appendChild(el('h4', '', w.error ? 'It did not work' : (w.back ? 'Done'
-        : (w.result ? (w.result.restarting ? 'isemon starts again on ' + engineWord(w.to)
-                       : 'Done - restart isemon') : 'Moving'))));
-      var prog = el('div', 'prog' + (w.error ? ' bad' : (w.result ? ' done' : '')));
+      var r = w.result;
+      var going = el('div', 'going wide mig-going' + (w.error ? ' failed' : ''));
+      var bar = el('div', 'bar');
       var fill = el('span');
       fill.id = 'wiz-bar';
-      fill.style.width = w.result || w.error ? '100%' : Math.min(100, Math.round(100 * (w.doneN || 0) / (w.total || 1000))) + '%';
-      prog.appendChild(fill);
-      page.appendChild(prog);
-      var said = el('div', 'joblines');
+      fill.style.width = r || w.error ? '100%'
+        : Math.min(100, Math.round(100 * (w.doneN || 0) / (w.total || 1000))) + '%';
+      bar.appendChild(fill);
+      going.appendChild(bar);
+      var said = el('div', 'says');
       said.id = 'wiz-said';
-      w.said.slice(-8).forEach(function (one) { said.appendChild(noI18n(el('div', '', one))); });
-      page.appendChild(said);
+      said.textContent = w.error ? 'stopped at: ' + (w.said[w.said.length - 1] || 'the start')
+        : (w.said[w.said.length - 1] || 'starting');
+      going.appendChild(noI18n(said));
+      page.appendChild(going);
       if (w.error) {
-        page.appendChild(noI18n(el('p', 'note bad', String(w.error))));
-        page.appendChild(el('p', 'note', 'Nothing was taken up: isemon goes on with the database '
-          + 'it had. Back to change what was asked, or Close.'));
-      } else if (w.back) {
-        page.appendChild(el('p', 'note good', 'isemon runs on ' + engineWord(w.to) + ' now. The '
-          + 'database it came from is a spare: keep it until you are happy, then it may go.'));
-      } else if (w.result && !w.result.restarting) {
-        page.appendChild(el('p', 'note', 'Everything is in ' + engineWord(w.to) + ' and it is '
-          + 'taken up from the next start: restart isemon (systemctl restart isemon).'));
-      } else if (w.result) {
-        page.appendChild(el('p', 'note', 'Everything is in ' + engineWord(w.to) + '; isemon is '
-          + 'starting again on it - this page waits for it.'));
+        page.appendChild(noI18n(el('p', 'note bad', 'The move stopped: ' + w.error)));
+        page.appendChild(el('p', 'btnhelp', 'Nothing here was changed and this installation goes '
+          + 'on as it was. Go back, put it right and start it again.'));
+        buttons = [{words: 'Back', icon: 'prev', left: true, go: function () {
+          w.error = ''; w.said = []; w.result = null; w.check = null; dbWizardGo(2);
+        }}, close];
+      } else if (r) {
+        if (!w.repoint) {
+          page.appendChild(noI18n(el('p', 'note good', 'Everything is in ' + engineWord(w.to)
+            + ': ' + num(r.rows || 0) + ' row(s), every table counted on both sides. The copy '
+            + 'made first: ' + (r.copy || '') + '.')));
+        }
+        if (r.password) {
+          page.appendChild(el('p', 'note', r.switched
+            ? 'The password made for the account (kept in config.json - shown this once):'
+            : 'The password made for the account - kept nowhere, as it was not switched over: '
+              + 'note it, the wizard asks for it when you switch over (shown this once):'));
+          var pw = el('input', 'mono');
+          pw.type = 'text';
+          pw.readOnly = true;
+          pw.value = r.password;
+          pw.onclick = function () { pw.select(); };
+          page.appendChild(noI18n(pw));
+        }
+        if (w.back) {
+          page.appendChild(el('p', 'note good', 'Running on ' + engineWord(w.to) + ' now - the '
+            + 'page is loaded again.'));
+          buttons = [];
+        } else if (r.restarting) {
+          page.appendChild(el('p', 'note', 'isemon is starting again on it…'));
+          buttons = [];
+        } else if (r.switched || w.repoint) {
+          page.appendChild(el('p', 'note', 'It is taken up from the next start: restart isemon '
+            + '(systemctl restart isemon).'));
+          buttons = [close];
+        } else {
+          page.appendChild(el('p', 'note', 'Not switched over: this installation stays on '
+            + dbWizardWhere() + '. Run the wizard again with the switch on when you want it.'));
+          buttons = [close];
+        }
+      } else {
+        buttons = [{words: 'Hide - it goes on', icon: 'close', close: true}];
       }
     }
-  }, [
-    {words: 'Back', icon: 'prev', left: true, go: function () {
-      if (w.step === 5) { w.error = ''; w.said = []; w.result = null; w.sure = false; dbWizardGo(4); return; }
-      dbWizardGo(dbWizardBackTo());
-    }},
-    {words: 'Close', close: true},
-    {words: w.step === 4 ? (w.repoint ? 'Point it there' : 'Start') : 'Next',
-     icon: w.step === 4 ? 'play' : 'next', cls: 'primary', go: function (b) { dbWizardNext(b); }}
-  ], 'large');
-  /* Ids on the buttons, and which of them there are on this step. */
-  var foot = Array.prototype.slice.call(document.querySelectorAll('#modal-foot button'));
-  var back = foot[0];
-  var next = foot[foot.length - 1];
-  if (next) next.id = 'wiz-next';
-  if (back) back.id = 'wiz-back';
-  if (back) back.hidden = w.step === 0 || running || (w.step === 5 && !w.error);
-  if (next) next.hidden = w.step === 5;
-  dbWizardButtons();
+  }, [], 'medium');
+  $('modal-box').classList.add('mig-box');
+  /* modal() draws the buttons it is given; the step decided them while
+     drawing, so they are drawn again now, with Next named for the checks. */
+  var foot = $('modal-foot');
+  clear(foot);
+  buttons.forEach(function (b) {
+    var x = cmdButton(b.words, b.icon || '', b.cls || '');
+    if (b.left) x.classList.add('left');
+    x.disabled = !!b.off;
+    if (b.words === 'Next' || b.words === 'Start the move' || b.words === 'Point it there') x.id = 'wiz-next';
+    if (b.words === 'Back') x.id = 'wiz-back';
+    x.onclick = function () {
+      if (b.close) { closeModal(); return; }
+      if (b.go) b.go(x);
+    };
+    foot.appendChild(x);
+  });
 }
 
 /* The two lists of files kept beside the database, which are the same table

@@ -296,7 +296,7 @@ try:
                                                        "words: 'Back'" in page,
                                                        "words: 'Next'" in page),
        (True, True, True))
-    ok('refused on the page in high availability', 'if (w.step === 0) return !w.nodes.length;' in page)
+    ok('refused on the page in high availability', 'off: !!w.nodes.length' in page)
     ok('the job followed, and the page waits for isemon back on the new one',
        ('function dbWizardFollow(' in page, 'function dbWizardBack(' in page), (True, True))
 finally:

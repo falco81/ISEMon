@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.277",
+  "version": "1.10.278",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -596,13 +596,9 @@
    "source": "a file is put back as a copy, not as a dump",
    "text": "soubor se vrací jako kopie, ne jako dump"
   },
-  "s.a-file-on-this-machine-nothing.bad330e0": {
-   "source": "A file on this machine. Nothing to install or run beside isemon; fine for most sites.",
-   "text": "Soubor na tomto stroji. Vedle isemonu není potřeba nic instalovat ani spouštět; pro většinu míst stačí."
-  },
-  "s.a-file-on-this-machine-or.c3e23fee": {
-   "source": "A file on this machine, or a database server. The file needs nothing installing and is the faster of the two; a server is for keeping this somewhere it is backed up and watched with everything else. Changing this does not move anything - carry it across first, below.",
-   "text": "Soubor na tomto stroji, nebo databázový server. Soubor nevyžaduje nic instalovat a je rychlejší; server je pro případ, že chcete data mít tam, kde se zálohují a hlídají spolu se vším ostatním. Změna tohoto nastavení nic nepřesune - nejprve data přeneste, viz níže."
+  "s.a-file-on-this-machine-or.7b03bccc": {
+   "source": "A file on this machine, or a database server. The file needs nothing installing and is the faster of the two; a server is for keeping this somewhere it is backed up and watched with everything else. Another one is reached by Move to another database… alone, which carries everything across first.",
+   "text": "Soubor na tomto stroji, nebo databázový server. Soubor nepotřebuje nic instalovat a je rychlejší z obou; server je na to, aby byla data tam, kde se zálohuje a hlídá všechno ostatní. Na jinou se přechází jen přes Přesunout do jiné databáze…, který nejdřív vše přenese."
   },
   "s.a-file-stored-on-an-ftp.be984a30": {
    "source": "a file stored on an FTP server",
@@ -891,10 +887,6 @@
   "s.a-mariadb-dump.55a87f15": {
    "source": "a MariaDB dump",
    "text": "dump MariaDB"
-  },
-  "s.a-mariadb-or-mysql-server-here.ae28de33": {
-   "source": "A MariaDB (or MySQL) server, here or on another machine.",
-   "text": "Server MariaDB (nebo MySQL), tady nebo na jiném stroji."
   },
   "s.a-member-of-a-watched-group.daa0cc16": {
    "source": "a member of a watched group signed in",
@@ -1192,10 +1184,6 @@
    "source": "A PostgreSQL installed as it comes lets postgres in only on the machine itself, without a password. Give it one first, on the server:",
    "text": "PostgreSQL ve výchozí instalaci pouští účet postgres jen přímo na stroji a bez hesla. Nejdřív mu na serveru nastavte heslo:"
   },
-  "s.a-postgresql-server-here-or-on.a56cfe9e": {
-   "source": "A PostgreSQL server, here or on another machine - the one for very big databases.",
-   "text": "Server PostgreSQL, tady nebo na jiném stroji – ten pro hodně velké databáze."
-  },
   "s.a-privileged-service-was-called.1a931cdd": {
    "source": "a privileged service was called",
    "text": "byla volána privilegovaná služba"
@@ -1415,6 +1403,14 @@
   "s.a-server-in-maintenance-says-503.63454312": {
    "source": "A server in maintenance says 503 on its health check (healthz.php), so a load balancer or the monitoring leaves it alone; it goes on reading the logs and banning, and these pages go on working.",
    "text": "Server v údržbě vrací na kontrole stavu (healthz.php) 503, takže ho balancer i monitoring nechají být; dál čte logy a blokuje a tyto stránky fungují dál."
+  },
+  "s.a-server-on-this-machine-or.89a678d7": {
+   "source": "A server - on this machine or another. The database and its account are made by the wizard.",
+   "text": "Server – na tomto stroji nebo jinde. Databázi a její účet založí průvodce."
+  },
+  "s.a-server-on-this-machine-or.a978be75": {
+   "source": "A server - on this machine or another, the one for very big databases. The database and its account are made by the wizard.",
+   "text": "Server – na tomto stroji nebo jinde, ten pro opravdu velké databáze. Databázi a její účet založí průvodce."
   },
   "s.a-service-runs-as.b7dbdc10": {
    "source": "A service runs as",
@@ -2636,6 +2632,10 @@
    "source": "an administrator deleted something",
    "text": "správce něco smazal"
   },
+  "s.an-administrator-of-that-server.7a798ed2": {
+   "source": "An administrator of that server",
+   "text": "Správce toho serveru"
+  },
   "s.an-administrator-on-that-server-is.3bfa1ebb": {
    "source": "an administrator on that server is needed to make a database and an account on it. (Once the account exists and its password is saved, this needs none: it signs in as that account and checks what is there.)",
    "text": "k vytvoření databáze a účtu na tom serveru je potřeba jeho správce. (Jakmile účet existuje a jeho heslo je uložené, správce už potřeba není: přihlásí se tím účtem a zkontroluje, co tam je.)"
@@ -2963,6 +2963,10 @@
   "s.another-packet-was-exactly-as-close.9aed3705": {
    "source": "Another packet was exactly as close to this attempt and fitted it exactly as well, and nothing in either log says which of the two caused it. The nearer one is shown. Everything above comes from that packet, so treat it as the likely one rather than the known one.",
    "text": "Jiný paket byl tomuto pokusu přesně stejně blízko a seděl na něj stejně dobře a nic v žádném z logů neříká, který z nich ho způsobil. Zobrazuje se ten bližší. Vše výše pochází z tohoto paketu, berte ho tedy jako pravděpodobný, ne jistý."
+  },
+  "s.another-server-or-another-database-of.e4313dd0": {
+   "source": "Another server or another database of it can still be chosen.",
+   "text": "Stále lze zvolit jiný server nebo jinou databázi na něm."
   },
   "s.another-value-waits-for-the-server.bb094b0a": {
    "source": "another value waits for the server’s next start",
@@ -4848,6 +4852,10 @@
    "source": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log.",
    "text": "Ke změně je potřeba účet, který to smí: vlastní účet tohoto programu, pokud to právo má, jinak správce toho serveru. Na ten se zeptá okno, použije se jen pro ten jeden požadavek a nikam se neukládá – ani do nastavení, ani do databáze, ani do žádného logu."
   },
+  "s.check-again.e185048c": {
+   "source": "Check again",
+   "text": "Zkontrolovat znovu"
+  },
   "s.check-dns-here-then-order-it.2a250c0e": {
    "source": "Check DNS here, then Order it now. Renewals go by themselves.",
    "text": "Tady Zkontrolovat DNS, pak Objednat teď. Obnovy proběhnou samy."
@@ -6284,10 +6292,6 @@
    "source": "Done by",
    "text": "Provedl"
   },
-  "s.done-restart-isemon.d83d5253": {
-   "source": "Done - restart isemon",
-   "text": "Hotovo – restartujte isemon"
-  },
   "s.done.5a8d6cac": {
    "source": "- done",
    "text": "– hotovo"
@@ -6808,6 +6812,10 @@
    "source": "Empties what can be got again — the records read from the logs, the fetched lists, the country database — and never the accounts, the settings or the whitelist, which are not even offered here.",
    "text": "Vyprázdní, co lze získat znovu – záznamy načtené z logů, stažené seznamy, databázi zemí – a nikdy účty, nastavení ani whitelist, které tu ani nejsou nabízeny."
   },
+  "s.empty-a-strong-one-is-made.b12815fa": {
+   "source": "Empty: a strong one is made when the account is made, and kept in config.json (root only).",
+   "text": "Prázdné: při založení účtu se vytvoří silné heslo a uloží se do config.json (jen pro root)."
+  },
   "s.empty-as-far-back-as-there.76cf1cdc": {
    "source": "Empty: as far back as there is.",
    "text": "Prázdné: tak daleko, kam záznamy sahají."
@@ -6839,6 +6847,10 @@
   "s.empty-nothing-is-being-kept-out.a9de34e1": {
    "source": "(empty: nothing is being kept out)",
    "text": "(prázdné: nic se neblokuje)"
+  },
+  "s.empty-one-is-made-and-kept.6dd43bf4": {
+   "source": "empty: one is made and kept",
+   "text": "prázdné: vytvoří se a uloží"
   },
   "s.empty-the-country-list-on-the.5b2f12f1": {
    "source": "Empty the country list on the router",
@@ -8056,6 +8068,10 @@
    "source": "Everything this downloads and when each is due again. A machine with no way out simply never fetches and says so, rather than failing quietly.",
    "text": "Vše, co se stahuje, a kdy je každá položka znovu na řadě. Stroj bez přístupu ven prostě nic nestahuje a řekne to, místo aby potichu selhával."
   },
+  "s.everything-this-installation-holds-the-records.3be8f819": {
+   "source": "Everything this installation holds - the records, the bans, the settings, the accounts, the events - is in one database. This moves all of it into another one. Nothing here changes until the very last step.",
+   "text": "Vše, co tato instalace drží – záznamy, bany, nastavení, účty, události – je v jedné databázi. Tímto se to celé přesune do jiné. Až do úplně posledního kroku se tu nic nezmění."
+  },
   "s.everything-this-installation-is-configured-to.7c3c8314": {
    "source": "Everything this installation is configured to do, the whitelist, the public lists, GeoIP, the router, the accounts and the database.",
    "text": "Vše, co je tato instalace nastavena dělat: whitelist, veřejné seznamy, GeoIP, router, účty a databáze."
@@ -8183,6 +8199,10 @@
   "s.eye.79df4b17": {
    "source": "eye",
    "text": "eye"
+  },
+  "s.fact-wide.0a2666f7": {
+   "source": "fact wide",
+   "text": "fact wide"
   },
   "s.fail-a-login-here-goes-on.ddfd8638": {
    "source": "fail a login here goes on the list for good. Start with FireHOL level 1, which is chosen to have no false positives.",
@@ -9536,6 +9556,10 @@
    "source": "Go out through a proxy",
    "text": "Ven přes proxy"
   },
+  "s.go.2e0b45f2": {
+   "source": "Go",
+   "text": "Spustit"
+  },
   "s.going-back-now.f34819d5": {
    "source": "going back now",
    "text": "vrací se teď"
@@ -9800,6 +9824,10 @@
    "source": "Hidden by itself half an hour after it began.",
    "text": "Samo se skryje půl hodiny po začátku."
   },
+  "s.hide-it-goes-on.4c571219": {
+   "source": "Hide - it goes on",
+   "text": "Skrýt – běží dál"
+  },
   "s.hide-it.c002485a": {
    "source": "Hide it",
    "text": "Skrýt"
@@ -9987,6 +10015,10 @@
   "s.how-long-a-block-lasts-when.1003aca8": {
    "source": "How long a block lasts when there is no ladder.",
    "text": "Jak dlouho trvá blokace, když nejsou nastaveny stupně blokace."
+  },
+  "s.how-long-a-connection-is-waited.8c7c1ec6": {
+   "source": "How long a connection is waited for.",
+   "text": "Jak dlouho se čeká na spojení."
   },
   "s.how-long-a-machine-seen-on.57d95657": {
    "source": "How long a machine seen on eduroam is remembered. One row each, and it is only ever read beside a page about what is happening now - a machine that has not been back in a fortnight is a row nothing will ever ask for. A university’s eduroam is thousands of machines a day, so there is a ceiling of twenty thousand rows underneath this as well.",
@@ -10627,10 +10659,6 @@
   "s.i-have-kept-it.60211bdb": {
    "source": "I have kept it",
    "text": "Uložil jsem si ho"
-  },
-  "s.i-understand-isemon-restarts-on-the.6ff6f5da": {
-   "source": "I understand: isemon restarts on the new database; what is here now stays as it is, as a spare.",
-   "text": "Rozumím: isemon se restartuje na nové databázi; to, co je tu teď, zůstane, jak je, jako záloha."
   },
   "s.i-will-set-them.191ae17e": {
    "source": "I will set them",
@@ -11544,6 +11572,10 @@
    "source": "isemon is restarting - asking again…",
    "text": "isemon se restartuje – ptám se znovu…"
   },
+  "s.isemon-is-starting-again-on-it.17ce4f4c": {
+   "source": "isemon is starting again on it…",
+   "text": "isemon se na ní znovu spouští…"
+  },
   "s.isemon-leaves-the-firewall-alone.41882e8a": {
    "source": "isemon leaves the firewall alone",
    "text": "isemon nechává firewall být"
@@ -11704,10 +11736,6 @@
    "source": "It answers, and everything of isemon is in it.",
    "text": "Odpovídá a je v ní všechno z isemonu."
   },
-  "s.it-answers-the-account-may-write.a70ede83": {
-   "source": "It answers, the account may write, and it is empty.",
-   "text": "Odpovídá, účet smí zapisovat a je prázdná."
-  },
   "s.it-can-reach-the-vpn.1582f558": {
    "source": "· it can reach the VPN",
    "text": "· k VPN se dostane"
@@ -11751,10 +11779,6 @@
   "s.it-did-not-work.19a40b70": {
    "source": "it did not work",
    "text": "nefungovalo to"
-  },
-  "s.it-did-not-work.6bdabe0e": {
-   "source": "It did not work",
-   "text": "Nepovedlo se"
   },
   "s.it-disagreed-with-the-events.35808eef": {
    "source": "it disagreed with the events",
@@ -11848,6 +11872,10 @@
    "source": "It is one of the names under",
    "text": "Je to jeden z názvů pod"
   },
+  "s.it-is-taken-up-from-the.25678332": {
+   "source": "It is taken up from the next start: restart isemon (systemctl restart isemon).",
+   "text": "Použije se od příštího startu: restartujte isemon (systemctl restart isemon)."
+  },
   "s.it-is-the-half-of-the.a2c7fdca": {
    "source": "It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.",
    "text": "Je to ta polovina příběhu, kterou tato stránka nikdy neukazovala: prázdný seznam výše neříká nic o tom, zda se nic neděje, nebo zda se vše děje jeden pokus pod hranicí."
@@ -11923,10 +11951,6 @@
   "s.italy.ad79ef0f": {
    "source": "Italy",
    "text": "Itálie"
-  },
-  "s.its-account.8c432b0c": {
-   "source": "Its account",
-   "text": "Její účet"
   },
   "s.its-acme-directory.3f45b7e1": {
    "source": "Its ACME directory",
@@ -12039,6 +12063,10 @@
   "s.its-name-is-not-known-yet.904d56f8": {
    "source": "its name is not known yet",
    "text": "jeho jméno zatím není známé"
+  },
+  "s.its-name-or-address.dea43771": {
+   "source": "Its name or address.",
+   "text": "Jeho jméno nebo adresa."
   },
   "s.its-name.d43ff9f3": {
    "source": "Its name…",
@@ -12788,10 +12816,6 @@
    "source": "Lebanon",
    "text": "Libanon"
   },
-  "s.left-empty-a-long-one-is.8667d710": {
-   "source": "Left empty, a long one is made with the account and kept in the config file.",
-   "text": "Necháte-li prázdné, vytvoří se s účtem dlouhé heslo a uloží se do konfiguračního souboru."
-  },
   "s.left-forgetting-old-records-under.7ce5dfa7": {
    "source": "left. Forgetting old records, under",
    "text": "zbývá. Zapomínání starých záznamů, v"
@@ -13007,6 +13031,10 @@
   "s.let-through.3b771409": {
    "source": "let through",
    "text": "propuštěno"
+  },
+  "s.letters-digits-and-only-made-there.e5a713fc": {
+   "source": "Letters, digits and _ only. Made there if it is not.",
+   "text": "Jen písmena, číslice a _. Pokud tam není, založí se."
   },
   "s.letters-digits-dot-dash-or-underscore.0d38f488": {
    "source": "letters, digits, dot, dash or underscore",
@@ -13616,10 +13644,6 @@
    "source": "Made by",
    "text": "Vytvořil"
   },
-  "s.made-for-you.afb59aa9": {
-   "source": "(made for you)",
-   "text": "(vytvoří se)"
-  },
   "s.made-give-the-certificate-to-the.9671a3e9": {
    "source": "made — give the certificate to the server",
    "text": "vytvořeno – dejte certifikát serveru"
@@ -13667,10 +13691,6 @@
   "s.made-on-the-first-run.be24152c": {
    "source": "made on the first run",
    "text": "vytvořeno při prvním spuštění"
-  },
-  "s.made-there-if-it-is-not.11971c08": {
-   "source": "Made there if it is not, with an administrator (next step).",
-   "text": "Pokud tam není, vytvoří se – s administrátorem (další krok)."
   },
   "s.made.785c2d91": {
    "source": "Made",
@@ -13876,6 +13896,10 @@
    "source": "MariaDB keeps what was put in until it is next started. This file keeps it over a restart: on the server, as root (on Debian and Ubuntu the folder is /etc/mysql/mariadb.conf.d):",
    "text": "MariaDB si nastavené hodnoty drží do příštího startu. Tento soubor je zachová i po restartu: na serveru jako root (na Debianu a Ubuntu je složka /etc/mysql/mariadb.conf.d):"
   },
+  "s.mariadb.378e3bca": {
+   "source": "mariadb",
+   "text": "mariadb"
+  },
   "s.mariadb.7f00002b": {
    "source": "MariaDB",
    "text": "MariaDB"
@@ -13955,6 +13979,10 @@
   "s.may-look-at-every-page-ban.aff56a7e": {
    "source": "may look at every page, ban an address, let one back in and put the lists on the firewall — and nothing else. A",
    "text": "smí prohlížet všechny stránky, zablokovat adresu, pustit ji zpět a nahrát seznamy na firewall — a nic jiného. Účet"
+  },
+  "s.may-the-account-write.46a76be2": {
+   "source": "May the account write",
+   "text": "Smí účet zapisovat"
   },
   "s.may-this-account-write.12a21188": {
    "source": "May this account write",
@@ -14239,6 +14267,14 @@
   "s.move.379d6ce9": {
    "source": "move",
    "text": "move"
+  },
+  "s.moved-from.1f980343": {
+   "source": "Moved from",
+   "text": "Odkud"
+  },
+  "s.moved-to.02519ea0": {
+   "source": "Moved to",
+   "text": "Kam"
   },
   "s.moving.65cd4dd8": {
    "source": "Moving",
@@ -14700,10 +14736,6 @@
    "source": "Next in line, after the one being worked out now.",
    "text": "Je na řadě hned po tom, který se počítá teď."
   },
-  "s.next-tries-it-exactly-as-isemon.d39a6b9a": {
-   "source": "Next tries it, exactly as isemon would - nothing is written.",
-   "text": "Další ji vyzkouší přesně tak, jak by to udělal isemon – nic se nezapíše."
-  },
   "s.next.bc981983": {
    "source": "Next",
    "text": "Další"
@@ -14935,10 +14967,6 @@
   "s.no-older-version-is-there.d18ec671": {
    "source": "No older version is there.",
    "text": "Žádná starší verze tam není."
-  },
-  "s.no-other-isemon-uses-this-database.6dc4673c": {
-   "source": "No other isemon uses this database: it may be moved.",
-   "text": "Žádný jiný isemon tuto databázi nepoužívá: lze ji přesunout."
   },
   "s.no-password-is-saved-yet.68fe4be7": {
    "source": "no password is saved yet",
@@ -15636,6 +15664,10 @@
    "source": "not while these logs have been read",
    "text": "ne během čtení těchto logů"
   },
+  "s.not-with-that-account-yet.a6ad2c16": {
+   "source": "not with that account yet",
+   "text": "zatím ne s tímto účtem"
+  },
   "s.not-yet.3a230353": {
    "source": "not yet",
    "text": "zatím ne"
@@ -15703,10 +15735,6 @@
   "s.nothing-changes-for-the-firewalls.414423e4": {
    "source": "Nothing changes for the firewalls",
    "text": "Pro firewally se nic nemění"
-  },
-  "s.nothing-changes-until-the-last-step.03b8a85c": {
-   "source": "Nothing changes until the last step. Until then isemon goes on exactly as it is, and Close leaves everything as it was.",
-   "text": "Do posledního kroku se nic nemění. Do té doby isemon běží přesně jako teď a Zavřít nechá vše, jak bylo."
   },
   "s.nothing-else.1d39751a": {
    "source": "nothing else",
@@ -15803,6 +15831,10 @@
   "s.nothing-here-is-ever-judged.847d0997": {
    "source": "Nothing here is ever judged.",
    "text": "Nic zde se nikdy neposuzuje."
+  },
+  "s.nothing-here-was-changed-and-this.d0755dbd": {
+   "source": "Nothing here was changed and this installation goes on as it was. Go back, put it right and start it again.",
+   "text": "Nic se tu nezměnilo a instalace běží dál jako dosud. Vraťte se, opravte to a spusťte znovu."
   },
   "s.nothing-here-yet.ede1ba2f": {
    "source": "Nothing here yet.",
@@ -15903,6 +15935,10 @@
   "s.nothing-is-whitelisted-yet.fd1bd59f": {
    "source": "Nothing is whitelisted yet",
    "text": "Na whitelistu zatím nic není"
+  },
+  "s.nothing-isemon-is-pointed-at-what.f565766e": {
+   "source": "nothing - isemon is pointed at what is there",
+   "text": "nic – isemon se nasměruje na to, co tam je"
   },
   "s.nothing-matches.17e7aebf": {
    "source": "Nothing matches",
@@ -16055,10 +16091,6 @@
   "s.nothing-was-run.0994d85e": {
    "source": "nothing was run",
    "text": "nic nebylo spuštěno"
-  },
-  "s.nothing-was-taken-up-isemon-goes.cf7c42c3": {
-   "source": "Nothing was taken up: isemon goes on with the database it had. Back to change what was asked, or Close.",
-   "text": "Na nic se nepřepnulo: isemon pokračuje s databází, kterou měl. Zpět pro změnu zadaného, nebo Zavřít."
   },
   "s.nothing-yet.76eb7251": {
    "source": "Nothing yet",
@@ -16295,6 +16327,10 @@
   "s.off-blocks-nobody-by-itself-temporary.f5d25f8a": {
    "source": "Off blocks nobody by itself. Temporary uses the ladder. Permanent keeps the first offender out until somebody takes them off.",
    "text": "Vypnuto samo nikoho neblokuje. Dočasně používá stupně blokace. Trvale drží prvního pachatele venku, dokud ho někdo neodblokuje."
+  },
+  "s.off-everything-is-carried-in-and.0fb3496c": {
+   "source": "Off: everything is carried in and checked, and this installation stays on the one in use.",
+   "text": "Vypnuto: vše se přenese a zkontroluje a tato instalace zůstane na té, kterou používá teď."
   },
   "s.off-is-right-for-these-lists.daa577b0": {
    "source": "Off is right for these lists: every cipher in them is strong, and the client knows best which is fast for it.",
@@ -19116,6 +19152,10 @@
    "source": "Reach this directory, sign in to it as the reading account and read its base, and say which step failed if one does. It only reads.",
    "text": "Spojit se s tímto adresářem, přihlásit se k němu čtecím účtem a přečíst jeho základ, a v případě selhání uvést, který krok selhal. Pouze čte."
   },
+  "s.reachable-writable-and-empty-of-ours.dc244022": {
+   "source": "Reachable, writable and empty of ours - exactly what a move needs.",
+   "text": "Dosažitelná, zapisovatelná a bez našich dat – přesně to, co přesun potřebuje."
+  },
   "s.reached-straight.02b6d9af": {
    "source": "Reached straight",
    "text": "Dosaženo přímo"
@@ -19131,6 +19171,10 @@
   "s.reached.debd1fc5": {
    "source": "Reached",
    "text": "Dostupné"
+  },
+  "s.reaching-it.9829a70a": {
+   "source": "Reaching it…",
+   "text": "Připojuji se…"
   },
   "s.reaching-the-firewall.7ada873d": {
    "source": "Reaching the firewall",
@@ -19376,10 +19420,6 @@
    "source": "reads them again with it.",
    "text": "je s ním přečte znovu."
   },
-  "s.ready.20c7c552": {
-   "source": "Ready",
-   "text": "Připraveno"
-  },
   "s.ready.75c05337": {
    "source": "ready",
    "text": "připraveno"
@@ -19451,6 +19491,10 @@
   "s.records-in-it.9800e32a": {
    "source": "Records in it",
    "text": "Záznamů v něm"
+  },
+  "s.records-of-ours-in-it.a3a554b7": {
+   "source": "Records of ours in it",
+   "text": "Našich záznamů v ní"
   },
   "s.records-read.6b6de2cc": {
    "source": "Records read",
@@ -20504,10 +20548,6 @@
    "source": "seconds to the next figures",
    "text": "sekund do dalších čísel"
   },
-  "s.secret.e5e9fa1b": {
-   "source": "secret",
-   "text": "tajné"
-  },
   "s.secure.73c048ec": {
    "source": "; Secure",
    "text": "; Secure"
@@ -21520,6 +21560,10 @@
    "source": "SQLite (library)",
    "text": "SQLite (knihovna)"
   },
+  "s.sqlite-nothing-to-install-or-run.1bca5fdb": {
+   "source": "SQLite - nothing to install or run, one file in the state folder. Right for most sites.",
+   "text": "SQLite – nic k instalaci ani spouštění, jeden soubor ve stavové složce. Pro většinu míst to stačí."
+  },
   "s.sqlite.6d64a5ee": {
    "source": "sqlite",
    "text": "sqlite"
@@ -21732,13 +21776,13 @@
    "source": "Start the counting again?",
    "text": "Začít počítat znovu?"
   },
+  "s.start-the-move.dc2d22d5": {
+   "source": "Start the move",
+   "text": "Spustit přesun"
+  },
   "s.start.2b020927": {
    "source": "start",
    "text": "start"
-  },
-  "s.start.952f3754": {
-   "source": "Start",
-   "text": "Spustit"
   },
   "s.started-over-by-the-peer.04400023": {
    "source": "Started over by the peer",
@@ -21755,6 +21799,10 @@
   "s.starting-and-stopping.1e4bb95d": {
    "source": "starting and stopping",
    "text": "spouštění a zastavování"
+  },
+  "s.starting.9493af05": {
+   "source": "starting",
+   "text": "začíná se"
   },
   "s.starting.fe392644": {
    "source": "starting…",
@@ -22075,6 +22123,10 @@
   "s.switch-over-the-nodes-send-over.5ae428af": {
    "source": "Switch over: the nodes send over TLS from then on. The plain input here stays for any node not switched over.",
    "text": "Přepnout: uzly od té chvíle posílají přes TLS. Nešifrovaný vstup zde zůstává pro každý uzel, který nebyl přepnut."
+  },
+  "s.switch-over-to-it-at-the.8844339c": {
+   "source": "Switch over to it at the end",
+   "text": "Na konci na ni přepnout"
   },
   "s.switch-port.b3b618bd": {
    "source": "Switch port",
@@ -22895,6 +22947,10 @@
   "s.the-account-is-switched-off.3598cff7": {
    "source": "the account is switched off",
    "text": "účet je vypnutý"
+  },
+  "s.the-account-isemon-signs-in-with.4c2824b6": {
+   "source": "The account isemon signs in with.",
+   "text": "Účet, kterým se isemon přihlašuje."
   },
   "s.the-account-it-signs-in-as.21d418f7": {
    "source": "The account it signs in as",
@@ -23896,13 +23952,17 @@
    "source": "the dashboard",
    "text": "dashboard"
   },
+  "s.the-database-and-its-account-are.1a10d79e": {
+   "source": "The database and its account are made by an administrator of that server - root on MariaDB, postgres on PostgreSQL, or anyone who may create a database and an account. It is used for this one move and kept nowhere: not in the settings, not in the database, not in any log.",
+   "text": "Databázi a její účet založí správce toho serveru – root na MariaDB, postgres na PostgreSQL, nebo kdokoli, kdo smí založit databázi a účet. Použije se jen pro tento přesun a nikde se neukládá: ani v nastavení, ani v databázi, ani v žádném logu."
+  },
+  "s.the-database-and-the-account-are.c774dadc": {
+   "source": "the database and the account are letters, digits and _ only",
+   "text": "databáze a účet smí obsahovat jen písmena, číslice a _"
+  },
   "s.the-database-and-the-copies-kept.ef56814a": {
    "source": "the database and the copies kept beside it",
    "text": "databáze a kopie uložené vedle ní"
-  },
-  "s.the-database-in-use-now.97329fc2": {
-   "source": "The database in use now",
-   "text": "Databáze, která se teď používá"
   },
   "s.the-database-in-use-will-not.c5d9318b": {
    "source": "the database in use will not open, so there is nothing to carry out of it",
@@ -23939,10 +23999,6 @@
   "s.the-database-on-that-server-it.1e71f695": {
    "source": "The database on that server. It may be made from here.",
    "text": "Databáze na tomto serveru. Lze ji vytvořit odsud."
-  },
-  "s.the-database-or-its-account-is.23365945": {
-   "source": "The database or its account is not there yet (or the password is not the one it has). An administrator on that server makes them - used for this one run and stored nowhere.",
-   "text": "Databáze nebo její účet tam ještě nejsou (nebo heslo není to, které účet má). Vytvoří je administrátor toho serveru – použije se jen pro tento jeden běh a nikam se neukládá."
   },
   "s.the-database-s-own-disk.8ad39f84": {
    "source": "The database’s own disk",
@@ -25864,6 +25920,14 @@
    "source": "The password for",
    "text": "Heslo pro"
   },
+  "s.the-password-made-for-the-account.0937729a": {
+   "source": "The password made for the account (kept in config.json - shown this once):",
+   "text": "Heslo vytvořené pro účet (uložené v config.json – zobrazí se jen tentokrát):"
+  },
+  "s.the-password-made-for-the-account.5e7832ee": {
+   "source": "The password made for the account - kept nowhere, as it was not switched over: note it, the wizard asks for it when you switch over (shown this once):",
+   "text": "Heslo vytvořené pro účet – nikde uložené, protože se nepřepnulo: poznamenejte si ho, průvodce se na něj zeptá při přepnutí (zobrazí se jen tentokrát):"
+  },
   "s.the-password-of-that-account-it.15fc65bf": {
    "source": "The password of that account. It is never anybody’s way in to this dashboard.",
    "text": "Heslo k tomuto účtu. Nikdy pro nikoho neslouží jako přístup do tohoto dashboardu."
@@ -26548,6 +26612,10 @@
    "source": "the server inside a dst-nat rule sent it to",
    "text": "server uvnitř, kam ho dst-nat pravidlo poslalo"
   },
+  "s.the-server-is-its-name-or.7a37d67a": {
+   "source": "the server is its name or address",
+   "text": "server je jeho jméno nebo adresa"
+  },
   "s.the-server-is-on-another-machine.13b119c4": {
    "source": "The server is on another machine and what it has could not be read from here. Type its memory and processors below and press Read again.",
    "text": "Server běží na jiném stroji a jeho parametry se odsud nedaly přečíst. Zadejte níže jeho paměť a procesory a stiskněte Načíst znovu."
@@ -26707,6 +26775,10 @@
   "s.the-ssl-vpn-closed-a-connection.ce846697": {
    "source": "the SSL VPN closed a connection with an alert",
    "text": "SSL VPN ukončila spojení s upozorněním (alert)"
+  },
+  "s.the-start.63ff2684": {
+   "source": "the start",
+   "text": "začátek"
   },
   "s.the-state-of-its-connection-as.4aad1e77": {
    "source": "the state of its connection, as the router tracks it (MikroTik)",
@@ -28200,6 +28272,10 @@
    "source": "Throw away the changes on this page and read the settings back from the daemon as they actually are.",
    "text": "Zahodit změny na této stránce a načíst nastavení z démona znovu tak, jak skutečně jsou."
   },
+  "s.throw-away-what-is-in-it.52a71664": {
+   "source": "Throw away what is in it first (never the one in use)",
+   "text": "Nejdřív zahodit, co v ní je (nikdy ne tu používanou)"
+  },
   "s.throw-it-away.081a29d4": {
    "source": "Throw it away",
    "text": "Zahodit"
@@ -28271,6 +28347,10 @@
   "s.time.714eea0f": {
    "source": "time",
    "text": "time"
+  },
+  "s.timeout.56d3c949": {
+   "source": "timeout",
+   "text": "timeout"
   },
   "s.times.4b0f911f": {
    "source": "Times",
@@ -28992,6 +29072,10 @@
    "source": "until taken off",
    "text": "dokud není odebráno"
   },
+  "s.until-the-switch-nothing-here-changes.4190f45a": {
+   "source": "Until the switch nothing here changes and nothing is written into config.json. What is here now stays exactly as it is - a spare: the file may be deleted, or the server uninstalled, once you are happy.",
+   "text": "Až do přepnutí se tu nic nemění a do config.json se nic nezapisuje. Co je tu teď, zůstane přesně tak, jak je – jako záloha: soubor lze smazat, nebo server odinstalovat, až budete spokojeni."
+  },
   "s.until-then-this-page-is-guarded.6afeb6ce": {
    "source": "Until then this page is guarded: PHP takes no request body apart here, and the web server refuses multipart ones.",
    "text": "Do té doby je tato stránka chráněná: PHP zde nerozebírá žádné tělo požadavku a webový server multipart požadavky odmítá."
@@ -29476,13 +29560,13 @@
    "source": "Wait for DNS to carry it (s)",
    "text": "Počkat, než ho DNS roznese (s)"
   },
+  "s.wait-for-it-s.a9cf9bfa": {
+   "source": "Wait for it (s)",
+   "text": "Čekat na ni (s)"
+  },
   "s.wait.daaad336": {
    "source": "wait",
    "text": "čekejte"
-  },
-  "s.waited-for-s.92444adf": {
-   "source": "Waited for (s)",
-   "text": "Čekat (s)"
   },
   "s.waiting-for-root.50f827fe": {
    "source": "waiting for root…",
@@ -29652,10 +29736,6 @@
    "source": "what an SSD writes in a second in the background",
    "text": "kolik SSD zapíše za sekundu na pozadí"
   },
-  "s.what-answered.3068b985": {
-   "source": "What answered",
-   "text": "Co odpovědělo"
-  },
   "s.what-became-of-it-in-the.8c3694a4": {
    "source": "what became of it in the sandbox",
    "text": "co se s tím stalo v sandboxu"
@@ -29728,6 +29808,10 @@
    "source": "What FreeRADIUS said to the machines that were refused and did NOT get on afterwards.",
    "text": "Co FreeRADIUS řekl strojům, které byly odmítnuty a pak se dovnitř NEDOSTALY."
   },
+  "s.what-goes.2082eb13": {
+   "source": "What goes",
+   "text": "Co se přenese"
+  },
   "s.what-happened-to-it.44a4e9e4": {
    "source": "What happened to it",
    "text": "Co se s tím stalo"
@@ -29799,6 +29883,10 @@
   "s.what-is-there-now-is-kept.a2749bef": {
    "source": "What is there now is kept, and Put back as it was goes back to it.",
    "text": "Současné hodnoty se uloží a tlačítko Vrátit původní se k nim vrátí."
+  },
+  "s.what-is-there.44f1e3eb": {
+   "source": "What is there",
+   "text": "Co tam je"
   },
   "s.what-is-waiting.43b1c87f": {
    "source": "what is waiting",
@@ -30684,10 +30772,6 @@
    "source": "Where everything is kept",
    "text": "Kde je vše uloženo"
   },
-  "s.where-everything-is-to-go.c5cfa601": {
-   "source": "Where everything is to go",
-   "text": "Kam má všechno jít"
-  },
   "s.where-from.e6ad44f1": {
    "source": "Where from",
    "text": "Odkud"
@@ -30776,9 +30860,9 @@
    "source": "Where TACACS sign-ins come from",
    "text": "Odkud přicházejí TACACS přihlášení"
   },
-  "s.where-that-server-is-nothing-is.6200fcf2": {
-   "source": "Where that server is. Nothing is sent anywhere until it is tried.",
-   "text": "Kde ten server je. Dokud se to nevyzkouší, nikam se nic neposílá."
+  "s.where-that-server-is-changed-and.7349f9a9": {
+   "source": "Where that server is. Changed and saved, it is tried first - it must answer and hold this installation's database - and isemon starts again on it.",
+   "text": "Kde ten server je. Po změně a uložení se nejdřív vyzkouší – musí odpovídat a obsahovat databázi této instalace – a isemon se na něm znovu spustí."
   },
   "s.where-the-ban-came-from-ise.95a24ac6": {
    "source": "where the ban came from: ise, nps, radius, tacacs, fw, win, manual",
@@ -32942,6 +33026,10 @@
    "source": "{0} earns {1}",
    "text": "{0} vede k {1}"
   },
+  "p.empty-the-engine-s-own.b8fe1164": {
+   "source": "Empty: the engine’s own ({0}).",
+   "text": "Prázdné: výchozí pro daný typ ({0})."
+  },
   "p.ended-in-the-lines-kept.41bac2e6": {
    "source": "· {0} ended in the lines kept",
    "text": "· {0} skončilo v uchovaných řádcích"
@@ -33030,13 +33118,13 @@
    "source": "Everything about {0}",
    "text": "Vše o {0}"
   },
-  "p.everything-is-in-and-it-is.30a2cb71": {
-   "source": "Everything is in {0} and it is taken up from the next start: restart isemon (systemctl restart isemon).",
-   "text": "Všechno je v {0} a od příštího startu se používá: restartujte isemon (systemctl restart isemon)."
+  "p.everything-failed-attempt-s-login-s.fa6789a7": {
+   "source": "everything: {0} failed attempt(s), {1} login(s), every ban, setting and account",
+   "text": "vše: {0} neúspěšných pokusů, {1} přihlášení, každý ban, nastavení i účet"
   },
-  "p.everything-is-in-isemon-is-starting.dc36ef2d": {
-   "source": "Everything is in {0}; isemon is starting again on it - this page waits for it.",
-   "text": "Všechno je v {0}; isemon se na ní znovu spouští – tato stránka na něj čeká."
+  "p.everything-is-in-row-s-every.3dd1c9c1": {
+   "source": "Everything is in {0}: {1} row(s), every table counted on both sides. The copy made first: {2}.",
+   "text": "Vše je v {0}: {1} řádků, každá tabulka spočítána na obou stranách. Kopie vytvořená předem: {2}."
   },
   "p.everything-is-now-in-as-well.61006401": {
    "source": "everything is now in {0} as well",
@@ -33298,6 +33386,10 @@
    "source": "{0} hours",
    "text": "{0} hodin"
   },
+  "p.how-isemon-reaches-the-server-must.ebd4ca5d": {
+   "source": "How isemon reaches {0}. The server must be running; the database and the account need not exist yet - the next step makes them.",
+   "text": "Jak se isemon dostane k {0}. Server musí běžet; databáze ani účet zatím nemusí existovat – další krok je založí."
+  },
   "p.how-much-each-machine-that-writes.42147cb8": {
    "source": "How much each machine that writes one of these logs has written in the last 24 hours. On a pair of ISE nodes one of them is doing the authenticating at any moment and which one changes without warning — so a node at nought beside one carrying its usual total is a failover, which is ordinary. What is not ordinary is every node at nought, or the total falling when one of them goes quiet: that is a node that has stopped sending to this machine.{0}{1}",
    "text": "Kolik každý stroj, který zapisuje některý z těchto logů, zapsal za posledních 24 hodin. U dvojice uzlů ISE v každém okamžiku autentizuje jeden z nich a který to je, se mění bez varování — takže uzel na nule vedle uzlu s obvyklým objemem je failover, což je běžné. Běžné není, když jsou na nule všechny uzly, nebo když celkový objem klesne, jakmile jeden z nich utichne: to je uzel, který přestal posílat na tento počítač.{0}{1}"
@@ -33305,10 +33397,6 @@
   "p.how-much-the-sessions-it-let.2ba4e637": {
    "source": "How much the sessions it let through carried, both ways: out is what the side that started each session sent, in is what came back.{0}",
    "text": "Kolik přenesly relace, které propustil, oběma směry: ven je to, co poslala strana, která relaci zahájila, dovnitř je to, co přišlo zpět.{0}"
-  },
-  "p.how-to-reach.e17320da": {
-   "source": "How to reach {0}",
-   "text": "Jak se dostat k {0}"
   },
   "p.hsts-days.c0f0db11": {
    "source": "HSTS {0} days",
@@ -33377,6 +33465,10 @@
   "p.in-this-window.510d4a8d": {
    "source": "{0} in this window",
    "text": "{0} v tomto časovém okně"
+  },
+  "p.in-use-now.f7db9f72": {
+   "source": "In use now: {0}",
+   "text": "Teď používaná: {0}"
   },
   "p.in-what-gets-erased-ticking-it.ba0da6d6": {
    "source": "in what gets erased — {0} Ticking it does nothing on its own: nothing goes until the button at the bottom of this card is pressed, and it says what it is about to erase first.",
@@ -33526,10 +33618,6 @@
    "source": "isemon-backup-{0}",
    "text": "isemon-backup-{0}"
   },
-  "p.isemon-is-pointed-at.1c04441d": {
-   "source": "isemon is pointed at {0}",
-   "text": "isemon je nasměrován na {0}"
-  },
   "p.isemon-is-there-this-server-runs.177cccd2": {
    "source": "isemon {0} is there - this server runs {1} (looked {2})",
    "text": "Je k dispozici isemon {0} – tento server běží na {1} (zkontrolováno {2})"
@@ -33542,10 +33630,6 @@
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
   },
-  "p.isemon-runs-on-now-the-database.f100ec05": {
-   "source": "isemon runs on {0} now. The database it came from is a spare: keep it until you are happy, then it may go.",
-   "text": "isemon teď běží na {0}. Databáze, ze které přišel, je záloha: nechte si ji, dokud nejste spokojeni, pak může pryč."
-  },
   "p.isemon-set.4e4102ba": {
    "source": "isemon --set {0}=…",
    "text": "isemon --set {0}=…"
@@ -33553,10 +33637,6 @@
   "p.isemon-settings-json.09b18ed4": {
    "source": "isemon-settings-{0}-{1}.json",
    "text": "isemon-settings-{0}-{1}.json"
-  },
-  "p.isemon-starts-again-on.9380f53e": {
-   "source": "isemon starts again on {0}",
-   "text": "isemon se znovu spouští na {0}"
   },
   "p.isemon.15f32881": {
    "source": "isemon {0}",
@@ -33617,10 +33697,6 @@
   "p.its-certificate.4470ad14": {
    "source": "· its certificate {0}{1}",
    "text": "· jeho certifikát {0}{1}"
-  },
-  "p.its-driver-is-not-installed-here.e5a9232f": {
-   "source": "its driver is not installed here: {0}",
-   "text": "její ovladač tu není nainstalovaný: {0}"
   },
   "p.its-extensions.124099b0": {
    "source": "Its extensions ({0}):",
@@ -34002,6 +34078,10 @@
    "source": "No country here is called “{0}”",
    "text": "Žádná země zde se nejmenuje „{0}“"
   },
+  "p.no-driver.e66ff173": {
+   "source": "no driver: {0}",
+   "text": "chybí ovladač: {0}"
+  },
   "p.no-http-answer.22f4d11b": {
    "source": "no HTTP answer: {0}",
    "text": "žádná odpověď HTTP: {0}"
@@ -34077,6 +34157,10 @@
   "p.not-saved-yet-until-it-is.b01c8911": {
    "source": "Not saved yet: until it is, {0} is still written to as it was. What was set for the kind it is now is kept, for switching back.",
    "text": "Zatím neuloženo: do uložení se do {0} zapisuje dosavadním způsobem. Co bylo nastaveno pro současný druh, zůstává pro přepnutí zpět."
+  },
+  "p.not-switched-over-this-installation-stays.0b6ef91d": {
+   "source": "Not switched over: this installation stays on {0}. Run the wizard again with the switch on when you want it.",
+   "text": "Nepřepnuto: tato instalace zůstává na {0}. Až budete chtít, spusťte průvodce znovu se zapnutým přepnutím."
   },
   "p.not.98837118": {
    "source": "NOT {0}",
@@ -34658,6 +34742,10 @@
    "source": "{0} rule(s) · {1} permit · {2} deny",
    "text": "{0} {0:pravidlo|pravidla|pravidel} · {1} permit · {2} deny"
   },
+  "p.running-on-now-the-page-is.108b35a6": {
+   "source": "Running on {0} now - the page is loaded again.",
+   "text": "Teď běží na {0} – stránka se načte znovu."
+  },
   "p.running.3be09acf": {
    "source": "· running: {0}",
    "text": "· běží: {0}"
@@ -34905,6 +34993,10 @@
   "p.stop-this-account-signing-in-without.5e22d666": {
    "source": "Stop this account signing in, without removing it. Whatever it is signed in as ends at once.{0}",
    "text": "Zabránit tomuto účtu v přihlašování, aniž by byl odebrán. Cokoli, k čemu je přihlášen, ihned skončí.{0}"
+  },
+  "p.stopped-at.71a12f1b": {
+   "source": "stopped at: {0}",
+   "text": "zastaveno u: {0}"
   },
   "p.story-failed.ce857005": {
    "source": "story-failed:{0}",
@@ -35318,6 +35410,10 @@
    "source": "the MikroTik {0}",
    "text": "MikroTik {0}"
   },
+  "p.the-move-stopped.e09a3946": {
+   "source": "The move stopped: {0}",
+   "text": "Přesun se zastavil: {0}"
+  },
   "p.the-name-given-to-under-settings.a832cbe8": {
    "source": "The name given to {0} under Settings → The OTP logs → Where OTP sign-ins come from.",
    "text": "Název přidělený {0} v Nastavení → OTP logy → Odkud přicházejí OTP přihlášení."
@@ -35474,6 +35570,10 @@
    "source": "There are more than {0} rows matching what is set above. Counting past this point means reading every record there has ever been, which is slow and answers nothing - so it stops here and says so. Narrow the search, or pick a shorter span of time, and the number becomes exact.",
    "text": "Řádků odpovídajících nastavení výše je více než {0}. Počítání za touto hranicí by znamenalo číst všechny záznamy, které kdy existovaly, což je pomalé a nic to neřekne – proto se zde zastaví a oznámí to. Zužte hledání nebo zvolte kratší časové okno a číslo bude přesné."
   },
+  "p.there-are-record-s-of-ours.24fc7819": {
+   "source": "There are {0} record(s) of ours in it already - an earlier move, or another installation. Moving into it as it is would mix the two.",
+   "text": "Je v ní už {0} našich záznamů – z dřívějšího přesunu, nebo z jiné instalace. Přesun do ní, jak je, by obojí smíchal."
+  },
   "p.there-is-already-an-account-called.0f749634": {
    "source": "there is already an account called {0}; change it rather than making it again",
    "text": "účet {0} už existuje; místo opětovného vytvoření ho změňte"
@@ -35589,10 +35689,6 @@
   "p.through-the-subnet.3a921efc": {
    "source": ", through the subnet {0}",
    "text": ", přes podsíť {0}"
-  },
-  "p.throw-away-what-is-in-it.05da9eef": {
-   "source": "Throw away what is in it first - {0} record(s). Moving into a database that is not empty would mix two installations.",
-   "text": "Nejdřív zahodit, co v ní je – {0} záznam(ů). Přesun do databáze, která není prázdná, by smíchal dvě instalace."
   },
   "p.tidied-given-back.202c2d7d": {
    "source": "tidied: {0} → {1}, {2} given back",
@@ -35862,6 +35958,10 @@
    "source": "What {0} holds, most first",
    "text": "Co obsahuje {0}, nejčastější první"
   },
+  "p.what-is-in-it-thrown-away.33bece31": {
+   "source": "what is in it thrown away first ({0} record(s))",
+   "text": "nejdřív se zahodí, co v ní je ({0} záznamů)"
+  },
   "p.what-may-do-is-decided-by.3d51affe": {
    "source": "what {0} may do is decided by their groups in the directory, and is worked out again every time they sign in - anything set here would last until then and no longer. Move them between the groups named under Settings, Active Directory. To stop them getting in at all right now, switch the account off here.",
    "text": "co smí {0} dělat, určují jeho skupiny v adresáři a znovu se to vyhodnocuje při každém přihlášení – cokoli nastaveného zde by platilo jen do té doby. Přesuňte ho mezi skupinami uvedenými v Nastavení, Active Directory. Chcete-li mu přístup okamžitě zamezit, vypněte účet zde."
@@ -35957,6 +36057,10 @@
   "p.with-nothing-after-it.41b1b573": {
    "source": "\"{0}\" with nothing after it",
    "text": "\"{0}\" bez ničeho za tím"
+  },
+  "p.with-the-account.4316d992": {
+   "source": "With the account: {0}",
+   "text": "S účtem: {0}"
   },
   "p.worked-out.5b62f208": {
    "source": "worked out {0}",
@@ -37614,6 +37718,14 @@
    "source": "every {0}{1}",
    "text": "každých {0}{1}"
   },
+  "p.everything-is-in-and-it-is.30a2cb71": {
+   "source": "Everything is in {0} and it is taken up from the next start: restart isemon (systemctl restart isemon).",
+   "text": "Všechno je v {0} a od příštího startu se používá: restartujte isemon (systemctl restart isemon)."
+  },
+  "p.everything-is-in-isemon-is-starting.dc36ef2d": {
+   "source": "Everything is in {0}; isemon is starting again on it - this page waits for it.",
+   "text": "Všechno je v {0}; isemon se na ní znovu spouští – tato stránka na něj čeká."
+  },
   "p.everything-will-be-read-out-of.2fb44ffe": {
    "source": "Everything will be read out of {0} from then on, and the file on this machine may be deleted once you are happy. Carry everything across first if you have not — this does not move anything.",
    "text": "Od té chvíle se vše bude číst z {0} a soubor na tomto počítači můžete smazat, až budete spokojeni. Pokud jste to ještě neudělali, nejdřív vše přeneste — tímto se nic nepřesouvá."
@@ -37625,6 +37737,10 @@
   "p.files.c4897534": {
    "source": "· {0} files{1}",
    "text": "· {0} {0:soubor|soubory|souborů}{1}"
+  },
+  "p.how-to-reach.e17320da": {
+   "source": "How to reach {0}",
+   "text": "Jak se dostat k {0}"
   },
   "p.imported-the-columns-of-table-s.eabb23ca": {
    "source": "Imported: the columns of {0} table(s){1}{2}",
@@ -37646,6 +37762,10 @@
    "source": "{0} is kept out because the range {1} is banned. Letting it in lets the whole range in.",
    "text": "{0} je blokována, protože rozsah {1} je zabanovaný. Vpuštěním se dovnitř pustí celý rozsah."
   },
+  "p.isemon-is-pointed-at.1c04441d": {
+   "source": "isemon is pointed at {0}",
+   "text": "isemon je nasměrován na {0}"
+  },
   "p.isemon-is-running-this-page-is.9c79a3dc": {
    "source": "isemon {0} is running. This page is still the one of {1}.",
    "text": "Běží isemon {0}. Tato stránka je stále ta z {1}."
@@ -37657,6 +37777,14 @@
   "p.isemon-lang-max-age-31536000-samesite.65e9fd43": {
    "source": "isemon_lang={0}; max-age=31536000; SameSite=Strict{1}",
    "text": "isemon_lang={0}; max-age=31536000; SameSite=Strict{1}"
+  },
+  "p.isemon-runs-on-now-the-database.f100ec05": {
+   "source": "isemon runs on {0} now. The database it came from is a spare: keep it until you are happy, then it may go.",
+   "text": "isemon teď běží na {0}. Databáze, ze které přišel, je záloha: nechte si ji, dokud nejste spokojeni, pak může pryč."
+  },
+  "p.isemon-starts-again-on.9380f53e": {
+   "source": "isemon starts again on {0}",
+   "text": "isemon se znovu spouští na {0}"
   },
   "p.it-answered-routeros.a8e6a5de": {
    "source": "it answered: {0}, RouterOS {1}{2}{3}{4}{5}{6}",
@@ -37673,6 +37801,10 @@
   "p.it-is-worked-out-behind-the.f5a5049b": {
    "source": "{0}It is worked out behind the daemon and kept, so this wait is only the first time; from then on the page opens at once and says how old what it shows is.{1} This page fills in by itself.",
    "text": "{0}Počítá se na pozadí démona a uchovává se, takže se čeká jen poprvé; od té chvíle se stránka otevře okamžitě a uvede, jak staré je to, co ukazuje.{1} Stránka se doplní sama."
+  },
+  "p.its-driver-is-not-installed-here.e5a9232f": {
+   "source": "its driver is not installed here: {0}",
+   "text": "její ovladač tu není nainstalovaný: {0}"
   },
   "p.last-read.98f86991": {
    "source": "· last read {0}",
@@ -37785,6 +37917,10 @@
   "p.this-writes-one-setting-into-and.a1634c2e": {
    "source": "This writes one setting into {0} and restarts the daemon, which takes a few seconds. Nothing in either database is touched.",
    "text": "Tímto se zapíše jedno nastavení do {0} a restartuje se démon, což trvá několik sekund. Žádné z databází se to nedotkne."
+  },
+  "p.throw-away-what-is-in-it.05da9eef": {
+   "source": "Throw away what is in it first - {0} record(s). Moving into a database that is not empty would mix two installations.",
+   "text": "Nejdřív zahodit, co v ní je – {0} záznam(ů). Přesun do databáze, která není prázdná, by smíchal dvě instalace."
   },
   "p.was-restarted-and-has-not-answered.da13ad98": {
    "source": "{0} was restarted and has not answered since - see journalctl -u {1}",
@@ -37930,6 +38066,14 @@
    "source": "A downloadable ACL ·",
    "text": "Stahovatelné ACL ·"
   },
+  "s.a-file-on-this-machine-nothing.bad330e0": {
+   "source": "A file on this machine. Nothing to install or run beside isemon; fine for most sites.",
+   "text": "Soubor na tomto stroji. Vedle isemonu není potřeba nic instalovat ani spouštět; pro většinu míst stačí."
+  },
+  "s.a-file-on-this-machine-or.c3e23fee": {
+   "source": "A file on this machine, or a database server. The file needs nothing installing and is the faster of the two; a server is for keeping this somewhere it is backed up and watched with everything else. Changing this does not move anything - carry it across first, below.",
+   "text": "Soubor na tomto stroji, nebo databázový server. Soubor nevyžaduje nic instalovat a je rychlejší; server je pro případ, že chcete data mít tam, kde se zálohují a hlídají spolu se vším ostatním. Změna tohoto nastavení nic nepřesune - nejprve data přeneste, viz níže."
+  },
   "s.a-group-that-may-only-read.9c108306": {
    "source": "A group that may only read and use the API, an account in it, and api-ssl with the certificate made here. Paste them into the router’s terminal; put this machine’s address in address= to let only it in.",
    "text": "Skupina, která smí jen číst a používat API, účet v ní a api-ssl s certifikátem vytvořeným zde. Vložte to do terminálu routeru; do address= dejte adresu tohoto stroje, aby se připojil jen on."
@@ -37942,6 +38086,10 @@
    "source": "A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and it works for a FortiGate too.",
    "text": "Klíč v URL: dlouhý náhodný klíč, který URL obsahuje a který tlačítko Nový klíč změní. Je to jediná možnost pro FMC, které nemá kam zadat heslo pro feed, a funguje i pro FortiGate."
   },
+  "s.a-mariadb-or-mysql-server-here.ae28de33": {
+   "source": "A MariaDB (or MySQL) server, here or on another machine.",
+   "text": "Server MariaDB (nebo MySQL), tady nebo na jiném stroji."
+  },
   "s.a-new-version-of-isemon-put.f7e69738": {
    "source": "A new version of isemon, put in from this page: send the signed package, press Upgrade, and root runs its install.sh --upgrade.",
    "text": "Nová verze isemonu nainstalovaná z této stránky: pošlete podepsaný balíček, stiskněte Upgrade a root spustí jeho install.sh --upgrade."
@@ -37953,6 +38101,10 @@
   "s.a-number-of-minutes-in-words.437d9d4f": {
    "source": "A number of minutes, in words a person reads without counting.",
    "text": "Počet minut slovy, aby jej člověk přečetl bez počítání."
+  },
+  "s.a-postgresql-server-here-or-on.a56cfe9e": {
+   "source": "A PostgreSQL server, here or on another machine - the one for very big databases.",
+   "text": "Server PostgreSQL, tady nebo na jiném stroji – ten pro hodně velké databáze."
   },
   "s.a-refused.4a2b2348": {
    "source": "A refused",
@@ -38118,6 +38270,10 @@
    "source": "do what? test, cert, paste, download, forget or commands",
    "text": "co udělat? test, cert, paste, download, forget nebo commands"
   },
+  "s.done-restart-isemon.d83d5253": {
+   "source": "Done - restart isemon",
+   "text": "Hotovo – restartujte isemon"
+  },
   "s.dual-cert-as-let-s-encrypt.66d3c8c6": {
    "source": "Dual-cert, as Let’s Encrypt advises: nginx answers the clients that take ECDSA with this much smaller certificate, everybody else with the RSA one. Renewed with it.",
    "text": "Dual-cert, jak radí Let’s Encrypt: nginx odpovídá klientům, kteří ECDSA umí, tímto mnohem menším certifikátem, všem ostatním tím RSA. Obnovuje se spolu s ním."
@@ -38250,6 +38406,10 @@
    "source": "HTTP-01",
    "text": "HTTP-01"
   },
+  "s.i-understand-isemon-restarts-on-the.6ff6f5da": {
+   "source": "I understand: isemon restarts on the new database; what is here now stays as it is, as a spare.",
+   "text": "Rozumím: isemon se restartuje na nové databázi; to, co je tu teď, zůstane, jak je, jako záloha."
+  },
   "s.if-the-database-and-the-account.ebd49419": {
    "source": "if the database and the account are not there yet,",
    "text": "pokud databáze a účet ještě neexistují,"
@@ -38257,6 +38417,10 @@
   "s.in-one-of-them-and-this.6c7ad560": {
    "source": "in one of them and this does not need to know which.",
    "text": "v jedné z nich a tady není třeba vědět, ve které."
+  },
+  "s.in-use-now.accf2d58": {
+   "source": "In use now:",
+   "text": "Teď se používá:"
   },
   "s.indexes-on-them.cbddab9f": {
    "source": "Indexes on them",
@@ -38306,6 +38470,14 @@
    "source": "It answers, but this account may not make anything in it. Set it up, or give the account rights on that database.",
    "text": "Odpovídá, ale tento účet v něm nesmí nic vytvářet. Nastavte ho, nebo dejte účtu práva k této databázi."
   },
+  "s.it-answers-the-account-may-write.a70ede83": {
+   "source": "It answers, the account may write, and it is empty.",
+   "text": "Odpovídá, účet smí zapisovat a je prázdná."
+  },
+  "s.it-did-not-work.6bdabe0e": {
+   "source": "It did not work",
+   "text": "Nepovedlo se"
+  },
   "s.it-is-reachable-and-empty-of.74b2745d": {
    "source": "It is reachable and empty of ours, which is exactly what something to carry everything into should look like.",
    "text": "Je dostupný a neobsahuje nic našeho, což je přesně to, jak má vypadat místo, kam se má vše přenést."
@@ -38313,6 +38485,10 @@
   "s.it.6c5522ca": {
    "source": "it",
    "text": "to"
+  },
+  "s.its-account.8c432b0c": {
+   "source": "Its account",
+   "text": "Její účet"
   },
   "s.its-key-kept-here.8938ee6b": {
    "source": ", its key kept here",
@@ -38329,6 +38505,10 @@
   "s.leave-it.e7c7e7b3": {
    "source": "Leave it",
    "text": "Nechat být"
+  },
+  "s.left-empty-a-long-one-is.8667d710": {
+   "source": "Left empty, a long one is made with the account and kept in the config file.",
+   "text": "Necháte-li prázdné, vytvoří se s účtem dlouhé heslo a uloží se do konfiguračního souboru."
   },
   "s.left.1635a45a": {
    "source": "left.",
@@ -38354,6 +38534,14 @@
    "source": "Look for a new version once a day",
    "text": "Hledat novou verzi jednou denně"
   },
+  "s.made-for-you.afb59aa9": {
+   "source": "(made for you)",
+   "text": "(vytvoří se)"
+  },
+  "s.made-there-if-it-is-not.11971c08": {
+   "source": "Made there if it is not, with an administrator (next step).",
+   "text": "Pokud tam není, vytvoří se – s administrátorem (další krok)."
+  },
   "s.make-full-admin.487dc74c": {
    "source": "Make full admin",
    "text": "Nastavit jako plného správce"
@@ -38378,6 +38566,10 @@
    "source": "Newest",
    "text": "Nejnovější"
   },
+  "s.next-tries-it-exactly-as-isemon.d39a6b9a": {
+   "source": "Next tries it, exactly as isemon would - nothing is written.",
+   "text": "Další ji vyzkouší přesně tak, jak by to udělal isemon – nic se nezapíše."
+  },
   "s.nginx-keeps-the-files-it-has.ed950c40": {
    "source": "nginx keeps the files it has now; isemon no longer changes them.",
    "text": "nginx si ponechá soubory, které má teď; isemon je už nebude měnit."
@@ -38385,6 +38577,10 @@
   "s.no-key-yet.4eb24632": {
    "source": "no key yet",
    "text": "zatím žádný klíč"
+  },
+  "s.no-other-isemon-uses-this-database.6dc4673c": {
+   "source": "No other isemon uses this database: it may be moved.",
+   "text": "Žádný jiný isemon tuto databázi nepoužívá: lze ji přesunout."
   },
   "s.no-the-one-certificate.1975debf": {
    "source": "No - the one certificate",
@@ -38414,6 +38610,10 @@
    "source": "(not there yet - or not known yet)",
    "text": "(zatím tam není – nebo to zatím není známo)"
   },
+  "s.nothing-changes-until-the-last-step.03b8a85c": {
+   "source": "Nothing changes until the last step. Until then isemon goes on exactly as it is, and Close leaves everything as it was.",
+   "text": "Do posledního kroku se nic nemění. Do té doby isemon běží přesně jako teď a Zavřít nechá vše, jak bylo."
+  },
   "s.nothing-here-is-banned-yet-these.1566b2cf": {
    "source": "Nothing here is banned yet. These are the addresses the counting can see, and how far each one still has to go. Only the VPN is counted: 802.1X, MAB and TACACS+ are recorded and shown, never judged.",
    "text": "Zatím zde nic není zablokováno. Toto jsou adresy, které počítání vidí, a kolik má každá ještě před sebou. Počítá se pouze VPN: 802.1X, MAB a TACACS+ se zaznamenávají a zobrazují, nikdy neposuzují."
@@ -38441,6 +38641,10 @@
   "s.nothing-was-saved-and-nothing-was.93276d82": {
    "source": "Nothing was saved and nothing was written: this opened it, asked what it is, counted what is in it and closed it again.",
    "text": "Nic nebylo uloženo ani zapsáno: soubor se otevřel, zjistilo se, co je zač, spočítalo se, co obsahuje, a opět se zavřel."
+  },
+  "s.nothing-was-taken-up-isemon-goes.cf7c42c3": {
+   "source": "Nothing was taken up: isemon goes on with the database it had. Back to change what was asked, or Close.",
+   "text": "Na nic se nepřepnulo: isemon pokračuje s databází, kterou měl. Zpět pro změnu zadaného, nebo Zavřít."
   },
   "s.of-them-matched-to-say-anything.6e277d19": {
    "source": "of them matched to say anything.",
@@ -38526,6 +38730,10 @@
    "source": "Reading and banning",
    "text": "Čtení a blokování"
   },
+  "s.ready.20c7c552": {
+   "source": "Ready",
+   "text": "Připraveno"
+  },
   "s.refusals-a-controller-wrote-for-it.868d296c": {
    "source": "refusals a controller wrote for it - in words, or None when too few",
    "text": "odmítnutím, která pro něj zapsal řadič - slovy, nebo None, když se jich"
@@ -38553,6 +38761,10 @@
   "s.saved-restart-the-daemon-to-take.7658a913": {
    "source": "saved; restart the daemon to take it up: systemctl restart isemon",
    "text": "uloženo; pro načtení restartujte démona: systemctl restart isemon"
+  },
+  "s.secret.e5e9fa1b": {
+   "source": "secret",
+   "text": "tajné"
   },
   "s.set-it-up.088b14ed": {
    "source": "Set it up…",
@@ -38593,6 +38805,10 @@
   "s.start-using-it.b9ba9078": {
    "source": "Start using it…",
    "text": "Začít používat…"
+  },
+  "s.start.952f3754": {
+   "source": "Start",
+   "text": "Spustit"
   },
   "s.step-is-for-good-10-60.ad863697": {
    "source": "step is for good. \"10, 60, 1440, forever\" is ten minutes the first",
@@ -38677,6 +38893,14 @@
   "s.the-controller-that-wrote-it.f9b49b5f": {
    "source": "the controller that wrote it",
    "text": "řadič, který to zapsal"
+  },
+  "s.the-database-in-use-now.97329fc2": {
+   "source": "The database in use now",
+   "text": "Databáze, která se teď používá"
+  },
+  "s.the-database-or-its-account-is.23365945": {
+   "source": "The database or its account is not there yet (or the password is not the one it has). An administrator on that server makes them - used for this one run and stored nowhere.",
+   "text": "Databáze nebo její účet tam ještě nejsou (nebo heslo není to, které účet má). Vytvoří je administrátor toho serveru – použije se jen pro tento jeden běh a nikam se neukládá."
   },
   "s.the-database-s-own-disk.aa14a0dd": {
    "source": "The database’s own disk:",
@@ -38814,9 +39038,17 @@
    "source": "User name and password: HTTP basic authentication. A FortiGate sends them (the external threat feed’s own user name and password); an FMC cannot, so an FTD fed through an FMC needs one of the other two.",
    "text": "Uživatelské jméno a heslo: HTTP basic autentizace. FortiGate je posílá (vlastní uživatelské jméno a heslo externího threat feedu); FMC to neumí, takže FTD napájené přes FMC potřebuje jednu z dalších dvou možností."
   },
+  "s.waited-for-s.92444adf": {
+   "source": "Waited for (s)",
+   "text": "Čekat (s)"
+  },
   "s.what-a-refusal-row-already-says.41b9173f": {
    "source": "What a refusal row already says, so it is not written twice.",
    "text": "Co už řádek odmítnutí uvádí, aby se to nepsalo dvakrát."
+  },
+  "s.what-answered.3068b985": {
+   "source": "What answered",
+   "text": "Co odpovědělo"
   },
   "s.what-crossed-the-firewall-out-of.4265ab2e": {
    "source": "What crossed the firewall, out of its own log: every session it let through or refused, what its web filter and its SSL inspection did, who signed in to its VPN and to the firewall itself. Nothing here is ever judged and nothing here can earn anybody a ban.",
@@ -38870,9 +39102,17 @@
    "source": "What to type on the router",
    "text": "Co zadat na routeru"
   },
+  "s.where-everything-is-to-go.c5cfa601": {
+   "source": "Where everything is to go",
+   "text": "Kam má všechno jít"
+  },
   "s.where-new-versions-are-published-the.e54f6ba4": {
    "source": "Where new versions are published - the address below - is looked at once a day. A newer isemon found there is offered here, and put in with one press: fetched, its signature checked like a package sent by hand, then this server upgraded. Nothing is put in by itself.",
    "text": "Kde se vydávají nové verze – adresa níže – se kontroluje jednou denně. Novější isemon, který se tam najde, se tu nabídne a nainstaluje jedním stisknutím: stáhne se, jeho podpis se zkontroluje jako u ručně nahraného balíčku a tento server se pak upgraduje. Nic se nenainstaluje samo."
+  },
+  "s.where-that-server-is-nothing-is.6200fcf2": {
+   "source": "Where that server is. Nothing is sent anywhere until it is tried.",
+   "text": "Kde ten server je. Dokud se to nevyzkouší, nikam se nic neposílá."
   },
   "s.where-the-ban-came-from-ise.6eb67f35": {
    "source": "where the ban came from: ise, nps, tacacs, fw, win, manual",

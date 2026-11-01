@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.277'
+__version__ = '1.10.278'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -24931,11 +24931,17 @@ def db_migrate(daemon, want, by, admin_user='', admin_password='', empty=False,
         far.close()
     if short:
         raise DbMoveError('not everything arrived, so it is not taken up: ' + '; '.join(short[:5]))
-    store.add_event('settings', 'everything was carried into the %s at %s (%s row(s)); %s is a '
-                    'copy of what was here' % (word, dialect_for(want).where(), num_words(grand),
+    the = word if word.startswith('the ') else 'the ' + word
+    store.add_event('settings', 'everything was carried into %s at %s (%s row(s)); %s is a '
+                    'copy of what was here' % (the, dialect_for(want).where(), num_words(grand),
                                                copy.name), 'warn', who=by)
     out = {'engine': name, 'words': word, 'where': dialect_for(want).where(), 'rows': grand,
            'copy': copy.name, 'counts': after, 'password_made': bool(made)}
+    if made:
+        # Shown once, on the page of whoever moved it (the job's result is
+        # theirs and a full administrator's alone); kept in config.json once
+        # it is switched over to, and nowhere if it is not.
+        out['password'] = made
     if not switch:
         return out
     say(900, 'taken up: %s' % word)
@@ -24945,11 +24951,65 @@ def db_migrate(daemon, want, by, admin_user='', admin_password='', empty=False,
                     'db_user': want['user'], 'db_password': want['password'],
                     'db_timeout_s': want.get('timeout') or 10})
     daemon.save_settings(put, by=by)
-    log('everything was carried into the %s at %s and it is the one in use from the next start '
-        '(by %s)' % (word, dialect_for(want).where(), by), 'warn')
+    log('everything was carried into %s at %s and it is the one in use from the next start '
+        '(by %s)' % (the, dialect_for(want).where(), by), 'warn')
     out['switched'] = True
     say(1000, 'done')
     return out
+
+
+def db_settings_saved(store, given):
+    """The address of the database in use, changed in Settings -> The database
+    and saved with the save bar (1.10.278, as the AI app 1.0.57 has it).
+
+    Which engine is reached is Move to another database... alone: saved here,
+    it would point isemon at an empty database of another kind. How the one
+    in use is reached - the server, the port, the account, its password, the
+    wait - may be saved here, once it is tried: it must answer, the account
+    must write, and it must be this installation's database (another that is
+    empty of isemon is a move, not a setting). Returns whether isemon has to
+    start again to take it up; raises ValueError, naming the setting, when it
+    may not be saved - and then nothing is.
+    """
+    if not isinstance(given, dict):
+        return False
+    live = str(CONFIG.get('db_engine') or 'sqlite')
+    if 'db_engine' in given and str(given.get('db_engine') or 'sqlite') != live:
+        raise ValueError('db_engine: another database is reached by Move to another '
+                         'database... (Settings - The database), which carries everything '
+                         'across first. Nothing was changed.')
+    values, typed = dict(CONFIG), False
+    for key in FILE_ONLY:
+        if key == 'db_engine' or key not in given:
+            continue
+        value = given[key]
+        if key in SECRET_KEYS and (value is None or str(value).startswith('\u2022')):
+            continue                       # shown back masked; unchanged
+        values[key] = check_setting(key, value)
+        typed = typed or key == 'db_password'
+    if live == 'sqlite':
+        return False                       # not used by the file: kept for later
+    before, want = db_config(CONFIG), db_config(values)
+    moved = [k for k in ('host', 'port', 'name', 'user', 'password', 'timeout')
+             if before.get(k) != want.get(k)]
+    if not moved:
+        return False
+    # The saved password goes only where it was saved for (as engine_asked).
+    if not typed and any(before.get(k) != want.get(k) for k in ('host', 'port', 'user')):
+        raise ValueError('db_password: another server or account wants its password typed - '
+                         'the saved one goes only where it was saved for. Nothing was changed.')
+    got = db_try(want)
+    if not got.get('ok'):
+        raise ValueError('db_host: the database could not be reached with these, so nothing '
+                         'was changed: %s' % str(got.get('trouble') or '')[:300])
+    if not got.get('writable'):
+        raise ValueError('db_user: it answers, but this account may not write to it. Nothing '
+                         'was changed.')
+    if not got.get('ours'):
+        raise ValueError('db_name: that is another database, and nothing of isemon is in it: '
+                         'Move to another database... carries everything into it first. '
+                         'Nothing was changed.')
+    return True
 
 
 def engine_asked(given, engine=None):
@@ -58446,9 +58506,12 @@ class Daemon(object):
                      'from standards-oui.ieee.org.',
         'db_engine': 'A file on this machine, or a database server. The file needs nothing '
                      'installing and is the faster of the two; a server is for keeping this '
-                     'somewhere it is backed up and watched with everything else. Changing '
-                     'this does not move anything - carry it across first, below.',
-        'db_host': 'Where that server is. Nothing is sent anywhere until it is tried.',
+                     'somewhere it is backed up and watched with everything else. Another one '
+                     'is reached by Move to another database… alone, which carries '
+                     'everything across first.',
+        'db_host': 'Where that server is. Changed and saved, it is tried first - it must '
+                   'answer and hold this installation\'s database - and isemon starts again '
+                   'on it.',
         'db_port': 'Its port. Left at 0 it is the usual one: 3306 for MariaDB, 5432 for '
                    'PostgreSQL.',
         'db_name': 'The database on that server. It may be made from here.',
@@ -74773,16 +74836,21 @@ class ApiHandler(BaseHTTPRequestHandler):
             code = str(data.get('admin_password') or '')
             empty = bool(data.get('empty'))
             restart_too = bool(data.get('restart'))
+            # Switch over to it at the end (1.10.278): off, everything is
+            # carried in and counted, and this installation stays where it is.
+            switch = data.get('switch', True) not in (False, 0, '0', 'false', 'no', 'off')
             by = me['name']
 
             def work(progress):
-                got = db_migrate(daemon, want, by, who, code, empty, progress)
+                got = db_migrate(daemon, want, by, who, code, empty, progress, switch=switch)
                 under = bool(os.environ.get('INVOCATION_ID'))
-                got['restarting'] = bool(under and restart_too)
+                got['restarting'] = bool(under and restart_too and switch)
                 got['under_systemd'] = under
-                got['message'] = ('everything is in %s and it is taken up%s'
-                                  % (word, ': isemon starts again on it' if got['restarting']
-                                     else ' - restart isemon to start on it'))
+                got['message'] = (('everything is in %s and it is taken up%s'
+                                   % (word, ': isemon starts again on it' if got['restarting']
+                                      else ' - restart isemon to start on it'))
+                                  if switch else 'everything is in %s as well; not switched '
+                                  'over - this installation stays on the one in use' % word)
                 if got['restarting']:
                     threading.Timer(3.0, lambda: os.kill(os.getpid(), signal.SIGTERM)).start()
                 return got
@@ -77641,9 +77709,28 @@ class ApiHandler(BaseHTTPRequestHandler):
             me = self.need_admin()
             if not me:
                 return None
-            return self.send_json({'ok': True,
-                                   **daemon.save_settings(self.body().get('settings') or {},
-                                                          by=me['name'])})
+            given = self.body().get('settings') or {}
+            # How the database in use is reached (1.10.278): tried before it
+            # is saved, and isemon starts again on it.
+            try:
+                again = db_settings_saved(store, given)
+            except ValueError as e:
+                return self.fail(str(e))
+            said = daemon.save_settings(given, by=me['name'])
+            if again and any(k in FILE_ONLY for k in said.get('changed') or []):
+                under = bool(os.environ.get('INVOCATION_ID'))
+                store.add_event('settings', 'how the database is reached was changed (%s); '
+                                'isemon starts again on it' % ', '.join(sorted(
+                                    k for k in said['changed'] if k in FILE_ONLY)),
+                                'warn', who=me['name'])
+                said = dict(said, restarting=under, message='%s - %s' % (
+                    said.get('message') or 'saved',
+                    'isemon starts again on it in a moment' if under
+                    else 'restart isemon to take it up'))
+                if under:
+                    log('restarting to take up the new address of the database', 'warn')
+                    threading.Timer(1.5, lambda: os.kill(os.getpid(), signal.SIGTERM)).start()
+            return self.send_json({'ok': True, **said})
 
         if path == '/api/export':
             me = self.need_admin()

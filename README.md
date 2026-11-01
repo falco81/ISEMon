@@ -371,6 +371,33 @@ working.
 
 ## Version
 
+1.10.278
+
+- **Settings → The database: the address of the database is there again,
+  with the wizard beside it**, as the AI app 1.0.57 has them. How the
+  database in use is reached - the server, the port, the database, the
+  account, its password, the wait - is in the settings again and saved with
+  the save bar: **tried first** (it must answer, the account must write, and
+  it must be this installation's database - another one, empty of isemon, is
+  a move and is refused), then written into config.json and isemon starts
+  again on it; the page waits for it and loads again. A changed server or
+  account wants its password typed: the saved one goes only where it was
+  saved for. Which engine is reached is not changed there: the box is the
+  wizard's, its button **Move to another database…** beside it (and on the
+  card below).
+- **The wizard says which database is in use now, and looks as the AI app's
+  does** - its popup, steps, cards, fields, facts and buttons drawn with the
+  AI app's own sizes, fonts and colours: on its first step the card of the
+  database in use is tagged *in use now* whichever engine it is (a server: another server or another database
+  of it may still be chosen; the file: not again), and a line *In use now:*
+  under the cards. Its steps are the AI app's - Where to, How to reach it,
+  What is there, Go, Moving (How to reach it is not asked of the file) - it
+  starts from the settings above, asks the server at once and has **Check
+  again**, shows the plan, and may stop short: **Switch over to it at the
+  end** off carries everything in and counts it, and this installation stays
+  where it is. The password made for the account is shown once; after the
+  switch the page is loaded again on the new database.
+
 1.10.277
 
 - **Settings → The database → Move to another database…: a wizard**. The five
