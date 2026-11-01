@@ -371,6 +371,29 @@ working.
 
 ## Version
 
+1.10.279
+
+- **Certificates from acme (acme push)**: acme - the certificate manager of
+  ours - gives the dashboard its certificate and renews it, as it does for
+  otp and zigmon (protocol 1, [docs/acme-push.md](docs/acme-push.md)). On
+  **Settings → Certificates and TLS** a new card: *Take certificates from
+  acme*, *Pair with an acme* (a code shown once, 15 minutes, five wrong
+  tries), *Or paste acme's key*, the acmes paired with *Forget it*, *Take
+  certificates of other names*, what acme sees here and the last push.
+  `index.php` answers acme's four requests (`?api=acme-push-hello`, `-pair`,
+  `-inventory`, `-install`) and hands them to the daemon as they came: every
+  request signed (Ed25519, ±300 s, each nonce once), the certificate's key
+  sealed to this installation (X25519 + HKDF + AES-256-GCM), checked against
+  the certificate, valid now, holding the dashboard's name - and kept exactly
+  where an upload keeps it (an ECDSA and an RSA one side by side as well),
+  Automatic certificates leaving it alone from then on; the same one again
+  touches nothing. By the `cryptography` module where it is installed, in
+  plain Python where it is not - both checked against the protocol's test
+  vectors. **Only one more way in**: off until it is switched on, it goes
+  through the upload's own code, and upload, request, self-signed, the TLS
+  settings and Automatic certificates work as before - checked with it on and
+  paired, each of them replacing a pushed certificate as it would any other.
+
 1.10.278
 
 - **Settings → The database: the address of the database is there again,

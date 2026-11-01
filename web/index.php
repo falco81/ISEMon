@@ -250,6 +250,53 @@ if (isset($_GET['api'])) {
         exit;
     }
 
+    /* acme push (1.10.279): acme - the certificate manager of ours - gives
+       this dashboard its certificate. Its four requests come here before any
+       session or same-page check: nothing a browser can be made to send
+       carries a valid signature, and the page decides nothing - the body
+       goes to the daemon byte for byte (the signature covers it), with the
+       five X-Acme-Push-* headers beside it, and its answer comes back as it
+       is. docs/acme-push.md. */
+    if (preg_match('/^acme-push-(hello|pair|inventory|install)$/', $what, $pm)) {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        $op = $pm[1];
+        $refuse = static function (int $status, string $code, string $words): void {
+            http_response_code($status);
+            echo json_encode(['ok' => false, 'code' => $code, 'error' => $words]);
+            exit;
+        };
+        if (($op === 'hello') === $post) {
+            $refuse(405, 'bad_request', $op === 'hello' ? 'hello is a GET' : 'this is a POST');
+        }
+        if ($op === 'hello') {
+            [$status, $body] = isemon_call('/api/acme-push/hello', 'GET', null, 20.0);
+        } else {
+            $most = 1024 * 1024;
+            if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > $most) {
+                $refuse(413, 'too_big', 'over 1 MiB');
+            }
+            $raw = (string) @file_get_contents('php://input', false, null, 0, $most + 1);
+            if (strlen($raw) > $most) {
+                $refuse(413, 'too_big', 'over 1 MiB');
+            }
+            $head = [];
+            foreach (['Version', 'Key', 'Time', 'Nonce', 'Signature'] as $h) {
+                $head[$h] = substr((string) ($_SERVER['HTTP_X_ACME_PUSH_' . strtoupper($h)] ?? ''),
+                                   0, 300);
+            }
+            [$status, $body] = isemon_call('/api/acme-push/' . $op, 'POST',
+                                           ['body' => base64_encode($raw), 'headers' => $head],
+                                           120.0);
+        }
+        if ($status === 0) {
+            $refuse(503, 'down', 'the page cannot reach isemon\'s daemon');
+        }
+        http_response_code($status);
+        echo $body;
+        exit;
+    }
+
     /* Two things checked before anything is read, because both of them are
        about requests that were never meant for this page.
 
@@ -403,6 +450,7 @@ if (isset($_GET['api'])) {
         /* The firewall, who may reach which page, and TLS (1.10.222). */
         'web-firewall' => '/api/web/firewall',
         'web-tls'      => '/api/web/tls',
+        'acme-push-admin' => '/api/acme-push-admin',
         'web-tls-export' => '/api/web/tls/export',
         'web-tls-download' => '/api/web/tls/download',
         'upgrade'      => '/api/upgrade',
@@ -501,6 +549,7 @@ if (isset($_GET['api'])) {
     $writes = [
         'web-firewall' => '/api/web/firewall',
         'web-tls'      => '/api/web/tls',
+        'acme-push-admin' => '/api/acme-push-admin',
         'web-tls-export' => '/api/web/tls/export',
         'upgrade'      => '/api/upgrade',
         'net'          => '/api/net',
@@ -2827,6 +2876,17 @@ function srcText(el) {
     color:var(--tx-dim);font-size:12.5px}
   .mig-going.failed .bar span{background:var(--crit)}
   .mig-trouble{margin:6px 0 14px;word-break:break-word}
+  /* Certificates from acme (1.10.279). */
+  #tls-push-card h4{margin:18px 0 8px;font-size:14px}
+  .push-code{margin:12px 0;padding:14px 16px;border:1px solid var(--info);border-radius:10px;
+    background:var(--info-bg)}
+  .push-code-k{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--tx-dim)}
+  .push-code-v{display:block;margin:6px 0;font-size:24px;font-weight:700;letter-spacing:2px;
+    background:none;border:0;color:var(--tx);cursor:copy;padding:0}
+  .push-code-s{font-size:12.5px;color:var(--tx-dim)}
+  .push-paste{margin:12px 0}
+  .push-paste summary{cursor:pointer;color:var(--info);font-size:13px}
+  .push-paste input{width:100%;box-sizing:border-box;margin:8px 0}
   /* The database server's own settings (1.10.173). */
   .tune-machine{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 2px}
   .tune-machine .set-item{flex:1 1 150px;margin:0}
@@ -6062,6 +6122,14 @@ function srcText(el) {
     </div>
     <div class="card full">
       <div class="cert-grid" id="tls-cards"></div>
+    </div>
+    <div class="card full" id="tls-push-card">
+      <h2>Certificates from acme</h2>
+      <p class="note">acme - the certificate manager of ours - gives this dashboard its
+        certificate and renews it by itself, as it does for otp and zigmon. Pair it once here;
+        each certificate it pushes is checked (signed by the paired acme, its key the
+        certificate's, valid, holding the dashboard's name) and goes in as an upload does.</p>
+      <div id="tls-push"></div>
     </div>
   </div>
 
@@ -40467,6 +40535,7 @@ function acmeDnsGuide(d) {
 var TLS = {last: null, timer: null};
 function loadTls() {
   api('web-tls').then(drawTls).catch(oops);
+  loadPush();
   clearTimeout(TLS.timer);
   var next = paneAgain('tls', step), gen = TLS.gen;
   function step() {
@@ -40477,6 +40546,190 @@ function loadTls() {
     api('web-tls', undefined, {quiet: true}).then(drawTls).catch(function () {}).then(next);
   }
   TLS.timer = setTimeout(step, 1000);
+}
+/* ---- Certificates from acme (acme push, 1.10.279) ---------------------------
+   acme - the certificate manager of ours - gives this dashboard its
+   certificate and renews it: switched on here, paired once (a code shown
+   here, put into the target in acme), and from then on each push goes in as
+   an upload does. "acme" in these words is always that certificate manager,
+   never this server's own Automatic certificates. */
+var PUSH = {last: null, code: '', until: 0, timer: null};
+function loadPush() {
+  api('acme-push-admin', undefined, {quiet: true}).then(drawPush).catch(function () {});
+}
+function pushDo(body, button, done) {
+  if (button) busy(button, true);
+  api('acme-push-admin', body).then(function (d) {
+    if (button) busy(button, false);
+    if (d.code) { PUSH.code = d.code; PUSH.until = d.until; }
+    if (body.action === 'unpair' || body.action === 'off') { PUSH.code = ''; PUSH.until = 0; }
+    toast(d.message, 'good');
+    drawPush(d);
+    if (done) done(d);
+  }).catch(function (e) { if (button) busy(button, false); oops(e); });
+}
+function pushManaged(m) {
+  if (m === 'own-acme') return 'Automatic certificates of this server';
+  if (m === 'acme-push') return 'acme (pushed here)';
+  if (m === 'manual') return 'by hand (uploaded, a request, self-signed)';
+  if (m === 'none') return 'nothing yet';
+  return String(m || '');
+}
+function pushCode(host, d) {
+  var left = Math.round((PUSH.until || 0) - Date.now() / 1000);
+  /* Used (paired), taken back or run out on the daemon: not shown again. */
+  if (!d.pairing) PUSH.code = '';
+  if (!PUSH.code || left <= 0) {
+    PUSH.code = '';
+    if (d.pairing) {
+      host.appendChild(el('p', 'note', 'A pairing code is waiting for another '
+        + Math.max(1, Math.round(((d.pairing.until || 0) - Date.now() / 1000) / 60)) + ' min. '
+        + 'It was shown once: Take it back, or make a new one.'));
+    }
+    return;
+  }
+  var box = el('div', 'push-code');
+  box.appendChild(el('div', 'push-code-k', 'The pairing code - shown this once'));
+  var c = noI18n(el('button', 'push-code-v mono', PUSH.code));
+  c.type = 'button';
+  c.title = 'Copy it';
+  c.onclick = function () { copyText(PUSH.code, 'the code is copied'); };
+  box.appendChild(c);
+  box.appendChild(el('div', 'push-code-s', 'Put it into the target in acme (Targets → An '
+    + 'application of ours → Pairing code) and press Try there, within '
+    + Math.max(1, Math.ceil(left / 60)) + ' min. Five wrong tries and it is gone.'));
+  host.appendChild(box);
+}
+function drawPush(d) {
+  PUSH.last = d;
+  var host = $('tls-push');
+  if (!host) return;
+  clear(host);
+  var may = !!d.may;
+  /* The switch */
+  var sw = wrSwitch(d.on, function (on) {
+    if (!on) {
+      confirmThen('Take no more certificates from acme?', 'Nothing more is taken from any '
+        + 'acme; the certificate the dashboard has stays as it is. The pairing is kept for when '
+        + 'it is switched on again.', 'Switch it off', function () { pushDo({action: 'off'}); });
+      sw._input.checked = true;
+      return;
+    }
+    pushDo({action: 'on'});
+  }, !may);
+  host.appendChild(wrRow('Take certificates from acme', 'acme pushes the dashboard’s '
+    + 'certificate here and renews it; what it pushes goes in as an upload does, and Automatic '
+    + 'certificates leave it alone from then on.', sw));
+  if (!d.on) {
+    host.appendChild(el('p', 'btnhelp', 'Off: acme is told only that this is isemon '
+      + (d.version || '') + '.'));
+    return;
+  }
+  /* Where acme reaches it */
+  var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+  var addr = noI18n(el('button', 'banfeed-url mono', base));
+  addr.type = 'button';
+  addr.title = 'Copy it';
+  addr.onclick = function () { copyText(base, 'the address is copied'); };
+  host.appendChild(el('div', 'banfeed-url-label', 'The address for the target in acme'));
+  host.appendChild(addr);
+  host.appendChild(el('p', 'btnhelp', 'acme’s address has to be among those that may '
+    + 'reach the dashboard (Firewall and access).'));
+  /* Pairing */
+  var pairing = el('div', 'push-pair');
+  pushCode(pairing, d);
+  host.appendChild(pairing);
+  if (may) {
+    var row = el('div', 'btnrow');
+    var pair = cmdButton('Pair with an acme', 'key', 'primary');
+    pair.onclick = function () { pushDo({action: 'pair'}, pair); };
+    row.appendChild(pair);
+    if (PUSH.code || d.pairing) {
+      var back = cmdButton('Take it back', 'undo', '');
+      back.onclick = function () { pushDo({action: 'unpair'}, back); };
+      row.appendChild(back);
+    }
+    host.appendChild(row);
+  }
+  /* The acmes paired */
+  host.appendChild(el('h4', '', 'Paired with'));
+  if (!(d.keys || []).length) {
+    host.appendChild(el('p', 'note', 'No acme yet: nothing is taken until one is paired.'));
+  } else {
+    var t = el('table', 'plain');
+    var th = el('tr');
+    ['acme', 'Its key', 'How', 'Since', ''].forEach(function (w) { th.appendChild(el('th', '', w)); });
+    var thead = el('thead');
+    thead.appendChild(th);
+    t.appendChild(thead);
+    var tb = el('tbody');
+    (d.keys || []).forEach(function (k) {
+      var tr = el('tr');
+      tr.appendChild(noI18n(el('td', '', k.name || k.comment || '–')));
+      tr.appendChild(noI18n(el('td', 'mono small', k.key_id || '')));
+      tr.appendChild(el('td', '', k.how === 'pasted' ? 'its key pasted' : 'a pairing code'));
+      tr.appendChild(el('td', '', stamp(k.at)));
+      var act = el('td', 'act');
+      if (may) {
+        var f = cmdButton('Forget it', 'forget', 'small danger');
+        f.onclick = function () {
+          confirmThen('Forget this acme?', 'Nothing more is taken from it; the certificate the '
+            + 'dashboard has stays as it is. Pairing again brings it back.', 'Forget it',
+            function () { pushDo({action: 'forget', key_id: k.key_id}); });
+        };
+        act.appendChild(f);
+      }
+      tr.appendChild(act);
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    var wrap = el('div', 'scroll');
+    wrap.appendChild(t);
+    host.appendChild(wrap);
+  }
+  if (may) {
+    var paste = el('details', 'push-paste');
+    paste.appendChild(el('summary', '', 'Or paste acme’s key'));
+    var box = el('input', 'wr-in mono');
+    box.type = 'text';
+    box.placeholder = 'acme-push-ed25519 AAAA… acme@acme1';
+    box.spellcheck = false;
+    paste.appendChild(box);
+    var take = cmdButton('Take this key', 'key', '');
+    take.onclick = function () { pushDo({action: 'paste', key: box.value}, take); };
+    var pr = el('div', 'btnrow');
+    pr.appendChild(take);
+    paste.appendChild(pr);
+    paste.appendChild(el('p', 'btnhelp', 'acme shows it on its own Certificates from acme card '
+      + '(This acme’s own key). acme then trusts this isemon as it first sees it - keep '
+      + 'Check the application’s certificate on there.'));
+    host.appendChild(paste);
+  }
+  /* Other names */
+  host.appendChild(wrRow('Take certificates of other names', 'Off: a certificate that does not '
+    + 'hold the dashboard’s name is refused, so none can take it over silently.',
+    wrSwitch(d.other_names, function (on) { pushDo({action: 'other_names', on: on}); }, !may)));
+  /* What acme sees here */
+  host.appendChild(el('h4', '', 'What acme sees here'));
+  (d.slots || []).forEach(function (s) {
+    var cur = s.current || {};
+    var facts = [['Slot', noI18n(el('span', 'mono', s.id))],
+                 ['Names it must hold', s.names && s.names.length
+                   ? noI18n(el('span', '', s.names.join(', '))) : 'none known yet (acme_name)'],
+                 ['Looked after by', pushManaged(s.managed_by)],
+                 ['Now', s.current ? noI18n(el('span', '', (cur.issuer || '').replace(/^CN=/, '')))
+                   : 'no certificate']];
+    if (cur.not_after) facts.push(['Valid until', stamp(cur.not_after)]);
+    host.appendChild(peekFacts(facts));
+    if (!s.installable) host.appendChild(el('p', 'note bad', s.why_not || 'it cannot take one now'));
+  });
+  /* The last push */
+  if (d.last && d.last.at) {
+    host.appendChild(el('p', 'btnhelp', 'The last push: ' + stamp(d.last.at) + ' from '
+      + (d.last.from || 'acme') + ' - ' + (d.last.state === 'already' ? 'it was there already'
+      : 'put in') + ', until ' + stamp(d.last.until) + '.'));
+  }
+  explainWhatWasDrawn($('tls-push-card'));
 }
 function daysLeft(ts) { return ts ? Math.floor((ts - Date.now() / 1000) / 86400) : null; }
 function certTone(days) { return days === null ? 'dim' : (days < 0 ? 'crit' : (days < 21 ? 'warn' : 'ok')); }

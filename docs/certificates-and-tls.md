@@ -94,3 +94,9 @@ has.
 
 The card says how many days are left (orange under 21). `isemon --check`
 says it too, and fails once it has run out.
+
+## Certificates from acme
+
+acme - the certificate manager of ours - can give and renew this certificate
+by itself: *Certificates from acme* on this pane, paired once with a code.
+What it pushes goes in as an upload does. See [acme-push.md](acme-push.md).

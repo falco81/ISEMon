@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.278",
+  "version": "1.10.279",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -1104,6 +1104,10 @@
    "source": "a page or a setting",
    "text": "stránka nebo nastavení"
   },
+  "s.a-pairing-code.1ba023e2": {
+   "source": "a pairing code",
+   "text": "párovací kód"
+  },
   "s.a-pass-anything-else-is-shown.0a642f59": {
    "source": "a pass, anything else is shown as logged. Sign-ins to the router (winbox, ssh, the web, the API), every change to its configuration and who made it, the VPN of people (OpenVPN, L2TP, SSTP, PPTP: who, from where, which address inside) and the tunnels to other sites are read as well; a refused sign-in from the internet can earn a ban like any other at the firewall. The time is the syslog header's, read in the zone set beside the firewall.",
    "text": "propuštění, cokoli jiného se ukáže jako zalogované. Čtou se i přihlášení k routeru (winbox, ssh, web, API), každá změna jeho konfigurace a kdo ji udělal, VPN lidí (OpenVPN, L2TP, SSTP, PPTP: kdo, odkud, jakou adresu uvnitř) a tunely do jiných lokalit; odmítnuté přihlášení z internetu může vést k banu jako každé jiné na firewallu. Čas je ze syslog hlavičky, čtený v zóně nastavené u firewallu."
@@ -1888,6 +1892,18 @@
    "source": "ACME no longer renews it either.",
    "text": "Ani ACME ho už neobnovuje."
   },
+  "s.acme-push-ed25519-aaaa-acme-acme1.41ad0a78": {
+   "source": "acme-push-ed25519 AAAA… acme@acme1",
+   "text": "acme-push-ed25519 AAAA… acme@acme1"
+  },
+  "s.acme-pushed-here.eaf494f4": {
+   "source": "acme (pushed here)",
+   "text": "acme (dodaný sem)"
+  },
+  "s.acme-pushes-the-dashboard-s-certificate.abc6ecb6": {
+   "source": "acme pushes the dashboard’s certificate here and renews it; what it pushes goes in as an upload does, and Automatic certificates leave it alone from then on.",
+   "text": "acme sem dodává certifikát dashboardu a obnovuje ho; co dodá, se uloží jako ruční nahrání a Automatické certifikáty ho od té doby nechají být."
+  },
   "s.acme-renews-it.24be8eb7": {
    "source": "ACME renews it",
    "text": "obnovuje ho ACME"
@@ -1900,9 +1916,21 @@
    "source": "ACME renews this one from now on - at the next look (within the hour) if it is not from the CA yet.",
    "text": "Od teď ho obnovuje ACME – při nejbližší kontrole (do hodiny), pokud ještě není od CA."
   },
+  "s.acme-s-address-has-to-be.d8f6d2c1": {
+   "source": "acme’s address has to be among those that may reach the dashboard (Firewall and access).",
+   "text": "Adresa acme musí být mezi těmi, které smí na dashboard (Firewall a přístup)."
+  },
+  "s.acme-shows-it-on-its-own.a3d01a48": {
+   "source": "acme shows it on its own Certificates from acme card (This acme’s own key). acme then trusts this isemon as it first sees it - keep Check the application’s certificate on there.",
+   "text": "acme ho ukazuje na své kartě Certifikáty z acme (Vlastní klíč tohoto acme). acme pak tomuto isemonu věří tak, jak ho poprvé uvidí – nechte tam zapnuté Ověřovat certifikát aplikace."
+  },
   "s.acme-stops-renewing-this-one-the.e458b32e": {
    "source": "ACME stops renewing this one; the certificate it has stays.",
    "text": "ACME ho přestane obnovovat; certifikát, který má, zůstane."
+  },
+  "s.acme-the-certificate-manager-of-ours.bcd35938": {
+   "source": "acme - the certificate manager of ours - gives this dashboard its certificate and renews it by itself, as it does for otp and zigmon. Pair it once here; each certificate it pushes is checked (signed by the paired acme, its key the certificate's, valid, holding the dashboard's name) and goes in as an upload does.",
+   "text": "acme – náš správce certifikátů – dává tomuto dashboardu certifikát a sám ho obnovuje, stejně jako u otp a zigmonu. Spárujte ho tu jednou; každý certifikát, který dodá, se zkontroluje (podepsaný spárovaným acme, klíč patří k certifikátu, je platný, obsahuje jméno dashboardu) a uloží se jako ruční nahrání."
   },
   "s.acme.293abb6b": {
    "source": "acme",
@@ -3704,6 +3732,10 @@
    "source": "Automatic certificates (HTTP-01)",
    "text": "Automatické certifikáty (HTTP-01)"
   },
+  "s.automatic-certificates-of-this-server.f058c5cf": {
+   "source": "Automatic certificates of this server",
+   "text": "Automatické certifikáty tohoto serveru"
+  },
   "s.automatic-certificates-the-acme-ca-through.a0faea49": {
    "source": "Automatic certificates: the ACME CA through it",
    "text": "Automatické certifikáty: ACME CA přes ni"
@@ -4436,6 +4468,10 @@
    "source": "by hand - the record is shown here, you put it in",
    "text": "ručně – záznam se ukáže zde, vložíte ho sami"
   },
+  "s.by-hand-uploaded-a-request-self.8e921bc9": {
+   "source": "by hand (uploaded, a request, self-signed)",
+   "text": "ručně (nahraný, žádost, self-signed)"
+  },
   "s.by-hand.db5bc9af": {
    "source": "by hand",
    "text": "ručně"
@@ -4723,6 +4759,10 @@
   "s.certificates-expired.03ee862d": {
    "source": "Certificates expired",
    "text": "Prošlé certifikáty"
+  },
+  "s.certificates-from-acme.bc8cf49e": {
+   "source": "Certificates from acme",
+   "text": "Certifikáty z acme"
   },
   "s.certificates-from-an-acme-ca.e5122ca8": {
    "source": "Certificates from an ACME CA",
@@ -9032,6 +9072,10 @@
    "source": "Forget them",
    "text": "Zapomenout je"
   },
+  "s.forget-this-acme.5ce8d32e": {
+   "source": "Forget this acme?",
+   "text": "Zapomenout toto acme?"
+  },
   "s.forget-who-fetched-the-list.afe0c297": {
    "source": "Forget who fetched the list",
    "text": "Zapomenout, kdo seznam stahoval"
@@ -11740,6 +11784,10 @@
    "source": "· it can reach the VPN",
    "text": "· k VPN se dostane"
   },
+  "s.it-cannot-take-one-now.beab9c1b": {
+   "source": "it cannot take one now",
+   "text": "teď žádný přijmout nemůže"
+  },
   "s.it-carried-everything.11be1e8b": {
    "source": "It carried everything:",
    "text": "Přenesl vše:"
@@ -11940,6 +11988,10 @@
    "source": "It sent back:",
    "text": "Vrátil:"
   },
+  "s.it-was-there-already.72b40faf": {
+   "source": "it was there already",
+   "text": "už tam byl"
+  },
   "s.it-works.241cddf0": {
    "source": "It works",
    "text": "Funguje to"
@@ -12031,6 +12083,10 @@
   "s.its-key-is-deleted-from-this.a9d4a581": {
    "source": "Its key is deleted from this machine. A server that asks for one will refuse backups until another is made and given to it.",
    "text": "Jeho klíč se smaže z tohoto stroje. Server, který ho chce, bude zálohy odmítat, dokud se nevytvoří jiný a nedá se mu."
+  },
+  "s.its-key-pasted.0cb4c260": {
+   "source": "its key pasted",
+   "text": "vložený klíč"
   },
   "s.its-key-was-sealed-on-another.582b56fe": {
    "source": "its key was sealed on another machine",
@@ -13416,6 +13472,10 @@
    "source": "Look up the names behind addresses",
    "text": "Vyhledávat názvy k adresám"
   },
+  "s.looked-after-by.2403699f": {
+   "source": "Looked after by",
+   "text": "Stará se o něj"
+  },
   "s.looked-at-first-in-this-order.d9a7d8da": {
    "source": "Looked at first, in this order: a DROP or REJECT here wins over what isemon lets in below. Each carries its note as the comment of the rule in iptables.",
    "text": "Posuzují se jako první, v tomto pořadí: DROP nebo REJECT zde vyhrává nad tím, co isemon pouští níže. Každé nese svou poznámku jako komentář pravidla v iptables."
@@ -14412,6 +14472,10 @@
    "source": "Names it cannot resolve",
    "text": "Jména, která nedokáže přeložit"
   },
+  "s.names-it-must-hold.f1d4ac26": {
+   "source": "Names it must hold",
+   "text": "Jména, která musí obsahovat"
+  },
   "s.names-it-tried.e6e1a7c6": {
    "source": "Names it tried",
    "text": "Jména, která zkoušel"
@@ -14776,6 +14840,10 @@
    "source": "No accounts",
    "text": "Žádné účty"
   },
+  "s.no-acme-yet-nothing-is-taken.3dc7bd4e": {
+   "source": "No acme yet: nothing is taken until one is paired.",
+   "text": "Zatím žádné acme: dokud se žádné nespáruje, nic se nepřijímá."
+  },
   "s.no-address-left-to-translate-to.2592d318": {
    "source": "no address left to translate to",
    "text": "nezbývá žádná adresa, na kterou překládat"
@@ -14807,6 +14875,10 @@
   "s.no-certificate-yet-make-one-or.6251e374": {
    "source": "No certificate yet — make one, or let it pin the router’s own at the first connection.",
    "text": "Zatím žádný certifikát — vytvořte ho, nebo nechte při prvním připojení připnout vlastní certifikát routeru."
+  },
+  "s.no-certificate.2a6a501e": {
+   "source": "no certificate",
+   "text": "žádný certifikát"
   },
   "s.no-client-certificate-most-servers-want.4889943a": {
    "source": "No client certificate — most servers want none.",
@@ -15263,6 +15335,10 @@
   "s.none-is-there-yet-and-mutual.20f440f2": {
    "source": "- none is there yet, and mutual TLS needs one",
    "text": "- zatím tam žádná není a vzájemné TLS ji potřebuje"
+  },
+  "s.none-known-yet-acme-name.a6cd3416": {
+   "source": "none known yet (acme_name)",
+   "text": "zatím žádná známá (acme_name)"
   },
   "s.none-of-the-ones-switched-on.37bcfcfb": {
    "source": "none of the ones switched on",
@@ -15948,6 +16024,14 @@
    "source": "Nothing may ever ban it; a ban it has now is lifted.",
    "text": "Nic ji nikdy nesmí zablokovat; blokace, kterou má teď, se zruší."
   },
+  "s.nothing-more-is-taken-from-any.4a873087": {
+   "source": "Nothing more is taken from any acme; the certificate the dashboard has stays as it is. The pairing is kept for when it is switched on again.",
+   "text": "Od žádného acme se už nic nepřijme; certifikát, který dashboard má, zůstane, jak je. Spárování se ponechá pro opětovné zapnutí."
+  },
+  "s.nothing-more-is-taken-from-it.1f434708": {
+   "source": "Nothing more is taken from it; the certificate the dashboard has stays as it is. Pairing again brings it back.",
+   "text": "Už se od něj nic nepřijme; certifikát, který dashboard má, zůstane, jak je. Nové spárování ho vrátí."
+  },
   "s.nothing-needed-changing.5a84becb": {
    "source": "Nothing needed changing.",
    "text": "Nebylo potřeba nic měnit."
@@ -16323,6 +16407,10 @@
   "s.of.de04fa0e": {
    "source": "of",
    "text": "z"
+  },
+  "s.off-a-certificate-that-does-not.f4fb954f": {
+   "source": "Off: a certificate that does not hold the dashboard’s name is refused, so none can take it over silently.",
+   "text": "Vypnuto: certifikát, který neobsahuje jméno dashboardu, se odmítne, takže ho žádný nemůže potichu převzít."
   },
   "s.off-blocks-nobody-by-itself-temporary.f5d25f8a": {
    "source": "Off blocks nobody by itself. Temporary uses the ladder. Permanent keeps the first offender out until somebody takes them off.",
@@ -17616,6 +17704,10 @@
    "source": "- (or !, or NOT) in front turns a term round",
    "text": "- (nebo !, nebo NOT) na začátku výraz obrátí"
   },
+  "s.or-paste-acme-s-key.f2f86cbc": {
+   "source": "Or paste acme’s key",
+   "text": "Nebo vložte klíč acme"
+  },
   "s.or-paste-pem-here.c8c6a73c": {
    "source": "Or paste PEM here",
    "text": "Nebo sem vložte PEM"
@@ -17931,6 +18023,18 @@
   "s.pages-and-settings.14dcc9ec": {
    "source": "Pages and settings",
    "text": "Stránky a nastavení"
+  },
+  "s.pair-with-an-acme.30958176": {
+   "source": "Pair with an acme",
+   "text": "Spárovat s acme"
+  },
+  "s.pair.20166cc5": {
+   "source": "pair",
+   "text": "pair"
+  },
+  "s.paired-with.a8cb0523": {
+   "source": "Paired with",
+   "text": "Spárováno s"
   },
   "s.pairs-every-one-of-them-is.7d94b1d3": {
    "source": "pairs; every one of them is kept and shown when a row is pressed, and the ones the page is built from become columns. The firewall's own clock to the nanosecond is the time of every line, so nothing here depends on a zone.",
@@ -18859,6 +18963,10 @@
   "s.put-in.a9229e72": {
    "source": "put in:",
    "text": "nastaveno:"
+  },
+  "s.put-in.fe9c90c2": {
+   "source": "put in",
+   "text": "vložen"
   },
   "s.put-it-back.15527f69": {
    "source": "Put it back",
@@ -21272,6 +21380,10 @@
    "source": "slider",
    "text": "slider"
   },
+  "s.slot.ece2ac10": {
+   "source": "Slot",
+   "text": "Slot"
+  },
   "s.slovakia.b6c149c3": {
    "source": "Slovakia",
    "text": "Slovensko"
@@ -22428,6 +22540,14 @@
    "source": "tak.cesnet.cz",
    "text": "tak.cesnet.cz"
   },
+  "s.take-certificates-from-acme.8fe0e923": {
+   "source": "Take certificates from acme",
+   "text": "Přijímat certifikáty z acme"
+  },
+  "s.take-certificates-of-other-names.fefe5632": {
+   "source": "Take certificates of other names",
+   "text": "Přijímat certifikáty s jinými jmény"
+  },
   "s.take-every-entry-carrying-this-daemon.882ad5d3": {
    "source": "Take every entry carrying this daemon’s mark off the router — the banned addresses, the country list, or both. Anything you put on those lists by hand stays, every other address list is never mentioned, and your firewall rules are not touched. The bans themselves stay here, so \"Put the lists on it\" afterwards puts them all back.",
    "text": "Odebrat z routeru každou položku s označením tohoto démona — zablokované adresy, seznam zemí, nebo obojí. Cokoli, co jste do těchto seznamů vložili ručně, zůstane, žádného jiného address listu se to netýká a vašich pravidel firewallu se to nedotkne. Samotné blokace tu zůstávají, takže „Nahrát seznamy“ je potom všechny vrátí zpět."
@@ -22444,6 +22564,10 @@
    "source": "Take it away",
    "text": "Odebrat"
   },
+  "s.take-it-back.eb9bdeb4": {
+   "source": "Take it back",
+   "text": "Vzít zpět"
+  },
   "s.take-it-off-the-list.e65c5695": {
    "source": "Take it off the list",
    "text": "Odebrat ze seznamu"
@@ -22459,6 +22583,10 @@
   "s.take-it-out.56748aa4": {
    "source": "Take it out",
    "text": "Odebrat"
+  },
+  "s.take-no-more-certificates-from-acme.08676a50": {
+   "source": "Take no more certificates from acme?",
+   "text": "Už nepřijímat certifikáty z acme?"
   },
   "s.take-one-off-it.37587b47": {
    "source": "take one off it",
@@ -22543,6 +22671,10 @@
   "s.take-this-key-away.77aa279e": {
    "source": "Take this key away",
    "text": "Odebrat tento klíč"
+  },
+  "s.take-this-key.c73415c7": {
+   "source": "Take this key",
+   "text": "Převzít tento klíč"
   },
   "s.take-this-off-the-search.81dad072": {
    "source": "Take this off the search:",
@@ -23076,6 +23208,10 @@
    "source": "the address and port the source was made",
    "text": "adresa a port, na které byl zdroj přeložen"
   },
+  "s.the-address-for-the-target-in.861f0af9": {
+   "source": "The address for the target in acme",
+   "text": "Adresa pro cíl v acme"
+  },
   "s.the-address-given-out-inside-the.51b850f1": {
    "source": "the address given out inside the VPN",
    "text": "adresa přidělená uvnitř VPN"
@@ -23095,6 +23231,10 @@
   "s.the-address-has-not-been-looked.a6460bdb": {
    "source": "The address has not been looked at yet: Look now, above, lists what is there.",
    "text": "Adresa ještě nebyla zkontrolována: Zkontrolovat teď výše ukáže, co tam je."
+  },
+  "s.the-address-is-copied.af9a6d57": {
+   "source": "the address is copied",
+   "text": "adresa je zkopírovaná"
   },
   "s.the-address-it-came-from.22677d07": {
    "source": "the address it came from",
@@ -23695,6 +23835,10 @@
   "s.the-code-from-the-app-was.75ae8d3a": {
    "source": "the code from the app was asked for and never typed",
    "text": "kód z aplikace byl vyžádán a nikdo ho nezadal"
+  },
+  "s.the-code-is-copied.9969ba90": {
+   "source": "the code is copied",
+   "text": "kód je zkopírovaný"
   },
   "s.the-code-was-wrong-confirming-a.5c2f1148": {
    "source": "the code was wrong confirming a new token",
@@ -25891,6 +26035,10 @@
   "s.the-pair.3e34411c": {
    "source": "The pair",
    "text": "Pár"
+  },
+  "s.the-pairing-code-shown-this-once.a9b18e97": {
+   "source": "The pairing code - shown this once",
+   "text": "Párovací kód – zobrazí se jen jednou"
   },
   "s.the-part-of-the-tree-people.c89d2f9d": {
    "source": "The part of the tree people live in: DC=example,DC=com , or an organisational unit inside it if that is quicker to search.",
@@ -29032,6 +29180,10 @@
    "source": "(unnamed)",
    "text": "(bez názvu)"
   },
+  "s.unpair.781184a9": {
+   "source": "unpair",
+   "text": "unpair"
+  },
   "s.unrated-sites.12a613db": {
    "source": "unrated sites",
    "text": "nehodnocené weby"
@@ -29723,6 +29875,10 @@
   "s.what-a-person-types-as-their.9dcc7701": {
    "source": "What a person types as their name",
    "text": "Co osoba zadává jako své jméno"
+  },
+  "s.what-acme-sees-here.739cbc52": {
+   "source": "What acme sees here",
+   "text": "Co tu acme vidí"
   },
   "s.what-active-directory-says-about-it.57f73bde": {
    "source": "What Active Directory says about it right now: who the person is, which groups they are in, whether it is switched off, locked or expired. Read only — nothing is ever written to the directory.",
@@ -32430,6 +32586,10 @@
    "source": "{0} a page",
    "text": "{0} na stránku"
   },
+  "p.a-pairing-code-is-waiting-for.be1c51f6": {
+   "source": "A pairing code is waiting for another {0} min. It was shown once: Take it back, or make a new one.",
+   "text": "Párovací kód čeká ještě {0} min. Zobrazil se jen jednou: vezměte ho zpět, nebo vytvořte nový."
+  },
   "p.a-password-is-at-least-characters.3741d884": {
    "source": "a password is at least {0} characters",
    "text": "heslo má alespoň {0} znaků"
@@ -34314,6 +34474,10 @@
    "source": ", of which only the last {0} day(s) may earn a ban",
    "text": ", z nichž jen posledních {0} dní může vést k blokaci"
   },
+  "p.off-acme-is-told-only-that.a9f95ab7": {
+   "source": "Off: acme is told only that this is isemon {0}.",
+   "text": "Vypnuto: acme se dozví jen to, že tu je isemon {0}."
+  },
   "p.on-a-list-of-refused-attempts.9b5124b4": {
    "source": "{0}On a list of refused attempts that is the strongest thing there is to know about one: nobody has ever had it.{1}",
    "text": "{0}V seznamu odmítnutých pokusů je to to nejsilnější, co se o jménu dá vědět: nikdo ho nikdy neměl.{1}"
@@ -34569,6 +34733,10 @@
   "p.pub.090e9b6f": {
    "source": "{0}.pub",
    "text": "{0}.pub"
+  },
+  "p.put-it-into-the-target-in.d1063961": {
+   "source": "Put it into the target in acme (Targets → An application of ours → Pairing code) and press Try there, within {0} min. Five wrong tries and it is gone.",
+   "text": "Vložte ho do cíle v acme (Cíle → Naše aplikace → Párovací kód) a tam stiskněte Vyzkoušet, do {0} min. Po pěti chybných pokusech zmizí."
   },
   "p.put-on-in-s.84078b62": {
    "source": "{0} put on in {1} s{2}",
@@ -35377,6 +35545,10 @@
   "p.the-last-page-of-this-list.54894d48": {
    "source": "The last page of this list.{0}",
    "text": "Poslední stránka tohoto seznamu.{0}"
+  },
+  "p.the-last-push-from-until.cf174325": {
+   "source": "The last push: {0} from {1} - {2}, until {3}.",
+   "text": "Poslední dodání: {0} z {1} – {2}, platný do {3}."
   },
   "p.the-last-read-failed.dbd3215e": {
    "source": "The last read failed: {0}",
