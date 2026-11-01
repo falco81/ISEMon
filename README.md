@@ -371,6 +371,34 @@ working.
 
 ## Version
 
+1.10.272
+
+- **Settings → The database → Tune it for this machine shows its settings
+  again**: since 1.10.241 a popup drawn again in its own place ran what was
+  to be done when it closed - while it was still being drawn. Tuning the
+  database server forgot its own state there and stopped half drawn: the
+  machine's facts, and none of the settings, the boxes for the memory and
+  the processors or the button to put them in. What is to be done when a
+  popup closes is done when it closes again, as before 1.10.241; every
+  popup that sets it was gone over (a job's progress, the time window, the
+  questions, the private key and passphrase boxes).
+- **Checking a directory that does not answer says which step failed**:
+  the check's own verdict was sent as `ok`, over the request's, so a
+  check that failed read as a request that failed and the page said only
+  "HTTP 200". It is `passed` now, and the steps are shown either way -
+  for the first directory and the second.
+- **Only errors on the machine's console**: systemd's rc-local generator
+  says "/etc/rc.d/rc.local is not marked executable, skipping" at every
+  `systemctl daemon-reload` - every dnf update that touches a unit, every
+  upgrade - into the kernel's log, and a kernel with a high console level
+  printed it over the isemon console on tty1, in bursts hours apart.
+  install.sh writes `/etc/sysctl.d/80-isemon-console.conf` with RHEL's own
+  `kernel.printk = 4 4 1 7` (every message still in `journalctl -k`), the
+  same on every run; an administrator's own kernel.printk in any other file
+  is left alone (and ours, from before it was, taken away); `--uninstall`
+  takes it away. rc.local is not made executable. The upgrade and the first
+  install reload systemd once rather than twice.
+
 1.10.271
 
 - **A second isemon writing the same records is found out**: the rows of a

@@ -550,7 +550,8 @@ text = (ROOT / 'install.sh').read_text()
 fn = re.search(r'\ninstall_console\(\) \{.*?\n\}\n', text, re.S).group(0)
 ok('a fresh install switches it on', 'install_console fresh' in text, True)
 ok('an upgrade only puts the script in', text.count('install_console upgrade'), 1)
-ok('uninstall takes the script away', '"$CONSOLE_PROFILE" "$CONSOLE_FLAG"; do' in text, True)
+ok('uninstall takes the script away', '"$CONSOLE_PROFILE" "$CONSOLE_FLAG"' in
+   text[text.index('if [[ -n "$DO_UNINSTALL" ]]; then'):], True)
 inst = work / 'inst'
 inst.mkdir()
 

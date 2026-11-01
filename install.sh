@@ -55,6 +55,10 @@ UPGRADE_SERVICE_UNIT="/etc/systemd/system/isemon-upgrade.service"
 # kept in /etc itself where only root writes.
 CONSOLE_PROFILE="/etc/profile.d/zz-isemon-console.sh"
 CONSOLE_FLAG="/etc/isemon-console-login"
+# Only errors on the console (1.10.272): see console_quiet.
+CONSOLE_SYSCTL="${ISEMON_CONSOLE_SYSCTL:-/etc/sysctl.d/80-isemon-console.conf}"
+SYSCTL_DIR="${ISEMON_SYSCTL_DIR:-/etc/sysctl.d}"
+SYSCTL_CONF="${ISEMON_SYSCTL_CONF:-/etc/sysctl.conf}"
 
 DRY_RUN=""
 ASSUME_YES=""
@@ -183,6 +187,7 @@ root_helpers() {
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon-upgrade.service" "$UPGRADE_SERVICE_UNIT"
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon-upgrade.path" "$UPGRADE_PATH_UNIT"
     run systemctl daemon-reload
+    UNITS_RELOADED="yes"        # every unit is in by now: see reload_units
     # The upgrade's own path unit is not restarted while it is the one
     # running this (an upgrade from the pages): it is already watching.
     if [[ -z "${ISEMON_UPGRADE_FROM_PAGES:-}" ]]; then
@@ -333,6 +338,7 @@ chrony_check() {    # chrony_check fresh|upgrade
 # root's login (`isemon --console-at-login on` switches it on there).
 install_console() {        # install_console fresh|upgrade
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon-console-login.sh" "$CONSOLE_PROFILE"
+    console_quiet
     [[ "$1" == "fresh" ]] || return 0
     if [[ -n "$DRY_RUN" ]]; then note "[would write] $CONSOLE_FLAG"; return 0; fi
     # A link or anything else that is not a plain file is taken away, never
@@ -345,6 +351,53 @@ install_console() {        # install_console fresh|upgrade
             && mv -f "$CONSOLE_FLAG.$$" "$CONSOLE_FLAG"
     fi
     good "the isemon console at login: $(head -c 3 "$CONSOLE_FLAG" 2>/dev/null | tr -cd 'onf') (isemon --console-at-login on|off)"
+}
+
+# Only errors printed on the machine's console (1.10.272). systemd's
+# rc-local generator says "/etc/rc.d/rc.local is not marked executable,
+# skipping" at every `systemctl daemon-reload` - every dnf update that
+# touches a unit, every upgrade - and, running before journald, says it into
+# the kernel's log, which the kernel prints on the console when its console
+# level lets it through (a kernel booted without `quiet`, or with
+# loglevel=7). Over the isemon console on tty1 that was bursts of lines,
+# hours apart. RHEL's own 4 4 1 7: errors and worse on the console, every
+# message still in `journalctl -k`. An administrator's own kernel.printk, in
+# any other file, is left as it is; the file is written the same on every
+# run and goes with --uninstall. rc.local itself is not made executable:
+# that would start rc-local.service at every boot.
+console_quiet() {
+    local own
+    own="$(grep -ls '^[[:space:]]*kernel\.printk' "$SYSCTL_DIR"/*.conf "$SYSCTL_CONF" 2>/dev/null \
+           | grep -vxF "$CONSOLE_SYSCTL" || true)"
+    if [[ -n "$own" ]]; then
+        note "kernel.printk is set by hand ($(echo $own)): the console's log level is left as it is"
+        # ...and ours, from before it was, goes: read after theirs (80- comes
+        # late), it would have the last word over the administrator's.
+        if [[ -f "$CONSOLE_SYSCTL" && -z "$DRY_RUN" ]]; then
+            rm -f "$CONSOLE_SYSCTL"
+        fi
+        return 0
+    fi
+    if [[ -n "$DRY_RUN" ]]; then note "[would write] $CONSOLE_SYSCTL"; return 0; fi
+    mkdir -p "$(dirname "$CONSOLE_SYSCTL")"
+    printf '%s\n' "# Written by isemon's install.sh: only errors on the console (tty1, where" \
+        "# the isemon console is); every message is still in journalctl -k." \
+        'kernel.printk = 4 4 1 7' > "$CONSOLE_SYSCTL"
+    chmod 0644 "$CONSOLE_SYSCTL"
+    # In a container it cannot be set: the file is there for the machine.
+    sysctl -q -p "$CONSOLE_SYSCTL" >/dev/null 2>&1 || true
+    good "only errors on the console: $CONSOLE_SYSCTL (every message is in journalctl -k)"
+}
+
+# systemd told of the units once, not twice (1.10.272): each daemon-reload
+# runs every generator again, and each says its notices again (see
+# console_quiet). root_helpers reloads after the last unit is in; a second
+# one right after it changed nothing.
+UNITS_RELOADED=""
+reload_units() {
+    [[ -n "$UNITS_RELOADED" ]] && return 0
+    run systemctl daemon-reload
+    UNITS_RELOADED="yes"
 }
 
 not_a_link() {      # not_a_link PATH...
@@ -1021,7 +1074,7 @@ if [[ -n "$DO_UNINSTALL" ]]; then
     for one in "$UNIT_FILE" "$LOGROTATE_FILE" "$NGINX_CONF" "$BIN_LINK" \
                "$WEB_PATH_UNIT" "$WEB_SERVICE_UNIT" "$UPGRADE_PATH_UNIT" "$UPGRADE_SERVICE_UNIT" \
                "/etc/polkit-1/rules.d/49-isemon-database.rules" "$CONFIG_DIR/may-restart-database" \
-               "$CONSOLE_PROFILE" "$CONSOLE_FLAG"; do
+               "$CONSOLE_PROFILE" "$CONSOLE_FLAG" "$CONSOLE_SYSCTL"; do
         [[ -e "$one" ]] && run rm -f "$one"
     done
     [[ -d "$LIB_DIR" ]] && run rm -rf "$LIB_DIR"
@@ -1767,7 +1820,7 @@ if [[ -n "$DO_UPGRADE" ]]; then
     root_helpers
     chrony_check upgrade
     install_console upgrade
-    run systemctl daemon-reload
+    reload_units
     progress 7 "restarting isemon"
     run systemctl restart isemon.service
     if [[ -n "$DRY_RUN" ]]; then
@@ -2103,7 +2156,7 @@ run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.logrotate" "$LOGROTATE_FILE"
 root_helpers
 chrony_check fresh
 install_console fresh
-run systemctl daemon-reload
+reload_units
 run systemctl enable isemon.service >/dev/null
 run systemctl restart isemon.service
 sleep 2

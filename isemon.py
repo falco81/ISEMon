@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.271'
+__version__ = '1.10.272'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -77247,7 +77247,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                 # work" is a setup page somebody debugs by guessing.
                 which = ('directory2' if str(data.get('which') or '') == 'directory2'
                          else 'directory')
-                return self.send_json({'ok': True, **daemon.directory_check(which)})
+                # Whether the check passed is `passed`, not `ok` (1.10.272):
+                # spread over the answer, a check that failed made the
+                # request itself look failed, and the page said "HTTP 200"
+                # instead of which step it was.
+                got = daemon.directory_check(which)
+                got['passed'] = bool(got.pop('ok', False))
+                return self.send_json({'ok': True, **got})
             if data.get('groups') is not None:
                 try:
                     found = daemon.directory_group_list(None,

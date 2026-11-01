@@ -7162,8 +7162,11 @@ function modal(title, build, buttons, narrow) {
     var again = MODAL_REDRAW === MODAL_GEN;
     MODAL_REDRAW = -1;
     if (again || $('modal-title').textContent === title) {
-      /* drawn again in its own place */
-      if (MODAL_CLOSE) { var f0 = MODAL_CLOSE; MODAL_CLOSE = null; f0(); }
+      /* Drawn again in its own place: the same popup going on, so what is
+         to be done when it closes stays for when it does (1.10.272). Run
+         here, it was run while the popup was still being drawn - Tuning
+         the database server forgot its own state and stopped half drawn,
+         without its settings or a button to put them in. */
     } else {
       modalPark();
     }
@@ -27802,7 +27805,8 @@ function showDirCheck(d) {
         + 'named by hand in the setting beside it.';
       body.appendChild(says);
     }
-    if (d.ok) {
+    /* `passed` since 1.10.272: `ok` is whether the request worked. */
+    if (d.passed !== undefined ? d.passed : d.ok) {
       body.appendChild(el('p', 'note', d.lookup_only
         ? 'It answered. A name the first directory does not have will be asked of this one \u2014 '
           + 'and nothing else is ever asked of it.'
