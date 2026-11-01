@@ -371,6 +371,17 @@ working.
 
 ## Version
 
+1.10.274
+
+- **Settings → Backups: the popups as plexmon 2.5.4 draws them too**: a
+  destination (folder, FTP, FTPS, SFTP, SCP, SMB) opens in plexmon's large
+  popup (1120 px) on its form grid - four columns, the name over two, its
+  labels and boxes, the pickers with their arrow, the primary button filled
+  and Forget it red, buttons 38 px high; Where should the backups go?, Put
+  this back, Trying and the putting back in plexmon's medium (900 px); How to
+  put it back and Backups at… large; Edit with the pencil. Held against
+  plexmon 2.5.4 itself in a browser, box by box, for every kind.
+
 1.10.273
 
 - **Settings → Backups as plexmon 2.5.4 has it**: the same look - the facts

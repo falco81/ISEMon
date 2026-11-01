@@ -2753,6 +2753,7 @@ function srcText(el) {
     box-shadow:0 26px 70px rgba(0,0,0,.6)}
   .modal .box.narrow{width:min(560px,100%)}
   .modal .box.medium{width:min(860px,100%)}
+  .modal .box.large{width:min(1120px,100%)}
   /* The database server's own settings (1.10.173). */
   .tune-machine{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 2px}
   .tune-machine .set-item{flex:1 1 150px;margin:0}
@@ -6177,6 +6178,26 @@ function srcText(el) {
         #pane-backup .set-grid > .set-item.wide{grid-column:span 2;max-width:none}
         @media (max-width: 760px){ #pane-backup .set-grid > .set-item.wide{grid-column:auto} }
         #pane-backup .set-item.asleep{opacity:.45}
+        /* The popups of the backups as plexmon 2.5.4 draws them (1.10.273):
+           its form grid, its labels and boxes, a primary button filled. */
+        #modal-body:has(.rb-box),#modal-body:has(.rb-kinds){padding:20px 24px}
+        .modal .box.medium:has(.rb-box),.modal .box.medium:has(.rb-kinds){width:min(900px,100%)}
+        .rb-kind-tile{font-size:14.5px}
+        .rb-kind-tile .bad{color:var(--crit)}
+        .rb-box .wr-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 18px}
+        .rb-box .wr-field{gap:6px;margin:0;min-width:0}
+        .rb-box .wr-field > span:first-child{font-size:13.5px;font-weight:650;color:var(--tx);line-height:18px}
+        .rb-box .wr-field .wr-help{font-size:12.5px}
+        .rb-box .wr-in,.rb-box input.wr-in{height:38px;padding:0 12px;font-size:14px;background-color:var(--panel2);
+          border-radius:10px;box-sizing:border-box}
+        .rb-box select.wr-in{font-weight:600;padding:0 34px 0 12px;
+          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%238b94a3' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+          background-repeat:no-repeat;background-position:right 10px center;background-size:14px}
+        .rb-box textarea.wr-in{height:auto;padding:10px 12px}
+        .rb-box .wr-in:focus{border-color:var(--info);outline:none}
+        #modal-box:has(.rb-box) .btn,#modal-box:has(.rb-kinds) .btn{min-height:38px;height:38px}
+        #modal-box:has(.rb-box) .btn.primary,#pane-backup .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+        #modal-box:has(.rb-box) .btn.danger,#pane-backup .btn.danger{color:var(--crit);border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
       </style>
       <div id="rb-top"></div>
       <div class="card full" id="rb-tried-card" hidden><h2>Backups tried <span class="right" id="rb-tried-tools"></span></h2><div id="rb-tried"></div></div>
@@ -38143,7 +38164,7 @@ function rbGuide() {
           a.download = d.name || 'RESTORE.md';
           document.body.appendChild(a); a.click(); a.remove();
           setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-        }}], 'medium');
+        }}], 'large');
   }).catch(oops);
 }
 /* Markdown as the guides are written: headings, paragraphs, lists, tables,
@@ -38314,7 +38335,7 @@ function drawRbTargets() {
     var tr = cmdButton('Try it', 'play', 'small');
     tr.onclick = function () { rbTry(t, null, tr); };
     acts.appendChild(tr);
-    var ed = cmdButton('Edit', 'gear', 'small');
+    var ed = cmdButton('Edit', 'edit', 'small');
     ed.onclick = function () { rbEdit(t); };
     acts.appendChild(ed);
     var ls2 = cmdButton('Backups there', 'list', 'small');
@@ -38479,7 +38500,7 @@ function rbEdit(t) {
       busy(b, true);
       rbSaveForm(t.kind, cur).then(function () { busy(b, false); toast('saved', 'good'); closeModal(); loadRbackup(); })
         .catch(function (e) { busy(b, false); oops(e); });
-    }}], 'medium');
+    }}], 'large');
 }
 function rbTarget(id) { return (RB.targets || []).filter(function (x) { return x.id === id; })[0]; }
 function rbFormData(kind) {
@@ -38821,7 +38842,7 @@ function rbTry(t, data, button, inEditor) {
     };
     var host = inEditor ? $('rb-try-out') : null;
     if (host) show(host);
-    else modal('Trying ' + (t.name || ''), function (body) { var hh = el('div', 'rb-box'); body.appendChild(hh); show(hh); }, [{words: 'Close', close: true}], true);
+    else modal('Trying ' + (t.name || ''), function (body) { var hh = el('div', 'rb-box'); body.appendChild(hh); show(hh); }, [{words: 'Close', close: true}], 'medium');
     if (!inEditor) loadRbackup();
   }).catch(function (e) { if (button) busy(button, false); oops(e); });
 }
@@ -38834,7 +38855,7 @@ function rbListThere(t) {
       clear(host);
       var files = x.files || [];
       if (!files.length) { host.appendChild(el('p', 'note', 'No backup of isemon there.')); return; }
-      host.appendChild(listTable(['Made', 'Machine', 'Size', ''], files, function (fl) {
+      host.appendChild(listTable(['Made', 'Machine', 'Size', '', ''], files, function (fl) {
         var tr = el('tr');
         var w = el('td');
         w.appendChild(noI18n(el('div', '', stamp(fl.when))));
@@ -38875,7 +38896,7 @@ function rbListThere(t) {
         return tr;
       }, 'plain'));
     }).catch(function (e) { clear(host); host.appendChild(noI18n(el('p', 'note bad', String(e.message || e)))); });
-  }, [{words: 'Close', close: true}], 'medium');
+  }, [{words: 'Close', close: true}], 'large');
 }
 function rbPutBackConfirm(what) {
   var pw = null;
@@ -38909,7 +38930,7 @@ function rbPutBackConfirm(what) {
           toast(x.message, 'good');
           rbRestoreWatch(x.job_id);
         }).catch(oops);
-      }}], true);
+      }}], 'medium');
 }
 function rbRestoreWatch(jid) {
   modal('Putting the backup back', function (body) {
@@ -38921,7 +38942,7 @@ function rbRestoreWatch(jid) {
     var says = el('div', 'btnhelp');
     says.id = 'rbr-says';
     body.appendChild(says);
-  }, [{words: 'Close', close: true}], true);
+  }, [{words: 'Close', close: true}], 'medium');
   var step = function () {
     api('job&id=' + encodeURIComponent(jid), undefined, {quiet: true}).then(function (d) {
       var j = d.job || {};

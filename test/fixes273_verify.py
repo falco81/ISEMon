@@ -185,6 +185,30 @@ try:
        ("if (s.key === 'rbackup_verify') item.classList.add('wide');" in page,
         '#pane-backup .set-item.asleep{opacity:.45}' in page), (True, True))
     ok('How to put it back with the book', "cmdButton('How to put it back', 'book', '')" in page)
+
+    print('\nThe popups of the backups, as plexmon draws them (1.10.274)')
+    import re
+    def size_of(fn):
+        a = page.index('\nfunction %s(' % fn)
+        body = page[a:page.index('\n}\n', a)]
+        return re.findall(r"\]\s*,\s*('\w+'|true)\s*\)", body)[-1]
+    ok('a destination, How to put it back, Backups there: large; the rest medium', [size_of(f) for f in (
+        'rbEdit', 'rbGuide', 'rbListThere', 'rbPickKind', 'rbPutBackConfirm', 'rbRestoreWatch', 'rbTry')],
+       ["'large'"] * 3 + ["'medium'"] * 4)
+    ok('large is 1120 px, and medium 900 px for the backups\' popups',
+       ('.modal .box.large{width:min(1120px,100%)}' in page,
+        '.modal .box.medium:has(.rb-box),.modal .box.medium:has(.rb-kinds){width:min(900px,100%)}' in page),
+       (True, True))
+    ok('plexmon\'s form grid, labels and boxes in them', (
+        '.rb-box .wr-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 18px}' in page,
+        'font-size:13.5px;font-weight:650;color:var(--tx);line-height:18px' in page,
+        '.rb-box select.wr-in{font-weight:600;padding:0 34px 0 12px;' in page), (True, True, True))
+    ok('the primary button filled, the danger one red, 38 px high', (
+        '#modal-box:has(.rb-box) .btn.primary,#pane-backup .btn.primary{background:#1f6feb' in page,
+        '#modal-box:has(.rb-box) .btn.danger,#pane-backup .btn.danger{color:var(--crit)' in page,
+        '#modal-box:has(.rb-box) .btn,#modal-box:has(.rb-kinds) .btn{min-height:38px;height:38px}' in page),
+       (True, True, True))
+    ok('Edit with the pencil', "var ed = cmdButton('Edit', 'edit', 'small');" in page)
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 

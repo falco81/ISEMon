@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.273",
+  "version": "1.10.274",
   "made": "2026-11-01",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -12559,6 +12559,10 @@
   "s.laos.7998be8d": {
    "source": "Laos",
    "text": "Laos"
+  },
+  "s.large.5296d5cc": {
+   "source": "large",
+   "text": "large"
   },
   "s.last-200-lines.83223e89": {
    "source": "last 200 lines",

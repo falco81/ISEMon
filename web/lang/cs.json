@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.273",
+  "version": "1.10.274",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -12559,6 +12559,10 @@
   "s.laos.7998be8d": {
    "source": "Laos",
    "text": "Laos"
+  },
+  "s.large.5296d5cc": {
+   "source": "large",
+   "text": "velké"
   },
   "s.last-200-lines.83223e89": {
    "source": "last 200 lines",
