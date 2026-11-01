@@ -177,6 +177,8 @@ was reinstalled on purpose, *Forget it* and trust the new one.
 | *Backups kept at each destination* (`rbackup_keep`) | this machine's newest N stay at each destination (30); older ones are taken away after each backup (with their .sha256 and RESTORE.md). The newest and the one just sent are never taken away, and only backups this installation sent itself are: another machine's - even one whose name looks the same - never |
 | *And none older than (days)* (`rbackup_keep_days`) | older ones go too; 0: only the count |
 | *The password of the backups* (`rbackup_password`) | a secret setting, kept sealed |
+| *Try the backups* (`rbackup_verify`) | only by hand (default), after every backup (the one just sent), or once a week (after the first backup a week or more since the last try) - see below |
+| *What is backed up* (`rbackup_what`) | everything, the logs too (default), or the configuration only |
 
 They are ordinary settings: `isemon --settings` shows them (the password as
 its last two letters) and `isemon --set` changes them. The password is best set
@@ -195,6 +197,26 @@ On the command line:
 ```bash
 isemon --rbackup-status            # the destinations and the last backups
 isemon --rbackup-now               # one now, to every destination switched on
+```
+
+## Trying one (1.10.273)
+
+A backup nobody has opened is a backup nobody knows is good. *Try the newest*
+fetches the newest backup of this installation back from the first destination
+switched on, opens it with the password, checks every file in it against its
+manifest and reads what it carries the way putting it back would: the database
+(on the file and on a database server alike) and that a full administrator is
+in it - or, for a backup of the configuration alone, the configuration and its
+accounts. Nothing is put back, and nothing is left behind.
+
+The top of the page says when one was last tried (*Tried*); *Backups tried*
+lists every try with each of its checks - *Clear the list* empties it, the
+cross on a line takes that line off; the backups stay. *Try the backups* does
+it by itself after every backup, or once a week; a backup that went out but
+is not good is said as a failed backup. Events has every try.
+
+```bash
+isemon --rbackup-verify            # the newest one tried, here and now
 ```
 
 ## Putting one back

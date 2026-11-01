@@ -73,7 +73,8 @@ try:
     ok('everything, as until now, unless it is set', isemon.DEFAULTS['rbackup_what'], 'all')
     ok('...and so what is backed up', isemon.rb_what(), 'all')
     page = (ROOT / 'web' / 'index.php').read_text(encoding='utf-8')
-    ok('on the Backups pane', "'rbackup', 'rbackup_what'" in page)
+    _bk = page[page.index("  backup:  ['rbackup',"):]
+    ok('on the Backups pane', "'rbackup_what'" in _bk[:_bk.index(']')])
     ok('a configuration-only backup is told apart on the page',
        page.count("'configuration only'") >= 2)
 

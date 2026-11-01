@@ -6083,8 +6083,12 @@ function srcText(el) {
   <div class="ctl-pane wr" id="pane-backup" hidden>
     <div class="ctl-head">
       <h2 class="ctl-title">Backups</h2>
-      <p class="ctl-lede">A backup of everything - the database with its keys - locked with a
-        password and sent to another machine, on a schedule or now; and one put back.</p>
+      <p class="ctl-lede">A backup is everything isemon is: its database (the records, the bans,
+        the accounts, the settings, the certificates, the events) with the keys that open its
+        secrets - or, if wanted, the configuration alone - with RESTORE.md, the exact steps to
+        bring it back on a machine installed from nothing. Locked with the password below; sent
+        to every destination switched on - a folder, FTP, FTPS, SFTP, SCP or a Windows/Samba
+        share.</p>
     </div>
     <div id="rb-body">
       <style nonce="<?= h($nonce) ?>">
@@ -6158,8 +6162,24 @@ function srcText(el) {
         .rb-box .note.good{background:var(--ok-bg);border-radius:10px;padding:10px 12px}
         .rb-box .bad,#rb-body .bad{color:var(--crit)}
         .rb-box .wr-in{width:100%;box-sizing:border-box}
+        /* As plexmon 2.5.4 draws them (1.10.273): the backups tried, a
+           setting with long choices over two columns, and what is not in
+           use while the schedule is off faded whole. */
+        .rb-tried{display:flex;flex-direction:column;gap:6px}
+        .rb-try{border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+        .rb-try.bad{border-color:color-mix(in srgb,var(--crit,#f85149) 50%,var(--line))}
+        .rb-try summary{cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap;list-style:none}
+        .rb-try summary::-webkit-details-marker{display:none}
+        .rb-try-x{margin-left:auto}
+        .rb-checks{margin:8px 0 2px 16px;display:flex;flex-direction:column;gap:4px}
+        .rb-check{display:flex;gap:8px;align-items:baseline}
+        .rb-check .dot{flex:none;transform:translateY(-1px)}
+        #pane-backup .set-grid > .set-item.wide{grid-column:span 2;max-width:none}
+        @media (max-width: 760px){ #pane-backup .set-grid > .set-item.wide{grid-column:auto} }
+        #pane-backup .set-item.asleep{opacity:.45}
       </style>
       <div id="rb-top"></div>
+      <div class="card full" id="rb-tried-card" hidden><h2>Backups tried <span class="right" id="rb-tried-tools"></span></h2><div id="rb-tried"></div></div>
       <div class="card full"><h2>When, how many, and the password</h2><div id="sect-backup"></div></div>
       <div class="card full" id="rb-targets-card"><h2>Where they go <span class="right" id="rb-add-host"></span></h2>
         <div id="rb-targets"></div></div>
@@ -8390,6 +8410,8 @@ function markHead() { return [{words: 'Kept out', cls: 'mark'}]; }
    turns its icon red with it.
    ========================================================================== */
 var ICONS = {
+  /* An open book: How to put it back (1.10.273, as plexmon's). */
+  book: '<path d="M12 6.5C10 5 7 4.5 3.5 5v13.5C7 18 10 18.5 12 20c2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5V20"/>',
   archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M10 13h4"/>',
   shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
   /* A socket, a radio, and a plug with nothing behind it: the three doors
@@ -26056,8 +26078,8 @@ var PANES = {
             'tidy_daily', 'tidy_at', 'backup_daily',
             'backup_keep', 'backup_at'],
   /* Backups to another machine (1.10.228), drawn into Settings -> Backups. */
-  backup:  ['rbackup', 'rbackup_what', 'rbackup_at', 'rbackup_every', 'rbackup_day', 'rbackup_keep',
-            'rbackup_keep_days', 'rbackup_password'],
+  backup:  ['rbackup', 'rbackup_at', 'rbackup_every', 'rbackup_day', 'rbackup_keep',
+            'rbackup_keep_days', 'rbackup_password', 'rbackup_verify', 'rbackup_what'],
   /* Updates and restarts on a schedule (1.10.257), as otp 1.0.164 draws them:
      a card "On a schedule" in System updates and in Restart and power off. */
   osup:    ['osup_check', 'osup_check_at', 'osup_auto', 'osup_auto_what', 'osup_auto_every',
@@ -27233,6 +27255,8 @@ function settingItem(s) {
   }
   var item = el('div', 'set-item' + (isBool(s) || isBanMode(s) ? ' set-bool' : ''));
   item.dataset.key = s.key;
+  /* Over two columns, as plexmon draws it: its choices are long (1.10.273). */
+  if (s.key === 'rbackup_verify') item.classList.add('wide');
   var label = el('label', '', s.name || s.key);
   label.setAttribute('for', 'set-' + s.key);
   if (NEEDS_NET[s.key]) {
@@ -37980,6 +38004,11 @@ function drawRbTop() {
   else fact('Next', 'by hand only', 'warn');
   fact('Locked', d.locked ? 'with the password (AES-256)' : 'no password - nothing is sent', d.locked ? 'good' : 'bad');
   fact('Destinations', num(on.length) + ' of ' + num((d.targets || []).length) + ' switched on', '', true);
+  /* The last try (1.10.273, as plexmon 2.5.4): whether the newest backup
+     can be put back. */
+  var tried = (d.verified || [])[0];
+  fact('Tried', tried ? (tried.ok ? 'can be put back' : 'NOT GOOD') + ' · ' + ago(tried.at) : 'never',
+       tried ? (tried.ok ? 'good' : 'bad') : 'warn');
   words.appendChild(facts);
   if (mine && !mine.ok) {
     var bad = (mine.targets || []).filter(function (x) { return !x.ok; });
@@ -38000,6 +38029,15 @@ function drawRbTop() {
       .catch(function (e) { busy(now, false); oops(e); });
   };
   acts.appendChild(now);
+  var tryb = cmdButton('Try the newest', 'check', '');
+  tryb.disabled = !on.length || running || !d.locked;
+  explain(tryb, 'The newest backup of this installation fetched back from the first destination, opened with the password, every file checked, the database (or the configuration) read through - nothing is put back.');
+  tryb.onclick = function () {
+    busy(tryb, true);
+    api('rbackup', {action: 'verify'}).then(function (x) { toast(x.message, 'good'); RB.job = x.job; rbWatch(); })
+      .catch(function (e) { busy(tryb, false); oops(e); });
+  };
+  acts.appendChild(tryb);
   var dl = cmdButton('Download one here', 'download', '');
   dl.disabled = running || !d.locked;
   explain(dl, 'A backup made now, saved on the computer you are sitting at - locked with the password as the others. A large database takes a while: the download starts when it is ready.');
@@ -38012,7 +38050,7 @@ function drawRbTop() {
   var back = cmdButton('Put one back…', 'undo', '');
   back.onclick = rbPutBackFile;
   acts.appendChild(back);
-  var guide = cmdButton('How to put it back', 'info', '');
+  var guide = cmdButton('How to put it back', 'book', '');
   explain(guide, 'RESTORE.md - the exact steps to bring everything back from a backup, filled in with this installation, as every backup carries it. To read now, and to keep apart from the backups.');
   guide.onclick = rbGuide;
   acts.appendChild(guide);
@@ -38030,9 +38068,63 @@ function drawRbTop() {
   sy.id = 'rb-going-says';
   going.appendChild(sy);
   card.appendChild(going);
-  if (!d.locked) card.appendChild(el('p', 'note bad', 'The backups have no password, so nothing is sent: a backup holds the key of every password kept here. Set the password of the backups below (Make a strong one) and save.'));
   if (!d.tools.openssl) card.appendChild(el('p', 'note bad', 'openssl is not on this machine: backups cannot be locked (dnf install openssl).'));
   host.appendChild(card);
+  RB.verified = d.verified || [];
+  drawRbTried();
+}
+/* The backups tried (1.10.273, as plexmon 2.5.4): each try, every check of
+   it; the list can be emptied, or a try taken off - the backups themselves
+   stay. */
+function drawRbTried() {
+  var card = $('rb-tried-card'), host = $('rb-tried'), tools = $('rb-tried-tools');
+  if (!card) return;
+  var rows = RB.verified || [];
+  card.hidden = !rows.length;
+  clear(host);
+  clear(tools);
+  if (!rows.length) return;
+  var forget = function (q) {
+    api('rbackup', Object.assign({action: 'verified_forget'}, q)).then(function (d) {
+      toast(d.message, 'good'); RB.verified = d.verified || []; drawRbTop();
+    }).catch(oops);
+  };
+  var wipe = cmdButton('Clear the list', 'trash', 'small');
+  wipe.onclick = function () {
+    askThen('Clear the list of backups tried?', 'Every try goes from this list. The backups themselves stay where they are. Events keeps a line saying who cleared it.', 'Clear the list', true)
+      .then(function (yes) { if (yes) forget({all: 1}); });
+  };
+  tools.appendChild(wipe);
+  var list = el('div', 'rb-tried');
+  rows.slice(0, 8).forEach(function (v, i) {
+    var it = el('details', 'rb-try ' + (v.ok ? 'good' : 'bad'));
+    if (i === 0 && !v.ok) it.open = true;
+    var sm = el('summary');
+    sm.appendChild(el('span', 'dot ' + (v.ok ? 'ok' : 'bad')));
+    sm.appendChild(el('b', '', v.ok ? 'Can be put back' : 'Not good'));
+    sm.appendChild(noI18n(el('span', 'mono small', v.file || '?')));
+    sm.appendChild(el('span', 'muted small', '·'));
+    sm.appendChild(noI18n(el('span', 'muted small', ago(v.at))));
+    sm.appendChild(el('span', 'muted small', '·'));
+    sm.appendChild(noI18n(el('span', 'muted small', '→ ' + (v.target || ''))));
+    var x = el('button', 'xbtn rb-try-x');
+    x.type = 'button';
+    x.innerHTML = iconMarkup('close', 14);
+    x.title = 'Take it off the list';
+    x.onclick = function (e) { e.preventDefault(); e.stopPropagation(); forget({at: v.at}); };
+    sm.appendChild(x);
+    it.appendChild(sm);
+    var ul = el('div', 'rb-checks');
+    (v.checks || []).forEach(function (k) {
+      var row = el('div', 'rb-check');
+      row.appendChild(el('span', 'dot ' + (k.ok ? 'ok' : 'bad')));
+      row.appendChild(noI18n(el('span', '', k.what)));
+      ul.appendChild(row);
+    });
+    it.appendChild(ul);
+    list.appendChild(it);
+  });
+  host.appendChild(list);
 }
 /* RESTORE.md on the page: read here, downloaded as the file. */
 function rbGuide() {
@@ -38154,7 +38246,8 @@ function rbWatch() {
       if (j.running) { RB_POLL = setTimeout(step, paneLive('backup') ? 1000 : 5000); return; }
       RB_POLL = null;
       var r = j.result || {};
-      if (j.error) toast('the backup: ' + j.error, 'bad');
+      if (j.error) toast((j.what === 'verify' ? 'the backup tried: ' : 'the backup: ') + j.error, 'bad');
+      else if (j.what === 'verify') toast(r.message || 'tried: it can be put back', 'good');
       else if (r.made && ME && j.by === ME.name) {
         toast(r.message || 'ready', 'good');
         window.location.href = '?api=rbackup-download&made=' + encodeURIComponent(r.made);

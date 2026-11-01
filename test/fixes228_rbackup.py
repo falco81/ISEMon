@@ -748,7 +748,12 @@ try:
     page = (ROOT / 'web' / 'index.php').read_text(encoding='utf-8')
     ok('the pane is drawn by loadRbackup', 'function loadRbackup()' in page and
        'id="rb-top"' in page and 'id="sect-backup"' in page)
-    ok('its settings are in its pane', "backup:  ['rbackup', 'rbackup_what', 'rbackup_at'" in page)
+    # In plexmon's order since 1.10.273: the keys of the pane, whatever their order.
+    _bk = page[page.index("  backup:  ['rbackup',"):]
+    _bk = _bk[:_bk.index(']')]
+    ok('its settings are in its pane', all("'%s'" % k in _bk for k in (
+        'rbackup', 'rbackup_what', 'rbackup_at', 'rbackup_every', 'rbackup_day', 'rbackup_keep',
+        'rbackup_keep_days', 'rbackup_password')))
     ok('a backup is sent as the file itself with a header of ours, never multipart',
        "'X-Isemon-Rbackup': '1', 'Content-Type': 'application/octet-stream'" in page and
        "$what === 'rbackup-upload' && strpos($kind, 'application/octet-stream') === 0" in page)

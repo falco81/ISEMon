@@ -371,6 +371,23 @@ working.
 
 ## Version
 
+1.10.273
+
+- **Settings → Backups as plexmon 2.5.4 has it**: the same look - the facts
+  at the top with *Tried*, no red box under them (*Locked* says it), the
+  settings in plexmon's order and faded whole while they are not in use, *Try
+  the backups* over two columns - and its function: **a backup tried**. *Try
+  the newest* fetches the newest backup of this installation back from the
+  first destination, opens it with the password, checks every file against
+  its manifest and reads what it carries as putting it back would (the
+  database with a full administrator in it, or the configuration) - nothing
+  is put back. *Backups tried* lists every try with its checks. *Try the
+  backups* (`rbackup_verify`): only by hand, after every backup, or once a
+  week - which plexmon offers and does not do, and isemon does.
+  `isemon --rbackup-verify` on the command line. isemon's own *What is
+  backed up* (everything, or the configuration only) stays, in the place of
+  plexmon's Plex database.
+
 1.10.272
 
 - **Settings → The database → Tune it for this machine shows its settings

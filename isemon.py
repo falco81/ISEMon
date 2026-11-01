@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.272'
+__version__ = '1.10.273'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -901,6 +901,11 @@ DEFAULTS = {
     # carries, with the keys and the pages' own settings), put back without
     # touching the logs a machine has.
     'rbackup_what': 'all',
+    # Whether a backup is tried - fetched back from the first destination,
+    # opened with the password, every file checked and the database read
+    # through (1.10.273, as plexmon 2.5.4): only by hand, after every backup,
+    # or once a week after the backup.
+    'rbackup_verify': 'off',
     # Updates and restarts on a schedule (1.10.257; after otp 1.0.164-1.0.168),
     # Settings -> System updates and Restart and power off: a look for updates
     # every day, the updates put in by themselves in a window, and a restart
@@ -56689,6 +56694,7 @@ class Daemon(object):
         'upgrade_check': (0, 1), 'upgrade_url': 'str', 'downgrade_offered': (0, 1),
         'rbackup': (0, 1), 'rbackup_at': 'str', 'rbackup_every': ('daily', 'weekly'),
         'rbackup_what': ('all', 'config'),
+        'rbackup_verify': ('off', 'after', 'weekly'),
         'rbackup_day': (1, 7), 'rbackup_keep': (1, 1000), 'rbackup_keep_days': (0, 3650),
         'rbackup_password': 'str',
         'osup_check': (0, 1), 'osup_check_at': 'str', 'osup_auto': (0, 1),
@@ -56983,6 +56989,7 @@ class Daemon(object):
         'rbackup_keep': 'Backups kept at each destination',
         'rbackup_keep_days': 'And none older than (days)',
         'rbackup_password': 'The password of the backups',
+        'rbackup_verify': 'Try the backups',
         'osup_check': 'Look for updates every day',
         'osup_check_at': 'At',
         'osup_auto': 'Updates on a schedule',
@@ -58130,6 +58137,8 @@ class Daemon(object):
         'rbackup_keep': 'How many of this machine’s backups each destination keeps; the oldest '
                         'go first, the newest never.',
         'rbackup_keep_days': 'Older ones are taken away too - 0: only the count above decides.',
+        'rbackup_verify': 'The newest backup fetched back, opened with the password, every file '
+                          'checked and the database read through - nothing is put back.',
         'osup_check': 'This server looks what dnf (or apt) has waiting, every day at the time '
                       'below - for the cards here. Nothing is put in.',
         'osup_check_at': 'When, as <code>HH:MM</code> on this machine’s clock.',
@@ -58324,6 +58333,8 @@ class Daemon(object):
                              'rsa4096': 'RSA 4096 (RS256)'},
         'rbackup_what': {'all': 'Everything, the logs too',
                          'config': 'The configuration only, without the logs'},
+        'rbackup_verify': {'off': 'only by hand', 'after': 'after every backup, the one just sent',
+                           'weekly': 'once a week, the newest one'},
         'osup_auto_what': {'security': 'only the security updates', 'all': 'every update'},
         'osup_auto_every': {'daily': 'every day', 'weekly': 'every week, on the day below',
                             'monthly': 'on the first of every month'},
@@ -68951,7 +68962,8 @@ def rb_folder(name):
     return p
 
 
-RB_WORK_PREFIXES = ('isemon-rbackup-', 'isemon-rbhere-', 'isemon-putback-', 'isemon-fetch-')
+RB_WORK_PREFIXES = ('isemon-rbackup-', 'isemon-rbhere-', 'isemon-putback-', 'isemon-fetch-',
+                    'isemon-verify-')
 
 
 def rb_tidy_work(idle=86400):
@@ -70477,9 +70489,168 @@ def rb_job_start(daemon, by, only=None):
             raise RbError(run['error'])
         run['message'] = ('the backup went to every destination' if run['ok'] else
                           'the backup did not reach every destination')
+        # Tried as well, as Settings says (1.10.273): after every backup, or
+        # once a week - the first backup that went out a week or more after
+        # the last try.
+        if run['ok'] and rb_verify_due(daemon.store):
+            sent = [x for x in (run.get('targets') or []) if x.get('ok') and x.get('id')]
+            if sent:
+                progress(0, 1000, 'the backup just sent is tried')
+                v = rb_verify(daemon.store, by, sent[0]['id'], run.get('file'),
+                              lambda n, words: progress(n, 1000, words))
+                run['verified'] = v
+                if not v['ok']:
+                    raise RbError('sent, but it is not good: ' + v.get('said', ''))
+                run['message'] += '; tried: it can be put back'
         return run
     return daemon.job_start('rbackup', work, by=by, key='send',
                             label='A backup to the destinations')
+
+
+# ---- a backup tried (1.10.273, as plexmon 2.5.4) ---------------------------------------
+RB_VERIFIED_MOST = 20
+
+
+def rb_verified(store):
+    """The backups tried, the newest first."""
+    try:
+        got = json.loads(store.get_meta('rbackup:verified') or '[]')
+    except ValueError:
+        got = []
+    return [x for x in got if isinstance(x, dict)] if isinstance(got, list) else []
+
+
+def rb_verified_put(store, rows):
+    store.set_meta('rbackup:verified', json.dumps(rows[:RB_VERIFIED_MOST], default=str))
+
+
+def rb_verify_due(store, now=None):
+    """Whether the backup just sent is to be tried as well."""
+    how = str(CONFIG.get('rbackup_verify') or 'off')
+    if how == 'after':
+        return True
+    if how != 'weekly':
+        return False
+    last = max([float(x.get('at') or 0) for x in rb_verified(store)] or [0])
+    return (now or time.time()) - last >= 6.5 * 86400
+
+
+def rb_verify(store, by, tid=None, name=None, progress=None):
+    """The newest backup of this installation (or the one named) fetched
+    back from a destination, opened with the password, every file checked
+    against its manifest, and what it carries read through as putting it
+    back would read it - the database (on the file and on a server alike) or
+    the configuration. Nothing is put back. The try is kept, newest first."""
+    def say(n, words):
+        if progress:
+            progress(n, words)
+    if tid:
+        t = rb_target(store, tid)
+        if not t:
+            raise ValueError('no such destination')
+    else:
+        on = [x for x in rb_targets(store) if x.get('enabled')]
+        if not on:
+            raise ValueError('no destination to try: switch one on')
+        t = on[0]
+    if not rb_password():
+        raise ValueError('the backups have no password: there is nothing locked to try')
+    out = {'at': time.time(), 'by': by, 'target': t['name'], 'target_id': t['id'],
+           'ok': False, 'checks': []}
+    work = Path(tempfile.mkdtemp(prefix='isemon-verify-', dir=scratch_dir()))
+    os.chmod(str(work), 0o700)
+    try:
+        say(100, 'the backups at %s looked at' % t['name'])
+        files = rb_remote_list(store, t['id'])
+        if name:
+            pick = name if any(x['name'] == name for x in files) else None
+        else:
+            pick = next((x['name'] for x in files if x.get('mine')), None)
+        if not pick:
+            raise RbError('there is no backup of this installation at %s' % t['name'])
+        out['file'] = pick
+        say(200, 'fetched from %s' % t['name'])
+        local = work / 'b'
+        rb_fetch(store, t['id'], pick, str(local))
+        size = local.stat().st_size
+        out['bytes'] = size
+        say(450, 'opened with the password and every file checked')
+        top, m = rb_open(str(local), rb_password(), work)
+        try:
+            local.unlink()
+        except OSError:
+            pass
+        out['what'] = 'config' if m.get('what') == 'config' else 'all'
+        out['checks'].append({'what': 'opened with the password, %d file(s) as they were made'
+                              % len(m.get('files') or {}), 'ok': True})
+        say(750, 'what it carries read through')
+        if out['what'] == 'config':
+            # As putting it back reads it (rb_restore_config).
+            try:
+                conf = json.loads((top / RB_CONF).read_text(encoding='utf-8'))
+            except (OSError, ValueError):
+                conf = None
+            exp = conf.get('export') if isinstance(conf, dict) else None
+            ok = (isinstance(conf, dict) and isinstance(exp, dict) and
+                  conf.get('_what') == 'isemon configuration backup')
+            if not ok:
+                out['checks'].append({'what': 'its configuration is not readable, or not one '
+                                              'of isemon', 'ok': False})
+            else:
+                people = [u for u in (exp.get('users') or []) if isinstance(u, dict)]
+                out['checks'].append({'what': 'the configuration: %d setting(s), %d account(s)'
+                                      % (len(exp.get('settings') or {}), len(people)),
+                                      'ok': True})
+                admins = [u for u in people if u.get('role') == 'fulladmin'
+                          and not u.get('disabled')]
+                out['checks'].append({'what': 'a full administrator in it' if admins else
+                                      'no full administrator in it - put back, it would lock '
+                                      'everybody out', 'ok': bool(admins)})
+        else:
+            said, why = store.dump_peek(top / RB_DB)
+            if said is None:
+                out['checks'].append({'what': 'the database: %s' % why, 'ok': False})
+            else:
+                admins = said.get('admins')
+                counts = said.get('counts') or {}
+                words = ', '.join('{:,} {}'.format(int(v or 0), k) for k, v in counts.items()
+                                  if k in ('failed', 'passed', 'blocked', 'users'))
+                out['checks'].append({'what': 'the database read through%s' % (
+                    ': ' + words if words else ''), 'ok': True})
+                out['checks'].append({'what': 'a full administrator in it' if admins else
+                                      'no full administrator in it - put back, it would lock '
+                                      'everybody out', 'ok': bool(admins)})
+        out['made'] = m.get('made_words') or ''
+        out['isemon'] = m.get('isemon') or ''
+        out['ok'] = all(x['ok'] for x in out['checks'])
+    except Exception as e:                              # noqa: BLE001
+        out['checks'].append({'what': rb_scrub(str(e))[:300], 'ok': False})
+    finally:
+        shutil.rmtree(str(work), ignore_errors=True)
+    out['said'] = '; '.join(x['what'] for x in out['checks'] if not x['ok']) or 'all good'
+    rb_verified_put(store, [out] + rb_verified(store))
+    store.add_event('backup', 'a backup tried (%s at %s): %s' % (
+        out.get('file', '?'), t['name'], 'it can be put back' if out['ok'] else out['said']),
+        'info' if out['ok'] else 'bad', who=by)
+    say(1000, 'tried')
+    return out
+
+
+def rb_verify_start(daemon, by, tid=None, name=None):
+    """A backup tried, on a thread of its own; the page follows the job."""
+    rb_not_while(daemon, 'rbackup-restore', 'a backup is being put back: try one when it is '
+                                            'done')
+    going = rb_job_of(daemon)
+    if going and not going['done']:
+        raise ValueError('a backup is being made or tried already')
+
+    def work(progress):
+        v = rb_verify(daemon.store, by, tid, name, lambda n, words: progress(n, 1000, words))
+        if not v['ok']:
+            raise RbError('not good: ' + v['said'])
+        v['message'] = 'tried: it can be put back'
+        return v
+    return daemon.job_start('rbackup', work, by=by, key='verify', label='A backup tried')
 
 
 def rb_here_start(daemon, by):
@@ -70995,7 +71166,9 @@ def rb_page(daemon):
                       for k in RB_KINDS],
             'tools': rb_tools(), 'host': rb_host(), 'locked': bool(rb_password()),
             'iter': RB_ITER, 'site': CONFIG.get('site_name') or 'isemon', 'most': RB_MOST,
-            'next': rb_next_words(), 'on': bool(int(CONFIG.get('rbackup') or 0))}
+            'next': rb_next_words(), 'on': bool(int(CONFIG.get('rbackup') or 0)),
+            'verified': rb_verified(store)[:10],
+            'verify': str(CONFIG.get('rbackup_verify') or 'off')}
 
 
 def _rb_target_for(store, b):
@@ -71154,6 +71327,18 @@ def rb_do(daemon, b, by):
         store.add_event('backup', '%s deleted the backup %s at %s' % (by, name, t['name']),
                         'warn', who=by)
         return {'message': 'deleted'}
+    if act == 'verify':
+        return {'message': 'the backup is being tried',
+                'job': rb_job_view(rb_verify_start(daemon, by, str(b.get('id') or '') or None,
+                                                   str(b.get('name') or '') or None))}
+    if act == 'verified_forget':
+        got = rb_verified(store)
+        left = [] if b.get('all') else [x for x in got if abs(float(x.get('at') or 0) -
+                                                             float(b.get('at') or 0)) > 0.001]
+        rb_verified_put(store, left)
+        store.add_event('backup', '%s cleared %d line(s) of the backups tried (the backups stay)'
+                        % (by, len(got) - len(left)), who=by)
+        return {'message': 'cleared', 'verified': left}
     if act == 'restore_md':
         return rb_restore_guide(store)
     if act == 'runs_forget':
@@ -71354,6 +71539,26 @@ def cmd_rbackup_now(args, pal, store):
         else:
             pal.bad('%s: %s' % (x['name'], x.get('error')))
     return 0 if run['ok'] else 2
+
+
+def cmd_rbackup_verify(args, pal, store):
+    """The newest backup tried (1.10.273): fetched back, opened, every file
+    checked, what it carries read through - nothing put back."""
+    def said(done, words=''):
+        if words and sys.stdout.isatty():
+            sys.stdout.write('\r  %-70s' % words[:70])
+            sys.stdout.flush()
+    try:
+        v = rb_verify(store, 'the command line', progress=said)
+    except (RbError, ValueError) as e:
+        pal.bad(str(e))
+        return 1
+    if sys.stdout.isatty():
+        sys.stdout.write('\r%s\r' % (' ' * 74))
+    print('  %s at %s' % (v.get('file') or '?', v.get('target')))
+    for c in v['checks']:
+        (pal.good if c['ok'] else pal.bad)(c['what'])
+    return 0 if v['ok'] else 2
 
 
 def cmd_restore_bundle(args, pal, store):
@@ -86052,6 +86257,9 @@ def main(argv=None):
                           'passphrase of the file otp made')
     act.add_argument('--rbackup-now', action='store_true', dest='rbackup_now',
                      help='a backup to every destination switched on (Settings -> Backups), now')
+    act.add_argument('--rbackup-verify', action='store_true', dest='rbackup_verify',
+                     help='the newest backup tried: fetched back from the first destination, '
+                          'opened, every file checked - nothing put back')
     act.add_argument('--rbackup-status', action='store_true', dest='rbackup_status',
                      help='the backup destinations and the last backups sent')
     act.add_argument('--erase', metavar='WHAT', nargs='?', const='list',
@@ -86196,6 +86404,7 @@ def main(argv=None):
         (bool(args.export), cmd_export), (bool(args.import_), cmd_import),
         (args.backup, cmd_backup), (args.dump, cmd_dump), (bool(args.restore), cmd_restore),
         (args.rbackup_status, cmd_rbackup_status), (args.rbackup_now, cmd_rbackup_now),
+        (args.rbackup_verify, cmd_rbackup_verify),
         (bool(args.restore_bundle), cmd_restore_bundle),
         (args.rescan, cmd_rescan), (args.ptr_fill, cmd_ptr_fill),
         (bool(args.ptr), cmd_ptr), (bool(args.database), cmd_database),

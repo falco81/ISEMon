@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.272",
+  "version": "1.10.273",
   "made": "2026-11-01",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -292,6 +292,10 @@
    "source": "A backup fetched to download",
    "text": "A backup fetched to download"
   },
+  "s.a-backup-is-everything-isemon-is.adfe9958": {
+   "source": "A backup is everything isemon is: its database (the records, the bans, the accounts, the settings, the certificates, the events) with the keys that open its secrets - or, if wanted, the configuration alone - with RESTORE.md, the exact steps to bring it back on a machine installed from nothing. Locked with the password below; sent to every destination switched on - a folder, FTP, FTPS, SFTP, SCP or a Windows/Samba share.",
+   "text": "A backup is everything isemon is: its database (the records, the bans, the accounts, the settings, the certificates, the events) with the keys that open its secrets - or, if wanted, the configuration alone - with RESTORE.md, the exact steps to bring it back on a machine installed from nothing. Locked with the password below; sent to every destination switched on - a folder, FTP, FTPS, SFTP, SCP or a Windows/Samba share."
+  },
   "s.a-backup-made-now-and-sent.7f645c4d": {
    "source": "A backup made now and sent to every destination switched on - the same as the scheduled one.",
    "text": "A backup made now and sent to every destination switched on - the same as the scheduled one."
@@ -304,10 +308,6 @@
    "source": "A backup of everything is made and sent to every destination switched on, at the time below. Without it, only Back up now sends one.",
    "text": "A backup of everything is made and sent to every destination switched on, at the time below. Without it, only Back up now sends one."
   },
-  "s.a-backup-of-everything-the-database.4a2f1f25": {
-   "source": "A backup of everything - the database with its keys - locked with a password and sent to another machine, on a schedule or now; and one put back.",
-   "text": "A backup of everything - the database with its keys - locked with a password and sent to another machine, on a schedule or now; and one put back."
-  },
   "s.a-backup-to-download.1b3d5287": {
    "source": "A backup to download",
    "text": "A backup to download"
@@ -319,6 +319,10 @@
   "s.a-backup-to-the-destinations.4aa63245": {
    "source": "A backup to the destinations",
    "text": "A backup to the destinations"
+  },
+  "s.a-backup-tried.c5964deb": {
+   "source": "A backup tried",
+   "text": "A backup tried"
   },
   "s.a-ban-admin-may-ban-one.56e4d3eb": {
    "source": "a ban admin may ban one address and let one back in, and nothing more",
@@ -647,6 +651,10 @@
   "s.a-full-admin-may-change-anything.ecdff4fc": {
    "source": "A full admin may change anything: ban, unban, settings, the router, accounts.",
    "text": "A full admin may change anything: ban, unban, settings, the router, accounts."
+  },
+  "s.a-full-administrator-in-it.cdb289c4": {
+   "source": "a full administrator in it",
+   "text": "a full administrator in it"
   },
   "s.a-full-administrator-only.50d7842f": {
    "source": "a full administrator only",
@@ -2212,6 +2220,10 @@
    "source": "Afghanistan",
    "text": "Afghanistan"
   },
+  "s.after-every-backup-the-one-just.bf316a8d": {
+   "source": "after every backup, the one just sent",
+   "text": "after every backup, the one just sent"
+  },
   "s.after-it-where-it-is-not.36b3f076": {
    "source": "after it where it is not 53. The first one that hands over a",
    "text": "after it where it is not 53. The first one that hands over a"
@@ -3772,6 +3784,10 @@
    "source": "Backups to the destinations on a schedule",
    "text": "Backups to the destinations on a schedule"
   },
+  "s.backups-tried.7f11d5ea": {
+   "source": "Backups tried",
+   "text": "Backups tried"
+  },
   "s.backups.530cc25b": {
    "source": "Backups",
    "text": "Backups"
@@ -4532,6 +4548,14 @@
    "source": "Cameroon",
    "text": "Cameroon"
   },
+  "s.can-be-put-back.13402312": {
+   "source": "Can be put back",
+   "text": "Can be put back"
+  },
+  "s.can-be-put-back.e164128e": {
+   "source": "can be put back",
+   "text": "can be put back"
+  },
   "s.can-instead-write-each-ban-to.13fac5d6": {
    "source": "can instead write each ban to the pfSense the moment it is made, through the REST API package or over ssh.",
    "text": "can instead write each ban to the pfSense the moment it is made, through the REST API package or over ssh."
@@ -5032,6 +5056,10 @@
    "source": "Clear the list of backups sent?",
    "text": "Clear the list of backups sent?"
   },
+  "s.clear-the-list-of-backups-tried.1bcaa71d": {
+   "source": "Clear the list of backups tried?",
+   "text": "Clear the list of backups tried?"
+  },
   "s.clear-the-list.d2a19a06": {
    "source": "Clear the list",
    "text": "Clear the list"
@@ -5059,6 +5087,10 @@
   "s.clear.719ea396": {
    "source": "Clear",
    "text": "Clear"
+  },
+  "s.cleared.66b8c9e3": {
+   "source": "cleared",
+   "text": "cleared"
   },
   "s.click-a-row-for-the-whole.b1045694": {
    "source": "Click a row for the whole record: on a VPN login the authorisation profile, the directory groups, the policy that matched, and the firewall the session was handed — the downloadable ACL, drawn as rules rather than as one long line. That ACL arrives as a record of its own in the same log; it is not a login, so it is not listed as one.",
@@ -7759,6 +7791,10 @@
   "s.every-token-server.6f9e7a43": {
    "source": "every token server",
    "text": "every token server"
+  },
+  "s.every-try-goes-from-this-list.a47fb924": {
+   "source": "Every try goes from this list. The backups themselves stay where they are. Events keeps a line saying who cleared it.",
+   "text": "Every try goes from this list. The backups themselves stay where they are. Events keeps a line saying who cleared it."
   },
   "s.every-tunnel-group.0f769697": {
    "source": "every tunnel group",
@@ -11916,6 +11952,10 @@
    "source": "Its certificate",
    "text": "Its certificate"
   },
+  "s.its-configuration-is-not-readable-or.9c9596bf": {
+   "source": "its configuration is not readable, or not one of isemon",
+   "text": "its configuration is not readable, or not one of isemon"
+  },
   "s.its-content-lives-only-in-the.148535b7": {
    "source": "Its content lives only in the pf table. The sync here puts it back: set",
    "text": "Its content lives only in the pf table. The sync here puts it back: set"
@@ -14784,6 +14824,10 @@
    "source": "no flags will be drawn until it is",
    "text": "no flags will be drawn until it is"
   },
+  "s.no-full-administrator-in-it-put.c81bb221": {
+   "source": "no full administrator in it - put back, it would lock everybody out",
+   "text": "no full administrator in it - put back, it would lock everybody out"
+  },
   "s.no-ise-log-is-set-up.69e358de": {
    "source": "no ISE log is set up",
    "text": "no ISE log is set up"
@@ -15327,6 +15371,14 @@
   "s.not-given.1d6edf47": {
    "source": "not given",
    "text": "not given"
+  },
+  "s.not-good.3b66e675": {
+   "source": "Not good",
+   "text": "Not good"
+  },
+  "s.not-good.db04b217": {
+   "source": "NOT GOOD",
+   "text": "NOT GOOD"
   },
   "s.not-in-the-group-that-is.66223cc6": {
    "source": "not in the group that is allowed",
@@ -16628,6 +16680,10 @@
    "source": "once a day",
    "text": "once a day"
   },
+  "s.once-a-week-the-newest-one.1abdf1d0": {
+   "source": "once a week, the newest one",
+   "text": "once a week, the newest one"
+  },
   "s.once-by-hand-in-your-dns.c315ca57": {
    "source": "once, by hand, in your DNS",
    "text": "once, by hand, in your DNS"
@@ -16987,6 +17043,10 @@
   "s.only-bans-of-addresses-in-one.de17fa64": {
    "source": "Only bans of addresses in one country. The country is written down when the ban is made, so a history older than this is filled in from the country database as it stands now.",
    "text": "Only bans of addresses in one country. The country is written down when the ban is made, so a history older than this is filled in from the country database as it stands now."
+  },
+  "s.only-by-hand.ee9c7afc": {
+   "source": "only by hand",
+   "text": "only by hand"
   },
   "s.only-entries-carrying-our-own-mark.c42e461a": {
    "source": "Only entries carrying our own mark are added or removed. Anything you put there by hand, every other address list on the router, and all of your firewall rules are left exactly as they are.",
@@ -23304,17 +23364,25 @@
    "source": "the backup is being put back",
    "text": "the backup is being put back"
   },
+  "s.the-backup-is-being-tried.7d724ce2": {
+   "source": "the backup is being tried",
+   "text": "the backup is being tried"
+  },
   "s.the-backup-is-ready-the-download.c8f7061b": {
    "source": "the backup is ready: the download starts",
    "text": "the backup is ready: the download starts"
+  },
+  "s.the-backup-tried.87d8caeb": {
+   "source": "the backup tried:",
+   "text": "the backup tried:"
   },
   "s.the-backup-went-to-every-destination.3f830f16": {
    "source": "the backup went to every destination",
    "text": "the backup went to every destination"
   },
-  "s.the-backups-have-no-password-so.2ee8353c": {
-   "source": "The backups have no password, so nothing is sent: a backup holds the key of every password kept here. Set the password of the backups below (Make a strong one) and save.",
-   "text": "The backups have no password, so nothing is sent: a backup holds the key of every password kept here. Set the password of the backups below (Make a strong one) and save."
+  "s.the-backup.edab18f6": {
+   "source": "the backup:",
+   "text": "the backup:"
   },
   "s.the-backups-themselves-stay-where-they.fd18b874": {
    "source": "The backups themselves stay where they went",
@@ -25515,6 +25583,18 @@
   "s.the-new-versions-of-isemon-through.c77e686b": {
    "source": "The new versions of isemon through it",
    "text": "The new versions of isemon through it"
+  },
+  "s.the-newest-backup-fetched-back-opened.9503e99c": {
+   "source": "The newest backup fetched back, opened with the password, every file checked and the database read through - nothing is put back.",
+   "text": "The newest backup fetched back, opened with the password, every file checked and the database read through - nothing is put back."
+  },
+  "s.the-newest-backup-of-this-installation.eae9e31e": {
+   "source": "The newest backup of this installation fetched back from the first destination, opened with the password, every file checked, the database (or the configuration) read through - nothing is put back.",
+   "text": "The newest backup of this installation fetched back from the first destination, opened with the password, every file checked, the database (or the configuration) read through - nothing is put back."
+  },
+  "s.the-newest-backup-tried-fetched-back.6fd7f927": {
+   "source": "the newest backup tried: fetched back from the first destination, opened, every file checked - nothing put back",
+   "text": "the newest backup tried: fetched back from the first destination, opened, every file checked - nothing put back"
   },
   "s.the-newest-of-them-was.520efbef": {
    "source": "The newest of them was",
@@ -28476,6 +28556,14 @@
    "source": "trial",
    "text": "trial"
   },
+  "s.tried-it-can-be-put-back.a2d14001": {
+   "source": "tried: it can be put back",
+   "text": "tried: it can be put back"
+  },
+  "s.tried.a4f17df8": {
+   "source": "Tried",
+   "text": "Tried"
+  },
   "s.tries.39a8c320": {
    "source": "Tries",
    "text": "Tries"
@@ -28551,6 +28639,14 @@
   "s.try-reaching-it.1f463908": {
    "source": "Try reaching it",
    "text": "Try reaching it"
+  },
+  "s.try-the-backups.6ad4529d": {
+   "source": "Try the backups",
+   "text": "Try the backups"
+  },
+  "s.try-the-newest.2f623e6e": {
+   "source": "Try the newest",
+   "text": "Try the newest"
   },
   "s.try.3240aa0f": {
    "source": "try",
@@ -29231,6 +29327,10 @@
   "s.verdict.860360ac": {
    "source": "verdict",
    "text": "verdict"
+  },
+  "s.verify.86a4261d": {
+   "source": "verify",
+   "text": "verify"
   },
   "s.version-uptime-what-is-being-read.b4a1c90b": {
    "source": "Version, uptime, what is being read and how long the last read took.",
@@ -34977,10 +35077,6 @@
   "p.the-backup-is-back-what-it.e3cf277a": {
    "source": "the backup is back; what it replaced is kept as {0}",
    "text": "the backup is back; what it replaced is kept as {0}"
-  },
-  "p.the-backup.565eeb27": {
-   "source": "the backup: {0}",
-   "text": "the backup: {0}"
   },
   "p.the-bans-of-source-s-were.380dfd3a": {
    "source": "the bans of {0} source(s) were let go",
