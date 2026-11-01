@@ -371,6 +371,15 @@ working.
 
 ## Version
 
+1.10.275
+
+- **A password typed in Settings is dots**: every secret setting - the password
+  of the backups, of the routers, the directories, the database, the proxy, the
+  ban feed, the ACME tokens - was a box of text, so what was typed into it stood
+  there whole for anybody looking over a shoulder. They are password boxes now,
+  as plexmon's masked box: dots while typed, the one that is set still shown by
+  its last two letters, and no password manager offered to keep it.
+
 1.10.274
 
 - **Settings → Backups: the popups as plexmon 2.5.4 draws them too**: a

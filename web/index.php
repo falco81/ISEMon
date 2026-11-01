@@ -27419,8 +27419,14 @@ function settingItem(s) {
     input.type = 'text';
     input.value = s.value === null || s.value === undefined ? '' : String(s.value);
     if (s.secret) {
+      /* Dots while it is typed, as plexmon's masked box (1.10.275): typed
+         as text it stood there whole for anybody looking over a shoulder.
+         Not a sign-in of this page: no password manager is to keep it. */
+      input.type = 'password';
+      input.setAttribute('data-lpignore', 'true');
+      input.setAttribute('data-1p-ignore', 'true');
       input.placeholder = s.set ? 'set — leave as it is to keep it' : 'not set';
-      input.autocomplete = 'off';
+      input.autocomplete = 'new-password';
       /* Pressed, the dots are chosen whole: what is typed replaces them
          (1.10.217). */
       input.addEventListener('focus', function () {

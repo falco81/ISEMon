@@ -209,6 +209,13 @@ try:
         '#modal-box:has(.rb-box) .btn,#modal-box:has(.rb-kinds) .btn{min-height:38px;height:38px}' in page),
        (True, True, True))
     ok('Edit with the pencil', "var ed = cmdButton('Edit', 'edit', 'small');" in page)
+
+    print('\nA secret setting typed (1.10.275)')
+    m = page[page.index('    if (s.secret) {'):]
+    m = m[:m.index('\n    }\n')]
+    ok('dots while it is typed, and no password manager keeps it', (
+        "input.type = 'password';" in m, "input.autocomplete = 'new-password';" in m,
+        "data-lpignore" in m), (True, True, True))
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 
