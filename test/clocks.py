@@ -359,10 +359,14 @@ folder, otp, edu, store, daemon = fresh()
 WROTE_AT = float(int(time.time()))
 # Six hours for most of the year, five in the weeks when one of the two
 # has changed its clocks and the other has not yet.
-GAP = float(round(sum(
-    sign * isemon.datetime.fromtimestamp(WROTE_AT, __import__('zoneinfo').ZoneInfo(zone))
-    .utcoffset().total_seconds()
-    for sign, zone in ((1, 'Europe/Prague'), (-1, 'America/New_York')))))
+# ...and as the reader works it out: Prague's wall clock read as New York's,
+# so New York's offset is the one at that wall-clock time rather than at the
+# moment - in the hours around New York's own change they differ.
+_ZI = __import__('zoneinfo').ZoneInfo
+_WALL = isemon.datetime.fromtimestamp(WROTE_AT, _ZI('Europe/Prague'))
+GAP = float(round(_WALL.utcoffset().total_seconds()
+                  - _WALL.replace(tzinfo=None).replace(tzinfo=_ZI('America/New_York'))
+                  .utcoffset().total_seconds()))
 (otp / isemon.CONFIG['otp_name']).write_text(
     OTP_LINE.replace('Sep 25 11:32:48', prague_now(WROTE_AT)) + '\n')
 (edu / isemon.CONFIG['eduroam_name']).write_text(

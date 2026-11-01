@@ -169,10 +169,28 @@ def both(engine, label):
     def counted(self):
         if self.rows:
             paid['n'] += 1
-        return real_pay(self)
-    for how in ('one by one', 'together', 'together, its first writing refused'):
+        try:
+            return real_pay(self)
+        finally:
+            if self.spoiled:
+                spoiled['n'] += 1
+    real_begin = isemon.Storage.owe_begin
+    spoiled = {'n': 0}
+
+    def blind_begin(self, db, records):
+        # As if another connection wrote the rows already there after they
+        # were looked up: none of them is known to be there.
+        owe = real_begin(self, db, records)
+        if owe is not None:
+            for t in owe.there:
+                owe.there[t].clear()
+        return owe
+    hows = ('one by one', 'together', 'together, its first writing refused',
+            'together, rows written meanwhile by another connection')
+    for how in hows:
         isemon.Storage.OWE_ENGINES = () if how == 'one by one' else ('postgres', 'sqlite')
         refused = {'left': 1 if 'refused' in how else 0}
+        isemon.Storage.owe_begin = blind_begin if 'meanwhile' in how else real_begin
 
         def pay(self):
             if refused['left'] and self.rows:
@@ -185,16 +203,19 @@ def both(engine, label):
             got[how] = run(store, daemon)
         finally:
             isemon.OwedRows.pay = real_pay
+            isemon.Storage.owe_begin = real_begin
             store.close()
             shutil.rmtree(str(folder), ignore_errors=True)
     one = got['one by one']
     ok('%s: the stream did what it is there to do - bans, rows, sign-ins' % label,
        (len(one['bans']) >= 5, len(one['failed']) > 250, len(one['passed']) > 80,
         one['new'][2] == 1), (True, True, True, True))
-    for how in ('together', 'together, its first writing refused'):
+    for how in hows[1:]:
         for key in ('new', 'failed', 'passed', 'bans', 'ban history', 'events'):
             ok('%s, %s: %s the same as one by one' % (label, how, key), got[how][key], one[key])
     ok('%s: ...and the rows were written together' % label, paid['n'] > 0)
+    ok('%s: rows another connection wrote meanwhile were found out, and the lot taken again'
+       % label, spoiled['n'] > 0)
 
 
 try:
@@ -214,6 +235,10 @@ try:
         both({'engine': 'postgres', 'host': host or '127.0.0.1', 'port': int(port or 5432),
               'name': name or 'isemon', 'user': user or 'isemon', 'password': word,
               'timeout': 10}, 'PostgreSQL')
+
+    print('\nA session as it lands')
+    ok('without its NULs, as every value is written', (isemon.OwedRows.key('a\x00b'),
+                                                       isemon.OwedRows.key(None)), ('ab', None))
 
     print('\nWhere it is done')
     isemon.Storage.OWE_ENGINES = ('postgres',)

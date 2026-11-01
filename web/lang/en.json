@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.270",
-  "made": "2026-10-31",
+  "version": "1.10.271",
+  "made": "2026-11-01",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -19956,6 +19956,10 @@
    "source": "Row",
    "text": "Row"
   },
+  "s.rows-written-meanwhile-elsewhere.f117b8dc": {
+   "source": "rows written meanwhile elsewhere",
+   "text": "rows written meanwhile elsewhere"
+  },
   "s.rows.6c30d261": {
    "source": "rows",
    "text": "rows"
@@ -34089,6 +34093,10 @@
   "p.of-ours-when-last-read.c168ce64": {
    "source": "{0} of ours, when last read",
    "text": "{0} of ours, when last read"
+  },
+  "p.of-rows-were-written-meanwhile-by.c777d6c8": {
+   "source": "{0} of {1} rows were written meanwhile by another connection",
+   "text": "{0} of {1} rows were written meanwhile by another connection"
   },
   "p.of-somebody-else-s-left-alone.6e5e9d06": {
    "source": "· {0} of somebody else’s left alone",

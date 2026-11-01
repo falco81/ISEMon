@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.270'
+__version__ = '1.10.271'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2874,7 +2874,25 @@ def same_address(addr):
     is the same single address, and reading it as a range of its own makes
     every IPv6 entry look missing - so it gets added again on every sync and
     the router says "already have such entry" every time.
+
+    The answer about a string never changes, so it is remembered as
+    `is_address`'s is (1.10.270): every record asks it two or three times,
+    of the same few thousand addresses.
     """
+    key = addr if addr.__class__ is str else str(addr or '')
+    got = _SAME_ADDRESS.get(key)
+    if got is None:
+        got = _same_address(key)
+        if len(_SAME_ADDRESS) > 200000:
+            _SAME_ADDRESS.clear()
+        _SAME_ADDRESS[key] = got
+    return got
+
+
+_SAME_ADDRESS = {}
+
+
+def _same_address(addr):
     text = str(addr or '').strip()
     try:
         if '/' in text:
@@ -20012,10 +20030,13 @@ class OwedRows(object):
     (`there`), and one not looked up then is asked on its own, as before.
     """
 
-    __slots__ = ('db', 'rows', 'busy', 'asked', 'there', 'seen')
+    __slots__ = ('db', 'rows', 'busy', 'asked', 'there', 'seen', 'spoiled')
 
     def __init__(self, db):
         self.db = db
+        # Fewer rows went in than were held: another connection wrote some of
+        # them meanwhile, and what was said new of them was not (see `pay`).
+        self.spoiled = False
         self.rows = {}               # the statement -> its rows, in order
         self.busy = False            # a look of its own: written nothing first
         self.asked = {'failed': set(), 'passed': set()}
@@ -20025,8 +20046,25 @@ class OwedRows(object):
     def pay(self):
         rows, self.rows = self.rows, {}
         for sql, lot in rows.items():
-            if lot:
-                self.db.executemany(sql, lot)
+            if not lot:
+                continue
+            got = self.db.executemany(sql, lot)
+            # Every one of them was looked up and none was there: one that
+            # did not go in was written by another connection since - a
+            # second isemon on the same database, a replay by hand - and was
+            # judged here as new. The lot is taken again a record at a time,
+            # where each INSERT says for itself, as it always did.
+            n = getattr(got, 'rowcount', -1)
+            if n is not None and 0 <= n < len(lot):
+                self.spoiled = True
+                raise StorageError('%d of %d rows were written meanwhile by another connection'
+                                   % (len(lot) - n, len(lot)))
+
+    @staticmethod
+    def key(value):
+        """A session as it lands in the table: without NULs, as `Db._no_nul`
+        writes every value."""
+        return value.replace('\x00', '') if value.__class__ is str else value
 
 
 class Db(object):
@@ -35328,7 +35366,7 @@ class Storage(object):
         for r in records:
             sid = getattr(r, 'session', None)
             if sid and isinstance(sid, str):
-                keys.append(self.fits_ident(sid, 'an ISE session id'))
+                keys.append(OwedRows.key(self.fits_ident(sid, 'an ISE session id')))
         keys = list(dict.fromkeys(keys))
         for table in ('failed', 'passed'):
             for at in range(0, len(keys), 500):
@@ -35352,7 +35390,7 @@ class Storage(object):
         """One new row of a lot held to be written with the others; whether
         it is new, as INSERT OR IGNORE would have said."""
         owe = self._local.owed
-        key = args[0]
+        key = OwedRows.key(args[0])
         if key in owe.seen[table]:
             return False
         if key in owe.asked[table]:
@@ -35364,7 +35402,7 @@ class Storage(object):
             owe.busy = True
             try:
                 there = owe.db.execute('SELECT 1 AS one FROM %s WHERE session=?' % table,
-                                       (key,)).fetchone() is not None
+                                       (args[0],)).fetchone() is not None
             finally:
                 owe.busy = False
         if there:
@@ -48466,6 +48504,8 @@ class Daemon(object):
                                 took = self.take_record(kind, record, judge=judge)
                                 if joined and raw.get_transaction_status() == 3:   # INERROR
                                     raise StorageError('the record was refused')
+                                if owe is not None and owe.spoiled:
+                                    raise StorageError('rows written meanwhile elsewhere')
                             except Exception as e:
                                 raise TakeCarefully(str(e)) from e
                             if took:
@@ -48539,6 +48579,8 @@ class Daemon(object):
                             owe.pay()
                         except Exception as e:
                             raise TakeCarefully(str(e)) from e
+                        if owe.spoiled:
+                            raise TakeCarefully('rows written meanwhile elsewhere')
                 new += got
                 careful = False
             except TakeCarefully:

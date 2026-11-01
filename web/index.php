@@ -39084,17 +39084,27 @@ function fwSave() {
    said "waiting for root…" for up to five more. */
 function rootWaits(d) {
   var r = d && (d.root_state || d.root);
-  return !!(r && typeof r === 'object' && r.pending);
+  /* ...only where root's helper is there to do it: without it the change
+     waits until it is, and the pane asks every five seconds meanwhile. */
+  return !!(r && typeof r === 'object' && r.pending && r.helper);
 }
+/* One chain of asking a pane: loading it again starts a new one, and the
+   old one - its question perhaps still out - ends at its next step rather
+   than going on beside it. */
 function paneAgain(key, again) {
   var S = key === 'fw' ? FW : TLS;
-  return function () { S.timer = setTimeout(again, rootWaits(S.last) ? 700 : 5000); };
+  var mine = S.gen = (S.gen || 0) + 1;
+  return function () {
+    if (S.gen !== mine) return;
+    S.timer = setTimeout(again, rootWaits(S.last) ? 700 : 5000);
+  };
 }
 function loadFw() {
   api('web-firewall').then(drawFw).catch(oops);
   clearTimeout(FW.timer);
-  var next = paneAgain('fw', step);
+  var next = paneAgain('fw', step), gen = FW.gen;
   function step() {
+    if (FW.gen !== gen) return;
     if (!paneLive('fw')) { FW.timer = null; return; }
     if (document.hidden) return next();
     if ($('modal') && !$('modal').hidden) return next();
@@ -39907,8 +39917,9 @@ var TLS = {last: null, timer: null};
 function loadTls() {
   api('web-tls').then(drawTls).catch(oops);
   clearTimeout(TLS.timer);
-  var next = paneAgain('tls', step);
+  var next = paneAgain('tls', step), gen = TLS.gen;
   function step() {
+    if (TLS.gen !== gen) return;
     if (!paneLive('tls')) { TLS.timer = null; return; }
     if (document.hidden) return next();
     if ($('modal') && !$('modal').hidden) return next();

@@ -151,8 +151,13 @@ try:
 
     print('\nThe panes that wait for root')
     ok('Firewall and access, Certificates and TLS: 0.7 s while root has it to do, 5 s otherwise',
-       ('rootWaits(S.last) ? 700 : 5000' in page, "var next = paneAgain('fw', step);" in page,
-        "var next = paneAgain('tls', step);" in page), (True, True, True))
+       ('rootWaits(S.last) ? 700 : 5000' in page, "var next = paneAgain('fw', step), gen = FW.gen;" in page,
+        "var next = paneAgain('tls', step), gen = TLS.gen;" in page), (True, True, True))
+    ok('...only while root\'s helper is there to do it',
+       'return !!(r && typeof r === \'object\' && r.pending && r.helper);' in page)
+    ok('...loaded again, the old chain ends rather than going on beside the new one',
+       (page.count('    if (S.gen !== mine) return;'), page.count('if (FW.gen !== gen) return;'),
+        page.count('if (TLS.gen !== gen) return;')), (1, 1, 1))
     ok('...the next question only once the last is answered',
        page.count(".catch(function () {}).then(next);"), 2)
     ok('...the TLS pane\'s root state and the firewall\'s both read',

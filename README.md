@@ -371,6 +371,27 @@ working.
 
 ## Version
 
+1.10.271
+
+- **A second isemon writing the same records is found out**: the rows of a
+  lot are written together on PostgreSQL (1.10.270), and whether each was
+  new is known from a look at the lot's start. A record written meanwhile by
+  another connection - a second isemon on the same database, a replay by
+  hand - was then judged here as new as well, its refusal counted twice. How
+  many rows went in is now held against how many were held; where fewer
+  did, the lot is undone and taken again a record at a time, where each
+  INSERT says for itself, as before. A session with a NUL in it is looked up
+  as it is written, without it.
+- **Firewall and access, Certificates and TLS: one chain of asking**: the
+  pane loaded again while its question was still out (Save, Try again, a
+  look at another pane and back) went on asking twice, a chain more each
+  time, until it was closed. Loading it again now ends the old one. The
+  quick asking while root has a change to put in is only where root's
+  helper is there to do it; without it the pane asks every five seconds.
+- **An address written one way, remembered**: what every record asks two or
+  three times of the same few thousand addresses is worked out once -
+  about a tenth more records a second.
+
 1.10.270
 
 - **Twice the records a second on PostgreSQL**: a lot of records was one
