@@ -602,6 +602,31 @@ try:
             'a wrong pairing code', 'acme push: paired with', 'was pasted', 'was forgotten',
             'no longer taken')))
 
+    print('\nThe card\'s changes wait for the save bar (1.10.280)')
+    acme3 = Acme(base, 'third')
+    acme3.app_id, acme3.enc = acme.app_id, acme.enc
+    st, d = admin({'action': 'save', 'on': True, 'other_names': True, 'add': ['junk'],
+                   'forget': []})
+    ok('one bad key in what is saved: refused, nothing of it saved',
+       (st, isemon.push_conf(store)), (400, {'on': False, 'other_names': False}))
+    st, d = admin({'action': 'save', 'on': True, 'other_names': True, 'add': [acme3.text],
+                   'forget': [acme2.kid]})
+    ok('saved at once: on, other names, a key taken, a key forgotten', (
+        st, d['on'], d['other_names'], [k['key_id'] for k in d['keys']], d['message'][:6]),
+       (200, True, True, [acme3.kid], 'saved:'))
+    ok('...and the key taken may ask', acme3.post('inventory', {})[0], 200)
+    st, d = admin({'action': 'save', 'on': None, 'other_names': None, 'add': [], 'forget': []})
+    ok('nothing different: said so', (st, d['message']), (200, 'nothing was different'))
+    st, d = admin({'action': 'save', 'forget': ['0123456789abcdef']})
+    ok('a key to forget that is not here: refused', st, 400)
+    st, d = admin({'action': 'save', 'on': False, 'add': [acme2.text]})
+    ok('a key added while switching off: refused, nothing changed', (st, isemon.push_conf(store)['on']),
+       (400, True))
+    st, d = admin({'action': 'save', 'on': False, 'other_names': False}, who='watcher')
+    ok('read only may not save', st, 403)
+    st, d = admin({'action': 'save', 'on': False, 'other_names': False})
+    ok('switched off by the save bar', (st, d['on'], d['other_names']), (200, False, False))
+
     print('\nThe page')
     page = (ROOT / 'web' / 'index.php').read_text()
     ok('acme\'s four requests before any session or same-page check', (
@@ -616,6 +641,13 @@ try:
                                             "'Or paste acme" in page,
                                             "'Take certificates of other names'" in page),
        (True,) * 5)
+    ok('its changes wait for the save bar: kept as pending, saved at once, put back by Reset', (
+        "extraPending('acme-push', {save: pushSave, reset: pushReset});" in page,
+        "api('acme-push-admin', {action: 'save'," in page,
+        "var sw = wrSwitch(on, function (v) { pushWant({on: v}); }, !may);" in page,
+        "pushDo({action: 'off'})" not in page, "pushDo({action: 'forget'" not in page,
+        "pushDo({action: 'paste'" not in page,
+        "var SAVE_PANES = ['fw', 'time', 'about', 'tls'];" in page), (True,) * 7)
 finally:
     if php:
         php.terminate()

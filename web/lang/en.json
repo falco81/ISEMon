@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.279",
+  "version": "1.10.280",
   "made": "2026-11-01",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -1900,9 +1900,9 @@
    "source": "acme (pushed here)",
    "text": "acme (pushed here)"
   },
-  "s.acme-pushes-the-dashboard-s-certificate.abc6ecb6": {
-   "source": "acme pushes the dashboard’s certificate here and renews it; what it pushes goes in as an upload does, and Automatic certificates leave it alone from then on.",
-   "text": "acme pushes the dashboard’s certificate here and renews it; what it pushes goes in as an upload does, and Automatic certificates leave it alone from then on."
+  "s.acme-pushes-the-dashboard-s-certificate.170fe8e2": {
+   "source": "acme pushes the dashboard’s certificate here and renews it; what it pushes goes in as an upload does, and Automatic certificates leave it alone from then on. Off again: nothing more is taken, the certificate the dashboard has stays as it is, the pairing is kept.",
+   "text": "acme pushes the dashboard’s certificate here and renews it; what it pushes goes in as an upload does, and Automatic certificates leave it alone from then on. Off again: nothing more is taken, the certificate the dashboard has stays as it is, the pairing is kept."
   },
   "s.acme-renews-it.24be8eb7": {
    "source": "ACME renews it",
@@ -9072,10 +9072,6 @@
    "source": "Forget them",
    "text": "Forget them"
   },
-  "s.forget-this-acme.5ce8d32e": {
-   "source": "Forget this acme?",
-   "text": "Forget this acme?"
-  },
   "s.forget-who-fetched-the-list.afe0c297": {
    "source": "Forget who fetched the list",
    "text": "Forget who fetched the list"
@@ -15704,6 +15700,10 @@
    "source": "Not this folder",
    "text": "Not this folder"
   },
+  "s.not-this-one.febeb00d": {
+   "source": "Not this one",
+   "text": "Not this one"
+  },
   "s.not-touched-at-all.f9dcd6f8": {
    "source": "not touched at all",
    "text": "not touched at all"
@@ -16024,13 +16024,9 @@
    "source": "Nothing may ever ban it; a ban it has now is lifted.",
    "text": "Nothing may ever ban it; a ban it has now is lifted."
   },
-  "s.nothing-more-is-taken-from-any.4a873087": {
-   "source": "Nothing more is taken from any acme; the certificate the dashboard has stays as it is. The pairing is kept for when it is switched on again.",
-   "text": "Nothing more is taken from any acme; the certificate the dashboard has stays as it is. The pairing is kept for when it is switched on again."
-  },
-  "s.nothing-more-is-taken-from-it.1f434708": {
-   "source": "Nothing more is taken from it; the certificate the dashboard has stays as it is. Pairing again brings it back.",
-   "text": "Nothing more is taken from it; the certificate the dashboard has stays as it is. Pairing again brings it back."
+  "s.nothing-more-is-taken-from-it.02f623de": {
+   "source": "Nothing more is taken from it once this is saved; the certificate the dashboard has stays as it is. Pairing again brings it back.",
+   "text": "Nothing more is taken from it once this is saved; the certificate the dashboard has stays as it is. Pairing again brings it back."
   },
   "s.nothing-needed-changing.5a84becb": {
    "source": "Nothing needed changing.",
@@ -22288,6 +22284,10 @@
    "source": "Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "Switched off, not one file is opened and nothing anywhere behaves differently."
   },
+  "s.switched-off-not-saved-yet-save.11f9dd55": {
+   "source": "Switched off - not saved yet: Save below.",
+   "text": "Switched off - not saved yet: Save below."
+  },
   "s.switched-off-nothing-is-sent-here.9f210341": {
    "source": "Switched off: nothing is sent here.",
    "text": "Switched off: nothing is sent here."
@@ -22331,6 +22331,10 @@
   "s.switched-on-it-opens-by-itself.07cae8ec": {
    "source": "). Switched on, it opens by itself when root signs in there;",
    "text": "). Switched on, it opens by itself when root signs in there;"
+  },
+  "s.switched-on-not-saved-yet-save.53e4030b": {
+   "source": "Switched on - not saved yet: Save below, then pair it.",
+   "text": "Switched on - not saved yet: Save below, then pair it."
   },
   "s.switched-on-the-security-logs-are.bfc450e4": {
    "source": "Switched on, the Security logs are read the way the ISE logs are — one folder per controller, all of them read into one timeline — and a",
@@ -22584,10 +22588,6 @@
    "source": "Take it out",
    "text": "Take it out"
   },
-  "s.take-no-more-certificates-from-acme.08676a50": {
-   "source": "Take no more certificates from acme?",
-   "text": "Take no more certificates from acme?"
-  },
   "s.take-one-off-it.37587b47": {
    "source": "take one off it",
    "text": "take one off it"
@@ -22719,6 +22719,10 @@
   "s.taken-out-save-to-keep-it.0676775d": {
    "source": "taken out — save to keep it",
    "text": "taken out — save to keep it"
+  },
+  "s.taken-when-saved.f75fe279": {
+   "source": "taken when saved",
+   "text": "taken when saved"
   },
   "s.taken.13ed3655": {
    "source": "taken",
@@ -22931,6 +22935,10 @@
   "s.that-is-not-a-settings-file.f7945103": {
    "source": "that is not a settings file: it is not JSON",
    "text": "that is not a settings file: it is not JSON"
+  },
+  "s.that-is-not-acme-s-key.47a791f6": {
+   "source": "that is not acme’s key - one line: acme-push-ed25519 AAAA… comment",
+   "text": "that is not acme’s key - one line: acme-push-ed25519 AAAA… comment"
   },
   "s.that-is-not-json.12d75bf4": {
    "source": "that is not JSON",

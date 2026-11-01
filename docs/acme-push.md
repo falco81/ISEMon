@@ -16,7 +16,9 @@ changed for this.
 ## Setting it up
 
 1. **Settings → Certificates and TLS → Certificates from acme**: switch on
-   *Take certificates from acme*. isemon makes its id and its sealing key
+   *Take certificates from acme* and **Save the changes** (the card's
+   switches, a pasted key and *Forget it* wait for the save bar, as every
+   setting does). isemon makes its id and its sealing key
    (X25519) once; the private half is sealed in the database.
 2. *Pair with an acme*: a code is shown **once** (16 letters,
    `XXXX-XXXX-XXXX-XXXX`, 15 minutes, five wrong tries and it is gone).

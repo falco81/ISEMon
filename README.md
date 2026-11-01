@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.280
+
+- **Certificates from acme: the changes wait for the save bar**, as every
+  setting does. *Take certificates from acme*, *Take certificates of other
+  names*, acme's key pasted (*Take this key*) and *Forget it* beside a paired
+  acme are marked as changed and done only by **Save the changes** at the
+  bottom - all of them at once, every pasted key checked before anything is
+  written - and *Put them back* forgets them. The save bar is on
+  Certificates and TLS always. *Pair with an acme* (and *Take it back*)
+  stay a button that does what it says when pressed, as *Request (CSR)*
+  does: it shows a code, and is offered once the switch is saved on.
+
 1.10.279
 
 - **Certificates from acme (acme push)**: acme - the certificate manager of

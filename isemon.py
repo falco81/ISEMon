@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.279'
+__version__ = '1.10.280'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -67624,6 +67624,36 @@ def push_do(daemon, data, by):
     act = str(data.get('action') or '')
     conf = push_conf(store)
     msg, extra = '', {}
+    if act == 'save':
+        # What the card's changes are, saved by the save bar at once
+        # (1.10.280): every key checked before anything is written.
+        adds = [push_key_text(t) for t in (data.get('add') or [])[:PUSH_KEYS_MOST]]
+        drops = [str(k) for k in (data.get('forget') or [])[:PUSH_KEYS_MOST]]
+        known = {k.get('key_id') for k in push_keys(store)}
+        if any(k not in known for k in drops):
+            raise ValueError('a key to forget is not one paired here')
+        want_on = conf['on'] if data.get('on') is None else bool(data.get('on'))
+        if adds and not want_on:
+            raise ValueError('acme\'s key is taken only while certificates are taken from acme')
+        said = []
+        if want_on != conf['on']:
+            push_do(daemon, {'action': 'on' if want_on else 'off'}, by)
+            said.append('certificates %s from acme' % ('taken' if want_on else 'no longer taken'))
+        if data.get('other_names') is not None and \
+                bool(data['other_names']) != push_conf(store)['other_names']:
+            push_do(daemon, {'action': 'other_names', 'on': bool(data['other_names'])}, by)
+            said.append('other names %s' % ('taken' if data['other_names'] else 'refused'))
+        for kid in drops:
+            push_do(daemon, {'action': 'forget', 'key_id': kid}, by)
+            said.append('the key %s forgotten' % kid)
+        for pub, comment in adds:
+            kid = push_key_take(store, pub, comment, comment, by, 'pasted')
+            store.add_event('control', 'acme push: acme\'s key %s (%s) was pasted' % (kid, comment),
+                            who=by)
+            said.append('acme\'s key %s taken' % kid)
+        out = push_page(daemon, True)
+        out['message'] = 'saved: ' + '; '.join(said) if said else 'nothing was different'
+        return out
     if act in ('on', 'off'):
         conf['on'] = act == 'on'
         _push_put(store, 'acme_push:conf', conf)
