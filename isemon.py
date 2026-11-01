@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.275'
+__version__ = '1.10.276'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -13646,9 +13646,10 @@ def rosapi_ssh_key(store, name):
     return unseal_secret(store.get_meta('rosapi_sshkey_%s' % name, None) or '') or ''
 
 
-def rosapi_masked(rows):
+def rosapi_masked(rows, shown=True):
     """The firewalls with each API password taken out, and whether there is
-    one said instead - what the page is given."""
+    one said instead - what the page is given. Its last two letters only to
+    somebody who may change it (`shown`), as every other secret (1.10.276)."""
     if not isinstance(rows, (list, tuple)):
         return rows
     out = []
@@ -13659,7 +13660,8 @@ def rosapi_masked(rows):
             api['password_set'] = bool(api.get('password'))
             # Shown back the way every other password in Settings is
             # (1.10.215): its length and its last two letters.
-            api['password'] = secret_shown(unseal_secret(api.get('password') or '') or '')
+            api['password'] = (secret_shown(unseal_secret(api.get('password') or '') or '')
+                               if shown else '')
             row['api'] = api
         out.append(row)
     return out
@@ -58400,10 +58402,11 @@ class Daemon(object):
                 one['lags'] = self.fw_lags() if hasattr(self, 'fw_lags') else {}
                 # A MikroTik's API password (1.10.211) is never shown back:
                 # whether one is set, and nothing else.
-                one['value'] = rosapi_masked(one.get('value'))
-                one['effective'] = rosapi_masked(one['effective'])
-                one['file'] = rosapi_masked(one.get('file')) if one.get('file') else one.get('file')
-                one['default'] = rosapi_masked(one.get('default'))
+                one['value'] = rosapi_masked(one.get('value'), may_change)
+                one['effective'] = rosapi_masked(one['effective'], may_change)
+                one['file'] = (rosapi_masked(one.get('file'), may_change) if one.get('file')
+                               else one.get('file'))
+                one['default'] = rosapi_masked(one.get('default'), may_change)
                 one['api_states'] = self.rosapi.states() if hasattr(self, 'rosapi') else {}
                 one['api_pins'] = {}
                 # ...and the certificate kept for it, as the banning's key is

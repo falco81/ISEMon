@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.275",
+  "version": "1.10.276",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -29307,6 +29307,10 @@
   "s.value.8dce170d": {
    "source": "Value",
    "text": "Hodnota"
+  },
+  "s.value.f32b67c7": {
+   "source": "value",
+   "text": "hodnota"
   },
   "s.vanuatu.d16ad2dc": {
    "source": "Vanuatu",

@@ -210,12 +210,11 @@ try:
        (True, True, True))
     ok('Edit with the pencil', "var ed = cmdButton('Edit', 'edit', 'small');" in page)
 
-    print('\nA secret setting typed (1.10.275)')
+    print('\nA secret setting typed (1.10.275; the masked box since 1.10.276)')
     m = page[page.index('    if (s.secret) {'):]
     m = m[:m.index('\n    }\n')]
-    ok('dots while it is typed, and no password manager keeps it', (
-        "input.type = 'password';" in m, "input.autocomplete = 'new-password';" in m,
-        "data-lpignore" in m), (True, True, True))
+    ok('dots while it is typed, the kept one by its last two letters',
+       'maskInput(input, input.value);' in m)
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 

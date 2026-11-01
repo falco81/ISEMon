@@ -371,6 +371,21 @@ working.
 
 ## Version
 
+1.10.276
+
+- **A kept password by its last two letters, a typed one as dots**: the
+  password boxes of 1.10.275 hid the last two letters of the password that
+  is kept as well. Every password and token is now plexmon's masked box: one
+  that is kept is shown as the daemon sends it - dots and its last two
+  letters, to a full administrator only - and what is typed is dots, every
+  letter, its own value kept beside what is shown; typing into a kept one
+  starts it afresh, nothing can be copied out of it, no password manager is
+  offered it. The settings (backups, routers, directories, database, proxy,
+  ban feed, ACME tokens), a backup destination's passwords, and a MikroTik's
+  API password on Reaching the firewall - which was typed as text, and whose
+  last two letters went to every account that could read the settings: now
+  only to a full administrator, as every other secret.
+
 1.10.275
 
 - **A password typed in Settings is dots**: every secret setting - the password

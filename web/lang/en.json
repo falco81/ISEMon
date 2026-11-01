@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.275",
+  "version": "1.10.276",
   "made": "2026-11-01",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -29307,6 +29307,10 @@
   "s.value.8dce170d": {
    "source": "Value",
    "text": "Value"
+  },
+  "s.value.f32b67c7": {
+   "source": "value",
+   "text": "value"
   },
   "s.vanuatu.d16ad2dc": {
    "source": "Vanuatu",

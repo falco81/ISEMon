@@ -7126,6 +7126,82 @@ function oops(e) {
   toast(String(e && e.message || e), 'bad');
 }
 
+/* A box for a password or a token, as plexmon's maskBox (1.10.276). One that
+   is kept comes from the daemon as dots and its last two letters - shown as
+   it is, to a full administrator only, who can tell "the one I set" from
+   another; what is typed is dots, every letter of it. Its value is the real
+   text; nothing typed can be copied out of it, and no password manager is
+   offered it. */
+var MASK_PROTO = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+function maskShown(real) {
+  real = String(real || '');
+  if (!real || real.charAt(0) === '\u2022') return real;
+  return new Array(real.length + 1).join('\u2022');
+}
+function maskInput(i, value) {
+  if (i._masked) { i.value = value; return i; }
+  i._masked = true;
+  i.type = 'text';
+  i.autocomplete = 'off';
+  i.setAttribute('data-lpignore', 'true');
+  i.setAttribute('data-1p-ignore', 'true');
+  i.spellcheck = false;
+  i.classList.add('masked');
+  var real = '';
+  var paint = function (caret) {
+    MASK_PROTO.set.call(i, maskShown(real));
+    if (caret !== undefined && document.activeElement === i) {
+      try { i.setSelectionRange(caret, caret); } catch (e) { }
+    }
+  };
+  Object.defineProperty(i, 'value', {
+    configurable: true,
+    get: function () { return real; },
+    set: function (v) { real = v === null || v === undefined ? '' : String(v); paint(); }
+  });
+  var changed = function (caret) {
+    paint(caret);
+    i.dispatchEvent(new Event('input', {bubbles: true}));
+  };
+  i.addEventListener('beforeinput', function (e) {
+    var a = i.selectionStart, z = i.selectionEnd, t = e.inputType || '';
+    if (a === null) return;
+    e.preventDefault();
+    /* What was kept is dots: anything typed into it starts it afresh. */
+    if (real.charAt(0) === '\u2022') { real = ''; a = z = 0; }
+    var data = e.data;
+    if (data === null && e.dataTransfer) data = e.dataTransfer.getData('text/plain');
+    if (t.indexOf('insert') === 0) {
+      if (t === 'insertLineBreak' || t === 'insertParagraph') return;
+      data = String(data || '').replace(/[\r\n]+/g, '');
+      real = real.slice(0, a) + data + real.slice(z);
+      changed(a + data.length);
+    } else if (t.indexOf('delete') === 0) {
+      if (a === z) {
+        if (/Backward/.test(t)) a = /Word|Line/.test(t) ? 0 : Math.max(0, a - 1);
+        else z = /Word|Line/.test(t) ? real.length : Math.min(real.length, z + 1);
+      }
+      real = real.slice(0, a) + real.slice(z);
+      changed(a);
+    }
+  });
+  /* Whatever got in without being typed - filled in by the browser - is
+     taken as it is. */
+  i.addEventListener('input', function (e) {
+    if (!e.isTrusted) return;
+    var shown = MASK_PROTO.get.call(i);
+    if (shown !== maskShown(real)) { real = shown.replace(/^\u2022+/, ''); paint(); }
+  });
+  /* Pressed, a kept one is chosen whole: what is typed replaces it. */
+  i.addEventListener('focus', function () {
+    if (real.charAt(0) === '\u2022') setTimeout(function () { try { i.select(); } catch (e) { } }, 0);
+  });
+  i.addEventListener('copy', function (e) { e.preventDefault(); });
+  i.addEventListener('cut', function (e) { e.preventDefault(); });
+  real = value === null || value === undefined ? '' : String(value);
+  paint();
+  return i;
+}
 function busy(button, on) {
   if (!button) return;
   button.disabled = !!on;
@@ -27419,14 +27495,10 @@ function settingItem(s) {
     input.type = 'text';
     input.value = s.value === null || s.value === undefined ? '' : String(s.value);
     if (s.secret) {
-      /* Dots while it is typed, as plexmon's masked box (1.10.275): typed
-         as text it stood there whole for anybody looking over a shoulder.
-         Not a sign-in of this page: no password manager is to keep it. */
-      input.type = 'password';
-      input.setAttribute('data-lpignore', 'true');
-      input.setAttribute('data-1p-ignore', 'true');
+      /* Dots while it is typed, and the one that is kept by its last two
+         letters, as plexmon's masked box (1.10.275, 1.10.276). */
+      maskInput(input, input.value);
       input.placeholder = s.set ? 'set — leave as it is to keep it' : 'not set';
-      input.autocomplete = 'new-password';
       /* Pressed, the dots are chosen whole: what is typed replaces them
          (1.10.217). */
       input.addEventListener('focus', function () {
@@ -29864,6 +29936,7 @@ function rosApiPanel(one, index, rows, settle, paint, s) {
       input.title = 'Shown back by its last two letters only. Leave it alone to keep the one '
         + 'that is set; type a new one to replace it.';
     }
+    if (key === 'password') maskInput(input, input.value);    /* 1.10.276 */
     input.oninput = function () {
       cfg[key] = type === 'number' ? Number(input.value) : input.value;
       settle();
@@ -37925,12 +37998,10 @@ function rbWhere(t) {
 }
 function rbMask(value, placeholder) {
   var t = el('input', 'wr-in mono');
-  t.type = 'password';
-  t.value = value || '';
+  t.type = 'text';
   t.placeholder = placeholder || '';
-  t.autocomplete = 'new-password';
   t.spellcheck = false;
-  return t;
+  return maskInput(t, value || '');
 }
 function rbArea(value, placeholder) {
   var a = el('textarea', 'wr-in mono rb-area small');
