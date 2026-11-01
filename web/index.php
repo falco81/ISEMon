@@ -2876,23 +2876,60 @@ function srcText(el) {
     color:var(--tx-dim);font-size:12.5px}
   .mig-going.failed .bar span{background:var(--crit)}
   .mig-trouble{margin:6px 0 14px;word-break:break-word}
-  /* Certificates from acme (1.10.279). */
-  #tls-push-card h4{margin:18px 0 8px;font-size:14px}
-  .push-code{margin:12px 0;padding:14px 16px;border:1px solid var(--info);border-radius:10px;
-    background:var(--info-bg)}
-  .push-code-k{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--tx-dim)}
-  .push-code-v{display:block;margin:6px 0;font-size:24px;font-weight:700;letter-spacing:2px;
-    background:none;border:0;color:var(--tx);cursor:copy;padding:0}
-  .push-code-s{font-size:12.5px;color:var(--tx-dim)}
-  .push-paste{margin:12px 0}
-  .push-pending{color:var(--warn)}
-  #tls-push .arow.changed{outline:1px solid rgba(210,153,34,.55);border-radius:10px;padding:9px 12px}
-  #tls-push tr.push-gone td{text-decoration:line-through;color:var(--tx-mut)}
-  #tls-push tr.push-gone td.act{text-decoration:none}
-  .push-added{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:8px 12px;
-    border:1px dashed var(--warn);border-radius:10px}
-  .push-paste summary{cursor:pointer;color:var(--info);font-size:13px}
-  .push-paste input{width:100%;box-sizing:border-box;margin:8px 0}
+  /* Certificates from acme (1.10.279), drawn as the AI app 1.0.60 draws it (1.10.281). */
+  .push-code{font-size:30px;letter-spacing:.12em;text-align:center;padding:18px 10px;margin:12px 0;border:1px dashed var(--line);border-radius:10px;background:var(--panel2);user-select:all;overflow-wrap:anywhere}
+  #tls-push .facts,.push-box .facts{display:grid !important;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 16px}
+  #tls-push .facts{margin:12px 0}
+  #tls-push .facts .fact,.push-box .facts .fact{max-width:none !important;min-width:0;padding:10px 14px;border-radius:10px}
+  #tls-push .facts .fact.wide,.push-box .facts .fact.wide{grid-column:span 2}
+  #tls-push .facts .fact .k,.push-box .facts .fact .k{font-size:11px;letter-spacing:.6px;white-space:normal;line-height:1.35}
+  #tls-push .facts .fact .v,.push-box .facts .fact .v{font-size:14.5px;margin-top:4px;white-space:pre-wrap;overflow:visible;overflow-wrap:anywhere}
+  #tls-push h4{margin:16px 0 8px}
+  #tls-push tr.push-gone td:not(.rowtools){text-decoration:line-through;opacity:.55}
+  #tls-push .rowtools .muted{margin-right:8px}
+  #tls-push td.rowtools{text-align:right;white-space:nowrap;vertical-align:middle}
+  #tls-push td.rowtools > *{vertical-align:middle}
+  /* ...with the AI app's own sizes, on this card and its popups alone. */
+  #tls-push-card{padding:20px 22px;border-radius:14px;font-size:14.5px;line-height:1.5}
+  #tls-push-card > h2{font-size:16px;margin:0 0 12px;line-height:1.5;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #tls-push-card > h2 .right{margin-left:auto;display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px}
+  #tls-push-card > p.note{font-size:13.5px;line-height:1.55;color:var(--tx-dim);margin:0 0 14px;max-width:980px;display:flow-root}
+  #tls-push .set-grid{grid-auto-flow:row dense;row-gap:22px;column-gap:22px}
+  @supports (grid-template-rows:subgrid){
+    #tls-push .set-grid > .set-item{display:grid;grid-row:span 3;grid-template-rows:subgrid;row-gap:7px;align-content:start}
+    #tls-push .set-grid > .set-item > label{grid-row:1;align-self:end}
+    #tls-push .set-grid > .set-item > :nth-child(2){grid-row:2;align-self:center}
+    #tls-push .set-grid > .set-item > .sw{justify-self:start;margin:0}
+  }
+  #tls-push .set-item label,.push-box .set-item label{font-size:13.5px;line-height:1.3}
+  #tls-push .set-item .says,.push-box .set-item .says{font-size:12.5px;line-height:1.5}
+  #tls-push .btnrow,.push-box .btnrow{gap:10px}
+  #tls-push-card .btn,#modal-box.push-box .btn{height:38px;min-height:38px;padding:0 16px;font-size:13.5px;border-radius:10px;gap:8px;
+    display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;line-height:1;font-weight:600}
+  #tls-push-card .btn.small{height:32px;min-height:32px;padding:0 12px;font-size:12.5px;border-radius:8px;gap:7px}
+  #tls-push-card .btn.primary,#modal-box.push-box .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  #tls-push-card .btn.primary:hover:not(:disabled),#modal-box.push-box .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
+  #tls-push-card .btn.primary svg,#modal-box.push-box .btn.primary svg{opacity:1}
+  #tls-push-card .btn.danger{color:var(--crit);border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
+  #tls-push-card .btn.danger:hover:not(:disabled){background:rgba(248,81,73,.22);color:#ff7b72;border-color:var(--crit)}
+  #tls-push table th{font-size:11.5px;letter-spacing:.6px;line-height:1.5}
+  #tls-push table td{font-size:14px;line-height:1.5}
+  #tls-push p.note.good{background:none;border:0;padding:0;color:var(--ok);max-width:none;font-size:13px;margin:0 0 14px}
+  #modal-box.push-box .head{padding:18px 24px;gap:12px}
+  #modal-box.push-box .head h3{font-size:17px;font-weight:650}
+  #modal-box.push-box #modal-body{padding:20px 24px;gap:0}
+  #modal-box.push-box #modal-foot{padding:14px 24px;gap:10px}
+  #modal-box.push-box #modal-body > .set-item + .set-item{margin-top:14px}
+  #modal-box.push-box{font-size:14.5px;line-height:1.5;width:min(560px,100%)}
+  #modal-box.push-box textarea:focus,#modal-box.push-box input[type=text]:focus{border-color:var(--info);box-shadow:0 0 0 3px rgba(88,166,255,.15);outline:none}
+  #modal-box.push-box textarea{width:100%;box-sizing:border-box;border-radius:9px;padding:7px 10px;font-size:13.5px;line-height:1.5;
+    background:var(--panel2);color:var(--tx);border:1px solid var(--line)}
+  #modal-box.push-box input[type=text]{height:38px;padding:0 12px;font-size:14px;line-height:1.2;border-radius:10px;width:100%;box-sizing:border-box;
+    background-color:var(--panel2);color:var(--tx);border:1px solid var(--line)}
+  .copyable{cursor:pointer;user-select:none;-webkit-user-select:none;transition:border-color .15s,background .15s,box-shadow .15s}
+  .copyable.copied{border-color:var(--ok)!important;box-shadow:0 0 0 1px var(--ok) inset!important;background:var(--ok-bg)}
+  .fact.copyable:hover,.push-code.copyable:hover{border-color:var(--info);box-shadow:0 0 0 1px var(--info) inset}
+  .push-code.copyable{user-select:all;-webkit-user-select:all}
   /* The database server's own settings (1.10.173). */
   .tune-machine{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 2px}
   .tune-machine .set-item{flex:1 1 150px;margin:0}
@@ -6130,11 +6167,12 @@ function srcText(el) {
       <div class="cert-grid" id="tls-cards"></div>
     </div>
     <div class="card full" id="tls-push-card">
-      <h2>Certificates from acme</h2>
-      <p class="note">acme - the certificate manager of ours - gives this dashboard its
-        certificate and renews it by itself, as it does for otp and zigmon. Pair it once here;
-        each certificate it pushes is checked (signed by the paired acme, its key the
-        certificate's, valid, holding the dashboard's name) and goes in as an upload does.</p>
+      <h2>Certificates from acme <span class="right" id="tls-push-state"></span></h2>
+      <p class="note">acme, the certificate manager, can give this server its certificate and renew it
+        by itself (acme push). Paired once with a code shown here, acme signs every request with its key and
+        sends the certificate's private key sealed for this server alone; the certificate is kept exactly where
+        an upload above keeps it, and the Automatic certificates leave it alone from then on. Off until switched
+        on; acme's address must be among those that may reach these pages.</p>
       <div id="tls-push"></div>
     </div>
   </div>
@@ -40559,243 +40597,205 @@ function loadTls() {
    here, put into the target in acme), and from then on each push goes in as
    an upload does. "acme" in these words is always that certificate manager,
    never this server's own Automatic certificates. */
-var PUSH = {last: null, code: '', until: 0, timer: null, want: null};
-/* The card's changes wait for the save bar, as every setting does (1.10.280):
-   on or off, other names, acme's key pasted, an acme forgotten. Making a
-   pairing code is an action, as Request (CSR) is - done when pressed. */
-function pushWant(change) {
-  var w = PUSH.want || {add: [], forget: []};
-  Object.keys(change).forEach(function (k) { w[k] = change[k]; });
-  var d = PUSH.last || {};
-  if (w.on === d.on) delete w.on;
-  if (w.other_names === d.other_names) delete w.other_names;
-  PUSH.want = (w.on !== undefined || w.other_names !== undefined || w.add.length
-               || w.forget.length) ? w : null;
-  if (PUSH.want) extraPending('acme-push', {save: pushSave, reset: pushReset});
-  else extraDone('acme-push');
-  drawPush(PUSH.last);
+/* ---- Certificates from acme (acme push, 1.10.279) ---------------------------
+   Drawn exactly as the AI app 1.0.60 draws its card (1.10.281): the switches
+   in a grid, the tiles to copy for acme's Target, Pair with an acme (its code
+   in a popup), Or paste acme's key… (a popup), the acmes paired, what acme
+   sees here, the last push. The switches and Forget it wait for the save
+   bar at the bottom, as every setting does; "acme" in these words is always
+   the certificate manager, never this server's own Automatic certificates. */
+var PUSH = {};
+var PUSH_WANT = {forget: {}};
+function loadPush() {
+  if (!$('tls-push')) return;
+  api('acme-push-admin', undefined, {quiet: true}).then(drawPush).catch(function () { /* the card stays as it was */ });
+}
+function pushDo(body, then) {
+  return api('acme-push-admin', body).then(function (d) {
+    if (d.message) toast(d.message, 'good');
+    drawPush(d);
+    if (then) then(d);
+    return d;
+  }).catch(oops);
+}
+function pushField(label, input, says) {
+  var item = el('div', 'set-item');
+  item.appendChild(el('label', '', label));
+  item.appendChild(input);
+  if (says) item.appendChild(el('div', 'says', says));
+  return item;
+}
+function pushSwitch(on) {
+  var wrap = wrSwitch(on);
+  wrap._get = function () { return wrap._input.checked ? 1 : 0; };
+  return wrap;
+}
+function pushCopy(node, text, words) {
+  node.classList.add('copyable');
+  node.title = 'Click to copy';
+  node.setAttribute('role', 'button');
+  node.tabIndex = 0;
+  node.onclick = function (ev) {
+    ev.stopPropagation();
+    copyText(text, words);
+    node.classList.add('copied');
+    setTimeout(function () { node.classList.remove('copied'); }, 1200);
+  };
+  node.onkeydown = function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); node.onclick(ev); } };
+  return node;
+}
+/* The tiles of the card and of the code: a click copies what is in it - the
+   code, the address for acme, the id, the key - for acme's Target. */
+function pushTiles(box, values) {
+  Array.prototype.forEach.call(box.querySelectorAll('.fact'), function (cell, i) {
+    if (values[i]) pushCopy(cell, values[i], 'copied: ' + cell.querySelector('.k').textContent);
+  });
+  return box;
+}
+function pushBase() { return location.origin + location.pathname.replace(/[^\/]*$/, ''); }
+function pushCode(code, until) {
+  modal('Pair with an acme', function (body) {
+    body.appendChild(el('p', 'note', 'In acme: Targets → add An application of ours (acme push), its address below, and this code in Pairing code - then Try. The code is shown this once, works once, for 15 minutes; five wrong tries end it.'));
+    var big = noI18n(el('div', 'push-code mono', code));
+    pushCopy(big, code, 'the pairing code is copied');
+    body.appendChild(big);
+    body.appendChild(pushTiles(dbWizardFacts([['The address for acme', noI18n(el('span', 'mono', pushBase()))],
+      ['Valid until', new Date(until * 1000).toLocaleTimeString(numLang())]]), [pushBase()]));
+    body.appendChild(el('p', 'btnhelp', 'A click on the code or the address copies it.'));
+  }, [{words: 'Close', icon: 'close', close: true}], true);
+  $('modal-box').classList.add('push-box');
+}
+function pushWanted() {
+  var w = PUSH_WANT, d = PUSH || {};
+  var any = (w.on !== undefined && w.on !== d.on) || (w.other_names !== undefined && w.other_names !== d.other_names)
+    || Object.keys(w.forget).length;
+  if (!any) { PUSH_WANT = {forget: {}}; extraDone('acme-push'); return; }
+  extraPending('acme-push', {save: pushSave, reset: function () { PUSH_WANT = {forget: {}}; extraDone('acme-push'); drawPush(PUSH); }});
 }
 function pushSave() {
-  var w = PUSH.want;
-  if (!w) return Promise.resolve();
-  return api('acme-push-admin', {action: 'save', on: w.on === undefined ? null : w.on,
-                                 other_names: w.other_names === undefined ? null : w.other_names,
-                                 add: w.add, forget: w.forget}).then(function (d) {
-    PUSH.want = null;
+  var w = PUSH_WANT, d = PUSH || {};
+  return api('acme-push-admin', {action: 'save',
+                                 on: w.on !== undefined && w.on !== d.on ? w.on : null,
+                                 other_names: w.other_names !== undefined && w.other_names !== d.other_names ? w.other_names : null,
+                                 add: [], forget: Object.keys(w.forget)}).then(function (x) {
+    PUSH_WANT = {forget: {}};
     extraDone('acme-push');
-    if (!d.on) { PUSH.code = ''; PUSH.until = 0; }
-    toast(d.message, 'good');
-    drawPush(d);
+    toast('Certificates from acme: saved', 'good');
+    drawPush(x);
+    return true;
   });
 }
-function pushReset() {
-  PUSH.want = null;
-  extraDone('acme-push');
-  loadPush();
-}
-function loadPush() {
-  api('acme-push-admin', undefined, {quiet: true}).then(drawPush).catch(function () {});
-}
-function pushDo(body, button, done) {
-  if (button) busy(button, true);
-  api('acme-push-admin', body).then(function (d) {
-    if (button) busy(button, false);
-    if (d.code) { PUSH.code = d.code; PUSH.until = d.until; }
-    if (body.action === 'unpair' || body.action === 'off') { PUSH.code = ''; PUSH.until = 0; }
-    toast(d.message, 'good');
-    drawPush(d);
-    if (done) done(d);
-  }).catch(function (e) { if (button) busy(button, false); oops(e); });
-}
-function pushManaged(m) {
-  if (m === 'own-acme') return 'Automatic certificates of this server';
-  if (m === 'acme-push') return 'acme (pushed here)';
-  if (m === 'manual') return 'by hand (uploaded, a request, self-signed)';
-  if (m === 'none') return 'nothing yet';
-  return String(m || '');
-}
-function pushCode(host, d) {
-  var left = Math.round((PUSH.until || 0) - Date.now() / 1000);
-  /* Used (paired), taken back or run out on the daemon: not shown again. */
-  if (!d.pairing) PUSH.code = '';
-  if (!PUSH.code || left <= 0) {
-    PUSH.code = '';
-    if (d.pairing) {
-      host.appendChild(el('p', 'note', 'A pairing code is waiting for another '
-        + Math.max(1, Math.round(((d.pairing.until || 0) - Date.now() / 1000) / 60)) + ' min. '
-        + 'It was shown once: Take it back, or make a new one.'));
-    }
-    return;
-  }
-  var box = el('div', 'push-code');
-  box.appendChild(el('div', 'push-code-k', 'The pairing code - shown this once'));
-  var c = noI18n(el('button', 'push-code-v mono', PUSH.code));
-  c.type = 'button';
-  c.title = 'Copy it';
-  c.onclick = function () { copyText(PUSH.code, 'the code is copied'); };
-  box.appendChild(c);
-  box.appendChild(el('div', 'push-code-s', 'Put it into the target in acme (Targets → An '
-    + 'application of ours → Pairing code) and press Try there, within '
-    + Math.max(1, Math.ceil(left / 60)) + ' min. Five wrong tries and it is gone.'));
-  host.appendChild(box);
+function pushHow(how) {
+  return how === 'pairing code' ? 'paired with a code' : (how || '');
 }
 function drawPush(d) {
-  PUSH.last = d;
+  PUSH = d || {};
+  var W = PUSH_WANT;
   var host = $('tls-push');
   if (!host) return;
   clear(host);
+  var st = $('tls-push-state');
+  var keys = d.keys || [];
+  if (st) { clear(st); st.appendChild(el('span', 'tag ' + (d.on ? (keys.length ? 'ok' : 'warn') : 'dim'), d.on ? (keys.length ? 'on - paired' : 'on - not paired yet') : 'off')); }
   var may = !!d.may;
-  var w = PUSH.want || {add: [], forget: []};
-  var on = w.on !== undefined ? w.on : d.on;
-  /* The switch - saved by the save bar. */
-  var sw = wrSwitch(on, function (v) { pushWant({on: v}); }, !may);
-  var onRow = wrRow('Take certificates from acme', 'acme pushes the dashboard’s '
-    + 'certificate here and renews it; what it pushes goes in as an upload does, and Automatic '
-    + 'certificates leave it alone from then on. Off again: nothing more is taken, the '
-    + 'certificate the dashboard has stays as it is, the pairing is kept.', sw);
-  if (w.on !== undefined) onRow.classList.add('changed');
-  host.appendChild(onRow);
-  if (w.on !== undefined) {
-    host.appendChild(el('p', 'note push-pending', on ? 'Switched on - not saved yet: Save below, '
-      + 'then pair it.' : 'Switched off - not saved yet: Save below.'));
+  var g = el('div', 'set-grid');
+  var sw = pushSwitch(W.on !== undefined ? W.on : d.on);
+  sw._input.disabled = !may;
+  sw._input.onchange = function () { PUSH_WANT.on = !!sw._get(); pushWanted(); };
+  g.appendChild(pushField('Take certificates from acme', sw, 'Off: hello says only that it is off, and nothing is taken.'));
+  if (d.on) {
+    var sw2 = pushSwitch(W.other_names !== undefined ? W.other_names : d.other_names);
+    sw2._input.disabled = !may;
+    sw2._input.onchange = function () { PUSH_WANT.other_names = !!sw2._get(); pushWanted(); };
+    g.appendChild(pushField('Take certificates of other names', sw2, 'Off: a certificate must hold the name of this server (' + (((d.slots || [])[0] || {}).names || ['?']).join(', ') + '). On: acme may say not to check it.'));
   }
-  if (!on || !d.on) {
-    host.appendChild(el('p', 'btnhelp', 'Off: acme is told only that this is isemon '
-      + (d.version || '') + '.'));
-    return;
-  }
-  /* Where acme reaches it */
-  var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
-  var addr = noI18n(el('button', 'banfeed-url mono', base));
-  addr.type = 'button';
-  addr.title = 'Copy it';
-  addr.onclick = function () { copyText(base, 'the address is copied'); };
-  host.appendChild(el('div', 'banfeed-url-label', 'The address for the target in acme'));
-  host.appendChild(addr);
-  host.appendChild(el('p', 'btnhelp', 'acme’s address has to be among those that may '
-    + 'reach the dashboard (Firewall and access).'));
-  /* Pairing */
-  var pairing = el('div', 'push-pair');
-  pushCode(pairing, d);
-  host.appendChild(pairing);
+  host.appendChild(g);
+  if (!d.on) return;
+  host.appendChild(pushTiles(dbWizardFacts([
+    ['The address for acme', noI18n(el('span', 'mono', pushBase()))],
+    ['This server’s id', noI18n(el('span', 'mono', d.app_id || ''))],
+    ['Its sealing key (X25519)', noI18n(el('span', 'mono small', d.enc_key || ''))]]),
+    [pushBase(), d.app_id, d.enc_key]));
+  /* pairing */
   if (may) {
     var row = el('div', 'btnrow');
     var pair = cmdButton('Pair with an acme', 'key', 'primary');
-    pair.onclick = function () { pushDo({action: 'pair'}, pair); };
-    pair.disabled = w.on !== undefined;
+    pair.onclick = function () { pushDo({action: 'pair'}, function (x) { if (x.code) pushCode(x.code, (x.pairing || {}).until || x.until); }); };
     row.appendChild(pair);
-    if (PUSH.code || d.pairing) {
+    if (d.pairing) {
       var back = cmdButton('Take it back', 'undo', '');
-      back.onclick = function () { pushDo({action: 'unpair'}, back); };
+      back.onclick = function () { pushDo({action: 'unpair'}); };
       row.appendChild(back);
+      row.appendChild(el('span', 'small muted', 'A code waits until ' + new Date(d.pairing.until * 1000).toLocaleTimeString(numLang()) + ' (' + num(d.pairing.tries || 0) + ' wrong so far).'));
     }
+    var paste = cmdButton('Or paste acme’s key…', 'edit', '');
+    paste.onclick = function () {
+      var ta, nm;
+      modal('Paste acme’s key', function (body) {
+        body.appendChild(el('p', 'note', 'acme’s own Certificates from acme card shows This acme’s own key: acme-push-ed25519 AAAA… acme then pins this server when it first sees it - keep Check the application’s certificate on there.'));
+        ta = el('textarea', 'mono'); ta.rows = 3; ta.placeholder = 'acme-push-ed25519 …'; ta.spellcheck = false;
+        body.appendChild(pushField('acme’s key', ta));
+        nm = el('input'); nm.type = 'text'; nm.placeholder = 'acme1'; nm.autocomplete = 'off'; nm.spellcheck = false;
+        body.appendChild(pushField('A name for it', nm));
+      }, [{words: 'Close', icon: 'close', close: true}, {words: 'Take this key', cls: 'primary', icon: 'key', go: function (b) {
+        busy(b, true);
+        api('acme-push-admin', {action: 'paste', key: ta.value.trim(), name: nm.value.trim()})
+          .then(function (x) { toast(x.message, 'good'); closeModal(); drawPush(x); })
+          .catch(function (e) { busy(b, false); oops(e); });
+      }}], true);
+      $('modal-box').classList.add('push-box');
+      setTimeout(function () { try { ta.focus(); } catch (e) { } }, 30);
+    };
+    row.appendChild(paste);
     host.appendChild(row);
   }
-  /* The acmes paired */
-  host.appendChild(el('h4', '', 'Paired with'));
-  if (!(d.keys || []).length) {
-    host.appendChild(el('p', 'note', 'No acme yet: nothing is taken until one is paired.'));
-  } else {
-    var t = el('table', 'plain');
-    var th = el('tr');
-    ['acme', 'Its key', 'How', 'Since', ''].forEach(function (w) { th.appendChild(el('th', '', w)); });
-    var thead = el('thead');
-    thead.appendChild(th);
-    t.appendChild(thead);
-    var tb = el('tbody');
-    (d.keys || []).forEach(function (k) {
-      var gone = w.forget.indexOf(k.key_id) >= 0;
-      var tr = el('tr', gone ? 'push-gone' : '');
+  /* the acmes paired */
+  if (keys.length) {
+    host.appendChild(el('h4', '', 'Paired with'));
+    host.appendChild(listTable(['acme', 'Key', 'Since', 'How', {words: '', cls: 'act'}], keys, function (k) {
+      var tr = el('tr');
       tr.appendChild(noI18n(el('td', '', k.name || k.comment || '–')));
-      tr.appendChild(noI18n(el('td', 'mono small', k.key_id || '')));
-      tr.appendChild(el('td', '', k.how === 'pasted' ? 'its key pasted' : 'a pairing code'));
-      tr.appendChild(el('td', '', stamp(k.at)));
-      var act = el('td', 'act');
-      if (may) {
-        var f = gone ? cmdButton('Keep it', 'undo', 'small') : cmdButton('Forget it', 'forget', 'small danger');
-        explain(f, 'Nothing more is taken from it once this is saved; the certificate the '
-          + 'dashboard has stays as it is. Pairing again brings it back.');
-        f.onclick = function () {
-          pushWant({forget: gone ? w.forget.filter(function (x) { return x !== k.key_id; })
-                                 : w.forget.concat([k.key_id])});
-        };
+      tr.appendChild(noI18n(el('td', 'mono small', k.key_id)));
+      tr.appendChild(stampCell(k.at));
+      tr.appendChild(el('td', 'muted', pushHow(k.how)));
+      var act = el('td', 'rowtools');
+      if (!may) {
+        /* nothing to do for one who may only look */
+      } else if (W.forget[k.key_id]) {
+        tr.classList.add('push-gone');
+        var keep = cmdButton('Keep it', 'undo', 'small');
+        keep.onclick = function () { delete PUSH_WANT.forget[k.key_id]; pushWanted(); drawPush(PUSH); };
+        act.appendChild(el('span', 'small muted', 'forgotten when saved'));
+        act.appendChild(keep);
+      } else {
+        var f = cmdButton('Forget it', 'trash', 'small danger');
+        explain(f, 'Nothing more is taken from it once saved; the certificate it put in stays until another one replaces it.');
+        f.onclick = function () { PUSH_WANT.forget[k.key_id] = true; pushWanted(); drawPush(PUSH); };
         act.appendChild(f);
       }
       tr.appendChild(act);
-      tb.appendChild(tr);
-    });
-    t.appendChild(tb);
-    var wrap = el('div', 'scroll');
-    wrap.appendChild(t);
-    host.appendChild(wrap);
+      return tr;
+    }));
   }
-  /* Keys pasted and not saved yet. */
-  w.add.forEach(function (text) {
-    var row = el('div', 'push-added changed');
-    row.appendChild(noI18n(el('span', 'mono small', text.split(/\s+/).slice(0, 3).join(' '))));
-    row.appendChild(el('span', 'tag warn', 'taken when saved'));
-    if (may) {
-      var drop = cmdButton('Not this one', 'close', 'small');
-      drop.onclick = function () {
-        pushWant({add: w.add.filter(function (x) { return x !== text; })});
-      };
-      row.appendChild(drop);
-    }
-    host.appendChild(row);
-  });
-  if (may) {
-    var paste = el('details', 'push-paste');
-    if (w.add.length) paste.open = false;
-    paste.appendChild(el('summary', '', 'Or paste acme’s key'));
-    var box = el('input', 'wr-in mono');
-    box.type = 'text';
-    box.placeholder = 'acme-push-ed25519 AAAA… acme@acme1';
-    box.spellcheck = false;
-    paste.appendChild(box);
-    var take = cmdButton('Take this key', 'key', '');
-    take.onclick = function () {
-      var text = String(box.value || '').trim();
-      if (!/^acme-push-ed25519\s+[A-Za-z0-9+\/=]{40,48}(\s|$)/.test(text)) {
-        toast('that is not acme\u2019s key - one line: acme-push-ed25519 AAAA… comment', 'bad');
-        return;
-      }
-      if (w.add.indexOf(text) < 0) pushWant({add: w.add.concat([text])});
-    };
-    var pr = el('div', 'btnrow');
-    pr.appendChild(take);
-    paste.appendChild(pr);
-    paste.appendChild(el('p', 'btnhelp', 'acme shows it on its own Certificates from acme card '
-      + '(This acme’s own key). acme then trusts this isemon as it first sees it - keep '
-      + 'Check the application’s certificate on there.'));
-    host.appendChild(paste);
-  }
-  /* Other names */
-  host.appendChild(wrRow('Take certificates of other names', 'Off: a certificate that does not '
-    + 'hold the dashboard’s name is refused, so none can take it over silently.',
-    wrSwitch(w.other_names !== undefined ? w.other_names : d.other_names,
-             function (v) { pushWant({other_names: v}); }, !may)));
-  if (w.other_names !== undefined) host.lastChild.classList.add('changed');
-  /* What acme sees here */
+  /* what acme sees here */
   host.appendChild(el('h4', '', 'What acme sees here'));
-  (d.slots || []).forEach(function (s) {
-    var cur = s.current || {};
-    var facts = [['Slot', noI18n(el('span', 'mono', s.id))],
-                 ['Names it must hold', s.names && s.names.length
-                   ? noI18n(el('span', '', s.names.join(', '))) : 'none known yet (acme_name)'],
-                 ['Looked after by', pushManaged(s.managed_by)],
-                 ['Now', s.current ? noI18n(el('span', '', (cur.issuer || '').replace(/^CN=/, '')))
-                   : 'no certificate']];
-    if (cur.not_after) facts.push(['Valid until', stamp(cur.not_after)]);
-    host.appendChild(peekFacts(facts));
-    if (!s.installable) host.appendChild(el('p', 'note bad', s.why_not || 'it cannot take one now'));
-  });
-  /* The last push */
+  host.appendChild(listTable(['Slot', 'Names', 'Now', 'Until', 'Looked after by'], d.slots || [], function (s) {
+    var tr = el('tr');
+    tr.appendChild(noI18n(el('td', 'mono small', s.id)));
+    tr.appendChild(noI18n(el('td', 'mono small', (s.names || []).join(', '))));
+    var c = s.current || {};
+    tr.appendChild(el('td', 'small', c.fingerprint ? (c.issuer || '') + (c.alt ? ' + ' + (c.alt.key_type || '') : '') : 'none'));
+    tr.appendChild(c.not_after ? stampCell(c.not_after) : el('td', 'muted', '–'));
+    tr.appendChild(el('td', '', {none: 'nobody (none)', manual: 'by hand', 'own-acme': 'Automatic certificates', 'acme-push': 'acme push'}[s.managed_by] || s.managed_by));
+    return tr;
+  }));
   if (d.last && d.last.at) {
-    host.appendChild(el('p', 'btnhelp', 'The last push: ' + stamp(d.last.at) + ' from '
-      + (d.last.from || 'acme') + ' - ' + (d.last.state === 'already' ? 'it was there already'
-      : 'put in') + ', until ' + stamp(d.last.until) + '.'));
+    var l = el('p', 'note good');
+    l.textContent = 'The last push: ' + (d.last.acme || d.last.from || '') + ' · ' + ago(d.last.at) + ' · ' + (d.last.said || '');
+    host.appendChild(l);
   }
-  explainWhatWasDrawn($('tls-push-card'));
+  if (!may) host.appendChild(el('p', 'btnhelp', 'Only a full administrator changes it.'));
+  dressButtons(host);
 }
 function daysLeft(ts) { return ts ? Math.floor((ts - Date.now() / 1000) / 86400) : null; }
 function certTone(days) { return days === null ? 'dim' : (days < 0 ? 'crit' : (days < 21 ? 'warn' : 'ok')); }

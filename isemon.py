@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.280'
+__version__ = '1.10.281'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -67381,7 +67381,7 @@ def push_pair(daemon, kid, body, nonce, box):
             raise PushRefused('bad_code', 403, 'that is not the pairing code shown here')
         pub, comment = push_key_text(body.get('acme_key'))
         name = str(body.get('acme_name') or comment or '')[:200]
-        push_key_take(store, pub, comment, name, pairing.get('by') or '', 'pairing code')
+        push_key_take(store, pub, comment, name, pairing.get('by') or '', 'paired with a code')
         store.drop_meta('acme_push:pairing')
     store.add_event('control', 'acme push: paired with %s (key %s)' % (name or 'an acme', kid),
                     who=pairing.get('by') or 'acme push')
@@ -67555,7 +67555,8 @@ def push_install(daemon, body, box, kid):
         said = 'already there for %s' % slot['id']
     done = [{'slot': slot['id'], 'node': node, 'names': slot['names'],
              'fingerprint': main['fingerprint'], 'not_after': until, 'state': state}]
-    _push_put(store, 'acme_push:last', {'at': time.time(), 'from': acme_words, 'key_id': kid,
+    _push_put(store, 'acme_push:last', {'at': time.time(), 'from': acme_words, 'acme': acme_words,
+                                         'said': said, 'key_id': kid,
                                          'fingerprint': main['fingerprint'], 'until': until,
                                          'names': names[:20], 'state': state,
                                          'alt': bool(alt)})
@@ -67600,7 +67601,9 @@ def push_page(daemon, may):
     conf = push_conf(store)
     pairing = _push_meta(store, 'acme_push:pairing', {})
     out = {'ok': True, 'may': may, 'on': conf['on'], 'other_names': conf['other_names'],
-           'keys': [{k: one.get(k) for k in ('key_id', 'name', 'comment', 'at', 'by', 'how')}
+           'keys': [dict({k: one.get(k) for k in ('key_id', 'name', 'comment', 'at', 'by')},
+                         how='paired with a code' if one.get('how') == 'pairing code'
+                         else one.get('how'))
                     for one in push_keys(store)],
            'pairing': {'until': pairing.get('until'), 'tries': pairing.get('tries') or 0}
            if pairing.get('code') and float(pairing.get('until') or 0) > time.time() else None,
@@ -67679,7 +67682,7 @@ def push_do(daemon, data, by):
         store.add_event('control', 'acme push: a pairing code was made (15 minutes)', who=by)
         extra['code'] = '-'.join(code[i:i + 4] for i in range(0, 16, 4))
         extra['until'] = time.time() + PUSH_CODE_S
-        msg = 'the code is shown this once: put it into the target in acme within 15 minutes'
+        msg = 'the code waits 15 minutes'
     elif act == 'unpair':
         store.drop_meta('acme_push:pairing')
         msg = 'the pairing code is taken back'
@@ -67688,7 +67691,8 @@ def push_do(daemon, data, by):
         if not conf['on']:
             raise ValueError('switch it on first: Take certificates from acme')
         pub, comment = push_key_text(data.get('key'))
-        kid = push_key_take(store, pub, comment, comment, by, 'pasted')
+        kid = push_key_take(store, pub, comment, str(data.get('name') or '').strip()[:200] or comment,
+                            by, 'pasted')
         msg = 'acme\'s key %s is taken' % kid
         store.add_event('control', 'acme push: acme\'s key %s (%s) was pasted' % (kid, comment),
                         who=by)

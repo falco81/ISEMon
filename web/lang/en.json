@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.280",
+  "version": "1.10.281",
   "made": "2026-11-01",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -391,6 +391,10 @@
   "s.a-cisco-ftd-through-its-fmc.47e2d2f4": {
    "source": "A Cisco FTD (through its FMC) or a FortiGate fetches the addresses being kept out from a URL, by itself, every few minutes. Nothing here logs in to those firewalls and they do not sign in here: the URL is all they need. Who may fetch it is the web server's allow list, and the addresses under",
    "text": "A Cisco FTD (through its FMC) or a FortiGate fetches the addresses being kept out from a URL, by itself, every few minutes. Nothing here logs in to those firewalls and they do not sign in here: the URL is all they need. Who may fetch it is the web server's allow list, and the addresses under"
+  },
+  "s.a-click-on-the-code-or.63a4f594": {
+   "source": "A click on the code or the address copies it.",
+   "text": "A click on the code or the address copies it."
   },
   "s.a-client-sending-packets-bigger-than.d8db7141": {
    "source": "A client sending packets bigger than its tunnel carries: the MTU along its way is smaller than it thinks. Slow or stalling applications over the VPN, for those people.",
@@ -932,6 +936,10 @@
    "source": "a name, an institution, a MAC…",
    "text": "a name, an institution, a MAC…"
   },
+  "s.a-name-for-it.6b3abe2c": {
+   "source": "A name for it",
+   "text": "A name for it"
+  },
   "s.a-name-from-one-of-these.6d57fe8d": {
    "source": "A name from one of these can sign in here, which is why a name nobody here has heard of is not by itself wrong.",
    "text": "A name from one of these can sign in here, which is why a name nobody here has heard of is not by itself wrong."
@@ -1103,10 +1111,6 @@
   "s.a-page-or-a-setting.a37e2745": {
    "source": "a page or a setting",
    "text": "a page or a setting"
-  },
-  "s.a-pairing-code.1ba023e2": {
-   "source": "a pairing code",
-   "text": "a pairing code"
   },
   "s.a-pass-anything-else-is-shown.0a642f59": {
    "source": "a pass, anything else is shown as logged. Sign-ins to the router (winbox, ssh, the web, the API), every change to its configuration and who made it, the VPN of people (OpenVPN, L2TP, SSTP, PPTP: who, from where, which address inside) and the tunnels to other sites are read as well; a refused sign-in from the internet can earn a ban like any other at the firewall. The time is the syslog header's, read in the zone set beside the firewall.",
@@ -1892,17 +1896,13 @@
    "source": "ACME no longer renews it either.",
    "text": "ACME no longer renews it either."
   },
-  "s.acme-push-ed25519-aaaa-acme-acme1.41ad0a78": {
-   "source": "acme-push-ed25519 AAAA… acme@acme1",
-   "text": "acme-push-ed25519 AAAA… acme@acme1"
+  "s.acme-push-ed25519.d05f2338": {
+   "source": "acme-push-ed25519 …",
+   "text": "acme-push-ed25519 …"
   },
-  "s.acme-pushed-here.eaf494f4": {
-   "source": "acme (pushed here)",
-   "text": "acme (pushed here)"
-  },
-  "s.acme-pushes-the-dashboard-s-certificate.170fe8e2": {
-   "source": "acme pushes the dashboard’s certificate here and renews it; what it pushes goes in as an upload does, and Automatic certificates leave it alone from then on. Off again: nothing more is taken, the certificate the dashboard has stays as it is, the pairing is kept.",
-   "text": "acme pushes the dashboard’s certificate here and renews it; what it pushes goes in as an upload does, and Automatic certificates leave it alone from then on. Off again: nothing more is taken, the certificate the dashboard has stays as it is, the pairing is kept."
+  "s.acme-push.c078e5b5": {
+   "source": "acme push",
+   "text": "acme push"
   },
   "s.acme-renews-it.24be8eb7": {
    "source": "ACME renews it",
@@ -1916,25 +1916,29 @@
    "source": "ACME renews this one from now on - at the next look (within the hour) if it is not from the CA yet.",
    "text": "ACME renews this one from now on - at the next look (within the hour) if it is not from the CA yet."
   },
-  "s.acme-s-address-has-to-be.d8f6d2c1": {
-   "source": "acme’s address has to be among those that may reach the dashboard (Firewall and access).",
-   "text": "acme’s address has to be among those that may reach the dashboard (Firewall and access)."
+  "s.acme-s-key.a0c4f1bb": {
+   "source": "acme’s key",
+   "text": "acme’s key"
   },
-  "s.acme-shows-it-on-its-own.a3d01a48": {
-   "source": "acme shows it on its own Certificates from acme card (This acme’s own key). acme then trusts this isemon as it first sees it - keep Check the application’s certificate on there.",
-   "text": "acme shows it on its own Certificates from acme card (This acme’s own key). acme then trusts this isemon as it first sees it - keep Check the application’s certificate on there."
+  "s.acme-s-own-certificates-from-acme.8a4ef690": {
+   "source": "acme’s own Certificates from acme card shows This acme’s own key: acme-push-ed25519 AAAA… acme then pins this server when it first sees it - keep Check the application’s certificate on there.",
+   "text": "acme’s own Certificates from acme card shows This acme’s own key: acme-push-ed25519 AAAA… acme then pins this server when it first sees it - keep Check the application’s certificate on there."
   },
   "s.acme-stops-renewing-this-one-the.e458b32e": {
    "source": "ACME stops renewing this one; the certificate it has stays.",
    "text": "ACME stops renewing this one; the certificate it has stays."
   },
-  "s.acme-the-certificate-manager-of-ours.bcd35938": {
-   "source": "acme - the certificate manager of ours - gives this dashboard its certificate and renews it by itself, as it does for otp and zigmon. Pair it once here; each certificate it pushes is checked (signed by the paired acme, its key the certificate's, valid, holding the dashboard's name) and goes in as an upload does.",
-   "text": "acme - the certificate manager of ours - gives this dashboard its certificate and renews it by itself, as it does for otp and zigmon. Pair it once here; each certificate it pushes is checked (signed by the paired acme, its key the certificate's, valid, holding the dashboard's name) and goes in as an upload does."
+  "s.acme-the-certificate-manager-can-give.55363098": {
+   "source": "acme, the certificate manager, can give this server its certificate and renew it by itself (acme push). Paired once with a code shown here, acme signs every request with its key and sends the certificate's private key sealed for this server alone; the certificate is kept exactly where an upload above keeps it, and the Automatic certificates leave it alone from then on. Off until switched on; acme's address must be among those that may reach these pages.",
+   "text": "acme, the certificate manager, can give this server its certificate and renew it by itself (acme push). Paired once with a code shown here, acme signs every request with its key and sends the certificate's private key sealed for this server alone; the certificate is kept exactly where an upload above keeps it, and the Automatic certificates leave it alone from then on. Off until switched on; acme's address must be among those that may reach these pages."
   },
   "s.acme.293abb6b": {
    "source": "acme",
    "text": "acme"
+  },
+  "s.acme1.839c0285": {
+   "source": "acme1",
+   "text": "acme1"
   },
   "s.acmedns.93b5bebb": {
    "source": "acmedns",
@@ -3732,10 +3736,6 @@
    "source": "Automatic certificates (HTTP-01)",
    "text": "Automatic certificates (HTTP-01)"
   },
-  "s.automatic-certificates-of-this-server.f058c5cf": {
-   "source": "Automatic certificates of this server",
-   "text": "Automatic certificates of this server"
-  },
   "s.automatic-certificates-the-acme-ca-through.a0faea49": {
    "source": "Automatic certificates: the ACME CA through it",
    "text": "Automatic certificates: the ACME CA through it"
@@ -4468,10 +4468,6 @@
    "source": "by hand - the record is shown here, you put it in",
    "text": "by hand - the record is shown here, you put it in"
   },
-  "s.by-hand-uploaded-a-request-self.8e921bc9": {
-   "source": "by hand (uploaded, a request, self-signed)",
-   "text": "by hand (uploaded, a request, self-signed)"
-  },
   "s.by-hand.db5bc9af": {
    "source": "by hand",
    "text": "by hand"
@@ -4759,6 +4755,10 @@
   "s.certificates-expired.03ee862d": {
    "source": "Certificates expired",
    "text": "Certificates expired"
+  },
+  "s.certificates-from-acme-saved.6931ac7d": {
+   "source": "Certificates from acme: saved",
+   "text": "Certificates from acme: saved"
   },
   "s.certificates-from-acme.bc8cf49e": {
    "source": "Certificates from acme",
@@ -5155,6 +5155,10 @@
   "s.click-to-copy.39635a39": {
    "source": "Click to copy.",
    "text": "Click to copy."
+  },
+  "s.click-to-copy.8ef07790": {
+   "source": "Click to copy",
+   "text": "Click to copy"
   },
   "s.click-to-pause-or-resume-the.6c9961e2": {
    "source": "Click to pause or resume the live updates",
@@ -9092,6 +9096,10 @@
    "source": "Forgetting the network on it and joining again with the new password ends it.",
    "text": "Forgetting the network on it and joining again with the new password ends it."
   },
+  "s.forgotten-when-saved.5a0d113c": {
+   "source": "forgotten when saved",
+   "text": "forgotten when saved"
+  },
   "s.forgotten.b70686c5": {
    "source": "forgotten",
    "text": "forgotten"
@@ -10828,6 +10836,10 @@
    "source": "in a domain called",
    "text": "in a domain called"
   },
+  "s.in-acme-targets-add-an-application.5a0f188c": {
+   "source": "In acme: Targets → add An application of ours (acme push), its address below, and this code in Pairing code - then Try. The code is shown this once, works once, for 15 minutes; five wrong tries end it.",
+   "text": "In acme: Targets → add An application of ours (acme push), its address below, and this code in Pairing code - then Try. The code is shown this once, works once, for 15 minutes; five wrong tries end it."
+  },
   "s.in-an-ordinary-firewall-policy-from.3b4e9748": {
    "source": "In an ordinary firewall policy from the internet side, put",
    "text": "In an ordinary firewall policy from the internet side, put"
@@ -11780,10 +11792,6 @@
    "source": "· it can reach the VPN",
    "text": "· it can reach the VPN"
   },
-  "s.it-cannot-take-one-now.beab9c1b": {
-   "source": "it cannot take one now",
-   "text": "it cannot take one now"
-  },
   "s.it-carried-everything.11be1e8b": {
    "source": "It carried everything:",
    "text": "It carried everything:"
@@ -11984,10 +11992,6 @@
    "source": "It sent back:",
    "text": "It sent back:"
   },
-  "s.it-was-there-already.72b40faf": {
-   "source": "it was there already",
-   "text": "it was there already"
-  },
   "s.it-works.241cddf0": {
    "source": "It works",
    "text": "It works"
@@ -12079,10 +12083,6 @@
   "s.its-key-is-deleted-from-this.a9d4a581": {
    "source": "Its key is deleted from this machine. A server that asks for one will refuse backups until another is made and given to it.",
    "text": "Its key is deleted from this machine. A server that asks for one will refuse backups until another is made and given to it."
-  },
-  "s.its-key-pasted.0cb4c260": {
-   "source": "its key pasted",
-   "text": "its key pasted"
   },
   "s.its-key-was-sealed-on-another.582b56fe": {
    "source": "its key was sealed on another machine",
@@ -12195,6 +12195,10 @@
   "s.its-rules.f8d18805": {
    "source": "Its rules",
    "text": "Its rules"
+  },
+  "s.its-sealing-key-x25519.7f74a58d": {
+   "source": "Its sealing key (X25519)",
+   "text": "Its sealing key (X25519)"
   },
   "s.its-server.33dcf633": {
    "source": "Its server",
@@ -14468,10 +14472,6 @@
    "source": "Names it cannot resolve",
    "text": "Names it cannot resolve"
   },
-  "s.names-it-must-hold.f1d4ac26": {
-   "source": "Names it must hold",
-   "text": "Names it must hold"
-  },
   "s.names-it-tried.e6e1a7c6": {
    "source": "Names it tried",
    "text": "Names it tried"
@@ -14836,10 +14836,6 @@
    "source": "No accounts",
    "text": "No accounts"
   },
-  "s.no-acme-yet-nothing-is-taken.3dc7bd4e": {
-   "source": "No acme yet: nothing is taken until one is paired.",
-   "text": "No acme yet: nothing is taken until one is paired."
-  },
   "s.no-address-left-to-translate-to.2592d318": {
    "source": "no address left to translate to",
    "text": "no address left to translate to"
@@ -14871,10 +14867,6 @@
   "s.no-certificate-yet-make-one-or.6251e374": {
    "source": "No certificate yet — make one, or let it pin the router’s own at the first connection.",
    "text": "No certificate yet — make one, or let it pin the router’s own at the first connection."
-  },
-  "s.no-certificate.2a6a501e": {
-   "source": "no certificate",
-   "text": "no certificate"
   },
   "s.no-client-certificate-most-servers-want.4889943a": {
    "source": "No client certificate — most servers want none.",
@@ -15268,6 +15260,10 @@
    "source": "Nobody matches",
    "text": "Nobody matches"
   },
+  "s.nobody-none.338a757f": {
+   "source": "nobody (none)",
+   "text": "nobody (none)"
+  },
   "s.nobody-signs-in-against-it-no.01918e4b": {
    "source": "Nobody signs in against it, no role comes from its groups, and no account is made from it. Like the first, it is only ever read.",
    "text": "Nobody signs in against it, no role comes from its groups, and no account is made from it. Like the first, it is only ever read."
@@ -15331,10 +15327,6 @@
   "s.none-is-there-yet-and-mutual.20f440f2": {
    "source": "- none is there yet, and mutual TLS needs one",
    "text": "- none is there yet, and mutual TLS needs one"
-  },
-  "s.none-known-yet-acme-name.a6cd3416": {
-   "source": "none known yet (acme_name)",
-   "text": "none known yet (acme_name)"
   },
   "s.none-of-the-ones-switched-on.37bcfcfb": {
    "source": "none of the ones switched on",
@@ -15700,10 +15692,6 @@
    "source": "Not this folder",
    "text": "Not this folder"
   },
-  "s.not-this-one.febeb00d": {
-   "source": "Not this one",
-   "text": "Not this one"
-  },
   "s.not-touched-at-all.f9dcd6f8": {
    "source": "not touched at all",
    "text": "not touched at all"
@@ -16024,9 +16012,9 @@
    "source": "Nothing may ever ban it; a ban it has now is lifted.",
    "text": "Nothing may ever ban it; a ban it has now is lifted."
   },
-  "s.nothing-more-is-taken-from-it.02f623de": {
-   "source": "Nothing more is taken from it once this is saved; the certificate the dashboard has stays as it is. Pairing again brings it back.",
-   "text": "Nothing more is taken from it once this is saved; the certificate the dashboard has stays as it is. Pairing again brings it back."
+  "s.nothing-more-is-taken-from-it.ac2414f3": {
+   "source": "Nothing more is taken from it once saved; the certificate it put in stays until another one replaces it.",
+   "text": "Nothing more is taken from it once saved; the certificate it put in stays until another one replaces it."
   },
   "s.nothing-needed-changing.5a84becb": {
    "source": "Nothing needed changing.",
@@ -16404,10 +16392,6 @@
    "source": "of",
    "text": "of"
   },
-  "s.off-a-certificate-that-does-not.f4fb954f": {
-   "source": "Off: a certificate that does not hold the dashboard’s name is refused, so none can take it over silently.",
-   "text": "Off: a certificate that does not hold the dashboard’s name is refused, so none can take it over silently."
-  },
   "s.off-blocks-nobody-by-itself-temporary.f5d25f8a": {
    "source": "Off blocks nobody by itself. Temporary uses the ladder. Permanent keeps the first offender out until somebody takes them off.",
    "text": "Off blocks nobody by itself. Temporary uses the ladder. Permanent keeps the first offender out until somebody takes them off."
@@ -16415,6 +16399,10 @@
   "s.off-everything-is-carried-in-and.0fb3496c": {
    "source": "Off: everything is carried in and checked, and this installation stays on the one in use.",
    "text": "Off: everything is carried in and checked, and this installation stays on the one in use."
+  },
+  "s.off-hello-says-only-that-it.899b5c67": {
+   "source": "Off: hello says only that it is off, and nothing is taken.",
+   "text": "Off: hello says only that it is off, and nothing is taken."
   },
   "s.off-is-right-for-these-lists.daa577b0": {
    "source": "Off is right for these lists: every cipher in them is strong, and the client knows best which is fast for it.",
@@ -16604,9 +16592,17 @@
    "source": "on MariaDB, and on the file SQLite's own backup, which is the file. It is a fraction of the size of the database, and it is the format the server's own tools read, so it can be put back by somebody who has never heard of this program.",
    "text": "on MariaDB, and on the file SQLite's own backup, which is the file. It is a fraction of the size of the database, and it is the format the server's own tools read, so it can be put back by somebody who has never heard of this program."
   },
+  "s.on-not-paired-yet.1be56839": {
+   "source": "on - not paired yet",
+   "text": "on - not paired yet"
+  },
   "s.on-one-but-not-the-other.52bdf2d0": {
    "source": "On one but not the other:",
    "text": "On one but not the other:"
+  },
+  "s.on-paired.12244208": {
+   "source": "on - paired",
+   "text": "on - paired"
   },
   "s.on-passwords-are-recoverable.cd163f39": {
    "source": "ON — passwords are recoverable",
@@ -17127,6 +17123,10 @@
   "s.ones.c7d08f6c": {
    "source": "ones",
    "text": "ones"
+  },
+  "s.only-a-full-administrator-changes-it.e150178f": {
+   "source": "Only a full administrator changes it.",
+   "text": "Only a full administrator changes it."
   },
   "s.only-a-full-administrator-may-change.ba6e5f9c": {
    "source": "Only a full administrator may change the network.",
@@ -17700,9 +17700,9 @@
    "source": "- (or !, or NOT) in front turns a term round",
    "text": "- (or !, or NOT) in front turns a term round"
   },
-  "s.or-paste-acme-s-key.f2f86cbc": {
-   "source": "Or paste acme’s key",
-   "text": "Or paste acme’s key"
+  "s.or-paste-acme-s-key.985e0096": {
+   "source": "Or paste acme’s key…",
+   "text": "Or paste acme’s key…"
   },
   "s.or-paste-pem-here.c8c6a73c": {
    "source": "Or paste PEM here",
@@ -18028,6 +18028,10 @@
    "source": "pair",
    "text": "pair"
   },
+  "s.paired-with-a-code.46a0bcbf": {
+   "source": "paired with a code",
+   "text": "paired with a code"
+  },
   "s.paired-with.a8cb0523": {
    "source": "Paired with",
    "text": "Paired with"
@@ -18195,6 +18199,10 @@
   "s.paste-a-file-made-by-either.bfb2ae20": {
    "source": "Paste a file made by either of the download buttons, or choose it below. The settings in it are checked one by one exactly as if they had been typed here, and a single bad value stops the whole thing rather than leaving half of it applied. Afterwards you are told what the file carried, and what it could not.",
    "text": "Paste a file made by either of the download buttons, or choose it below. The settings in it are checked one by one exactly as if they had been typed here, and a single bad value stops the whole thing rather than leaving half of it applied. Afterwards you are told what the file carried, and what it could not."
+  },
+  "s.paste-acme-s-key.8d6436c8": {
+   "source": "Paste acme’s key",
+   "text": "Paste acme’s key"
   },
   "s.paste-the-authority-s-certificate-here.300c088e": {
    "source": "Paste the authority’s certificate here, in PEM form, and the server’s certificate can be checked properly instead of the check being switched off.",
@@ -18959,10 +18967,6 @@
   "s.put-in.a9229e72": {
    "source": "put in:",
    "text": "put in:"
-  },
-  "s.put-in.fe9c90c2": {
-   "source": "put in",
-   "text": "put in"
   },
   "s.put-it-back.15527f69": {
    "source": "Put it back",
@@ -22284,10 +22288,6 @@
    "source": "Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "Switched off, not one file is opened and nothing anywhere behaves differently."
   },
-  "s.switched-off-not-saved-yet-save.11f9dd55": {
-   "source": "Switched off - not saved yet: Save below.",
-   "text": "Switched off - not saved yet: Save below."
-  },
   "s.switched-off-nothing-is-sent-here.9f210341": {
    "source": "Switched off: nothing is sent here.",
    "text": "Switched off: nothing is sent here."
@@ -22331,10 +22331,6 @@
   "s.switched-on-it-opens-by-itself.07cae8ec": {
    "source": "). Switched on, it opens by itself when root signs in there;",
    "text": "). Switched on, it opens by itself when root signs in there;"
-  },
-  "s.switched-on-not-saved-yet-save.53e4030b": {
-   "source": "Switched on - not saved yet: Save below, then pair it.",
-   "text": "Switched on - not saved yet: Save below, then pair it."
   },
   "s.switched-on-the-security-logs-are.bfc450e4": {
    "source": "Switched on, the Security logs are read the way the ISE logs are — one folder per controller, all of them read into one timeline — and a",
@@ -22720,10 +22716,6 @@
    "source": "taken out — save to keep it",
    "text": "taken out — save to keep it"
   },
-  "s.taken-when-saved.f75fe279": {
-   "source": "taken when saved",
-   "text": "taken when saved"
-  },
   "s.taken.13ed3655": {
    "source": "taken",
    "text": "taken"
@@ -22935,10 +22927,6 @@
   "s.that-is-not-a-settings-file.f7945103": {
    "source": "that is not a settings file: it is not JSON",
    "text": "that is not a settings file: it is not JSON"
-  },
-  "s.that-is-not-acme-s-key.47a791f6": {
-   "source": "that is not acme’s key - one line: acme-push-ed25519 AAAA… comment",
-   "text": "that is not acme’s key - one line: acme-push-ed25519 AAAA… comment"
   },
   "s.that-is-not-json.12d75bf4": {
    "source": "that is not JSON",
@@ -23216,9 +23204,9 @@
    "source": "the address and port the source was made",
    "text": "the address and port the source was made"
   },
-  "s.the-address-for-the-target-in.861f0af9": {
-   "source": "The address for the target in acme",
-   "text": "The address for the target in acme"
+  "s.the-address-for-acme.6b52f336": {
+   "source": "The address for acme",
+   "text": "The address for acme"
   },
   "s.the-address-given-out-inside-the.51b850f1": {
    "source": "the address given out inside the VPN",
@@ -23239,10 +23227,6 @@
   "s.the-address-has-not-been-looked.a6460bdb": {
    "source": "The address has not been looked at yet: Look now, above, lists what is there.",
    "text": "The address has not been looked at yet: Look now, above, lists what is there."
-  },
-  "s.the-address-is-copied.af9a6d57": {
-   "source": "the address is copied",
-   "text": "the address is copied"
   },
   "s.the-address-it-came-from.22677d07": {
    "source": "the address it came from",
@@ -23843,10 +23827,6 @@
   "s.the-code-from-the-app-was.75ae8d3a": {
    "source": "the code from the app was asked for and never typed",
    "text": "the code from the app was asked for and never typed"
-  },
-  "s.the-code-is-copied.9969ba90": {
-   "source": "the code is copied",
-   "text": "the code is copied"
   },
   "s.the-code-was-wrong-confirming-a.5c2f1148": {
    "source": "the code was wrong confirming a new token",
@@ -26044,9 +26024,9 @@
    "source": "The pair",
    "text": "The pair"
   },
-  "s.the-pairing-code-shown-this-once.a9b18e97": {
-   "source": "The pairing code - shown this once",
-   "text": "The pairing code - shown this once"
+  "s.the-pairing-code-is-copied.6a42d2f9": {
+   "source": "the pairing code is copied",
+   "text": "the pairing code is copied"
   },
   "s.the-part-of-the-tree-people.c89d2f9d": {
    "source": "The part of the tree people live in: DC=example,DC=com , or an organisational unit inside it if that is quicker to search.",
@@ -28267,6 +28247,10 @@
   "s.this-server-s-address-gateway-dns.ff2f951d": {
    "source": "This server's address, gateway, DNS servers, host name and IPv6 - put in by the server itself, on trial: unless it is kept within minutes it goes back to the old one by itself.",
    "text": "This server's address, gateway, DNS servers, host name and IPv6 - put in by the server itself, on trial: unless it is kept within minutes it goes back to the old one by itself."
+  },
+  "s.this-server-s-id.8e8ec69a": {
+   "source": "This server’s id",
+   "text": "This server’s id"
   },
   "s.this-server-s-network-as-networkmanager.d091699f": {
    "source": "this server's network as NetworkManager has it, and a change under way or waiting to be kept (set it on the pages: Settings - Network)",
@@ -32542,6 +32526,10 @@
   }
  },
  "patterns": {
+  "p.a-code-waits-until-wrong-so.f1071667": {
+   "source": "A code waits until {0} ({1} wrong so far).",
+   "text": "A code waits until {0} ({1} wrong so far)."
+  },
   "p.a-copy-was-made.fd84d513": {
    "source": "a copy was made: {0} ({1})",
    "text": "a copy was made: {0} ({1})"
@@ -32593,10 +32581,6 @@
   "p.a-page.0f93df8d": {
    "source": "{0} a page",
    "text": "{0} a page"
-  },
-  "p.a-pairing-code-is-waiting-for.be1c51f6": {
-   "source": "A pairing code is waiting for another {0} min. It was shown once: Take it back, or make a new one.",
-   "text": "A pairing code is waiting for another {0} min. It was shown once: Take it back, or make a new one."
   },
   "p.a-password-is-at-least-characters.3741d884": {
    "source": "a password is at least {0} characters",
@@ -33041,6 +33025,10 @@
   "p.connection-s-in-its-table.fbe4ffca": {
    "source": "· {0} connection(s) in its table",
    "text": "· {0} connection(s) in its table"
+  },
+  "p.copied.38659fa9": {
+   "source": "copied: {0}",
+   "text": "copied: {0}"
   },
   "p.copies-kept-at-most.8a508eb4": {
    "source": "Copies kept ({0} at most)",
@@ -34482,9 +34470,9 @@
    "source": ", of which only the last {0} day(s) may earn a ban",
    "text": ", of which only the last {0} day(s) may earn a ban"
   },
-  "p.off-acme-is-told-only-that.a9f95ab7": {
-   "source": "Off: acme is told only that this is isemon {0}.",
-   "text": "Off: acme is told only that this is isemon {0}."
+  "p.off-a-certificate-must-hold-the.0aa402bc": {
+   "source": "Off: a certificate must hold the name of this server ({0}). On: acme may say not to check it.",
+   "text": "Off: a certificate must hold the name of this server ({0}). On: acme may say not to check it."
   },
   "p.on-a-list-of-refused-attempts.9b5124b4": {
    "source": "{0}On a list of refused attempts that is the strongest thing there is to know about one: nobody has ever had it.{1}",
@@ -34741,10 +34729,6 @@
   "p.pub.090e9b6f": {
    "source": "{0}.pub",
    "text": "{0}.pub"
-  },
-  "p.put-it-into-the-target-in.d1063961": {
-   "source": "Put it into the target in acme (Targets → An application of ours → Pairing code) and press Try there, within {0} min. Five wrong tries and it is gone.",
-   "text": "Put it into the target in acme (Targets → An application of ours → Pairing code) and press Try there, within {0} min. Five wrong tries and it is gone."
   },
   "p.put-on-in-s.84078b62": {
    "source": "{0} put on in {1} s{2}",
@@ -35554,9 +35538,9 @@
    "source": "The last page of this list.{0}",
    "text": "The last page of this list.{0}"
   },
-  "p.the-last-push-from-until.cf174325": {
-   "source": "The last push: {0} from {1} - {2}, until {3}.",
-   "text": "The last push: {0} from {1} - {2}, until {3}."
+  "p.the-last-push.d1fa2b24": {
+   "source": "The last push: {0} · {1} · {2}",
+   "text": "The last push: {0} · {1} · {2}"
   },
   "p.the-last-read-failed.dbd3215e": {
    "source": "The last read failed: {0}",

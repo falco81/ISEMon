@@ -359,7 +359,7 @@ try:
     card = admin()[1]
     ok('the card: who is paired, by what', [(k['key_id'], k['name'], k['how'])
                                             for k in card['keys']],
-       [(acme.kid, acme.name, 'pairing code')])
+       [(acme.kid, acme.name, 'paired with a code')])
 
     print('\nThe signature, refused in its order')
     st, r, _ = acme.post('inventory', {}, version='2')
@@ -582,7 +582,7 @@ try:
     ok('not a key: refused', st, 400)
     st, d = admin({'action': 'paste', 'key': acme2.text})
     ok('acme\'s key pasted: two acmes paired', (st, [k['how'] for k in d['keys']]),
-       (200, ['pairing code', 'pasted']))
+       (200, ['paired with a code', 'pasted']))
     st, r, _ = acme2.post('inventory', {})
     ok('...the second may ask', st, 200)
     st, d = admin({'action': 'forget', 'key_id': acme.kid})
@@ -642,12 +642,27 @@ try:
                                             "'Take certificates of other names'" in page),
        (True,) * 5)
     ok('its changes wait for the save bar: kept as pending, saved at once, put back by Reset', (
-        "extraPending('acme-push', {save: pushSave, reset: pushReset});" in page,
-        "api('acme-push-admin', {action: 'save'," in page,
-        "var sw = wrSwitch(on, function (v) { pushWant({on: v}); }, !may);" in page,
+        "extraPending('acme-push', {save: pushSave, reset: function () {" in page,
+        "return api('acme-push-admin', {action: 'save'," in page,
+        "sw._input.onchange = function () { PUSH_WANT.on = !!sw._get(); pushWanted(); };" in page,
         "pushDo({action: 'off'})" not in page, "pushDo({action: 'forget'" not in page,
         "pushDo({action: 'paste'" not in page,
         "var SAVE_PANES = ['fw', 'time', 'about', 'tls'];" in page), (True,) * 7)
+    ok('drawn as the AI app 1.0.60 draws it (1.10.281): the state on the heading, the tiles to '
+       'copy, the code and acme\'s key in popups, the tables, its sizes on this card alone', (
+        'id="tls-push-state"' in page, "function pushTiles(box, values)" in page,
+        "modal('Pair with an acme', function (body) {" in page,
+        "modal('Paste acme\u2019s key', function (body) {" in page or
+        "modal('Paste acme’s key', function (body) {" in page,
+        "listTable(['acme', 'Key', 'Since', 'How', {words: '', cls: 'act'}], keys," in page,
+        "listTable(['Slot', 'Names', 'Now', 'Until', 'Looked after by'], d.slots || []," in page,
+        '  #tls-push-card{padding:20px 22px;border-radius:14px;font-size:14.5px;line-height:1.5}' in page,
+        '  .push-code{font-size:30px;letter-spacing:.12em;' in page), (True,) * 8)
+    admin({'action': 'on'})
+    st, d = admin({'action': 'paste', 'key': Acme(base).text, 'name': 'named here'})
+    admin({'action': 'off'})
+    ok('acme\'s key pasted with a name of its own, at once from its popup (as the AI app)',
+       (st, d['keys'][-1]['name'], d['keys'][-1]['how']), (200, 'named here', 'pasted'))
 finally:
     if php:
         php.terminate()

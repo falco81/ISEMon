@@ -371,6 +371,21 @@ working.
 
 ## Version
 
+1.10.281
+
+- **Certificates from acme, drawn exactly as the AI app 1.0.60 draws it**:
+  the state on the card's heading (*off*, *on - not paired yet*, *on -
+  paired*); the two switches side by side on the settings grid; three tiles -
+  the address for acme, this server's id, its sealing key - each copied by a
+  click; *Pair with an acme* showing the code in a popup of its own (the code
+  and the address copied by a click, until when it is valid), *Take it back*
+  with when the waiting code runs out and how many wrong tries it has had;
+  *Or paste acme's key…* in a popup with a name for it; *Paired with* and
+  *What acme sees here* as tables; the last push in a line. Its sizes, fonts,
+  buttons and popups are the AI app's, set on this card and its popups alone.
+  The switches and *Forget it* still wait for the save bar; a pasted key is
+  taken by its popup's *Take this key*, as in the AI app.
+
 1.10.280
 
 - **Certificates from acme: the changes wait for the save bar**, as every
