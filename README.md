@@ -371,6 +371,29 @@ working.
 
 ## Version
 
+1.10.283
+
+- **Counting up to a ban: one address cleared**. Every row has a button of
+  its own beside the ban: that address back to nought, as *Clear all* does
+  for everybody - nothing deleted, nobody let in, its attempts still on the
+  Failed attempts page. Its counting starts again from that moment (the
+  floor the counting already keeps for each address, as after a ban it
+  served), and its ban history says who cleared it and when (*counting
+  cleared*); every other address counts on. A full administrator's, as
+  *Clear all* is.
+- **Looked through the whole application for more of what 1.10.282 found** -
+  a statement per row where one per few hundred does: every page's reads
+  timed on PostgreSQL with 5 500 bans, 205 000 ban events, 180 000 sign-ins
+  and 55 000 events (all well under a second, from what is kept even
+  sooner), and the work done behind them profiled. One more found and
+  mended: the pass that looks for anything missed (every few seconds) asked,
+  of every address over the bar that is already banned, whether a carried
+  ban keeps it out - one statement each. Now a few hundred a statement, the
+  same answer for every address (subnets, sources watched or switched off
+  included; checked against the old way on all of them): 1.2 s → 0.06 s for
+  7 000 addresses, every five seconds. Taking in the records, the Banned page
+  and the router's sync were already one statement a batch.
+
 1.10.282
 
 - **What the firewall is carrying, read in seconds rather than minutes**: the

@@ -12822,7 +12822,8 @@ function paintCounting() {
     draw: function (page, into) {
       into.appendChild(listTable(
         [addrHeads(), {words: 'How close', cls: 'num'}, '',
-         {words: 'Names', cls: 'num'}, 'Source', 'Last tried'].concat(banHeads()), page,
+         {words: 'Names', cls: 'num'}, 'Source', 'Last tried'].concat(banHeads())
+          .concat(ADMIN ? [{words: '', cls: 'act'}] : []), page,
         function (r) {
           var tr = el('tr');
           addrPlaceCountry(tr, r.ip, r.country, false, r.last);
@@ -12886,6 +12887,28 @@ function paintCounting() {
           }
           tr.appendChild(stampCell(r.last, 'dim'));
           banOnto(tr, r.ip, 'banned before it reached the bar', loadBans, true);
+          /* This one address back to nought (1.10.283), as Clear all does for
+             everybody: nothing deleted, nobody let in. */
+          if (ADMIN) {
+            var zero = iconButton('forget', 'Clear its counting: ' + r.ip + ' goes back to nought');
+            zero.classList.add('soon-zero');
+            zero.onclick = function (ev) {
+              ev.stopPropagation();
+              confirmThen('Clear the counting of ' + r.ip + '?',
+                'Its <b>' + num(r.tries || 0) + '</b> attempt(s) stop counting towards a ban, and '
+                + 'it has to earn one from here.<br><br>Nothing is deleted and nobody is let in: '
+                + 'every attempt stays on the Failed attempts page, and its ban history says '
+                + 'who cleared it and when.', 'Clear it', function () {
+                  api('blocked', {clear_counting_of: r.ip}).then(function (d) {
+                    toast(d.message, 'good');
+                    loadBans();
+                  }).catch(oops);
+                }, false);
+            };
+            var zc = el('td', 'act');
+            zc.appendChild(zero);
+            tr.appendChild(zc);
+          }
           opensWith(tr, '', function () { lookUp(r.ip); });
           return tr;
         }, 'plain'));

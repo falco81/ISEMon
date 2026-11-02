@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.282",
+  "version": "1.10.283",
   "made": "2026-11-02",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -3608,6 +3608,10 @@
    "source": "Attacks arrive from whole streets: this VPN sees thirty-two tries each from a dozen addresses in one /24. Folding turns those into one line, so the router carries one rule instead of a dozen and the list stays readable.",
    "text": "Attacks arrive from whole streets: this VPN sees thirty-two tries each from a dozen addresses in one /24. Folding turns those into one line, so the router carries one rule instead of a dozen and the list stays readable."
   },
+  "s.attempt-s-stop-counting-towards-a.2b6eeb3c": {
+   "source": "attempt(s) stop counting towards a ban, and it has to earn one from here.",
+   "text": "attempt(s) stop counting towards a ban, and it has to earn one from here."
+  },
   "s.attempts-they-have-made-in-the.0ce737d6": {
    "source": "attempts they have made in the window above — the only ones that are ever judged. A switch refusing MAB all day is on the Failed attempts page under its own tab and is not counted here. Click one to see everything known about it, and to ban it or let it back in.",
    "text": "attempts they have made in the window above — the only ones that are ever judged. A switch refusing MAB all day is on the Failed attempts page under its own tab and is not counted here. Click one to see everything known about it, and to ban it or let it back in."
@@ -5091,6 +5095,10 @@
   "s.clear-all.c043160a": {
    "source": "Clear all",
    "text": "Clear all"
+  },
+  "s.clear-it.cec806d9": {
+   "source": "Clear it",
+   "text": "Clear it"
   },
   "s.clear-my-search-history.cc8277d7": {
    "source": "Clear my search history",
@@ -15956,6 +15964,10 @@
    "source": "Nothing is changed but the names: no record is touched, nobody is banned or un-banned, and an address that turns out to have no name is written down as having none so it is not asked about again.",
    "text": "Nothing is changed but the names: no record is touched, nobody is banned or un-banned, and an address that turns out to have no name is written down as having none so it is not asked about again."
   },
+  "s.nothing-is-deleted-and-nobody-is.47fc6100": {
+   "source": "Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page, and its ban history says who cleared it and when.",
+   "text": "Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page, and its ban history says who cleared it and when."
+  },
   "s.nothing-is-deleted-and-nobody-is.d1ea0e0e": {
    "source": "Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page exactly as it is, every address that is already banned stays banned, and the ladder still remembers how many times each one has been banned before. What moves is only the moment the counting looks back to.",
    "text": "Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page exactly as it is, every address that is already banned stays banned, and the ladder still remembers how many times each one has been banned before. What moves is only the moment the counting looks back to."
@@ -22931,6 +22943,10 @@
   "s.that-is-not-a-settings-file.f7945103": {
    "source": "that is not a settings file: it is not JSON",
    "text": "that is not a settings file: it is not JSON"
+  },
+  "s.that-is-not-an-address.e49fdda6": {
+   "source": "that is not an address",
+   "text": "that is not an address"
   },
   "s.that-is-not-json.12d75bf4": {
    "source": "that is not JSON",
@@ -32994,6 +33010,14 @@
    "source": "Cisco ISE VPN banning on {0}. Sign in to go on.",
    "text": "Cisco ISE VPN banning on {0}. Sign in to go on."
   },
+  "p.clear-its-counting-goes-back-to.2b02a9f3": {
+   "source": "Clear its counting: {0} goes back to nought",
+   "text": "Clear its counting: {0} goes back to nought"
+  },
+  "p.clear-the-counting-of.693fb8df": {
+   "source": "Clear the counting of {0}?",
+   "text": "Clear the counting of {0}?"
+  },
   "p.click-to-copy-this-is-the.3a3787cc": {
    "source": "Click to copy. This is the half that goes ON {0}; the private half stays here. It goes into the",
    "text": "Click to copy. This is the half that goes ON {0}; the private half stays here. It goes into the"
@@ -36090,6 +36114,10 @@
    "source": "{0} was {1}",
    "text": "{0} was {1}"
   },
+  "p.went-back-to-nought.03ea825d": {
+   "source": "{0} went back to nought",
+   "text": "{0} went back to nought"
+  },
   "p.what-active-directory-says-about-this.3f72e1e4": {
    "source": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory.",
    "text": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory."
@@ -36807,6 +36835,10 @@
   "r.it-says-what-it-would-do.28f93df9": {
    "source": "It says what it would do before it does anything, and a subnet is only made where two or more banned addresses fall inside it — never where it would swallow something under <i>never kept out</i>.",
    "text": "It says what it would do before it does anything, and a subnet is only made where two or more banned addresses fall inside it — never where it would swallow something under <i>never kept out</i>."
+  },
+  "r.its-attempt-s-stop-counting-towards.a90f472b": {
+   "source": "Its <b>{0}</b> attempt(s) stop counting towards a ban, and it has to earn one from here.<br><br>Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page, and its ban history says who cleared it and when.",
+   "text": "Its <b>{0}</b> attempt(s) stop counting towards a ban, and it has to earn one from here.<br><br>Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page, and its ban history says who cleared it and when."
   },
   "r.its-public-half-goes-into-root.81273509": {
    "source": "Its <b>public</b> half goes into <code>/root/.ssh/authorized_keys</code> of this server. The <b>private</b> half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too.",

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.282'
+__version__ = '1.10.283'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -36619,6 +36619,19 @@ class Storage(object):
         self.set_meta('counting_from', repr(when))
         return when
 
+    def clear_counting_of(self, ip, by='', at=None):
+        """The same line for one address alone (1.10.283): its counting
+        starts again from now, as after a ban it served - the floor the
+        counting already keeps for each address (`let_back_in_at`). Nothing is
+        deleted; the line is in its ban history, who drew it and when."""
+        when = float(at if at is not None else time.time())
+        self.memo_clear(ip)
+        with self.db_write() as db:
+            db.execute('INSERT INTO block_events (ts, ip, what, why, auto, by) '
+                       "VALUES (?,?,'counting cleared',?,0,?)",
+                       (when, str(ip), 'its counting was started again', str(by or '')[:200]))
+        return when
+
     def blocked_one(self, ip):
         """The ban on exactly this address, as it stands, or None. Itself
         only: a subnet that covers it is not a row anybody can lengthen."""
@@ -36636,6 +36649,19 @@ class Storage(object):
         if memo is not None:
             memo[('blocked', str(ip))] = dict(got) if got else False
         return got
+
+    def blocked_many(self, ips, chunk=400):
+        """`blocked_one` of many addresses, a few hundred a statement
+        (1.10.283): {ip: row} of those that have a row of their own."""
+        out = {}
+        want = list(dict.fromkeys(str(x) for x in ips if x))
+        for i in range(0, len(want), chunk):
+            part = want[i:i + chunk]
+            for r in self.db.execute('SELECT ip, since, until, why, auto, by, hits, '
+                                     + self._src_col() + ' FROM blocked WHERE ip IN (%s)'
+                                     % ','.join('?' * len(part)), part):
+                out[str(r['ip'])] = dict(r)
+        return out
 
     def lengthen(self, ip, until, why=''):
         """Make a ban longer - never shorter, and `None` means for good."""
@@ -36722,7 +36748,8 @@ class Storage(object):
         if memo is not None and ('let back in', str(ip)) in memo:
             return memo[('let back in', str(ip))]
         row = self.db.execute(
-            "SELECT MAX(ts) AS t FROM block_events WHERE ip=? AND what='let back in'",
+            "SELECT MAX(ts) AS t FROM block_events WHERE ip=? AND what IN ('let back in', "
+            "'counting cleared')",
             (str(ip),)).fetchone()
         got = float((row['t'] if row else 0) or 0)
         if memo is not None:
@@ -36780,8 +36807,9 @@ class Storage(object):
         for at in range(0, len(want), 400):
             some = want[at:at + 400]
             for row in self.db.execute(
-                    "SELECT ip, MAX(ts) AS t FROM block_events WHERE what='let back in' "
-                    'AND ip IN (%s) GROUP BY ip' % ','.join('?' * len(some)), some):
+                    "SELECT ip, MAX(ts) AS t FROM block_events WHERE what IN ('let back in', "
+                    "'counting cleared') AND ip IN (%s) GROUP BY ip" % ','.join('?' * len(some)),
+                    some):
                 found[fold(row['ip'])] = max(found.get(fold(row['ip']), 0.0),
                                              float(row['t'] or 0))
         for ip in want:
@@ -36876,8 +36904,8 @@ class Storage(object):
         a whole page: asking per row is one query per row for an answer that
         is the same two columns."""
         return {r['ip']: float(r['t']) for r in self.db.execute(
-            "SELECT ip, MAX(ts) AS t FROM block_events WHERE what='let back in' AND ts>=? "
-            'GROUP BY ip', (float(ts),))}
+            "SELECT ip, MAX(ts) AS t FROM block_events WHERE what IN ('let back in', "
+            "'counting cleared') AND ts>=? GROUP BY ip", (float(ts),))}
 
     def failed_recent(self, ip, seconds, at=None, since_ban=False, devices=None, kinds=None):
         """When this address failed, inside a window of so many seconds.
@@ -40467,8 +40495,8 @@ class Storage(object):
         keep_from = time.time() - 2 * 86400
         with self.db_write() as db:
             db.execute('DELETE FROM blocked_log WHERE ended IS NOT NULL')
-            db.execute("DELETE FROM block_events WHERE what <> 'let back in' OR ts < ?",
-                       (keep_from,))
+            db.execute("DELETE FROM block_events WHERE what NOT IN ('let back in', "
+                       "'counting cleared') OR ts < ?", (keep_from,))
 
     # ---- folding ----------------------------------------------------------
     def fold_into(self, ip, net, by='folded'):
@@ -50413,13 +50441,18 @@ class Daemon(object):
         # the whole list was read every five seconds for it - and only the
         # rest asked one at a time, against the subnets too.
         out_now = self.store.banned_among(over)
+        # ...and whether a carried ban keeps those out, for all of them at
+        # once (1.10.283): one statement a few hundred, not one each.
+        covered = self.carried_covers_many([ip for ip in over if ip in out_now])
         for ip in over:
             if self.spared(ip):
                 continue
             # Under a ban nobody carries, a door that bans is still counted
             # (1.10.200), as on a refusal: only a carried one is skipped.
-            if (ip in out_now or self.store.blocked_until(ip) is not None) \
-                    and self.carried_covers(ip):
+            if ip in out_now:
+                if ip in covered:
+                    continue
+            elif self.store.blocked_until(ip) is not None and self.carried_covers(ip):
                 continue
             if self.maybe_block(ip) is not None:
                 done += 1
@@ -50935,6 +50968,65 @@ class Daemon(object):
             # a ban.
             log('which bans are carried: %s' % str(e)[:160], 'warn')
             return True
+
+    def carried_covers_many(self, ips):
+        """`carried_covers` of many addresses at once (1.10.283): the same
+        answer for each, their own rows read in one statement a few hundred
+        rather than one each - asked every few seconds of every address over
+        the bar that is already out, which on a busy site is thousands.
+        The set of those a carried ban keeps out."""
+        ips = [str(x) for x in ips]
+        if not ips:
+            return set()
+        try:
+            now = time.time()
+            on = ban_sources_on()
+            rows = self.store.blocked_many(ips)
+            out, rest = set(), []
+            for ip in ips:
+                row = rows.get(ip)
+                if row and (row.get('until') is None or float(row['until']) > now) \
+                        and set(ban_src_of(row)) & on:
+                    out.add(ip)
+                else:
+                    rest.append(ip)
+            nets = self.store.ban_nets() if rest else []
+            if rest and nets:
+                # The subnets around the rest, as `carried_covers` asks: the
+                # list of them once, and each one that holds one of them
+                # read once however many of them it holds.
+                held, full_of = [], {}
+                for net_row in nets:
+                    try:
+                        net = ipaddress.ip_network(net_row['ip'], strict=False)
+                    except ValueError:
+                        continue
+                    if net_row.get('until') is not None and float(net_row['until']) <= now:
+                        continue
+                    held.append((net, net_row))
+                for ip in rest:
+                    try:
+                        one = ipaddress.ip_address(ip)
+                    except ValueError:
+                        continue
+                    want = same_address(ip)
+                    for net, net_row in held:
+                        if one.version != net.version or one not in net:
+                            continue
+                        key = str(net_row['ip'])
+                        if key not in full_of:
+                            full_of[key] = self.store.blocked_one(net_row['ip']) or net_row
+                        full = full_of[key]
+                        if any(str(got.get('ip')) == str(full.get('ip'))
+                               or same_address(got.get('ip')) == want
+                               for got in ban_effective_rows(self.store, [full], now)):
+                            out.add(ip)
+                            break
+            return out
+        except Exception as e:                          # noqa: BLE001
+            # As `carried_covers`: not knowing, a ban is a ban.
+            log('which bans are carried: %s' % str(e)[:160], 'warn')
+            return set(ips)
 
     def ban_effective(self, rows, now=None):
         """The bans that are carried: those a source switched on stands
@@ -77812,6 +77904,19 @@ class ApiHandler(BaseHTTPRequestHandler):
                            if k not in ('add', 'remove', 'minutes', 'why'))):
                 return self.fail('a ban admin may ban one address and let one back in, and '
                                  'nothing more', 403)
+            if data.get('clear_counting_of'):
+                # One address back to nought (1.10.283), as Clear all does
+                # for everybody: nothing deleted, nobody let in.
+                ip = same_address(str(data.get('clear_counting_of') or '').strip())
+                if not is_address(ip):
+                    return self.fail('that is not an address')
+                when = store.clear_counting_of(ip, by=me['name'])
+                store.add_event('blocks', 'the counting of %s was started again; it went back '
+                                'to nought' % ip, who=me['name'])
+                daemon.forget_held('counting/')
+                daemon.bump()
+                return self.send_json({'ok': True, 'ip': ip, 'from': when,
+                                       'message': '%s went back to nought' % ip})
             if data.get('clear_counting'):
                 # Nought for everybody who is counting up. Nothing is
                 # deleted and nobody who is banned is let in: this moves the
