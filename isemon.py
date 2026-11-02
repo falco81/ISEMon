@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.281'
+__version__ = '1.10.282'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -826,6 +826,7 @@ DEFAULTS = {
     # trip per address; forty in a call turns a minute of waiting into a
     # second or two.
     'mikrotik_chunk': 40,
+    'mikrotik_read_s': 300,      # how long a firewall's lists are waited for (1.10.282)
 
     # --- who may open the dashboard ----------------------------------------
     'session_hours': 12,          # how long a login lasts before it is asked again
@@ -40339,6 +40340,27 @@ class Storage(object):
         row = self.db.execute(sql, args).fetchone()
         return int(row['n'] if row else 0)
 
+    def block_events_for(self, ips, per=8, chunk=400):
+        """The newest `per` ban events of each of many addresses, by the index
+        on the address, a few hundred addresses a statement (1.10.282).
+        {ip: [rows, newest first]}."""
+        out = {}
+        want = list(dict.fromkeys(str(x) for x in ips if x))
+        for i in range(0, len(want), chunk):
+            part = want[i:i + chunk]
+            try:
+                rows = self.db.execute(
+                    'SELECT * FROM block_events WHERE ip IN (%s) ORDER BY ts DESC'
+                    % ','.join('?' * len(part)), part).fetchall()
+            except sqlite3.Error:
+                continue
+            for r in rows:
+                r = dict(r)
+                got = out.setdefault(str(r.get('ip') or ''), [])
+                if len(got) < per:
+                    got.append(r)
+        return out
+
     def block_events_of(self, ip, limit=12):
         """One address's own ban history, newest first, by its index."""
         try:
@@ -53081,7 +53103,7 @@ class Daemon(object):
                   r'input does not match'
         if self.MIKROTIK_PROPLIST.get(fw) is not False:
             try:
-                out = self.mikrotik_run(short, fw=fw, timeout=self.MIKROTIK_READ_S)
+                out = self.mikrotik_run(short, fw=fw, timeout=self.mikrotik_read_s())
             except RuntimeError as e:
                 if not re.search(refused, str(e)):
                     raise
@@ -53093,7 +53115,15 @@ class Daemon(object):
                 return out
             self.MIKROTIK_PROPLIST[fw] = False
             log('%s: this RouterOS does not take proplist - its lists are read whole' % fw)
-        return self.mikrotik_run(whole, fw=fw, timeout=self.MIKROTIK_READ_S)
+        return self.mikrotik_run(whole, fw=fw, timeout=self.mikrotik_read_s())
+
+    def mikrotik_read_s(self):
+        """How long a list is waited for: Settings -> The firewall, Waiting for the
+        router's lists (1.10.282); five minutes unless it is said otherwise."""
+        try:
+            return max(30, min(1800, int(CONFIG.get('mikrotik_read_s') or self.MIKROTIK_READ_S)))
+        except (TypeError, ValueError):
+            return self.MIKROTIK_READ_S
 
     def mikrotik_entries(self, listed=None, remember=True, mark=None, fw='mikrotik'):
         """What is in one list on one firewall, and which of them are ours."""
@@ -53772,11 +53802,17 @@ class Daemon(object):
                 here.setdefault(one, dict(r, ip=one, src_off=False, carried_as=[],
                                           members=[], spared=self.spared(one)))
         out = []
+        # The story of every address at once, by the index on the address
+        # (1.10.282): one search of the whole ban history per entry - a
+        # LIKE over three columns, counted and then read - was most of the
+        # minutes this took on a router carrying thousands.
+        stories = self.store.block_events_for(
+            [x for one in entries for x in fw_story_keys(one['address'])], 8)
         for one in entries:
             plain = one['address'].split('/')[0]
             mine = here.get(plain) or here.get(one['address']) or {}
-            story, _ = self.store.block_events(60, text=plain)
-            story = [h for h in story if str(h.get('ip') or '').split('/')[0] == plain]
+            story = sorted((h for k in fw_story_keys(one['address']) for h in stories.get(k, [])),
+                           key=lambda h: h.get('ts') or 0, reverse=True)[:8]
             out.append({
                 'address': one['address'],
                 'family': 'IPv6' if ':' in plain else 'IPv4',
@@ -56942,7 +56978,7 @@ class Daemon(object):
         'pf_list': 'str', 'pf_geolist': 'str',
         'geolist': (0, 1), 'geolist_name': 'str', 'geolist_countries': 'str',
         'geolist_family': ('ipv4', 'ipv6', 'both'), 'geolist_auto': (0, 1),
-        'geolist_chunk': (20, 500), 'mikrotik_chunk': (1, 200),
+        'geolist_chunk': (20, 500), 'mikrotik_chunk': (1, 200), 'mikrotik_read_s': (30, 1800),
         'session_hours': (1, 720), 'session_idle_min': (5, 10080),
         'login_tries': (1, 100), 'login_wait_min': (1, 1440),
         'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
@@ -57220,6 +57256,7 @@ class Daemon(object):
         'geolist_auto': 'Refill it with every new database',
         'geolist_chunk': 'Lines sent to the router at once',
         'mikrotik_chunk': 'Bans sent to the router at once',
+        'mikrotik_read_s': 'Waiting for the router\'s lists (s)',
         'session_hours': 'A sign-in lasts (h)',
         'session_idle_min': 'Or until untouched for (min)',
         'login_tries': 'Wrong passwords before waiting',
@@ -58288,6 +58325,10 @@ class Daemon(object):
         'geolist_chunk': 'How many lines are sent to the router in one command. A country is '
                          'tens of thousands of prefixes and one ssh call each would take hours; '
                          'two hundred at a time takes about a minute.',
+        'mikrotik_read_s': 'How long reading an address list off a MikroTik may take before it is '
+                           'given up - What the firewall is carrying, and every sync. Five minutes '
+                           'is plenty for tens of thousands of entries; raise it for a slow router '
+                           'or a slow line.',
         'mikrotik_chunk': 'How many bans are sent to the router in one command. Every command '
                           'is a round trip, and a round trip to a router across a site is '
                           'most of the time a sync takes. Each one still carries its own '
@@ -64313,6 +64354,14 @@ TLS_DH = ('none', 'ffdhe2048', 'ffdhe3072', 'ffdhe4096', 'gen2048', 'gen3072', '
 PEM_CERT_RE = re.compile(r'-----BEGIN CERTIFICATE-----[A-Za-z0-9+/=\s]+?-----END CERTIFICATE-----')
 PEM_KEY_RE = re.compile(r'-----BEGIN ((?:RSA |EC |ENCRYPTED )?PRIVATE KEY)-----[A-Za-z0-9+/=\s:,-]+?'
                         r'-----END \1-----')
+
+
+def fw_story_keys(address):
+    """The ways an address on a firewall's list is written in the ban
+    history: itself, and as one address of /32 or /128 (1.10.282)."""
+    a = str(address or '')
+    plain = a.split('/')[0]
+    return list(dict.fromkeys([a, plain, plain + ('/128' if ':' in plain else '/32')]))
 
 
 class WebRootError(ValueError):

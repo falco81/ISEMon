@@ -371,6 +371,24 @@ working.
 
 ## Version
 
+1.10.282
+
+- **What the firewall is carrying, read in seconds rather than minutes**: the
+  ban history shown beside every address on the router was one search of the
+  whole history per address - a LIKE over three columns, counted and then
+  read - so a router carrying 5 500 bans was 11 000 scans of the history
+  before the page drew: on PostgreSQL with a big history, minutes (measured
+  here: 5 533 addresses beside 216 000 events, about 12 minutes before, 1.3 s
+  now). It is now read for all of them at once, a few hundred addresses a
+  statement, by the index on the address - the same story, the newest eight
+  of each address's own.
+- **...and the page waits for it**: the read was given up by the page after
+  60 s while the daemon went on; it is waited for as long as nginx waits for
+  the page (900 s). Every other read waits as before.
+- **Settings → The firewall: Waiting for the router's lists (s)** - how long
+  reading an address list off a MikroTik may take, for this read and every
+  sync; five minutes unless it is said otherwise (30 to 1800 s).
+
 1.10.281
 
 - **Certificates from acme, drawn exactly as the AI app 1.0.60 draws it**:

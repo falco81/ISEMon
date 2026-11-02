@@ -28,6 +28,7 @@ def ok(what, got, want=True):
 
 class Fake(object):
     MIKROTIK_READ_S = isemon.Daemon.MIKROTIK_READ_S
+    mikrotik_read_s = isemon.Daemon.mikrotik_read_s
     MIKROTIK_PROPLIST = {}
     mikrotik_list_print = isemon.Daemon.mikrotik_list_print
 

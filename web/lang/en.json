@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.281",
-  "made": "2026-11-01",
+  "version": "1.10.282",
+  "made": "2026-11-02",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -10139,6 +10139,10 @@
   "s.how-long-one-server-is-given.ab514e46": {
    "source": "How long one server is given to answer before the next one is asked. Nobody is waiting for any of this, but a queue standing behind a server that has gone away is a queue that never moves.",
    "text": "How long one server is given to answer before the next one is asked. Nobody is waiting for any of this, but a queue standing behind a server that has gone away is a queue that never moves."
+  },
+  "s.how-long-reading-an-address-list.eccde3bb": {
+   "source": "How long reading an address list off a MikroTik may take before it is given up - What the firewall is carrying, and every sync. Five minutes is plenty for tens of thousands of entries; raise it for a slow router or a slow line.",
+   "text": "How long reading an address list off a MikroTik may take before it is given up - What the firewall is carrying, and every sync. Five minutes is plenty for tens of thousands of entries; raise it for a slow router or a slow line."
   },
   "s.how-long-successful-logins-are-kept.c0cc32a0": {
    "source": "How long successful logins are kept.",
@@ -29719,6 +29723,10 @@
   "s.waiting-for-root.bb2b87dc": {
    "source": "waiting for root",
    "text": "waiting for root"
+  },
+  "s.waiting-for-the-router-s-lists.cc2384df": {
+   "source": "Waiting for the router's lists (s)",
+   "text": "Waiting for the router's lists (s)"
   },
   "s.waiting-for-the-server-s-next.435c4b07": {
    "source": "Waiting for the server’s next start:",

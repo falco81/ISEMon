@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.281",
+  "version": "1.10.282",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -10139,6 +10139,10 @@
   "s.how-long-one-server-is-given.ab514e46": {
    "source": "How long one server is given to answer before the next one is asked. Nobody is waiting for any of this, but a queue standing behind a server that has gone away is a queue that never moves.",
    "text": "Kolik času dostane jeden server na odpověď, než se zeptá další. Nikdo na nic z toho nečeká, ale fronta stojící za serverem, který zmizel, je fronta, která se nikdy nepohne."
+  },
+  "s.how-long-reading-an-address-list.eccde3bb": {
+   "source": "How long reading an address list off a MikroTik may take before it is given up - What the firewall is carrying, and every sync. Five minutes is plenty for tens of thousands of entries; raise it for a slow router or a slow line.",
+   "text": "Jak dlouho smí trvat čtení seznamu adres z MikroTiku, než se to vzdá – Co firewall nese i každá synchronizace. Pět minut stačí i na desítky tisíc záznamů; pro pomalý router nebo pomalou linku to zvyšte."
   },
   "s.how-long-successful-logins-are-kept.c0cc32a0": {
    "source": "How long successful logins are kept.",
@@ -29719,6 +29723,10 @@
   "s.waiting-for-root.bb2b87dc": {
    "source": "waiting for root",
    "text": "čeká na root"
+  },
+  "s.waiting-for-the-router-s-lists.cc2384df": {
+   "source": "Waiting for the router's lists (s)",
+   "text": "Čekání na seznamy routeru (s)"
   },
   "s.waiting-for-the-server-s-next.435c4b07": {
    "source": "Waiting for the server’s next start:",

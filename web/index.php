@@ -827,7 +827,10 @@ if (isset($_GET['api'])) {
     $query = $_GET;
     unset($query['api']);
     $tail = $query ? ('?' . http_build_query($query)) : '';
-    isemon_relay($reads[$what] . $tail, 'GET', null, 60.0);
+    /* What the firewall is carrying (1.10.282): read off the router, which on a
+       big list or a slow line is minutes - waited for as long as nginx waits
+       for this page, not given up after one. */
+    isemon_relay($reads[$what] . $tail, 'GET', null, $what === 'router' ? 900.0 : 60.0);
     exit;
 }
 
@@ -26305,7 +26308,7 @@ var PANES = {
             'mikrotik_pfssh_host', 'mikrotik_pfssh_port', 'mikrotik_pfssh_user',
             'mikrotik_pfssh_auth', 'mikrotik_pfssh_password', 'mikrotik_pfssh_sudo',
             'mikrotik_list', 'pf_list', 'mikrotik_sync', 'mikrotik_every',
-            'mikrotik_chunk'],
+            'mikrotik_chunk', 'mikrotik_read_s'],
   /* The Cisco half of the same page. Nothing here is ever sent anywhere:
      what it makes is a file, made at the moment somebody asks for it and
      pasted by a person who is looking at it. The two families are two
@@ -27373,7 +27376,7 @@ function fwFieldShown(key) {
   if (m) return FW_KIND_PREFIX[fwKindNow(m[1])] === m[2];
   var used = fwKindsInUse();
   if (key === 'mikrotik_list' || key === 'geolist_name' || key === 'mikrotik_chunk'
-      || key === 'geolist_chunk') {
+      || key === 'geolist_chunk' || key === 'mikrotik_read_s') {
     return used.indexOf('mikrotik') >= 0;
   }
   if (key === 'pf_list' || key === 'pf_geolist') {
