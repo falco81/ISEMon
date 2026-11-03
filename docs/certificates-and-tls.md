@@ -67,6 +67,18 @@ is made here and stays here, sealed; copy or download the request, give it
 to your CA, then *Upload* only the certificate it sends back - it is matched
 to the waiting key. *Drop the request* throws the key away.
 
+## A dual certificate (RSA and ECDSA)
+
+Two certificates for the same pages, each with its own key: RSA is answered
+with by default, ECDSA to every client that takes it. *Upload* both pairs at
+once - their PEM files (the two certificates, the two keys, the chains) in any
+order, or two PFX files under one password; the RSA one is kept as the
+certificate and the ECDSA one beside it. One RSA and one ECDSA only. One
+certificate uploaded alone replaces both.
+
+*Download* asks which: the first (RSA), the second (ECDSA), or both - a ZIP
+with each in the format chosen, its chain and its own key.
+
 ## Self-signed
 
 *Self-signed*: for a test, or until the real one comes; valid for 1 year to

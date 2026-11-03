@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.283",
-  "made": "2026-11-02",
+  "version": "1.10.284",
+  "made": "2026-11-03",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -563,6 +563,10 @@
   "s.a-download-of-this-acl-is.330e40ab": {
    "source": "A download of this ACL is among the records kept here, so the rules it holds can be shown under the logins that were handed it.",
    "text": "A download of this ACL is among the records kept here, so the rules it holds can be shown under the logins that were handed it."
+  },
+  "s.a-dual-certificate-an-rsa-one.f4c0440a": {
+   "source": "A dual certificate - an RSA one and an ECDSA one for the same pages, each with its own key: send both pairs at once (their PEM files, or two PFX files under one password). The RSA one is answered with by default, the ECDSA one to every client that takes it.",
+   "text": "A dual certificate - an RSA one and an ECDSA one for the same pages, each with its own key: send both pairs at once (their PEM files, or two PFX files under one password). The RSA one is answered with by default, the ECDSA one to every client that takes it."
   },
   "s.a-dump-cannot-be-made-on.74d518ce": {
    "source": "A dump cannot be made on this machine.",
@@ -4295,6 +4299,10 @@
   "s.bosnia-and-herzegovina.62ac59b7": {
    "source": "Bosnia and Herzegovina",
    "text": "Bosnia and Herzegovina"
+  },
+  "s.both-a-zip.d89e6aaa": {
+   "source": "both (a ZIP)",
+   "text": "both (a ZIP)"
   },
   "s.both-carrying-the-same.c76e5d83": {
    "source": "both carrying the same",
@@ -17036,9 +17044,9 @@
    "source": "one-off recovery code",
    "text": "one-off recovery code"
   },
-  "s.one-pfx-pkcs-12-file-at.3f7959ad": {
-   "source": "one PFX / PKCS#12 file at a time",
-   "text": "one PFX / PKCS#12 file at a time"
+  "s.one-pfx-pkcs-12-file-or.8469bf3f": {
+   "source": "one PFX / PKCS#12 file - or two, for a dual certificate",
+   "text": "one PFX / PKCS#12 file - or two, for a dual certificate"
   },
   "s.one-place-a-sign-in-from.f191e78b": {
    "source": "One place. A sign-in from anywhere else is marked.",
@@ -24828,6 +24836,10 @@
    "source": "The first thing ISE is asked after somebody signs in: may this person have a shell at all, and at what privilege level. It is not something they typed.",
    "text": "The first thing ISE is asked after somebody signs in: may this person have a shell at all, and at what privilege level. It is not something they typed."
   },
+  "s.the-first.7f9626dc": {
+   "source": "the first",
+   "text": "the first"
+  },
   "s.the-fmc-appears-under.742963a6": {
    "source": "The FMC appears under",
    "text": "The FMC appears under"
@@ -26723,6 +26735,10 @@
   "s.the-second-router-s-password-settings.454a3298": {
    "source": "the second router’s password — Settings, the router",
    "text": "the second router’s password — Settings, the router"
+  },
+  "s.the-second.b67cfe05": {
+   "source": "the second",
+   "text": "the second"
   },
   "s.the-secret-half-of-that-api.d86de78e": {
    "source": "The secret half of that API key. Kept here and never shown again; a plain export leaves it out.",
@@ -28979,6 +28995,10 @@
   "s.tw.47299a86": {
    "source": "TW",
    "text": "TW"
+  },
+  "s.two-certificates-are-kept-for-these.77a75c97": {
+   "source": "Two certificates are kept for these pages: an ECDSA one beside the RSA one. Both: each in the format chosen, with its own chain and its own private key.",
+   "text": "Two certificates are kept for these pages: an ECDSA one beside the RSA one. Both: each in the format chosen, with its own chain and its own private key."
   },
   "s.two-files-are-looked-for-in.d2ffa60f": {
    "source": "Two files are looked for in each folder. The",
@@ -31380,6 +31400,10 @@
    "source": "which backup?",
    "text": "which backup?"
   },
+  "s.which-certificate.2da38a55": {
+   "source": "Which certificate",
+   "text": "Which certificate"
+  },
   "s.which-client-people-connect-to-the.e2ac2e8d": {
    "source": "Which client people connect to the remote-access VPN with, and which version - an old one still in use is one to update.",
    "text": "Which client people connect to the remote-access VPN with, and which version - an old one still in use is one to update."
@@ -32945,6 +32969,10 @@
   "p.blocked-limit-1-parts-bans-counting.3fed2073": {
    "source": "blocked&limit=1&parts=bans&counting={0}",
    "text": "blocked&limit=1&parts=bans&counting={0}"
+  },
+  "p.both-zip.6a7d2474": {
+   "source": "{0}-both.zip",
+   "text": "{0}-both.zip"
   },
   "p.box.8fbb7d40": {
    "source": "box{0}",

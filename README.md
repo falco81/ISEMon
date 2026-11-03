@@ -371,6 +371,23 @@ working.
 
 ## Version
 
+1.10.284
+
+- **A dual certificate uploaded and downloaded** (Settings → Certificates and
+  TLS) - an RSA one and an ECDSA one for the same pages, each with its own
+  key, which until now only Automatic certificates (and acme) could put in.
+  **Upload** takes both pairs at once: their PEM files in any order, or two
+  PFX files under one password; each is sorted and checked as one alone is,
+  the RSA one is kept as the certificate (answered with by default) and the
+  ECDSA one beside it (to every client that takes it). Two of one kind, two
+  keys of one certificate, a key of no certificate sent, a twin that has run
+  out: refused, nothing changed. One certificate alone goes in as before,
+  and the twin beside the old one goes with it. **Download** asks which: the
+  first (the default, as ever), the second, or both - one ZIP, each in the
+  format chosen with its own chain and its own private key (PFX under the
+  password given); a key still only to a full administrator, and the export
+  said in Events. What is downloaded as both goes back up as it came.
+
 1.10.283
 
 - **Counting up to a ban: one address cleared**. Every row has a button of

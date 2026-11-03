@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.283'
+__version__ = '1.10.284'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -65378,7 +65378,53 @@ class WebRoot(object):
                     ders.append(base64.b64decode(str(one), validate=True))
                 except (ValueError, TypeError):
                     raise WebRootError('a .cer did not arrive whole')
-            got = tls_sort(texts + ders, str(data.get('password') or ''), pfx)
+            pfx2 = None
+            if data.get('pfx2'):
+                try:
+                    pfx2 = base64.b64decode(str(data['pfx2']), validate=True)
+                except (ValueError, TypeError):
+                    raise WebRootError('the second .pfx did not arrive whole')
+                if len(pfx2) > 256 * 1024:
+                    raise WebRootError('a .pfx is not that big')
+            # A dual one (1.10.284): two certificates, each with its own key -
+            # RSA and ECDSA, as two pairs of PEM or two PFX files. Each is
+            # sorted and checked as one alone is; the RSA one is kept as the
+            # certificate and the ECDSA one beside it, as Automatic
+            # certificates keeps a dual one.
+            twin = None
+            sent_keys = [m.group(0) for t in texts for m in PEM_KEY_RE.finditer(t)]
+            if (pfx is not None and pfx2 is not None) or (len(sent_keys) == 2 and pfx is None):
+                password = str(data.get('password') or '')
+                if pfx2 is not None:
+                    if pfx is None:
+                        raise WebRootError('two PFX files: the first one is missing')
+                    pair = [tls_sort(texts + ders, password, pfx),
+                            tls_sort([PEM_KEY_RE.sub('', t) for t in texts] + ders, password, pfx2)]
+                else:
+                    bare = [PEM_KEY_RE.sub('', t) for t in texts]
+                    pair = [tls_sort(bare + ders + [k], password) for k in sent_keys]
+                if any(not one['key'] for one in pair):
+                    raise WebRootError('each of the two certificates wants its own key')
+                if push_fingerprint(pair[0]['cert']) == push_fingerprint(pair[1]['cert']):
+                    raise WebRootError('the two keys sent are of one certificate')
+                kinds = [cert_key_kind(one['cert']) for one in pair]
+                if sorted(k[:2] for k in kinds) != ['ec', 'rs']:
+                    raise WebRootError('two certificates are kept side by side only as one RSA '
+                                       'and one ECDSA: these are %s' % ' and '.join(
+                                           KEY_KIND_WORDS.get(k, k or '?') for k in kinds))
+                if kinds[0].startswith('ec'):
+                    pair.reverse()
+                got, twin = pair
+                tf = twin['facts']
+                if tf.get('until') and tf['until'] < time.time():
+                    raise WebRootError('the ECDSA certificate ran out on %s'
+                                       % time.strftime('%Y-%m-%d', time.localtime(tf['until'])))
+                tls_check_chain(twin['cert'], twin['chain'], twin['root'])
+            elif pfx2 is not None:
+                raise WebRootError('a second PFX is for a second certificate: send the first one '
+                                   'with it')
+            else:
+                got = tls_sort(texts + ders, str(data.get('password') or ''), pfx)
             key = got['key']
             how = 'uploaded'
             if not key:
@@ -65403,6 +65449,9 @@ class WebRoot(object):
             tls.update(cert=got['cert'], chain=got['chain'], root=got['root'],
                        key=seal_secret(key), managed=True, since=time.time(), by=by, how=how)
             tls_drop_second(tls)
+            if twin:
+                tls.update(cert2=twin['cert'], chain2=twin['chain'],
+                           key2=seal_secret(twin['key']), cert2_for=tls_second_for(got['cert']))
             # One put in by hand is kept (otp 1.0.170): ACME does not replace
             # it at its next renewal - Automatic certificates → Look after it
             # gives it back.
@@ -65412,8 +65461,10 @@ class WebRoot(object):
             tls.setdefault('preset', 'standard')
             tls.setdefault('protocols', TLS_PRESETS['standard']['protocols'])
             tls.setdefault('hsts', 63072000)
-            msg = 'the certificate for %s is kept%s' % (f.get('cn') or f.get('subject'),
-                                                      ('; ' + said) if said else '')
+            msg = 'the certificate for %s is kept%s%s' % (
+                f.get('cn') or f.get('subject'),
+                ' - RSA, with the ECDSA one beside it' if twin else '',
+                ('; ' + said) if said else '')
             self.store.add_event('control', 'a certificate was put in for the dashboard: %s, '
                                             'until %s' % (f.get('subject'), time.strftime(
                                                 '%Y-%m-%d', time.localtime(f.get('until') or 0))),
@@ -65497,7 +65548,14 @@ class WebRoot(object):
         key = bool(managed and tls.get('key') and unseal_secret(tls['key']))
         pem = (tls.get('cert') or '') if managed else \
             ((self.look().get('cert') or {}).get('pem') or '')
-        return {'cert': bool(PEM_CERT_RE.search(pem or '')), 'key': key, 'managed': managed,
+        two = None
+        if managed and tls_second(tls):
+            # The ECDSA certificate beside it (1.10.284): offered on its own or
+            # with the first.
+            two = {'key': bool(tls.get('key2') and unseal_secret(tls['key2'])),
+                   'words': [cert_key_words(tls['cert']), cert_key_words(tls['cert2'])]}
+        return {'second': two,
+                'cert': bool(PEM_CERT_RE.search(pem or '')), 'key': key, 'managed': managed,
                 'chain_n': max(0, len(PEM_CERT_RE.findall(
                     ((tls.get('chain') or '') + (tls.get('root') or '') if managed else pem)
                     or '')) - (0 if managed else 1)),
@@ -65508,36 +65566,46 @@ class WebRoot(object):
         """The certificate in the format asked, as bytes, with its file name.
         A private key goes out only to a full administrator, and in a PFX (or
         an encrypted PEM) under the password given - which goes to openssl by
-        the environment, never on its command line, and is kept nowhere."""
+        the environment, never on its command line, and is kept nowhere.
+
+        A dual one (an ECDSA certificate beside the RSA one, 1.10.261) as
+        `which` says (1.10.284): 'main' - the one it was always, the default;
+        'second' - the one beside it; 'both' - each in the format asked, with
+        its own chain and key, in one ZIP."""
         fmt = str(data.get('format') or 'pem')
         if fmt not in self.EXPORT_FORMATS:
             raise WebRootError('no such format')
         words, with_key, ext = self.EXPORT_FORMATS[fmt]
         chain = data.get('chain', True) is not False
         password = str(data.get('password') or '')
+        which = str(data.get('which') or 'main')
+        if which not in ('main', 'second', 'both'):
+            raise WebRootError('which is main, second or both')
         tls = self.tls_conf()
         managed = bool(tls.get('managed') and tls.get('cert'))
-        if managed:
-            cert = tls['cert'].strip() + '\n'
-            more = ''.join(m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
-                (tls.get('chain') or '') + (tls.get('root') or '')))
-        else:
-            certs = [m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
-                (self.look().get('cert') or {}).get('pem') or '')]
-            if not certs:
-                raise WebRootError('there is no certificate here to export yet')
-            cert, more = certs[0], ''.join(certs[1:])
-        if not chain:
-            more = ''
-        key = None
+        two = bool(managed and tls_second(tls))
+        if which != 'main' and not two:
+            raise WebRootError('there is no second certificate beside this one')
+        parts = []
+        if which in ('main', 'both'):
+            if managed:
+                cert = tls['cert'].strip() + '\n'
+                more = ''.join(m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
+                    (tls.get('chain') or '') + (tls.get('root') or '')))
+            else:
+                certs = [m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
+                    (self.look().get('cert') or {}).get('pem') or '')]
+                if not certs:
+                    raise WebRootError('there is no certificate here to export yet')
+                cert, more = certs[0], ''.join(certs[1:])
+            parts.append((cert, more, (tls.get('key') if managed else '') or ''))
+        if which in ('second', 'both'):
+            parts.append((tls['cert2'].strip() + '\n', ''.join(
+                m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
+                    (tls.get('chain2') or '') + (tls.get('root') or ''))), tls.get('key2') or ''))
         if with_key:
             if not admin:
                 raise WebRootError('the private key is exported by a full administrator only')
-            key = unseal_secret(tls['key']) if managed and tls.get('key') else None
-            if not key:
-                raise WebRootError('isemon does not hold this certificate\'s private key (it is '
-                                   'nginx\'s own, never uploaded or made here): only the '
-                                   'certificate can be exported')
             if fmt.startswith('pfx') and len(password) < 8:
                 raise WebRootError('a PFX carries the private key: a password of 8 characters '
                                    'at least')
@@ -65545,8 +65613,6 @@ class WebRoot(object):
                 raise WebRootError('the password for the key: 8 characters at least, or none')
             if len(password) > 1024 or '\x00' in password:
                 raise WebRootError('that password is not taken')
-        cn = re.sub(r'[^A-Za-z0-9._-]+', '-', str((cert_facts(cert) or {}).get('cn') or
-                                                  'isemon')).strip('-.')[:60] or 'isemon'
         env = dict(os.environ, ISEMON_EXPORT_PW=password)
 
         def ossl(args, data_in=None):
@@ -65556,60 +65622,92 @@ class WebRoot(object):
                 raise WebRootError('openssl: %s' % (got.stderr.decode('utf-8', 'replace')
                                                     .strip().splitlines() or ['it failed'])[-1])
             return got.stdout
-        with tempfile.TemporaryDirectory(prefix='.isemon-export-') as work:
-            os.chmod(work, 0o700)
-            cf = os.path.join(work, 'cert.pem')
-            with open(cf, 'w') as f:
-                f.write(cert)
-            kf = os.path.join(work, 'key.pem')
-            if key:
-                fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-                with os.fdopen(fd, 'w') as f:
-                    f.write(key.strip() + '\n')
 
-            def key_pem():
-                if not password:
-                    return ossl(['pkey', '-in', kf])
-                return ossl(['pkey', '-in', kf, '-aes256', '-passout', 'env:ISEMON_EXPORT_PW'])
-            if fmt == 'pem':
-                out = (cert + more).encode()
-            elif fmt == 'der':
-                out = ossl(['x509', '-in', cf, '-outform', 'DER'])
-            elif fmt == 'p7b':
-                args = ['crl2pkcs7', '-nocrl', '-certfile', cf]
-                if more:
-                    mf = os.path.join(work, 'more.pem')
-                    with open(mf, 'w') as f:
-                        f.write(more)
-                    args += ['-certfile', mf]
-                out = ossl(args + ['-outform', 'DER'])
-            elif fmt == 'key':
-                out = key_pem()
-            elif fmt == 'pem_key':
-                out = (cert + more).encode() + key_pem()
-            else:
-                args = ['pkcs12', '-export', '-in', cf, '-inkey', kf, '-name', cn,
-                        '-passout', 'env:ISEMON_EXPORT_PW']
-                if more:
-                    mf = os.path.join(work, 'more.pem')
-                    with open(mf, 'w') as f:
-                        f.write(more)
-                    args += ['-certfile', mf]
-                if fmt == 'pfx_legacy':
-                    args += ['-keypbe', 'PBE-SHA1-3DES', '-certpbe', 'PBE-SHA1-3DES',
-                             '-macalg', 'sha1']
+        def one(cert, more, sealed):
+            if not chain:
+                more = ''
+            key = None
+            if with_key:
+                key = unseal_secret(sealed) if managed and sealed else None
+                if not key:
+                    raise WebRootError('isemon does not hold this certificate\'s private key (it '
+                                       'is nginx\'s own, never uploaded or made here): only the '
+                                       'certificate can be exported')
+            cn = re.sub(r'[^A-Za-z0-9._-]+', '-', str((cert_facts(cert) or {}).get('cn') or
+                                                      'isemon')).strip('-.')[:60] or 'isemon'
+            with tempfile.TemporaryDirectory(prefix='.isemon-export-') as work:
+                os.chmod(work, 0o700)
+                cf = os.path.join(work, 'cert.pem')
+                with open(cf, 'w') as f:
+                    f.write(cert)
+                kf = os.path.join(work, 'key.pem')
+                if key:
+                    fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                    with os.fdopen(fd, 'w') as f:
+                        f.write(key.strip() + '\n')
+
+                def key_pem():
+                    if not password:
+                        return ossl(['pkey', '-in', kf])
+                    return ossl(['pkey', '-in', kf, '-aes256', '-passout',
+                                 'env:ISEMON_EXPORT_PW'])
+                if fmt == 'pem':
+                    out = (cert + more).encode()
+                elif fmt == 'der':
+                    out = ossl(['x509', '-in', cf, '-outform', 'DER'])
+                elif fmt == 'p7b':
+                    args = ['crl2pkcs7', '-nocrl', '-certfile', cf]
+                    if more:
+                        mf = os.path.join(work, 'more.pem')
+                        with open(mf, 'w') as f:
+                            f.write(more)
+                        args += ['-certfile', mf]
+                    out = ossl(args + ['-outform', 'DER'])
+                elif fmt == 'key':
+                    out = key_pem()
+                elif fmt == 'pem_key':
+                    out = (cert + more).encode() + key_pem()
                 else:
-                    args += ['-keypbe', 'AES-256-CBC', '-certpbe', 'AES-256-CBC',
-                             '-macalg', 'sha256']
-                out = ossl(args)
+                    args = ['pkcs12', '-export', '-in', cf, '-inkey', kf, '-name', cn,
+                            '-passout', 'env:ISEMON_EXPORT_PW']
+                    if more:
+                        mf = os.path.join(work, 'more.pem')
+                        with open(mf, 'w') as f:
+                            f.write(more)
+                        args += ['-certfile', mf]
+                    if fmt == 'pfx_legacy':
+                        args += ['-keypbe', 'PBE-SHA1-3DES', '-certpbe', 'PBE-SHA1-3DES',
+                                 '-macalg', 'sha1']
+                    else:
+                        args += ['-keypbe', 'AES-256-CBC', '-certpbe', 'AES-256-CBC',
+                                 '-macalg', 'sha256']
+                    out = ossl(args)
+            return cn, out
+        made = [one(*part) + (cert_key_kind(part[0]),) for part in parts]
+        if len(made) == 1:
+            cn, out, _kind = made[0]
+            name = cn + ('.key' if fmt == 'key' else ext)
+        else:
+            import io
+            import zipfile
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+                for cn, out_one, kind in made:
+                    z.writestr('%s-%s%s' % (cn, 'ecdsa' if kind.startswith('ec') else 'rsa',
+                                            '.key' if fmt == 'key' else ext), out_one)
+            out = buf.getvalue()
+            name = made[0][0] + '-both.zip'
         if with_key:
             self.store.add_event('settings', '%s exported the certificate of the pages with its '
-                                 'private key (%s%s)' % (by or 'somebody', words.split(' - ')[0],
-                                                         ', the key encrypted' if password
-                                                         else ', the key not encrypted'),
+                                 'private key (%s%s%s)' % (
+                                     by or 'somebody', words.split(' - ')[0],
+                                     {'second': ', the second certificate',
+                                      'both': ', both certificates with both keys'}.get(which, ''),
+                                     ', the key encrypted' if password
+                                     else ', the key not encrypted'),
                                  'warn', who=by)
-        return {'name': cn + ('.key' if fmt == 'key' else ext), 'data': out, 'what': fmt,
-                'words': words, 'key': with_key}
+        return {'name': name, 'data': out, 'what': fmt, 'words': words, 'key': with_key,
+                'which': which}
 
     def cert_days(self):
         """Days until the certificate the dashboard answers with runs out, or

@@ -40980,6 +40980,11 @@ function certUpload(d) {
       + 'order or all in one - or one PFX / PKCS#12 file. ' + (d && d.pending
         ? 'A request waits here: the certificate the authority sent back is enough, its key is here.'
         : 'The key has to come with it.')));
+    /* Two certificates side by side (1.10.284), as a download of both gives them. */
+    body.appendChild(el('p', 'btnhelp', 'A dual certificate - an RSA one and an ECDSA one for the '
+      + 'same pages, each with its own key: send both pairs at once (their PEM files, or two '
+      + 'PFX files under one password). The RSA one is answered with by default, the ECDSA one '
+      + 'to every client that takes it.'));
     var drop = el('div', 'wr-drop');
     var inp = el('input');
     inp.type = 'file'; inp.multiple = true; inp.hidden = true;
@@ -41025,13 +41030,14 @@ function certUpload(d) {
         if (($('cu-paste').value || '').trim()) pem.push($('cu-paste').value);
         var pfx = got.filter(function (x) { return x.pfx; });
         var der = got.filter(function (x) { return x.der; }).map(function (x) { return x.der; });
-        if (pfx.length > 1) { toast('one PFX / PKCS#12 file at a time', 'bad'); return; }
+        if (pfx.length > 2) { toast('one PFX / PKCS#12 file - or two, for a dual certificate', 'bad'); return; }
         if (!pfx.length && !der.length && !/-----BEGIN /.test(pem.join('\n'))) {
           toast('choose the files first, or paste the PEM', 'bad');
           return;
         }
         busy(b, true);
         api('web-tls', {action: 'upload', pem: pem, der: der, pfx: pfx.length ? pfx[0].pfx : '',
+                        pfx2: pfx.length > 1 ? pfx[1].pfx : '',
                         password: ($('cu-pw') || {}).value || ''}).then(function (x) {
           toast(x.message, 'good'); closeModal(); loadTls();
         }).catch(function (e) {
@@ -42585,7 +42591,7 @@ var CE_FMT = [
 ];
 function certExport(d) {
   api('web-tls-export').then(function (v) {
-    var st = {fmt: 'pem', chain: true, pw: '', pw2: ''};
+    var st = {fmt: 'pem', chain: true, pw: '', pw2: '', which: 'main'};
     var facts = (d.managed && d.kept) ? d.kept : ((d.now && d.now.facts) || {});
     var draw = function (body) {
       var box = el('div', 'ce-wiz');
@@ -42599,6 +42605,20 @@ function certExport(d) {
           ? stamp(Number(facts.until)) : String(facts.until))));
       }
       box.appendChild(head);
+      /* A dual one (1.10.284): the RSA certificate, the ECDSA one beside it,
+         or both - each with its own chain and key, in one ZIP. */
+      if (v.second) {
+        var two = el('div', 'ce-sec');
+        two.appendChild(el('h4', '', 'Which certificate'));
+        var w2 = v.second.words || [];
+        two.appendChild(wrSeg([['main', w2[0] || 'the first'], ['second', w2[1] || 'the second'],
+                               ['both', 'both (a ZIP)']], st.which,
+                              function (x) { st.which = x; name.textContent = fileName(); }));
+        two.appendChild(el('div', 'small muted', 'Two certificates are kept for these pages: an '
+          + 'ECDSA one beside the RSA one. Both: each in the format chosen, with its own chain '
+          + 'and its own private key.'));
+        box.appendChild(two);
+      }
       var sec = el('div', 'ce-sec');
       sec.appendChild(el('h4', '', 'Format'));
       var g = el('div', 'rb-kinds ce-fmt');
@@ -42658,6 +42678,7 @@ function certExport(d) {
       box.appendChild(name);
       function fileName() {
         var cn = String(facts.cn || 'isemon').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-.]+|[-.]+$/g, '') || 'isemon';
+        if (st.which === 'both') return cn + '-both.zip';
         return cn + ({pem: '.pem', pem_key: '.pem', der: '.cer', p7b: '.p7b', pfx: '.pfx',
                       pfx_legacy: '.pfx', key: '.key'}[st.fmt] || '');
       }
@@ -42688,7 +42709,7 @@ function certExport(d) {
           return;
         }
         busy(b, true);
-        api('web-tls-export', {format: st.fmt, chain: st.chain, password: st.pw}).then(function (x) {
+        api('web-tls-export', {format: st.fmt, chain: st.chain, password: st.pw, which: st.which}).then(function (x) {
           st.pw = st.pw2 = '';
           saveBytes(x.name, x.b64);
           toast(x.key ? 'saved with its private key - keep it safe' : 'saved', 'good');
