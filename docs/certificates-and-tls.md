@@ -77,7 +77,9 @@ certificate and the ECDSA one beside it. One RSA and one ECDSA only. One
 certificate uploaded alone replaces both.
 
 *Download* asks which: the first (RSA), the second (ECDSA), or both - a ZIP
-with each in the format chosen, its chain and its own key.
+with each in the format chosen, its chain and its own key. That ZIP (or one a
+CA sends) goes back up as it is: *Upload* takes a ZIP and its files as though
+each had been chosen (not one locked with a password).
 
 ## Self-signed
 

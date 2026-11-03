@@ -371,6 +371,18 @@ working.
 
 ## Version
 
+1.10.285
+
+- **Certificates and TLS → Upload takes a ZIP** - Download's ZIP of both
+  certificates, or one a CA sends - its files taken as though each had been
+  chosen by itself: PEM, PFX and DER sorted as ever, two PFX in it (or one in
+  it and one beside it) a dual certificate under one password, a README in it
+  left alone. Unpacked by the daemon in memory, with limits (20 files, 256 KiB
+  each and 1 MiB in all, as unpacked - a ZIP that unpacks to megabytes is
+  refused), nothing written to the disk; a ZIP locked with a password is
+  refused with what to do (the PFX files in Download's are locked each by
+  its own password, which is taken).
+
 1.10.284
 
 - **A dual certificate uploaded and downloaded** (Settings → Certificates and

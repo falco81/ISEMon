@@ -40951,10 +40951,19 @@ function tlsCard(d) {
 function readCertFiles(files) {
   return Promise.all(Array.prototype.map.call(files, function (f) {
     return new Promise(function (ok, bad) {
-      if (f.size > 200000) { bad(new Error(f.name + ' is far bigger than any certificate file')); return; }
+      var zipped = /\.zip$/i.test(f.name);
+      if (f.size > (zipped ? 1048576 : 200000)) { bad(new Error(f.name + ' is far bigger than any certificate file')); return; }
       var r = new FileReader();
       r.onload = function () {
         var arr = new Uint8Array(r.result);
+        /* A ZIP (1.10.285) - as Download gives both: unpacked by the daemon. */
+        var isZip = zipped || (arr.length > 3 && arr[0] === 0x50 && arr[1] === 0x4b && arr[2] === 3 && arr[3] === 4);
+        if (isZip) {
+          var zb = '';
+          for (var j = 0; j < arr.length; j++) zb += String.fromCharCode(arr[j]);
+          ok({name: f.name, zip: btoa(zb)});
+          return;
+        }
         var text = new TextDecoder().decode(arr);
         if (/-----BEGIN /.test(text)) { ok({name: f.name, pem: text}); return; }
         var bin = '';
@@ -40984,11 +40993,12 @@ function certUpload(d) {
     body.appendChild(el('p', 'btnhelp', 'A dual certificate - an RSA one and an ECDSA one for the '
       + 'same pages, each with its own key: send both pairs at once (their PEM files, or two '
       + 'PFX files under one password). The RSA one is answered with by default, the ECDSA one '
-      + 'to every client that takes it.'));
+      + 'to every client that takes it. A ZIP is taken as it is - Download\u2019s of both, or '
+      + 'one from a CA - its files as though each had been chosen.'));
     var drop = el('div', 'wr-drop');
     var inp = el('input');
     inp.type = 'file'; inp.multiple = true; inp.hidden = true;
-    inp.accept = '.pem,.crt,.cer,.key,.pfx,.p12,.chain,.ca,.txt';
+    inp.accept = '.pem,.crt,.cer,.key,.pfx,.p12,.chain,.ca,.txt,.zip';
     var says = el('span', '', 'Drop the files here, or press to choose them');
     drop.appendChild(inp);
     drop.appendChild(says);
@@ -40998,7 +41008,7 @@ function certUpload(d) {
         got = got.concat(r);
         clear(list);
         got.forEach(function (x) {
-          list.appendChild(noI18n(el('span', 'cchip', x.name + (x.pfx ? ' (PFX)' : (x.der ? ' (DER)' : ' (PEM)')))));
+          list.appendChild(noI18n(el('span', 'cchip', x.name + (x.zip ? ' (ZIP)' : (x.pfx ? ' (PFX)' : (x.der ? ' (DER)' : ' (PEM)'))))));
         });
         says.textContent = 'Read: ' + got.length + ' file(s). More can be added.';
       }).catch(oops);
@@ -41031,13 +41041,15 @@ function certUpload(d) {
         var pfx = got.filter(function (x) { return x.pfx; });
         var der = got.filter(function (x) { return x.der; }).map(function (x) { return x.der; });
         if (pfx.length > 2) { toast('one PFX / PKCS#12 file - or two, for a dual certificate', 'bad'); return; }
-        if (!pfx.length && !der.length && !/-----BEGIN /.test(pem.join('\n'))) {
+        var zips = got.filter(function (x) { return x.zip; }).map(function (x) { return x.zip; });
+        if (zips.length > 2) { toast('one ZIP at a time - or two', 'bad'); return; }
+        if (!pfx.length && !der.length && !zips.length && !/-----BEGIN /.test(pem.join('\n'))) {
           toast('choose the files first, or paste the PEM', 'bad');
           return;
         }
         busy(b, true);
         api('web-tls', {action: 'upload', pem: pem, der: der, pfx: pfx.length ? pfx[0].pfx : '',
-                        pfx2: pfx.length > 1 ? pfx[1].pfx : '',
+                        pfx2: pfx.length > 1 ? pfx[1].pfx : '', zip: zips,
                         password: ($('cu-pw') || {}).value || ''}).then(function (x) {
           toast(x.message, 'good'); closeModal(); loadTls();
         }).catch(function (e) {

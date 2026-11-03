@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.284",
+  "version": "1.10.285",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -564,9 +564,9 @@
    "source": "A download of this ACL is among the records kept here, so the rules it holds can be shown under the logins that were handed it.",
    "text": "Mezi zde uloženými záznamy je stažení tohoto ACL, takže pravidla, která obsahuje, lze zobrazit u přihlášení, kterým bylo přiděleno."
   },
-  "s.a-dual-certificate-an-rsa-one.f4c0440a": {
-   "source": "A dual certificate - an RSA one and an ECDSA one for the same pages, each with its own key: send both pairs at once (their PEM files, or two PFX files under one password). The RSA one is answered with by default, the ECDSA one to every client that takes it.",
-   "text": "Duální certifikát – jeden RSA a jeden ECDSA pro tytéž stránky, každý s vlastním klíčem: pošlete oba páry najednou (jejich soubory PEM, nebo dva soubory PFX pod jedním heslem). Výchozí je RSA, ECDSA dostane každý klient, který ho umí."
+  "s.a-dual-certificate-an-rsa-one.03401929": {
+   "source": "A dual certificate - an RSA one and an ECDSA one for the same pages, each with its own key: send both pairs at once (their PEM files, or two PFX files under one password). The RSA one is answered with by default, the ECDSA one to every client that takes it. A ZIP is taken as it is - Download’s of both, or one from a CA - its files as though each had been chosen.",
+   "text": "Duální certifikát – jeden RSA a jeden ECDSA pro tytéž stránky, každý s vlastním klíčem: pošlete oba páry najednou (jejich soubory PEM, nebo dva soubory PFX pod jedním heslem). Výchozí je RSA, ECDSA dostane každý klient, který ho umí. ZIP se vezme tak, jak je – ten ze stažení obou, nebo od autority – jeho soubory, jako by byl vybrán každý zvlášť."
   },
   "s.a-dump-cannot-be-made-on.74d518ce": {
    "source": "A dump cannot be made on this machine.",
@@ -17136,6 +17136,10 @@
    "source": "One Windows event number on its own, where that is the question — 4740 is a lockout, 4625 a refused sign-in, 4624 a sign-in.",
    "text": "Jedno číslo události Windows samostatně, pokud jde právě o to — 4740 je zablokování účtu, 4625 odmítnuté přihlášení, 4624 přihlášení."
   },
+  "s.one-zip-at-a-time-or.67773553": {
+   "source": "one ZIP at a time - or two",
+   "text": "jeden ZIP najednou – nebo dva"
+  },
   "s.one.fe05bcdc": {
    "source": "one",
    "text": "jeden"
@@ -32564,6 +32568,10 @@
    "source": "Zimbabwe",
    "text": "Zimbabwe"
   },
+  "s.zip.a5f0f6c3": {
+   "source": "(ZIP)",
+   "text": "(ZIP)"
+  },
   "s.zone.b6931b00": {
    "source": "zone",
    "text": "zóna"
@@ -38313,6 +38321,10 @@
   "s.a-downloadable-acl.743e60c2": {
    "source": "A downloadable ACL ·",
    "text": "Stahovatelné ACL ·"
+  },
+  "s.a-dual-certificate-an-rsa-one.f4c0440a": {
+   "source": "A dual certificate - an RSA one and an ECDSA one for the same pages, each with its own key: send both pairs at once (their PEM files, or two PFX files under one password). The RSA one is answered with by default, the ECDSA one to every client that takes it.",
+   "text": "Duální certifikát – jeden RSA a jeden ECDSA pro tytéž stránky, každý s vlastním klíčem: pošlete oba páry najednou (jejich soubory PEM, nebo dva soubory PFX pod jedním heslem). Výchozí je RSA, ECDSA dostane každý klient, který ho umí."
   },
   "s.a-file-on-this-machine-nothing.bad330e0": {
    "source": "A file on this machine. Nothing to install or run beside isemon; fine for most sites.",

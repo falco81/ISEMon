@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.284'
+__version__ = '1.10.285'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -64596,6 +64596,58 @@ def tls_sort(texts, password='', pfx=None):
             'left_over': len(facts) - 1 - len(chain) - (1 if root else 0)}
 
 
+CERT_ZIP_MOST = 1 << 20
+
+
+def cert_zip_entries(raw):
+    """What a ZIP of certificate files holds, as Upload takes it (1.10.285):
+    [('pem', text) | ('der', bytes) | ('pfx', bytes)]. Read with limits - at
+    most 20 files, 256 KiB each and 1 MiB in all, unpacked - and nothing
+    written anywhere; a locked one is refused (Download's ZIP is not
+    locked: its PFX files are, each under the password given)."""
+    import io
+    import zipfile
+    if len(raw) > CERT_ZIP_MOST:
+        raise WebRootError('that ZIP is far bigger than certificate files are')
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipFile:
+        raise WebRootError('that is not a ZIP file')
+    out, total = [], 0
+    with zf:
+        infos = [i for i in zf.infolist() if not i.is_dir()]
+        if len(infos) > 20:
+            raise WebRootError('that ZIP holds %d files: certificate files are a few' % len(infos))
+        for info in infos:
+            name = info.filename.replace('\\', '/').split('/')[-1]
+            if not name or name.startswith('.') or '__MACOSX/' in info.filename:
+                continue
+            if info.flag_bits & 1:
+                raise WebRootError('the ZIP is locked with a password: unpack it and send its '
+                                   'files (a PFX in it is locked by its own password, which '
+                                   'is taken)')
+            if info.file_size > 256 * 1024 or total + info.file_size > CERT_ZIP_MOST:
+                raise WebRootError('%s in the ZIP is far bigger than a certificate file' % name)
+            try:
+                data = zf.read(info)
+            except (zipfile.BadZipFile, NotImplementedError, RuntimeError, ValueError) as e:
+                raise WebRootError('%s in the ZIP could not be read: %s' % (name, e))
+            total += len(data)
+            if len(data) > 256 * 1024 or total > CERT_ZIP_MOST:
+                raise WebRootError('%s in the ZIP is far bigger than a certificate file' % name)
+            low = name.lower()
+            if b'-----BEGIN ' in data[:65536]:
+                out.append(('pem', data.decode('utf-8', 'replace')))
+            elif low.endswith(('.pfx', '.p12')):
+                out.append(('pfx', data))
+            elif low.endswith(('.cer', '.crt', '.der')):
+                out.append(('der', data))
+            # anything else - a README, a text of instructions - left alone
+    if not out:
+        raise WebRootError('the ZIP holds no certificate file (PEM, PFX or DER)')
+    return out
+
+
 def tls_check_chain(cert, chain, root):
     """The chain checked against the root, when there is a root."""
     if not root:
@@ -65386,6 +65438,28 @@ class WebRoot(object):
                     raise WebRootError('the second .pfx did not arrive whole')
                 if len(pfx2) > 256 * 1024:
                     raise WebRootError('a .pfx is not that big')
+            # A ZIP (1.10.285) - as Download gives both, or any of a CA's: its
+            # files taken as though each had been chosen by itself.
+            zip_pfx = []
+            for one in (data.get('zip') or [])[:2]:
+                try:
+                    raw = base64.b64decode(str(one), validate=True)
+                except (ValueError, TypeError):
+                    raise WebRootError('the ZIP did not arrive whole')
+                for kind, item in cert_zip_entries(raw):
+                    if kind == 'pem':
+                        texts.append(item)
+                    elif kind == 'der':
+                        ders.append(item)
+                    else:
+                        zip_pfx.append(item)
+            if zip_pfx:
+                every = [x for x in (pfx, pfx2) if x is not None] + zip_pfx
+                if len(every) > 2:
+                    raise WebRootError('one PFX file - or two, for a dual certificate - and '
+                                       'these are %d' % len(every))
+                pfx, pfx2 = every[0], (every[1] if len(every) > 1 else None)
+            texts = texts[:16]
             # A dual one (1.10.284): two certificates, each with its own key -
             # RSA and ECDSA, as two pairs of PEM or two PFX files. Each is
             # sorted and checked as one alone is; the RSA one is kept as the
