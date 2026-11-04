@@ -2758,10 +2758,77 @@ OTPTLS_NAME_RE = re.compile(r'^(?=.{1,253}\Z)(\*\.)?[A-Za-z0-9]([A-Za-z0-9_-]{0,
                             r'(\.[A-Za-z0-9]([A-Za-z0-9_-]{0,62}))*\.?\Z')
 OTPTLS_DRIVERS = {'gtls': ('lmnsd_gtls.so', 'rsyslog-gnutls'),
                   'ossl': ('lmnsd_ossl.so', 'rsyslog-openssl')}
+# The words of the files written, the otp logs' (as they always were) - and,
+# while acmetls_part runs, the acme logs' (1.10.287): the same receiver for
+# acme's nodes, with a file, a folder and a port of its own.
+TLS_P = {'who': 'otp', 'pane': 'The OTP logs', 'input': 'otp-tls', 'ca_cn': 'the otp logs',
+         'filed': ['# What arrives here is filed by the same rule as what arrives plain',
+                   '# (11-otp.conf): /var/log/remote/<host>/totp.cgi.log and radius-detail.log.']}
+# acme's: read after otp's (99-tls- after 99-otp-), so that whichever of the
+# two loads imtcp, the one read first does (`tls_loads_fix`).
+ACMETLS_CONF = os.environ.get('ISEMON_ACMETLS_CONF', os.path.join(
+    os.path.dirname(OTPTLS_CONF), '99-tls-acme.conf'))
+ACMETLS_OLD = os.environ.get('ISEMON_ACMETLS_OLD', os.path.join(
+    os.path.dirname(OTPTLS_OLD), '10-acme-tls.conf'))
+ACMETLS_DIR = os.environ.get('ISEMON_ACMETLS_DIR', os.path.join(
+    os.path.dirname(OTPTLS_DIR), 'acme'))
+ACMETLS_P = {'who': 'acme', 'pane': 'acme\u2019s log', 'input': 'acme-tls',
+             'ca_cn': 'the acme logs',
+             'filed': ['# What arrives here is filed by the same rule as what arrives plain',
+                       '# (11-acme.conf): /var/log/remote/<HOST>/acme-certs.log and acme.log.']}
+TLS_SIBLINGS = []          # the other receiver's file, while acme's is the one asked
 
 
 def otptls_path(name):
     return os.path.join(OTPTLS_DIR, name)
+
+
+def tls_siblings():
+    """The other receiver's file: acme's while otp's is asked, otp's while
+    acme's is (1.10.287)."""
+    return TLS_SIBLINGS or [ACMETLS_CONF]
+
+
+IMTCP_LOAD = 'module(load="imtcp")'
+
+
+def tls_loads_fix(said):
+    """otp's receiver and acme's, both isemon's files: imtcp loaded by the
+    one rsyslog reads first, and by neither where another file of rsyslog's
+    loads it - rsyslog refuses a module loaded twice, and an input before its
+    module. Nothing is done while the one just written is the only one
+    there: it was written right. The other one, left alone by this one taken
+    away, may have to load it now (1.10.287)."""
+    files = [f for f in [OTPTLS_CONF] + tls_siblings() if os.path.isfile(f)]
+    if not files or files == [OTPTLS_CONF]:
+        return
+    files.sort(key=lambda f: os.path.basename(f))
+    real = tuple(os.path.realpath(f) for f in files)
+    outside = False
+    for path in rsyslog_conf_files():
+        if os.path.realpath(path) in real:
+            continue
+        text = rsyslog_text(path)
+        if re.search(r'module\s*\(\s*load\s*=\s*"imtcp"', text) or \
+                re.search(r'(?m)^\s*\$ModLoad\s+imtcp\b', text):
+            outside = True
+    for i, path in enumerate(files):
+        with open(path, encoding='utf-8', errors='replace') as f:
+            text = f.read(65536)
+        if '# isemon: the ' not in text:
+            continue                    # not isemon's: never written over
+        lines = text.split('\n')
+        has = IMTCP_LOAD in lines
+        want = not outside and i == 0
+        if has == want:
+            continue
+        if want:
+            at = next((n for n, l in enumerate(lines) if l.startswith('input(')), len(lines))
+            lines.insert(at, IMTCP_LOAD)
+        else:
+            lines = [l for l in lines if l != IMTCP_LOAD]
+        write_root(path, '\n'.join(lines), 0o644)
+        said.append('%s %s imtcp' % (path, 'loads' if want else 'no longer loads'))
 
 
 def rsyslog_conf_files():
@@ -2787,13 +2854,17 @@ def otptls_others():
     """What the rest of rsyslog's files already say: whether imtcp is loaded,
     whether the default TLS files are set, and the ports listened on."""
     mine = (os.path.realpath(OTPTLS_CONF), os.path.realpath(OTPTLS_OLD))
+    # The other receiver of isemon's (1.10.287) loads imtcp or not as
+    # `tls_loads_fix` says: never a reason for this one not to.
+    sibling = tuple(os.path.realpath(x) for x in tls_siblings())
     out = {'imtcp': [], 'global': [], 'ports': []}
     for path in rsyslog_conf_files():
         if os.path.realpath(path) in mine:
             continue
         text = rsyslog_text(path)
-        if re.search(r'module\s*\(\s*load\s*=\s*"imtcp"', text) or \
-                re.search(r'(?m)^\s*\$ModLoad\s+imtcp\b', text):
+        if (re.search(r'module\s*\(\s*load\s*=\s*"imtcp"', text) or
+                re.search(r'(?m)^\s*\$ModLoad\s+imtcp\b', text)) and \
+                os.path.realpath(path) not in sibling:
             out['imtcp'].append(path)
         if re.search(r'DefaultNetstreamDriver(CAFile|CertFile|KeyFile)', text):
             out['global'].append(path)
@@ -3033,13 +3104,12 @@ def otptls_read():
 def otptls_text(port, auth, peers, driver, per_input, load):
     lines = [
         '# %s' % OTPTLS_CONF,
-        OTPTLS_MARK + ' - written by isemon (Settings → The OTP logs →',
+        OTPTLS_MARK + ' - written by isemon (Settings → %s →' % TLS_P['pane'],
         '# Encrypted receiving). Changed there, not here: a hand edit is written over',
         '# the next time it is set there. The plain input on 514 is not this file\'s:',
         '# a node that still sends plain goes on arriving there.',
         '#',
-        '# What arrives here is filed by the same rule as what arrives plain',
-        '# (11-otp.conf): /var/log/remote/<host>/totp.cgi.log and radius-detail.log.',
+        ] + TLS_P['filed'] + [
         '']
     files = ('CAFile', otptls_path('ca.pem')), ('CertFile', otptls_path('isemon.crt')), \
         ('KeyFile', otptls_path('isemon.key'))
@@ -3047,7 +3117,7 @@ def otptls_text(port, auth, peers, driver, per_input, load):
         lines += ['global('] + ['  DefaultNetstreamDriver%s="%s"' % f for f in files] + [')']
     if load:
         lines.append('module(load="imtcp")')
-    inp = ['input(type="imtcp" port="%d" name="otp-tls"' % port,
+    inp = ['input(type="imtcp" port="%d" name="%s"' % (port, TLS_P['input']),
            '      StreamDriver.Name="%s"' % driver,
            '      StreamDriver.Mode="1"',
            '      StreamDriver.AuthMode="%s"' % auth]
@@ -3082,7 +3152,8 @@ def otptls_make(names, work):
         host = re.sub(r'[^A-Za-z0-9.-]', '', os.uname()[1])[:60] or 'isemon'
         tk, tc = os.path.join(work, 'ca.key'), os.path.join(work, 'ca.crt')
         openssl(['req', '-x509', '-newkey', 'rsa:3072', '-nodes', '-sha256', '-days', '3650',
-                 '-subj', '/CN=isemon %s - the otp logs' % host, '-keyout', tk, '-out', tc,
+                 '-subj', '/CN=isemon %s - %s' % (host, TLS_P['ca_cn']), '-keyout', tk,
+                 '-out', tc,
                  '-addext', 'basicConstraints=critical,CA:TRUE,pathlen:0',
                  '-addext', 'keyUsage=critical,keyCertSign,cRLSign'], 'the authority')
         with open(tk) as f:
@@ -3173,7 +3244,8 @@ def otptls_apply(r):
     st = otptls_state()
     now = otptls_conf_now()
     paths = [OTPTLS_CONF, OTPTLS_OLD, otptls_path('ca.pem'), otptls_path('isemon.crt'),
-             otptls_path('isemon.key'), otptls_path('.isemon.json')]
+             otptls_path('isemon.key'), otptls_path('.isemon.json')] + \
+        [f for f in tls_siblings() if os.path.isfile(f)]
     snap = snapshot(paths)
     old_port = now.get('port') if now.get('there') else 0
     # One set up by hand before: kept beside, once, never loaded again.
@@ -3199,6 +3271,7 @@ def otptls_apply(r):
                 os.unlink(OTPTLS_CONF)
             except FileNotFoundError:
                 pass
+            tls_loads_fix(said)
             otptls_restart(0, said)
             restarted = True
             otptls_firewalld(old_port, False, st, said)
@@ -3249,7 +3322,8 @@ def otptls_apply(r):
                 cert, key, own = otptls_make(names, work)
                 trust = pem_certs(str(r.get('otp_ca') or ''))
                 if mutual and not trust:
-                    raise Refused('mutual TLS: otp\'s authority (its ca.pem) is needed, to '
+                    raise Refused('mutual TLS: %s\'s authority (its ca.pem) is needed, to '
+                                  % TLS_P['who'] +
                                   'know the nodes by')
                 ca = ''.join(trust) + own
                 st.update(how='made', names=names, otp_ca=bool(trust))
@@ -3266,7 +3340,8 @@ def otptls_apply(r):
                 ca = ''.join(pem_certs(ca_text)) or ''.join(pem_certs(got['chain'])) or \
                     pem_certs(cert)[0]
                 if mutual and not pem_certs(ca_text):
-                    raise Refused('mutual TLS: otp\'s authority (its ca.pem) is needed, to '
+                    raise Refused('mutual TLS: %s\'s authority (its ca.pem) is needed, to '
+                                  % TLS_P['who'] +
                                   'know the nodes by')
                 st.update(how=str(r.get('how') or 'given')[:20], names=[],
                           otp_ca=bool(pem_certs(ca_text)))
@@ -3282,7 +3357,8 @@ def otptls_apply(r):
                     ca = ''.join(have + [c for c in extra if c not in have])
                     st['otp_ca'] = True
                 if mutual and not st.get('otp_ca', True):
-                    raise Refused('mutual TLS: otp\'s authority (its ca.pem) is needed, to '
+                    raise Refused('mutual TLS: %s\'s authority (its ca.pem) is needed, to '
+                                  % TLS_P['who'] +
                                   'know the nodes by - the certificate here was set up without '
                                   'it')
             else:
@@ -3296,6 +3372,7 @@ def otptls_apply(r):
         driver = otptls_driver_get(said)
         text = otptls_text(port, auth, peers, driver, per_input, not others['imtcp'])
         write_root(OTPTLS_CONF, text, 0o644)
+        tls_loads_fix(said)
         if shutil.which('restorecon') and not NO_SERVICES:
             subprocess.run(['restorecon', '-R', os.path.dirname(OTPTLS_DIR)], capture_output=True)
         if not NO_SERVICES or os.environ.get('ISEMON_RSYSLOGD'):
@@ -3313,9 +3390,11 @@ def otptls_apply(r):
         otptls_firewalld(port, True, st, said)
         st.update(on=True, port=port, auth=auth, peers=peers, at=time.time())
         write_root(otptls_path('.isemon.json'), json.dumps(st), 0o600)
-        said.append('rsyslog takes the otp logs over TLS on %d/tcp (%s)' % (port, {
-            'anon': 'it checks no node', 'x509/certvalid': 'from any node with a certificate '
-            'of otp\'s authority', 'x509/name': 'from %s' % ', '.join(peers)}[auth]))
+        said.append('rsyslog takes the %s logs over TLS on %d/tcp (%s)' % (
+            TLS_P['who'], port, {
+                'anon': 'it checks no node', 'x509/certvalid': 'from any node with a '
+                'certificate of %s\'s authority' % TLS_P['who'],
+                'x509/name': 'from %s' % ', '.join(peers)}[auth]))
         return said
     except BaseException:
         put_back(snap)
@@ -3367,6 +3446,23 @@ def otptls_part():
     write_here(OTPTLS_FILE, json.dumps(out))
 
 
+def acmetls_part():
+    """The acme logs over TLS (1.10.287): otp's receiver, done again with
+    acme's file, folder, words and requests (acmetls.ask, acmetls.json) - the
+    two side by side, each on a port of its own."""
+    global OTPTLS_ASK, OTPTLS_FILE, OTPTLS_CONF, OTPTLS_OLD, OTPTLS_DIR, OTPTLS_MARK, TLS_P
+    was = (OTPTLS_ASK, OTPTLS_FILE, OTPTLS_CONF, OTPTLS_OLD, OTPTLS_DIR, OTPTLS_MARK, TLS_P)
+    TLS_SIBLINGS[:] = [OTPTLS_CONF]
+    OTPTLS_ASK, OTPTLS_FILE = 'acmetls.ask', 'acmetls.json'
+    OTPTLS_CONF, OTPTLS_OLD, OTPTLS_DIR = ACMETLS_CONF, ACMETLS_OLD, ACMETLS_DIR
+    OTPTLS_MARK, TLS_P = '# isemon: the acme logs over TLS', ACMETLS_P
+    try:
+        otptls_part()
+    finally:
+        OTPTLS_ASK, OTPTLS_FILE, OTPTLS_CONF, OTPTLS_OLD, OTPTLS_DIR, OTPTLS_MARK, TLS_P = was
+        TLS_SIBLINGS[:] = []
+
+
 def status_read():
     """What this helper wrote last. It lies in the folder the isemon account
     owns, so nothing of it is trusted: what is used again (the DH choice) is
@@ -3408,6 +3504,10 @@ def serve():
         otptls_part()
     except Exception as e:                              # noqa: BLE001
         print('isemon_web.py: the otp logs over TLS: %s' % e, file=sys.stderr)
+    try:
+        acmetls_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: the acme logs over TLS: %s' % e, file=sys.stderr)
     # One left by a run that was stopped half way (1.10.238) - a reboot, a
     # timeout during DH: taken away and said, or the daemon would wait on it
     # for ever and never ask again.

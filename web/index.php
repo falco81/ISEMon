@@ -468,6 +468,11 @@ if (isset($_GET['api'])) {
         'sshkeys'      => '/api/sshkeys',
         /* The otp logs over TLS (1.10.245). */
         'otptls'       => '/api/otptls',
+        /* acme's log and its logs over TLS (1.10.287) - acme the certificate
+           manager, not this server's Automatic certificates (`acme`). */
+        'acmetls'      => '/api/acmetls',
+        'acmelog'      => '/api/acmelog',
+        'acmelog-events' => '/api/acmelog/events',
         /* Automatic certificates (1.10.251). */
         'acme'         => '/api/acme',
         /* Settings → Proxy → Try it (1.10.268). */
@@ -560,6 +565,7 @@ if (isset($_GET['api'])) {
         'rbackup'      => '/api/rbackup',
         'sshkeys'      => '/api/sshkeys',
         'otptls'       => '/api/otptls',
+        'acmetls'      => '/api/acmetls',
         'acme'         => '/api/acme',
         'proxy'        => '/api/proxy',
         'console-login' => '/api/console-login',
@@ -4137,6 +4143,160 @@ function srcText(el) {
   .modal .sk-made textarea{width:100%;box-sizing:border-box}
   /* The otp logs over TLS (1.10.245): a card on The OTP logs, drawn as the
      SSH keys of root are */
+  /* ---- the acme tab (1.10.287) ------------------------------------------- */
+  #am-host{display:flex;flex-direction:column;gap:14px}
+  #am-host .card + .card{margin-top:0}
+  .am-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    background:linear-gradient(120deg,rgba(163,113,247,.13),rgba(88,166,255,.07) 55%,var(--panel) 85%)}
+  .am-head-l{flex:1 1 320px;min-width:0}
+  .am-head-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .am-title{display:flex;align-items:center;gap:14px}
+  .am-title h2{margin:0 0 3px}
+  .am-logo{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;
+    border-radius:12px;background:var(--violet-bg);color:var(--violet);border:1px solid rgba(163,113,247,.35)}
+  .am-sub{color:var(--tx-dim);font-size:13px}
+  .am-live{white-space:nowrap}
+  .am-live.on::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--ok);margin-right:6px;vertical-align:1px;box-shadow:0 0 0 3px var(--ok-bg)}
+  .am-kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+  .am-kpi .label{display:flex;align-items:center;gap:7px}
+  .am-kpi-ic{display:inline-flex;opacity:.85}
+  .am-kpi.ok .am-kpi-ic{color:var(--ok)} .am-kpi.warn .am-kpi-ic{color:var(--warn)}
+  .am-kpi.crit .am-kpi-ic{color:var(--crit)} .am-kpi.info .am-kpi-ic{color:var(--info)}
+  .am-kpi{position:relative;overflow:hidden}
+  .am-kpi::after{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:var(--line)}
+  .am-kpi.ok::after{background:var(--ok)} .am-kpi.warn::after{background:var(--warn)}
+  .am-kpi.crit::after{background:var(--crit)} .am-kpi.info::after{background:var(--info)}
+  .am-kpi .sub{overflow-wrap:anywhere}
+  .am-two{gap:14px}
+  .am-attn h2 .n{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--crit-bg);color:var(--crit)}
+  .am-attn-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:8px}
+  .am-attn-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;
+    padding:10px 12px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);
+    border-left:3px solid var(--line);transition:border-color .15s,background .15s}
+  .am-attn-row:hover{background:rgba(88,166,255,.06);border-color:rgba(88,166,255,.4)}
+  .am-attn-row:focus-visible{outline:2px solid var(--info);outline-offset:1px}
+  .am-attn-row.crit{border-left-color:var(--crit)} .am-attn-row.warn{border-left-color:var(--warn)}
+  .am-attn-ic{display:inline-flex;flex:none}
+  .am-attn-row.crit .am-attn-ic{color:var(--crit)} .am-attn-row.warn .am-attn-ic{color:var(--warn)}
+  .am-attn-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .am-attn-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .am-attn-why{font-size:12.5px;color:var(--tx-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .am-attn-days{font-size:12.5px;font-weight:650;white-space:nowrap}
+  .am-state{display:inline-flex;align-items:center;gap:6px;padding:2px 9px 2px 8px;border-radius:999px;
+    font-size:11.5px;font-weight:650;white-space:nowrap;background:var(--panel2);color:var(--tx-dim)}
+  .am-state::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+  .am-state.ok{background:var(--ok-bg);color:var(--ok)} .am-state.warn{background:var(--warn-bg);color:var(--warn)}
+  .am-state.crit{background:var(--crit-bg);color:var(--crit)}
+  td:not(:first-child) > .am-state:first-child{margin-left:-8px}
+  .am-mix{display:flex;gap:2px;height:10px;border-radius:999px;overflow:hidden;margin:4px 0 8px}
+  .am-mix-part{min-width:4px;background:var(--tx-mut)}
+  .am-mix-part.ok{background:var(--ok)} .am-mix-part.warn{background:var(--warn)}
+  .am-mix-part.crit{background:var(--crit)} .am-mix-part.dim{background:var(--tx-mut)}
+  .am-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--tx-dim);margin:6px 0 4px}
+  .am-legend-it{display:inline-flex;align-items:center;gap:6px}
+  .am-legend-it b{color:var(--tx);font-weight:650}
+  .am-sw{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--tx-mut);flex:none}
+  .am-sw.round{border-radius:50%}
+  .am-sw.ok{background:var(--ok)} .am-sw.warn{background:var(--warn)} .am-sw.crit{background:var(--crit)}
+  .am-sw.dim{background:var(--tx-mut)}
+  .am-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 10px}
+  .am-find{flex:1 1 260px;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:9px;
+    color:var(--tx);padding:8px 11px;font:inherit;font-size:13.5px}
+  .am-find:focus{outline:none;border-color:var(--info)}
+  .am-sel{background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--tx);
+    padding:7px 9px;font:inherit;font-size:13px;max-width:200px}
+  .am-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .am-chips .chip.on{background:rgba(88,166,255,.14);color:var(--info);border-color:var(--info)}
+  .am-table td{vertical-align:top}
+  .am-name b{font-size:13.5px}
+  .am-left{min-width:150px}
+  .am-gauge{height:6px;border-radius:999px;background:var(--panel2);overflow:hidden;margin:6px 0 5px;max-width:170px}
+  .am-gauge-fill{display:block;height:100%;border-radius:999px;background:var(--tx-mut)}
+  .am-gauge-fill.ok{background:var(--ok)} .am-gauge-fill.warn{background:var(--warn)}
+  .am-gauge-fill.crit{background:var(--crit)}
+  .am-left-words{font-size:12.5px;font-weight:650}
+  .am-left-words.ok{color:var(--ok)} .am-left-words.warn{color:var(--warn)} .am-left-words.crit{color:var(--crit)}
+  .am-left-words.dim{color:var(--tx-dim)}
+  .am-tchips{display:flex;flex-wrap:wrap;gap:4px;max-width:300px}
+  .am-tchip{display:inline-flex;align-items:center;gap:4px;padding:1px 7px 1px 5px;border-radius:6px;font-size:11.5px;
+    font-family:ui-monospace,Menlo,Consolas,monospace}
+  .am-tchip.ok{background:var(--ok-bg);color:var(--ok)} .am-tchip.crit{background:var(--crit-bg);color:var(--crit)}
+  .am-msg{font-size:12.5px;color:var(--tx-dim);max-width:520px;overflow-wrap:anywhere}
+  .am-msg .tag{margin-left:6px}
+  .am-chart{width:100%;overflow:hidden}
+  .am-chart svg{width:100%;height:auto;display:block}
+  .am-grid{stroke:var(--line);stroke-width:1}
+  .am-base{stroke:var(--tx-mut);stroke-width:1}
+  .am-axis{fill:var(--tx-mut);font-size:11px}
+  .am-today{stroke:var(--info);stroke-width:2;stroke-dasharray:3 3}
+  .am-zone-gone{fill:rgba(248,81,73,.07)} .am-zone-soon{fill:rgba(210,153,34,.08)}
+  .am-dot{cursor:pointer}
+  .am-dot circle{stroke:var(--panel);stroke-width:2}
+  .am-dot.ok circle{fill:var(--ok)} .am-dot.warn circle{fill:var(--warn)} .am-dot.crit circle{fill:var(--crit)}
+  .am-dot.dim circle{fill:var(--tx-mut)}
+  .am-dot .am-stem{stroke:var(--line);stroke-width:1}
+  .am-dot-label{fill:var(--tx-dim);font-size:11.5px}
+  .am-dot:hover .am-dot-label,.am-dot:focus .am-dot-label{fill:var(--tx)}
+  .am-dot:focus{outline:none}
+  .am-hit,.am-dot circle.am-hit{fill:transparent;stroke:none !important}
+  .am-col:hover .am-seg{opacity:.85}
+  .am-col:hover .am-hit{fill:rgba(88,166,255,.06)}
+  .am-tip{position:fixed;z-index:9999;pointer-events:none;background:var(--panel2);border:1px solid var(--line);
+    border-radius:10px;padding:8px 10px;font-size:12.5px;color:var(--tx);box-shadow:0 8px 24px rgba(0,0,0,.45);
+    max-width:340px}
+  .am-tip-head{font-weight:650;margin-bottom:3px}
+  .am-tip-row{display:flex;align-items:center;gap:7px;color:var(--tx-dim)}
+  .am-tip-row b{margin-left:auto;padding-left:14px;color:var(--tx);font-variant-numeric:tabular-nums}
+  .am-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(190px,100%),1fr));gap:10px}
+  .am-tile{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;
+    display:flex;flex-direction:column;gap:4px;border-top:3px solid var(--line)}
+  .am-tile.ok{border-top-color:var(--ok)} .am-tile.warn{border-top-color:var(--warn)}
+  .am-tile.crit{border-top-color:var(--crit)}
+  .am-tile-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .am-tile-top b{overflow-wrap:anywhere}
+  .am-tile-line{display:flex;align-items:baseline;gap:7px}
+  .am-big{font-size:22px;font-weight:680;letter-spacing:-.3px}
+  .am-good{color:var(--ok)} .am-bad{color:var(--crit)}
+  .am-dotc{width:8px;height:8px;border-radius:50%;background:var(--tx-mut);flex:none}
+  .am-dotc.ok{background:var(--ok);box-shadow:0 0 0 3px var(--ok-bg)} .am-dotc.warn{background:var(--warn)}
+  .am-fails{display:flex;flex-direction:column;gap:6px;max-height:430px;overflow:auto}
+  .am-fail{all:unset;box-sizing:border-box;cursor:pointer;padding:9px 11px;border-radius:10px;background:var(--panel2);
+    border:1px solid var(--line);border-left:3px solid var(--crit)}
+  .am-fail:hover{border-color:rgba(88,166,255,.4);border-left-color:var(--crit)}
+  .am-fail:focus-visible{outline:2px solid var(--info)}
+  .am-fail-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .am-fail-when{margin-left:auto;font-size:12px;color:var(--tx-mut)}
+  .am-fail-msg{font-size:12.5px;color:var(--tx-dim);margin-top:3px;overflow-wrap:anywhere}
+  .am-allgood{display:flex;align-items:center;gap:10px;color:var(--ok);font-weight:600;padding:18px 4px}
+  .am-hbars{display:flex;flex-direction:column;gap:5px}
+  .am-hbar{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;
+    gap:10px;align-items:center;padding:3px 6px;border-radius:7px;font-size:13px}
+  .am-hbar:hover{background:var(--panel2)}
+  .am-hbar:focus-visible{outline:2px solid var(--info)}
+  .am-hbar-k{color:var(--tx-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .am-hbar-t{height:8px;border-radius:999px;background:var(--panel2);overflow:hidden}
+  .am-hbar-f{display:block;height:100%;border-radius:999px;background:var(--violet)}
+  .am-who{display:flex;flex-wrap:wrap;gap:6px}
+  .am-next{display:flex;flex-direction:column;gap:2px}
+  .am-next-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;
+    padding:6px 8px;border-radius:8px;font-size:13px}
+  .am-next-row:hover{background:var(--panel2)}
+  .am-next-row:focus-visible{outline:2px solid var(--info)}
+  .am-next-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #am-host h4,.modal .am-hist + h4{margin:14px 0 8px;font-size:13px;color:var(--tx-dim)}
+  .am-empty{text-align:left}
+  .am-cert-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .am-line-msg{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--panel2);font-size:13px;overflow-wrap:anywhere}
+  .am-timeline{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--line)}
+  .am-tl{position:relative;padding:6px 0 10px 12px;cursor:pointer}
+  .am-tl::before{content:'';position:absolute;left:-21px;top:11px;width:10px;height:10px;border-radius:50%;
+    background:var(--info);border:2px solid var(--panel)}
+  .am-tl.ok::before{background:var(--ok)} .am-tl.warn::before{background:var(--warn)} .am-tl.crit::before{background:var(--crit)}
+  .am-tl-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .am-tl-when{margin-left:auto;font-size:12px;color:var(--tx-mut)}
+  .am-tl-msg{font-size:12.5px;color:var(--tx-dim);overflow-wrap:anywhere}
+  .am-tl:hover .am-tl-msg{color:var(--tx)}
   #otptls-card{margin-top:16px}
   #ot-host > .note{margin:0 0 12px}
   #ot-host .pw-head{margin-top:4px}
@@ -4152,6 +4312,21 @@ function srcText(el) {
   #ot-host .note.good ul{margin:4px 0 0;padding-left:18px}
   #otptls-card .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
   #otptls-card .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
+  #acmetls-card{margin-top:16px}
+  #at-host > .note{margin:0 0 12px}
+  #at-host .pw-head{margin-top:4px}
+  #at-host .net-facts{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+  #at-host .ot-warn{color:var(--warn)} #at-host .ot-bad{color:var(--crit);font-weight:700}
+  #at-host .ot-good{color:var(--ok)}
+  #at-host details.fold{margin:12px 0 0}
+  #at-host pre.lines{white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:340px;overflow:auto;
+    background:var(--panel2);border:0;border-radius:0 0 12px 12px;padding:10px 12px;margin:0}
+  #at-host .btnrow{margin-top:14px}
+  #at-host .ot-then{margin:12px 0 0;padding-left:20px;color:var(--tx-mut);font-size:12.5px}
+  #at-host .ot-then li{margin:2px 0}
+  #at-host .note.good ul{margin:4px 0 0;padding-left:18px}
+  #acmetls-card .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  #acmetls-card .btn.primary:hover:not(:disabled){background:#388bfd;border-color:#388bfd;color:#fff}
   .modal .ot-wiz textarea{width:100%;box-sizing:border-box}
   .modal .ot-wiz .rb-kind-tile.on{border-color:var(--info)}
   /* The certificate exported (1.10.249). */
@@ -4535,6 +4710,9 @@ function srcText(el) {
   <button role="tab" aria-selected="false" data-tab="windows" data-icon="shield" hidden
           title="What the Windows domain controllers saw: the accounts the domain locked and why, who it turned away and from which machine, what was changed in Active Directory, and the handful of patterns worth looking at. Its failed logons from the internet earn a ban only while that source is switched on under Settings → Banning.">Domain<span class="count"
           id="tabn-windows"></span></button>
+  <button role="tab" aria-selected="false" data-tab="acmelog" data-icon="lock" hidden
+          title="What acme - the certificate manager - sent here: every certificate as it stands, when each runs out, where it went, what failed, its targets and its nodes, and every line it sent. There while Settings → The acme logs is on.">acme<span class="count"
+          id="tabn-acmelog"></span></button>
   <button role="tab" aria-selected="false" data-tab="router" data-icon="router"
           title="What the Mikrotik is actually carrying, beside what is known here. The two halves rarely disagree, and this is where it shows when they do — and where a pair in high availability is held against itself.">Firewall</button>
   <button role="tab" aria-selected="false" data-tab="events" data-icon="list"
@@ -4834,6 +5012,11 @@ function srcText(el) {
 </section>
 
 <!-- ===================== Router ===================== -->
+<!-- ===================== acme (1.10.287) ===================== -->
+<section class="panel" id="tab-acmelog" hidden>
+  <div id="am-host"><p class="note">Reading…</p></div>
+</section>
+
 <section class="panel" id="tab-router" hidden>
   <div class="card full">
     <h2>What the firewall is carrying <span class="right" id="router-when"></span></h2>
@@ -5262,6 +5445,7 @@ function srcText(el) {
     <div class="ctl-group">Logs read</div>
     <button type="button" data-pane="logs"    data-icon="log"    title="Where the two ISE nodes write, how often they are read, and which network devices' failures are allowed to earn a ban.">The ISE logs</button>
     <button type="button" data-pane="otp"     data-icon="token"  title="The one-time password logs: whether they are read at all, and which folders the token servers write into. Off unless somebody switches it on, and off it changes nothing.">The OTP logs</button>
+    <button type="button" data-pane="acmelog" data-icon="lock"   title="The logs of acme, the certificate manager: whether they are read at all, where rsyslog files them, and acme's nodes sending them encrypted. Switched on, an acme tab shows every certificate and what happened to it. Off unless somebody switches it on, and nothing read here is ever judged.">The acme logs</button>
     <button type="button" data-pane="eduroam" data-icon="wifi"   title="The eduroam logs: whether the visitors' network's own RADIUS server is read at all, which folders it writes into, and which accounts to leave out altogether. Off unless somebody switches it on, and off it changes nothing.">The eduroam logs</button>
     <button type="button" data-pane="tacplus" data-icon="terminal" title="A TACACS+ daemon of this site's own — tac_plus rather than ISE — in front of the switches and routers: whether its logs are read at all, which folders it writes into, and what its two files are called. Off unless somebody switches it on, and off it changes nothing. Nothing read here is ever judged.">The tac_plus logs</button>
     <button type="button" data-pane="nps" data-icon="wifi" title="A Windows NPS server — Network Policy Server, RADIUS that is not ISE — answering the switches, the wireless or the VPN: whether its logs are read at all, which folders they are in and which files are its. Off unless somebody switches it on, and off it changes nothing. Nothing read here is ever judged.">The NPS logs</button>
@@ -5353,6 +5537,43 @@ function srcText(el) {
         input on 514 keeps working for any node not switched over yet, and what arrives is filed
         in the same folders - nothing about reading the logs changes.</p>
       <div id="ot-host"></div>
+    </div>
+  </div>
+
+  <!-- acme - the certificate manager (1.10.287): what it sends by syslog,
+       read as the OTP logs are, and an acme tab showing it. A page of its own
+       for the same reason: another system altogether, off on most sites. -->
+  <div class="ctl-pane" id="pane-acmelog" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">The acme logs</h2>
+      <p class="ctl-lede">acme looks after the certificates of the whole site - it orders them,
+        renews them and puts them on the F5s, the firewalls and the servers. What happened to
+        each of them, and what went wrong, it sends here by syslog: switched on, the acme tab
+        shows every certificate, when it runs out, where it went and what failed.</p>
+    </div>
+    <div class="card full">
+      <p class="note">In acme: <b>Settings → isemon</b> - <span class="mono">isemon=1</span>,
+        this machine in <span class="mono">isemon_targets</span> (<span class="mono">host:514/tcp</span>,
+        or <span class="mono">host:6514/tls</span> once the encrypted receiving below is set up), and
+        <span class="mono">isemon_events=1</span> for the rest of what acme does as well. rsyslog
+        files the lines as <span class="mono">/var/log/remote/&lt;HOST&gt;/acme-certs.log</span> and
+        <span class="mono">acme.log</span> (<span class="mono">deploy/rsyslog-acme.conf</span>, as
+        <span class="mono">11-acme.conf</span>).</p>
+      <p class="note"><b>Nothing here is ever judged.</b> It is what acme did, kept and shown -
+        nobody is banned by it. Switched off, not one file is opened and the acme tab is not
+        there.</p>
+      <div id="sect-acmelog"></div>
+    </div>
+    <!-- Encrypted receiving for acme's nodes: the same receiver as the OTP
+         logs have, with a file, a folder and a port of its own. -->
+    <div class="card full wr" id="acmetls-card">
+      <h2>Encrypted receiving (TLS)</h2>
+      <p class="note">acme's nodes can send their lines here encrypted (syslog over TLS,
+        RFC 5425): acme checks that it is isemon that answers, and with mutual TLS only acme's
+        own nodes may send - the name in each node's certificate is the node's name. The plain
+        input on 514 keeps working for any node not switched over yet, and what arrives is filed
+        in the same folders - nothing about reading the logs changes.</p>
+      <div id="at-host"></div>
     </div>
   </div>
 
@@ -9922,7 +10143,7 @@ function showTab(name) {
     function (b) {
       b.setAttribute('aria-selected', b.getAttribute('data-tab') === name ? 'true' : 'false');
     });
-  ['overview', 'bans', 'failed', 'logins', 'traffic', 'windows', 'router', 'events',
+  ['overview', 'bans', 'failed', 'logins', 'traffic', 'windows', 'acmelog', 'router', 'events',
    'logs', 'settings'].forEach(
     function (one) {
       var panel = $('tab-' + one);
@@ -9953,6 +10174,7 @@ function onTab(name) {
   if (name === 'windows') loadWindows();
   if (name === 'traffic') { loadTraffic(); if (typeof tFitSoon === 'function') tFitSoon(); }
   if (name === 'events') loadEvents();
+  if (name === 'acmelog' && typeof loadAcmeLog === 'function') loadAcmeLog();
   if (name === 'settings') loadSettings();
   /* Drawn from the status every poll draws the header from, so it is there
      already; drawn again at once so a page opened straight onto it does not
@@ -10502,6 +10724,18 @@ function paintHeader(s, quiet) {
   if (domainTab) {
     domainTab.hidden = !s.winsec_on;
     if (!s.winsec_on && TAB === 'windows') showTab('overview');
+  }
+  /* ...and acme's, there only while its logs are read (1.10.287) - with how
+     many of its certificates want looking at. */
+  var acmeTab = document.querySelector('.tabs button[data-tab="acmelog"]');
+  if (acmeTab) {
+    acmeTab.hidden = !s.acmelog_on;
+    var an = $('tabn-acmelog');
+    if (an) {
+      an.textContent = s.acmelog_on && s.acmelog_attention ? String(s.acmelog_attention) : '';
+      an.classList.toggle('hot', !!s.acmelog_attention);
+    }
+    if (!s.acmelog_on && TAB === 'acmelog') showTab('overview');
   }
   /* ...and the firewall's traffic, there only while its log is read. */
   var trafficTab = document.querySelector('.tabs button[data-tab="traffic"]');
@@ -12087,7 +12321,8 @@ var LOG_HOLDS_WORDS = {failed: 'refusals', passed: 'logins',
                        winsec: 'what a domain controller saw',
                        fwlog: 'what crossed the firewall', otp: 'one-time passwords',
                        'otp-detail': 'what the token server was asked',
-                       eduroam: 'eduroam sign-ins', 'eduroam-detail': 'eduroam sessions'};
+                       eduroam: 'eduroam sign-ins', 'eduroam-detail': 'eduroam sessions',
+                       acmelog: 'what acme did'};
 
 function logHolds(l) {
   var source = l.source || 'ise';
@@ -12097,6 +12332,12 @@ function logHolds(l) {
     says: 'This file is a token server\u2019s, not ISE\u2019s. One line is one attempt and '
       + 'the line says whether it worked, so both halves come out of the one file. None of it '
       + 'is ever judged.'
+  };
+  if (source === 'acmelog') return {
+    words: 'what acme did', tone: 'violet',
+    whole: 'every certificate acme issued, renewed, deployed, let run out or failed with - and, where it sends them, its sign-ins and settings',
+    says: 'This file is acme\u2019s - the certificate manager - not ISE\u2019s. One line is one '
+      + 'thing acme did; they are shown on the acme tab. None of it is ever judged.'
   };
   if (source === 'otp-detail') return {
     words: 'what the token server was asked', tone: 'violet',
@@ -26281,6 +26522,8 @@ var PANES = {
             'tacacs_from', 'tacacs_from_mark', 'log_zone'],
   otp:     ['otp', 'otp_paths', 'otp_name', 'otp_detail', 'otp_detail_name',
             'otp_from', 'otp_from_mark'],
+  acmelog: ['acmelog', 'acmelog_paths', 'acmelog_certs_name', 'acmelog_events',
+            'acmelog_events_name', 'retain_acmelog_days'],
   eduroam: ['eduroam', 'eduroam_format', 'eduroam_paths', 'eduroam_name',
             'eduroam_detail_name', 'eduroam_nps_name', 'eduroam_nps_policy',
             'eduroam_ignore'],
@@ -27183,6 +27426,11 @@ var ONLY_WHEN = {
   power_auto_at: ['power_auto', '1'], power_auto_needed: ['power_auto', '1'],
   otp_paths: ['otp', '1'],
   otp_name: ['otp', '1'],
+  acmelog_paths: ['acmelog', '1'],
+  acmelog_certs_name: ['acmelog', '1'],
+  acmelog_events: ['acmelog', '1'],
+  acmelog_events_name: ['acmelog_events', '1'],
+  retain_acmelog_days: ['acmelog', '1'],
   eduroam_paths: ['eduroam', '1'],
   eduroam_name: ['eduroam', '1'],
   eduroam_detail_name: ['eduroam', '1'],
@@ -29516,6 +29764,7 @@ function showPane(name, quietly) {
   if (name === 'power' && typeof loadPower === 'function') loadPower();
   if (name === 'sshkeys' && typeof loadSshKeys === 'function') loadSshKeys();
   if (name === 'otp' && typeof loadOtpTls === 'function') loadOtpTls();
+  if (name === 'acmelog' && typeof loadAcmeTls === 'function') loadAcmeTls();
   if (name === 'osup' && typeof loadOsup === 'function') loadOsup();
   else if (typeof ouPoll === 'function') ouPoll(false);
   if (name === 'backup' && typeof loadRbackup === 'function') loadRbackup();
@@ -29972,6 +30221,8 @@ var LIST_ROWS = {
               'One folder per ISE node, the way rsyslog files them.'],
   otp_paths: ['folder', '/var/log/remote/otp',
               'One folder per token server.'],
+  acmelog_paths: ['folder', '/var/log/remote/acme',
+                  'The folder rsyslog files acme\u2019s lines in - /var/log/remote/<HOST>, HOST being isemon_hostname in acme.'],
   eduroam_paths: ['folder', '/var/log/remote/eduroam',
                   'One folder per RADIUS server, or a path to the file itself.'],
   winsec_paths: ['folder', '/var/log/remote/dc01',
@@ -42984,6 +43235,1395 @@ function otWizSettings(box) {
   box.appendChild(el('p', 'note', 'Step 3 of 3 - which of otp\'s nodes may send, and on which port. The plain input on 514 stays as it is.'));
   otSettings(box, w, w.src !== 'otp', 'Needed with mutual TLS: otp → High availability → the cluster\'s authority, or ca.pem from the file otp made.');
 }
+/* ==========================================================================
+   Settings → The acme logs → Encrypted receiving (1.10.287; for acme's
+   Settings → isemon → Encrypted sending)
+   --------------------------------------------------------------------------
+   The card of the OTP logs, drawn again for acme's nodes (acmetls.ask,
+   acmetls.json): its own rsyslog input, port and certificate. Nothing of the
+   OTP logs' card is shared but its look. A full administrator's only.
+   ========================================================================== */
+var AT = {d: null, poll: null, asked: 0, ownCa: false, wiz: null};
+function loadAcmeTls() {
+  var host = $('at-host');
+  if (!host) return;
+  if (!ADMIN) {
+    clear(host);
+    host.appendChild(el('p', 'note', 'Only a full administrator may see or change the encrypted receiving.'));
+    return;
+  }
+  api('acmetls').then(function (d) {
+    AT.d = d; drawAcmeTls();
+    /* Read afresh when the pane is opened. */
+    if (d.helper && Date.now() - AT.asked > 20000) {
+      AT.asked = Date.now();
+      api('acmetls', {action: 'refresh'}).then(function () { atPoll(true); }).catch(function () {});
+    }
+    atPoll(atPending());
+  }).catch(oops);
+}
+function atPending() { return !!(AT.d && ((AT.d.pending || []).length || AT.d.busy)); }
+function atChanging() { return !!(AT.d && (AT.d.pending || []).length); }
+function atPoll(on) {
+  if (on && !AT.poll) {
+    AT.poll = setInterval(function () {
+      if (!paneLive('acmelog')) { atPoll(false); return; }
+      api('acmetls', undefined, {quiet: true}).then(function (d) {
+        AT.d = d; drawAcmeTls();
+        if (!atPending()) { atPoll(false); atDone(); }
+      }).catch(function () {});
+    }, 700);      /* only while root has it to do: 1.5 s before 1.10.270 */
+  }
+  if (!on && AT.poll) { clearInterval(AT.poll); AT.poll = null; }
+}
+/* A change asked of root: followed from now on. */
+function atAsked() {
+  api('acmetls', undefined, {quiet: true}).then(function (d) { AT.d = d; drawAcmeTls(); atPoll(true); })
+    .catch(function () { atPoll(true); });
+}
+/* A change that is done: a certificate made here wants its authority in acme. */
+function atDone() {
+  if (!AT.ownCa) return;
+  AT.ownCa = false;
+  var d = AT.d || {};
+  if (d.last && d.last.ok && d.own_ca && d.own_ca.pem && $('modal').hidden) atShowCa();
+}
+var AT_HOW = {acme: 'from the file acme made', made: 'made here, by isemon\'s own authority',
+              given: 'a certificate pasted here'};
+var AT_DID = {apply: 'set up', make: 'set up', set: 'changed', off: 'switched off'};
+function atMode(d) {
+  if (d.auth === 'x509/name') return 'mutual TLS - only the nodes named';
+  if (d.auth === 'x509/certvalid') return 'mutual TLS - any node with a certificate from acme\'s authority';
+  if (d.auth === 'anon') return 'TLS one way - acme checks isemon, isemon checks nobody';
+  return d.auth || '';
+}
+function atUntil(c) {
+  if (!c || !c.until) return '';
+  var days = c.until_t ? daysLeft(c.until_t) : null;
+  var words = c.until_t ? stamp(c.until_t) : c.until;
+  if (days === null) return words;
+  var cls = days < 0 ? 'ot-bad' : (days < 60 ? 'ot-warn' : '');
+  var said = days < 0 ? words + ' - it has run out' : (days < 60 ? words + ' - ' + days + ' days left' : words);
+  return el('span', cls, said);
+}
+function drawAcmeTls() {
+  var host = $('at-host');
+  if (!host || !AT.d) return;
+  var keepOpen = !!(host.querySelector('details.fold[open]'));
+  clear(host);
+  var d = AT.d, c = d.cert || {}, kept = d.kept || {}, last = d.last || {};
+  var changing = atChanging();
+  if (!d.helper) {
+    host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet '
+      + '(isemon-web.path, as 1.10.287 puts it in): run ./install.sh --upgrade from the 1.10.287 package (or later) once. '
+      + 'Until then the encrypted receiving is neither read nor changed here.'));
+  }
+  if (changing) {
+    host.appendChild(el('p', 'note', 'Root is putting it in - a few seconds, a minute when rsyslog-gnutls has to be installed first.'));
+  } else if (d.error) {
+    var bad = el('div', 'note bad');
+    bad.appendChild(el('b', '', 'Root said:'));
+    bad.appendChild(noI18n(el('span', 'mono', d.error)));
+    host.appendChild(bad);
+  } else if (last.ok && last.at && Date.now() / 1000 - last.at < 900) {
+    var good = el('div', 'note good');
+    good.appendChild(el('b', '', last.do === 'off' ? 'Switched off.' : 'Done.'));
+    if ((d.said || []).length) {
+      var ul = el('ul');
+      d.said.forEach(function (x) { ul.appendChild(noI18n(el('li', '', x))); });
+      good.appendChild(ul);
+    }
+    host.appendChild(good);
+  }
+  /* The state, and the facts. */
+  var hd = el('div', 'pw-head');
+  /* Green: on and listening, nothing gone wrong with TLS since rsyslog
+     started. Yellow: not listening, or something went wrong - said below. */
+  var tone = !d.read ? '' : (d.on ? (d.listening === false || (d.trouble || []).length ? 'warn' : 'ok') : '');
+  hd.appendChild(el('span', 'dot' + (tone ? ' ' + tone : '')));
+  hd.appendChild(noI18n(el('b', '', location.hostname || 'this machine')));
+  if (!d.read) hd.appendChild(el('span', 'tag dim', d.helper ? 'reading…' : 'not read'));
+  else if (d.on && d.mine) hd.appendChild(el('span', 'tag ok', 'on - isemon\'s'));
+  else if (d.on) hd.appendChild(el('span', 'tag warn', 'on - set up by hand'));
+  else hd.appendChild(el('span', 'tag dim', 'off'));
+  if (changing) hd.appendChild(el('span', 'tag info', 'being changed…'));
+  host.appendChild(hd);
+  var state = !d.read ? '' : (d.on ? (d.mine ? 'On - set up by isemon' : 'On - set up by hand, not by isemon') : 'Off');
+  var peers = !d.on ? '' : (d.auth === 'x509/name' ? noI18n(el('span', 'mono', (d.peers || []).join(', ')))
+    : (d.auth === 'x509/certvalid' ? 'any node with a certificate from acme\'s authority'
+      : (d.auth === 'anon' ? 'anybody - isemon checks nobody' : '')));
+  var names = (c.names || []).slice();
+  if (c.cn) names.unshift(c.cn);
+  var fw = '';
+  if (d.on) {
+    if (d.fw === 'firewalld') fw = d.fw_open === true ? 'firewalld lets it in'
+      : (d.fw_open === false ? el('span', 'ot-warn', 'firewalld does not let it in') : 'unknown');
+    else if (d.fw === 'iptables') {
+      var fi = d.fw_isemon || {};
+      fw = !fi.on ? 'isemon\'s firewall is off here - the machine\'s own rules decide'
+        : (!fi.let ? el('span', 'ot-warn', 'isemon\'s firewall does not let it in - The logs arriving (rsyslog) is turned off under Settings → Firewall and access')
+          : (fi.any ? 'isemon\'s firewall lets it in from anywhere, as one of the logs arriving (Settings → Firewall and access)'
+            : 'isemon\'s firewall lets it in from the log senders named only (Settings → Firewall and access)'));
+    }
+    else fw = 'unknown';
+  }
+  var plain = (d.plain || []).map(function (p) { return p.proto + '/' + p.port + (p.file ? ' (' + p.file + ')' : ''); });
+  var lastWords = '';
+  if (kept.at) {
+    lastWords = (AT_DID[kept.do] || 'changed') + ' by ' + (kept.by || '?') + ', ' + ago(kept.at)
+      + (kept.how && AT_HOW[kept.how] && kept.do !== 'off' ? ' - ' + AT_HOW[kept.how] : '');
+  }
+  host.appendChild(netFacts([
+    ['State', state],
+    ['Port and mode', d.on && d.port ? d.port + '/tcp, ' + atMode(d) : ''],
+    ['Nodes allowed', peers],
+    ['isemon\'s certificate', c.subject ? noI18n(el('span', 'mono', names.length ? names.join(', ') : c.subject)) : (d.read ? 'none here' : '')],
+    ['Issued by', c.issuer ? noI18n(el('span', '', String(c.issuer).replace(/^CN=/, ''))) : ''],
+    ['Valid until', atUntil(c)],
+    ['Authority trusted for the nodes', (d.ca || []).length
+      ? noI18n(el('span', '', d.ca.map(function (x) { return String(x.subject || '?').replace(/^CN=/, ''); }).join('; ')))
+      : (d.on && d.auth !== 'anon' ? el('span', 'ot-warn', 'none') : '')],
+    ['Listening', !d.on ? '' : (d.listening === true ? el('span', 'ot-good', 'yes')
+      : (d.listening === false ? el('span', 'ot-bad', 'no') : 'unknown'))],
+    ['Firewall', fw],
+    ['rsyslog', d.version ? 'rsyslog ' + d.version + (d.driver_there ? ', TLS by ' + d.driver_there
+      : ', no TLS driver yet - rsyslog-gnutls is installed with the first setup') : ''],
+    ['Plain receiving', plain.length ? noI18n(el('span', 'mono', plain.join(', ') + ' - kept as it is')) : (d.read ? 'none found' : '')],
+    ['Last change', lastWords],
+    ['Read', d.at ? ago(d.at) : 'not yet']
+  ]));
+  if ((d.trouble || []).length) {
+    var more = el('details', 'fold');
+    var sum = el('summary', '', 'what went wrong with TLS since rsyslog started');
+    sum.appendChild(el('span', 'n', String(d.trouble.length)));
+    more.appendChild(sum);
+    more.appendChild(noI18n(el('pre', 'lines', d.trouble.join('\n'))));
+    if (keepOpen) more.open = true;
+    host.appendChild(more);
+  }
+  /* What can be done. */
+  var row = el('div', 'btnrow');
+  var off = !d.helper || changing;
+  var setup = cmdButton('Set up…', 'lock', 'primary');
+  explain(setup, 'Where isemon\'s certificate comes from - the file acme made, one made here, or one pasted - and which of acme\'s nodes may send.');
+  setup.disabled = off;
+  setup.onclick = function () { atWizard(); };
+  row.appendChild(setup);
+  if (d.on) {
+    var ch = cmdButton('Change nodes…', 'gear', '');
+    explain(ch, 'The port, mutual TLS and the nodes that may send - the certificate stays as it is.');
+    ch.disabled = off;
+    ch.onclick = function () { atChange(); };
+    row.appendChild(ch);
+  }
+  if (d.own_ca && d.own_ca.pem) {
+    var ca = cmdButton('isemon\'s authority', 'shield', '');
+    explain(ca, 'The certificate of the authority that made isemon\'s certificate here - to paste into acme.');
+    ca.onclick = function () { atShowCa(); };
+    row.appendChild(ca);
+  }
+  var again = cmdButton('Read again', 'refresh', '');
+  again.disabled = !d.helper;
+  again.onclick = function () {
+    busy(again, true);
+    api('acmetls', {action: 'refresh'}).then(function () { toast('asked again'); atAsked(); })
+      .catch(function (e) { busy(again, false); oops(e); });
+  };
+  row.appendChild(again);
+  /* Both always there (1.10.247) - greyed, and saying why, when there is
+     nothing for them to do. */
+  var sw = cmdButton('Switch off…', 'forget', 'danger');
+  explain(sw, d.on ? 'The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes.'
+    : 'Nothing to switch off: rsyslog has no encrypted input for acme here.');
+  sw.disabled = off || !d.on;
+  sw.onclick = function () { atOff(); };
+  row.appendChild(sw);
+  var anything = d.on || (d.cert && d.cert.subject) || (d.own_ca && d.own_ca.pem) || (d.ca && d.ca.length)
+    || (d.left && d.left.length);
+  var rm = cmdButton('Remove…', 'trash', 'danger');
+  explain(rm, anything ? 'The encrypted receiving taken away whole: the input, isemon\'s certificate and key, acme\'s authority and the one made here. The plain input on 514 stays.'
+    : 'Nothing to remove: no encrypted input, no certificate and no key of it are on this machine.');
+  rm.disabled = off || !anything;
+  rm.onclick = function () { atRemove(); };
+  row.appendChild(rm);
+  host.appendChild(row);
+  if (d.on && d.mine) {
+    host.appendChild(el('p', 'btnhelp', 'Then, on acme - Settings → isemon → Encrypted sending:'));
+    var ol = el('ol', 'ot-then');
+    ol.appendChild(el('li', '', 'Try it on every node: each sends a test line here over TLS.'));
+    ol.appendChild(el('li', '', 'Switch over: isemon_targets to this machine\'s name:' + (d.port || 6514) + '/tls - the nodes send over TLS from then on. The plain input here stays for any node not switched over.'));
+    host.appendChild(ol);
+  }
+  explainWhatWasDrawn($('acmetls-card'));
+}
+/* A change, asked: followed until root has done it. */
+function atSend(body, b) {
+  if (b) busy(b, true);
+  return api('acmetls', body).then(function (x) {
+    toast(x.message, 'good');
+    atAsked();
+    return x;
+  }).catch(function (e) { if (b) busy(b, false); throw e; });
+}
+function atOff() {
+  confirmThen('Switch the encrypted receiving off',
+    'rsyslog stops taking acme\'s lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch acme\'s nodes back to plain sending first, or their lines stop arriving.',
+    'Switch it off', function () { atSend({action: 'off'}).catch(oops); }, true);
+}
+function atRemove() {
+  confirmThen('Remove the encrypted receiving',
+    'rsyslog stops taking acme\'s lines over TLS, and isemon\'s certificate, its key, acme\'s authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch acme\'s nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into acme again.',
+    'Remove it', function () { atSend({action: 'remove'}).catch(oops); }, true);
+}
+/* isemon's own authority, to paste into acme. */
+function atShowCa() {
+  var ca = (AT.d && AT.d.own_ca) || {};
+  if (!ca.pem) return;
+  modal('isemon\'s authority', function (body) {
+    var box = el('div', 'sk-made ot-wiz');
+    box.appendChild(el('p', 'note', 'isemon\'s certificate was made here by an authority of this machine\'s own. acme checks isemon by it: paste it into acme - Settings → isemon → Encrypted sending → isemon\'s certificate → "isemon has one from its own CA".'));
+    var area = noI18n(el('textarea', 'wr-in mono'));
+    area.rows = 10; area.readOnly = true; area.value = ca.pem; area.spellcheck = false;
+    box.appendChild(area);
+    var row = el('div', 'btnrow');
+    var dl = cmdButton('Download isemon-ca.crt', 'download', 'primary');
+    dl.onclick = function () { saveText('isemon-ca.crt', ca.pem); };
+    var cp = cmdButton('Copy it', 'copy', '');
+    cp.onclick = function () { copyText(ca.pem, 'isemon\'s authority is on the clipboard'); };
+    row.appendChild(dl); row.appendChild(cp);
+    box.appendChild(row);
+    box.appendChild(netFacts([
+      ['The authority', noI18n(el('span', '', String(ca.subject || '').replace(/^CN=/, '')))],
+      ['Valid until', atUntil(ca)],
+      ['SHA-256', ca.fp ? noI18n(el('span', 'mono small', ca.fp)) : '']
+    ]));
+    body.appendChild(box);
+  }, [{words: 'Close', close: true}], 'medium');
+}
+/* A PEM box with a button that reads it from a file. */
+function atPemField(words, value, placeholder, help, onchange) {
+  var area = noI18n(rbArea(value, placeholder));
+  area.rows = 5;
+  area.oninput = function () { onchange(area.value); };
+  var f = wrField(words, area, help);
+  var row = el('div', 'ot-pem-row');
+  var pick = cmdButton('Read a file…', 'upload', 'small');
+  var input = el('input'); input.type = 'file'; input.hidden = true;
+  input.accept = '.pem,.crt,.cer,.key,.txt';
+  pick.onclick = function () { input.click(); };
+  input.onchange = function () {
+    var fl = input.files && input.files[0];
+    input.value = '';
+    if (!fl) return;
+    if (fl.size > 200000) { toast('that file is far bigger than a certificate', 'warn'); return; }
+    fl.text().then(function (t) { area.value = t.trim(); onchange(area.value); });
+  };
+  row.appendChild(pick); row.appendChild(input);
+  f.appendChild(row);
+  return f;
+}
+/* The port, mutual TLS, the nodes and acme's authority: the wizard's last
+   step, and Change nodes… */
+function atSettings(body, s, caToo, caHelp) {
+  var port = wrText(String(s.port || 6514), '6514', 'mono');
+  port.oninput = function () { s.port = port.value; };
+  body.appendChild(wrField('Port', port, 'TCP: the port in isemon_targets (host:6514/tls). Not 514 - that one is the plain logs\'; not the port of the OTP logs over TLS either.'));
+  var caBox = null;
+  var mu = wrSwitch(s.mutual, function (v) { s.mutual = v; if (caBox) caBox.hidden = !v; nodes.hidden = !v; });
+  body.appendChild(wrField('Mutual TLS - isemon takes acme\'s nodes only', mu,
+    'Off, acme still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.'));
+  var area = noI18n(rbArea(s.peers, 'acme1\nacme2'));
+  area.rows = 3;
+  area.oninput = function () { s.peers = area.value; };
+  var nodes = wrField('Nodes allowed', area, 'The names in the nodes\' certificates - the names of acme\'s nodes (acme1, acme2), one per line. Empty: any node with a certificate from acme\'s authority.');
+  nodes.hidden = !s.mutual;
+  body.appendChild(nodes);
+  if (caToo) {
+    caBox = atPemField('acme\'s authority', s.otpCa, '-----BEGIN CERTIFICATE-----\n…\n-----END CERTIFICATE-----',
+      caHelp, function (v) { s.otpCa = v; });
+    caBox.hidden = !s.mutual;
+    body.appendChild(caBox);
+  }
+}
+function atPeers(text) {
+  return String(text || '').split(/[\s,;]+/).filter(Boolean).join(' ');
+}
+/* Change nodes…: the certificate stays. */
+function atChange() {
+  var d = AT.d || {};
+  var s = {port: d.port || 6514, mutual: d.auth === 'x509/name' || d.auth === 'x509/certvalid',
+           peers: (d.peers || []).join('\n'), otpCa: ''};
+  var said;
+  modal('Change the nodes', function (body) {
+    var box = el('div', 'ot-wiz');
+    box.appendChild(el('p', 'note', 'Which of acme\'s nodes may send, on which port. isemon\'s certificate stays as it is.'));
+    atSettings(box, s, true, 'Only to replace the authority there now' + ((d.ca || []).length ? '' : ' - none is there yet, and mutual TLS needs one') + '. ca.pem from the file acme made - acme\'s own authority.');
+    said = el('div', 'note bad'); said.hidden = true;
+    box.appendChild(said);
+    body.appendChild(box);
+  }, [{words: 'Cancel', close: true}, {words: 'Change it', cls: 'primary', icon: 'save', go: function (b) {
+    var q = {action: 'set', port: Number(s.port) || 0, mutual: !!s.mutual, peers: s.mutual ? atPeers(s.peers) : ''};
+    if (s.mutual && /BEGIN CERTIFICATE/.test(s.otpCa || '')) q.otp_ca = s.otpCa;
+    atSend(q, b).then(function () { closeModal(); }).catch(function (e) {
+      said.hidden = false; said.textContent = String(e && e.message || e);
+    });
+  }}], 'medium');
+}
+/* ---- Set up…: a wizard of three steps ----------------------------------- */
+var AT_WIZ_TITLE = 'Set up encrypted receiving';
+function atWizard() {
+  var d = AT.d || {};
+  AT.wiz = {step: 1, src: '', opened: null, pass: '', zip: '', zipName: '',
+            names: (d.suggest || []).join('\n'), cert: '', key: '', chain: '',
+            port: d.port || 6514, mutual: true, peers: (d.peers || []).join('\n'), otpCa: ''};
+  atWizStep(1);
+}
+function atWizForget() {
+  var w = AT.wiz;
+  if (!w || w.redrawing) return;
+  /* A key pasted, a passphrase typed: gone from the page when the popup closes. */
+  w.key = ''; w.pass = ''; w.zip = ''; w.cert = ''; w.chain = '';
+  AT.wiz = null;
+}
+function atWizStep(n) {
+  var w = AT.wiz;
+  if (!w) return;
+  w.step = n;
+  var buttons = [];
+  var said;
+  var build = function (body) {
+    var box = el('div', 'ot-wiz');
+    said = el('div', 'note bad'); said.hidden = true;
+    if (n === 1) atWizSource(box);
+    else if (n === 2 && w.src === 'acme') atWizFile(box);
+    else if (n === 2 && w.src === 'made') atWizMade(box);
+    else if (n === 2) atWizGiven(box);
+    else atWizSettings(box);
+    box.appendChild(said);
+    body.appendChild(box);
+  };
+  var fail = function (e) { if (said) { said.hidden = false; said.textContent = String(e && e.message || e); } };
+  if (n > 1) buttons.push({words: 'Back', icon: 'prev', left: true, go: function () { atWizStep(n - 1); }});
+  buttons.push({words: 'Cancel', close: true});
+  if (n === 2 && w.src === 'acme' && !w.opened) {
+    buttons.push({words: 'Open', cls: 'primary', icon: 'unfold', go: function (b) {
+      if (!w.zip) { fail('choose the file first - the ZIP acme made'); return; }
+      busy(b, true);
+      api('acmetls', {action: 'open', zip: w.zip, passphrase: w.pass}).then(function (x) {
+        w.opened = x; w.pass = ''; w.zip = '';
+        var cf = x.conf || {};
+        w.port = cf.port || 6514; w.mutual = !!cf.mutual; w.peers = (cf.peers || []).join('\n');
+        atWizStep(2);
+      }).catch(function (e) { busy(b, false); fail(e); });
+    }});
+  } else if (n === 2) {
+    buttons.push({words: 'Next', cls: 'primary', icon: 'next', go: function () {
+      if (w.src === 'made' && !atPeers(w.names)) { fail('at least one name or address acme\'s nodes reach this machine by'); return; }
+      if (w.src === 'given' && !/BEGIN CERTIFICATE/.test(w.cert)) { fail('the certificate: PEM, -----BEGIN CERTIFICATE-----'); return; }
+      if (w.src === 'given' && (!/PRIVATE KEY-----/.test(w.key) || /ENCRYPTED/.test(w.key))) { fail('the key: a PEM private key without a passphrase'); return; }
+      atWizStep(3);
+    }});
+  } else if (n === 3) {
+    buttons.push({words: 'Set it up', cls: 'primary', icon: 'lock', go: function (b) {
+      var q = {port: Number(w.port) || 0, mutual: !!w.mutual, peers: w.mutual ? atPeers(w.peers) : ''};
+      if (w.src === 'acme') { q.action = 'apply'; q.token = (w.opened || {}).token; }
+      else if (w.src === 'made') { q.action = 'make'; q.names = atPeers(w.names); q.otp_ca = w.mutual ? w.otpCa : ''; }
+      else { q.action = 'apply'; q.cert = w.cert; q.key = w.key; q.chain = w.chain; q.ca = w.mutual ? w.otpCa : ''; }
+      if (w.mutual && w.src !== 'acme' && !/BEGIN CERTIFICATE/.test(w.otpCa || '')) {
+        fail('mutual TLS: acme\'s authority is needed, to know the nodes by - or switch mutual TLS off');
+        return;
+      }
+      var made = w.src === 'made';
+      atSend(q, b).then(function () { AT.ownCa = made; closeModal(); }).catch(fail);
+    }});
+  }
+  w.redrawing = true;
+  try { modal(AT_WIZ_TITLE, build, buttons, 'medium'); } finally { w.redrawing = false; }
+  MODAL_CLOSE = atWizForget;
+}
+function atWizSource(box) {
+  var w = AT.wiz;
+  box.appendChild(el('p', 'note', 'Step 1 of 3 - where isemon\'s certificate comes from. acme checks it every time a node sends.'));
+  var g = el('div', 'rb-kinds');
+  [['acme', 'archive', 'The file acme made', 'The encrypted ZIP from acme → Settings → isemon → Encrypted sending → Encrypt…: isemon\'s certificate from acme\'s own authority. It carries acme\'s authority and the nodes too.'],
+   ['made', 'key', 'Made here', 'isemon makes an authority of its own and a certificate from it. Its authority is then pasted into acme as "isemon has one from its own CA".'],
+   ['given', 'upload', 'Paste a certificate', 'One from your own CA or a public one: the certificate, its key without a passphrase, and the chain if there is one.']
+  ].forEach(function (k) {
+    var b = el('button', 'rb-kind-tile' + (w.src === k[0] ? ' on' : ''));
+    b.type = 'button';
+    var ic = el('span', 'rb-kind' + (k[0] === 'acme' ? ' k-sftp' : ''));
+    ic.innerHTML = iconMarkup(k[1], 20);
+    b.appendChild(ic);
+    var t = el('b', '', k[2]);
+    if (k[0] === 'acme') { t.appendChild(document.createTextNode(' ')); t.appendChild(el('span', 'tag ok', 'recommended')); }
+    b.appendChild(t);
+    b.appendChild(el('span', 'small muted', k[3]));
+    b.onclick = function () {
+      if (w.src !== k[0]) { w.opened = null; w.mutual = true; }
+      w.src = k[0];
+      atWizStep(2);
+    };
+    g.appendChild(b);
+  });
+  box.appendChild(g);
+}
+function atWizFile(box) {
+  var w = AT.wiz;
+  if (w.opened) {
+    var x = w.opened, c = x.cert || {}, ca = x.ca || {}, cf = x.conf || {};
+    box.appendChild(el('p', 'note good', 'Step 2 of 3 - the file is open. Its key stays on the server and goes to root once; nothing of it is kept in the database.'));
+    var p = el('div', 'subpanel');
+    p.appendChild(netFacts([
+      ['isemon\'s certificate', noI18n(el('span', 'mono', (c.names || []).length ? c.names.join(', ') : (c.subject || '')))],
+      ['Issued by', noI18n(el('span', '', String(c.issuer || '').replace(/^CN=/, '')))],
+      ['Valid until', c.until || ''],
+      ['acme\'s authority', noI18n(el('span', '', String(ca.subject || '').replace(/^CN=/, '')))],
+      ['Port', String(cf.port || 6514), true],
+      ['Mutual TLS', cf.mutual ? 'yes' : 'no'],
+      ['Nodes', (cf.peers || []).length ? noI18n(el('span', 'mono', cf.peers.join(', '))) : (cf.mutual ? 'any node with a certificate from acme\'s authority' : '')]
+    ]));
+    box.appendChild(p);
+    box.appendChild(el('p', 'btnhelp', 'What acme chose is filled in on the next step; it can be changed there.'));
+    return;
+  }
+  box.appendChild(el('p', 'note', 'Step 2 of 3 - the encrypted ZIP acme made for isemon, and the passphrase acme showed when it made it. It is opened on the server; the key in it is never sent back to the page.'));
+  var f = el('div', 'ot-file');
+  var pick = cmdButton('Choose the file…', 'upload', '');
+  var name = noI18n(el('span', '', w.zipName || 'no file chosen'));
+  var input = el('input'); input.type = 'file'; input.hidden = true; input.accept = '.zip,application/zip';
+  pick.onclick = function () { input.click(); };
+  input.onchange = function () {
+    var fl = input.files && input.files[0];
+    input.value = '';
+    if (!fl) return;
+    if (fl.size > 1048576) { toast('that file is far bigger than the one acme makes', 'warn'); return; }
+    var r = new FileReader();
+    r.onload = function () {
+      var arr = new Uint8Array(r.result), bin = '';
+      for (var i = 0; i < arr.length; i += 8192) bin += String.fromCharCode.apply(null, arr.subarray(i, i + 8192));
+      w.zip = btoa(bin); w.zipName = fl.name;
+      name.textContent = fl.name;
+    };
+    r.onerror = function () { toast(fl.name + ' could not be read', 'bad'); };
+    r.readAsArrayBuffer(fl);
+  };
+  f.appendChild(pick); f.appendChild(name); f.appendChild(input);
+  box.appendChild(wrField('The file', f));
+  var pp = rbMask(w.pass, '');
+  pp.oninput = function () { w.pass = pp.value; };
+  box.appendChild(wrField('Its passphrase', pp, 'The one acme showed beside the file. Used here to open it, and not kept.'));
+}
+function atWizMade(box) {
+  var w = AT.wiz;
+  box.appendChild(el('p', 'note', 'Step 2 of 3 - isemon makes an authority of its own and a certificate from it. Afterwards its authority is shown, to paste into acme.'));
+  var area = noI18n(rbArea(w.names, 'isemon.example.net\n192.0.2.10'));
+  area.rows = 4;
+  area.oninput = function () { w.names = area.value; };
+  box.appendChild(wrField('The names', area, 'The names and addresses acme\'s nodes reach this machine by - "isemon\'s address" in acme\'s wizard - one per line.'));
+}
+function atWizGiven(box) {
+  var w = AT.wiz;
+  box.appendChild(el('p', 'note', 'Step 2 of 3 - a certificate from your own CA or a public one, with the names acme\'s nodes reach this machine by.'));
+  box.appendChild(atPemField('The certificate', w.cert, '-----BEGIN CERTIFICATE-----\n…\n-----END CERTIFICATE-----', '', function (v) { w.cert = v; }));
+  box.appendChild(atPemField('Its key', w.key, '-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----', 'Without a passphrase. It goes to root once and is kept only in rsyslog\'s folder.', function (v) { w.key = v; }));
+  box.appendChild(atPemField('The chain', w.chain, '-----BEGIN CERTIFICATE-----\n…\n-----END CERTIFICATE-----', 'Optional: the intermediate certificates between it and the root.', function (v) { w.chain = v; }));
+}
+function atWizSettings(box) {
+  var w = AT.wiz;
+  box.appendChild(el('p', 'note', 'Step 3 of 3 - which of acme\'s nodes may send, and on which port. The plain input on 514 stays as it is.'));
+  atSettings(box, w, w.src !== 'acme', 'Needed with mutual TLS: ca.pem from the file acme made - acme\'s own authority.');
+}
+/* ==========================================================================
+   The acme tab (1.10.287)
+   --------------------------------------------------------------------------
+   What acme - the certificate manager - sent here, read from its logs
+   (Settings → The acme logs): every certificate as it stands, when each runs
+   out, where it went, what failed, day by day, its targets and its nodes,
+   and every line it sent. There only while the logs are read. Nothing here
+   is ever judged; nothing here changes anything in acme.
+   ========================================================================== */
+var AM = {days: 30, d: null, state: '', text: '', ev: null, evq: {}, timer: null, asked: 0};
+var AM_STATE = {
+  ok: ['Fine', 'ok', 'check'],
+  expiring: ['Runs out soon', 'warn', 'clock'],
+  failing: ['Renewal failing', 'crit', 'cancel'],
+  deploy_failed: ['Not deployed', 'crit', 'cancel'],
+  expired: ['Run out', 'crit', 'ban'],
+  revoked: ['Revoked', 'dim', 'forget'],
+  deleted: ['Deleted', 'dim', 'trash']
+};
+var AM_ACTION = {issued: 'issued', renewed: 'renewed', renew: 'renewal failed', deployed: 'deployed',
+                 deploy: 'deployment failed', expiring: 'runs out soon', expired: 'ran out',
+                 revoked: 'revoked', added: 'added', changed: 'changed', deleted: 'deleted',
+                 imported: 'imported'};
+var AM_SERIES = [['issued', 'Issued and renewed', 'var(--info)'], ['deployed', 'Deployed', 'var(--ok)'],
+                 ['warn', 'Warnings', 'var(--warn)'], ['failed', 'Failures', 'var(--crit)'],
+                 ['other', 'Everything else', 'var(--tx-mut)']];
+var SVGNS = 'http://www.w3.org/2000/svg';
+function amSvg(kind, attrs) {
+  var n = document.createElementNS(SVGNS, kind);
+  Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+  return n;
+}
+function amDays(c) { return c.days_left === null || c.days_left === undefined ? null : c.days_left; }
+function amDaysWords(days) {
+  if (days === null) return 'not known';
+  var d = Math.floor(days);
+  if (days < 0) return Math.ceil(-days) === 1 ? 'ran out a day ago' : 'ran out ' + Math.ceil(-days) + ' days ago';
+  if (d === 0) return 'today';
+  return d === 1 ? 'in 1 day' : 'in ' + d + ' days';
+}
+function amTone(days) {
+  if (days === null) return 'dim';
+  if (days < 0 || days <= 7) return 'crit';
+  if (days <= (AM.d && AM.d.soon_days || 30)) return 'warn';
+  return 'ok';
+}
+function amStateTag(state) {
+  var s = AM_STATE[state] || [state, 'dim'];
+  return el('span', 'am-state ' + s[1], s[0]);
+}
+/* One tooltip for every mark on the tab: what is under the pointer. */
+function amTip() {
+  var t = $('am-tip');
+  if (!t) {
+    t = el('div', 'am-tip');
+    t.id = 'am-tip';
+    t.hidden = true;
+    document.body.appendChild(t);
+  }
+  return t;
+}
+function amHover(node, lines) {
+  node.addEventListener('mousemove', function (ev) {
+    var t = amTip();
+    clear(t);
+    lines().forEach(function (l, i) {
+      var row = el('div', i ? 'am-tip-row' : 'am-tip-head');
+      if (l.color) {
+        var sw = el('span', 'am-sw');
+        sw.style.background = l.color;
+        row.appendChild(sw);
+      }
+      row.appendChild(noI18n(el('span', '', l.text)));
+      if (l.value !== undefined) row.appendChild(noI18n(el('b', '', String(l.value))));
+      t.appendChild(row);
+    });
+    t.hidden = false;
+    var x = ev.clientX + 14, y = ev.clientY + 14;
+    var w = t.offsetWidth, h = t.offsetHeight;
+    if (x + w > window.innerWidth - 8) x = ev.clientX - w - 14;
+    if (y + h > window.innerHeight - 8) y = ev.clientY - h - 14;
+    t.style.left = Math.max(8, x) + 'px';
+    t.style.top = Math.max(8, y) + 'px';
+  });
+  node.addEventListener('mouseleave', function () { amTip().hidden = true; });
+}
+
+function loadAcmeLog(quiet) {
+  if (!$('am-host')) return;
+  AM.asked = Date.now();
+  api('acmelog&days=' + AM.days, undefined, {quiet: !!quiet}).then(function (d) {
+    AM.d = d;
+    drawAcmeLog();
+    if (!AM.ev) amEvents(true);
+  }).catch(function (e) { if (!quiet) oops(e); });
+  if (!AM.timer) {
+    AM.timer = setInterval(function () {
+      if (TAB !== 'acmelog' || document.hidden) return;
+      if (Date.now() - AM.asked > 60000) { loadAcmeLog(true); amEvents(true, true); }
+    }, 5000);
+  }
+}
+
+function drawAcmeLog() {
+  var host = $('am-host');
+  var d = AM.d;
+  if (!host || !d) return;
+  clear(host);
+  if (!d.on) {
+    host.appendChild(el('p', 'note', 'acme’s logs are not read: Settings → The acme logs.'));
+    return;
+  }
+  host.appendChild(amHead(d));
+  if (!d.total) {
+    var empty = el('div', 'card full am-empty');
+    empty.appendChild(el('h2', '', 'Nothing from acme yet'));
+    empty.appendChild(el('p', 'note', 'The logs are read, and not one line of acme’s has been found in them. In acme: Settings → isemon - isemon=1, this machine in isemon_targets - then Send a test line. The Logs tab says whether the files are there and readable.'));
+    host.appendChild(empty);
+    return;
+  }
+  host.appendChild(amKpis(d));
+  var attention = (d.certs || []).filter(function (c) {
+    return c.state === 'expired' || c.state === 'failing' || c.state === 'deploy_failed' || c.state === 'expiring';
+  });
+  if (attention.length) host.appendChild(amAttention(attention));
+  host.appendChild(amCertsCard(d));
+  var two = el('div', 'grid halves am-two');
+  two.appendChild(amRunway(d));
+  two.appendChild(amActivity(d));
+  host.appendChild(two);
+  var three = el('div', 'grid halves am-two');
+  three.appendChild(amTargets(d));
+  three.appendChild(amNodes(d));
+  host.appendChild(three);
+  var four = el('div', 'grid halves am-two');
+  four.appendChild(amFailures(d));
+  four.appendChild(amKinds(d));
+  host.appendChild(four);
+  host.appendChild(amEventsCard());
+  amDrawEvents();
+  explainWhatWasDrawn(host);
+}
+
+function amHead(d) {
+  var head = el('div', 'card full am-head');
+  var left = el('div', 'am-head-l');
+  var title = el('div', 'am-title');
+  var ic = el('span', 'am-logo');
+  ic.innerHTML = iconMarkup('lock', 22);
+  title.appendChild(ic);
+  var words = el('div', '');
+  words.appendChild(el('h2', '', 'acme - the certificate manager'));
+  var nodes = (d.nodes || []).map(function (n) { return n.node; });
+  var sub = el('div', 'am-sub');
+  sub.appendChild(noI18n(el('span', '', num((d.kpi || {}).certs || 0) + ' certificates · ' + num((d.kpi || {}).targets || 0) + ' targets · '
+    + (nodes.length ? 'nodes ' + nodes.join(', ') : 'no node named yet'))));
+  if (d.last_ts) {
+    sub.appendChild(document.createTextNode(' · '));
+    var last = el('span', 'am-live' + (Date.now() / 1000 - d.last_ts < 86400 ? ' on' : ''), 'last line ' + ago(d.last_ts));
+    last.title = stamp(d.last_ts);
+    sub.appendChild(last);
+  }
+  words.appendChild(sub);
+  title.appendChild(words);
+  left.appendChild(title);
+  head.appendChild(left);
+  var right = el('div', 'am-head-r');
+  var seg = el('div', 'seg');
+  [[7, '7 days'], [30, '30 days'], [90, '90 days'], [365, 'a year']].forEach(function (p) {
+    var b = el('button', p[0] === AM.days ? 'on' : '', p[1]);
+    b.type = 'button';
+    b.title = 'What acme did over the last ' + p[1] + ': the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen.';
+    b.onclick = function () { AM.days = p[0]; loadAcmeLog(); };
+    seg.appendChild(b);
+  });
+  right.appendChild(seg);
+  var again = cmdButton('Read again', 'refresh', 'small');
+  again.onclick = function () { busy(again, true); loadAcmeLog(); amEvents(true); };
+  right.appendChild(again);
+  head.appendChild(right);
+  return head;
+}
+
+function amKpis(d) {
+  var k = d.kpi || {}, s = d.sums || {};
+  var grid = el('div', 'grid top am-kpis');
+  var soonest = (d.certs || []).filter(function (c) { return c.state === 'expiring'; })
+    .sort(function (a, b) { return (a.not_after || 0) - (b.not_after || 0); })[0];
+  var gone = (d.certs || []).filter(function (c) { return c.state === 'expired'; }).map(function (c) { return c.cert; });
+  var cards = [
+    ['Certificates', k.certs, 'info', 'shield', num(k.ok || 0) + ' fine · ' + num((k.certs || 0) - (k.ok || 0) - (k.revoked || 0)) + ' to look at', ''],
+    ['Run out within ' + (d.soon_days || 30) + ' days', k.expiring, k.expiring ? 'warn' : 'ok', 'clock',
+     soonest ? soonest.cert + ' ' + amDaysWords(amDays(soonest)) : 'none', 'expiring'],
+    ['Run out', k.expired, k.expired ? 'crit' : 'ok', 'ban', gone.length ? gone.slice(0, 3).join(', ') + (gone.length > 3 ? ' …' : '') : 'none', 'expired'],
+    ['Failing', k.failing, k.failing ? 'crit' : 'ok', 'cancel',
+     num(s.renew_failed || 0) + ' renewals and ' + num(s.deploy_failed || 0) + ' deployments failed', 'failing'],
+    ['Issued and renewed', s.issued, 'info', 'refresh', 'in the last ' + amPeriod(), ''],
+    ['Deployed', s.deployed, 'ok', 'upload', 'to the targets, in the last ' + amPeriod(), '']
+  ];
+  cards.forEach(function (c) {
+    var card = el('div', 'card metric am-kpi ' + c[2]);
+    var lab = el('div', 'label');
+    var ic = el('span', 'am-kpi-ic');
+    ic.innerHTML = iconMarkup(c[3], 15);
+    lab.appendChild(ic);
+    lab.appendChild(el('span', '', c[0]));
+    card.appendChild(lab);
+    card.appendChild(noI18n(el('div', 'value', num(c[1] || 0))));
+    card.appendChild(noI18n(el('div', 'sub', c[4])));
+    if (c[5]) {
+      card.classList.add('tappable');
+      card.tabIndex = 0;
+      card.title = 'Show these certificates only';
+      card.onclick = function () { AM.state = AM.state === c[5] ? '' : c[5]; drawAcmeLog(); var t = $('am-certs'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'}); };
+    }
+    grid.appendChild(card);
+  });
+  return grid;
+}
+function amPeriod() {
+  return {7: '7 days', 30: '30 days', 90: '90 days', 365: 'year'}[AM.days] || AM.days + ' days';
+}
+
+function amAttention(list) {
+  var card = el('div', 'card full am-attn');
+  var h = el('h2', '', 'Wants looking at');
+  h.appendChild(el('span', 'n', String(list.length)));
+  card.appendChild(h);
+  var box = el('div', 'am-attn-list');
+  list.forEach(function (c) {
+    var row = el('button', 'am-attn-row ' + ((AM_STATE[c.state] || [])[1] || ''));
+    row.type = 'button';
+    var ic = el('span', 'am-attn-ic');
+    ic.innerHTML = iconMarkup((AM_STATE[c.state] || [])[2] || 'info', 16);
+    row.appendChild(ic);
+    var mid = el('span', 'am-attn-mid');
+    var top = el('span', 'am-attn-top');
+    top.appendChild(noI18n(el('b', '', c.cert)));
+    top.appendChild(amStateTag(c.state));
+    mid.appendChild(top);
+    var why = c.state === 'failing' ? (c.failed_msg || 'the last renewal failed')
+      : (c.state === 'deploy_failed' ? 'not on ' + (c.targets || []).filter(function (t) { return !t.ok; }).map(function (t) { return t.target; }).join(', ')
+        : (c.names || ''));
+    mid.appendChild(noI18n(el('span', 'am-attn-why', why)));
+    row.appendChild(mid);
+    var days = amDays(c);
+    row.appendChild(el('span', 'am-attn-days ' + amTone(days), amDaysWords(days)));
+    row.onclick = function () { amCert(c); };
+    box.appendChild(row);
+  });
+  card.appendChild(box);
+  return card;
+}
+
+function amCertsCard(d) {
+  var card = el('div', 'card full');
+  card.id = 'am-certs';
+  var h = el('h2', '', 'Certificates');
+  h.appendChild(el('span', 'right', 'each as its last line says it is'));
+  card.appendChild(h);
+  /* What they add up to, as one bar. */
+  var states = d.states || {};
+  var total = Object.keys(states).reduce(function (a, k) { return k === 'deleted' ? a : a + states[k]; }, 0);
+  if (total) {
+    var bar = el('div', 'am-mix');
+    ['ok', 'expiring', 'failing', 'deploy_failed', 'expired', 'revoked'].forEach(function (k) {
+      if (!states[k]) return;
+      var part = el('span', 'am-mix-part ' + AM_STATE[k][1]);
+      part.style.flexGrow = states[k];
+      amHover(part, function () { return [{text: AM_STATE[k][0]}, {text: 'certificates', value: states[k]}]; });
+      bar.appendChild(part);
+    });
+    card.appendChild(bar);
+    var legend = el('div', 'am-legend');
+    ['ok', 'expiring', 'failing', 'deploy_failed', 'expired', 'revoked'].forEach(function (k) {
+      if (!states[k]) return;
+      var it = el('span', 'am-legend-it');
+      it.appendChild(el('span', 'am-sw ' + AM_STATE[k][1]));
+      it.appendChild(el('span', '', AM_STATE[k][0]));
+      it.appendChild(noI18n(el('b', '', num(states[k]))));
+      legend.appendChild(it);
+    });
+    card.appendChild(legend);
+  }
+  /* What is shown. */
+  var tools = el('div', 'am-tools');
+  var find = el('input', 'am-find');
+  find.type = 'search';
+  find.placeholder = 'Find a certificate, a name, a serial, a target…';
+  find.value = AM.text;
+  find.oninput = function () { AM.text = find.value; amFillCerts(); };
+  tools.appendChild(find);
+  var chips = el('div', 'am-chips');
+  [['', 'All'], ['look', 'To look at'], ['expiring', 'Runs out soon'], ['expired', 'Run out'],
+   ['failing', 'Failing'], ['ok', 'Fine'], ['deleted', 'Deleted']].forEach(function (c) {
+    var b = el('button', 'chip' + (AM.state === c[0] ? ' on' : ''), c[1]);
+    b.type = 'button';
+    b.onclick = function () { AM.state = c[0]; Array.prototype.forEach.call(chips.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); amFillCerts(); };
+    chips.appendChild(b);
+  });
+  tools.appendChild(chips);
+  card.appendChild(tools);
+  var box = el('div', 'am-certs-box');
+  box.id = 'am-certs-box';
+  card.appendChild(box);
+  setTimeout(amFillCerts, 0);
+  return card;
+}
+function amCertShown(c) {
+  var st = AM.state;
+  if (st === 'look' && !(c.state === 'expired' || c.state === 'failing' || c.state === 'deploy_failed' || c.state === 'expiring')) return false;
+  if (st === 'failing' && !(c.state === 'failing' || c.state === 'deploy_failed')) return false;
+  if (st && st !== 'look' && st !== 'failing' && c.state !== st) return false;
+  if (!st && c.state === 'deleted') return false;
+  var q = AM.text.trim().toLowerCase();
+  if (!q) return true;
+  var hay = [c.cert, c.names, c.serial, c.issuer, c.node].concat((c.targets || []).map(function (t) { return t.target; }))
+    .join(' ').toLowerCase();
+  return hay.indexOf(q) >= 0;
+}
+function amFillCerts() {
+  var box = $('am-certs-box');
+  if (!box || !AM.d) return;
+  clear(box);
+  var rows = (AM.d.certs || []).filter(amCertShown);
+  if (!rows.length) {
+    box.appendChild(el('p', 'note', 'No certificate is like that.'));
+    return;
+  }
+  var soon = AM.d.soon_days || 30;
+  box.appendChild(listTable(['State', 'Certificate', 'Runs out', 'Issued by', 'Serial', 'Targets', 'Last'], rows, function (c) {
+    var tr = el('tr', 'am-row tappable');
+    tr.tabIndex = 0;
+    tr.onclick = function () { amCert(c); };
+    tr.onkeydown = function (ev) { if (ev.key === 'Enter') amCert(c); };
+    var st = el('td', '');
+    st.appendChild(amStateTag(c.state));
+    tr.appendChild(st);
+    var nm = el('td', 'am-name');
+    nm.appendChild(noI18n(el('b', '', c.cert)));
+    if (c.names) {
+      var ns = el('div', 'namesrow');
+      String(c.names).split(',').slice(0, 4).forEach(function (n) { ns.appendChild(noI18n(el('span', 'tag namepill', n.trim()))); });
+      var more = String(c.names).split(',').length - 4;
+      if (more > 0) ns.appendChild(el('span', 'small muted', '+' + more));
+      nm.appendChild(ns);
+    }
+    tr.appendChild(nm);
+    var days = amDays(c);
+    var td = el('td', 'am-left');
+    var gauge = el('div', 'am-gauge');
+    var fill = el('span', 'am-gauge-fill ' + amTone(days));
+    fill.style.width = (days === null ? 0 : Math.max(3, Math.min(100, days / Math.max(90, soon * 3) * 100))) + '%';
+    gauge.appendChild(fill);
+    td.appendChild(gauge);
+    var dl = el('div', 'am-left-words ' + amTone(days), amDaysWords(days));
+    td.appendChild(dl);
+    if (c.not_after) { var at = noI18n(el('div', 'small muted', stamp(c.not_after))); td.appendChild(at); }
+    tr.appendChild(td);
+    tr.appendChild(noI18n(el('td', 'small', c.issuer || '–')));
+    tr.appendChild(noI18n(el('td', 'mono small', c.serial || '–')));
+    var tg = el('td', '');
+    var tw = el('div', 'am-tchips');
+    (c.targets || []).forEach(function (t) {
+      var chip = el('span', 'am-tchip ' + (t.ok ? 'ok' : 'crit'));
+      chip.innerHTML = iconMarkup(t.ok ? 'check' : 'close', 12);
+      chip.appendChild(noI18n(el('span', '', t.target)));
+      amHover(chip, function () {
+        return [{text: t.target + (t.kind ? ' (' + t.kind + ')' : '')},
+                {text: t.ok ? 'deployed' : 'failed', value: ago(t.ts)},
+                {text: t.msg || ''}];
+      });
+      tw.appendChild(chip);
+    });
+    if (!(c.targets || []).length) tw.appendChild(el('span', 'small muted', 'none said'));
+    tg.appendChild(tw);
+    tr.appendChild(tg);
+    var last = el('td', 'small');
+    last.appendChild(el('div', '', AM_ACTION[c.last_action] || c.last_action || 'a line'));
+    var when = noI18n(el('div', 'muted', ago(c.last_ts)));
+    when.title = stamp(c.last_ts);
+    last.appendChild(when);
+    tr.appendChild(last);
+    return tr;
+  }, 'plain am-table'));
+}
+
+/* When each runs out, on one line of time: what has run out on the left of
+   today, what runs out soon in the band right of it. */
+function amRunway(d) {
+  var card = el('div', 'card');
+  var h = el('h2', '', 'When they run out');
+  card.appendChild(h);
+  var certs = (d.certs || []).filter(function (c) { return c.not_after && c.state !== 'deleted' && c.state !== 'revoked'; });
+  if (!certs.length) {
+    card.appendChild(el('p', 'note', 'acme has said the end of none of them yet: the not_after of a certificate comes with its issue, renewal and deployment lines.'));
+    return card;
+  }
+  var now = d.now || Date.now() / 1000;
+  var soon = d.soon_days || 30;
+  var dl = certs.map(function (c) { return (c.not_after - now) / 86400; });
+  var lo = Math.min(-14, Math.floor(Math.min.apply(null, dl) / 7) * 7 - 7);
+  var hi = Math.max(120, Math.ceil(Math.max.apply(null, dl) / 30) * 30);
+  hi = Math.min(hi, 800);
+  var W = 640, padL = 14, padR = 14, axisY = 0, rowH = 22;
+  var x = function (v) { return padL + (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * (W - padL - padR); };
+  /* Rows: a dot goes on the first row where it does not touch another. */
+  var placed = [];
+  var sorted = certs.map(function (c, i) { return {c: c, v: dl[i]}; }).sort(function (a, b) { return a.v - b.v; });
+  sorted.forEach(function (p) {
+    var px = x(p.v), row = 0;
+    while (placed.some(function (q) { return q.row === row && Math.abs(q.px - px) < 70; })) row++;
+    placed.push({c: p.c, v: p.v, px: px, row: row});
+  });
+  var rows = Math.max(1, Math.max.apply(null, placed.map(function (p) { return p.row; })) + 1);
+  axisY = 22 + rows * rowH;
+  var H = axisY + 30;
+  var svg = amSvg('svg', {viewBox: '0 0 ' + W + ' ' + H, 'class': 'am-runway', role: 'img',
+                          'aria-label': 'When each certificate runs out'});
+  svg.appendChild(amSvg('rect', {x: x(lo), y: 10, width: x(0) - x(lo), height: axisY - 10, 'class': 'am-zone-gone'}));
+  svg.appendChild(amSvg('rect', {x: x(0), y: 10, width: x(soon) - x(0), height: axisY - 10, 'class': 'am-zone-soon'}));
+  for (var t = Math.ceil(lo / 30) * 30; t <= hi; t += (hi - lo > 300 ? 90 : 30)) {
+    svg.appendChild(amSvg('line', {x1: x(t), x2: x(t), y1: 10, y2: axisY, 'class': 'am-grid'}));
+    var lab = amSvg('text', {x: x(t), y: axisY + 16, 'class': 'am-axis',
+                             'text-anchor': x(t) > W - 40 ? 'end' : (x(t) < 40 ? 'start' : 'middle')});
+    lab.textContent = t === 0 ? 'today' : (t > 0 ? '+' + t + ' d' : t + ' d');
+    svg.appendChild(lab);
+  }
+  svg.appendChild(amSvg('line', {x1: x(0), x2: x(0), y1: 6, y2: axisY + 4, 'class': 'am-today'}));
+  svg.appendChild(amSvg('line', {x1: padL, x2: W - padR, y1: axisY, y2: axisY, 'class': 'am-base'}));
+  placed.forEach(function (p) {
+    var cy = 22 + p.row * rowH + rowH / 2 - 4;
+    var g = amSvg('g', {'class': 'am-dot ' + amTone(p.v), tabindex: '0'});
+    g.appendChild(amSvg('line', {x1: p.px, x2: p.px, y1: cy, y2: axisY, 'class': 'am-stem'}));
+    g.appendChild(amSvg('circle', {cx: p.px, cy: cy, r: 5.5}));
+    var tx = amSvg('text', {x: p.px + 9, y: cy + 4, 'class': 'am-dot-label'});
+    tx.textContent = p.c.cert;
+    g.appendChild(tx);
+    g.appendChild(amSvg('circle', {cx: p.px, cy: cy, r: 13, 'class': 'am-hit'}));
+    amHover(g, function () {
+      return [{text: p.c.cert}, {text: stamp(p.c.not_after)}, {text: amDaysWords(p.v)},
+              {text: (AM_STATE[p.c.state] || [p.c.state])[0]}];
+    });
+    g.addEventListener('click', function () { amCert(p.c); });
+    svg.appendChild(g);
+  });
+  var wrap = el('div', 'am-chart');
+  wrap.appendChild(svg);
+  card.appendChild(wrap);
+  var legend = el('div', 'am-legend');
+  [['crit', 'run out, or within 7 days'], ['warn', 'within ' + soon + ' days'], ['ok', 'later']].forEach(function (l) {
+    var it = el('span', 'am-legend-it');
+    it.appendChild(el('span', 'am-sw round ' + l[0]));
+    it.appendChild(el('span', '', l[1]));
+    legend.appendChild(it);
+  });
+  card.appendChild(legend);
+  /* ...and the next ones, in words. */
+  card.appendChild(el('h4', '', 'Next to run out'));
+  var next = el('div', 'am-next');
+  sorted.filter(function (p) { return p.v >= 0; }).slice(0, 5).forEach(function (p) {
+    var row = el('button', 'am-next-row');
+    row.type = 'button';
+    row.appendChild(el('span', 'am-sw round ' + amTone(p.v)));
+    row.appendChild(noI18n(el('b', '', p.c.cert)));
+    row.appendChild(noI18n(el('span', 'muted small am-next-n', p.c.names || '')));
+    row.appendChild(el('span', 'am-left-words ' + amTone(p.v), amDaysWords(p.v)));
+    row.onclick = function () { amCert(p.c); };
+    next.appendChild(row);
+  });
+  card.appendChild(next);
+  return card;
+}
+
+/* Day by day, what acme did: stacked, one bar a day. */
+function amActivity(d) {
+  var card = el('div', 'card');
+  var h = el('h2', '', 'What acme did, day by day');
+  h.appendChild(noI18n(el('span', 'right', num((d.sums || {}).events || 0) + ' lines')));
+  card.appendChild(h);
+  var days = d.activity || [];
+  if (!days.length) return card;
+  var W = 640, H = 210, padL = 34, padR = 6, padT = 10, padB = 26;
+  var max = 1;
+  days.forEach(function (b) {
+    var t = AM_SERIES.reduce(function (a, s) { return a + (b[s[0]] || 0); }, 0);
+    if (t > max) max = t;
+  });
+  var step = max <= 4 ? 1 : Math.ceil(max / 4 / Math.pow(10, Math.floor(Math.log10(max / 4)))) * Math.pow(10, Math.floor(Math.log10(max / 4)));
+  var top = Math.ceil(max / step) * step;
+  var y = function (v) { return padT + (1 - v / top) * (H - padT - padB); };
+  var svg = amSvg('svg', {viewBox: '0 0 ' + W + ' ' + H, 'class': 'am-bars', role: 'img',
+                          'aria-label': 'What acme did, day by day'});
+  for (var g = 0; g <= top; g += step) {
+    svg.appendChild(amSvg('line', {x1: padL, x2: W - padR, y1: y(g), y2: y(g), 'class': g ? 'am-grid' : 'am-base'}));
+    var lab = amSvg('text', {x: padL - 6, y: y(g) + 4, 'class': 'am-axis', 'text-anchor': 'end'});
+    lab.textContent = num(g);
+    svg.appendChild(lab);
+  }
+  var slot = (W - padL - padR) / days.length;
+  var bw = Math.max(2, Math.min(22, slot - (slot > 8 ? 3 : 1)));
+  var every = Math.ceil(days.length / 8);
+  days.forEach(function (b, i) {
+    var cx = padL + slot * i + slot / 2;
+    var base = 0;
+    var col = amSvg('g', {'class': 'am-col'});
+    var parts = AM_SERIES.filter(function (s) { return b[s[0]]; });
+    parts.forEach(function (s, j) {
+      var v = b[s[0]];
+      var y1 = y(base + v), y0 = y(base);
+      var hgt = Math.max(1, y0 - y1 - (j ? 2 : 0));
+      var last = j === parts.length - 1;
+      var r = last ? Math.min(3, bw / 2, hgt / 2) : 0;
+      var top0 = y1;
+      var path = 'M' + (cx - bw / 2) + ',' + (top0 + hgt) + ' V' + (top0 + r)
+        + (r ? ' Q' + (cx - bw / 2) + ',' + top0 + ' ' + (cx - bw / 2 + r) + ',' + top0 : '')
+        + ' H' + (cx + bw / 2 - r)
+        + (r ? ' Q' + (cx + bw / 2) + ',' + top0 + ' ' + (cx + bw / 2) + ',' + (top0 + r) : '')
+        + ' V' + (top0 + hgt) + ' Z';
+      col.appendChild(amSvg('path', {d: path, fill: s[2], 'class': 'am-seg am-seg-' + s[0]}));
+      base += v;
+    });
+    col.appendChild(amSvg('rect', {x: cx - slot / 2, y: padT, width: slot, height: H - padT - padB, 'class': 'am-hit'}));
+    amHover(col, function () {
+      var out = [{text: new Date(b.day * 1000).toLocaleDateString(numLang(), {weekday: 'short', day: 'numeric', month: 'short'})}];
+      AM_SERIES.forEach(function (s) { if (b[s[0]]) out.push({text: s[1], value: num(b[s[0]]), color: s[2]}); });
+      if (out.length === 1) out.push({text: 'nothing'});
+      return out;
+    });
+    svg.appendChild(col);
+    if (i % every === 0) {
+      var t = amSvg('text', {x: cx, y: H - 8, 'class': 'am-axis', 'text-anchor': 'middle'});
+      t.textContent = new Date(b.day * 1000).toLocaleDateString(numLang(), {day: 'numeric', month: 'numeric'});
+      svg.appendChild(t);
+    }
+  });
+  var wrap = el('div', 'am-chart');
+  wrap.appendChild(svg);
+  card.appendChild(wrap);
+  var legend = el('div', 'am-legend');
+  AM_SERIES.forEach(function (s) {
+    var it = el('span', 'am-legend-it');
+    var sw = el('span', 'am-sw');
+    sw.style.background = s[2];
+    it.appendChild(sw);
+    it.appendChild(el('span', '', s[1]));
+    legend.appendChild(it);
+  });
+  card.appendChild(legend);
+  return card;
+}
+
+function amTargets(d) {
+  var card = el('div', 'card');
+  card.appendChild(el('h2', '', 'Targets'));
+  var list = d.targets || [];
+  if (!list.length) {
+    card.appendChild(el('p', 'note', 'No deployment yet: a target - an F5, a FortiGate, a server - is named on the line that says a certificate went to it.'));
+    return card;
+  }
+  var grid = el('div', 'am-tiles');
+  list.forEach(function (t) {
+    var tile = el('div', 'am-tile ' + (t.failed ? 'crit' : 'ok'));
+    var top = el('div', 'am-tile-top');
+    top.appendChild(noI18n(el('b', '', t.target)));
+    if (t.kind) top.appendChild(noI18n(el('span', 'tag', t.kind)));
+    tile.appendChild(top);
+    var line = el('div', 'am-tile-line');
+    line.appendChild(noI18n(el('span', 'am-big', num(t.certs))));
+    line.appendChild(el('span', 'muted', t.certs === 1 ? 'certificate' : 'certificates'));
+    tile.appendChild(line);
+    var st = el('div', 'small ' + (t.failed ? 'am-bad' : 'am-good'),
+      t.failed ? num(t.failed) + ' not deployed: ' + t.failing.join(', ') : 'every one deployed');
+    tile.appendChild(st);
+    if (t.last_ts) tile.appendChild(noI18n(el('div', 'small muted', 'last ' + ago(t.last_ts))));
+    grid.appendChild(tile);
+  });
+  card.appendChild(grid);
+  return card;
+}
+
+function amNodes(d) {
+  var card = el('div', 'card');
+  card.appendChild(el('h2', '', 'acme’s nodes'));
+  var list = d.nodes || [];
+  if (!list.length) {
+    card.appendChild(el('p', 'note', 'No node has said its name yet.'));
+    return card;
+  }
+  var grid = el('div', 'am-tiles');
+  var now = Date.now() / 1000;
+  list.forEach(function (n) {
+    var fresh = now - n.last_ts < 86400;
+    var tile = el('div', 'am-tile ' + (fresh ? 'ok' : 'warn'));
+    var top = el('div', 'am-tile-top');
+    top.appendChild(el('span', 'am-dotc ' + (fresh ? 'ok' : 'warn')));
+    top.appendChild(noI18n(el('b', '', n.node)));
+    if (!n.events_on) top.appendChild(el('span', 'tag', 'certificates only'));
+    tile.appendChild(top);
+    var line = el('div', 'am-tile-line');
+    line.appendChild(noI18n(el('span', 'am-big', num(n.in_period))));
+    line.appendChild(el('span', 'muted', 'lines in the last ' + amPeriod()));
+    tile.appendChild(line);
+    tile.appendChild(noI18n(el('div', 'small muted', 'last line ' + ago(n.last_ts))));
+    if (n.last_bad) {
+      var bad = noI18n(el('div', 'small am-bad', 'last trouble ' + ago(n.last_bad.ts) + ': ' + (n.last_bad.msg || '')));
+      tile.appendChild(bad);
+    }
+    grid.appendChild(tile);
+  });
+  card.appendChild(grid);
+  card.appendChild(el('p', 'btnhelp', '“certificates only”: nothing but acme-certs came from that node this week - isemon_events is off there.'));
+  return card;
+}
+
+function amFailures(d) {
+  var card = el('div', 'card');
+  var h = el('h2', '', 'What went wrong');
+  h.appendChild(noI18n(el('span', 'right', 'in the last ' + amPeriod())));
+  card.appendChild(h);
+  var list = d.failures || [];
+  if (!list.length) {
+    var ok = el('div', 'am-allgood');
+    ok.innerHTML = iconMarkup('check', 22);
+    ok.appendChild(el('span', '', 'Nothing failed.'));
+    card.appendChild(ok);
+    return card;
+  }
+  var box = el('div', 'am-fails');
+  list.slice(0, 30).forEach(function (r) {
+    var row = el('button', 'am-fail');
+    row.type = 'button';
+    var top = el('div', 'am-fail-top');
+    top.appendChild(el('span', 'tag ' + (r.level === 'bad' ? 'crit' : 'warn'), AM_ACTION[r.action] || r.kind || 'trouble'));
+    if (r.cert) top.appendChild(noI18n(el('b', '', r.cert)));
+    if (r.target) top.appendChild(noI18n(el('span', 'muted', '→ ' + r.target)));
+    var when = noI18n(el('span', 'am-fail-when', ago(r.ts)));
+    when.title = stamp(r.ts);
+    top.appendChild(when);
+    row.appendChild(top);
+    row.appendChild(noI18n(el('div', 'am-fail-msg', r.msg || '')));
+    row.appendChild(noI18n(el('div', 'small muted', (r.node || '') + (r.who && r.who !== 'acme' ? ' · ' + r.who : ''))));
+    row.onclick = function () { amLine(r); };
+    box.appendChild(row);
+  });
+  card.appendChild(box);
+  return card;
+}
+
+function amKinds(d) {
+  var card = el('div', 'card');
+  card.appendChild(el('h2', '', 'Everything acme sent'));
+  var kinds = d.kinds || [];
+  if (!kinds.length) {
+    card.appendChild(el('p', 'note', 'Nothing in the last ' + amPeriod() + '.'));
+    return card;
+  }
+  var max = kinds[0].n || 1;
+  var bars = el('div', 'am-hbars');
+  kinds.slice(0, 10).forEach(function (k) {
+    var row = el('button', 'am-hbar');
+    row.type = 'button';
+    row.title = 'Show these lines';
+    row.appendChild(noI18n(el('span', 'am-hbar-k', k.kind)));
+    var track = el('span', 'am-hbar-t');
+    var fill = el('span', 'am-hbar-f');
+    fill.style.width = Math.max(2, k.n / max * 100) + '%';
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(noI18n(el('b', '', num(k.n))));
+    row.onclick = function () { AM.evq = {kind: k.kind === 'test' ? '' : k.kind}; amEvents(true); var c = $('am-events'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); };
+    bars.appendChild(row);
+  });
+  card.appendChild(bars);
+  if ((d.who || []).length) {
+    card.appendChild(el('h4', '', 'Who did it'));
+    var who = el('div', 'am-who');
+    d.who.forEach(function (w) {
+      var chip = el('button', 'chip');
+      chip.type = 'button';
+      chip.appendChild(noI18n(el('span', '', w.who)));
+      chip.appendChild(noI18n(el('b', '', ' ' + num(w.n))));
+      chip.onclick = function () { AM.evq = {who: w.who}; amEvents(true); var c = $('am-events'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); };
+      who.appendChild(chip);
+    });
+    card.appendChild(who);
+  }
+  return card;
+}
+
+/* ---- every line acme sent, newest first ----------------------------------- */
+function amEventsCard() {
+  var card = el('div', 'card full');
+  card.id = 'am-events';
+  var h = el('h2', '', 'Every line acme sent');
+  card.appendChild(h);
+  var f = el('div', 'am-tools');
+  var q = el('input', 'am-find');
+  q.type = 'search';
+  q.placeholder = 'Find in the lines…';
+  q.value = AM.evq.q || '';
+  var t = null;
+  q.oninput = function () { clearTimeout(t); t = setTimeout(function () { AM.evq.q = q.value; amEvents(true); }, 350); };
+  f.appendChild(q);
+  var facets = (AM.ev && AM.ev.facets) || {};
+  var sel = function (key, words, values, nice) {
+    var s = el('select', 'am-sel');
+    var o = el('option', '', words);
+    o.value = '';
+    s.appendChild(o);
+    (values || []).forEach(function (v) {
+      var op = noI18n(el('option', '', nice ? nice(v) : v));
+      op.value = v;
+      if (AM.evq[key] === v) op.selected = true;
+      s.appendChild(op);
+    });
+    s.onchange = function () { AM.evq[key] = s.value; amEvents(true); };
+    return s;
+  };
+  f.appendChild(sel('tag', 'Both logs', facets.tag, function (v) { return v === 'acme-certs' ? 'certificates (acme-certs)' : 'the rest (acme)'; }));
+  f.appendChild(sel('level', 'Any level', facets.level));
+  f.appendChild(sel('kind', 'Any kind', facets.kind));
+  f.appendChild(sel('node', 'Any node', facets.node));
+  f.appendChild(sel('action', 'Any action', facets.action, function (v) { return AM_ACTION[v] || v; }));
+  var any = Object.keys(AM.evq).some(function (k) { return AM.evq[k]; });
+  if (any) {
+    var clr = cmdButton('Clear', 'close', 'small');
+    clr.onclick = function () { AM.evq = {}; amEvents(true); };
+    f.appendChild(clr);
+  }
+  card.appendChild(f);
+  var box = el('div', '');
+  box.id = 'am-ev-box';
+  card.appendChild(box);
+  return card;
+}
+function amEvents(fresh, quiet) {
+  var q = [];
+  Object.keys(AM.evq).forEach(function (k) { if (AM.evq[k]) q.push(encodeURIComponent(k) + '=' + encodeURIComponent(AM.evq[k])); });
+  var more = !fresh && AM.ev && AM.ev.rows.length ? AM.ev.rows[AM.ev.rows.length - 1].ts : 0;
+  if (more) q.push('before=' + more);
+  q.push('limit=100');
+  api('acmelog-events&' + q.join('&'), undefined, {quiet: !!quiet}).then(function (d) {
+    if (!d.on) return;
+    if (more && AM.ev) {
+      var seen = {};
+      AM.ev.rows.forEach(function (r) { seen[r.ident] = 1; });
+      AM.ev.rows = AM.ev.rows.concat((d.rows || []).filter(function (r) { return !seen[r.ident]; }));
+      AM.ev.more = d.more;
+    } else {
+      AM.ev = d;
+    }
+    /* The filters come from what there is: drawn again when the card is. */
+    var card = $('am-events');
+    if (card && fresh) {
+      var fresh2 = amEventsCard();
+      card.parentNode.replaceChild(fresh2, card);
+    }
+    amDrawEvents();
+  }).catch(function (e) { if (!quiet) oops(e); });
+}
+function amDrawEvents() {
+  var box = $('am-ev-box');
+  if (!box) return;
+  clear(box);
+  var ev = AM.ev;
+  if (!ev) { box.appendChild(el('p', 'note', 'Reading…')); return; }
+  if (!ev.rows.length) { box.appendChild(el('p', 'note', 'No line is like that.')); return; }
+  box.appendChild(listTable(['When', 'Level', 'Node', 'Kind', 'Who', 'What', 'Message'], ev.rows, function (r) {
+    var tr = el('tr', 'am-row tappable');
+    tr.tabIndex = 0;
+    tr.onclick = function () { amLine(r); };
+    tr.onkeydown = function (e) { if (e.key === 'Enter') amLine(r); };
+    tr.appendChild(stampCell(r.ts));
+    var lv = el('td', '');
+    lv.appendChild(el('span', 'tag ' + ({bad: 'crit', warn: 'warn', info: 'dim'}[r.level] || 'dim'), r.raw ? 'text' : (r.level || 'info')));
+    tr.appendChild(lv);
+    tr.appendChild(noI18n(el('td', 'small', r.node || '–')));
+    tr.appendChild(noI18n(el('td', 'small', r.kind || (r.tag === 'acme-certs' ? 'certificates' : '–'))));
+    tr.appendChild(noI18n(el('td', 'small', r.who || '–')));
+    var what = el('td', 'small');
+    if (r.action) what.appendChild(el('span', '', AM_ACTION[r.action] || r.action));
+    if (r.cert) what.appendChild(noI18n(el('b', '', ' ' + r.cert)));
+    if (r.target) what.appendChild(noI18n(el('span', 'muted', ' → ' + r.target)));
+    if (!r.action && !r.cert) what.appendChild(el('span', 'muted', '–'));
+    tr.appendChild(what);
+    var msg = noI18n(el('td', 'am-msg', r.msg || ''));
+    if (r.truncated) msg.appendChild(el('span', 'tag', 'cut'));
+    tr.appendChild(msg);
+    return tr;
+  }, 'plain am-table'));
+  if (ev.more) {
+    var row = el('div', 'btnrow');
+    var b = cmdButton('Older lines', 'down', '');
+    b.onclick = function () { busy(b, true); amEvents(false); };
+    row.appendChild(b);
+    box.appendChild(row);
+  }
+}
+
+/* One line, whole: every field it carried. */
+function amLine(r) {
+  modal('A line of acme’s', function (body) {
+    var facts = [['When', stamp(r.ts)], ['Log', noI18n(el('span', 'mono', r.tag || ''))],
+                 ['Node', noI18n(el('span', '', r.node || r.host || ''))], ['Level', r.level || ''],
+                 ['Kind', noI18n(el('span', '', r.kind || ''))], ['Who', noI18n(el('span', '', r.who || ''))]];
+    [['action', 'Action'], ['result', 'Result'], ['cert', 'Certificate'], ['names', 'Names'],
+     ['serial', 'Serial'], ['issuer', 'Issued by'], ['version', 'Version'], ['target', 'Target'],
+     ['target_kind', 'Kind of target'], ['reason', 'Why']].forEach(function (k) {
+      if (r[k[0]]) facts.push([k[1], noI18n(el('span', k[0] === 'serial' ? 'mono' : '', String(r[k[0]])))]);
+    });
+    if (r.not_after) facts.push(['Valid until', stamp(r.not_after)]);
+    Object.keys(r.extra || {}).forEach(function (k) { facts.push([k, noI18n(el('span', 'mono', String(r.extra[k])))]); });
+    body.appendChild(netFacts(facts));
+    var m = el('div', 'am-line-msg');
+    m.appendChild(noI18n(el('span', '', r.msg || '')));
+    if (r.truncated) m.appendChild(el('p', 'btnhelp', 'acme cut this line at its length (…TRUNCATED).'));
+    if (r.raw) m.appendChild(el('p', 'btnhelp', 'Not key=value: a test from acme’s command line or its TLS wizard.'));
+    body.appendChild(m);
+    if (r.cert) {
+      var row = el('div', 'btnrow');
+      var go = cmdButton('This certificate', 'shield', '');
+      go.onclick = function () {
+        var c = ((AM.d || {}).certs || []).filter(function (x) { return x.cert === r.cert; })[0];
+        if (c) amCert(c);
+      };
+      row.appendChild(go);
+      body.appendChild(row);
+    }
+  }, [{words: 'Close', close: true}], 'medium');
+}
+
+/* One certificate, whole: as it stands, where it is, and what happened to it. */
+function amCert(c) {
+  modal(c.cert, function (body) {
+    var head = el('div', 'am-cert-head');
+    head.appendChild(amStateTag(c.state));
+    var days = amDays(c);
+    head.appendChild(el('span', 'am-left-words ' + amTone(days), amDaysWords(days)));
+    body.appendChild(head);
+    var facts = [['Names', noI18n(el('span', 'mono', c.names || '–'))],
+                 ['Valid until', c.not_after ? stamp(c.not_after) : 'not said'],
+                 ['Issued by', noI18n(el('span', '', c.issuer || '–'))],
+                 ['Serial', noI18n(el('span', 'mono', c.serial || '–'))],
+                 ['Version', noI18n(el('span', '', c.version || '–'))],
+                 ['Last issued or renewed', c.issued_at ? stamp(c.issued_at) : 'not in what was kept'],
+                 ['Last line', (AM_ACTION[c.last_action] || c.last_action || 'a line') + ', ' + ago(c.last_ts)],
+                 ['On the node', noI18n(el('span', '', c.node || '–'))]];
+    if (c.failed_at) facts.push(['Last failure', noI18n(el('span', 'am-bad', ago(c.failed_at) + ': ' + (c.failed_msg || '')))]);
+    if (c.reason) facts.push(['Revoked because', noI18n(el('span', '', c.reason))]);
+    body.appendChild(netFacts(facts));
+    if ((c.targets || []).length) {
+      body.appendChild(el('h4', '', 'Where it is'));
+      body.appendChild(listTable(['Target', 'Kind', 'State', 'Version', 'When'], c.targets, function (t) {
+        var tr = el('tr');
+        tr.appendChild(noI18n(el('td', '', t.target)));
+        tr.appendChild(noI18n(el('td', 'small', t.kind || '–')));
+        var s = el('td', '');
+        s.appendChild(el('span', 'tag ' + (t.ok ? 'ok' : 'crit'), t.ok ? 'deployed' : 'failed'));
+        tr.appendChild(s);
+        tr.appendChild(noI18n(el('td', 'small', t.version || '–')));
+        tr.appendChild(stampCell(t.ts));
+        return tr;
+      }));
+    }
+    body.appendChild(el('h4', '', 'What happened to it'));
+    var hist = el('div', 'am-hist');
+    hist.appendChild(el('p', 'note', 'Reading…'));
+    body.appendChild(hist);
+    api('acmelog-events&cert=' + encodeURIComponent(c.cert) + '&limit=200', undefined, {quiet: true}).then(function (d) {
+      clear(hist);
+      var rows = d.rows || [];
+      if (!rows.length) { hist.appendChild(el('p', 'note', 'Nothing kept.')); return; }
+      var ol = el('ol', 'am-timeline');
+      rows.forEach(function (r) {
+        var li = el('li', 'am-tl ' + ({bad: 'crit', warn: 'warn'}[r.level] || (r.action === 'deployed' ? 'ok' : 'info')));
+        var top = el('div', 'am-tl-top');
+        top.appendChild(el('b', '', AM_ACTION[r.action] || r.action || 'a line'));
+        if (r.target) top.appendChild(noI18n(el('span', 'muted', '→ ' + r.target)));
+        var when = noI18n(el('span', 'am-tl-when', stamp(r.ts)));
+        top.appendChild(when);
+        li.appendChild(top);
+        li.appendChild(noI18n(el('div', 'am-tl-msg', r.msg || '')));
+        li.onclick = function () { amLine(r); };
+        ol.appendChild(li);
+      });
+      hist.appendChild(ol);
+    }).catch(function () { clear(hist); hist.appendChild(el('p', 'note', 'It could not be read.')); });
+  }, [{words: 'Close', close: true}], 'medium');
+}
+
 /* Opened straight at this pane, it was switched to before this block was
    read: drawn now. */
 setTimeout(function () { if (paneLive('otp')) loadOtpTls(); }, 0);

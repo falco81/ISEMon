@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.286'
+__version__ = '1.10.287'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -169,6 +169,14 @@ DEFAULTS = {
     # the two ISE nodes are.
     'otp': 0,
     'otp_paths': ['/var/log/remote/otp', '/var/log/remote/otpsec'],
+    # acme, the certificate manager (1.10.287): its events, filed by rsyslog as
+    # /var/log/remote/<HOST>/acme-certs.log and acme.log. Off until switched on.
+    'acmelog': 0,
+    'acmelog_paths': ['/var/log/remote/acme'],
+    'acmelog_certs_name': 'acme-certs.log',
+    'acmelog_events': 1,
+    'acmelog_events_name': 'acme.log',
+    'retain_acmelog_days': 400,
     'otp_name': 'totp.cgi.log',
     # The token log says whether a number was right and nothing else: the
     # token software is asked over the loopback by whatever stands in front
@@ -1953,6 +1961,7 @@ def acl_body(text):
 
 # The settings that name a log file inside a folder.
 LOG_FILE_NAMES = ('ise_failed_name', 'ise_passed_name', 'otp_name', 'otp_detail_name',
+                  'acmelog_certs_name', 'acmelog_events_name',
                   'eduroam_name', 'eduroam_detail_name', 'eduroam_nps_name', 'tacplus_name',
                   'tacplus_said_name', 'nps_name', 'winsec_name', 'fwlog_name', 'radius_name',
                   'radius_detail_name')
@@ -2191,7 +2200,7 @@ def check_setting(key, value):
         # nobody can make sense of must be refused while somebody is still
         # looking at it, not six hours of records later.
         zone_named(want)
-    if key in ('otp_paths', 'eduroam_paths'):
+    if key in ('otp_paths', 'eduroam_paths', 'acmelog_paths'):
         # Nothing at all is allowed in either: it is what switching those
         # logs off and leaving them off looks like.
         want = [str(p).strip() for p in (want if isinstance(want, list)
@@ -6457,7 +6466,7 @@ def log_folders(source):
            'eduroam-detail': 'eduroam_paths', 'eduroam-nps': 'eduroam_paths',
            'tacplus': 'tacplus_paths', 'nps': 'nps_paths',
            'radius': 'radius_paths', 'radius-detail': 'radius_paths',
-           'fwlog': 'fwlog_paths'}.get(str(source or ''))
+           'fwlog': 'fwlog_paths', 'acmelog': 'acmelog_paths'}.get(str(source or ''))
     if not key:
         return []
     if source == 'fwlog':
@@ -17099,7 +17108,168 @@ class ListQuery(object):
         return ('%s = ?' % col, [number(item)])
 
 
-LOG_PARSERS = {'ise': ise_parse_lines, 'otp': otp_parse_lines,
+# ---- acme: the certificate manager's own log (1.10.287) ---------------------
+#
+# acme sends its events to isemon by syslog (its Settings → isemon): one line
+# an event, `acme-certs` for what happened to a certificate, `acme` for the
+# rest of it where isemon_events is on. rsyslog files them as
+# /var/log/remote/<HOST>/<TAG>.log, and they are read from there as the otp
+# logs are. A line, after the envelope:
+#
+#   level=<l> kind=<k> node=<n> who=<w> [fields, by key] msg=<text>
+#
+# a value bare where it is [A-Za-z0-9_.:@/+-]+, else in "quotes" with \" and
+# \\, cut at a length with " ...TRUNCATED" (perhaps inside a quoted value).
+# Nothing here is ever judged: it is what acme did, kept and shown.
+
+ACME_TAGS = ('acme-certs', 'acme')
+ACME_ENVELOPE = re.compile(
+    r'^(?:<\d{1,3}>)?\s*'
+    r'(?:(?P<iso>\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?)'
+    r'|(?P<bsd>[A-Z][a-z]{2} [ \d]\d \d\d:\d\d:\d\d))\s+'
+    r'(?P<host>\S+)\s+(?P<tag>[A-Za-z0-9_.-]+)(?:\[(?P<pid>\d+)\])?:\s?(?P<msg>.*)$')
+ACME_TOKEN = re.compile(r'([a-z][a-z0-9_]{0,31})=("(?:[^"\\]|\\.)*"?|[^ ]*)')
+# What each line may carry and what is kept in a column of its own; every
+# other field is kept beside it, as it came.
+ACME_COLUMNS = ('level', 'kind', 'node', 'who', 'action', 'result', 'cert', 'names', 'serial',
+                'not_after', 'issuer', 'target', 'target_kind', 'version', 'reason')
+ACME_LEVELS = ('info', 'warn', 'bad')
+
+
+class AcmeLine(object):
+    """One line of acme's: never an authentication, never judged - kept as
+    what acme did (`acme_events`). Told apart from a record by being this."""
+
+    __slots__ = ('ts', 'tag', 'host', 'pid', 'fields', 'msg', 'raw', 'ident', 'truncated')
+    failed = False
+    ip = None
+    session = None
+
+    def __init__(self, ts, tag, host, pid, fields, msg, raw, ident, truncated):
+        self.ts, self.tag, self.host, self.pid = ts, tag, host, pid
+        self.fields, self.msg, self.raw, self.ident = fields, msg, raw, ident
+        self.truncated = truncated
+
+
+def acme_unquote(value):
+    """A value as acme wrote it: bare, or in quotes with \\" and \\\\ inside -
+    and a quoted one cut off before its closing quote taken as far as it goes."""
+    if not value.startswith('"'):
+        return value
+    body = value[1:]
+    if body.endswith('"'):
+        n, i = 0, len(body) - 2
+        while i >= 0 and body[i] == '\\':
+            n += 1
+            i -= 1
+        if n % 2 == 0:
+            body = body[:-1]
+    out, i = [], 0
+    while i < len(body):
+        if body[i] == '\\' and i + 1 < len(body) and body[i + 1] in '"\\':
+            out.append(body[i + 1])
+            i += 2
+            continue
+        out.append(body[i])
+        i += 1
+    return ''.join(out)
+
+
+def acme_fields(text):
+    """The key=value message of a line, as a dict - and whether it was cut.
+    None where the line is not key=value at all (acme --isemon-test)."""
+    text = str(text or '')
+    truncated = text.endswith(' ...TRUNCATED')
+    if truncated:
+        text = text[:-len(' ...TRUNCATED')]
+    if not text.startswith('level='):
+        return None, truncated
+    out, at = {}, 0
+    while at < len(text):
+        while at < len(text) and text[at] == ' ':
+            at += 1
+        m = ACME_TOKEN.match(text, at)
+        if not m:
+            break
+        key, value = m.group(1), m.group(2)
+        if key == 'msg':
+            # msg is always the last: whatever follows is its own, however it
+            # was cut.
+            rest = text[m.start(2):]
+            out['msg'] = acme_unquote(rest) if rest.startswith('"') else rest
+            break
+        out.setdefault(key, acme_unquote(value))
+        at = m.end()
+    return out, truncated
+
+
+def acme_when(m, now=None):
+    """The moment of a line: its ISO time with its zone where rsyslog wrote
+    one, else the BSD time of the node's clock with no year and no zone -
+    this machine's zone and the year that puts it no later than tomorrow."""
+    now = now or time.time()
+    if m.group('iso'):
+        text = m.group('iso').replace(' ', 'T')
+        try:
+            from datetime import datetime
+            if text.endswith('Z'):
+                text = text[:-1] + '+00:00'
+            if re.search(r'[+-]\d\d\d\d$', text):
+                text = text[:-2] + ':' + text[-2:]
+            got = datetime.fromisoformat(text)
+            if got.tzinfo is None:
+                return time.mktime(got.timetuple()) + got.microsecond / 1e6
+            return got.timestamp()
+        except ValueError:
+            return now
+    text = re.sub(r'\s+', ' ', m.group('bsd'))
+    year = time.localtime(now).tm_year
+    for y in (year, year - 1):
+        try:
+            ts = time.mktime(time.strptime('%d %s' % (y, text), '%Y %b %d %H:%M:%S'))
+        except (ValueError, OverflowError):
+            return now
+        if ts <= now + 86400:
+            return ts
+    return now
+
+
+def acme_parse_lines(lines, hold=None, now=None):
+    """acme's lines, as AcmeLine. A line that is not acme's - another
+    program in the same folder - is left alone; one of acme's that is not
+    key=value (a test from its command line) is kept as it is."""
+    for line in lines:
+        text = str(line or '').rstrip('\r\n')
+        if not text.strip():
+            continue
+        m = ACME_ENVELOPE.match(text)
+        if not m or m.group('tag') not in ACME_TAGS:
+            continue
+        fields, cut = acme_fields(m.group('msg'))
+        raw = fields is None
+        if raw:
+            fields = {}
+            msg = m.group('msg').strip()
+        else:
+            msg = fields.pop('msg', '')
+        ident = hashlib.sha256(text.encode('utf-8', 'replace')).hexdigest()[:40]
+        yield AcmeLine(acme_when(m, now), m.group('tag'), m.group('host'), m.group('pid') or '',
+                       fields, msg, raw, ident, cut)
+
+
+def acme_iso_ts(text):
+    """not_after=2027-01-30T10:26:48Z as a moment, or None."""
+    m = re.match(r'^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(?:\.\d+)?Z$', str(text or ''))
+    if not m:
+        return None
+    import calendar
+    try:
+        return float(calendar.timegm(tuple(int(x) for x in m.groups()) + (0, 0, 0)))
+    except (ValueError, OverflowError):
+        return None
+
+
+LOG_PARSERS = {'ise': ise_parse_lines, 'otp': otp_parse_lines, 'acmelog': acme_parse_lines,
                'otp-detail': otp_detail_lines,
                'eduroam': edu_parse_lines, 'eduroam-detail': edu_detail_lines,
                'winsec': win_parse_lines, 'tacplus': tacplus_parse_lines,
@@ -19632,6 +19802,43 @@ CREATE INDEX IF NOT EXISTS seen_fold ON seen_values (col, fold);
 -- belongs to - which is why the join is by name and time rather than by
 -- anything either side could agree on beforehand, and why `at` is kept: the
 -- difference between it and `ts` is how far behind the shipping is running.
+-- What acme - the certificate manager - did, one line a row (1.10.287): an
+-- issue, a renewal, a deployment to a target, one about to run out, one that
+-- failed - and, where acme sends them, its sign-ins and settings. `ident` is
+-- the line itself hashed: read twice, it is kept once. The fields a line
+-- carries that have no column of their own are in `extra`, as it came.
+CREATE TABLE IF NOT EXISTS acme_events (
+    ident     TEXT PRIMARY KEY,
+    ts        REAL NOT NULL,
+    at        REAL,
+    tag       TEXT,
+    host      TEXT,
+    node      TEXT,
+    level     TEXT,
+    kind      TEXT,
+    who       TEXT,
+    action    TEXT,
+    result    TEXT,
+    cert      TEXT,
+    names     TEXT,
+    serial    TEXT,
+    not_after REAL,
+    issuer    TEXT,
+    target    TEXT,
+    target_kind TEXT,
+    version   TEXT,
+    reason    TEXT,
+    msg       TEXT,
+    extra     TEXT,
+    raw       INTEGER DEFAULT 0,
+    truncated INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS acme_events_ts ON acme_events (ts);
+CREATE INDEX IF NOT EXISTS acme_events_cert ON acme_events (cert, ts);
+CREATE INDEX IF NOT EXISTS acme_events_action ON acme_events (action, ts);
+CREATE INDEX IF NOT EXISTS acme_events_level ON acme_events (level, ts);
+CREATE INDEX IF NOT EXISTS acme_events_node ON acme_events (node, ts);
+
 CREATE TABLE IF NOT EXISTS otp_asked (
     ident    TEXT PRIMARY KEY,  -- server/second/port: one transaction, once
     ts       REAL NOT NULL,     -- when the RADIUS server saw it, out of the record
@@ -35185,6 +35392,333 @@ class Storage(object):
         return {'ts': float(row['ts'] or 0), 'at': float(row['at'] or 0),
                 'behind': max(0.0, float(row['at'] or 0) - float(row['ts'] or 0))}
 
+    # ---- acme's log, as the acme tab shows it (1.10.287) ----------------
+
+    ACME_ISSUE = ('issued', 'renewed', 'imported')
+    ACME_SOON_DAYS = 30
+
+    def acme_certificates(self, now=None):
+        """Every certificate acme spoke of, as it stands: the last line of
+        each, with what earlier lines said where the last did not say it
+        (its names, serial, end, issuer), the last word of every target it
+        went to - and what that adds up to: ok, expiring, expired, failing,
+        a deployment failed, revoked, deleted."""
+        now = now or time.time()
+        try:
+            rows = self.db.execute(
+                'SELECT ts, node, level, action, result, cert, names, serial, not_after, issuer, '
+                'target, target_kind, version, reason, msg FROM acme_events '
+                'WHERE cert IS NOT NULL ORDER BY ts DESC LIMIT 50000').fetchall()
+        except sqlite3.Error:
+            return []
+        certs = {}
+        for row in rows:
+            r = dict(row)
+            name = r['cert']
+            c = certs.get(name)
+            if c is None:
+                c = certs[name] = {
+                    'cert': name, 'last_ts': r['ts'], 'last_action': r['action'],
+                    'last_result': r['result'], 'last_level': r['level'], 'last_msg': r['msg'],
+                    'node': r['node'], 'names': None, 'serial': None, 'not_after': None,
+                    'issuer': None, 'version': None, 'reason': None, 'targets': {},
+                    'issued_at': None, 'failed_at': None, 'failed_msg': None,
+                    'expired_at': None, 'revoked_at': None, 'deleted_at': None,
+                    'events': 0, 'deploys_ok': 0, 'deploys_failed': 0}
+            c['events'] += 1
+            for k in ('names', 'serial', 'not_after', 'issuer', 'version', 'reason'):
+                if c[k] is None and r[k] is not None:
+                    c[k] = r[k]
+            act = r['action'] or ''
+            if act in self.ACME_ISSUE and r['result'] in (None, 'ok') and c['issued_at'] is None:
+                c['issued_at'] = r['ts']
+            if (act == 'renew' or (act in self.ACME_ISSUE and r['result'] == 'failed')) \
+                    and c['failed_at'] is None:
+                c['failed_at'], c['failed_msg'] = r['ts'], r['msg']
+            if act == 'expired' and c['expired_at'] is None:
+                c['expired_at'] = r['ts']
+            if act == 'revoked' and c['revoked_at'] is None:
+                c['revoked_at'] = r['ts']
+            if act == 'deleted' and c['deleted_at'] is None:
+                c['deleted_at'] = r['ts']
+            if r['target'] and act in ('deployed', 'deploy'):
+                ok = act == 'deployed' and r['result'] in (None, 'ok')
+                if ok:
+                    c['deploys_ok'] += 1
+                else:
+                    c['deploys_failed'] += 1
+                if r['target'] not in c['targets']:
+                    c['targets'][r['target']] = {
+                        'target': r['target'], 'kind': r['target_kind'], 'ok': ok,
+                        'ts': r['ts'], 'version': r['version'], 'node': r['node'],
+                        'msg': r['msg']}
+        out = []
+        for c in certs.values():
+            issued = c['issued_at'] or 0
+            na = c['not_after']
+            c['days_left'] = None if na is None else (na - now) / 86400.0
+            failing_deploy = any(not t['ok'] for t in c['targets'].values())
+            if c['deleted_at'] and c['deleted_at'] >= issued:
+                state = 'deleted'
+            elif c['revoked_at'] and c['revoked_at'] >= issued:
+                state = 'revoked'
+            elif (na is not None and na <= now) or (c['expired_at'] and c['expired_at'] >= issued):
+                state = 'expired'
+            elif c['failed_at'] and c['failed_at'] > issued:
+                state = 'failing'
+            elif failing_deploy:
+                state = 'deploy_failed'
+            elif (na is not None and na - now <= self.ACME_SOON_DAYS * 86400) \
+                    or c['last_action'] == 'expiring':
+                state = 'expiring'
+            else:
+                state = 'ok'
+            c['state'] = state
+            c['targets'] = sorted(c['targets'].values(), key=lambda t: t['target'])
+            out.append(c)
+        order = {'expired': 0, 'failing': 1, 'deploy_failed': 2, 'expiring': 3, 'revoked': 4,
+                 'ok': 5, 'deleted': 6}
+        out.sort(key=lambda c: (order.get(c['state'], 9),
+                                c['not_after'] if c['not_after'] is not None else 9e18,
+                                c['cert']))
+        return out
+
+    def acme_attention(self):
+        """How many of acme's certificates want looking at: run out, about
+        to, failing to renew, or not on a target they should be on."""
+        n = 0
+        for c in self.acme_certificates():
+            if c['state'] in ('expired', 'failing', 'deploy_failed', 'expiring'):
+                n += 1
+        return n
+
+    def acme_view(self, days=30, now=None):
+        """The acme tab: its certificates, what they add up to, what acme
+        did day by day over `days`, its targets, its nodes, what failed."""
+        now = now or time.time()
+        days = max(1, min(int(days or 30), 400))
+        since = now - days * 86400
+        certs = self.acme_certificates(now)
+        live = [c for c in certs if c['state'] != 'deleted']
+        db = self.db
+        try:
+            rows = db.execute(
+                'SELECT ts, tag, level, kind, action, result, who, node FROM acme_events '
+                'WHERE ts >= ? ORDER BY ts LIMIT 300000', (since,)).fetchall()
+        except sqlite3.Error:
+            rows = []
+        # Day by day, on this machine's calendar.
+        first = time.localtime(since)
+        start = time.mktime((first.tm_year, first.tm_mon, first.tm_mday, 0, 0, 0, 0, 0, -1))
+        buckets = []
+        at = start
+        while at <= now:
+            t = time.localtime(at)
+            nxt = time.mktime((t.tm_year, t.tm_mon, t.tm_mday + 1, 0, 0, 0, 0, 0, -1))
+            buckets.append({'day': at, 'issued': 0, 'deployed': 0, 'failed': 0, 'warn': 0,
+                            'other': 0})
+            at = nxt
+        bounds = [b['day'] for b in buckets]
+        import bisect
+        sums = {'issued': 0, 'deployed': 0, 'deploy_failed': 0, 'renew_failed': 0, 'bad': 0,
+                'warn': 0, 'events': 0, 'expiring': 0, 'expired': 0, 'revoked': 0}
+        kinds, who, nodes_n = {}, {}, {}
+        for row in rows:
+            r = dict(row)
+            sums['events'] += 1
+            act, res, lvl = r['action'] or '', r['result'] or '', r['level'] or 'info'
+            i = bisect.bisect_right(bounds, r['ts']) - 1
+            b = buckets[i] if 0 <= i < len(buckets) else None
+            if act in self.ACME_ISSUE and res in ('', 'ok'):
+                sums['issued'] += 1
+                key = 'issued'
+            elif act == 'deployed' and res in ('', 'ok'):
+                sums['deployed'] += 1
+                key = 'deployed'
+            elif lvl == 'bad' or res == 'failed':
+                key = 'failed'
+            elif lvl == 'warn':
+                key = 'warn'
+            else:
+                key = 'other'
+            if act == 'deploy' or (act == 'deployed' and res == 'failed'):
+                sums['deploy_failed'] += 1
+            if act == 'renew' or (act in self.ACME_ISSUE and res == 'failed'):
+                sums['renew_failed'] += 1
+            if act in ('expiring', 'expired', 'revoked'):
+                sums[act] += 1
+            if lvl == 'bad':
+                sums['bad'] += 1
+            elif lvl == 'warn':
+                sums['warn'] += 1
+            if b is not None:
+                b[key] += 1
+            k = r['kind'] or ('test' if r['tag'] == 'acme' else 'certificates')
+            kinds[k] = kinds.get(k, 0) + 1
+            if r['who'] and r['who'] != 'acme':
+                who[r['who']] = who.get(r['who'], 0) + 1
+            if r['node']:
+                nodes_n[r['node']] = nodes_n.get(r['node'], 0) + 1
+        # The targets, from every deployment there is.
+        targets = {}
+        for c in certs:
+            if c['state'] == 'deleted':
+                continue
+            for t in c['targets']:
+                one = targets.setdefault(t['target'], {
+                    'target': t['target'], 'kind': t['kind'], 'certs': 0, 'ok': 0, 'failed': 0,
+                    'last_ts': 0, 'last_ok': None, 'failing': []})
+                one['certs'] += 1
+                one['kind'] = one['kind'] or t['kind']
+                if t['ok']:
+                    one['ok'] += 1
+                else:
+                    one['failed'] += 1
+                    one['failing'].append(c['cert'])
+                if t['ts'] > one['last_ts']:
+                    one['last_ts'], one['last_ok'] = t['ts'], t['ok']
+        # The nodes, from every line there is.
+        nodes = []
+        try:
+            for row in db.execute(
+                    'SELECT node, MAX(ts) AS last_ts, COUNT(*) AS n FROM acme_events '
+                    'WHERE node IS NOT NULL GROUP BY node ORDER BY node').fetchall():
+                r = dict(row)
+                got = db.execute(
+                    "SELECT ts, msg FROM acme_events WHERE node = ? AND level = 'bad' "
+                    'ORDER BY ts DESC LIMIT 1', (r['node'],)).fetchone()
+                tags = [str(x['tag']) for x in db.execute(
+                    'SELECT DISTINCT tag FROM acme_events WHERE node = ? AND ts >= ?',
+                    (r['node'], now - 7 * 86400)).fetchall()]
+                nodes.append({'node': r['node'], 'last_ts': r['last_ts'], 'events': int(r['n']),
+                              'in_period': nodes_n.get(r['node'], 0),
+                              'last_bad': dict(got) if got else None,
+                              'events_on': 'acme' in tags})
+            failures = [self.acme_row(dict(r)) for r in db.execute(
+                "SELECT * FROM acme_events WHERE ts >= ? AND (level = 'bad' OR result = 'failed') "
+                'ORDER BY ts DESC LIMIT 100', (since,)).fetchall()]
+            total = int(db.execute('SELECT COUNT(*) AS n FROM acme_events').fetchone()['n'])
+            seen = db.execute('SELECT MAX(at) AS a, MAX(ts) AS t, MIN(ts) AS f '
+                              'FROM acme_events').fetchone()
+        except sqlite3.Error:
+            failures, total, seen = [], 0, None
+        states = {}
+        for c in live:
+            states[c['state']] = states.get(c['state'], 0) + 1
+        return {
+            'on': True, 'now': now, 'days': days, 'since': since, 'soon_days': self.ACME_SOON_DAYS,
+            'kpi': {'certs': len(live), 'ok': states.get('ok', 0),
+                    'expiring': states.get('expiring', 0), 'expired': states.get('expired', 0),
+                    'failing': states.get('failing', 0) + states.get('deploy_failed', 0),
+                    'revoked': states.get('revoked', 0),
+                    'targets': len(targets), 'nodes': len(nodes)},
+            'sums': sums, 'states': states, 'certs': certs, 'activity': buckets,
+            'targets': sorted(targets.values(), key=lambda t: (-t['failed'], t['target'])),
+            'nodes': nodes, 'failures': failures,
+            'kinds': sorted(({'kind': k, 'n': v} for k, v in kinds.items()),
+                            key=lambda x: -x['n']),
+            'who': sorted(({'who': k, 'n': v} for k, v in who.items()),
+                          key=lambda x: -x['n'])[:10],
+            'total': total,
+            'last_read': (seen['a'] if seen else None), 'last_ts': (seen['t'] if seen else None),
+            'first_ts': (seen['f'] if seen else None)}
+
+    @staticmethod
+    def acme_row(r):
+        """A row of acme_events as the page has it: what had no column of
+        its own put back beside the rest."""
+        extra = r.pop('extra', None)
+        try:
+            r['extra'] = json.loads(extra) if extra else {}
+        except (ValueError, TypeError):
+            r['extra'] = {}
+        r['raw'] = bool(r.get('raw'))
+        r['truncated'] = bool(r.get('truncated'))
+        return r
+
+    ACME_FILTERS = ('tag', 'level', 'kind', 'node', 'cert', 'action', 'result', 'target', 'who')
+
+    def acme_events_list(self, want, limit=200):
+        """acme's lines, newest first, narrowed by what is asked: any of
+        ACME_FILTERS exactly, `q` anywhere in the message, the certificate's
+        names or the target, and `before` for the page after."""
+        where, args = [], []
+        for k in self.ACME_FILTERS:
+            v = str(want.get(k) or '').strip()
+            if v:
+                where.append('%s = ?' % k)
+                args.append(v[:200])
+        q = str(want.get('q') or '').strip().lower()
+        if q:
+            where.append('(LOWER(msg) LIKE ? OR LOWER(cert) LIKE ? OR LOWER(names) LIKE ? '
+                         'OR LOWER(target) LIKE ? OR LOWER(serial) LIKE ? OR LOWER(who) LIKE ?)')
+            like = '%' + q.replace('\\', '').replace('%', '').replace('_', '')[:200] + '%'
+            args.extend([like] * 6)
+        for key, op in (('before', '<'), ('since', '>=')):
+            try:
+                v = float(want.get(key) or 0)
+            except (TypeError, ValueError):
+                v = 0
+            if v:
+                where.append('ts %s ?' % op)
+                args.append(v)
+        limit = max(1, min(int(limit or 200), 1000))
+        sql = 'SELECT * FROM acme_events%s ORDER BY ts DESC, ident LIMIT %d' % (
+            (' WHERE ' + ' AND '.join(where)) if where else '', limit + 1)
+        try:
+            rows = [self.acme_row(dict(r)) for r in self.db.execute(sql, tuple(args)).fetchall()]
+        except sqlite3.Error:
+            rows = []
+        more = len(rows) > limit
+        rows = rows[:limit]
+        try:
+            facets = {}
+            for k in ('node', 'kind', 'action', 'level', 'tag'):
+                facets[k] = [str(r['v']) for r in self.db.execute(
+                    'SELECT DISTINCT %s AS v FROM acme_events WHERE %s IS NOT NULL ORDER BY %s '
+                    'LIMIT 100' % (k, k, k)).fetchall()]
+        except sqlite3.Error:
+            facets = {}
+        return {'rows': rows, 'more': more, 'facets': facets}
+
+    def acme_note(self, rec):
+        """One line of acme's, kept - once, however often it is read."""
+        f = dict(rec.fields or {})
+        cols = {k: (str(f.pop(k))[:500] if f.get(k) is not None else None)
+                for k in ACME_COLUMNS}
+        if cols['level'] not in ACME_LEVELS:
+            cols['level'] = 'info' if not cols['level'] else cols['level'][:10]
+        not_after = acme_iso_ts(cols.pop('not_after'))
+        try:
+            with self.db_write() as db:
+                db.execute(
+                    'INSERT OR IGNORE INTO acme_events (ident, ts, at, tag, host, node, level, '
+                    'kind, who, action, result, cert, names, serial, not_after, issuer, target, '
+                    'target_kind, version, reason, msg, extra, raw, truncated) '
+                    'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                    (rec.ident, float(rec.ts), time.time(), rec.tag, str(rec.host or '')[:200],
+                     cols['node'], cols['level'], cols['kind'],
+                     cols['who'], cols['action'], cols['result'], cols['cert'], cols['names'],
+                     cols['serial'], not_after, cols['issuer'], cols['target'],
+                     cols['target_kind'], cols['version'], cols['reason'],
+                     str(rec.msg or '')[:4000],
+                     json.dumps(f, ensure_ascii=False, sort_keys=True)[:8000] if f else None,
+                     1 if rec.raw else 0, 1 if rec.truncated else 0))
+            return True
+        except sqlite3.Error as e:
+            log('a line of acme\'s could not be written down: %s' % e, 'warn')
+            return False
+
+    def tidy_acme(self):
+        """What acme did longer ago than the site keeps it, let go."""
+        days = int(CONFIG.get('retain_acmelog_days') or 400)
+        try:
+            with self.db_write() as db:
+                db.execute('DELETE FROM acme_events WHERE ts < ?', (time.time() - days * 86400,))
+        except sqlite3.Error:
+            return 0
+        return 1
+
     def tidy_otp_asked(self):
         """The packets older than the site keeps them, let go."""
         days = int(CONFIG.get('retain_otp_days') or 0)
@@ -41982,7 +42516,8 @@ class Storage(object):
         """
         out = {}
         for table in ('failed', 'passed', 'win_events', 'win_rollup', 'seen_values',
-                      'otp_asked', 'eduroam_seen', 'fw_events', 'fw_roll', 'fw_ready',
+                      'otp_asked', 'acme_events', 'eduroam_seen', 'fw_events', 'fw_roll',
+                      'fw_ready',
                       'blocked', 'blocked_log', 'block_events',
                       'events', 'feed_ranges', 'geo_ranges', 'ptr', 'mac_vendors',
                       'users', 'sessions', 'fold_versions'):
@@ -42116,6 +42651,19 @@ class Storage(object):
             'tables': ['otp_asked'],
             'part': {'failed': "kind = 'otp'", 'passed': "kind = 'otp'"},
             'reread': ('otp', 'otp-detail'),
+        },
+        # What acme - the certificate manager - sent (1.10.287): never
+        # judged; erased, its logs are read again from their beginning.
+        'acmelog': {
+            'name': 'what acme sent',
+            'says': 'Every line acme - the certificate manager - sent: what happened to '
+                    'each certificate and, where it sends them, its sign-ins and settings. '
+                    'None of it is judged. Erasing it also forgets where acme\u2019s logs '
+                    'were read up to, so whatever is still in the files is read again from '
+                    'the beginning. Lines that have already been rotated away do not come '
+                    'back.',
+            'tables': ['acme_events'],
+            'reread': ('acmelog',),
         },
         'eduroam': {
             'name': 'the records read from the eduroam logs',
@@ -44689,6 +45237,12 @@ class Daemon(object):
         differently from an installation that has never heard of them.
         """
         return bool(int(CONFIG.get('otp') or 0) and (CONFIG.get('otp_paths') or []))
+
+    def acmelog_on(self):
+        """Whether acme's log is read (1.10.287): switched on, with a folder.
+        Off, not one file of it is opened and its tab is not there. (acme the
+        certificate manager - not `acme_on`, this server's own certificates.)"""
+        return bool(int(CONFIG.get('acmelog') or 0) and (CONFIG.get('acmelog_paths') or []))
 
     def nps_doors(self):
         """Which of NPS's doors have anything behind them, ever.
@@ -47666,6 +48220,22 @@ class Daemon(object):
                     said = str(CONFIG.get('otp_detail_name') or 'radius-detail.log').strip()
                     if said:
                         out.append(('otp-detail', str(base / said), 'otp-detail'))
+        # acme, the certificate manager (1.10.287): its certificates' log, and
+        # the rest of what it does beside it where that is read too.
+        if self.acmelog_on():
+            names = [str(CONFIG.get('acmelog_certs_name') or 'acme-certs.log').strip()]
+            if int(CONFIG.get('acmelog_events', 1) or 0):
+                names.append(str(CONFIG.get('acmelog_events_name') or 'acme.log').strip())
+            for folder in CONFIG.get('acmelog_paths') or []:
+                folder = str(folder).strip()
+                if not folder:
+                    continue
+                base = Path(folder)
+                if base.suffix == '.log':
+                    out.append(('acmelog', str(base), 'acmelog'))
+                    continue
+                for name in dict.fromkeys(n for n in names if n):
+                    out.append(('acmelog', str(base / name), 'acmelog'))
         # eduroam is two files to a server: what happened, and what the
         # session was. Both are read; only the first makes rows.
         if self.eduroam_on() and str(CONFIG.get('eduroam_format') or '') == 'nps':
@@ -49078,6 +49648,10 @@ class Daemon(object):
         is weighed, or the first file read decides everything and the second
         arrives to find its addresses already dealt with.
         """
+        # A line of acme's (1.10.287): kept as what acme did, never judged.
+        if isinstance(record, AcmeLine):
+            self.store.acme_note(record)
+            return False
         # An accounting record is not an authentication and is never a row:
         # what it says is what one machine's session is, kept beside the
         # sign-in that started it. See `EduSession`.
@@ -57002,6 +57576,8 @@ class Daemon(object):
         'fold_auto': (0, 1), 'fold_every_h': (1, 720), 'fold_least': (2, 64),
         'geo': (0, 1), 'geo_every_d': (1, 3650),
         'otp': (0, 1), 'otp_paths': 'list', 'otp_name': 'str',
+        'acmelog': (0, 1), 'acmelog_paths': 'list', 'acmelog_certs_name': 'str',
+        'acmelog_events': (0, 1), 'acmelog_events_name': 'str', 'retain_acmelog_days': (1, 3650),
         'otp_detail': (0, 1), 'otp_detail_name': 'str',
         'otp_from': 'str', 'otp_from_mark': (0, 1),
         'eduroam': (0, 1), 'eduroam_paths': 'list', 'eduroam_name': 'str',
@@ -57226,6 +57802,12 @@ class Daemon(object):
         'nps_name': 'Which files in each are NPS’s',
         'nps_ignore': 'Accounts to leave out altogether',
         'nps_port_names': 'What the switches call their ports',
+        'acmelog': 'Read acme\u2019s log',
+        'acmelog_paths': 'Where rsyslog files what acme sends',
+        'acmelog_certs_name': 'Its certificates\u2019 log in each',
+        'acmelog_events': 'Read the rest of what acme does as well',
+        'acmelog_events_name': 'That log in each',
+        'retain_acmelog_days': 'Keep what acme did (days)',
         'otp': 'Read the one-time password logs',
         'otp_paths': 'Where the token servers write',
         'otp_name': 'The name of the log file in each',
@@ -57860,6 +58442,21 @@ class Daemon(object):
                'differently. On, every line of them is written down and shown \u2014 and '
                'never judged, because the address on one of these records is the machine that '
                'asked, which is the token server itself.',
+        'acmelog': 'acme - the certificate manager - sends what happens to every certificate '
+                '(issued, renewed, deployed to a target, about to run out, failed) by syslog, '
+                'and with isemon_events on the rest of what it does (sign-ins, settings, '
+                'backups). Switched on, it is read as the OTP logs are and an acme tab shows '
+                'it all; nothing of it is ever judged. Off, not one file is opened.',
+        'acmelog_paths': 'The folder rsyslog files acme\u2019s lines in - /var/log/remote/<HOST>/, '
+                      'HOST being isemon_hostname in acme (one for the whole cluster; each '
+                      'node says its own name in every line). Comma separated for more than '
+                      'one acme; a path may name a file itself.',
+        'acmelog_certs_name': 'The certificates\u2019 log in each folder: what acme sends as '
+                           'acme-certs - always, while sending to isemon is on in acme.',
+        'acmelog_events': 'The other log beside it: what acme sends as acme - sign-ins, '
+                       'accounts, settings, backups, the portal, HA - where isemon_events is on '
+                       'in acme.',
+        'acmelog_events_name': 'What that one is called in each folder.',
         'otp_paths': 'One folder per token server, comma separated. Two is as usual as one: '
                      'the pair answers active/active exactly as the ISE nodes do, so both are '
                      'read and what comes out of them is one list. A path may name the file '
@@ -58450,6 +59047,9 @@ class Daemon(object):
             'has not been back in a fortnight is a row nothing will ever ask for. A '
             'university\u2019s eduroam is thousands of machines a day, so there is a '
             'ceiling of twenty thousand rows underneath this as well.',
+        'retain_acmelog_days':
+            'How long what acme sent is kept: every issue, renewal, deployment and failure '
+            'of every certificate. A few lines a day - a year of it is little.',
         'retain_otp_days':
             'How long the RADIUS packets behind the token log are kept - what the token '
             'server was ASKED, beside what it answered. They are what makes "the same '
@@ -60338,6 +60938,11 @@ class Daemon(object):
             'radius_doors': self.radius_doors() if self.radius_on() else [],
             'otp_on': self.otp_on(),
             'otp_detail_on': self.otp_detail_on(),
+            # acme's log (1.10.287): its tab, and how many of its
+            # certificates want looking at, there only while it is read.
+            'acmelog_on': self.acmelog_on(),
+            'acmelog_attention': (self.held('acmelog/attention', 30, self.store.acme_attention)
+                                  if self.acmelog_on() else 0),
             'eduroam_on': self.eduroam_on(),
             # Which number each named VLAN is, where ISE has said both in one
             # record. A page uses it to show the number beside a record that
@@ -62607,6 +63212,11 @@ class Daemon(object):
             otptls_tick(self.webroot)
         except Exception as e:
             log('the otp logs over TLS: %s' % e, 'warn')
+        # ... and the acme logs, the same way (1.10.287).
+        try:
+            acmetls_tick(self.webroot)
+        except Exception as e:
+            log('the acme logs over TLS: %s' % e, 'warn')
         # ... and the certificate by ACME (1.10.251): looked at once an hour,
         # ordered in a thread of its own.
         try:
@@ -62862,6 +63472,7 @@ class Daemon(object):
             # counted into the total below.
             out['eduroam'] = self.store.tidy_eduroam_seen() or 0
             out['otp'] = self.store.tidy_otp_asked() or 0
+            out['acmelog'] = self.store.tidy_acme() or 0
             # What was written down beside bans long over. Once an hour is
             # plenty: it is a few rows per address.
             if time.time() - getattr(self, '_marks_tidied', 0) >= 3600:
@@ -69784,20 +70395,21 @@ def _winzip_aes(raw, extra, password, crc, ae_crc):
     return plain
 
 
-def otp_zip_open(data, password):
-    """{name: bytes} of the file otp made: AES-256 (WinZip's, which `unzip`
-    cannot open and 7-Zip can), the old ZipCrypto, or no lock at all."""
+def otp_zip_open(data, password, who='otp'):
+    """{name: bytes} of the file otp made (or acme, 1.10.287): AES-256
+    (WinZip's, which `unzip` cannot open and 7-Zip can), the old ZipCrypto, or
+    no lock at all."""
     import io
     import struct
     import zipfile
     if not isinstance(password, bytes):
         password = str(password or '').encode('utf-8')
     if len(data) > OTPTLS_ZIP_MOST:
-        raise ValueError('that is far bigger than the file otp makes')
+        raise ValueError('that is far bigger than the file %s makes' % who)
     try:
         zf = zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile:
-        raise ValueError('that is not a zip file (isemon-tls.zip, as otp makes it)')
+        raise ValueError('that is not a zip file (isemon-tls.zip, as %s makes it)' % who)
     out = {}
     with zf:
         for info in zf.infolist()[:20]:
@@ -70150,6 +70762,297 @@ def otptls_api(wr, b, by):
                                        'away within seconds; the plain one stays as it is'}
     if act == 'off':
         otptls_ask(wr, {'do': 'off', 'by': by})
+        return {'ok': True, 'message': 'root takes the encrypted input away within seconds; the '
+                                       'plain one stays as it is'}
+    raise ValueError('no such thing to do')
+
+
+# The acme logs over TLS (1.10.287; for acme's Settings → isemon → Encrypted
+# sending)
+# ---------------------------------------------------------------------------
+# What the otp logs have over TLS, done again for acme's nodes: rsyslog's
+# encrypted input of its own (its file 99-tls-acme.conf, its folder
+# /etc/pki/rsyslog/acme, a port of its own), put in by root's helper (asked in
+# acmetls.ask, answered in acmetls.json), the certificate from the file acme's
+# wizard makes, pasted, or made here. With mutual TLS only acme's nodes send -
+# the name in each node's certificate is the node's name (acme1, acme2).
+# What arrives is filed by 11-acme.conf, as what arrives plain. Nothing of
+# the otp logs' is changed by it.
+ACMETLS_WORK = {'busy': False, 'since': 0.0, 'queue': [], 'now': {}, 'error': '', 'said': [],
+                'last': {}}
+ACMETLS_LOCK = threading.Lock()
+ACMETLS_OPENED = {}                 # token -> what a zip held, for ten minutes
+
+
+def acmetls_helper(wr):
+    """Whether root's half is there and new enough to be asked about acme's
+    (the path unit of 1.10.287 watches acmetls.ask)."""
+    if not wr.helper_there():
+        return False
+    if os.environ.get('ISEMON_WEB_HELPER'):
+        return True
+    try:
+        return 'acmetls.ask' in Path(WEB_PATH_UNIT).read_text()
+    except OSError:
+        return False
+
+
+def acmetls_open_zip(data, password):
+    """The file acme made, opened and checked: what is in it, for the page,
+    and a token by which it is set up - its key stays here."""
+    try:
+        files = otp_zip_open(data, password, 'acme')
+    except PermissionError as e:
+        raise ValueError(str(e))
+    need = [n for n in ('ca.pem', 'isemon.crt', 'isemon.key') if n not in files]
+    if need:
+        raise ValueError('%s missing from it - is it the file acme made for isemon (Settings '
+                         '→ isemon → Encrypted sending → Encrypt…)?' % ', '.join(need))
+    text = {n: files[n].decode('utf-8', 'replace') for n in ('ca.pem', 'isemon.crt',
+                                                             'isemon.key')}
+    if 'PRIVATE KEY-----' not in text['isemon.key'] or 'ENCRYPTED' in text['isemon.key']:
+        raise ValueError('isemon.key is not a private key without a passphrase')
+    cert = _pem_facts(text['isemon.crt'])
+    ca = _pem_facts(text['ca.pem'])
+    if not cert or not ca:
+        raise ValueError('the certificates in it do not read')
+    a = subprocess.run(['openssl', 'x509', '-noout', '-pubkey'], input=text['isemon.crt'],
+                       capture_output=True, text=True, timeout=20).stdout.strip()
+    b = subprocess.run(['openssl', 'pkey', '-pubout'], input=text['isemon.key'],
+                       capture_output=True, text=True, timeout=20).stdout.strip()
+    if not a or a != b:
+        raise ValueError('isemon.key is not the key of isemon.crt')
+    conf = otptls_conf_facts(files.get('10-acme-tls.conf', b'').decode('utf-8', 'replace'))
+    token = secrets.token_hex(12)
+    now = time.time()
+    for k in [k for k, v in ACMETLS_OPENED.items() if now - v['at'] > 600]:
+        ACMETLS_OPENED.pop(k, None)
+    ACMETLS_OPENED[token] = {'at': now, 'ca': text['ca.pem'], 'cert': text['isemon.crt'],
+                            'key': text['isemon.key']}
+    return {'token': token, 'cert': cert, 'ca': ca, 'conf': conf,
+            'files': sorted(files), 'readme': 'README.txt' in files}
+
+
+def acmetls_root_ask(wr, data, wait=900):
+    ask_id = secrets.token_hex(8)
+    wr.write('acmetls.ask', dict(data, id=ask_id, at=time.time()))
+    end = time.time() + wait
+    while time.time() < end:
+        got = wr.read('acmetls.json')
+        if isinstance(got, dict) and got.get('id') == ask_id:
+            return got
+        time.sleep(0.4)
+    try:
+        if (wr.read('acmetls.ask') or {}).get('id') == ask_id:
+            os.unlink(str(wr.folder() / 'acmetls.ask'))
+    except OSError:
+        pass
+    raise WebRootError('root\'s helper did not answer in %d s - is isemon-web.path running? '
+                       '(systemctl status isemon-web.path; ./install.sh --upgrade from 1.10.287 '
+                       'puts in the one that is asked about the acme logs over TLS)' % wait)
+
+
+ACMETLS_WORDS = {'apply': 'set up the acme logs over TLS', 'make': 'set up the acme logs over TLS '
+                'with a certificate made here', 'set': 'changed the acme logs over TLS',
+                'off': 'switched the acme logs over TLS off',
+                'remove': 'removed the acme logs over TLS - the input, the certificate, its key '
+                          'and the authorities'}
+
+
+def acmetls_ask(wr, a):
+    """One job for root, done behind: a read, or a change."""
+    if not acmetls_helper(wr):
+        raise WebRootError('root\'s half is not installed on this machine yet: run '
+                           './install.sh --upgrade (1.10.287 or later) once')
+    a = dict(a, id=secrets.token_hex(6), at=time.time())
+    with ACMETLS_LOCK:
+        if a['do'] != 'read' and (ACMETLS_WORK['busy'] and ACMETLS_WORK.get('doing') != 'read' or
+                                  any(x['do'] != 'read' for x in ACMETLS_WORK['queue'])):
+            raise WebRootError('a change is being made already - wait for it to end')
+        ACMETLS_WORK['queue'] = (ACMETLS_WORK['queue'] + [a])[-6:]
+    acmetls_tick(wr)
+    return a['id']
+
+
+def acmetls_tick(wr):
+    if ACMETLS_WORK['busy'] and time.time() - ACMETLS_WORK['since'] < 1200:
+        return
+    if not acmetls_helper(wr) or not wr.folder().is_dir():
+        return
+    with ACMETLS_LOCK:
+        todo = [a for a in ACMETLS_WORK['queue'] if time.time() - a['at'] < 600]
+        ACMETLS_WORK['queue'] = []
+        if not todo:
+            return
+        reads = [a for a in todo if a['do'] == 'read']
+        todo = [a for a in todo if a['do'] != 'read'] + reads[-1:]
+        ACMETLS_WORK.update(busy=True, since=time.time(), doing=todo[0]['do'])
+
+    def go():
+        try:
+            for a in todo:
+                ACMETLS_WORK['doing'] = a['do']
+                ask = {k: v for k, v in a.items() if k not in ('by', 'id', 'at')}
+                err, got = '', {}
+                try:
+                    got = acmetls_root_ask(wr, ask, 900 if a['do'] != 'read' else 60)
+                    if not got.get('ok'):
+                        err = str(got.get('said') or 'root\'s helper said no')
+                except (WebRootError, OSError) as e:
+                    err = str(e)[:400] or e.__class__.__name__
+                if isinstance(got.get('data'), dict):
+                    ACMETLS_WORK['now'] = dict(got['data'], at_read=time.time())
+                if a['do'] == 'read':
+                    if err or time.time() - float(ACMETLS_WORK['last'].get('at') or 0) > 120:
+                        ACMETLS_WORK['error'] = err
+                    continue
+                who = a.get('by') or 'somebody'
+                said = got.get('said') if isinstance(got.get('said'), list) else []
+                ACMETLS_WORK.update(error=err, said=said, last={
+                    'do': a['do'], 'ok': not err, 'at': time.time(), 'by': who})
+                if err:
+                    log('the acme logs over TLS: %s' % err, 'warn')
+                    wr.store.add_event('settings', 'the acme logs over TLS were not changed '
+                                       '(asked by %s): %s' % (who, err[:300]), 'warn',
+                                       who=a.get('by') or '')
+                    continue
+                wr.store.add_event('settings', '%s %s%s' % (
+                    who, ACMETLS_WORDS.get(a['do'], 'changed the acme logs over TLS'),
+                    (' - ' + '; '.join(said)[:400]) if said else ''), 'warn',
+                    who=a.get('by') or '')
+                kept = wr._meta('acme_tls', {})
+                kept.update(do=a['do'], by=who, at=time.time(),
+                            on=a['do'] not in ('off', 'remove'))
+                if a['do'] in ('apply', 'make'):
+                    kept['how'] = a.get('how') or a['do']
+                wr._put('acme_tls', kept)
+                # The port is one more rsyslog listens on: isemon's firewall
+                # (where it is isemon's) lets it in by itself, as one of the
+                # logs arriving - at once, not at the next look.
+                try:
+                    acmetls_fw_follow(wr)
+                except Exception as e:                  # noqa: BLE001
+                    log('the acme logs over TLS: the firewall: %s' % e, 'warn')
+        except Exception as e:                          # noqa: BLE001
+            log('the acme logs over TLS: %s' % e, 'warn')
+        finally:
+            with ACMETLS_LOCK:
+                ACMETLS_WORK.update(busy=False, doing='')
+                more = bool(ACMETLS_WORK['queue'])
+        if more:
+            acmetls_tick(wr)
+    threading.Thread(target=go, name='isemon-acmetls', daemon=True).start()
+
+
+def acmetls_fw_follow(wr, wait=30):
+    """Root looked again (the ports rsyslog listens on), and isemon's
+    firewall put in with the port of the acme logs over TLS - or without it,
+    once switched off. Nothing where the firewall is not isemon's."""
+    t0 = time.time()
+    wr._asked_look = 0.0
+    wr.look(fresh_s=0)
+    end = t0 + wait
+    while time.time() < end:
+        if float((wr.read('look.json') or {}).get('at') or 0) >= t0:
+            break
+        time.sleep(0.3)
+    if not wr.fw_conf()['on']:
+        return False
+    if wr.pending():
+        return False                # the minute's due() asks once root is free
+    return wr.push('the acme logs over TLS changed the ports rsyslog listens on').get(
+        'pushed', False)
+
+
+def acmetls_view(wr):
+    now = ACMETLS_WORK.get('now') or {}
+    helper = acmetls_helper(wr)
+    if helper and time.time() - float(now.get('at_read') or 0) > OTPTLS_STALE_S and \
+            not ACMETLS_WORK['busy'] and not ACMETLS_WORK['queue']:
+        try:
+            acmetls_ask(wr, {'do': 'read'})
+        except (WebRootError, OSError):
+            pass
+    conf = now.get('conf') or {}
+    fw = wr.fw_conf()
+    with ACMETLS_LOCK:
+        pending = [a['do'] for a in ACMETLS_WORK['queue'] if a['do'] != 'read']
+        if ACMETLS_WORK['busy'] and ACMETLS_WORK.get('doing') not in ('', 'read'):
+            pending.append(ACMETLS_WORK['doing'])
+    return {'ok': True, 'helper': helper, 'read': bool(now), 'at': now.get('at_read'),
+            'on': bool(conf.get('there')), 'mine': bool(conf.get('mine')),
+            'port': conf.get('port') or 0, 'auth': conf.get('auth') or '',
+            'driver': conf.get('driver') or '', 'peers': conf.get('peers') or [],
+            'file': now.get('file') or '', 'dir': now.get('dir') or '',
+            'version': now.get('version') or '', 'driver_there': now.get('driver_there') or '',
+            'cert': now.get('cert') or {}, 'ca': now.get('ca') or [],
+            'own_ca': now.get('own_ca') or {}, 'how': now.get('how') or '',
+            'left': now.get('left') or [],
+            'listening': now.get('listening'), 'fw': now.get('fw') or '',
+            'fw_open': now.get('fw_open'), 'trouble': now.get('trouble') or [],
+            'plain': [p for p in now.get('others') or [] if str(p.get('port')) == '514'],
+            'others': now.get('others') or [],
+            # Its port is one of the logs arriving to isemon's firewall.
+            'fw_isemon': {'on': fw['on'], 'let': 'logs' not in fw['off'],
+                          'any': fw['logs']['any'] or not fw['logs']['from'],
+                          'from': fw['logs']['from']},
+            'kept': wr._meta('acme_tls', {}), 'pending': pending, 'busy': ACMETLS_WORK['busy'],
+            'error': ACMETLS_WORK.get('error') or '', 'said': ACMETLS_WORK.get('said') or [],
+            'last': ACMETLS_WORK.get('last') or {}, 'suggest': otptls_suggest(),
+            't': time.time()}
+
+
+def acmetls_api(wr, b, by):
+    """What the card asks for (POST /api/acmetls)."""
+    act = str(b.get('action') or '')
+    if act == 'refresh':
+        acmetls_ask(wr, {'do': 'read'})
+        return {'ok': True, 'message': 'asked again'}
+    if act == 'open':
+        try:
+            data = base64.b64decode(str(b.get('zip') or ''), validate=True)
+        except (ValueError, TypeError):
+            raise ValueError('the file did not arrive whole')
+        got = acmetls_open_zip(data, str(b.get('passphrase') or ''))
+        return dict(got, ok=True)
+    if act in ('apply', 'make', 'set'):
+        ask = dict(_otptls_common(b), do=act, by=by)
+        if act == 'apply':
+            tok = str(b.get('token') or '')
+            if tok:
+                had = ACMETLS_OPENED.pop(tok, None)
+                if not had or time.time() - had['at'] > 600:
+                    raise ValueError('the file opened is no longer held (ten minutes): open it '
+                                     'again')
+                ask.update(ca=had['ca'], cert=had['cert'], key=had['key'], how='acme')
+            else:
+                key = str(b.get('key') or '')
+                if 'PRIVATE KEY-----' not in key or 'ENCRYPTED' in key:
+                    raise ValueError('the key: a PEM private key without a passphrase')
+                ask.update(cert=str(b.get('cert') or '')[:200000], key=key[:20000],
+                           chain=str(b.get('chain') or '')[:200000],
+                           ca=str(b.get('ca') or '')[:200000], how='given')
+        elif act == 'make':
+            names = b.get('names')
+            if isinstance(names, list):
+                names = ' '.join(str(n) for n in names)
+            ask.update(names=str(names or '')[:2000], otp_ca=str(b.get('otp_ca') or '')[:200000],
+                       how='made')
+        else:
+            ask['otp_ca'] = str(b.get('otp_ca') or '')[:200000]
+        if ask['mutual'] and act != 'set' and 'BEGIN CERTIFICATE' not in (
+                ask.get('ca') if act == 'apply' else ask.get('otp_ca') or ''):
+            raise ValueError('mutual TLS: acme\'s authority (its ca.pem) is needed, to know the '
+                             'nodes by')
+        acmetls_ask(wr, ask)
+        return {'ok': True, 'message': 'root puts it in - it takes a few seconds, a minute when '
+                                       'rsyslog-gnutls has to be installed first'}
+    if act == 'remove':
+        acmetls_ask(wr, {'do': 'remove', 'by': by})
+        return {'ok': True, 'message': 'root takes the encrypted input, its certificate and key '
+                                       'away within seconds; the plain one stays as it is'}
+    if act == 'off':
+        acmetls_ask(wr, {'do': 'off', 'by': by})
         return {'ok': True, 'message': 'root takes the encrypted input away within seconds; the '
                                        'plain one stays as it is'}
     raise ValueError('no such thing to do')
@@ -76402,6 +77305,23 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return None
             return self.send_json(push_do(daemon, self.body(), me.get('name') or ''))
 
+        # ---- acme's log (1.10.287): the acme tab, for anybody signed in,
+        # and only while it is read.
+        if path in ('/api/acmelog', '/api/acmelog/events'):
+            me = self.need_login()
+            if not me:
+                return None
+            if not daemon.acmelog_on():
+                return self.send_json({'on': False})
+            if path == '/api/acmelog':
+                return self.send_json(daemon.held(
+                    'acmelog/view/%d' % number('days', 30, 1, 400), 5,
+                    lambda: store.acme_view(number('days', 30, 1, 400))))
+            want = {k: one(k) for k in store.ACME_FILTERS + ('q', 'before', 'since')}
+            got = store.acme_events_list(want, number('limit', 200, 1, 1000))
+            got['on'] = True
+            return self.send_json(got)
+
         # ---- stopping a search somebody no longer wants -------------------
         if path == '/api/stop' and method == 'POST':
             me = self.need_login()
@@ -77350,6 +78270,19 @@ class ApiHandler(BaseHTTPRequestHandler):
             try:
                 return self.send_json(otptls_api(daemon.webroot, self.body(),
                                                  me.get('name') or ''))
+            except (WebRootError, ValueError, OSError) as e:
+                return self.fail(str(e))
+
+        # ...and acme's logs over TLS (1.10.287), the same way.
+        if path == '/api/acmetls':
+            me = self.need_admin()
+            if not me:
+                return None
+            if method != 'POST':
+                return self.send_json(acmetls_view(daemon.webroot))
+            try:
+                return self.send_json(acmetls_api(daemon.webroot, self.body(),
+                                                  me.get('name') or ''))
             except (WebRootError, ValueError, OSError) as e:
                 return self.fail(str(e))
 
@@ -80475,7 +81408,8 @@ def cmd_status(args, pal, store):
              'fwlog': 'what crossed the firewall',
              'otp': 'one-time passwords',
              'otp-detail': 'what the token server was asked',
-             'eduroam': 'eduroam sign-ins', 'eduroam-detail': 'eduroam sessions'}
+             'eduroam': 'eduroam sign-ins', 'eduroam-detail': 'eduroam sessions',
+             'acmelog': 'what acme did'}
     keep_s = 86400 * max(1, int(data.get('fw_keep_days')
                                 or CONFIG.get('fwlog_keep_days') or 14))
     shown = log_rows_grouped(data['logs'], float(data.get('now') or time.time()), keep_s,

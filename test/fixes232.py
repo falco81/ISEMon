@@ -40,9 +40,12 @@ PORT = 19400 + random.randint(0, 90)
 
 # The shape of the database DOWNGRADE_FLOOR was set for: every table, every
 # column added later, every index, the split tables, the columns each engine
-# treats apart. The same in 1.10.226 and 1.10.232.
+# treats apart. The same in 1.10.226 and 1.10.232. 1.10.287 added a table of
+# its own (acme_events, acme's log) and nothing else: an older version never
+# reads it, never writes it and never copies it - its tables are the ones its
+# own SCHEMA names - so the floor stays where it was.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': 'bd9faa25c4715226358c5d8575a5afd00c60ee62bcbafc02fcf79a153c279194'}
+               'sha256': '3f625a59804ce4fda0d70db7542327febf0f59c85c605d240edaa13217aac8c2'}
 
 
 def ok(what, got, want=True):

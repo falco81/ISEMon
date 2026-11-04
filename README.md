@@ -372,6 +372,32 @@ working.
 
 ## Version
 
+1.10.287
+
+- **acme - the certificate manager - read from its logs**, as the OTP logs
+  are: Settings → **The acme logs** (off by default). acme sends what happens
+  to every certificate by syslog (`acme-certs`) and, with `isemon_events=1`,
+  the rest of what it does (`acme`); rsyslog files them as
+  `/var/log/remote/<HOST>/acme-certs.log` and `acme.log`
+  (`deploy/rsyslog-acme.conf`). Every line is kept once (a line read twice is
+  one row), unknown kinds and fields included; acme's test lines that are not
+  key=value are kept as text. Nothing of it is ever judged.
+- **An acme tab**, there only while those logs are read: every certificate as
+  its last line says it is (fine, runs out soon, run out, renewal failing,
+  not deployed, revoked, deleted) with the days it has left, its names,
+  issuer, serial and the targets it is on; what wants looking at; when they
+  run out, on one line of time; what acme did day by day; its targets and its
+  nodes; what went wrong; and every line it sent, searched and filtered, each
+  opened whole. The tab counts the certificates that want looking at.
+- **Encrypted receiving for acme's nodes** (Settings → The acme logs →
+  Encrypted receiving): the receiver the OTP logs have, done again for acme -
+  its own rsyslog file (`99-tls-acme.conf`), folder (`/etc/pki/rsyslog/acme`)
+  and port; the certificate from the ZIP acme's wizard makes, made here or
+  pasted; mutual TLS by the nodes' names. With both receivers set up, imtcp
+  is loaded once, by the file rsyslog reads first. `./install.sh --upgrade`
+  puts in the path unit that watches `acmetls.ask`.
+- `acme` itself - this server's own Automatic certificates - is as it was.
+
 1.10.286
 
 - **`isemon --get KEY`** - what `--set` changes, read back: the value as it

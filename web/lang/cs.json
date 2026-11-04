@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.285",
+  "version": "1.10.287",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -59,6 +59,10 @@
   "s.10th.1fe9f4eb": {
    "source": "10th",
    "text": "10."
+  },
+  "s.11-acme-conf.fb83e25b": {
+   "source": "11-acme.conf",
+   "text": "11-acme.conf"
   },
   "s.1111-staff.4c81cd54": {
    "source": "1111, staff",
@@ -212,6 +216,10 @@
    "source": "6th",
    "text": "6."
   },
+  "s.7-days.0a8dd6ad": {
+   "source": "7 days",
+   "text": "7 dní"
+  },
   "s.7th.cb13d0ba": {
    "source": "7th",
    "text": "7."
@@ -283,6 +291,10 @@
   "s.8th.4c737b6b": {
    "source": "8th",
    "text": "8."
+  },
+  "s.90-days.170621ac": {
+   "source": "90 days",
+   "text": "90 dní"
   },
   "s.9th.e62af88d": {
    "source": "9th",
@@ -819,6 +831,14 @@
   "s.a-lease-moves-so-this-is.a56cadca": {
    "source": "A lease moves, so this is what it was called then and not necessarily what it is called now. Open the address for every name it has had.",
    "text": "Lease se přesouvá, takže toto je název z té doby, ne nutně současný. Otevřete adresu a uvidíte všechny názvy, které kdy měla."
+  },
+  "s.a-line-of-acme-s.35af81f6": {
+   "source": "A line of acme’s",
+   "text": "Řádek od acme"
+  },
+  "s.a-line.5ede2f28": {
+   "source": "a line",
+   "text": "řádek"
   },
   "s.a-list-switched-on-or-off.9cddd7e5": {
    "source": "A list switched on or off here is saved with",
@@ -1876,6 +1896,10 @@
    "source": "; _acme-challenge.NAME is a CNAME to the subdomain below.",
    "text": "; _acme-challenge.JMÉNO je CNAME na subdoménu níže."
   },
+  "s.acme-cut-this-line-at-its.7b25c204": {
+   "source": "acme cut this line at its length (…TRUNCATED).",
+   "text": "acme tento řádek zkrátil na svou délku (…TRUNCATED)."
+  },
   "s.acme-dns-key.6f4a82ff": {
    "source": "acme-dns key",
    "text": "Klíč acme-dns"
@@ -1892,9 +1916,21 @@
    "source": "acme.example.net",
    "text": "acme.example.net"
   },
+  "s.acme-has-said-the-end-of.f3380be8": {
+   "source": "acme has said the end of none of them yet: the not_after of a certificate comes with its issue, renewal and deployment lines.",
+   "text": "acme zatím u žádného neřekl, kdy končí: not_after certifikátu přichází s řádky o vydání, obnově a nasazení."
+  },
   "s.acme-leaves-it-alone.ce1236b2": {
    "source": "ACME leaves it alone",
    "text": "ACME ho nechává být"
+  },
+  "s.acme-log.59d1ebc0": {
+   "source": "acme.log",
+   "text": "acme.log"
+  },
+  "s.acme-looks-after-the-certificates-of.bc5f4114": {
+   "source": "acme looks after the certificates of the whole site - it orders them, renews them and puts them on the F5s, the firewalls and the servers. What happened to each of them, and what went wrong, it sends here by syslog: switched on, the acme tab shows every certificate, when it runs out, where it went and what failed.",
+   "text": "acme se stará o certifikáty celé organizace - objednává je, obnovuje a nasazuje na F5, firewally a servery. Co se s každým z nich stalo a co selhalo, posílá sem přes syslog: po zapnutí ukazuje záložka acme každý certifikát, kdy vyprší, kam byl nasazen a co selhalo."
   },
   "s.acme-no-longer-renews-it-either.31a89f8a": {
    "source": "ACME no longer renews it either.",
@@ -1920,9 +1956,25 @@
    "source": "ACME renews this one from now on - at the next look (within the hour) if it is not from the CA yet.",
    "text": "Od teď ho obnovuje ACME – při nejbližší kontrole (do hodiny), pokud ještě není od CA."
   },
+  "s.acme-s-authority.24397703": {
+   "source": "acme's authority",
+   "text": "Autorita acme"
+  },
   "s.acme-s-key.a0c4f1bb": {
    "source": "acme’s key",
    "text": "Klíč acme"
+  },
+  "s.acme-s-logs-are-not-read.cb5b454e": {
+   "source": "acme’s logs are not read: Settings → The acme logs.",
+   "text": "Logy acme se nečtou: Nastavení → Logy acme."
+  },
+  "s.acme-s-nodes-can-send-their.a74b4111": {
+   "source": "acme's nodes can send their lines here encrypted (syslog over TLS, RFC 5425): acme checks that it is isemon that answers, and with mutual TLS only acme's own nodes may send - the name in each node's certificate is the node's name. The plain input on 514 keeps working for any node not switched over yet, and what arrives is filed in the same folders - nothing about reading the logs changes.",
+   "text": "Uzly acme sem mohou posílat své řádky šifrovaně (syslog přes TLS, RFC 5425): acme ověřuje, že odpovídá isemon, a se vzájemným TLS smějí posílat jen uzly acme - jméno v certifikátu každého uzlu je název uzlu. Nešifrovaný vstup na 514 dál funguje pro uzly, které ještě nejsou přepnuté, a co dorazí, se ukládá do stejných složek - na čtení logů se nic nemění."
+  },
+  "s.acme-s-nodes.0edca580": {
+   "source": "acme’s nodes",
+   "text": "Uzly acme"
   },
   "s.acme-s-own-certificates-from-acme.8a4ef690": {
    "source": "acme’s own Certificates from acme card shows This acme’s own key: acme-push-ed25519 AAAA… acme then pins this server when it first sees it - keep Check the application’s certificate on there.",
@@ -1936,17 +1988,37 @@
    "source": "acme, the certificate manager, can give this server its certificate and renew it by itself (acme push). Paired once with a code shown here, acme signs every request with its key and sends the certificate's private key sealed for this server alone; the certificate is kept exactly where an upload above keeps it, and the Automatic certificates leave it alone from then on. Off until switched on; acme's address must be among those that may reach these pages.",
    "text": "acme, správce certifikátů, může tomuto serveru dávat certifikát a sám ho obnovovat (acme push). Po jednorázovém spárování kódem z této karty acme podepisuje každý požadavek svým klíčem a soukromý klíč certifikátu posílá zapečetěný jen pro tento server; certifikát se uloží přesně tam, kam ho ukládá ruční nahrání výše, a Automatické certifikáty ho od té doby nechají být. Vypnuté, dokud to nezapnete; adresa acme musí patřit mezi ty, které na tyto stránky smějí."
   },
+  "s.acme-the-certificate-manager-sends-what.ed7b0413": {
+   "source": "acme - the certificate manager - sends what happens to every certificate (issued, renewed, deployed to a target, about to run out, failed) by syslog, and with isemon_events on the rest of what it does (sign-ins, settings, backups). Switched on, it is read as the OTP logs are and an acme tab shows it all; nothing of it is ever judged. Off, not one file is opened.",
+   "text": "acme - správce certifikátů - posílá přes syslog, co se stalo s každým certifikátem (vydán, obnoven, nasazen na cíl, brzy vyprší, selhal), a s isemon_events i zbytek toho, co dělá (přihlášení, nastavení, zálohy). Po zapnutí se čte stejně jako logy OTP a vše ukazuje záložka acme; nic z toho se nikdy neposuzuje. Vypnuto se neotevře ani jeden soubor."
+  },
+  "s.acme-the-certificate-manager.cf8b6397": {
+   "source": "acme - the certificate manager",
+   "text": "acme - správce certifikátů"
+  },
   "s.acme.293abb6b": {
    "source": "acme",
    "text": "acme"
+  },
+  "s.acme1-acme2.f2a3a4eb": {
+   "source": "acme1 acme2",
+   "text": "acme1 acme2"
   },
   "s.acme1.839c0285": {
    "source": "acme1",
    "text": "acme1"
   },
+  "s.acme2.16bce300": {
+   "source": "acme2",
+   "text": "acme2"
+  },
   "s.acmedns.93b5bebb": {
    "source": "acmedns",
    "text": "acmedns"
+  },
+  "s.acmelog.41cbe60e": {
+   "source": "acmelog",
+   "text": "acmelog"
   },
   "s.across-the-forest.d0d9bbdd": {
    "source": "across the forest",
@@ -2075,6 +2147,10 @@
   "s.add.df756c7b": {
    "source": "→ Add",
    "text": "→ Add"
+  },
+  "s.added.172415f0": {
+   "source": "added",
+   "text": "přidán"
   },
   "s.added.b68734c2": {
    "source": "Added",
@@ -3052,6 +3128,10 @@
    "source": "antivirus",
    "text": "antivir"
   },
+  "s.any-action.e108025a": {
+   "source": "Any action",
+   "text": "Jakákoli akce"
+  },
   "s.any-address-at-all-the-rule.fa353507": {
    "source": "Any address at all — the rule does not care where it comes from.",
    "text": "Jakákoli adresa – pravidlu je jedno, odkud přichází."
@@ -3072,9 +3152,25 @@
    "source": "Any key already stored for it is replaced",
    "text": "Případný klíč, který je pro něj už uložen, bude nahrazen"
   },
+  "s.any-kind.8cb2cddf": {
+   "source": "Any kind",
+   "text": "Jakýkoli druh"
+  },
+  "s.any-level.cb33d8da": {
+   "source": "Any level",
+   "text": "Jakákoli úroveň"
+  },
   "s.any-node-with-a-certificate-from.61debf77": {
    "source": "any node with a certificate from otp's authority",
    "text": "kterýkoli uzel s certifikátem od autority otp"
+  },
+  "s.any-node-with-a-certificate-from.f37657c3": {
+   "source": "any node with a certificate from acme's authority",
+   "text": "kterýkoli uzel s certifikátem od autority acme"
+  },
+  "s.any-node.340b35d5": {
+   "source": "Any node",
+   "text": "Jakýkoli uzel"
   },
   "s.any-of-them.c214c8ea": {
    "source": "any of them",
@@ -3340,6 +3436,10 @@
    "source": "As written down at your last sign-in.",
    "text": "Jak bylo zapsáno při vašem posledním přihlášení."
   },
+  "s.as.21f79c4b": {
+   "source": ", as",
+   "text": ", jako"
+  },
   "s.as.9d31985f": {
    "source": "As",
    "text": "Jako"
@@ -3543,6 +3643,10 @@
   "s.at-least-one-name-or-address.8fa15fe6": {
    "source": "at least one name or address otp's nodes reach this machine by",
    "text": "alespoň jeden název nebo adresa, pod kterou uzly otp tento stroj dosáhnou"
+  },
+  "s.at-least-one-name-or-address.d721c062": {
+   "source": "at least one name or address acme's nodes reach this machine by",
+   "text": "alespoň jeden název nebo adresa, pod kterou uzly acme tento stroj dosáhnou"
   },
   "s.at-least-since.af6cccbc": {
    "source": "at least since",
@@ -4320,6 +4424,10 @@
    "source": "both lists — the banned addresses and the countries",
    "text": "oba seznamy – zablokované adresy i země"
   },
+  "s.both-logs.501ff966": {
+   "source": "Both logs",
+   "text": "Oba logy"
+  },
   "s.both-nodes-of-the-pair-always.82461e3c": {
    "source": "Both nodes of the pair, always — only one of them is authenticating at any moment and which one changes without warning. Where each file has been read up to is kept in the database, so a restart carries on rather than reading everything again.",
    "text": "Vždy oba uzly dvojice – v každém okamžiku autentizuje jen jeden z nich a který to je, se mění bez varování. Kam až byl každý soubor přečten, se uchovává v databázi, takže restart pokračuje, místo aby se vše četlo znovu."
@@ -4760,6 +4868,10 @@
    "source": "certificate",
    "text": "certifikát"
   },
+  "s.certificates-acme-certs.7cd66c5c": {
+   "source": "certificates (acme-certs)",
+   "text": "certifikáty (acme-certs)"
+  },
   "s.certificates-and-tls.dd603688": {
    "source": "Certificates and TLS",
    "text": "Certifikáty a TLS"
@@ -4787,6 +4899,22 @@
   "s.certificates-in-the-firewall-s-trustpoints.079c3358": {
    "source": "Certificates in the firewall’s trustpoints that have expired or are about to - the VPN’s own name among them, the one every client checks.",
    "text": "Certifikáty v trustpointech firewallu, které vypršely nebo brzy vyprší – mezi nimi i vlastní jméno VPN, které kontroluje každý klient."
+  },
+  "s.certificates-only-nothing-but-acme-certs.e581a105": {
+   "source": "“certificates only”: nothing but acme-certs came from that node this week - isemon_events is off there.",
+   "text": "„jen certifikáty“: z toho uzlu tento týden přišlo jen acme-certs - isemon_events je tam vypnuté."
+  },
+  "s.certificates-only.9d575607": {
+   "source": "certificates only",
+   "text": "jen certifikáty"
+  },
+  "s.certificates.1102b412": {
+   "source": "certificates",
+   "text": "certifikáty"
+  },
+  "s.certificates.b3e4eb01": {
+   "source": "Certificates",
+   "text": "Certifikáty"
   },
   "s.cfg.6ed7efe0": {
    "source": "cfg",
@@ -5032,6 +5160,10 @@
    "source": "choose the file first - isemon-tls.zip",
    "text": "nejdřív vyberte soubor - isemon-tls.zip"
   },
+  "s.choose-the-file-first-the-zip.efd70d0c": {
+   "source": "choose the file first - the ZIP acme made",
+   "text": "nejdřív vyberte soubor - ZIP, který vytvořil acme"
+  },
   "s.choose-the-file.ef9cfa06": {
    "source": "Choose the file…",
    "text": "Vybrat soubor…"
@@ -5091,6 +5223,10 @@
   "s.ciphers-for-tls-1-2-an.8da0ab24": {
    "source": "Ciphers for TLS 1.2 (an OpenSSL list; TLS 1.3 chooses its own)",
    "text": "Šifry pro TLS 1.2 (seznam OpenSSL; TLS 1.3 si volí vlastní)"
+  },
+  "s.circle.00b7b811": {
+   "source": "circle",
+   "text": "circle"
   },
   "s.cisco-ftd-and-asa.0e0d475c": {
    "source": "Cisco FTD and ASA",
@@ -5736,6 +5872,10 @@
    "source": "custom",
    "text": "vlastní"
   },
+  "s.cut.06e45e38": {
+   "source": "cut",
+   "text": "zkráceno"
+  },
   "s.cvpn.7cbd787b": {
    "source": "cvpn",
    "text": "cvpn"
@@ -5936,6 +6076,10 @@
    "source": "Deleted by",
    "text": "Smazal"
   },
+  "s.deleted.441bda6c": {
+   "source": "Deleted",
+   "text": "Smazané"
+  },
   "s.deleted.b639f5cc": {
    "source": "deleted",
    "text": "smazáno"
@@ -5983,6 +6127,22 @@
   "s.deploy-deployment.3ba098bb": {
    "source": "Deploy → Deployment",
    "text": "Deploy → Deployment"
+  },
+  "s.deploy-rsyslog-acme-conf.7c4a9634": {
+   "source": "deploy/rsyslog-acme.conf",
+   "text": "deploy/rsyslog-acme.conf"
+  },
+  "s.deployed.85a01b85": {
+   "source": "deployed",
+   "text": "nasazen"
+  },
+  "s.deployed.ceeeeffb": {
+   "source": "Deployed",
+   "text": "Nasazeno"
+  },
+  "s.deployment-failed.23480e59": {
+   "source": "deployment failed",
+   "text": "nasazení selhalo"
   },
   "s.der.7d44c33c": {
    "source": "der",
@@ -6664,6 +6824,10 @@
    "source": "Each answer this site’s own RADIUS gave, and who got it last.",
    "text": "Každá odpověď, kterou dal vlastní RADIUS této lokality, a kdo ji dostal naposledy."
   },
+  "s.each-as-its-last-line-says.9804677d": {
+   "source": "each as its last line says it is",
+   "text": "každý tak, jak říká jeho poslední řádek"
+  },
   "s.each-bar-is-split-by-the.83b23614": {
    "source": "Each bar is split by the door: the VPN underneath, then TACACS+, the network, and the token server and the visitors’ network above those. Different systems with different people in front of them, so the height means everything in that hour and the colours say which door.",
    "text": "Každý sloupec je rozdělen podle vstupu: VPN dole, pak TACACS+, síť a nad nimi tokenový server a síť pro hosty. Různé systémy s různými lidmi před sebou, takže výška znamená vše v dané hodině a barvy říkají, jaký vstup."
@@ -7328,6 +7492,10 @@
    "source": "Every ban there has ever been, kept long after the address was let back in. It is what the ladder counts, and what somebody reads when they want to know why an address they have never heard of was on the router last Tuesday.",
    "text": "Všechny blokace, které kdy byly, uchované dlouho poté, co byla adresa znovu vpuštěna. Z toho vycházejí stupně blokace a to si přečte ten, kdo chce vědět, proč byla minulé úterý na routeru adresa, o které nikdy neslyšel."
   },
+  "s.every-certificate-acme-issued-renewed-deployed.5369d547": {
+   "source": "every certificate acme issued, renewed, deployed, let run out or failed with - and, where it sends them, its sign-ins and settings",
+   "text": "každý certifikát, který acme vydal, obnovil, nasadil, nechal vypršet nebo u něj selhal - a kde je posílá, i jeho přihlášení a nastavení"
+  },
   "s.every-closed-ban-and-every-line.df503323": {
    "source": "Every closed ban and every line of every address’s story goes. Whoever is banned right now stays banned — but the ladder counts this history, so everybody starts again at the bottom step afterwards. This cannot be undone.",
    "text": "Zmizí každá ukončená blokace a každý řádek historie každé adresy. Kdo je zablokovaný právě teď, zůstane zablokovaný — ale stupně blokace z této historie vycházejí, takže poté všichni začnou znovu na nejnižším stupni. Tuto akci nelze vrátit zpět."
@@ -7508,6 +7676,10 @@
    "source": "every kind of line",
    "text": "všechny druhy řádků"
   },
+  "s.every-line-acme-sent.dafaab00": {
+   "source": "Every line acme sent",
+   "text": "Každý řádek, který acme poslal"
+  },
   "s.every-line-goes-from-this-list.f6cc9955": {
    "source": "Every line goes from this list.",
    "text": "Z tohoto seznamu zmizí každý řádek."
@@ -7647,6 +7819,10 @@
   "s.every-nps-server.0a350878": {
    "source": "every NPS server",
    "text": "všechny servery NPS"
+  },
+  "s.every-one-deployed.7b0b0bf2": {
+   "source": "every one deployed",
+   "text": "vše nasazeno"
   },
   "s.every-one-of-them-allowed-click.bb458b44": {
    "source": "Every one of them allowed. Click the row to read them.",
@@ -7956,6 +8132,10 @@
    "source": "Everything above the ending is this machine's: one deny line per address, written afresh every time. The ending is yours, and it is the same body of an access list you would type at the router — as many lines as your own list needs. Every line is read before it is saved, and a line a router would refuse is refused here instead, where it costs nothing. An access list ends with an implicit deny, so a list with no permit at the bottom is a list that stops everything: that is why this is a setting and not something to remember by hand.",
    "text": "Vše nad závěrem patří tomuto stroji: jeden řádek deny na adresu, pokaždé zapsaný znovu. Závěr je váš a je to stejné tělo access listu, jaké byste zadali na routeru — tolik řádků, kolik váš vlastní seznam potřebuje. Každý řádek se před uložením zkontroluje a řádek, který by router odmítl, se odmítne už zde, kde to nic nestojí. Access list končí implicitním deny, takže seznam bez permit na konci zastaví všechno: proto je to nastavení, a ne něco, na co je třeba pamatovat ručně."
   },
+  "s.everything-acme-sent.4cdc9e45": {
+   "source": "Everything acme sent",
+   "text": "Vše, co acme poslal"
+  },
   "s.everything-answered-people-in-the-groups.c5f38e3c": {
    "source": "Everything answered. People in the groups above can sign in with their own name and password.",
    "text": "Vše odpovědělo. Lidé ve výše uvedených skupinách se mohou přihlásit vlastním jménem a heslem."
@@ -8216,9 +8396,17 @@
    "source": "Expected",
    "text": "Očekáváno"
   },
+  "s.expired.45a6f9ad": {
+   "source": "expired",
+   "text": "vypršel"
+  },
   "s.expires-in.0a49c3a3": {
    "source": "Expires in",
    "text": "Vyprší za"
+  },
+  "s.expiring.5c300411": {
+   "source": "expiring",
+   "text": "brzy vyprší"
   },
   "s.explicit-auth-tls-on-port-21.5485ab91": {
    "source": "explicit - AUTH TLS on port 21",
@@ -8380,6 +8568,14 @@
    "source": "failed",
    "text": "neúspěšné"
   },
+  "s.failing.2181f599": {
+   "source": "Failing",
+   "text": "Selhává"
+  },
+  "s.failing.b6d73a45": {
+   "source": "failing",
+   "text": "selhává"
+  },
   "s.failover-ftd.c73b9cb8": {
    "source": "failover (FTD)",
    "text": "failover (FTD)"
@@ -8399,6 +8595,10 @@
   "s.failurereason.5a7f1b26": {
    "source": "FailureReason",
    "text": "FailureReason"
+  },
+  "s.failures.3eec1582": {
+   "source": "Failures",
+   "text": "Selhání"
   },
   "s.false-ticker.1954c9f8": {
    "source": "false ticker",
@@ -8680,6 +8880,10 @@
    "source": "Filling the country list on the router",
    "text": "Plnění seznamu zemí na routeru"
   },
+  "s.find-a-certificate-a-name-a.7cd1ab63": {
+   "source": "Find a certificate, a name, a serial, a target…",
+   "text": "Najít certifikát, jméno, sériové číslo, cíl…"
+  },
   "s.find-a-setting.2c9a67e0": {
    "source": "Find a setting…",
    "text": "Hledat nastavení…"
@@ -8696,6 +8900,10 @@
    "source": "Find anything",
    "text": "Hledat cokoli"
   },
+  "s.find-in-the-lines.d6111bf0": {
+   "source": "Find in the lines…",
+   "text": "Hledat v řádcích…"
+  },
   "s.find-the-groups.6a9747b2": {
    "source": "Find the groups",
    "text": "Najít skupiny"
@@ -8703,6 +8911,10 @@
   "s.find.ded8dae5": {
    "source": "find",
    "text": "hledat"
+  },
+  "s.fine.226d7ec9": {
+   "source": "Fine",
+   "text": "V pořádku"
   },
   "s.fingerprint.fed4c905": {
    "source": "Fingerprint",
@@ -9028,6 +9240,10 @@
    "source": "for the FTDs using that policy. From then on the FMC updates the list by itself and pushes it without another deployment.",
    "text": "pro FTD, která tuto politiku používají. Od té chvíle FMC aktualizuje seznam sám a nasazuje ho bez dalšího deploymentu."
   },
+  "s.for-the-rest-of-what-acme.869fc39a": {
+   "source": "for the rest of what acme does as well. rsyslog files the lines as",
+   "text": "i pro zbytek toho, co acme dělá. rsyslog ukládá řádky jako"
+  },
   "s.for-the-settings-that-take-effect.e302f849": {
    "source": "For the settings that take effect only at its start. Restarting takes a few seconds. While PostgreSQL is down this program cannot write; it waits, and carries on where it was.",
    "text": "Kvůli nastavením, která platí až od startu. Restart trvá několik sekund. Dokud PostgreSQL neběží, program nemůže zapisovat; počká a pak pokračuje, kde přestal."
@@ -9311,6 +9527,10 @@
   "s.from-the-eduroam-logs.b0ab5c8d": {
    "source": "from the eduroam logs",
    "text": "z logů eduroam"
+  },
+  "s.from-the-file-acme-made.8050e093": {
+   "source": "from the file acme made",
+   "text": "ze souboru, který vytvořil acme"
   },
   "s.from-the-file-otp-made.22ce812e": {
    "source": "from the file otp made",
@@ -9944,6 +10164,14 @@
    "source": "Hong Kong",
    "text": "Hongkong"
   },
+  "s.host-being-isemon-hostname-in-acme.771db1c4": {
+   "source": ", HOST being isemon_hostname in acme.",
+   "text": ", kde HOST je isemon_hostname v acme."
+  },
+  "s.host-being-isemon-hostname-in-acme.82425d11": {
+   "source": "/, HOST being isemon_hostname in acme (one for the whole cluster; each node says its own name in every line). Comma separated for more than one acme; a path may name a file itself.",
+   "text": "/, kde HOST je isemon_hostname v acme (jeden pro celý cluster; každý uzel uvádí v každém řádku své jméno). Více acme oddělte čárkou; cesta může vést i přímo na soubor."
+  },
   "s.host-key-not-trusted-yet.269d6428": {
    "source": "host key not trusted yet",
    "text": "klíč serveru zatím neověřen"
@@ -10235,6 +10463,10 @@
   "s.how-long-to-wait-for-that.b5d50bab": {
    "source": "How long to wait for that server before giving up on one attempt.",
    "text": "Jak dlouho čekat na tento server, než se jeden pokus vzdá."
+  },
+  "s.how-long-what-acme-sent-is.14246fab": {
+   "source": "How long what acme sent is kept: every issue, renewal, deployment and failure of every certificate. A few lines a day - a year of it is little.",
+   "text": "Jak dlouho se uchovává, co acme poslal: každé vydání, obnova, nasazení a selhání každého certifikátu. Pár řádků denně - rok je málo dat."
   },
   "s.how-many-address-ranges-this-list.3476149b": {
    "source": "How many address ranges this list holds. A range is not one address: a single range can be a whole network of them.",
@@ -10816,6 +11048,10 @@
    "source": "IKEv2",
    "text": "IKEv2"
   },
+  "s.img.978ea7af": {
+   "source": "img",
+   "text": "img"
+  },
   "s.implicit-tls-from-the-start-port.9f6d9a7b": {
    "source": "implicit - TLS from the start, port 990",
    "text": "implicitní – TLS od začátku, port 990"
@@ -10848,6 +11084,10 @@
    "source": "imported",
    "text": "importováno"
   },
+  "s.in-1-day.fc2039a2": {
+   "source": "in 1 day",
+   "text": "za 1 den"
+  },
   "s.in-24-h.e13701cd": {
    "source": "in 24 h",
    "text": "za 24 h"
@@ -10859,6 +11099,10 @@
   "s.in-acme-targets-add-an-application.5a0f188c": {
    "source": "In acme: Targets → add An application of ours (acme push), its address below, and this code in Pairing code - then Try. The code is shown this once, works once, for 15 minutes; five wrong tries end it.",
    "text": "V acme: Cíle → přidat Naše aplikace (acme push), adresu níže a tento kód do Párovací kód – pak Vyzkoušet. Kód se ukáže jen teď, platí jednou a 15 minut; pět chybných pokusů ho zruší."
+  },
+  "s.in-acme.be33b15b": {
+   "source": "In acme:",
+   "text": "V acme:"
   },
   "s.in-an-ordinary-firewall-policy-from.3b4e9748": {
    "source": "In an ordinary firewall policy from the internet side, put",
@@ -11664,6 +11908,10 @@
    "source": "isemon makes an authority of its own and a certificate from it. Its authority is then pasted into otp as \"isemon has one from its own CA\".",
    "text": "isemon vytvoří vlastní autoritu a od ní certifikát. Jeho autorita se pak vloží do otp jako \"isemon has one from its own CA\"."
   },
+  "s.isemon-makes-an-authority-of-its.c17ce099": {
+   "source": "isemon makes an authority of its own and a certificate from it. Its authority is then pasted into acme as \"isemon has one from its own CA\".",
+   "text": "isemon vytvoří vlastní autoritu a od ní certifikát. Jeho autorita se pak vloží do acme jako \"isemon has one from its own CA\"."
+  },
   "s.isemon-nightly.d3683098": {
    "source": "isemon\\nightly",
    "text": "isemon\\nightly"
@@ -11716,9 +11964,17 @@
    "source": "isemon's certificate was made here by an authority of this machine's own. otp checks isemon by it: paste it into otp - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\".",
    "text": "Certifikát isemonu byl vytvořen zde vlastní autoritou tohoto stroje. otp podle ní isemon ověřuje: vložte ji do otp - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\"."
   },
+  "s.isemon-s-certificate-was-made-here.b996ddc8": {
+   "source": "isemon's certificate was made here by an authority of this machine's own. acme checks isemon by it: paste it into acme - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\".",
+   "text": "Certifikát isemonu byl vytvořen zde vlastní autoritou tohoto stroje. acme podle ní isemon ověřuje: vložte ji do acme - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\"."
+  },
   "s.isemon-s-certificate.9665d2f1": {
    "source": "isemon's certificate",
    "text": "Certifikát isemonu"
+  },
+  "s.isemon-s-firewall-does-not-let.3926b8a4": {
+   "source": "isemon's firewall does not let it in - The logs arriving (rsyslog) is turned off under Settings → Firewall and access",
+   "text": "firewall isemonu to nepustí - Přicházející logy (rsyslog) jsou vypnuté v Nastavení → Firewall a přístup"
   },
   "s.isemon-s-firewall-does-not-let.bd4cce70": {
    "source": "isemon's firewall does not let it in - The otp logs over TLS is turned off under Settings → Firewall and access",
@@ -11728,6 +11984,10 @@
    "source": "isemon's firewall is off here - the machine's own rules decide",
    "text": "firewall isemonu je zde vypnutý - rozhodují vlastní pravidla stroje"
   },
+  "s.isemon-s-firewall-lets-it-in.075c5177": {
+   "source": "isemon's firewall lets it in from anywhere, as one of the logs arriving (Settings → Firewall and access)",
+   "text": "firewall isemonu to pouští odkudkoli, jako jeden z přicházejících logů (Nastavení → Firewall a přístup)"
+  },
   "s.isemon-s-firewall-lets-it-in.1ca1c921": {
    "source": "isemon's firewall lets it in from anywhere (Settings → Firewall and access)",
    "text": "firewall isemonu ho pouští odkudkoli (Nastavení → Firewall a přístup)"
@@ -11735,6 +11995,10 @@
   "s.isemon-s-firewall-lets-it-in.81ccaa7f": {
    "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
    "text": "firewall isemonu ho pouští jen z uzlů otp (Nastavení → Firewall a přístup)"
+  },
+  "s.isemon-s-firewall-lets-it-in.8d7624d0": {
+   "source": "isemon's firewall lets it in from the log senders named only (Settings → Firewall and access)",
+   "text": "firewall isemonu to pouští jen od uvedených odesílatelů logů (Nastavení → Firewall a přístup)"
   },
   "s.isemon-service.141f5596": {
    "source": "isemon.service",
@@ -11788,9 +12052,21 @@
    "source": "Israel",
    "text": "Izrael"
   },
+  "s.issued-and-renewed.f55389b6": {
+   "source": "Issued and renewed",
+   "text": "Vydáno a obnoveno"
+  },
   "s.issued-by.a8fac411": {
    "source": "Issued by",
    "text": "Vydal"
+  },
+  "s.issued.7c4f7733": {
+   "source": "issued",
+   "text": "vydán"
+  },
+  "s.issuer.9cf32721": {
+   "source": "issuer",
+   "text": "vydavatel"
   },
   "s.it-answered-a-name-the-first.8981a6ba": {
    "source": "It answered. A name the first directory does not have will be asked of this one — and nothing else is ever asked of it.",
@@ -11835,6 +12111,10 @@
   "s.it-could-not-be-read-just.251fb254": {
    "source": "It could not be read just now.",
    "text": "Teď se to nepodařilo přečíst."
+  },
+  "s.it-could-not-be-read.8a4c9151": {
+   "source": "It could not be read.",
+   "text": "Nepodařilo se načíst."
   },
   "s.it-did-not-answer.597429b6": {
    "source": "It did not answer",
@@ -11960,6 +12240,10 @@
    "source": "; it is used only while the directory is unreachable.",
    "text": "; používá se jen tehdy, když adresář není dostupný."
   },
+  "s.it-is-what-acme-did-kept.0cf16a12": {
+   "source": "It is what acme did, kept and shown - nobody is banned by it. Switched off, not one file is opened and the acme tab is not there.",
+   "text": "Je to, co acme udělal, uchované a zobrazené - nikdo kvůli tomu není zablokován. Vypnuto se neotevře ani jeden soubor a záložka acme není vidět."
+  },
   "s.it-is-worked-out-behind-the.a15967d3": {
    "source": "It is worked out behind the daemon and kept, so this wait is only the first time; from then on the page opens at once and says how old what it shows is.",
    "text": "Počítá se na pozadí démona a uchovává se, takže se čeká jen poprvé; od té chvíle se stránka otevře okamžitě a uvede, jak staré je to, co ukazuje."
@@ -12047,6 +12331,10 @@
   "s.its-certificate.29b2115d": {
    "source": "Its certificate",
    "text": "Jeho certifikát"
+  },
+  "s.its-certificates-log-in-each.e6bd97bb": {
+   "source": "Its certificates’ log in each",
+   "text": "Log jeho certifikátů v každé"
   },
   "s.its-configuration-is-not-readable-or.9c9596bf": {
    "source": "its configuration is not readable, or not one of isemon",
@@ -12440,6 +12728,10 @@
    "source": "Keep this menu open",
    "text": "Ponechat tuto nabídku otevřenou"
   },
+  "s.keep-what-acme-did-days.4fda9367": {
+   "source": "Keep what acme did (days)",
+   "text": "Uchovávat, co acme dělal (dní)"
+  },
   "s.keep-what-it-let-through-as.b82b55db": {
    "source": "Keep what it let through as rows at all",
    "text": "Vůbec uchovávat jako řádky to, co pustil"
@@ -12596,6 +12888,10 @@
    "source": "&kind=dump",
    "text": "&kind=dump"
   },
+  "s.kind-of-target.fd188a03": {
+   "source": "Kind of target",
+   "text": "Druh cíle"
+  },
   "s.kind-utm-file-filesandboxstatus.754158c0": {
    "source": "kind:utm/file FileSandboxStatus:*",
    "text": "kind:utm/file FileSandboxStatus:*"
@@ -12720,6 +13016,10 @@
    "source": "Last downloaded",
    "text": "Naposledy staženo"
   },
+  "s.last-failure.d11afcf4": {
+   "source": "Last failure",
+   "text": "Poslední selhání"
+  },
   "s.last-fetch-failed.3299f1bd": {
    "source": "last fetch failed",
    "text": "poslední stahování selhalo"
@@ -12747,6 +13047,14 @@
   "s.last-hour.580ee57e": {
    "source": "last hour",
    "text": "poslední hodina"
+  },
+  "s.last-issued-or-renewed.28beab3f": {
+   "source": "Last issued or renewed",
+   "text": "Naposledy vydán nebo obnoven"
+  },
+  "s.last-line.e0596ebc": {
+   "source": "Last line",
+   "text": "Poslední řádek"
   },
   "s.last-month.54184f4f": {
    "source": "last month",
@@ -12831,6 +13139,10 @@
   "s.lasted.9de28c0f": {
    "source": "lasted",
    "text": "lasted"
+  },
+  "s.later.3f14ecc8": {
+   "source": "later",
+   "text": "později"
   },
   "s.later.56e2f5d3": {
    "source": "Later",
@@ -13328,6 +13640,10 @@
    "source": "log",
    "text": "log"
   },
+  "s.log.8bf95ea3": {
+   "source": "Log",
+   "text": "Log"
+  },
   "s.log.cbf4b90c": {
    "source": "*.log",
    "text": "*.log"
@@ -13491,6 +13807,10 @@
   "s.look-up-the-names-behind-addresses.a28ab8ee": {
    "source": "Look up the names behind addresses",
    "text": "Vyhledávat názvy k adresám"
+  },
+  "s.look.e09315fa": {
+   "source": "look",
+   "text": "look"
   },
   "s.looked-after-by.2403699f": {
    "source": "Looked after by",
@@ -14180,6 +14500,10 @@
    "source": "menuitem",
    "text": "menuitem"
   },
+  "s.message.68f4145f": {
+   "source": "Message",
+   "text": "Zpráva"
+  },
   "s.method.bfbaf8b2": {
    "source": "method",
    "text": "metoda"
@@ -14412,9 +14736,21 @@
    "source": "muted",
    "text": "muted"
   },
+  "s.mutual-tls-acme-s-authority-is.f8291add": {
+   "source": "mutual TLS: acme's authority is needed, to know the nodes by - or switch mutual TLS off",
+   "text": "vzájemné TLS: je potřeba autorita acme, podle které se uzly poznají - nebo vzájemné TLS vypněte"
+  },
   "s.mutual-tls-any-node-with-a.27287a09": {
    "source": "mutual TLS - any node with a certificate from otp's authority",
    "text": "vzájemné TLS - kterýkoli uzel s certifikátem od autority otp"
+  },
+  "s.mutual-tls-any-node-with-a.537e8567": {
+   "source": "mutual TLS - any node with a certificate from acme's authority",
+   "text": "vzájemné TLS - kterýkoli uzel s certifikátem od autority acme"
+  },
+  "s.mutual-tls-isemon-takes-acme-s.8f00118a": {
+   "source": "Mutual TLS - isemon takes acme's nodes only",
+   "text": "Vzájemné TLS - isemon přijímá jen uzly acme"
   },
   "s.mutual-tls-isemon-takes-otp-s.18446127": {
    "source": "Mutual TLS - isemon takes otp's nodes only",
@@ -14511,6 +14847,10 @@
   "s.names-the-eduroam-policies.6fd2dcec": {
    "source": "names the eduroam policies.",
    "text": "označuje politiky eduroam."
+  },
+  "s.names.237a4713": {
+   "source": "names",
+   "text": "jména"
   },
   "s.names.2b7c08c3": {
    "source": "Names",
@@ -14615,6 +14955,10 @@
   "s.needed-when-the.44f9217d": {
    "source": "Needed when the",
    "text": "Potřebné, když"
+  },
+  "s.needed-with-mutual-tls-ca-pem.2a87e063": {
+   "source": "Needed with mutual TLS: ca.pem from the file acme made - acme's own authority.",
+   "text": "Potřeba se vzájemným TLS: ca.pem ze souboru, který vytvořil acme - vlastní autorita acme."
   },
   "s.needed-with-mutual-tls-otp-high.66e0a8e8": {
    "source": "Needed with mutual TLS: otp → High availability → the cluster's authority, or ca.pem from the file otp made.",
@@ -14816,6 +15160,10 @@
    "source": "Next in line, after the one being worked out now.",
    "text": "Je na řadě hned po tom, který se počítá teď."
   },
+  "s.next-to-run-out.38eb7938": {
+   "source": "Next to run out",
+   "text": "Nejbližší vypršení"
+  },
   "s.next.bc981983": {
    "source": "Next",
    "text": "Další"
@@ -14880,6 +15228,10 @@
    "source": "No backup sent yet.",
    "text": "Zatím se žádná záloha neodeslala."
   },
+  "s.no-certificate-is-like-that.d511d8bd": {
+   "source": "No certificate is like that.",
+   "text": "Žádný takový certifikát."
+  },
   "s.no-certificate-of-isemon-s.6d119ae2": {
    "source": "no certificate of isemon's",
    "text": "žádný certifikát isemonu"
@@ -14915,6 +15267,10 @@
   "s.no-database-server-is-running-as.c6b3c5ea": {
    "source": "no database server is running as a service on this machine",
    "text": "na tomto stroji neběží žádný databázový server jako služba"
+  },
+  "s.no-deployment-yet-a-target-an.f8104333": {
+   "source": "No deployment yet: a target - an F5, a FortiGate, a server - is named on the line that says a certificate went to it.",
+   "text": "Zatím žádné nasazení: cíl - F5, FortiGate, server - je uveden na řádku, který říká, že na něj certifikát odešel."
   },
   "s.no-destination-yet-a-backup-kept.b771977b": {
    "source": "No destination yet. A backup kept only on this machine is lost with it: add a place on another machine.",
@@ -15008,6 +15364,10 @@
    "source": "No, leave the router alone",
    "text": "Ne, router nechat být"
   },
+  "s.no-line-is-like-that.32b556b0": {
+   "source": "No line is like that.",
+   "text": "Žádný takový řádek."
+  },
   "s.no-log-is-switched-on.fe68579b": {
    "source": "no log is switched on",
    "text": "není zapnutý žádný log"
@@ -15043,6 +15403,14 @@
   "s.no-name.7ce85133": {
    "source": "(no name)",
    "text": "(bez jména)"
+  },
+  "s.no-node-has-said-its-name.2f61c2d5": {
+   "source": "No node has said its name yet.",
+   "text": "Žádný uzel zatím neřekl své jméno."
+  },
+  "s.no-node-named-yet.f2f1ff8a": {
+   "source": "no node named yet",
+   "text": "zatím žádný uzel"
   },
   "s.no-older-version-is-there.d18ec671": {
    "source": "No older version is there.",
@@ -15352,6 +15720,10 @@
    "source": "none of the ones switched on",
    "text": "žádný ze zapnutých"
   },
+  "s.none-said.61398ec7": {
+   "source": "none said",
+   "text": "neuvedeno"
+  },
   "s.none-seen-yet.12f39596": {
    "source": "None seen yet.",
    "text": "Zatím nic nezaznamenáno."
@@ -15480,6 +15852,10 @@
    "source": "Not counted yet.",
    "text": "Zatím nespočítáno."
   },
+  "s.not-deployed.c2880b92": {
+   "source": "Not deployed",
+   "text": "Nenasazen"
+  },
   "s.not-downloaded-here.1d1c1622": {
    "source": "not downloaded here",
    "text": "zde nestaženo"
@@ -15556,6 +15932,10 @@
    "source": "not in use",
    "text": "nepoužívá se"
   },
+  "s.not-in-what-was-kept.7596b459": {
+   "source": "not in what was kept",
+   "text": "není v uchovaném"
+  },
   "s.not-keeping-up.62f0d407": {
    "source": "Not keeping up",
    "text": "Nestíhá"
@@ -15576,6 +15956,10 @@
    "source": "Not kept, the server goes back to its old network by itself and restarts. Keep it once you have checked that it answers at its new address.",
    "text": "Nepotvrzeno: server se sám vrátí ke staré síti a restartuje se. Potvrďte až po ověření, že odpovídá na nové adrese."
   },
+  "s.not-key-value-a-test-from.0f4d1b6c": {
+   "source": "Not key=value: a test from acme’s command line or its TLS wizard.",
+   "text": "Není key=value: test z příkazové řádky acme nebo z jeho průvodce TLS."
+  },
   "s.not-known-for-certain-most-servers.4801882f": {
    "source": "not known for certain - most servers are on SSDs now; choose the other if this one is not",
    "text": "není jisté – většina serverů dnes běží na SSD; pokud tento ne, zvolte druhou možnost"
@@ -15587,6 +15971,10 @@
   "s.not-known-yet.f4cb26f0": {
    "source": "not known yet",
    "text": "zatím neznámo"
+  },
+  "s.not-known.36ad1f9c": {
+   "source": "not known",
+   "text": "neznámo"
   },
   "s.not-let-in.89040f28": {
    "source": "not let in",
@@ -15828,6 +16216,10 @@
    "source": "nothing enrolled for this account",
    "text": "pro tento účet není nic zaregistrováno"
   },
+  "s.nothing-failed.f79670cd": {
+   "source": "Nothing failed.",
+   "text": "Nic neselhalo."
+  },
   "s.nothing-filled-it-yet.3786b95c": {
    "source": "nothing filled it yet",
    "text": "zatím to nic nenaplnilo"
@@ -15835,6 +16227,10 @@
   "s.nothing-for-a-long-time-it.0696f146": {
    "source": "— nothing for a long time; it may have ended without the firewall saying so",
    "text": "— dlouho nic; mohlo to skončit, aniž by to firewall oznámil"
+  },
+  "s.nothing-from-acme-yet.8174acd8": {
+   "source": "Nothing from acme yet",
+   "text": "Od acme zatím nic"
   },
   "s.nothing-from-the-domain-controllers-in.41476dcb": {
    "source": "Nothing from the domain controllers in the window above.",
@@ -16028,6 +16424,10 @@
    "source": "nothing - isemon is pointed at what is there",
    "text": "nic – isemon se nasměruje na to, co tam je"
   },
+  "s.nothing-kept.1baf119d": {
+   "source": "Nothing kept.",
+   "text": "Nic uchováno."
+  },
   "s.nothing-matches.17e7aebf": {
    "source": "Nothing matches",
    "text": "Nic neodpovídá"
@@ -16131,6 +16531,10 @@
   "s.nothing-to-send-yet.0ddbccda": {
    "source": "nothing to send yet",
    "text": "zatím není co odeslat"
+  },
+  "s.nothing-to-switch-off-rsyslog-has.9ee6cf27": {
+   "source": "Nothing to switch off: rsyslog has no encrypted input for acme here.",
+   "text": "Není co vypnout: rsyslog tu nemá šifrovaný vstup pro acme."
   },
   "s.nothing-to-switch-off-rsyslog-has.bb9fa8da": {
    "source": "Nothing to switch off: rsyslog has no encrypted input for otp here.",
@@ -16352,6 +16756,10 @@
    "source": "Number",
    "text": "Číslo"
   },
+  "s.numeric.cd3975cf": {
+   "source": "numeric",
+   "text": "numeric"
+  },
   "s.object.1615307c": {
    "source": "object",
    "text": "objekt"
@@ -16415,6 +16823,10 @@
   "s.of.de04fa0e": {
    "source": "of",
    "text": "z"
+  },
+  "s.off-acme-still-checks-that-it.2f1c599d": {
+   "source": "Off, acme still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.",
+   "text": "Vypnuté: acme dál ověřuje, že odpovídá isemon, ale isemon přijímá řádky od kohokoli, kdo se k portu dostane."
   },
   "s.off-blocks-nobody-by-itself-temporary.f5d25f8a": {
    "source": "Off blocks nobody by itself. Temporary uses the ladder. Permanent keeps the first offender out until somebody takes them off.",
@@ -16503,6 +16915,10 @@
   "s.old-passwords-kept.d8b488e7": {
    "source": "Old passwords kept",
    "text": "Uchovávaná stará hesla"
+  },
+  "s.older-lines.ccdcd2fd": {
+   "source": "Older lines",
+   "text": "Starší řádky"
   },
   "s.older-ones-are-taken-away-too.e10461e3": {
    "source": "Older ones are taken away too - 0: only the count above decides.",
@@ -16744,6 +17160,10 @@
    "source": "on the MikroTik (",
    "text": "na MikroTik ("
   },
+  "s.on-the-node.e8bb9988": {
+   "source": "On the node",
+   "text": "Na uzlu"
+  },
   "s.on-the-nps-server-with-both.495d9cf8": {
    "source": "on the NPS server — with both",
    "text": "na serveru NPS — s oběma"
@@ -16859,6 +17279,10 @@
   "s.once-by-hand-in-your-dns.c315ca57": {
    "source": "once, by hand, in your DNS",
    "text": "jednou, ručně, ve vašem DNS"
+  },
+  "s.once-the-encrypted-receiving-below-is.7190855f": {
+   "source": "once the encrypted receiving below is set up), and",
+   "text": "jakmile bude níže nastaven šifrovaný příjem), a"
   },
   "s.one-a-range-or-several-by.3aa5bc46": {
    "source": "One, a range, or several by commas. Empty: every port.",
@@ -18476,6 +18900,10 @@
    "source": "placeholder",
    "text": "zástupný text"
   },
+  "s.plain-am-table.3ef4083b": {
+   "source": "plain am-table",
+   "text": "plain am-table"
+  },
   "s.plain-ftp-the-password-and-the.c0c4165d": {
    "source": "Plain FTP: the password and the file go over unencrypted - only inside a network you trust (the file itself is locked).",
    "text": "Obyčejné FTP: heslo i soubor jdou nešifrovaně – jen uvnitř sítě, které věříte (soubor sám je zamčený)."
@@ -19200,6 +19628,10 @@
    "source": "ram",
    "text": "ram"
   },
+  "s.ran-out-a-day-ago.42deb2a7": {
+   "source": "ran out a day ago",
+   "text": "vypršel před dnem"
+  },
   "s.ran-out.76b4acbf": {
    "source": "ran out",
    "text": "vypršelo"
@@ -19335,6 +19767,10 @@
   "s.read-a-windows-nps-server-s.85909bba": {
    "source": "Read a Windows NPS server’s logs",
    "text": "Číst logy serveru Windows NPS"
+  },
+  "s.read-acme-s-log.1c15d105": {
+   "source": "Read acme’s log",
+   "text": "Číst log acme"
   },
   "s.read-again.c6c842b1": {
    "source": "Read again",
@@ -19487,6 +19923,10 @@
   "s.read-the-radius-log-beside-it.b9f2e6ce": {
    "source": "Read the RADIUS log beside it",
    "text": "Číst vedle toho log RADIUS"
+  },
+  "s.read-the-rest-of-what-acme.6d3a81e5": {
+   "source": "Read the rest of what acme does as well",
+   "text": "Číst i zbytek toho, co acme dělá"
   },
   "s.read-the-tail-of-the-daemon.e830c0c6": {
    "source": "Read the tail of the daemon’s own log file. Switch on debug in Settings to have it say everything.",
@@ -19828,6 +20268,14 @@
    "source": "remport",
    "text": "remport"
   },
+  "s.renewal-failed.f05989d2": {
+   "source": "renewal failed",
+   "text": "obnova selhala"
+  },
+  "s.renewal-failing.2f774a20": {
+   "source": "Renewal failing",
+   "text": "Obnova selhává"
+  },
   "s.renewed-by-acme-before-it-runs.d2856c48": {
    "source": "Renewed by ACME before it runs out. A certificate put in by hand on Certificates and TLS takes it out of ACME’s care.",
    "text": "Obnovuje ho ACME, než vyprší. Certifikát vložený ručně v Certifikáty a TLS ho z péče ACME vyjme."
@@ -19839,6 +20287,10 @@
   "s.renewed-when-fewer-days-are-left.505bbe85": {
    "source": "Renewed when fewer days are left than",
    "text": "Obnovit, když zbývá méně dní než"
+  },
+  "s.renewed.b6e9e91e": {
+   "source": "renewed",
+   "text": "obnoven"
   },
   "s.renews.78906379": {
    "source": "Renews",
@@ -20040,6 +20492,18 @@
    "source": "Reversible encryption",
    "text": "Vratné šifrování"
   },
+  "s.revoked-because.58f9fcb9": {
+   "source": "Revoked because",
+   "text": "Odvolán, protože"
+  },
+  "s.revoked.8375cdf2": {
+   "source": "revoked",
+   "text": "odvolán"
+  },
+  "s.revoked.85f17ac0": {
+   "source": "Revoked",
+   "text": "Odvolané"
+  },
   "s.rfc-2136-dynamic-update-with-a.e9b35bd2": {
    "source": "RFC 2136 dynamic update with a TSIG key (BIND, PowerDNS, Knot...)",
    "text": "dynamická aktualizace RFC 2136 s klíčem TSIG (BIND, PowerDNS, Knot…)"
@@ -20143,6 +20607,10 @@
   "s.root-s-half-of-this-is.54666464": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here.",
    "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.239 (nebo novějšího). Do té doby se klíče zde nečtou ani nemění."
+  },
+  "s.root-s-half-of-this-is.b571e4cc": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path, as 1.10.287 puts it in): run ./install.sh --upgrade from the 1.10.287 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
+   "text": "Rootova polovina tohoto zatím není na tomto stroji nainstalovaná (isemon-web.path, jak ji instaluje 1.10.287): jednou spusťte ./install.sh --upgrade z balíčku 1.10.287 (nebo novějšího). Do té doby se šifrovaný příjem zde ani nečte, ani nemění."
   },
   "s.root-s-half-of-this-is.d288dacc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there.",
@@ -20272,6 +20740,14 @@
    "source": "rsyslog's encrypted input for otp's logs, read afresh: on or off, its port, its mode and nodes, the certificate, whether rsyslog listens, the firewall, the plain input on 514 kept, the last change (Settings - The OTP logs - Encrypted receiving)",
    "text": "šifrovaný vstup rsyslogu pro logy otp, načtený znovu: zapnuto nebo vypnuto, jeho port, režim a uzly, certifikát, zda rsyslog naslouchá, firewall, ponechaný nešifrovaný vstup na 514, poslední změna (Nastavení - Logy OTP - Šifrovaný příjem)"
   },
+  "s.rsyslog-stops-taking-acme-s-lines.18d7b5d0": {
+   "source": "rsyslog stops taking acme's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.",
+   "text": "rsyslog přestane přijímat řádky acme přes TLS. Nešifrovaný vstup na 514 zůstane, jak je, a soubory certifikátu se ponechají."
+  },
+  "s.rsyslog-stops-taking-acme-s-lines.c4cd9e27": {
+   "source": "rsyslog stops taking acme's lines over TLS, and isemon's certificate, its key, acme's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.",
+   "text": "rsyslog přestane přijímat řádky acme přes TLS a certifikát isemonu, jeho klíč, autorita acme i autorita vytvořená zde se z tohoto stroje smažou. Nešifrovaný vstup na 514 zůstává, jak je."
+  },
   "s.rsyslog-stops-taking-otp-s-lines.4391a522": {
    "source": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.",
    "text": "rsyslog přestane přijímat řádky otp přes TLS a certifikát isemonu, jeho klíč, autorita otp i autorita vytvořená zde se z tohoto stroje smažou. Nešifrovaný vstup na 514 zůstává, jak je."
@@ -20299,6 +20775,14 @@
   "s.rules.bb11a8e3": {
    "source": "Rules",
    "text": "Pravidla"
+  },
+  "s.run-out-or-within-7-days.09f2b30d": {
+   "source": "run out, or within 7 days",
+   "text": "vypršel, nebo do 7 dní"
+  },
+  "s.run-out.bef8194f": {
+   "source": "Run out",
+   "text": "Vypršelo"
   },
   "s.run-pfctl-through-sudo.30f85749": {
    "source": "Run pfctl through sudo",
@@ -20331,6 +20815,18 @@
   "s.running.3c49d9cc": {
    "source": "running",
    "text": "běží"
+  },
+  "s.runs-out-soon.0e5a0cfa": {
+   "source": "runs out soon",
+   "text": "brzy vyprší"
+  },
+  "s.runs-out-soon.a8037825": {
+   "source": "Runs out soon",
+   "text": "Brzy vyprší"
+  },
+  "s.runs-out.cf4a215f": {
+   "source": "Runs out",
+   "text": "Vyprší"
   },
   "s.russia.6754fe3c": {
    "source": "Russia",
@@ -20804,6 +21300,14 @@
    "source": "serial number",
    "text": "sériové číslo"
   },
+  "s.serial.50de66b7": {
+   "source": "serial",
+   "text": "sériové číslo"
+  },
+  "s.serial.83f8c31a": {
+   "source": "Serial",
+   "text": "Sériové číslo"
+  },
   "s.serve-the-time-to.eb2ffb80": {
    "source": "Serve the time to",
    "text": "Poskytovat čas sítím"
@@ -21000,6 +21504,10 @@
    "source": "Settings → Firewall",
    "text": "Nastavení → Firewall"
   },
+  "s.settings-isemon.2afe1171": {
+   "source": "Settings → isemon",
+   "text": "Settings → isemon"
+  },
   "s.settings-key-which-opens-every-password.86496911": {
    "source": ": settings.key (which opens every password and private key kept in the database - the routers’, the directory’s, the certificate’s), banfeed.key and the routers’ host keys, and this machine’s config.json to read (without the database password). Put back on a freshly installed machine, that machine is this one again. Keep it as carefully as the key itself.",
    "text": ": settings.key (který otevírá každé heslo a soukromý klíč uložený v databázi – routerů, adresáře, certifikátu), banfeed.key a klíče hostitelů routerů, a config.json tohoto stroje ke čtení (bez hesla k databázi). Obnovená na čerstvě nainstalovaném stroji z něj udělá zase tento. Uchovávejte ji stejně pečlivě jako samotný klíč."
@@ -21104,6 +21612,10 @@
    "source": "Short-tempered — 1 day, then for good",
    "text": "Netrpělivé — 1 den, pak natrvalo"
   },
+  "s.short.a0f4ea7d": {
+   "source": "short",
+   "text": "short"
+  },
   "s.shortest-password.454014d5": {
    "source": "Shortest password",
    "text": "Nejkratší heslo"
@@ -21115,6 +21627,14 @@
   "s.show-only-the-rows-from-one.b3b60bf1": {
    "source": "Show only the rows from one country. Search it by name or by its two letters;",
    "text": "Zobrazit jen řádky z jedné země. Hledejte ji podle názvu nebo podle dvoupísmenného kódu;"
+  },
+  "s.show-these-certificates-only.2464260e": {
+   "source": "Show these certificates only",
+   "text": "Ukázat jen tyto certifikáty"
+  },
+  "s.show-these-lines.fdca64be": {
+   "source": "Show these lines",
+   "text": "Ukázat tyto řádky"
   },
   "s.show-what-the-machine-accounts-did.9226ba18": {
    "source": "Show what the machine accounts did as well",
@@ -21988,9 +22508,17 @@
    "source": "stays",
    "text": "zůstává"
   },
+  "s.step-1-of-3-where-isemon.7c684ee2": {
+   "source": "Step 1 of 3 - where isemon's certificate comes from. acme checks it every time a node sends.",
+   "text": "Krok 1 ze 3 - odkud pochází certifikát isemonu. acme ho ověřuje pokaždé, když uzel posílá."
+  },
   "s.step-1-of-3-where-isemon.d7adb085": {
    "source": "Step 1 of 3 - where isemon's certificate comes from. otp checks it every time a node sends.",
    "text": "Krok 1 ze 3 - odkud pochází certifikát isemonu. otp ho ověřuje pokaždé, když uzel posílá."
+  },
+  "s.step-2-of-3-a-certificate.3fe65af6": {
+   "source": "Step 2 of 3 - a certificate from your own CA or a public one, with the names acme's nodes reach this machine by.",
+   "text": "Krok 2 ze 3 - certifikát z vaší vlastní CA nebo veřejný, s názvy, pod kterými uzly acme tento stroj dosáhnou."
   },
   "s.step-2-of-3-a-certificate.578a01e7": {
    "source": "Step 2 of 3 - a certificate from your own CA or a public one, with the names otp's nodes reach this machine by.",
@@ -22000,6 +22528,14 @@
    "source": "Step 2 of 3 - isemon makes an authority of its own and a certificate from it. Afterwards its authority is shown, to paste into otp.",
    "text": "Krok 2 ze 3 - isemon vytvoří vlastní autoritu a od ní certifikát. Poté se zobrazí jeho autorita k vložení do otp."
   },
+  "s.step-2-of-3-isemon-makes.4ff71f68": {
+   "source": "Step 2 of 3 - isemon makes an authority of its own and a certificate from it. Afterwards its authority is shown, to paste into acme.",
+   "text": "Krok 2 ze 3 - isemon vytvoří vlastní autoritu a od ní certifikát. Poté se zobrazí jeho autorita k vložení do acme."
+  },
+  "s.step-2-of-3-the-encrypted.63d18f69": {
+   "source": "Step 2 of 3 - the encrypted ZIP acme made for isemon, and the passphrase acme showed when it made it. It is opened on the server; the key in it is never sent back to the page.",
+   "text": "Krok 2 ze 3 - šifrovaný ZIP, který acme vytvořil pro isemon, a heslo, které acme ukázal při jeho vytvoření. Otevře se na serveru; klíč v něm se do stránky nikdy nevrací."
+  },
   "s.step-2-of-3-the-file.73c36994": {
    "source": "Step 2 of 3 - the file otp made for isemon (isemon-tls.zip), and the passphrase otp showed when it made it. It is opened on the server; the key in it is never sent back to the page.",
    "text": "Krok 2 ze 3 - soubor, který otp vytvořil pro isemon (isemon-tls.zip), a heslo, které otp při jeho vytvoření ukázal. Otevře se na serveru; klíč v něm se nikdy neposílá zpět na stránku."
@@ -22007,6 +22543,10 @@
   "s.step-2-of-3-the-file.c2ab1510": {
    "source": "Step 2 of 3 - the file is open. Its key stays on the server and goes to root once; nothing of it is kept in the database.",
    "text": "Krok 2 ze 3 - soubor je otevřený. Jeho klíč zůstává na serveru a jednou se předá rootovi; nic z něj se neukládá do databáze."
+  },
+  "s.step-3-of-3-which-of.1bce2c0c": {
+   "source": "Step 3 of 3 - which of acme's nodes may send, and on which port. The plain input on 514 stays as it is.",
+   "text": "Krok 3 ze 3 - které uzly acme smějí posílat a na který port. Nešifrovaný vstup na 514 zůstane, jak je."
   },
   "s.step-3-of-3-which-of.a17506a2": {
    "source": "Step 3 of 3 - which of otp's nodes may send, and on which port. The plain input on 514 stays as it is.",
@@ -22204,9 +22744,21 @@
    "source": "svc",
    "text": "svc"
   },
+  "s.svg.8feba646": {
+   "source": "svg",
+   "text": "svg"
+  },
   "s.sweden.72ddd2b6": {
    "source": "Sweden",
    "text": "Švédsko"
+  },
+  "s.switch-acme-s-nodes-back-to.20b910d4": {
+   "source": "Switch acme's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into acme again.",
+   "text": "Nejdřív přepněte uzly acme zpět na nešifrované posílání, jinak jejich řádky přestanou přicházet. Pro TLS znovu je nastavte od začátku - certifikát znovu vytvořený zde pochází z nové autority, kterou je třeba do acme vložit znovu."
+  },
+  "s.switch-acme-s-nodes-back-to.88d886aa": {
+   "source": "Switch acme's nodes back to plain sending first, or their lines stop arriving.",
+   "text": "Nejdřív přepněte uzly acme zpět na nešifrované odesílání, jinak jejich řádky přestanou docházet."
   },
   "s.switch-controller-or-head-end.8848f657": {
    "source": "switch, controller or head end",
@@ -22556,6 +23108,10 @@
    "source": "tacplus",
    "text": "tacplus"
   },
+  "s.tag.5e9b60f6": {
+   "source": "tag",
+   "text": "tag"
+  },
   "s.taiwan.094d515b": {
    "source": "Taiwan",
    "text": "Tchaj-wan"
@@ -22780,6 +23336,18 @@
    "source": "Tanzania",
    "text": "Tanzanie"
   },
+  "s.target.0e8a3ad9": {
+   "source": "target",
+   "text": "cíl"
+  },
+  "s.target.61ad50a9": {
+   "source": "Target",
+   "text": "Cíl"
+  },
+  "s.targets.d35260a0": {
+   "source": "Targets",
+   "text": "Cíle"
+  },
   "s.tb.f8a902b0": {
    "source": "TB",
    "text": "TB"
@@ -22791,6 +23359,10 @@
   "s.tcp-otp-sends-to-6514-unless.3d2c51f3": {
    "source": "TCP; otp sends to 6514 unless told otherwise. Not 514 - that one is the plain logs'.",
    "text": "TCP; otp posílá na 6514, pokud není řečeno jinak. Ne 514 - ten patří nešifrovaným logům."
+  },
+  "s.tcp-the-port-in-isemon-targets.f11ef416": {
+   "source": "TCP: the port in isemon_targets (host:6514/tls). Not 514 - that one is the plain logs'; not the port of the OTP logs over TLS either.",
+   "text": "TCP: port v isemon_targets (host:6514/tls). Ne 514 - ten patří nešifrovaným logům; ani port logů OTP přes TLS."
   },
   "s.tcp-udp-icmp-6.58de7c79": {
    "source": "tcp, udp, icmp, 6",
@@ -22912,6 +23484,10 @@
    "source": "that file could not be read",
    "text": "ten soubor nelze přečíst"
   },
+  "s.that-file-is-far-bigger-than.66a1da82": {
+   "source": "that file is far bigger than the one acme makes",
+   "text": "ten soubor je mnohem větší než ten, který vytváří acme"
+  },
   "s.that-file-is-far-bigger-than.68efbff7": {
    "source": "that file is far bigger than the one otp makes",
    "text": "ten soubor je mnohem větší než ten, který vytváří otp"
@@ -22995,6 +23571,10 @@
   "s.that-list-is-called.9e347a98": {
    "source": "That list is called",
    "text": "Ten seznam se jmenuje"
+  },
+  "s.that-log-in-each.ad46f2b5": {
+   "source": "That log in each",
+   "text": "Ten log v každé"
   },
   "s.that-long-press-a-row-for.febf092e": {
    "source": "that long. Press a row for everything known about that session.",
@@ -23223,6 +23803,10 @@
   "s.the-acme-dns-server.1489e1fb": {
    "source": "The acme-dns server",
    "text": "Server acme-dns"
+  },
+  "s.the-acme-logs.16a67a65": {
+   "source": "The acme logs",
+   "text": "Logy acme"
   },
   "s.the-address-and-port-inside-the.fc563dec": {
    "source": "the address and port inside the destination was made (a dst-nat)",
@@ -23744,6 +24328,10 @@
    "source": "The certificate of the authority that signed the server’s.",
    "text": "Certifikát autority, která podepsala certifikát serveru."
   },
+  "s.the-certificate-of-the-authority-that.77b70ed4": {
+   "source": "The certificate of the authority that made isemon's certificate here - to paste into acme.",
+   "text": "Certifikát autority, která zde vytvořila certifikát isemonu - k vložení do acme."
+  },
   "s.the-certificate-of-the-authority-that.edfb503a": {
    "source": "The certificate of the authority that made isemon's certificate here - to paste into otp.",
    "text": "Certifikát autority, která zde vytvořila certifikát isemonu - k vložení do otp."
@@ -23791,6 +24379,10 @@
   "s.the-certificate.a2525335": {
    "source": "The certificate",
    "text": "Certifikát"
+  },
+  "s.the-certificates-log-in-each-folder.073c7ffe": {
+   "source": "The certificates’ log in each folder: what acme sends as acme-certs - always, while sending to isemon is on in acme.",
+   "text": "Log certifikátů v každé složce: co acme posílá jako acme-certs - vždy, když je v acme zapnuté posílání do isemonu."
   },
   "s.the-chain-isemon-in-and-its.355a2e82": {
    "source": "The chain ISEMON-IN and its jump go; the rest of the firewall stays exactly as it is. Whatever only ISEMON-IN let in is then up to your own rules.",
@@ -24508,9 +25100,17 @@
    "source": "The encrypted input taken away - the certificate and its key stay, to switch it on again with Change nodes.",
    "text": "Šifrovaný vstup se odebere - certifikát a jeho klíč zůstanou, aby šel znovu zapnout přes Změnit uzly."
   },
+  "s.the-encrypted-receiving-taken-away-whole.11a3f0ef": {
+   "source": "The encrypted receiving taken away whole: the input, isemon's certificate and key, acme's authority and the one made here. The plain input on 514 stays.",
+   "text": "Šifrovaný příjem se odebere celý: vstup, certifikát a klíč isemonu, autorita acme i ta vytvořená zde. Nešifrovaný vstup na 514 zůstává."
+  },
   "s.the-encrypted-receiving-taken-away-whole.7f2b653d": {
    "source": "The encrypted receiving taken away whole: the input, isemon's certificate and key, otp's authority and the one made here. The plain input on 514 stays.",
    "text": "Šifrovaný příjem se odebere celý: vstup, certifikát a klíč isemonu, autorita otp i ta vytvořená zde. Nešifrovaný vstup na 514 zůstává."
+  },
+  "s.the-encrypted-zip-from-acme-settings.97ed5859": {
+   "source": "The encrypted ZIP from acme → Settings → isemon → Encrypted sending → Encrypt…: isemon's certificate from acme's own authority. It carries acme's authority and the nodes too.",
+   "text": "Šifrovaný ZIP z acme → Settings → isemon → Encrypted sending → Encrypt…: certifikát isemonu od vlastní autority acme. Obsahuje i autoritu acme a uzly."
   },
   "s.the-end-has-to-come-after.ab4a91b6": {
    "source": "The end has to come after the start.",
@@ -24587,6 +25187,10 @@
   "s.the-fields-with-a-column-fast.40051c66": {
    "source": "The fields with a column — fast",
    "text": "Pole se sloupcem — rychlé"
+  },
+  "s.the-file-acme-made.c3b3b192": {
+   "source": "The file acme made",
+   "text": "Soubor od acme"
   },
   "s.the-file-carries-the-private-key.83277e9c": {
    "source": "The file carries the private key.",
@@ -24859,6 +25463,14 @@
   "s.the-folder-in-it.d7d30c67": {
    "source": "The folder in it",
    "text": "Složka v něm"
+  },
+  "s.the-folder-rsyslog-files-acme-s.3bdb3bbc": {
+   "source": "The folder rsyslog files acme’s lines in - /var/log/remote/",
+   "text": "Složka, do které rsyslog ukládá řádky acme - /var/log/remote/"
+  },
+  "s.the-folder-rsyslog-files-acme-s.77b06ba3": {
+   "source": "The folder rsyslog files acme’s lines in - /var/log/remote/ /, HOST being isemon_hostname in acme (one for the whole cluster; each node says its own name in every line). Comma separated for more than one acme; a path may name a file itself.",
+   "text": "Složka, do které rsyslog ukládá řádky acme - /var/log/remote/ /, kde HOST je isemon_hostname v acme (jeden pro celý cluster; každý uzel uvádí v každém řádku své jméno). Více acme oddělte čárkou; cesta může vést i přímo na soubor."
   },
   "s.the-folder-the-syslog-server-files.b13eabe7": {
    "source": "The folder the syslog server files this firewall’s lines in - or the path to one file. A pair in failover is one firewall with a folder for each unit: add the second with the + beside it.",
@@ -25292,6 +25904,10 @@
    "source": "the last one went wrong",
    "text": "poslední se nezdařil"
   },
+  "s.the-last-renewal-failed.d0751bcd": {
+   "source": "the last renewal failed",
+   "text": "poslední obnova selhala"
+  },
   "s.the-last-time-somebody-went-back.c588fb1d": {
    "source": "The last time somebody went back over the logs.",
    "text": "Kdy naposledy někdo znovu prošel logy."
@@ -25384,6 +26000,10 @@
    "source": "the logon type",
    "text": "typ přihlášení"
   },
+  "s.the-logs-are-read-and-not.7be06689": {
+   "source": "The logs are read, and not one line of acme’s has been found in them. In acme: Settings → isemon - isemon=1, this machine in isemon_targets - then Send a test line. The Logs tab says whether the files are there and readable.",
+   "text": "Logy se čtou, ale nenašel se v nich ani jeden řádek od acme. V acme: Settings → isemon - isemon=1, tento stroj v isemon_targets - pak Send a test line. Záložka Logy řekne, zda soubory existují a jdou číst."
+  },
   "s.the-logs-arriving-rsyslog.b0c8d680": {
    "source": "The logs arriving (rsyslog)",
    "text": "Přicházející logy (rsyslog)"
@@ -25403,6 +26023,10 @@
   "s.the-logs-it-reads.95af3c29": {
    "source": "The logs it reads",
    "text": "Logy, které čte"
+  },
+  "s.the-logs-of-acme-the-certificate.97fb0931": {
+   "source": "The logs of acme, the certificate manager: whether they are read at all, where rsyslog files them, and acme's nodes sending them encrypted. Switched on, an acme tab shows every certificate and what happened to it. Off unless somebody switches it on, and nothing read here is ever judged.",
+   "text": "Logy acme, správce certifikátů: zda se vůbec čtou, kam je rsyslog ukládá a šifrované posílání z uzlů acme. Po zapnutí ukazuje záložka acme každý certifikát a co se s ním stalo. Vypnuto, dokud to někdo nezapne, a nic zde přečteného se nikdy neposuzuje."
   },
   "s.the-logs-say-what-happened-the.d6524020": {
    "source": "The logs say what happened; the directory says what it happened TO, and only the two together say whether anybody should care. Switched on, a handful of small searches a day against each directory that is set up here answer the questions no log can: ​which accounts a SERVICE runs as — a ticket asked for in RC4 is kerberoasting against one of those and an old application against anything else; which accounts have their pre-authentication switched off on purpose — a ticket asked for without it is ordinary against those and is somebody trying every account in turn against the rest; which accounts are switched off altogether — something still trying one of those is something nobody told; and who is in the groups that run the domain, following groups inside groups, so that an account being hammered is weighed by what it can actually do. ​Where any of that makes an alarm worse, the alarm gets worse and says in words which fact did it. ​IT READS AND NEVER WRITES. Nothing is ever changed in Active Directory, by this or by anything else in this program; a directory that will not answer leaves what was known exactly as it was; and with no directory set up this does nothing at all. What it last found is on the Domain page.",
@@ -25696,6 +26320,10 @@
    "source": "The name",
    "text": "Jméno"
   },
+  "s.the-names-and-addresses-acme-s.a6cd17b6": {
+   "source": "The names and addresses acme's nodes reach this machine by - \"isemon's address\" in acme's wizard - one per line.",
+   "text": "Názvy a adresy, pod kterými uzly acme tento stroj dosáhnou - \"isemon's address\" v průvodci acme - jeden na řádek."
+  },
   "s.the-names-and-addresses-otp-s.5877b843": {
    "source": "The names and addresses otp's nodes reach this machine by - \"isemon's address\" in otp's wizard - one per line.",
    "text": "Názvy a adresy, pod kterými uzly otp tento stroj dosáhnou - \"isemon's address\" v průvodci otp - jeden na řádek."
@@ -25719,6 +26347,10 @@
   "s.the-names-in-the-nodes-certificates.1fec620e": {
    "source": "The names in the nodes' certificates, one per line. Empty: any node with a certificate from otp's authority.",
    "text": "Názvy v certifikátech uzlů, jeden na řádek. Prázdné: kterýkoli uzel s certifikátem od autority otp."
+  },
+  "s.the-names-in-the-nodes-certificates.5347b12f": {
+   "source": "The names in the nodes' certificates - the names of acme's nodes (acme1, acme2), one per line. Empty: any node with a certificate from acme's authority.",
+   "text": "Jména v certifikátech uzlů - názvy uzlů acme (acme1, acme2), jedno na řádek. Prázdné: kterýkoli uzel s certifikátem od autority acme."
   },
   "s.the-names-that-are-not-names.2f00a327": {
    "source": "The names that are not names",
@@ -25892,6 +26524,10 @@
    "source": "the older versions at upgrade_url, and which of them it is safe to go back to",
    "text": "starší verze na upgrade_url a ke kterým z nich je bezpečné se vrátit"
   },
+  "s.the-one-acme-showed-beside-the.6dc368d2": {
+   "source": "The one acme showed beside the file. Used here to open it, and not kept.",
+   "text": "To, které acme ukázal vedle souboru. Použije se zde k jeho otevření a neuloží se."
+  },
   "s.the-one-kept-now-is-replaced.4ff37c5d": {
    "source": "The one kept now is replaced",
    "text": "Ten uložený teď se nahradí"
@@ -25995,6 +26631,10 @@
   "s.the-other-domains-it-answers-for.377a0a62": {
    "source": "The other domains it answers for",
    "text": "Další domény, za které odpovídá"
+  },
+  "s.the-other-log-beside-it-what.01ce8868": {
+   "source": "The other log beside it: what acme sends as acme - sign-ins, accounts, settings, backups, the portal, HA - where isemon_events is on in acme.",
+   "text": "Druhý log vedle: co acme posílá jako acme - přihlášení, účty, nastavení, zálohy, portál, HA - kde je v acme zapnuté isemon_events."
   },
   "s.the-otp-logs-over-tls.201c25e0": {
    "source": "The otp logs over TLS",
@@ -26519,6 +27159,10 @@
   "s.the-request-was-copied.f202a05d": {
    "source": "the request was copied",
    "text": "žádost je zkopírovaná do schránky"
+  },
+  "s.the-rest-acme.a9b7e749": {
+   "source": "the rest (acme)",
+   "text": "zbytek (acme)"
   },
   "s.the-rest-of-input.e29d42cc": {
    "source": "the rest of INPUT",
@@ -27660,6 +28304,10 @@
    "source": "Then, here: fill the settings in,",
    "text": "Potom zde: vyplňte nastavení,"
   },
+  "s.then-on-acme-settings-isemon-encrypted.1993cd42": {
+   "source": "Then, on acme - Settings → isemon → Encrypted sending:",
+   "text": "Pak v acme - Settings → isemon → Encrypted sending:"
+  },
   "s.then-on-otp-settings-isemon-encrypted.916db68b": {
    "source": "Then, on otp - Settings → isemon → Encrypted sending:",
    "text": "Pak v otp - Settings → isemon → Encrypted sending:"
@@ -27940,6 +28588,10 @@
    "source": "This box is not on the list under Settings → The OTP logs → Where OTP sign-ins come from. A new thing asking the token server is worth knowing about.",
    "text": "Tento stroj není v seznamu v Nastavení → Logy OTP → Odkud přicházejí OTP přihlášení. Nový stroj dotazující se tokenového serveru stojí za pozornost."
   },
+  "s.this-certificate.7189644c": {
+   "source": "This certificate",
+   "text": "Tento certifikát"
+  },
   "s.this-column.771b9a7f": {
    "source": "this column",
    "text": "tento sloupec"
@@ -28019,6 +28671,10 @@
   "s.this-file-is-a-windows-nps.4f0b7cd5": {
    "source": "This file is a Windows NPS server’s own log, read as eduroam’s: one request and its answer make one sign-in, and the accounting in the same file says where the machine was and what address it was given. None of it is ever judged.",
    "text": "Tento soubor je vlastní log serveru Windows NPS, čtený jako log eduroamu: jeden požadavek a odpověď na něj tvoří jedno přihlášení a accounting ve stejném souboru říká, kde stroj byl a jakou adresu dostal. Nic z toho se nikdy neposuzuje."
+  },
+  "s.this-file-is-acme-s-the.685fce28": {
+   "source": "This file is acme’s - the certificate manager - not ISE’s. One line is one thing acme did; they are shown on the acme tab. None of it is ever judged.",
+   "text": "Tento soubor patří acme - správci certifikátů - ne ISE. Jeden řádek je jedna věc, kterou acme udělal; zobrazují se na záložce acme. Nic z toho se nikdy neposuzuje."
   },
   "s.this-file-is-the-firewall-s.b12d2882": {
    "source": "This file is the firewall’s own log as its syslog server writes it. One line is one thing that happened, and what is read is shown on the Traffic tab. None of it is ever judged and none of it can earn anybody a ban.",
@@ -28115,6 +28771,10 @@
   "s.this-machine-has.a6e78f36": {
    "source": "This machine has",
    "text": "Tento stroj má"
+  },
+  "s.this-machine-in.4472f5c8": {
+   "source": ", this machine in",
+   "text": ", tento stroj v"
   },
   "s.this-machine-reaches-the-opnsense-over.df8ecd40": {
    "source": "This machine reaches the OPNsense over HTTPS on its web interface’s port. With the certificate it makes for itself, switch",
@@ -28572,6 +29232,10 @@
    "source": "TLS, its certificate pinned (api-ssl, 8729)",
    "text": "TLS s připnutým certifikátem (api-ssl, 8729)"
   },
+  "s.tls-one-way-acme-checks-isemon.dadc36f9": {
+   "source": "TLS one way - acme checks isemon, isemon checks nobody",
+   "text": "jednosměrné TLS - acme ověřuje isemon, isemon nikoho neověřuje"
+  },
   "s.tls-one-way-otp-checks-isemon.ec7d8ad3": {
    "source": "TLS one way - otp checks isemon, isemon checks nobody",
    "text": "jednosměrné TLS - otp ověřuje isemon, isemon nikoho neověřuje"
@@ -28631,6 +29295,10 @@
   "s.to-keep-them-for-good.535ae5dd": {
    "source": "To keep them for good",
    "text": "Aby platila natrvalo"
+  },
+  "s.to-look-at.4acb8297": {
+   "source": "To look at",
+   "text": "K prohlédnutí"
   },
   "s.to-pick-it-from-the-directory.92073c02": {
    "source": "to pick it from the directory rather than typing it. More than one, separated by semicolons.",
@@ -29796,6 +30464,10 @@
    "source": "wan1",
    "text": "wan1"
   },
+  "s.wants-looking-at.0a3b5b79": {
+   "source": "Wants looking at",
+   "text": "Chce pozornost"
+  },
   "s.warn.4c8ea476": {
    "source": "warn",
    "text": "warn"
@@ -29803,6 +30475,10 @@
   "s.warnings-and-worse.528cae40": {
    "source": "warnings and worse",
    "text": "varování a závažnější"
+  },
+  "s.warnings.1430f976": {
+   "source": "Warnings",
+   "text": "Varování"
   },
   "s.was-it-ever-here-who-made.2d06d23e": {
    "source": "Was it ever here? Who made it and who deleted it",
@@ -29916,9 +30592,25 @@
    "source": "What a person types as their name",
    "text": "Co osoba zadává jako své jméno"
   },
+  "s.what-acme-chose-is-filled-in.024b38b5": {
+   "source": "What acme chose is filled in on the next step; it can be changed there.",
+   "text": "Co zvolil acme, se vyplní v dalším kroku; tam se to dá změnit."
+  },
+  "s.what-acme-did-day-by-day.e2e0fc8e": {
+   "source": "What acme did, day by day",
+   "text": "Co acme dělal, den po dni"
+  },
+  "s.what-acme-did.818aec0a": {
+   "source": "what acme did",
+   "text": "co acme dělal"
+  },
   "s.what-acme-sees-here.739cbc52": {
    "source": "What acme sees here",
    "text": "Co tu acme vidí"
+  },
+  "s.what-acme-the-certificate-manager-sent.9f12148f": {
+   "source": "What acme - the certificate manager - sent here: every certificate as it stands, when each runs out, where it went, what failed, its targets and its nodes, and every line it sent. There while Settings → The acme logs is on.",
+   "text": "Co sem poslal acme - správce certifikátů: každý certifikát, jak je teď, kdy který vyprší, kam byl nasazen, co selhalo, jeho cíle a uzly a každý řádek, který poslal. Je zde, když je zapnuté Nastavení → Logy acme."
   },
   "s.what-active-directory-says-about-it.57f73bde": {
    "source": "What Active Directory says about it right now: who the person is, which groups they are in, whether it is switched off, locked or expired. Read only — nothing is ever written to the directory.",
@@ -30331,6 +31023,10 @@
   "s.what-that-means.c80014ef": {
    "source": "what that means",
    "text": "co to znamená"
+  },
+  "s.what-that-one-is-called-in.3c0f5fb8": {
+   "source": "What that one is called in each folder.",
+   "text": "Jak se ten jmenuje v každé složce."
   },
   "s.what-that-one-is-called.db2a32ec": {
    "source": "What that one is called",
@@ -30804,6 +31500,10 @@
    "source": "what went wrong with TLS since rsyslog started",
    "text": "co se s TLS pokazilo od startu rsyslogu"
   },
+  "s.what-went-wrong.772ce8a1": {
+   "source": "What went wrong",
+   "text": "Co selhalo"
+  },
   "s.what-would-change.8cebb8a3": {
    "source": "What would change",
    "text": "Co by se změnilo"
@@ -30852,6 +31552,10 @@
    "source": "When, as",
    "text": "Kdy, jako"
   },
+  "s.when-each-certificate-runs-out.466bb210": {
+   "source": "When each certificate runs out",
+   "text": "Kdy který certifikát vyprší"
+  },
   "s.when-fewer-than-renewed-when-fewer.bd05a6ae": {
    "source": "When fewer than “Renewed when fewer days are left than” days are left - a third of its life at most. The CA offers no renewal window (ARI).",
    "text": "Až zbude méně dní, než říká „Obnovit, když zbývá méně dní než“ - nejvýš třetina jeho platnosti. CA nenabízí okno pro obnovení (ARI)."
@@ -30899,6 +31603,10 @@
   "s.when-the-update-needs-a-restart.95274d08": {
    "source": "When the update needs a restart - restarted by itself, or offered on the page.",
    "text": "Když aktualizace potřebuje restart – restartovat samo, nebo nabídnout na stránce."
+  },
+  "s.when-they-run-out.084666a5": {
+   "source": "When they run out",
+   "text": "Kdy vyprší"
   },
   "s.when-this-account-was-made-and.e8533b59": {
    "source": "When this account was made, and by whom.",
@@ -30984,6 +31692,10 @@
    "source": "Where in the directory",
    "text": "Kde v adresáři"
   },
+  "s.where-isemon-s-certificate-comes-from.5b8b65a1": {
+   "source": "Where isemon's certificate comes from - the file acme made, one made here, or one pasted - and which of acme's nodes may send.",
+   "text": "Odkud pochází certifikát isemonu - soubor od acme, vytvořený zde, nebo vložený - a které uzly acme smějí posílat."
+  },
   "s.where-isemon-s-certificate-comes-from.a12cbfa7": {
    "source": "Where isemon's certificate comes from - the file otp made, one made here, or one pasted - and which of otp's nodes may send.",
    "text": "Odkud pochází certifikát isemonu - soubor od otp, vytvořený zde, nebo vložený - a které uzly otp smějí posílat."
@@ -30999,6 +31711,10 @@
   "s.where-it-is-routed-to.48447d63": {
    "source": "where it is routed to",
    "text": "kam je směrováno"
+  },
+  "s.where-it-is.cd3bb6eb": {
+   "source": "Where it is",
+   "text": "Kde je"
   },
   "s.where-it-looks.9a540f42": {
    "source": "Where it looks",
@@ -31043,6 +31759,10 @@
   "s.where-people-normally-reach-the-switches.cd394605": {
    "source": "Where people normally reach the switches from — on most sites one jump host, on others a whole management network. Each entry is one address, a subnet or a run of them, and may carry a name, written where=name , which is then shown wherever that address appears: 192.168.251.10=LogHost, 172.22.22.0/24=VLAN500, 10.9.0.0-10.9.0.63=Jump . Where an address is in more than one of them the narrowest wins, so a jump box named inside a subnet that is also named keeps its own name. Empty means nobody has said, and nothing is marked.",
    "text": "Odkud se běžně přistupuje ke switchům — ve většině prostředí z jednoho jump hostu, jinde z celé management sítě. Každý záznam je jedna adresa, podsíť nebo souvislá řada adres a může nést jméno, zapsané jako where=name , které se pak zobrazuje všude, kde se ta adresa objeví: 192.168.251.10=LogHost, 172.22.22.0/24=VLAN500, 10.9.0.0-10.9.0.63=Jump . Pokud adresa spadá do více z nich, vyhrává ten nejužší, takže jump box pojmenovaný uvnitř podsítě, která je také pojmenovaná, si ponechá své vlastní jméno. Prázdné znamená, že nikdo nic neurčil, a nic se neoznačuje."
+  },
+  "s.where-rsyslog-files-what-acme-sends.228ef988": {
+   "source": "Where rsyslog files what acme sends",
+   "text": "Kam rsyslog ukládá, co acme posílá"
   },
   "s.where-should-the-backups-go.35db2acb": {
    "source": "Where should the backups go?",
@@ -31628,6 +32348,10 @@
    "source": "which object",
    "text": "který objekt"
   },
+  "s.which-of-acme-s-nodes-may.5f310971": {
+   "source": "Which of acme's nodes may send, on which port. isemon's certificate stays as it is.",
+   "text": "Které uzly acme smějí posílat a na který port. Certifikát isemonu zůstane, jak je."
+  },
   "s.which-of-nps-s-answers-are.38eadf3f": {
    "source": "Which of NPS's answers are eduroam's",
    "text": "Které odpovědi NPS patří eduroamu"
@@ -31807,6 +32531,10 @@
   "s.who-did-it-where-that-is.2408e420": {
    "source": "who did it, where that is somebody else",
    "text": "kdo to udělal, pokud je to někdo jiný"
+  },
+  "s.who-did-it.1db1ef0d": {
+   "source": "Who did it",
+   "text": "Kdo to udělal"
   },
   "s.who-did-it.b55d20ef": {
    "source": "who did it",
@@ -32472,6 +33200,10 @@
    "source": "xid",
    "text": "xid"
   },
+  "s.year.4ff0b153": {
+   "source": "year",
+   "text": "rok"
+  },
   "s.yemen.ac33d641": {
    "source": "Yemen",
    "text": "Jemen"
@@ -32786,6 +33518,14 @@
    "source": "{0} ago",
    "text": "před {0}"
   },
+  "p.am-dot.cf7e0738": {
+   "source": "am-dot {0}",
+   "text": "am-dot {0}"
+  },
+  "p.am-seg-am-seg.c4f44830": {
+   "source": "am-seg am-seg-{0}",
+   "text": "am-seg am-seg-{0}"
+  },
   "p.an-address-not-allowed-to-fetch.ef93b6a8": {
    "source": "an address not allowed to fetch it{0}{1} ·",
    "text": "adresa, která ho nesmí stahovat{0}{1} ·"
@@ -33017,6 +33757,10 @@
   "p.carried.c332138d": {
    "source": ", {0} carried",
    "text": ", {0} přeneseno"
+  },
+  "p.certificates-targets.b6b5d6a9": {
+   "source": "{0} certificates · {1} targets · {2}",
+   "text": "{0} certifikátů · {1} cílů · {2}"
   },
   "p.change-s-not-saved-yet.68a60bf7": {
    "source": "{0} change(s) not saved yet",
@@ -33454,6 +34198,10 @@
    "source": "Filling {0} on the router",
    "text": "Plní se {0} na routeru"
   },
+  "p.fine-to-look-at.a6d06684": {
+   "source": "{0} fine · {1} to look at",
+   "text": "{0} v pořádku · {1} k prohlédnutí"
+  },
   "p.first-record.c122041a": {
    "source": "first record: {0}",
    "text": "první záznam: {0}"
@@ -33662,6 +34410,10 @@
    "source": "{0}{1} in all",
    "text": "{0}{1} celkem"
   },
+  "p.in-days.0e70e686": {
+   "source": "in {0} days",
+   "text": "za {0} dní"
+  },
   "p.in-of-the-newest-2-000.dc586fdc": {
    "source": "in {0} of the newest 2,000",
    "text": "v {0} z nejnovějších 2 000"
@@ -33685,6 +34437,10 @@
   "p.in-the-domain-the-last-day.68e1352e": {
    "source": "In the domain, the last {0} day(s)",
    "text": "V doméně, posledních {0} dní"
+  },
+  "p.in-the-last.6dd60127": {
+   "source": "in the last {0}",
+   "text": "za posledních {0}"
   },
   "p.in-this-window.510d4a8d": {
    "source": "{0} in this window",
@@ -33990,6 +34746,10 @@
    "source": "· last in the hour from {0}",
    "text": "· naposledy během hodiny z {0}"
   },
+  "p.last-line.8aa0b07d": {
+   "source": "last line {0}",
+   "text": "poslední řádek {0}"
+  },
   "p.last-run-banned.ffb158fd": {
    "source": "last run {0} · {1} banned",
    "text": "poslední běh {0} · {1} zablokováno"
@@ -33997,6 +34757,14 @@
   "p.last-seen.3aed934c": {
    "source": "last seen {0}",
    "text": "naposledy viděno {0}"
+  },
+  "p.last-trouble.e5b58f63": {
+   "source": "last trouble {0}: {1}",
+   "text": "poslední potíž {0}: {1}"
+  },
+  "p.last.4a52bdfe": {
+   "source": "last {0}",
+   "text": "naposledy {0}"
   },
   "p.last.b3c11f73": {
    "source": "— last {0}",
@@ -34089,6 +34857,14 @@
   "p.line.0f802be9": {
    "source": "line {0}:",
    "text": "řádek {0}:"
+  },
+  "p.lines-in-the-last.99a86c36": {
+   "source": "lines in the last {0}",
+   "text": "řádků za posledních {0}"
+  },
+  "p.lines.64d16b22": {
+   "source": "{0} lines",
+   "text": "{0} řádků"
   },
   "p.list-on-or-off-when-it.bdf8ebdc": {
    "source": "list on or off. {0} When it is on, the ranges it publishes are fetched on the schedule set above and every address inside them is blocked at the router straight away, without waiting for anybody to try a password. Switching it off drops its ranges from the router at the next sync; nothing you have banned by hand is touched either way.",
@@ -34326,6 +35102,10 @@
    "source": "no such {0}",
    "text": "{0} neexistuje"
   },
+  "p.nodes.dc6aa41c": {
+   "source": "nodes {0}",
+   "text": "uzly {0}"
+  },
   "p.nokeygen.c6609769": {
    "source": "{0}-nokeygen",
    "text": "{0}-nokeygen"
@@ -34341,6 +35121,10 @@
   "p.not-answering-for-the-page-asks.fe13d9ba": {
    "source": "Not answering for {0}. The page asks again every two seconds.",
    "text": "Neodpovídá {0}. Stránka se ptá znovu každé dvě sekundy."
+  },
+  "p.not-deployed.a689d658": {
+   "source": "{0} not deployed: {1}",
+   "text": "{0} nenasazeno: {1}"
   },
   "p.not-in-this-group-when-this.95623c49": {
    "source": "Not in this group when this was remembered — added since, first seen {0}.",
@@ -34369,6 +35153,10 @@
   "p.not-now.232e8fd0": {
    "source": "Not now: {0}",
    "text": "Teď ne: {0}"
+  },
+  "p.not-on.ce99a1a1": {
+   "source": "not on {0}",
+   "text": "není na {0}"
   },
   "p.not-reached.39a78661": {
    "source": "Not reached: {0}",
@@ -34417,6 +35205,10 @@
   "p.nothing-in-the-last-h.b616cd35": {
    "source": "nothing in the last {0} h",
    "text": "nic za posledních {0} h"
+  },
+  "p.nothing-in-the-last.56fc724c": {
+   "source": "Nothing in the last {0}.",
+   "text": "Nic za posledních {0}."
   },
   "p.nothing-in-this-group-matches.ccbf2050": {
    "source": "Nothing in this group matches “{0}”",
@@ -34613,6 +35405,10 @@
   "p.only-to-replace-the-authority-there.69d0b00c": {
    "source": "Only to replace the authority there now{0}. otp → High availability → the cluster's authority, or ca.pem from the file otp made.",
    "text": "Jen k nahrazení autority, která tam je teď{0}. otp → High availability → autorita clusteru, nebo ca.pem ze souboru, který vytvořil otp."
+  },
+  "p.only-to-replace-the-authority-there.6d54c830": {
+   "source": "Only to replace the authority there now{0}. ca.pem from the file acme made - acme's own authority.",
+   "text": "Jen pro nahrazení tamní autority{0}. ca.pem ze souboru, který vytvořil acme - vlastní autorita acme."
   },
   "p.only-watched-carried-nowhere.b942058e": {
    "source": "{0} · only watched: carried nowhere",
@@ -34814,6 +35610,10 @@
    "source": "· {0} quiet",
    "text": "· {0} bez provozu"
   },
+  "p.ran-out-days-ago.a18d8f99": {
+   "source": "ran out {0} days ago",
+   "text": "vypršel před {0} dny"
+  },
   "p.range-s-countries-fetched.75c16e41": {
    "source": "{0} range(s) · {1} countries · fetched {2}",
    "text": "{0} {0:rozsah|rozsahy|rozsahů} · {1} zemí · staženo {2}"
@@ -34922,6 +35722,10 @@
    "source": "Remove {0}",
    "text": "Odebrat {0}"
   },
+  "p.renewals-and-deployments-failed.13884017": {
+   "source": "{0} renewals and {1} deployments failed",
+   "text": "selhalo {0} obnov a {1} nasazení"
+  },
   "p.restarting-so-far-a-restart-takes.0dfa982c": {
    "source": "Restarting: {0} so far - a restart takes a minute or two.",
    "text": "Restart: zatím {0} – restart trvá minutu či dvě."
@@ -34969,6 +35773,10 @@
   "p.rule-s-permit-deny.d24b4458": {
    "source": "{0} rule(s) · {1} permit · {2} deny",
    "text": "{0} {0:pravidlo|pravidla|pravidel} · {1} permit · {2} deny"
+  },
+  "p.run-out-within-days.419c8310": {
+   "source": "Run out within {0} days",
+   "text": "Vyprší do {0} dní"
   },
   "p.running-on-now-the-page-is.108b35a6": {
    "source": "Running on {0} now - the page is loaded again.",
@@ -35249,6 +36057,10 @@
   "p.sw3word.520077fd": {
    "source": "sw3word {0}",
    "text": "sw3word {0}"
+  },
+  "p.switch-over-isemon-targets-to-this.5673aad9": {
+   "source": "Switch over: isemon_targets to this machine's name:{0}/tls - the nodes send over TLS from then on. The plain input here stays for any node not switched over.",
+   "text": "Přepnutí: isemon_targets na jméno tohoto stroje:{0}/tls - uzly pak posílají přes TLS. Nešifrovaný vstup zde zůstává pro uzly, které ještě nejsou přepnuté."
   },
   "p.switched-off-means-nothing-is-ever.b68ecb7e": {
    "source": "Switched off means nothing is ever written to this firewall, while everything about how to reach it stays where it is. Not set up means the switch is on but there is no address yet. Set up means both. Trouble means the last time this tried to reach it, it could not — the words beside it are whatever ssh said{0}",
@@ -35970,6 +36782,10 @@
    "source": "TLS, the certificate of {0} checked",
    "text": "TLS, certifikát {0} ověřen"
   },
+  "p.to-the-targets-in-the-last.069e7726": {
+   "source": "to the targets, in the last {0}",
+   "text": "na cíle, za posledních {0}"
+  },
   "p.toast-show.e7c4d6aa": {
    "source": "toast show{0}",
    "text": "toast show{0}"
@@ -36154,6 +36970,10 @@
    "source": "{0} went back to nought",
    "text": "{0} začíná znovu od nuly"
   },
+  "p.what-acme-did-over-the-last.cc066c22": {
+   "source": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen.",
+   "text": "Co acme dělal za posledních {0}: aktivita, selhání, počty. Certifikáty jsou ukázané tak, jak jsou teď, ať je zvoleno cokoli."
+  },
   "p.what-active-directory-says-about-this.3f72e1e4": {
    "source": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory.",
    "text": "Co o tomto účtu právě teď říká Active Directory: kdo to je, ve kterých skupinách je, zda je účet vypnutý, uzamčený nebo vypršelý a kdy bylo naposledy nastaveno heslo. Dotaz jde na adresář, který obsahuje {0}; nic zde nikdy do adresáře nezapisuje."
@@ -36298,6 +37118,10 @@
    "source": "With the account: {0}",
    "text": "S účtem: {0}"
   },
+  "p.within-days.4b7a9c97": {
+   "source": "within {0} days",
+   "text": "do {0} dní"
+  },
   "p.worked-out.5b62f208": {
    "source": "worked out {0}",
    "text": "spočítáno {0}"
@@ -36439,6 +37263,10 @@
   "r.a-zone-the-records-go-into.b20d79ab": {
    "source": "A zone the records go into instead of the name’s own (<code>acme.example.net</code>), the name with a CNAME to it in your DNS - <i>In your DNS</i> above says which. Empty: _acme-challenge.NAME itself.",
    "text": "Zóna, do které jdou záznamy místo vlastní zóny jména (<code>acme.example.net</code>), jméno s CNAME na ni ve vašem DNS – <i>Ve vašem DNS</i> výše říká jaký. Prázdné: přímo _acme-challenge.JMÉNO."
+  },
+  "r.acme1-acme2.539667b9": {
+   "source": "acme1<br>acme2",
+   "text": "acme1<br>acme2"
   },
   "r.address-es-of-the-other-family.d4c1e19c": {
    "source": "<b>{0}</b> address(es) of the other family are not in this one — a router keeps IPv4 and IPv6 in two different access lists. The button below writes the other.",
@@ -36960,6 +37788,10 @@
    "source": "<b>Nothing here earns a ban</b> unless <i>Logins to network devices</i> is switched on under Banning → Where the bans come from (1.10.194), and then only from an address on the internet: the address on one of these lines is as often as not the jump host the whole of the network staff comes through. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "<b>Nic zde nevede k banu</b>, dokud není <i>Přihlášení na síťová zařízení</i> zapnuté v Banningu → Odkud bany pocházejí (1.10.194), a pak jen z adresy na internetu: adresa na těchto řádcích je stejně často jump host, přes který chodí celý síťový tým. Vypnuté neotevře jediný soubor a nic se nikde nechová jinak."
   },
+  "r.nothing-here-is-ever-judged-it.b2296ffd": {
+   "source": "<b>Nothing here is ever judged.</b> It is what acme did, kept and shown - nobody is banned by it. Switched off, not one file is opened and the acme tab is not there.",
+   "text": "<b>Nic zde se nikdy neposuzuje.</b> Je to, co acme udělal, uchované a zobrazené - nikdo kvůli tomu není zablokován. Vypnuto se neotevře ani jeden soubor a záložka acme není vidět."
+  },
   "r.nothing-here-is-ever-judged-the.0c82af2a": {
    "source": "<b>Nothing here is ever judged.</b> The address on one of these records is the machine that asked the token server, which on every installation seen so far is the token server itself; banning on it would ban the server. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "<b>Nic zde se nikdy neposuzuje.</b> Adresou na takovém záznamu je stroj, který se dotazoval tokenového serveru, což je ve všech dosud viděných instalacích tokenový server sám; blokovat podle ní by znamenalo zablokovat server. Je-li vypnuto, neotevře se jediný soubor a nic se nikde nechová jinak."
@@ -37147,6 +37979,14 @@
   "r.root-no-longer-signs-in-with.c3b654aa": {
    "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
    "text": "Root se už nepřihlásí pomocí <code>{0}</code>{1} na tomto serveru.{2}"
+  },
+  "r.rsyslog-stops-taking-acme-s-lines.974384fa": {
+   "source": "rsyslog stops taking acme's lines over TLS, and isemon's certificate, its key, acme's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch acme's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into acme again.",
+   "text": "rsyslog přestane přijímat řádky acme přes TLS a certifikát isemonu, jeho klíč, autorita acme i zde vytvořená autorita se z tohoto stroje smažou. Nešifrovaný vstup na 514 zůstává, jak je.<br><br>Nejdřív přepněte uzly acme zpět na nešifrované posílání, jinak jejich řádky přestanou chodit. Pro TLS ho nastavte znovu - certifikát zde vytvořený znovu pochází z nové autority, kterou je třeba do acme vložit znovu."
+  },
+  "r.rsyslog-stops-taking-acme-s-lines.db598386": {
+   "source": "rsyslog stops taking acme's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch acme's nodes back to plain sending first, or their lines stop arriving.",
+   "text": "rsyslog přestane přijímat řádky acme přes TLS. Nešifrovaný vstup na 514 zůstává, jak je, a soubory certifikátů se ponechají.<br><br>Nejdřív přepněte uzly acme zpět na nešifrované posílání, jinak jejich řádky přestanou chodit."
   },
   "r.rsyslog-stops-taking-otp-s-lines.5e5b3a5b": {
    "source": "rsyslog stops taking otp's lines over TLS. The plain input on 514 stays as it is, and the certificate files are kept.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving.",

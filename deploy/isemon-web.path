@@ -6,7 +6,8 @@
 # network, a restart, its clock), sshkeys.ask (1.10.239: the keys root signs
 # in with) or osup.ask (1.10.239: a look for updates of the operating system,
 # or the update, which root starts as a unit of its own) or otptls.ask
-# (1.10.245: the otp logs received over TLS) - and this starts
+# (1.10.245: the otp logs received over TLS) or acmetls.ask (1.10.287: the
+# acme logs, the same way) - and this starts
 # isemon-web.service, which checks it as root and puts it in. Nothing else
 # can be asked for this way.
 [Unit]
@@ -20,6 +21,7 @@ PathExists=/var/lib/isemon/web/ntp.ask
 PathExists=/var/lib/isemon/web/sshkeys.ask
 PathExists=/var/lib/isemon/web/osup.ask
 PathExists=/var/lib/isemon/web/otptls.ask
+PathExists=/var/lib/isemon/web/acmetls.ask
 Unit=isemon-web.service
 
 [Install]

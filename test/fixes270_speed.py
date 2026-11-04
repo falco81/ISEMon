@@ -164,8 +164,8 @@ try:
        'var r = d && (d.root_state || d.root);' in page)
     ok('Try again on the firewall asks for the pane again',
        "toast(x.message, 'good'); loadFw(); }).catch(oops);" in page)
-    ok('SSH keys, the otp logs over TLS: 0.7 s while root has it to do',
-       page.count('}, 700);      /* only while root has it to do'), 2)
+    ok('SSH keys, the otp logs over TLS, the acme logs over TLS (1.10.287): 0.7 s while root '
+       'has it to do', page.count('}, 700);      /* only while root has it to do'), 3)
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 

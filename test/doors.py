@@ -1066,7 +1066,10 @@ ok('...and it is drawn as plain words, not as something to look at first',
 # already holds it. Anything else has to be placed when it opens, from where
 # it really is, and `.ccpanel` is.
 CSS = PAGE[PAGE.index('<style>') + 7:PAGE.index('</style>')]
-HELD = {'.sw .knob::after', '.sw3::after', '.ctl-nav button[data-pane].on::before', '.ctl-nav'}
+# ...nor the dot of a line of a certificate's story on the acme tab
+# (1.10.287): ten pixels on the line the list is drawn along.
+HELD = {'.sw .knob::after', '.sw3::after', '.ctl-nav button[data-pane].on::before', '.ctl-nav',
+        '.am-tl::before'}
 loose = []
 for sel, body in re.findall(r'([^{}]+)\{([^{}]*)\}', CSS):
     flat = ' '.join(body.split())
