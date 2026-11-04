@@ -277,6 +277,7 @@ isemon --banfeed newkey      a new key in the URL
 isemon --fetch feeds|geo     fetch the public lists, or the country database
 isemon --settings            every setting, as it stands
 isemon --set block_tries=8   change one
+isemon --get block_tries      read one back - its value alone (several, or 'mikrotik_*': key=value)
 isemon --users               who may open the dashboard
 isemon --add-user NAME --role fulladmin
 isemon --passwd NAME         set or reset a password
@@ -370,6 +371,16 @@ working.
 ---
 
 ## Version
+
+1.10.286
+
+- **`isemon --get KEY`** - what `--set` changes, read back: the value as it
+  stands (saved in the database, from config.json, or the default). One key
+  alone gives its value bare, for a script (`x=$(isemon --get block_tries)`);
+  several (`--get a --get b`) or a pattern (`--get 'mikrotik_*'`) give
+  `key=value` lines; `--json` gives an object. A password or a key is never
+  shown in clear - by its last two letters, as `--settings` and the page show
+  it. A name that is not a setting is said, with the names near it, exit 2.
 
 1.10.285
 

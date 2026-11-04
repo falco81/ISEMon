@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.285'
+__version__ = '1.10.286'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -81388,6 +81388,57 @@ def cmd_database(args, pal, store):
     return 0
 
 
+def cmd_get(args, pal, store):
+    """--get KEY (1.10.286): what --set changes, read back - the value as it
+    stands (saved, from config.json, or the default), one alone bare for a
+    script, several as key=value. A secret never in clear: as --settings and
+    the page show it, by its last two letters."""
+    import fnmatch
+    keys = []
+    for want in args.get:
+        want = str(want or '').strip()
+        want = 'ban_from_nps' if want == 'judge_nps_vpn' else want
+        if any(c in want for c in '*?['):
+            hit = [k for k in sorted(DEFAULTS) if fnmatch.fnmatchcase(k, want)]
+            if not hit:
+                pal.bad('no setting is called like %r (isemon --settings lists them all)' % want)
+                return 2
+            keys += hit
+        elif want in DEFAULTS:
+            keys.append(want)
+        else:
+            near = [k for k in sorted(DEFAULTS) if want and want.lower() in k][:5]
+            pal.bad('there is no setting %r%s' % (want, (' - perhaps ' + ', '.join(near))
+                                                  if near else ' (isemon --settings lists them all)'))
+            return 2
+    keys = list(dict.fromkeys(keys))
+
+    def shown(key):
+        value = CONFIG.get(key)
+        if key in SECRET_KEYS:
+            return secret_shown(value)
+        return value
+    if as_json(args, {k: shown(k) for k in keys}):
+        return 0
+
+    def words(value):
+        if value is None:
+            return ''
+        if isinstance(value, bool):
+            return '1' if value else '0'
+        if isinstance(value, (list, dict)):
+            if isinstance(value, list) and all(isinstance(v, (str, int, float)) for v in value):
+                return ','.join(str(v) for v in value)
+            return json.dumps(value, ensure_ascii=False, sort_keys=True)
+        return str(value)
+    if len(keys) == 1 and not any(c in str(args.get[0]) for c in '*?['):
+        print(words(shown(keys[0])))
+        return 0
+    for key in keys:
+        print('%s=%s' % (key, words(shown(key))))
+    return 0
+
+
 def cmd_settings(args, pal, store):
     if args.set:
         session = cli_session(store)
@@ -81454,6 +81505,7 @@ def cmd_settings(args, pal, store):
                                             else (pal.c_info if cell == 'config.json'
                                                   else pal.dim)))))
     pal.note('\n  Change one with:  isemon --set block_tries=8 --set block_window_min=15')
+    pal.note('  Read one back:    isemon --get block_tries')
     pal.note('  Everything saved lives in the database; %s is still read, and what is'
              % CONFIG_FILE)
     pal.note('  saved wins over it. Put a setting back to what the file says and it stops')
@@ -87879,6 +87931,10 @@ def main(argv=None):
     cfg = parser.add_argument_group('settings')
     cfg.add_argument('--settings', action='store_true', help='every setting, as it stands')
     cfg.add_argument('--set', action='append', metavar='KEY=VALUE', help='change one setting')
+    cfg.add_argument('--get', action='append', metavar='KEY',
+                     help='one setting as it stands: its value alone (for a script); '
+                          'several (--get a --get b) or a pattern (\'mikrotik_*\') as '
+                          'key=value lines; a password shown by its last two letters only')
     cfg.add_argument('--database', nargs='?', const='show', metavar='WHAT',
                      choices=('show', 'test', 'setup', 'move', 'empty'),
                      help='which database everything is kept in: "show" what it is now, '
@@ -87988,6 +88044,7 @@ def main(argv=None):
         (args.rescan, cmd_rescan), (args.ptr_fill, cmd_ptr_fill),
         (bool(args.ptr), cmd_ptr), (bool(args.database), cmd_database),
         (bool(args.erase), cmd_erase),
+        (bool(args.get), cmd_get),
         (args.settings or bool(args.set), cmd_settings),
         (args.directory, cmd_directory),
         (args.directory_groups is not None, cmd_directory_groups),
