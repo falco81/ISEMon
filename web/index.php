@@ -473,6 +473,9 @@ if (isset($_GET['api'])) {
         'acmetls'      => '/api/acmetls',
         'acmelog'      => '/api/acmelog',
         'acmelog-events' => '/api/acmelog/events',
+        'acmelog-jobs'   => '/api/acmelog/jobs',
+        'acmelog-job'    => '/api/acmelog/job',
+        'acmelog-checks' => '/api/acmelog/checks',
         /* Automatic certificates (1.10.251). */
         'acme'         => '/api/acme',
         /* Settings → Proxy → Try it (1.10.268). */
@@ -4143,6 +4146,53 @@ function srcText(el) {
   .modal .sk-made textarea{width:100%;box-sizing:border-box}
   /* The otp logs over TLS (1.10.245): a card on The OTP logs, drawn as the
      SSH keys of root are */
+  /* ---- the acme tab's Jobs and Checks pages (1.10.288) -------------------- */
+  .am-pages{align-self:flex-start}
+  .am-pages button{display:inline-flex;align-items:center;gap:7px}
+  .am-page{display:flex;flex-direction:column;gap:14px}
+  .am-page .card + .card{margin-top:0}
+  .am-share{display:flex;align-items:center;gap:8px;min-width:120px}
+  .am-share-t{flex:1;height:7px;border-radius:999px;background:var(--panel2);overflow:hidden;max-width:120px}
+  .am-share-f{display:block;height:100%;border-radius:999px}
+  .am-share-f.ok{background:var(--ok)} .am-share-f.warn{background:var(--warn)} .am-share-f.crit{background:var(--crit)}
+  .am-share-n{font-size:12.5px;font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+  .am-table td.num,.am-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .am-lat{min-width:140px}
+  .am-lat-t{position:relative;height:7px;border-radius:999px;background:var(--panel2);overflow:hidden;max-width:160px;margin:5px 0 4px}
+  .am-lat-90,.am-lat-50{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+  .am-lat-90{background:rgba(88,166,255,.35)} .am-lat-50{background:var(--info)}
+  .am-median{stroke:var(--info);stroke-width:1.5;stroke-dasharray:4 4}
+  .am-median-l{fill:var(--info)}
+  .am-wf{margin-top:10px}
+  .am-wf-row{all:unset;box-sizing:border-box;cursor:pointer;display:grid;
+    grid-template-columns:64px minmax(0,1.4fr) minmax(120px,1fr) 64px;gap:10px;align-items:center;
+    padding:4px 6px;border-radius:7px;font-size:12.5px;border-left:3px solid transparent}
+  .am-wf-row:hover{background:var(--panel2)}
+  .am-wf-row:focus-visible{outline:2px solid var(--info)}
+  .am-wf-row.crit{border-left-color:var(--crit)} .am-wf-row.warn{border-left-color:var(--warn)}
+  .am-wf-row.ok{border-left-color:var(--ok)}
+  .am-wf-at,.am-wf-ms{color:var(--tx-mut);font-variant-numeric:tabular-nums;text-align:right}
+  .am-wf-what{display:flex;gap:7px;align-items:center;min-width:0}
+  .am-wf-msg{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx-dim)}
+  .am-wf-row.dim .am-wf-msg{color:var(--tx-mut)}
+  .am-wf-track{position:relative;height:8px;background:var(--panel2);border-radius:999px}
+  .am-wf-bar{position:absolute;top:0;bottom:0;border-radius:999px;background:var(--info)}
+  .am-wf-bar.tick{width:3px;margin-left:-1px;background:var(--tx-mut)}
+  .am-wf-row.crit .am-wf-bar{background:var(--crit)} .am-wf-row.warn .am-wf-bar{background:var(--warn)}
+  .am-wf-row.ok .am-wf-bar.tick{background:var(--ok)}
+  .am-checks{display:flex;flex-direction:column;gap:8px}
+  .am-check{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.6fr) auto;gap:16px;align-items:center;
+    padding:10px 13px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--line)}
+  .am-check.ok{border-left-color:var(--ok)} .am-check.warn{border-left-color:var(--warn)}
+  .am-check.crit{border-left-color:var(--crit)}
+  .am-check-l{min-width:0;display:flex;flex-direction:column;gap:3px}
+  .am-check-r{text-align:right;white-space:nowrap}
+  .am-strip{display:flex;gap:2px;align-items:center;flex-wrap:nowrap;overflow:hidden}
+  .am-run{flex:0 0 auto;width:9px;height:22px;border-radius:3px;background:var(--tx-mut)}
+  .am-run.ok{background:var(--ok)} .am-run.warn{background:var(--warn)} .am-run.crit{background:var(--crit)}
+  .am-run:hover{opacity:.75}
+  @media (max-width:760px){.am-check{grid-template-columns:minmax(0,1fr)}.am-check-r{text-align:left}
+    .am-wf-row{grid-template-columns:56px minmax(0,1fr) 56px}.am-wf-track{display:none}}
   /* ---- the acme tab (1.10.287) ------------------------------------------- */
   #am-host{display:flex;flex-direction:column;gap:14px}
   #am-host .card + .card{margin-top:0}
@@ -5555,10 +5605,11 @@ function srcText(el) {
       <p class="note">In acme: <b>Settings → isemon</b> - <span class="mono">isemon=1</span>,
         this machine in <span class="mono">isemon_targets</span> (<span class="mono">host:514/tcp</span>,
         or <span class="mono">host:6514/tls</span> once the encrypted receiving below is set up), and
-        <span class="mono">isemon_events=1</span> for the rest of what acme does as well. rsyslog
-        files the lines as <span class="mono">/var/log/remote/&lt;HOST&gt;/acme-certs.log</span> and
-        <span class="mono">acme.log</span> (<span class="mono">deploy/rsyslog-acme.conf</span>, as
-        <span class="mono">11-acme.conf</span>).</p>
+        <span class="mono">isemon_events=1</span> for the rest of what acme does as well, and
+        <span class="mono">isemon_detail=1</span> (as it comes) for every job step by step. rsyslog
+        files the lines as <span class="mono">/var/log/remote/&lt;HOST&gt;/acme-certs.log</span>,
+        <span class="mono">acme.log</span> and <span class="mono">acme-jobs.log</span>
+        (<span class="mono">deploy/rsyslog-acme.conf</span>, as <span class="mono">11-acme.conf</span>).</p>
       <p class="note"><b>Nothing here is ever judged.</b> It is what acme did, kept and shown -
         nobody is banned by it. Switched off, not one file is opened and the acme tab is not
         there.</p>
@@ -26523,7 +26574,8 @@ var PANES = {
   otp:     ['otp', 'otp_paths', 'otp_name', 'otp_detail', 'otp_detail_name',
             'otp_from', 'otp_from_mark'],
   acmelog: ['acmelog', 'acmelog_paths', 'acmelog_certs_name', 'acmelog_events',
-            'acmelog_events_name', 'retain_acmelog_days'],
+            'acmelog_events_name', 'acmelog_jobs', 'acmelog_jobs_name', 'retain_acmelog_days',
+            'retain_acmelog_jobs_days'],
   eduroam: ['eduroam', 'eduroam_format', 'eduroam_paths', 'eduroam_name',
             'eduroam_detail_name', 'eduroam_nps_name', 'eduroam_nps_policy',
             'eduroam_ignore'],
@@ -27431,6 +27483,9 @@ var ONLY_WHEN = {
   acmelog_events: ['acmelog', '1'],
   acmelog_events_name: ['acmelog_events', '1'],
   retain_acmelog_days: ['acmelog', '1'],
+  acmelog_jobs: ['acmelog', '1'],
+  acmelog_jobs_name: ['acmelog_jobs', '1'],
+  retain_acmelog_jobs_days: ['acmelog_jobs', '1'],
   eduroam_paths: ['eduroam', '1'],
   eduroam_name: ['eduroam', '1'],
   eduroam_detail_name: ['eduroam', '1'],
@@ -39981,6 +40036,7 @@ function fwFromServer(d) {
   return JSON.parse(JSON.stringify({on: !!d.conf.on, off: d.conf.off || [], rules: d.conf.rules || [],
                                     logs: d.conf.logs || {any: true, from: []},
                                     otptls: d.conf.otptls || {any: true, from: []},
+                                    acmetls: d.conf.acmetls || {any: true, from: []},
                                     access: d.access, access_changed: false}));
 }
 function fwDirty() {
@@ -39993,7 +40049,8 @@ function fwSave() {
   if (!FW.draft) return Promise.resolve(true);
   var dr = FW.draft, was = FW.last ? !!FW.last.conf.on : false, ver = FW.ver;
   var go = function () {
-    var body = {on: dr.on, off: dr.off, rules: dr.rules, logs: dr.logs, otptls: dr.otptls};
+    var body = {on: dr.on, off: dr.off, rules: dr.rules, logs: dr.logs, otptls: dr.otptls,
+                acmetls: dr.acmetls};
     if (dr.access_changed) body.access = dr.access;
     return api('web-firewall', body).then(function (x) {
       toast(x.message, 'good');
@@ -40247,18 +40304,18 @@ function drawFwBody(d, auto) {
       fwDirty();
     }, !d.may));
     card.appendChild(top);
-    if (item.key === 'logs' || item.key === 'otptls') {
-      var lg = item.key === 'logs' ? FW.draft.logs : FW.draft.otptls;
+    if (item.key === 'logs' || item.key === 'otptls' || item.key === 'acmetls') {
+      var lg = item.key === 'logs' ? FW.draft.logs : (item.key === 'acmetls' ? FW.draft.acmetls : FW.draft.otptls);
       var senders = el('textarea', 'mono fw-nets');
       senders.rows = 2; senders.spellcheck = false;
       senders.placeholder = item.key === 'logs' ? 'the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4'
-        : 'otp\'s nodes: 10.1.2.3, 10.1.2.4';
+        : (item.key === 'acmetls' ? 'acme\'s nodes: 10.1.2.3, 10.1.2.4' : 'otp\'s nodes: 10.1.2.3, 10.1.2.4');
       senders.value = (lg.from || []).join(', ');
       senders.disabled = !d.may;
       senders.hidden = lg.any;
       senders.onchange = function () { lg.from = senders.value.split(/[\s,;]+/).filter(Boolean); fwDirty(); };
       card.appendChild(wrSeg([[true, 'From anywhere'], [false, item.key === 'logs' ? 'Only from the senders'
-        : 'Only from otp\'s nodes']], lg.any,
+        : (item.key === 'acmetls' ? 'Only from acme\'s nodes' : 'Only from otp\'s nodes')]], lg.any,
         function (v) { lg.any = v; senders.hidden = v; fwDirty(); }, !d.may));
       card.appendChild(senders);
     }
@@ -43361,9 +43418,9 @@ function drawAcmeTls() {
     else if (d.fw === 'iptables') {
       var fi = d.fw_isemon || {};
       fw = !fi.on ? 'isemon\'s firewall is off here - the machine\'s own rules decide'
-        : (!fi.let ? el('span', 'ot-warn', 'isemon\'s firewall does not let it in - The logs arriving (rsyslog) is turned off under Settings → Firewall and access')
-          : (fi.any ? 'isemon\'s firewall lets it in from anywhere, as one of the logs arriving (Settings → Firewall and access)'
-            : 'isemon\'s firewall lets it in from the log senders named only (Settings → Firewall and access)'));
+        : (!fi.let ? el('span', 'ot-warn', 'isemon\'s firewall does not let it in - acme - the certificate manager is turned off under Settings → Firewall and access')
+          : (fi.any ? 'isemon\'s firewall lets it in from anywhere (Settings → Firewall and access)'
+            : 'isemon\'s firewall lets it in from acme\'s nodes only (Settings → Firewall and access)'));
     }
     else fw = 'unknown';
   }
@@ -43742,7 +43799,7 @@ function atWizSettings(box) {
    and every line it sent. There only while the logs are read. Nothing here
    is ever judged; nothing here changes anything in acme.
    ========================================================================== */
-var AM = {days: 30, d: null, state: '', text: '', ev: null, evq: {}, timer: null, asked: 0};
+var AM = {days: 30, d: null, state: '', text: '', ev: null, evq: {}, timer: null, asked: 0, page: 'certs'};
 var AM_STATE = {
   ok: ['Fine', 'ok', 'check'],
   expiring: ['Runs out soon', 'warn', 'clock'],
@@ -43846,6 +43903,9 @@ function drawAcmeLog() {
     return;
   }
   host.appendChild(amHead(d));
+  /* Certificates, and - from acme-jobs (1.10.288) - Jobs and Checks. */
+  host.appendChild(amPages());
+  if (AM.page !== 'certs') { amLoadPage(host); return; }
   if (!d.total) {
     var empty = el('div', 'card full am-empty');
     empty.appendChild(el('h2', '', 'Nothing from acme yet'));
@@ -43910,7 +43970,7 @@ function amHead(d) {
   });
   right.appendChild(seg);
   var again = cmdButton('Read again', 'refresh', 'small');
-  again.onclick = function () { busy(again, true); loadAcmeLog(); amEvents(true); };
+  again.onclick = function () { busy(again, true); AMJ.asked = 0; loadAcmeLog(); amEvents(true); };
   right.appendChild(again);
   head.appendChild(right);
   return head;
@@ -44533,19 +44593,585 @@ function amDrawEvents() {
   }
 }
 
+/* ---- the acme tab's Jobs and Checks pages (1.10.288, acme-jobs) -----------
+   Made of acme's jobs step by step (isemon_detail in acme): how the jobs went
+   and how long a renewal takes, from which source; the validations by the
+   provider that proved them; the requests to the CAs, the DNS APIs and the
+   targets; who began them and how long they waited; one job opened as a
+   waterfall of its steps - and every check of a certificate, run by run. */
+var AMJ = {d: null, c: null, asked: 0};
+var AMJ_STATE = {ok: ['Done', 'ok'], failed: ['Failed', 'crit'], stopped: ['Stopped', 'warn'],
+                 running: ['Running', 'info'], interrupted: ['Interrupted', 'warn']};
+var AMC_STATE = {ok: ['Serves it', 'ok'], warn: ['Serves it, with a remark', 'warn'],
+                 old: ['Serves an older version', 'crit'], other: ['Serves another certificate', 'crit'],
+                 answer: ['The service answers wrongly', 'crit'], unreachable: ['Cannot be reached', 'crit']};
+function amMs(ms) {
+  if (ms === null || ms === undefined) return '–';
+  if (ms < 1000) return Math.round(ms) + ' ms';
+  if (ms < 60000) return (ms / 1000).toFixed(ms < 10000 ? 1 : 0) + ' s';
+  return Math.floor(ms / 60000) + ' min ' + Math.round((ms % 60000) / 1000) + ' s';
+}
+function amPctWords(a, b) { return b ? Math.round(a / b * 100) + ' %' : '–'; }
+function amJobTag(state) {
+  var s = AMJ_STATE[state] || [state || '?', 'dim'];
+  return el('span', 'am-state ' + s[1], s[0]);
+}
+function amPages() {
+  var bar = el('div', 'seg am-pages');
+  [['certs', 'Certificates', 'shield'], ['jobs', 'Jobs', 'gear'], ['checks', 'Checks', 'check']].forEach(function (p) {
+    var b = el('button', AM.page === p[0] ? 'on' : '');
+    b.type = 'button';
+    setButtonIcon(b, p[2], p[1]);
+    b.onclick = function () { AM.page = p[0]; drawAcmeLog(); };
+    bar.appendChild(b);
+  });
+  return bar;
+}
+function amLoadPage(host) {
+  var box = el('div', 'am-page');
+  box.id = 'am-page';
+  box.appendChild(el('p', 'note', 'Reading…'));
+  host.appendChild(box);
+  var page = AM.page;
+  var have = page === 'jobs' ? AMJ.d : AMJ.c;
+  if (have && have.days === AM.days && Date.now() - AMJ.asked < 30000) { amDrawPage(); return; }
+  AMJ.asked = Date.now();
+  api((page === 'jobs' ? 'acmelog-jobs' : 'acmelog-checks') + '&days=' + AM.days, undefined, {quiet: true}).then(function (d) {
+    if (page === 'jobs') AMJ.d = d; else AMJ.c = d;
+    amDrawPage();
+  }).catch(function (e) { oops(e); });
+}
+function amDrawPage() {
+  var box = $('am-page');
+  if (!box) return;
+  clear(box);
+  if (AM.page === 'jobs') amJobsPage(box, AMJ.d || {});
+  else amChecksPage(box, AMJ.c || {});
+  explainWhatWasDrawn(box);
+}
+function amNoDetail(box, words) {
+  var card = el('div', 'card full am-empty');
+  card.appendChild(el('h2', '', words));
+  card.appendChild(el('p', 'note', 'These come from acme-jobs: in acme, isemon_detail=1 (as it comes, from acme 1.0.44) - and here, Settings → The acme logs → Read acme’s jobs, step by step, with acme-jobs.log filed by rsyslog (deploy/rsyslog-acme.conf).'));
+  box.appendChild(card);
+}
+
+/* ---- Jobs ---------------------------------------------------------------- */
+function amJobsPage(box, d) {
+  var k = d.kpi || {};
+  if (!d.total) { amNoDetail(box, 'No job of acme’s yet'); return; }
+  var grid = el('div', 'grid top am-kpis');
+  var cards = [
+    ['Jobs', k.jobs, 'info', 'gear', num(k.ok || 0) + ' done · ' + num(k.failed || 0) + ' failed'
+      + (k.running ? ' · ' + num(k.running) + ' running' : '')],
+    ['Succeeded', k.done ? Math.round(k.ok / k.done * 100) : 0, k.failed ? (k.ok / Math.max(1, k.done) < 0.9 ? 'crit' : 'warn') : 'ok', 'check',
+     'of the ' + num(k.done || 0) + ' that ended', '%'],
+    ['A renewal takes', null, 'info', 'clock', 'half of them; 9 of 10 within ' + amMs(k.renew_p90), amMs(k.renew_p50)],
+    ['Validations refused', k.invalid, k.invalid ? 'warn' : 'ok', 'cancel', 'of ' + num(k.validations || 0) + ' names proved or not'],
+    ['Requests that failed', k.request_errors, k.request_errors ? 'warn' : 'ok', 'net',
+     num(k.requests || 0) + ' requests · ' + num(k.limited || 0) + ' rate-limited (429)'],
+    ['Interrupted', k.interrupted, k.interrupted ? 'warn' : 'ok', 'history', 'no end an hour after its last line - acme runs it again']
+  ];
+  cards.forEach(function (c) {
+    var card = el('div', 'card metric am-kpi ' + c[2]);
+    var lab = el('div', 'label');
+    var ic = el('span', 'am-kpi-ic');
+    ic.innerHTML = iconMarkup(c[3], 15);
+    lab.appendChild(ic);
+    lab.appendChild(el('span', '', c[0]));
+    card.appendChild(lab);
+    var v = noI18n(el('div', 'value', c[5] && c[5] !== '%' ? c[5] : num(c[1] || 0)));
+    if (c[5] === '%') v.appendChild(el('span', 'unit', '%'));
+    card.appendChild(v);
+    card.appendChild(noI18n(el('div', 'sub', c[4])));
+    grid.appendChild(card);
+  });
+  box.appendChild(grid);
+  var two = el('div', 'grid halves am-two');
+  two.appendChild(amJobsPerDay(d));
+  two.appendChild(amDurations(d));
+  box.appendChild(two);
+  var three = el('div', 'grid halves am-two');
+  three.appendChild(amGroupCard('By source', 'How the renewals went, by the source they were issued from.', d.by_issuer, 'source'));
+  three.appendChild(amGroupCard('By kind of job', 'Renewals, deployments, tests, imports, revocations.', d.by_kind, 'kind'));
+  box.appendChild(three);
+  box.appendChild(amValidations(d));
+  box.appendChild(amApis(d));
+  var four = el('div', 'grid halves am-two');
+  four.appendChild(amGroupCard('By target', 'The deployments, target by target.', d.by_target, 'target'));
+  four.appendChild(amWhoQueue(d));
+  box.appendChild(four);
+  box.appendChild(amJobsTable(d));
+}
+function amJobsPerDay(d) {
+  var card = el('div', 'card');
+  card.appendChild(el('h2', '', 'Jobs, day by day'));
+  var series = [['ok', 'Done', 'var(--ok)'], ['failed', 'Failed', 'var(--crit)'],
+                ['stopped', 'Stopped', 'var(--warn)'], ['interrupted', 'Interrupted', 'var(--tx-mut)']];
+  card.appendChild(amStacked(d.days_jobs || [], series, 'Jobs, day by day'));
+  return card;
+}
+/* Stacked bars a day, one axis, a tooltip a day. */
+function amStacked(days, series, label) {
+  var W = 640, H = 200, padL = 34, padR = 6, padT = 10, padB = 26;
+  var max = 1;
+  days.forEach(function (b) {
+    var t = series.reduce(function (a, s) { return a + (b[s[0]] || 0); }, 0);
+    if (t > max) max = t;
+  });
+  var step = max <= 4 ? 1 : Math.ceil(max / 4);
+  var top = Math.ceil(max / step) * step;
+  var y = function (v) { return padT + (1 - v / top) * (H - padT - padB); };
+  var svg = amSvg('svg', {viewBox: '0 0 ' + W + ' ' + H, 'class': 'am-bars', role: 'img', 'aria-label': label});
+  for (var g = 0; g <= top; g += step) {
+    svg.appendChild(amSvg('line', {x1: padL, x2: W - padR, y1: y(g), y2: y(g), 'class': g ? 'am-grid' : 'am-base'}));
+    var lab = amSvg('text', {x: padL - 6, y: y(g) + 4, 'class': 'am-axis', 'text-anchor': 'end'});
+    lab.textContent = num(g);
+    svg.appendChild(lab);
+  }
+  var slot = (W - padL - padR) / Math.max(1, days.length);
+  var bw = Math.max(2, Math.min(22, slot - (slot > 8 ? 3 : 1)));
+  var every = Math.ceil(days.length / 8);
+  days.forEach(function (b, i) {
+    var cx = padL + slot * i + slot / 2, base = 0;
+    var col = amSvg('g', {'class': 'am-col'});
+    var parts = series.filter(function (s) { return b[s[0]]; });
+    parts.forEach(function (s, j) {
+      var v = b[s[0]];
+      var y1 = y(base + v), y0 = y(base);
+      var hgt = Math.max(1, y0 - y1 - (j ? 2 : 0));
+      var r = j === parts.length - 1 ? Math.min(3, bw / 2, hgt / 2) : 0;
+      var path = 'M' + (cx - bw / 2) + ',' + (y1 + hgt) + ' V' + (y1 + r)
+        + (r ? ' Q' + (cx - bw / 2) + ',' + y1 + ' ' + (cx - bw / 2 + r) + ',' + y1 : '')
+        + ' H' + (cx + bw / 2 - r)
+        + (r ? ' Q' + (cx + bw / 2) + ',' + y1 + ' ' + (cx + bw / 2) + ',' + (y1 + r) : '')
+        + ' V' + (y1 + hgt) + ' Z';
+      col.appendChild(amSvg('path', {d: path, fill: s[2]}));
+      base += v;
+    });
+    col.appendChild(amSvg('rect', {x: cx - slot / 2, y: padT, width: slot, height: H - padT - padB, 'class': 'am-hit'}));
+    amHover(col, function () {
+      var out = [{text: new Date(b.day * 1000).toLocaleDateString(numLang(), {weekday: 'short', day: 'numeric', month: 'short'})}];
+      series.forEach(function (s) { if (b[s[0]]) out.push({text: s[1], value: num(b[s[0]]), color: s[2]}); });
+      if (out.length === 1) out.push({text: 'nothing'});
+      return out;
+    });
+    svg.appendChild(col);
+    if (i % every === 0) {
+      var t = amSvg('text', {x: cx, y: H - 8, 'class': 'am-axis', 'text-anchor': 'middle'});
+      t.textContent = new Date(b.day * 1000).toLocaleDateString(numLang(), {day: 'numeric', month: 'numeric'});
+      svg.appendChild(t);
+    }
+  });
+  var wrap = el('div', '');
+  var chart = el('div', 'am-chart');
+  chart.appendChild(svg);
+  wrap.appendChild(chart);
+  var legend = el('div', 'am-legend');
+  series.forEach(function (s) {
+    var it = el('span', 'am-legend-it');
+    var sw = el('span', 'am-sw');
+    sw.style.background = s[2];
+    it.appendChild(sw);
+    it.appendChild(el('span', '', s[1]));
+    legend.appendChild(it);
+  });
+  wrap.appendChild(legend);
+  return wrap;
+}
+/* How long each renewal took: a dot a renewal, on one line of time. */
+function amDurations(d) {
+  var card = el('div', 'card');
+  var h = el('h2', '', 'How long a renewal takes');
+  card.appendChild(h);
+  var pts = (d.durations || []).filter(function (p) { return p.ts && p.took_ms !== null; });
+  if (!pts.length) { card.appendChild(el('p', 'note', 'No renewal has ended yet.')); return card; }
+  var W = 640, H = 200, padL = 70, padR = 10, padT = 10, padB = 26;
+  var t0 = d.since, t1 = d.now;
+  var max = Math.max.apply(null, pts.map(function (p) { return p.took_ms; }));
+  var log = max > 20 * Math.max(1, Math.min.apply(null, pts.map(function (p) { return p.took_ms || 1; })));
+  var lo = log ? Math.max(1, Math.pow(10, Math.floor(Math.log10(Math.max(1, Math.min.apply(null, pts.map(function (p) { return p.took_ms || 1; }))))))) : 0;
+  var hi = log ? Math.pow(10, Math.ceil(Math.log10(max))) : Math.ceil(max / 1000) * 1000 || 1000;
+  var y = function (v) {
+    if (log) return padT + (1 - (Math.log10(Math.max(lo, v)) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo))) * (H - padT - padB);
+    return padT + (1 - v / hi) * (H - padT - padB);
+  };
+  var x = function (t) { return padL + (t - t0) / Math.max(1, t1 - t0) * (W - padL - padR); };
+  var svg = amSvg('svg', {viewBox: '0 0 ' + W + ' ' + H, 'class': 'am-bars', role: 'img', 'aria-label': 'How long each renewal took'});
+  var ticks = [];
+  if (log) { for (var v = lo; v <= hi; v *= 10) ticks.push(v); } else { for (var u = 0; u <= hi; u += hi / 4) ticks.push(u); }
+  ticks.forEach(function (v) {
+    svg.appendChild(amSvg('line', {x1: padL, x2: W - padR, y1: y(v), y2: y(v), 'class': 'am-grid'}));
+    var lab = amSvg('text', {x: padL - 6, y: y(v) + 4, 'class': 'am-axis', 'text-anchor': 'end'});
+    lab.textContent = amMs(v);
+    svg.appendChild(lab);
+  });
+  svg.appendChild(amSvg('line', {x1: padL, x2: W - padR, y1: H - padB, y2: H - padB, 'class': 'am-base'}));
+  for (var i = 0; i <= 4; i++) {
+    var tt = t0 + (t1 - t0) * i / 4;
+    var tl = amSvg('text', {x: x(tt), y: H - 8, 'class': 'am-axis', 'text-anchor': i === 0 ? 'start' : (i === 4 ? 'end' : 'middle')});
+    tl.textContent = new Date(tt * 1000).toLocaleDateString(numLang(), {day: 'numeric', month: 'numeric'});
+    svg.appendChild(tl);
+  }
+  if (d.kpi && d.kpi.renew_p50) {
+    svg.appendChild(amSvg('line', {x1: padL, x2: W - padR, y1: y(d.kpi.renew_p50), y2: y(d.kpi.renew_p50), 'class': 'am-median'}));
+    var ml = amSvg('text', {x: W - padR - 4, y: y(d.kpi.renew_p50) - 5, 'class': 'am-axis am-median-l', 'text-anchor': 'end'});
+    ml.textContent = 'half of them: ' + amMs(d.kpi.renew_p50);
+    svg.appendChild(ml);
+  }
+  pts.forEach(function (p) {
+    var g = amSvg('g', {'class': 'am-dot ' + (p.ok ? 'ok' : 'crit')});
+    g.appendChild(amSvg('circle', {cx: x(p.ts), cy: y(p.took_ms), r: 4.5}));
+    g.appendChild(amSvg('circle', {cx: x(p.ts), cy: y(p.took_ms), r: 10, 'class': 'am-hit'}));
+    amHover(g, function () {
+      return [{text: (p.cert || '?') + ' · ' + (p.issuer || '')}, {text: 'took', value: amMs(p.took_ms)},
+              {text: stamp(p.ts)}, {text: p.ok ? 'done' : 'failed'}];
+    });
+    g.addEventListener('click', function () { amJob({job: p.job, node: p.node, cert: p.cert}); });
+    svg.appendChild(g);
+  });
+  var chart = el('div', 'am-chart');
+  chart.appendChild(svg);
+  card.appendChild(chart);
+  var legend = el('div', 'am-legend');
+  [['ok', 'done'], ['crit', 'failed']].forEach(function (l) {
+    var it = el('span', 'am-legend-it');
+    it.appendChild(el('span', 'am-sw round ' + l[0]));
+    it.appendChild(el('span', '', l[1]));
+    legend.appendChild(it);
+  });
+  if (log) legend.appendChild(el('span', 'am-legend-it muted', 'the times on a logarithmic scale'));
+  card.appendChild(legend);
+  return card;
+}
+/* A share that went well, as a bar - and how many, and how long. */
+function amShare(ok, n) {
+  var wrap = el('div', 'am-share');
+  var bar = el('span', 'am-share-t');
+  var f = el('span', 'am-share-f ' + (n && ok / n < 0.8 ? 'crit' : (n && ok < n ? 'warn' : 'ok')));
+  f.style.width = (n ? ok / n * 100 : 0) + '%';
+  bar.appendChild(f);
+  wrap.appendChild(bar);
+  wrap.appendChild(noI18n(el('span', 'am-share-n', amPctWords(ok, n))));
+  return wrap;
+}
+function amGroupCard(title, says, rows, what) {
+  var card = el('div', 'card');
+  card.appendChild(el('h2', '', title));
+  card.appendChild(el('p', 'note', says));
+  rows = rows || [];
+  if (!rows.length) { card.appendChild(el('p', 'note', 'None in the period.')); return card; }
+  card.appendChild(listTable([what === 'source' ? 'Source' : (what === 'target' ? 'Target' : 'Kind'), {words: 'Jobs', cls: 'num'},
+                              'Succeeded', {words: 'Half within', cls: 'num'}, {words: '9 of 10 within', cls: 'num'}], rows, function (r) {
+    var tr = el('tr');
+    tr.appendChild(noI18n(el('td', '', r.key)));
+    tr.appendChild(noI18n(el('td', 'num', num(r.n))));
+    var s = el('td', '');
+    s.appendChild(amShare(r.ok, r.ok + r.failed));
+    tr.appendChild(s);
+    tr.appendChild(noI18n(el('td', 'num', amMs(r.p50))));
+    tr.appendChild(noI18n(el('td', 'num', amMs(r.p90))));
+    return tr;
+  }, 'plain am-table'));
+  return card;
+}
+function amValidations(d) {
+  var card = el('div', 'card full');
+  card.appendChild(el('h2', '', 'Validations, by the provider that proved them'));
+  card.appendChild(el('p', 'note', 'Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof.'));
+  var rows = d.validations || [];
+  if (!rows.length) { card.appendChild(el('p', 'note', 'No validation in the period - a source that is not ACME proves nothing.')); return card; }
+  card.appendChild(listTable(['Provider', 'Challenge', {words: 'Proved', cls: 'num'}, {words: 'Refused', cls: 'num'},
+                              'Accepted', {words: 'Half within', cls: 'num'}, {words: '9 of 10 within', cls: 'num'}, 'The last refusal'], rows, function (r) {
+    var tr = el('tr');
+    tr.appendChild(noI18n(el('td', 'mono small', r.via)));
+    tr.appendChild(noI18n(el('td', 'small', r.challenge_type)));
+    tr.appendChild(noI18n(el('td', 'num', num(r.valid))));
+    tr.appendChild(noI18n(el('td', 'num' + (r.invalid ? ' am-bad' : ''), num(r.invalid))));
+    var s = el('td', '');
+    s.appendChild(amShare(r.valid, r.valid + r.invalid));
+    tr.appendChild(s);
+    tr.appendChild(noI18n(el('td', 'num', amMs(r.p50))));
+    tr.appendChild(noI18n(el('td', 'num', amMs(r.p90))));
+    var e = el('td', 'am-msg');
+    if (r.last_error) {
+      e.appendChild(noI18n(el('span', '', r.last_error)));
+      e.appendChild(noI18n(el('div', 'small muted', ago(r.last_error_ts))));
+    } else e.appendChild(el('span', 'muted', '–'));
+    tr.appendChild(e);
+    return tr;
+  }, 'plain am-table'));
+  return card;
+}
+function amApis(d) {
+  var card = el('div', 'card full');
+  card.appendChild(el('h2', '', 'Requests to the CAs, the DNS APIs and the targets'));
+  card.appendChild(el('p', 'note', 'Every HTTPS request a module made, by the server it went to: how many failed (a status of 400 or more, or no answer), how many were rate-limited, and how long the answers took. Never the bodies, the headers or the values of a query - acme does not send them.'));
+  var rows = d.apis || [];
+  if (!rows.length) { card.appendChild(el('p', 'note', 'No request in the period.')); return card; }
+  var most = Math.max.apply(null, rows.map(function (r) { return r.p90 || 0; })) || 1;
+  card.appendChild(listTable(['Server', 'Module', {words: 'Requests', cls: 'num'}, 'Answered well', {words: '429', cls: 'num'},
+                              'How long', 'The last failure'], rows, function (r) {
+    var tr = el('tr');
+    tr.appendChild(noI18n(el('td', 'mono small', r.host)));
+    var m = el('td', 'small');
+    m.appendChild(noI18n(el('span', '', r.module || '–')));
+    if (r.module_kind) m.appendChild(noI18n(el('span', 'tag', r.module_kind)));
+    tr.appendChild(m);
+    tr.appendChild(noI18n(el('td', 'num', num(r.n))));
+    var s = el('td', '');
+    s.appendChild(amShare(r.n - r.errors, r.n));
+    tr.appendChild(s);
+    tr.appendChild(noI18n(el('td', 'num' + (r.limited ? ' am-bad' : ''), num(r.limited))));
+    var lat = el('td', 'am-lat');
+    var bar = el('div', 'am-lat-t');
+    var p50 = el('span', 'am-lat-50');
+    p50.style.width = Math.max(2, (r.p50 || 0) / most * 100) + '%';
+    var p90 = el('span', 'am-lat-90');
+    p90.style.width = Math.max(2, (r.p90 || 0) / most * 100) + '%';
+    bar.appendChild(p90); bar.appendChild(p50);
+    lat.appendChild(bar);
+    lat.appendChild(noI18n(el('div', 'small muted', amMs(r.p50) + ' · ' + amMs(r.p90))));
+    amHover(lat, function () { return [{text: r.host}, {text: 'half within', value: amMs(r.p50)}, {text: '9 of 10 within', value: amMs(r.p90)}]; });
+    tr.appendChild(lat);
+    var e = el('td', 'am-msg');
+    if (r.last_error) {
+      e.appendChild(noI18n(el('span', 'mono small', r.last_error)));
+      e.appendChild(noI18n(el('div', 'small muted', ago(r.last_error_ts))));
+    } else e.appendChild(el('span', 'muted', '–'));
+    tr.appendChild(e);
+    return tr;
+  }, 'plain am-table'));
+  card.appendChild(el('p', 'btnhelp', 'How long: the bar is the time half of the answers came within, the paler one 9 of 10.'));
+  return card;
+}
+function amWhoQueue(d) {
+  var card = el('div', 'card');
+  card.appendChild(el('h2', '', 'Who began them, and the wait'));
+  var k = d.kpi || {};
+  card.appendChild(netFacts([
+    ['Waited in the queue, half of them', amMs(k.queued_p50)],
+    ['...9 of 10 of them', amMs(k.queued_p90)]
+  ]));
+  var who = el('div', 'am-who');
+  (d.who || []).forEach(function (w) {
+    var chip = el('span', 'chip');
+    chip.appendChild(noI18n(el('span', '', w.who === 'acme' ? 'acme itself (its schedule)' : w.who)));
+    chip.appendChild(noI18n(el('b', '', ' ' + num(w.n))));
+    who.appendChild(chip);
+  });
+  card.appendChild(el('h4', '', 'Begun by'));
+  card.appendChild(who);
+  return card;
+}
+function amJobsTable(d) {
+  var card = el('div', 'card full');
+  card.appendChild(el('h2', '', 'The jobs'));
+  var tools = el('div', 'am-tools');
+  var find = el('input', 'am-find');
+  find.type = 'search';
+  find.placeholder = 'Find a certificate, a source, a target, an account…';
+  tools.appendChild(find);
+  var chips = el('div', 'am-chips');
+  var want = '';
+  var box = el('div', '');
+  var fill = function () {
+    clear(box);
+    var q = find.value.trim().toLowerCase();
+    var rows = (d.jobs || []).filter(function (j) {
+      if (want && j.state !== want) return false;
+      if (!q) return true;
+      return [j.cert, j.issuer, j.target, j.who, j.job_kind, j.names, j.node, j.job].join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+    if (!rows.length) { box.appendChild(el('p', 'note', 'No job is like that.')); return; }
+    box.appendChild(listTable(['State', 'Job', 'Certificate', 'Source or target', 'Begun by', 'Began', {words: 'Took', cls: 'num'}, 'What it said'], rows, function (j) {
+      var tr = el('tr', 'am-row tappable');
+      tr.tabIndex = 0;
+      tr.onclick = function () { amJob(j); };
+      tr.onkeydown = function (e) { if (e.key === 'Enter') amJob(j); };
+      var s = el('td', '');
+      s.appendChild(amJobTag(j.state));
+      tr.appendChild(s);
+      var k = el('td', 'small');
+      k.appendChild(noI18n(el('b', '', j.job_kind || '?')));
+      k.appendChild(noI18n(el('div', 'muted', '#' + j.job + ' · ' + (j.node || ''))));
+      tr.appendChild(k);
+      tr.appendChild(noI18n(el('td', '', j.cert || '–')));
+      tr.appendChild(noI18n(el('td', 'small', j.target || j.issuer || '–')));
+      tr.appendChild(noI18n(el('td', 'small', j.who === 'acme' ? 'acme' : (j.who || '–'))));
+      tr.appendChild(stampCell(j.started || j.ended));
+      tr.appendChild(noI18n(el('td', 'num', amMs(j.took_ms))));
+      tr.appendChild(noI18n(el('td', 'am-msg', j.said || j.why || '')));
+      return tr;
+    }, 'plain am-table'));
+  };
+  [['', 'All'], ['failed', 'Failed'], ['ok', 'Done'], ['interrupted', 'Interrupted'], ['running', 'Running']].forEach(function (c) {
+    var b = el('button', 'chip' + (c[0] === want ? ' on' : ''), c[1]);
+    b.type = 'button';
+    b.onclick = function () { want = c[0]; Array.prototype.forEach.call(chips.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); fill(); };
+    chips.appendChild(b);
+  });
+  tools.appendChild(chips);
+  find.oninput = fill;
+  card.appendChild(tools);
+  card.appendChild(box);
+  fill();
+  return card;
+}
+
+/* One job, whole: a waterfall of its steps, requests and validations on the
+   time since it began, and every line of it. */
+function amJob(j) {
+  modal('Job #' + j.job + (j.cert ? ' - ' + j.cert : ''), function (body) {
+    var head = el('div', 'am-cert-head');
+    head.appendChild(amJobTag(j.state));
+    if (j.job_kind) head.appendChild(noI18n(el('b', '', j.job_kind)));
+    if (j.took_ms !== undefined && j.took_ms !== null) head.appendChild(noI18n(el('span', 'muted', amMs(j.took_ms))));
+    body.appendChild(head);
+    var facts = [['Certificate', noI18n(el('span', '', j.cert || '–'))], ['Node', noI18n(el('span', '', j.node || '–'))],
+                 ['Begun by', noI18n(el('span', '', j.who || '–'))], ['Why', noI18n(el('span', '', j.why || '–'))]];
+    if (j.issuer) facts.push(['Source', noI18n(el('span', '', j.issuer + (j.issuer_kind ? ' (' + j.issuer_kind + ')' : '')))]);
+    if (j.challenge) facts.push(['Validation', noI18n(el('span', '', j.challenge))]);
+    if (j.target) facts.push(['Target', noI18n(el('span', '', j.target + (j.target_kind ? ' (' + j.target_kind + ')' : '')))]);
+    if (j.queued_ms !== undefined && j.queued_ms !== null) facts.push(['Waited in the queue', amMs(j.queued_ms)]);
+    if (j.started) facts.push(['Began', stamp(j.started)]);
+    if (j.said) facts.push(['How it ended', noI18n(el('span', '', j.said))]);
+    body.appendChild(netFacts(facts));
+    var wf = el('div', 'am-wf');
+    wf.appendChild(el('p', 'note', 'Reading…'));
+    body.appendChild(wf);
+    api('acmelog-job&job=' + encodeURIComponent(j.job) + '&node=' + encodeURIComponent(j.node || ''), undefined, {quiet: true}).then(function (d) {
+      clear(wf);
+      var rows = d.rows || [];
+      if (!rows.length) { wf.appendChild(el('p', 'note', 'Nothing kept of it.')); return; }
+      var span = Math.max(1, Math.max.apply(null, rows.map(function (r) { return (r.t_ms || 0) + (r.event === 'http' || r.event === 'validation' ? 0 : 0); })));
+      wf.appendChild(el('h4', '', 'How it ran'));
+      rows.forEach(function (r) {
+        var line = el('button', 'am-wf-row ' + ({bad: 'crit', warn: 'warn', ok: 'ok', debug: 'dim'}[r.level] || 'info'));
+        line.type = 'button';
+        var at = el('span', 'am-wf-at', amMs(r.t_ms || 0));
+        noI18n(at);
+        line.appendChild(at);
+        var what = el('span', 'am-wf-what');
+        var tag = {start: 'start', end: 'end', step: 'step', http: 'request', validation: 'validation', debug: 'debug'}[r.event] || r.event;
+        what.appendChild(el('span', 'tag ' + ({http: 'info', validation: 'info', end: (r.ok ? 'ok' : 'crit')}[r.event] || 'dim'), tag));
+        var words = r.msg || '';
+        what.appendChild(noI18n(el('span', 'am-wf-msg', words)));
+        line.appendChild(what);
+        var track = el('span', 'am-wf-track');
+        var dur = (r.event === 'http' || r.event === 'validation') ? (r.ms || 0) : 0;
+        var start = Math.max(0, (r.t_ms || 0) - dur);
+        var bar = el('span', 'am-wf-bar' + (dur ? '' : ' tick'));
+        bar.style.left = (start / span * 100) + '%';
+        bar.style.width = dur ? Math.max(0.6, dur / span * 100) + '%' : '';
+        track.appendChild(bar);
+        line.appendChild(track);
+        if (dur) line.appendChild(noI18n(el('span', 'am-wf-ms', amMs(dur))));
+        else line.appendChild(el('span', 'am-wf-ms', ''));
+        line.onclick = function () { amLine(r); };
+        wf.appendChild(line);
+      });
+    }).catch(function () { clear(wf); wf.appendChild(el('p', 'note', 'It could not be read.')); });
+  }, [{words: 'Close', close: true}], 'large');
+}
+
+/* ---- Checks -------------------------------------------------------------- */
+function amChecksPage(box, d) {
+  var checks = d.checks || [];
+  if (!checks.length) { amNoDetail(box, 'No check of acme’s yet'); return; }
+  var st = d.states || {};
+  var bad = checks.filter(function (c) { return !c.ok; }).length;
+  var grid = el('div', 'grid top am-kpis');
+  [['Checks', checks.length, 'info', 'check', num(d.runs || 0) + ' runs in the last ' + amPeriod()],
+   ['Serving the right one', (st.ok || 0) + (st.warn || 0), bad ? 'warn' : 'ok', 'shield', (st.warn ? num(st.warn) + ' with a remark' : 'as they should')],
+   ['Serving an older version', st.old || 0, st.old ? 'crit' : 'ok', 'history', 'deployed, and not served yet'],
+   ['Something else', (st.other || 0) + (st.answer || 0), (st.other || st.answer) ? 'crit' : 'ok', 'cancel', 'another certificate, or a wrong answer'],
+   ['Cannot be reached', st.unreachable || 0, st.unreachable ? 'crit' : 'ok', 'ban', 'no answer at all']].forEach(function (c) {
+    var card = el('div', 'card metric am-kpi ' + c[2]);
+    var lab = el('div', 'label');
+    var ic = el('span', 'am-kpi-ic');
+    ic.innerHTML = iconMarkup(c[3], 15);
+    lab.appendChild(ic);
+    lab.appendChild(el('span', '', c[0]));
+    card.appendChild(lab);
+    card.appendChild(noI18n(el('div', 'value', num(c[1] || 0))));
+    card.appendChild(noI18n(el('div', 'sub', c[4])));
+    grid.appendChild(card);
+  });
+  box.appendChild(grid);
+  var card = el('div', 'card full');
+  card.appendChild(el('h2', '', 'Every check, run by run'));
+  card.appendChild(el('p', 'note', 'Each test of a certificate - the HTTPS, SMTP, IMAP or LDAP service that should serve it - as it stands, and its last runs, oldest on the left.'));
+  var list = el('div', 'am-checks');
+  checks.forEach(function (c) {
+    var row = el('div', 'am-check ' + ((AMC_STATE[c.state] || [])[1] || 'dim'));
+    var left = el('div', 'am-check-l');
+    var top = el('div', 'am-attn-top');
+    top.appendChild(noI18n(el('b', '', c.test || '?')));
+    if (c.test_kind) top.appendChild(noI18n(el('span', 'tag', c.test_kind)));
+    top.appendChild(el('span', 'am-state ' + ((AMC_STATE[c.state] || [])[1] || 'dim'), (AMC_STATE[c.state] || [c.state || '?'])[0]));
+    left.appendChild(top);
+    left.appendChild(noI18n(el('div', 'small muted', (c.endpoint || '') + (c.cert ? ' · ' + c.cert : ''))));
+    if (!c.ok && c.msg) left.appendChild(noI18n(el('div', 'small am-bad', c.msg)));
+    row.appendChild(left);
+    var strip = el('div', 'am-strip');
+    (c.runs || []).forEach(function (r) {
+      var sq = el('span', 'am-run ' + ((AMC_STATE[r.state] || [])[1] || 'dim'));
+      amHover(sq, function () { return [{text: stamp(r.ts)}, {text: (AMC_STATE[r.state] || [r.state])[0]}]; });
+      strip.appendChild(sq);
+    });
+    row.appendChild(strip);
+    var right = el('div', 'am-check-r');
+    right.appendChild(noI18n(el('b', '', c.share === null ? '–' : Math.round(c.share * 100) + ' %')));
+    right.appendChild(noI18n(el('div', 'small muted', (c.fails ? num(c.fails) + ' failed in a row · ' : '') + 'half within ' + amMs(c.p50))));
+    right.appendChild(noI18n(el('div', 'small muted', 'last ' + ago(c.last_ts))));
+    row.appendChild(right);
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+  box.appendChild(card);
+  var inc = el('div', 'card full');
+  inc.appendChild(el('h2', '', 'When one began or stopped failing'));
+  var rows = d.incidents || [];
+  if (!rows.length) inc.appendChild(el('p', 'note', 'None in the period.'));
+  else inc.appendChild(listTable(['When', 'What', 'Check', 'Certificate', 'Where', 'What it said'], rows, function (r) {
+    var tr = el('tr');
+    tr.appendChild(stampCell(r.ts));
+    var w = el('td', '');
+    w.appendChild(el('span', 'tag ' + (r.went === 'bad' ? 'crit' : 'ok'), r.went === 'bad' ? 'began failing' : 'back in order'));
+    tr.appendChild(w);
+    tr.appendChild(noI18n(el('td', 'small', r.test || '–')));
+    tr.appendChild(noI18n(el('td', '', r.cert || '–')));
+    tr.appendChild(noI18n(el('td', 'small mono', r.endpoint || '–')));
+    tr.appendChild(noI18n(el('td', 'am-msg', r.msg || '')));
+    return tr;
+  }, 'plain am-table'));
+  box.appendChild(inc);
+}
+
 /* One line, whole: every field it carried. */
 function amLine(r) {
   modal('A line of acme’s', function (body) {
     var facts = [['When', stamp(r.ts)], ['Log', noI18n(el('span', 'mono', r.tag || ''))],
                  ['Node', noI18n(el('span', '', r.node || r.host || ''))], ['Level', r.level || ''],
                  ['Kind', noI18n(el('span', '', r.kind || ''))], ['Who', noI18n(el('span', '', r.who || ''))]];
-    [['action', 'Action'], ['result', 'Result'], ['cert', 'Certificate'], ['names', 'Names'],
-     ['serial', 'Serial'], ['issuer', 'Issued by'], ['version', 'Version'], ['target', 'Target'],
-     ['target_kind', 'Kind of target'], ['reason', 'Why']].forEach(function (k) {
-      if (r[k[0]]) facts.push([k[1], noI18n(el('span', k[0] === 'serial' ? 'mono' : '', String(r[k[0]])))]);
+    var shown = {ts: 1, tag: 1, node: 1, host: 1, level: 1, kind: 1, who: 1, msg: 1, extra: 1, raw: 1,
+                 truncated: 1, ident: 1, at: 1, not_after: 1};
+    var words = {action: 'Action', result: 'Result', cert: 'Certificate', names: 'Names', serial: 'Serial',
+                 issuer: 'Issued by', version: 'Version', target: 'Target', target_kind: 'Kind of target',
+                 reason: 'Why', event: 'Event', job: 'Job', job_kind: 'Kind of job', http_host: 'Server',
+                 status: 'Status', ms: 'Took (ms)', state: 'State', via: 'Proved by', took_ms: 'The whole job (ms)'};
+    var val = function (k, v) {
+      /* What acme leaves out on purpose (its secrets, a TXT value): said so. */
+      if (String(v) === '[hidden]') return el('span', 'tag dim', 'hidden on purpose');
+      return noI18n(el('span', /serial|fingerprint|path|host|id$/.test(k) ? 'mono' : '', String(v)));
+    };
+    Object.keys(r).forEach(function (k) {
+      if (shown[k] || r[k] === null || r[k] === undefined || r[k] === '') return;
+      facts.push([words[k] || k, val(k, r[k])]);
     });
     if (r.not_after) facts.push(['Valid until', stamp(r.not_after)]);
-    Object.keys(r.extra || {}).forEach(function (k) { facts.push([k, noI18n(el('span', 'mono', String(r.extra[k])))]); });
+    Object.keys(r.extra || {}).forEach(function (k) { facts.push([k, val(k, r.extra[k])]); });
     body.appendChild(netFacts(facts));
     var m = el('div', 'am-line-msg');
     m.appendChild(noI18n(el('span', '', r.msg || '')));

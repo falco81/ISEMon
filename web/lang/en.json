@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.287",
+  "version": "1.10.288",
   "made": "2026-11-04",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -291,6 +291,10 @@
   "s.8th.4c737b6b": {
    "source": "8th",
    "text": "8th"
+  },
+  "s.9-of-10-within.717e0caf": {
+   "source": "9 of 10 within",
+   "text": "9 of 10 within"
   },
   "s.90-days.170621ac": {
    "source": "90 days",
@@ -1296,6 +1300,10 @@
    "source": "a remote desktop",
    "text": "a remote desktop"
   },
+  "s.a-renewal-takes.8ec98536": {
+   "source": "A renewal takes",
+   "text": "A renewal takes"
+  },
   "s.a-request-waits-for-its-certificate.936ac366": {
    "source": "a request waits for its certificate",
    "text": "a request waits for its certificate"
@@ -1752,6 +1760,10 @@
    "source": "accepted",
    "text": "accepted"
   },
+  "s.accepted.61a0572c": {
+   "source": "Accepted",
+   "text": "Accepted"
+  },
   "s.access-list-for-a-cisco-router.9258124a": {
    "source": "Access list for a Cisco router…",
    "text": "Access list for a Cisco router…"
@@ -1920,6 +1932,14 @@
    "source": "acme has said the end of none of them yet: the not_after of a certificate comes with its issue, renewal and deployment lines.",
    "text": "acme has said the end of none of them yet: the not_after of a certificate comes with its issue, renewal and deployment lines."
   },
+  "s.acme-itself-its-schedule.1a12a299": {
+   "source": "acme itself (its schedule)",
+   "text": "acme itself (its schedule)"
+  },
+  "s.acme-jobs-log.f6a035cb": {
+   "source": "acme-jobs.log",
+   "text": "acme-jobs.log"
+  },
   "s.acme-leaves-it-alone.ce1236b2": {
    "source": "ACME leaves it alone",
    "text": "ACME leaves it alone"
@@ -1967,6 +1987,10 @@
   "s.acme-s-logs-are-not-read.cb5b454e": {
    "source": "acme’s logs are not read: Settings → The acme logs.",
    "text": "acme’s logs are not read: Settings → The acme logs."
+  },
+  "s.acme-s-nodes-10-1-2.8d515f0c": {
+   "source": "acme's nodes: 10.1.2.3, 10.1.2.4",
+   "text": "acme's nodes: 10.1.2.3, 10.1.2.4"
   },
   "s.acme-s-nodes-can-send-their.a74b4111": {
    "source": "acme's nodes can send their lines here encrypted (syslog over TLS, RFC 5425): acme checks that it is isemon that answers, and with mutual TLS only acme's own nodes may send - the name in each node's certificate is the node's name. The plain input on 514 keeps working for any node not switched over yet, and what arrives is filed in the same folders - nothing about reading the logs changes.",
@@ -2471,6 +2495,10 @@
   "s.always-let-in.3cf52f0d": {
    "source": "Always let in:",
    "text": "Always let in:"
+  },
+  "s.am-axis-am-median-l.2daac9f7": {
+   "source": "am-axis am-median-l",
+   "text": "am-axis am-median-l"
   },
   "s.american-samoa.ca0b36fe": {
    "source": "American Samoa",
@@ -3064,6 +3092,10 @@
    "source": "another ACME CA (step-ca, an internal CA...)",
    "text": "another ACME CA (step-ca, an internal CA...)"
   },
+  "s.another-certificate-or-a-wrong-answer.266eea15": {
+   "source": "another certificate, or a wrong answer",
+   "text": "another certificate, or a wrong answer"
+  },
   "s.another-folder-for-the-same-firewall.e0665661": {
    "source": "Another folder for the same firewall - the other unit of a pair",
    "text": "Another folder for the same firewall - the other unit of a pair"
@@ -3099,6 +3131,10 @@
   "s.answered-by.c518fc2e": {
    "source": "Answered by",
    "text": "Answered by"
+  },
+  "s.answered-well.4d0351b8": {
+   "source": "Answered well",
+   "text": "Answered well"
   },
   "s.answered.76e806ba": {
    "source": "answered",
@@ -3388,6 +3424,10 @@
    "source": "as install.sh wrote it - not set here yet",
    "text": "as install.sh wrote it - not set here yet"
   },
+  "s.as-it-comes-for-every-job.a02e58e1": {
+   "source": "(as it comes) for every job step by step. rsyslog files the lines as",
+   "text": "(as it comes) for every job step by step. rsyslog files the lines as"
+  },
   "s.as-it-is-now.5acc75ce": {
    "source": "As it is now",
    "text": "As it is now"
@@ -3427,6 +3467,10 @@
   "s.as-the-source-of-a.6b5c8901": {
    "source": "as the source of a",
    "text": "as the source of a"
+  },
+  "s.as-they-should.80835f68": {
+   "source": "as they should",
+   "text": "as they should"
   },
   "s.as-typed-below.5578f4ae": {
    "source": "As typed below.",
@@ -3876,6 +3920,10 @@
    "source": "Azerbaijan",
    "text": "Azerbaijan"
   },
+  "s.back-in-order.7904de50": {
+   "source": "back in order",
+   "text": "back in order"
+  },
   "s.back-in-service.879b64e2": {
    "source": "Back in service",
    "text": "Back in service"
@@ -4196,6 +4244,10 @@
    "source": "BC-FC-E7",
    "text": "BC-FC-E7"
   },
+  "s.began-failing.71f23e28": {
+   "source": "began failing",
+   "text": "began failing"
+  },
   "s.began.e143c17a": {
    "source": "Began",
    "text": "Began"
@@ -4239,6 +4291,10 @@
   "s.begins-within-seconds-it-can-be.2c3d76dc": {
    "source": "begins within seconds - it can be stopped until then",
    "text": "begins within seconds - it can be stopped until then"
+  },
+  "s.begun-by.885fdc2e": {
+   "source": "Begun by",
+   "text": "Begun by"
   },
   "s.behind-by.ede9254b": {
    "source": "Behind by",
@@ -4608,6 +4664,10 @@
    "source": "By itself",
    "text": "By itself"
   },
+  "s.by-kind-of-job.4dcb4b03": {
+   "source": "By kind of job",
+   "text": "By kind of job"
+  },
   "s.by-mail.fd54a0e9": {
    "source": "by mail",
    "text": "by mail"
@@ -4615,6 +4675,14 @@
   "s.by-sms.8a5390b2": {
    "source": "by SMS",
    "text": "by SMS"
+  },
+  "s.by-source.7fe5602e": {
+   "source": "By source",
+   "text": "By source"
+  },
+  "s.by-target.0835693c": {
+   "source": "By target",
+   "text": "By target"
   },
   "s.by-the-interval.c9f1552d": {
    "source": "By the interval",
@@ -4743,6 +4811,10 @@
   "s.cancel.77dfd213": {
    "source": "Cancel",
    "text": "Cancel"
+  },
+  "s.cannot-be-reached.816c9f4d": {
+   "source": "Cannot be reached",
+   "text": "Cannot be reached"
   },
   "s.cannot-be-told.161b4b23": {
    "source": "cannot be told",
@@ -4916,6 +4988,10 @@
    "source": "Certificates",
    "text": "Certificates"
   },
+  "s.certs.c7eb5bbc": {
+   "source": "certs",
+   "text": "certs"
+  },
   "s.cfg.6ed7efe0": {
    "source": "cfg",
    "text": "cfg"
@@ -4943,6 +5019,10 @@
   "s.chain.d81f3692": {
    "source": "Chain",
    "text": "Chain"
+  },
+  "s.challenge.bb9d653f": {
+   "source": "Challenge",
+   "text": "Challenge"
   },
   "s.change-any-of-these-and-press.3e2b5503": {
    "source": "Change any of these and press Read again: the settings are worked out afresh for what is typed.",
@@ -5092,6 +5172,10 @@
    "source": "Check the server’s certificate",
    "text": "Check the server’s certificate"
   },
+  "s.check.4b5e84be": {
+   "source": "Check",
+   "text": "Check"
+  },
   "s.check.d56d9853": {
    "source": "check",
    "text": "check"
@@ -5131,6 +5215,14 @@
   "s.checks-passed.9cc46760": {
    "source": "checks passed",
    "text": "checks passed"
+  },
+  "s.checks.5098dd19": {
+   "source": "Checks",
+   "text": "Checks"
+  },
+  "s.checks.7354fb82": {
+   "source": "checks",
+   "text": "checks"
   },
   "s.chile.349507e4": {
    "source": "Chile",
@@ -6132,6 +6224,10 @@
    "source": "deploy/rsyslog-acme.conf",
    "text": "deploy/rsyslog-acme.conf"
   },
+  "s.deployed-and-not-served-yet.108bc044": {
+   "source": "deployed, and not served yet",
+   "text": "deployed, and not served yet"
+  },
   "s.deployed.85a01b85": {
    "source": "deployed",
    "text": "deployed"
@@ -6832,6 +6928,10 @@
    "source": "Each bar is split by the door: the VPN underneath, then TACACS+, the network, and the token server and the visitors’ network above those. Different systems with different people in front of them, so the height means everything in that hour and the colours say which door.",
    "text": "Each bar is split by the door: the VPN underneath, then TACACS+, the network, and the token server and the visitors’ network above those. Different systems with different people in front of them, so the height means everything in that hour and the colours say which door."
   },
+  "s.each-name-a-ca-had-proved.1753ec71": {
+   "source": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof.",
+   "text": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof."
+  },
   "s.each-one-is-fetched-as-soon.bd18f295": {
    "source": "each one is fetched as soon as its own interval falls due",
    "text": "each one is fetched as soon as its own interval falls due"
@@ -6847,6 +6947,10 @@
   "s.each-record-looked-up-from-this.113119a4": {
    "source": "Each record looked up from this server now, through its DNS servers - as the CA will look. A record just put in may take a while to show (its TTL).",
    "text": "Each record looked up from this server now, through its DNS servers - as the CA will look. A record just put in may take a while to show (its TTL)."
+  },
+  "s.each-test-of-a-certificate-the.bc7d167a": {
+   "source": "Each test of a certificate - the HTTPS, SMTP, IMAP or LDAP service that should serve it - as it stands, and its last runs, oldest on the left.",
+   "text": "Each test of a certificate - the HTTPS, SMTP, IMAP or LDAP service that should serve it - as it stands, and its last runs, oldest on the left."
   },
   "s.eap-friendly-name.fd873623": {
    "source": "EAP-Friendly-Name",
@@ -7328,6 +7432,10 @@
    "source": "event",
    "text": "event"
   },
+  "s.event.ad8919ac": {
+   "source": "Event",
+   "text": "Event"
+  },
   "s.events-a-second.0f679db7": {
    "source": "Events a second",
    "text": "Events a second"
@@ -7495,6 +7603,10 @@
   "s.every-certificate-acme-issued-renewed-deployed.5369d547": {
    "source": "every certificate acme issued, renewed, deployed, let run out or failed with - and, where it sends them, its sign-ins and settings",
    "text": "every certificate acme issued, renewed, deployed, let run out or failed with - and, where it sends them, its sign-ins and settings"
+  },
+  "s.every-check-run-by-run.48bb0741": {
+   "source": "Every check, run by run",
+   "text": "Every check, run by run"
   },
   "s.every-closed-ban-and-every-line.df503323": {
    "source": "Every closed ban and every line of every address’s story goes. Whoever is banned right now stays banned — but the ladder counts this history, so everybody starts again at the bottom step afterwards. This cannot be undone.",
@@ -7664,6 +7776,10 @@
    "source": "Every hour",
    "text": "Every hour"
   },
+  "s.every-https-request-a-module-made.e385ea0a": {
+   "source": "Every HTTPS request a module made, by the server it went to: how many failed (a status of 400 or more, or no answer), how many were rate-limited, and how long the answers took. Never the bodies, the headers or the values of a query - acme does not send them.",
+   "text": "Every HTTPS request a module made, by the server it went to: how many failed (a status of 400 or more, or no answer), how many were rate-limited, and how long the answers took. Never the bodies, the headers or the values of a query - acme does not send them."
+  },
   "s.every-institution.122a2f38": {
    "source": "every institution",
    "text": "every institution"
@@ -7679,6 +7795,10 @@
   "s.every-line-acme-sent.dafaab00": {
    "source": "Every line acme sent",
    "text": "Every line acme sent"
+  },
+  "s.every-line-acme-the-certificate-manager.06fc1372": {
+   "source": "Every line acme - the certificate manager - sent: what happened to each certificate and, where it sends them, its sign-ins and settings. None of it is judged. Erasing it also forgets where acme’s logs were read up to, so whatever is still in the files is read again from the beginning. Lines that have already been rotated away do not come back.",
+   "text": "Every line acme - the certificate manager - sent: what happened to each certificate and, where it sends them, its sign-ins and settings. None of it is judged. Erasing it also forgets where acme’s logs were read up to, so whatever is still in the files is read again from the beginning. Lines that have already been rotated away do not come back."
   },
   "s.every-line-goes-from-this-list.f6cc9955": {
    "source": "Every line goes from this list.",
@@ -8560,6 +8680,10 @@
    "source": "failed · VPN",
    "text": "failed · VPN"
   },
+  "s.failed.09fef5d8": {
+   "source": "Failed",
+   "text": "Failed"
+  },
   "s.failed.10bc1246": {
    "source": "~\"failed\"",
    "text": "~\"failed\""
@@ -8883,6 +9007,10 @@
   "s.find-a-certificate-a-name-a.7cd1ab63": {
    "source": "Find a certificate, a name, a serial, a target…",
    "text": "Find a certificate, a name, a serial, a target…"
+  },
+  "s.find-a-certificate-a-source-a.6030e196": {
+   "source": "Find a certificate, a source, a target, an account…",
+   "text": "Find a certificate, a source, a target, an account…"
   },
   "s.find-a-setting.2c9a67e0": {
    "source": "Find a setting…",
@@ -9240,9 +9368,9 @@
    "source": "for the FTDs using that policy. From then on the FMC updates the list by itself and pushes it without another deployment.",
    "text": "for the FTDs using that policy. From then on the FMC updates the list by itself and pushes it without another deployment."
   },
-  "s.for-the-rest-of-what-acme.869fc39a": {
-   "source": "for the rest of what acme does as well. rsyslog files the lines as",
-   "text": "for the rest of what acme does as well. rsyslog files the lines as"
+  "s.for-the-rest-of-what-acme.523f5c32": {
+   "source": "for the rest of what acme does as well, and",
+   "text": "for the rest of what acme does as well, and"
   },
   "s.for-the-settings-that-take-effect.e302f849": {
    "source": "For the settings that take effect only at its start. Restarting takes a few seconds. While PostgreSQL is down this program cannot write; it waits, and carries on where it was.",
@@ -10048,6 +10176,14 @@
    "source": "half the processors for one large query",
    "text": "half the processors for one large query"
   },
+  "s.half-within.2630a1f2": {
+   "source": "Half within",
+   "text": "Half within"
+  },
+  "s.half-within.e290ade0": {
+   "source": "half within",
+   "text": "half within"
+  },
   "s.hand.9621a244": {
    "source": "hand",
    "text": "hand"
@@ -10107,6 +10243,10 @@
   "s.hidden-by-itself-half-an-hour.8efcc7e6": {
    "source": "Hidden by itself half an hour after it began.",
    "text": "Hidden by itself half an hour after it began."
+  },
+  "s.hidden-on-purpose.381d3c1d": {
+   "source": "hidden on purpose",
+   "text": "hidden on purpose"
   },
   "s.hide-it-goes-on.4c571219": {
    "source": "Hide - it goes on",
@@ -10292,6 +10432,10 @@
    "source": "How it is reached",
    "text": "How it is reached"
   },
+  "s.how-it-ran.01b3500a": {
+   "source": "How it ran",
+   "text": "How it ran"
+  },
   "s.how-it-was-accepted.746ec1a8": {
    "source": "How it was accepted",
    "text": "How it was accepted"
@@ -10315,6 +10459,10 @@
   "s.how-long-a-machine-seen-on.57d95657": {
    "source": "How long a machine seen on eduroam is remembered. One row each, and it is only ever read beside a page about what is happening now - a machine that has not been back in a fortnight is a row nothing will ever ask for. A university’s eduroam is thousands of machines a day, so there is a ceiling of twenty thousand rows underneath this as well.",
    "text": "How long a machine seen on eduroam is remembered. One row each, and it is only ever read beside a page about what is happening now - a machine that has not been back in a fortnight is a row nothing will ever ask for. A university’s eduroam is thousands of machines a day, so there is a ceiling of twenty thousand rows underneath this as well."
+  },
+  "s.how-long-a-renewal-takes.1b66debf": {
+   "source": "How long a renewal takes",
+   "text": "How long a renewal takes"
   },
   "s.how-long-a-sign-in-lasts.0325a055": {
    "source": "How long a sign-in lasts before it is asked for again.",
@@ -10360,6 +10508,10 @@
    "source": "How long each of them gets (s)",
    "text": "How long each of them gets (s)"
   },
+  "s.how-long-each-renewal-took.8834828a": {
+   "source": "How long each renewal took",
+   "text": "How long each renewal took"
+  },
   "s.how-long-failed-attempts-are-kept.11919321": {
    "source": "How long failed attempts are kept. 0 keeps them for ever.",
    "text": "How long failed attempts are kept. 0 keeps them for ever."
@@ -10396,6 +10548,10 @@
    "source": "How long the ban above lasts. \"For good\" means it stays until somebody takes it off; any of the others put a clock on it and the address comes back by itself when the clock runs out. This is one ban made by hand and does not touch the ladder in Settings.",
    "text": "How long the ban above lasts. \"For good\" means it stays until somebody takes it off; any of the others put a clock on it and the address comes back by itself when the clock runs out. This is one ban made by hand and does not touch the ladder in Settings."
   },
+  "s.how-long-the-bar-is-the.8a2b1370": {
+   "source": "How long: the bar is the time half of the answers came within, the paler one 9 of 10.",
+   "text": "How long: the bar is the time half of the answers came within, the paler one 9 of 10."
+  },
   "s.how-long-the-events-are-kept.2b0eaf68": {
    "source": "How long the events are kept here. They arrive in their thousands an hour on a busy domain and most of them are one machine talking to another, so they are kept for weeks rather than for the year the sign-ins are. ​0 means KEEP THEM ALL and delete nothing, for a site that wants a year of the domain in here to answer “when did this start” — the database then grows for as long as the logs keep arriving, and The database page says how big it has got.",
    "text": "How long the events are kept here. They arrive in their thousands an hour on a busy domain and most of them are one machine talking to another, so they are kept for weeks rather than for the year the sign-ins are. ​0 means KEEP THEM ALL and delete nothing, for a site that wants a year of the domain in here to answer “when did this start” — the database then grows for as long as the logs keep arriving, and The database page says how big it has got."
@@ -10407,6 +10563,10 @@
   "s.how-long-the-first-block-lasts.755f70d0": {
    "source": "How long the first block lasts, the second, the third. An address climbs one step every time it comes back and earns another; \"for good\" ends the ladder, and without it the last step repeats for ever. No ladder at all means every block is the single length below. On the command line it is written as minutes: 10, 60, 1440, forever .",
    "text": "How long the first block lasts, the second, the third. An address climbs one step every time it comes back and earns another; \"for good\" ends the ladder, and without it the last step repeats for ever. No ladder at all means every block is the single length below. On the command line it is written as minutes: 10, 60, 1440, forever ."
+  },
+  "s.how-long-the-jobs-steps-are.5255da56": {
+   "source": "How long the jobs’ steps are kept: a renewal is twenty to sixty lines, so this is the one of acme's that grows.",
+   "text": "How long the jobs’ steps are kept: a renewal is twenty to sixty lines, so this is the one of acme's that grows."
   },
   "s.how-long-the-name-an-address.472d7a8f": {
    "source": "How long the name an address once had is kept. Longer than anything else on purpose: the whole point of keeping them is that a record from March is shown the name its address had in March. ​This is never applied sooner than the records themselves - a site that keeps its authentications for two years keeps their names for two years, whatever this says - and a ceiling of four hundred thousand rows sits under it as well.",
@@ -10467,6 +10627,10 @@
   "s.how-long-what-acme-sent-is.14246fab": {
    "source": "How long what acme sent is kept: every issue, renewal, deployment and failure of every certificate. A few lines a day - a year of it is little.",
    "text": "How long what acme sent is kept: every issue, renewal, deployment and failure of every certificate. A few lines a day - a year of it is little."
+  },
+  "s.how-long.e060745b": {
+   "source": "How long",
+   "text": "How long"
   },
   "s.how-many-address-ranges-this-list.3476149b": {
    "source": "How many address ranges this list holds. A range is not one address: a single range can be a whole network of them.",
@@ -10799,6 +10963,10 @@
   "s.how-the-keys-were-agreed.0b3783dc": {
    "source": "how the keys were agreed",
    "text": "how the keys were agreed"
+  },
+  "s.how-the-renewals-went-by-the.cec0fbac": {
+   "source": "How the renewals went, by the source they were issued from.",
+   "text": "How the renewals went, by the source they were issued from."
   },
   "s.how-the-request-was-made.9bf9edd8": {
    "source": "how the request was made",
@@ -11343,6 +11511,14 @@
   "s.intermediate.ce03a801": {
    "source": "intermediate",
    "text": "intermediate"
+  },
+  "s.interrupted.50be3afc": {
+   "source": "Interrupted",
+   "text": "Interrupted"
+  },
+  "s.interrupted.d897bf48": {
+   "source": "interrupted",
+   "text": "interrupted"
   },
   "s.intf.1101963a": {
    "source": "intf",
@@ -11972,9 +12148,9 @@
    "source": "isemon's certificate",
    "text": "isemon's certificate"
   },
-  "s.isemon-s-firewall-does-not-let.3926b8a4": {
-   "source": "isemon's firewall does not let it in - The logs arriving (rsyslog) is turned off under Settings → Firewall and access",
-   "text": "isemon's firewall does not let it in - The logs arriving (rsyslog) is turned off under Settings → Firewall and access"
+  "s.isemon-s-firewall-does-not-let.1b66f4fb": {
+   "source": "isemon's firewall does not let it in - acme - the certificate manager is turned off under Settings → Firewall and access",
+   "text": "isemon's firewall does not let it in - acme - the certificate manager is turned off under Settings → Firewall and access"
   },
   "s.isemon-s-firewall-does-not-let.bd4cce70": {
    "source": "isemon's firewall does not let it in - The otp logs over TLS is turned off under Settings → Firewall and access",
@@ -11984,9 +12160,9 @@
    "source": "isemon's firewall is off here - the machine's own rules decide",
    "text": "isemon's firewall is off here - the machine's own rules decide"
   },
-  "s.isemon-s-firewall-lets-it-in.075c5177": {
-   "source": "isemon's firewall lets it in from anywhere, as one of the logs arriving (Settings → Firewall and access)",
-   "text": "isemon's firewall lets it in from anywhere, as one of the logs arriving (Settings → Firewall and access)"
+  "s.isemon-s-firewall-lets-it-in.04994b79": {
+   "source": "isemon's firewall lets it in from acme's nodes only (Settings → Firewall and access)",
+   "text": "isemon's firewall lets it in from acme's nodes only (Settings → Firewall and access)"
   },
   "s.isemon-s-firewall-lets-it-in.1ca1c921": {
    "source": "isemon's firewall lets it in from anywhere (Settings → Firewall and access)",
@@ -11995,10 +12171,6 @@
   "s.isemon-s-firewall-lets-it-in.81ccaa7f": {
    "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
    "text": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)"
-  },
-  "s.isemon-s-firewall-lets-it-in.8d7624d0": {
-   "source": "isemon's firewall lets it in from the log senders named only (Settings → Firewall and access)",
-   "text": "isemon's firewall lets it in from the log senders named only (Settings → Firewall and access)"
   },
   "s.isemon-service.141f5596": {
    "source": "isemon.service",
@@ -12063,10 +12235,6 @@
   "s.issued.7c4f7733": {
    "source": "issued",
    "text": "issued"
-  },
-  "s.issuer.9cf32721": {
-   "source": "issuer",
-   "text": "issuer"
   },
   "s.it-answered-a-name-the-first.8981a6ba": {
    "source": "It answered. A name the first directory does not have will be asked of this one — and nothing else is ever asked of it.",
@@ -12388,6 +12556,10 @@
    "source": "Its IPsec SAs",
    "text": "Its IPsec SAs"
   },
+  "s.its-jobs-log-in-each.adbf64b2": {
+   "source": "Its jobs’ log in each",
+   "text": "Its jobs’ log in each"
+  },
   "s.its-key-is-deleted-from-this.a9d4a581": {
    "source": "Its key is deleted from this machine. A server that asks for one will refuse backups until another is made and given to it.",
    "text": "Its key is deleted from this machine. A server that asks for one will refuse backups until another is made and given to it."
@@ -12616,6 +12788,22 @@
    "source": "job",
    "text": "job"
   },
+  "s.job.30c8cb83": {
+   "source": "Job",
+   "text": "Job"
+  },
+  "s.jobs-day-by-day.3820582a": {
+   "source": "Jobs, day by day",
+   "text": "Jobs, day by day"
+  },
+  "s.jobs.437736fd": {
+   "source": "Jobs",
+   "text": "Jobs"
+  },
+  "s.jobs.69669221": {
+   "source": "jobs",
+   "text": "jobs"
+  },
   "s.jordan.674027e1": {
    "source": "Jordan",
    "text": "Jordan"
@@ -12691,6 +12879,10 @@
   "s.keep-the-firewall-in-sync-by.69268641": {
    "source": "Keep the firewall in sync by itself",
    "text": "Keep the firewall in sync by itself"
+  },
+  "s.keep-the-jobs-steps-days.f87dd24a": {
+   "source": "Keep the jobs’ steps (days)",
+   "text": "Keep the jobs’ steps (days)"
   },
   "s.keep-the-names-of-addresses-for.80117e0a": {
    "source": "Keep the names of addresses for (days)",
@@ -12887,6 +13079,10 @@
   "s.kind-dump.17159a62": {
    "source": "&kind=dump",
    "text": "&kind=dump"
+  },
+  "s.kind-of-job.50599316": {
+   "source": "Kind of job",
+   "text": "Kind of job"
   },
   "s.kind-of-target.fd188a03": {
    "source": "Kind of target",
@@ -14580,6 +14776,10 @@
    "source": "modern",
    "text": "modern"
   },
+  "s.module.b8ff0289": {
+   "source": "Module",
+   "text": "Module"
+  },
   "s.moldova.9791bc4d": {
    "source": "Moldova",
    "text": "Moldova"
@@ -14847,10 +15047,6 @@
   "s.names-the-eduroam-policies.6fd2dcec": {
    "source": "names the eduroam policies.",
    "text": "names the eduroam policies."
-  },
-  "s.names.237a4713": {
-   "source": "names",
-   "text": "names"
   },
   "s.names.2b7c08c3": {
    "source": "Names",
@@ -15212,6 +15408,10 @@
    "source": "no address",
    "text": "no address"
   },
+  "s.no-answer-at-all.9b5dc517": {
+   "source": "no answer at all",
+   "text": "no answer at all"
+  },
   "s.no-answer-in-time-timed-out.68a65832": {
    "source": "no answer in time (timed out)",
    "text": "no answer in time (timed out)"
@@ -15239,6 +15439,10 @@
   "s.no-certificate-yet-make-one-or.6251e374": {
    "source": "No certificate yet — make one, or let it pin the router’s own at the first connection.",
    "text": "No certificate yet — make one, or let it pin the router’s own at the first connection."
+  },
+  "s.no-check-of-acme-s-yet.79ca6a25": {
+   "source": "No check of acme’s yet",
+   "text": "No check of acme’s yet"
   },
   "s.no-client-certificate-most-servers-want.4889943a": {
    "source": "No client certificate — most servers want none.",
@@ -15292,6 +15496,10 @@
    "source": "no driver",
    "text": "no driver"
   },
+  "s.no-end-an-hour-after-its.dca8ac17": {
+   "source": "no end an hour after its last line - acme runs it again",
+   "text": "no end an hour after its last line - acme runs it again"
+  },
   "s.no-file-arrived.3d877c78": {
    "source": "no file arrived",
    "text": "no file arrived"
@@ -15331,6 +15539,14 @@
   "s.no-ise-log-is-there.3f273b04": {
    "source": "no ISE log is there",
    "text": "no ISE log is there"
+  },
+  "s.no-job-is-like-that.c821a6cd": {
+   "source": "No job is like that.",
+   "text": "No job is like that."
+  },
+  "s.no-job-of-acme-s-yet.cdb69738": {
+   "source": "No job of acme’s yet",
+   "text": "No job of acme’s yet"
   },
   "s.no-key-lets-root-in-over.7a439df4": {
    "source": "No key lets root in over SSH on this server.",
@@ -15444,6 +15660,14 @@
    "source": "No release key is installed (/usr/local/lib/isemon/release-keys): every package would be refused. ./install.sh --upgrade puts the key in.",
    "text": "No release key is installed (/usr/local/lib/isemon/release-keys): every package would be refused. ./install.sh --upgrade puts the key in."
   },
+  "s.no-renewal-has-ended-yet.b4d9f953": {
+   "source": "No renewal has ended yet.",
+   "text": "No renewal has ended yet."
+  },
+  "s.no-request-in-the-period.a37d1c79": {
+   "source": "No request in the period.",
+   "text": "No request in the period."
+  },
   "s.no-role-comes-from-its-groups.0d47b5f0": {
    "source": "No role comes from its groups, no account is made from it, and it is never consulted when somebody types a password into this dashboard. It answers one question: who is this name. Like the first, it is only ever read — there is no write to a directory anywhere in this program.",
    "text": "No role comes from its groups, no account is made from it, and it is never consulted when somebody types a password into this dashboard. It answers one question: who is this name. Like the first, it is only ever read — there is no write to a directory anywhere in this program."
@@ -15555,6 +15779,10 @@
   "s.no-user-name-and-password-or.5360dc02": {
    "source": "no user name and password, or wrong ones",
    "text": "no user name and password, or wrong ones"
+  },
+  "s.no-validation-in-the-period-a.5a12687c": {
+   "source": "No validation in the period - a source that is not ACME proves nothing.",
+   "text": "No validation in the period - a source that is not ACME proves nothing."
   },
   "s.no-vpn-lines-kept-yet.db1990e4": {
    "source": "no VPN lines kept yet",
@@ -15707,6 +15935,10 @@
   "s.none-imported.69d43e0b": {
    "source": "none imported",
    "text": "none imported"
+  },
+  "s.none-in-the-period.83c17b63": {
+   "source": "None in the period.",
+   "text": "None in the period."
   },
   "s.none-is-kept-with-it.66365348": {
    "source": "None is kept with it.",
@@ -16423,6 +16655,10 @@
   "s.nothing-isemon-is-pointed-at-what.f565766e": {
    "source": "nothing - isemon is pointed at what is there",
    "text": "nothing - isemon is pointed at what is there"
+  },
+  "s.nothing-kept-of-it.8d2c3002": {
+   "source": "Nothing kept of it.",
+   "text": "Nothing kept of it."
   },
   "s.nothing-kept.1baf119d": {
    "source": "Nothing kept.",
@@ -17671,6 +17907,10 @@
   "s.only-for-a-server-that-asks.e8448a5c": {
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the"
+  },
+  "s.only-from-acme-s-nodes.89667324": {
+   "source": "Only from acme's nodes",
+   "text": "Only from acme's nodes"
   },
   "s.only-from-otp-s-nodes.cec2d00b": {
    "source": "Only from otp's nodes",
@@ -19268,6 +19508,18 @@
    "source": "Protocols",
    "text": "Protocols"
   },
+  "s.proved-by.99445968": {
+   "source": "Proved by",
+   "text": "Proved by"
+  },
+  "s.proved.6c61bbce": {
+   "source": "Proved",
+   "text": "Proved"
+  },
+  "s.provider.7ceee3f3": {
+   "source": "Provider",
+   "text": "Provider"
+  },
   "s.proxy-policy-name.39df38dc": {
    "source": "Proxy-Policy-Name",
    "text": "Proxy-Policy-Name"
@@ -19767,6 +20019,10 @@
   "s.read-a-windows-nps-server-s.85909bba": {
    "source": "Read a Windows NPS server’s logs",
    "text": "Read a Windows NPS server’s logs"
+  },
+  "s.read-acme-s-jobs-step-by.2fc639ec": {
+   "source": "Read acme’s jobs, step by step",
+   "text": "Read acme’s jobs, step by step"
   },
   "s.read-acme-s-log.1c15d105": {
    "source": "Read acme’s log",
@@ -20276,6 +20532,10 @@
    "source": "Renewal failing",
    "text": "Renewal failing"
   },
+  "s.renewals-deployments-tests-imports-revocations.610d0398": {
+   "source": "Renewals, deployments, tests, imports, revocations.",
+   "text": "Renewals, deployments, tests, imports, revocations."
+  },
   "s.renewed-by-acme-before-it-runs.d2856c48": {
    "source": "Renewed by ACME before it runs out. A certificate put in by hand on Certificates and TLS takes it out of ACME’s care.",
    "text": "Renewed by ACME before it runs out. A certificate put in by hand on Certificates and TLS takes it out of ACME’s care."
@@ -20319,6 +20579,22 @@
   "s.request-csr.fe7f2077": {
    "source": "Request (CSR)",
    "text": "Request (CSR)"
+  },
+  "s.request.088e29b0": {
+   "source": "request",
+   "text": "request"
+  },
+  "s.requests-that-failed.e2e8e7f4": {
+   "source": "Requests that failed",
+   "text": "Requests that failed"
+  },
+  "s.requests-to-the-cas-the-dns.9a754b53": {
+   "source": "Requests to the CAs, the DNS APIs and the targets",
+   "text": "Requests to the CAs, the DNS APIs and the targets"
+  },
+  "s.requests.f7194e6a": {
+   "source": "Requests",
+   "text": "Requests"
   },
   "s.required.1a77d416": {
    "source": "required",
@@ -20816,6 +21092,10 @@
    "source": "running",
    "text": "running"
   },
+  "s.running.73989d9c": {
+   "source": "Running",
+   "text": "Running"
+  },
   "s.runs-out-soon.0e5a0cfa": {
    "source": "runs out soon",
    "text": "runs out soon"
@@ -21300,10 +21580,6 @@
    "source": "serial number",
    "text": "serial number"
   },
-  "s.serial.50de66b7": {
-   "source": "serial",
-   "text": "serial"
-  },
   "s.serial.83f8c31a": {
    "source": "Serial",
    "text": "Serial"
@@ -21328,6 +21604,22 @@
    "source": "servers",
    "text": "servers"
   },
+  "s.serves-an-older-version.ece0b72f": {
+   "source": "Serves an older version",
+   "text": "Serves an older version"
+  },
+  "s.serves-another-certificate.b3883558": {
+   "source": "Serves another certificate",
+   "text": "Serves another certificate"
+  },
+  "s.serves-it-with-a-remark.1353484c": {
+   "source": "Serves it, with a remark",
+   "text": "Serves it, with a remark"
+  },
+  "s.serves-it.26b13b94": {
+   "source": "Serves it",
+   "text": "Serves it"
+  },
   "s.service.329cb8b6": {
    "source": "Service",
    "text": "Service"
@@ -21339,6 +21631,14 @@
   "s.services.5cbd5840": {
    "source": "Services",
    "text": "Services"
+  },
+  "s.serving-an-older-version.b1eb8dad": {
+   "source": "Serving an older version",
+   "text": "Serving an older version"
+  },
+  "s.serving-the-right-one.ed787f44": {
+   "source": "Serving the right one",
+   "text": "Serving the right one"
   },
   "s.session-id.67cc69de": {
    "source": "Session id",
@@ -22108,6 +22408,10 @@
    "source": "Something else…",
    "text": "Something else…"
   },
+  "s.something-else.48f88ac3": {
+   "source": "Something else",
+   "text": "Something else"
+  },
   "s.something-else.637828c0": {
    "source": "something else",
    "text": "something else"
@@ -22139,6 +22443,10 @@
   "s.source-interface.8181ffa2": {
    "source": "Source interface",
    "text": "Source interface"
+  },
+  "s.source-or-target.6e87c1c6": {
+   "source": "Source or target",
+   "text": "Source or target"
   },
   "s.source-port.aa61f4f1": {
    "source": "Source port",
@@ -22660,6 +22968,10 @@
    "source": "Stopped — the rows below are from the search before.",
    "text": "Stopped — the rows below are from the search before."
   },
+  "s.stopped.51e9111b": {
+   "source": "Stopped",
+   "text": "Stopped"
+  },
   "s.stopped.5acf4111": {
    "source": "stopped",
    "text": "stopped"
@@ -22699,6 +23011,10 @@
   "s.subtype.6d78c0c7": {
    "source": "subtype",
    "text": "subtype"
+  },
+  "s.succeeded.c8fbda90": {
+   "source": "Succeeded",
+   "text": "Succeeded"
   },
   "s.successful-login-s.29c74788": {
    "source": "successful login(s),",
@@ -24804,6 +25120,10 @@
    "source": "The debug log",
    "text": "The debug log"
   },
+  "s.the-deployments-target-by-target.86e56b6d": {
+   "source": "The deployments, target by target.",
+   "text": "The deployments, target by target."
+  },
   "s.the-description-written-on-the-group.efc40611": {
    "source": "The description written on the group in the directory itself.",
    "text": "The description written on the group in the directory itself."
@@ -25756,6 +26076,10 @@
    "source": "the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4",
    "text": "the ISE nodes, the firewalls: 10.1.2.3, 10.1.2.4"
   },
+  "s.the-jobs.1ad00000": {
+   "source": "The jobs",
+   "text": "The jobs"
+  },
   "s.the-key-a-pem-private-key.b28c0bb2": {
    "source": "the key: a PEM private key without a passphrase",
    "text": "the key: a PEM private key without a passphrase"
@@ -25888,6 +26212,10 @@
    "source": "The last backup went to every destination",
    "text": "The last backup went to every destination"
   },
+  "s.the-last-failure.f9eab674": {
+   "source": "The last failure",
+   "text": "The last failure"
+  },
   "s.the-last-fill-said.ba899c3a": {
    "source": "The last fill said",
    "text": "The last fill said"
@@ -25903,6 +26231,10 @@
   "s.the-last-one-went-wrong.c3789d02": {
    "source": "the last one went wrong",
    "text": "the last one went wrong"
+  },
+  "s.the-last-refusal.490c32e7": {
+   "source": "The last refusal",
+   "text": "The last refusal"
   },
   "s.the-last-renewal-failed.d0751bcd": {
    "source": "the last renewal failed",
@@ -27488,6 +27820,10 @@
    "source": "The server",
    "text": "The server"
   },
+  "s.the-service-answers-wrongly.4c29152b": {
+   "source": "The service answers wrongly",
+   "text": "The service answers wrongly"
+  },
   "s.the-service-asked-for.45cf8a77": {
    "source": "the service asked for",
    "text": "the service asked for"
@@ -27680,6 +28016,10 @@
    "source": "the TCP flags",
    "text": "the TCP flags"
   },
+  "s.the-third-log-what-acme-sends.b2835280": {
+   "source": "The third log: what acme sends as acme-jobs (isemon_detail in acme, on as it comes) - every renewal, deployment, test and import step by step, each request to a CA, a DNS API or a target, each validation of a name, and every run of a check. The Jobs and Checks pages of the acme tab are made of it.",
+   "text": "The third log: what acme sends as acme-jobs (isemon_detail in acme, on as it comes) - every renewal, deployment, test and import step by step, each request to a CA, a DNS API or a target, each validation of a name, and every run of a check. The Jobs and Checks pages of the acme tab are made of it."
+  },
   "s.the-threat-score-action-as-a.277bf8cc": {
    "source": "the threat-score action, as a number",
    "text": "the threat-score action, as a number"
@@ -27691,6 +28031,10 @@
   "s.the-time-zone-the-stamps-in.f033c982": {
    "source": "The time zone the stamps in this firewall’s lines are written in. Empty reads them like every other log (Settings → The ISE logs, or this machine’s own zone). An FTD writes UTC unless told otherwise, and its lines then look two hours old here in summer: write UTC. A stamp that carries its own zone (RFC 5424) is read in that zone whatever this says.",
    "text": "The time zone the stamps in this firewall’s lines are written in. Empty reads them like every other log (Settings → The ISE logs, or this machine’s own zone). An FTD writes UTC unless told otherwise, and its lines then look two hours old here in summer: write UTC. A stamp that carries its own zone (RFC 5424) is read in that zone whatever this says."
+  },
+  "s.the-times-on-a-logarithmic-scale.a8013c39": {
+   "source": "the times on a logarithmic scale",
+   "text": "the times on a logarithmic scale"
   },
   "s.the-tls-version.4e51c442": {
    "source": "the TLS version",
@@ -28164,6 +28508,10 @@
    "source": "The whole file as it stands this moment, both families, with the addresses that are out for good in it.",
    "text": "The whole file as it stands this moment, both families, with the addresses that are out for good in it."
   },
+  "s.the-whole-job-ms.727ac35e": {
+   "source": "The whole job (ms)",
+   "text": "The whole job (ms)"
+  },
   "s.the-whole-of-the-banning-on.dac77a1c": {
    "source": "The whole of the banning, on or off. Off, nothing is enforced and nothing of ours is left on the router; the list itself is kept, and switching it back on fills the router again from it.",
    "text": "The whole of the banning, on or off. Off, nothing is enforced and nothing of ours is left on the router; the list itself is kept, and switching it back on fills the router again from it."
@@ -28427,6 +28775,10 @@
   "s.these-carry-this-daemon-s-mark.f5d1d205": {
    "source": "These carry this daemon’s mark on the router but nothing here bans them any more — a ban that ran out or was lifted while the router could not be reached. The next sync takes them off.",
    "text": "These carry this daemon’s mark on the router but nothing here bans them any more — a ban that ran out or was lifted while the router could not be reached. The next sync takes them off."
+  },
+  "s.these-come-from-acme-jobs-in.71a4545c": {
+   "source": "These come from acme-jobs: in acme, isemon_detail=1 (as it comes, from acme 1.0.44) - and here, Settings → The acme logs → Read acme’s jobs, step by step, with acme-jobs.log filed by rsyslog (deploy/rsyslog-acme.conf).",
+   "text": "These come from acme-jobs: in acme, isemon_detail=1 (as it comes, from acme 1.0.44) - and here, Settings → The acme logs → Read acme’s jobs, step by step, with acme-jobs.log filed by rsyslog (deploy/rsyslog-acme.conf)."
   },
   "s.these-lines-carry-no-zone-of.40fadc9c": {
    "source": "These lines carry no zone of their own once syslog has been through them, so they are read in this machine’s zone. Set it where the controllers are somewhere else: `Europe/Prague`, or `+02:00`.",
@@ -29380,9 +29732,17 @@
    "source": "too variable",
    "text": "too variable"
   },
+  "s.took-ms.01126e05": {
+   "source": "Took (ms)",
+   "text": "Took (ms)"
+  },
   "s.took.26251f9d": {
    "source": "Took",
    "text": "Took"
+  },
+  "s.took.b1b416be": {
+   "source": "took",
+   "text": "took"
   },
   "s.touched-but-the-failed-attempts-that.3eca7343": {
    "source": "touched — but the failed attempts that earned a ban are what its reason points at, so forgetting them leaves the reason without its evidence.",
@@ -30216,6 +30576,22 @@
    "source": "valid",
    "text": "valid"
   },
+  "s.validation.6d361f1d": {
+   "source": "validation",
+   "text": "validation"
+  },
+  "s.validation.dd74d182": {
+   "source": "Validation",
+   "text": "Validation"
+  },
+  "s.validations-by-the-provider-that-proved.cfc3a50a": {
+   "source": "Validations, by the provider that proved them",
+   "text": "Validations, by the provider that proved them"
+  },
+  "s.validations-refused.c44614bc": {
+   "source": "Validations refused",
+   "text": "Validations refused"
+  },
   "s.value.8dce170d": {
    "source": "Value",
    "text": "Value"
@@ -30424,6 +30800,14 @@
    "source": "wait",
    "text": "wait"
   },
+  "s.waited-in-the-queue-half-of.71028a56": {
+   "source": "Waited in the queue, half of them",
+   "text": "Waited in the queue, half of them"
+  },
+  "s.waited-in-the-queue.1f83ae19": {
+   "source": "Waited in the queue",
+   "text": "Waited in the queue"
+  },
   "s.waiting-for-root.50f827fe": {
    "source": "waiting for root…",
    "text": "waiting for root…"
@@ -30607,6 +30991,10 @@
   "s.what-acme-sees-here.739cbc52": {
    "source": "What acme sees here",
    "text": "What acme sees here"
+  },
+  "s.what-acme-sent.e6c3a245": {
+   "source": "what acme sent",
+   "text": "what acme sent"
   },
   "s.what-acme-the-certificate-manager-sent.9f12148f": {
    "source": "What acme - the certificate manager - sent here: every certificate as it stands, when each runs out, where it went, what failed, its targets and its nodes, and every line it sent. There while Settings → The acme logs is on.",
@@ -31196,6 +31584,10 @@
    "source": "What the intrusion policy, the antivirus and the file and malware policy, Security Intelligence and application control found, newest first.",
    "text": "What the intrusion policy, the antivirus and the file and malware policy, Security Intelligence and application control found, newest first."
   },
+  "s.what-the-jobs-log-is-called.1f1f423e": {
+   "source": "What the jobs’ log is called in each folder.",
+   "text": "What the jobs’ log is called in each folder."
+  },
   "s.what-the-last-order-did.9234fc41": {
    "source": "What the last order did",
    "text": "What the last order did"
@@ -31575,6 +31967,10 @@
   "s.when-it-ran.acc3eb7c": {
    "source": "when it ran",
    "text": "when it ran"
+  },
+  "s.when-one-began-or-stopped-failing.34c486f9": {
+   "source": "When one began or stopped failing",
+   "text": "When one began or stopped failing"
   },
   "s.when-something-new-was-last-read.43b7991e": {
    "source": "When something new was last read out of this file, to the second.",
@@ -32527,6 +32923,10 @@
   "s.who-banned-it.1c025dcb": {
    "source": "who banned it",
    "text": "who banned it"
+  },
+  "s.who-began-them-and-the-wait.95decf5a": {
+   "source": "Who began them, and the wait",
+   "text": "Who began them, and the wait"
   },
   "s.who-did-it-where-that-is.2408e420": {
    "source": "who did it, where that is somebody else",
@@ -33962,6 +34362,10 @@
    "source": "{0}_domain",
    "text": "{0}_domain"
   },
+  "p.done-failed.4d5454a0": {
+   "source": "{0} done · {1} failed{2}",
+   "text": "{0} done · {1} failed{2}"
+  },
   "p.down-since.2249c0f6": {
    "source": "down since {0}",
    "text": "down since {0}"
@@ -34141,6 +34545,10 @@
   "p.failed-attempt-s.82632d2f": {
    "source": "{0} failed attempt(s)",
    "text": "{0} failed attempt(s)"
+  },
+  "p.failed-in-a-row.56b234cf": {
+   "source": "{0} failed in a row ·",
+   "text": "{0} failed in a row ·"
   },
   "p.failed-login-s-inside-earns-a.0316a8f9": {
    "source": "failed login(s) inside {0} earns a ban{1}. The bar below each address is whichever of those it will reach first.",
@@ -34329,6 +34737,18 @@
   "p.had-a-name-went-wrong.41e7beb7": {
    "source": "{0} had a name · {1} went wrong",
    "text": "{0} had a name · {1} went wrong"
+  },
+  "p.half-of-them-9-of-10.705a4899": {
+   "source": "half of them; 9 of 10 within {0}",
+   "text": "half of them; 9 of 10 within {0}"
+  },
+  "p.half-of-them.4fe6c1ff": {
+   "source": "half of them: {0}",
+   "text": "half of them: {0}"
+  },
+  "p.half-within.319da63e": {
+   "source": "{0}half within {1}",
+   "text": "{0}half within {1}"
   },
   "p.has-laid-out-table-s-by.52821ee0": {
    "source": "{0} has laid out {1} table(s) by hand. Put every one of them back as it comes: the widths and the order of the columns. Nothing else of theirs changes.",
@@ -34685,6 +35105,10 @@
   "p.its-password-this-and-the-whole.7b783f5c": {
    "source": "Its password. This, and the whole address above, are the only settings kept in {0} rather than in the database - a database cannot hold the address of itself.",
    "text": "Its password. This, and the whole address above, are the only settings kept in {0} rather than in the database - a database cannot hold the address of itself."
+  },
+  "p.job.40793196": {
+   "source": "Job #{0}{1}",
+   "text": "Job #{0}{1}"
   },
   "p.job.c1affedf": {
    "source": "&job={0}",
@@ -35274,6 +35698,10 @@
    "source": "{0} of {1} logs not there yet",
    "text": "{0} of {1} logs not there yet"
   },
+  "p.of-names-proved-or-not.1b5e58e8": {
+   "source": "of {0} names proved or not",
+   "text": "of {0} names proved or not"
+  },
   "p.of-ours-on-the-router-that.225ccc02": {
    "source": "{0} of ours on the router that nothing bans",
    "text": "{0} of ours on the router that nothing bans"
@@ -35297,6 +35725,10 @@
   "p.of-the-machines-refused-here-got.cccd13e9": {
    "source": "{0} of the {1} machines refused here got on to the network anyway — a PC is refused by MAB and then authenticates with its certificate, which is the ordinary way one joins. The card below leaves those out.",
    "text": "{0} of the {1} machines refused here got on to the network anyway — a PC is refused by MAB and then authenticates with its certificate, which is the ordinary way one joins. The card below leaves those out."
+  },
+  "p.of-the-that-ended.251132c1": {
+   "source": "of the {0} that ended",
+   "text": "of the {0} that ended"
   },
   "p.of-the-tunnel-ipsec-sa-s.5f4da14e": {
    "source": "{0} of the tunnel, {1} IPsec SA(s) made, {2} deleted",
@@ -35726,6 +36158,10 @@
    "source": "{0} renewals and {1} deployments failed",
    "text": "{0} renewals and {1} deployments failed"
   },
+  "p.requests-rate-limited-429.28fa4367": {
+   "source": "{0} requests · {1} rate-limited (429)",
+   "text": "{0} requests · {1} rate-limited (429)"
+  },
   "p.restarting-so-far-a-restart-takes.0dfa982c": {
    "source": "Restarting: {0} so far - a restart takes a minute or two.",
    "text": "Restarting: {0} so far - a restart takes a minute or two."
@@ -35785,6 +36221,14 @@
   "p.running.3be09acf": {
    "source": "· running: {0}",
    "text": "· running: {0}"
+  },
+  "p.running.d8178138": {
+   "source": "· {0} running",
+   "text": "· {0} running"
+  },
+  "p.runs-in-the-last.90b76a1f": {
+   "source": "{0} runs in the last {1}",
+   "text": "{0} runs in the last {1}"
   },
   "p.s-ago.26e8b765": {
    "source": "{0} s ago",
@@ -36974,6 +37418,10 @@
    "source": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen.",
    "text": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen."
   },
+  "p.what-acme-s-nodes-send-settings.e053af0a": {
+   "source": "{0}, {1} - what acme's nodes send (Settings → The acme logs{2})",
+   "text": "{0}, {1} - what acme's nodes send (Settings → The acme logs{2})"
+  },
   "p.what-active-directory-says-about-this.3f72e1e4": {
    "source": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory.",
    "text": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory."
@@ -37109,6 +37557,10 @@
   "p.with-a-one-time-password-at.a9ea78ad": {
    "source": "With a one-time password, at the token server: {0} refusal(s), from {1}.",
    "text": "With a one-time password, at the token server: {0} refusal(s), from {1}."
+  },
+  "p.with-a-remark.bbf293f8": {
+   "source": "{0} with a remark",
+   "text": "{0} with a remark"
   },
   "p.with-nothing-after-it.41b1b573": {
    "source": "\"{0}\" with nothing after it",

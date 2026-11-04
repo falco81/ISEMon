@@ -372,6 +372,29 @@ working.
 
 ## Version
 
+1.10.288
+
+- **acme's jobs, step by step** - the third program acme 1.0.44 sends
+  (`acme-jobs`, `isemon_detail` in acme, on as it comes), read from
+  `/var/log/remote/<HOST>/acme-jobs.log` (Settings → The acme logs → Read
+  acme's jobs, step by step; kept 90 days): every renewal, deployment, test,
+  import and revocation - its start, each step, each HTTPS request of a
+  module, each validation of a name, its end - and every run of a check.
+  What acme leaves out on purpose (`[hidden]`) is shown as such.
+- **The acme tab has three pages**: Certificates (as before), **Jobs** - how
+  the jobs went day by day, how long a renewal takes and by which source,
+  the validations by the provider that proved them, the requests to the CAs,
+  DNS APIs and targets (failures, rate limits, latency), who began them and
+  the wait in the queue, every job opened as a waterfall of its steps - and
+  **Checks**: every test of a certificate as it stands, run by run, and when
+  one began or stopped failing.
+- **A tile of acme's own in the firewall** (Settings → Firewall and access →
+  What isemon lets in by itself → *acme - the certificate manager*): the
+  port of acme's encrypted receiving and the plain syslog port its nodes
+  send to, let in by itself while acme's logs are read - from anywhere, or
+  only from acme's nodes. It can be turned off like every other tile.
+- `deploy/rsyslog-acme.conf` files `acme-jobs` as well.
+
 1.10.287
 
 - **acme - the certificate manager - read from its logs**, as the OTP logs

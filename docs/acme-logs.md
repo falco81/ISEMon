@@ -1,4 +1,4 @@
-# acme's logs and the acme tab (1.10.287)
+# acme's logs and the acme tab (1.10.287, 1.10.288)
 
 *acme* here is the certificate manager: the application that orders the
 site's certificates, renews them and deploys them to the F5s, the firewalls
@@ -26,6 +26,7 @@ acme --isemon-test                                       # a test line
 |---|---|---|
 | `acme-certs` | what happened to a certificate: issued, renewed, a renewal failed, deployed, a deployment failed, runs out soon, ran out, revoked, imported, changed | always, while `isemon=1` |
 | `acme` | everything else: sign-ins, accounts, settings, backups, the portal, mail, HA, … | with `isemon_events=1` |
+| `acme-jobs` | every job step by step (start, steps, HTTPS requests, validations, end) and every run of a check (acme 1.0.44) | with `isemon_detail=1` (as it comes) |
 
 Every node of an acme cluster sends its own lines, with its name in `node=`.
 The HOST is the same for the whole cluster (`isemon_hostname`).
@@ -39,7 +40,12 @@ both programs as:
 ```
 /var/log/remote/<HOST>/acme-certs.log
 /var/log/remote/<HOST>/acme.log
+/var/log/remote/<HOST>/acme-jobs.log
 ```
+
+(acme 1.0.43's own rule left `acme-jobs` out.) An `acme-jobs` line runs to
+900 bytes and more: over UDP raise `$MaxMessageSize`, or send over TCP or
+TLS.
 
 readable by the `isemon` group. The plain input (514) is the one the other
 logs use already.
@@ -54,6 +60,9 @@ logs use already.
 | `acmelog_events` | `1` | read the other log too |
 | `acmelog_events_name` | `acme.log` | what it is called |
 | `retain_acmelog_days` | `400` | how long a line is kept |
+| `acmelog_jobs` | `1` | read acme-jobs too |
+| `acmelog_jobs_name` | `acme-jobs.log` | what it is called |
+| `retain_acmelog_jobs_days` | `90` | how long a job's steps are kept (a renewal is 20-60 lines) |
 
 ```bash
 isemon --set acmelog=1
@@ -103,7 +112,17 @@ Then in acme: `isemon_targets=<this machine>:6514/tls` (and
 `./install.sh --upgrade` from 1.10.287 puts in the path unit that watches
 `acmetls.ask`; until then the card says root's half is not there.
 
-## 5. The acme tab
+## 5. The firewall
+
+Where isemon's own firewall is on (Settings → Firewall and access), *What
+isemon lets in by itself* has a tile **acme - the certificate manager**
+while acme's logs are read or acme's encrypted receiving is set up: the TLS
+port of that receiver and the plain syslog port (514) its nodes send to
+until they are switched over - from anywhere, or only from acme's nodes
+named there. The rules are put in by themselves (the firewall is compared
+every minute with what it should be); turned off, the tile lets nothing in.
+
+## 6. The acme tab
 
 There only while the logs are read, for anybody signed in:
 
@@ -143,5 +162,38 @@ acme drops what it cannot send while isemon does not answer (it never sends
 it again), so the tab is what arrived: the whole record is on the nodes
 (`/var/log/acme/acme-certs.log`) and in acme's own Events.
 
-API: `GET /api/acmelog?days=30` (the tab) and `GET /api/acmelog/events`
-(`tag level kind node cert action result target who q before since limit`).
+### Jobs (acme-jobs)
+
+- the counts - jobs, the share that succeeded, how long a renewal takes
+  (half of them, 9 of 10), validations refused, requests that failed and
+  were rate-limited, jobs interrupted (no `event=end` an hour after their
+  last line: a node restarted; acme runs it again as a new job);
+- jobs day by day, and every renewal's duration as a dot (on a logarithmic
+  scale when they differ widely);
+- by source, by kind of job, by target: how many, the share that succeeded,
+  how long;
+- validations by the provider that proved them (`via`, `challenge_type`):
+  proved, refused, how long the CA took, the last refusal;
+- requests by server (`host`, `module`): how many, the share answered well,
+  how many 429, the time half and 9 of 10 answers came within, the last
+  failure - never bodies, headers or query values (acme sends none);
+- who began them (`acme` is its own schedule) and the wait in the queue;
+- every job, searched and filtered; opened, a waterfall of its lines on the
+  time since it began. A job's certificate fields on `start` are the
+  certificate before, on `end` the new one.
+
+### Checks (acme-jobs, `kind=check`)
+
+Every test of a certificate (HTTPS, SMTP, IMAP, LDAP …): as it stands -
+serves it, serves an older version, serves another certificate, answers
+wrongly, cannot be reached - its last runs as a strip, the share that went
+well, how many failed in a row; and when one began (`went=bad`) or stopped
+(`went=back`) failing.
+
+`[hidden]` is a value acme left out on purpose (a secret, a TXT value): it
+is shown as such.
+
+API: `GET /api/acmelog?days=30` (the tab), `GET /api/acmelog/events`
+(`tag level kind node cert action result target who q before since limit`),
+`GET /api/acmelog/jobs?days=30`, `GET /api/acmelog/job?job=&node=`,
+`GET /api/acmelog/checks?days=30`.

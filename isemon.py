@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.287'
+__version__ = '1.10.288'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -177,6 +177,11 @@ DEFAULTS = {
     'acmelog_events': 1,
     'acmelog_events_name': 'acme.log',
     'retain_acmelog_days': 400,
+    # acme-jobs (1.10.288, acme 1.0.44's isemon_detail): every job step by
+    # step - its requests, its validations, its end - and every check run.
+    'acmelog_jobs': 1,
+    'acmelog_jobs_name': 'acme-jobs.log',
+    'retain_acmelog_jobs_days': 90,
     'otp_name': 'totp.cgi.log',
     # The token log says whether a number was right and nothing else: the
     # token software is asked over the loopback by whatever stands in front
@@ -1961,7 +1966,7 @@ def acl_body(text):
 
 # The settings that name a log file inside a folder.
 LOG_FILE_NAMES = ('ise_failed_name', 'ise_passed_name', 'otp_name', 'otp_detail_name',
-                  'acmelog_certs_name', 'acmelog_events_name',
+                  'acmelog_certs_name', 'acmelog_events_name', 'acmelog_jobs_name',
                   'eduroam_name', 'eduroam_detail_name', 'eduroam_nps_name', 'tacplus_name',
                   'tacplus_said_name', 'nps_name', 'winsec_name', 'fwlog_name', 'radius_name',
                   'radius_detail_name')
@@ -17122,7 +17127,7 @@ class ListQuery(object):
 # \\, cut at a length with " ...TRUNCATED" (perhaps inside a quoted value).
 # Nothing here is ever judged: it is what acme did, kept and shown.
 
-ACME_TAGS = ('acme-certs', 'acme')
+ACME_TAGS = ('acme-certs', 'acme', 'acme-jobs')
 ACME_ENVELOPE = re.compile(
     r'^(?:<\d{1,3}>)?\s*'
     r'(?:(?P<iso>\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?)'
@@ -17133,7 +17138,7 @@ ACME_TOKEN = re.compile(r'([a-z][a-z0-9_]{0,31})=("(?:[^"\\]|\\.)*"?|[^ ]*)')
 # other field is kept beside it, as it came.
 ACME_COLUMNS = ('level', 'kind', 'node', 'who', 'action', 'result', 'cert', 'names', 'serial',
                 'not_after', 'issuer', 'target', 'target_kind', 'version', 'reason')
-ACME_LEVELS = ('info', 'warn', 'bad')
+ACME_LEVELS = ('info', 'warn', 'bad', 'ok', 'debug')
 
 
 class AcmeLine(object):
@@ -19838,6 +19843,72 @@ CREATE INDEX IF NOT EXISTS acme_events_cert ON acme_events (cert, ts);
 CREATE INDEX IF NOT EXISTS acme_events_action ON acme_events (action, ts);
 CREATE INDEX IF NOT EXISTS acme_events_level ON acme_events (level, ts);
 CREATE INDEX IF NOT EXISTS acme_events_node ON acme_events (node, ts);
+
+-- acme's jobs, step by step (1.10.288): one line of acme-jobs a row - a
+-- job's start, step, request, validation or end (kind 'job'), or a check's
+-- run (kind 'check'). The fields with no column of their own are in `extra`.
+CREATE TABLE IF NOT EXISTS acme_jobs (
+    ident     TEXT PRIMARY KEY,
+    ts        REAL NOT NULL,
+    at        REAL,
+    host      TEXT,
+    level     TEXT,
+    kind      TEXT,
+    node      TEXT,
+    who       TEXT,
+    event     TEXT,
+    job       TEXT,
+    job_kind  TEXT,
+    cert      TEXT,
+    cert_id   TEXT,
+    names     TEXT,
+    issuer    TEXT,
+    issuer_kind TEXT,
+    challenge TEXT,
+    key_type  TEXT,
+    version   TEXT,
+    serial    TEXT,
+    cert_state TEXT,
+    owner     TEXT,
+    module    TEXT,
+    module_kind TEXT,
+    target    TEXT,
+    target_kind TEXT,
+    method    TEXT,
+    path      TEXT,
+    error     TEXT,
+    name      TEXT,
+    challenge_type TEXT,
+    via       TEXT,
+    state     TEXT,
+    result_version TEXT,
+    test      TEXT,
+    test_kind TEXT,
+    endpoint  TEXT,
+    went      TEXT,
+    prior     TEXT,
+    check_id  TEXT,
+    seq       INTEGER,
+    t_ms      INTEGER,
+    status    INTEGER,
+    ms        INTEGER,
+    bytes     INTEGER,
+    ok        INTEGER,
+    took_ms   INTEGER,
+    steps     INTEGER,
+    queued_ms INTEGER,
+    fails     INTEGER,
+    http_host TEXT,
+    not_after REAL,
+    msg       TEXT,
+    extra     TEXT,
+    raw       INTEGER DEFAULT 0,
+    truncated INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS acme_jobs_ts ON acme_jobs (ts);
+CREATE INDEX IF NOT EXISTS acme_jobs_job ON acme_jobs (job, node);
+CREATE INDEX IF NOT EXISTS acme_jobs_event ON acme_jobs (kind, event, ts);
+CREATE INDEX IF NOT EXISTS acme_jobs_cert ON acme_jobs (cert, ts);
 
 CREATE TABLE IF NOT EXISTS otp_asked (
     ident    TEXT PRIMARY KEY,  -- server/second/port: one transaction, once
@@ -35681,6 +35752,334 @@ class Storage(object):
             facets = {}
         return {'rows': rows, 'more': more, 'facets': facets}
 
+    # ---- acme's jobs, step by step (acme-jobs, 1.10.288) -------------------
+
+    ACME_JOB_COLUMNS = (
+        'event', 'job', 'job_kind', 'cert', 'cert_id', 'names', 'issuer', 'issuer_kind',
+        'challenge', 'key_type', 'version', 'serial', 'cert_state', 'owner', 'module',
+        'module_kind', 'target', 'target_kind', 'method', 'path', 'error', 'name',
+        'challenge_type', 'via', 'state', 'result_version', 'test', 'test_kind', 'endpoint',
+        'went', 'prior', 'check_id')
+    ACME_JOB_NUMBERS = ('seq', 't_ms', 'status', 'ms', 'bytes', 'ok', 'took_ms', 'steps',
+                        'queued_ms', 'fails')
+
+    def acme_job_note(self, rec):
+        """One line of acme-jobs, kept once: a job's start, step, request,
+        validation or end, or a check's result."""
+        f = dict(rec.fields or {})
+        row = {'level': str(f.pop('level', '') or 'info')[:10], 'kind': f.pop('kind', None),
+               'node': f.pop('node', None), 'who': f.pop('who', None)}
+        # `before` - what a check said the run before - is `prior` here: a
+        # word MariaDB keeps for itself.
+        if 'before' in f:
+            f['prior'] = f.pop('before')
+        for k in self.ACME_JOB_COLUMNS:
+            v = f.pop(k, None)
+            row[k] = str(v)[:500] if v is not None else None
+        for k in self.ACME_JOB_NUMBERS:
+            v = f.pop(k, None)
+            try:
+                row[k] = int(float(v)) if v not in (None, '') else None
+            except (TypeError, ValueError):
+                row[k] = None
+                if v is not None:
+                    f[k] = v
+        # `host` and `port` of a request: the envelope's host is another thing.
+        row['http_host'] = str(f.pop('host'))[:255] if f.get('host') is not None else None
+        not_after = acme_iso_ts(f.pop('not_after', None))
+        cols = (['ident', 'ts', 'at', 'host', 'level', 'kind', 'node', 'who'] +
+                list(self.ACME_JOB_COLUMNS) + list(self.ACME_JOB_NUMBERS) +
+                ['http_host', 'not_after', 'msg', 'extra', 'raw', 'truncated'])
+        vals = [rec.ident, float(rec.ts), time.time(), str(rec.host or '')[:200], row['level'],
+                row['kind'], row['node'], row['who']] + \
+            [row[k] for k in self.ACME_JOB_COLUMNS] + [row[k] for k in self.ACME_JOB_NUMBERS] + \
+            [row['http_host'], not_after, str(rec.msg or '')[:4000],
+             json.dumps(f, ensure_ascii=False, sort_keys=True)[:8000] if f else None,
+             1 if rec.raw else 0, 1 if rec.truncated else 0]
+        try:
+            with self.db_write() as db:
+                db.execute('INSERT OR IGNORE INTO acme_jobs (%s) VALUES (%s)' % (
+                    ', '.join(self.dialect.ident(c) for c in cols),
+                    ','.join('?' * len(cols))), tuple(vals))
+            return True
+        except sqlite3.Error as e:
+            log('a line of acme\'s jobs could not be written down: %s' % e, 'warn')
+            return False
+
+    def tidy_acme_jobs(self):
+        days = int(CONFIG.get('retain_acmelog_jobs_days') or 90)
+        try:
+            with self.db_write() as db:
+                db.execute('DELETE FROM acme_jobs WHERE ts < ?', (time.time() - days * 86400,))
+        except sqlite3.Error:
+            return 0
+        return 1
+
+    @staticmethod
+    def _pct(values, p):
+        v = sorted(x for x in values if x is not None)
+        if not v:
+            return None
+        k = (len(v) - 1) * p / 100.0
+        lo = int(k)
+        hi = min(lo + 1, len(v) - 1)
+        return v[lo] + (v[hi] - v[lo]) * (k - lo)
+
+    ACME_JOB_STALE_S = 3600
+
+    def acme_jobs_list(self, since, now=None, limit=3000):
+        """The jobs begun or ended since `since`, each from its start and its
+        end: what it was, for what, who began it, how it ended, how long it
+        took. One with no end an hour after its last line was interrupted (a
+        node restarted); acme runs it again as a job of its own."""
+        now = now or time.time()
+        db = self.db
+        try:
+            heads = db.execute(
+                "SELECT * FROM acme_jobs WHERE kind = 'job' AND event IN ('start', 'end') "
+                'AND ts >= ? ORDER BY ts LIMIT 200000', (since - 86400,)).fetchall()
+            lasts = db.execute(
+                "SELECT job, node, MAX(ts) AS last_ts, COUNT(*) AS n FROM acme_jobs "
+                "WHERE kind = 'job' AND ts >= ? GROUP BY job, node", (since - 86400,)).fetchall()
+        except sqlite3.Error:
+            return []
+        jobs = {}
+        for r in heads:
+            r = dict(r)
+            key = (r['job'], r['node'])
+            j = jobs.setdefault(key, {'job': r['job'], 'node': r['node'], 'started': None,
+                                      'ended': None, 'state': None, 'ok': None})
+            for k in ('job_kind', 'cert', 'cert_id', 'names', 'issuer', 'issuer_kind',
+                      'challenge', 'key_type', 'target', 'target_kind', 'owner'):
+                if r.get(k) is not None:
+                    j[k] = r[k]
+            if r['event'] == 'start':
+                j.update(started=r['ts'], who=r['who'], queued_ms=r['queued_ms'], why=r['msg'],
+                         version_before=r['version'])
+            else:
+                j.update(ended=r['ts'], state=r['state'] or ('ok' if r['ok'] else 'failed'),
+                         ok=r['ok'], took_ms=r['took_ms'], steps=r['steps'],
+                         result_version=r['result_version'], said=r['msg'],
+                         level=r['level'], not_after=r['not_after'])
+        for r in lasts:
+            j = jobs.get((r['job'], r['node']))
+            if j:
+                j['last_ts'], j['lines'] = r['last_ts'], int(r['n'])
+        out = []
+        for j in jobs.values():
+            if (j.get('started') or j.get('ended') or 0) < since:
+                continue
+            if j['state'] is None:
+                j['state'] = 'interrupted' if now - (j.get('last_ts') or 0) > \
+                    self.ACME_JOB_STALE_S else 'running'
+            out.append(j)
+        out.sort(key=lambda j: -(j.get('started') or j.get('ended') or 0))
+        return out[:limit]
+
+    def acme_jobs_view(self, days=30, now=None):
+        """The jobs page of the acme tab: how the jobs went, how long a
+        renewal takes and from which source, the validations by provider, the
+        requests to the CAs, DNS APIs and targets, who began them, the queue."""
+        now = now or time.time()
+        days = max(1, min(int(days or 30), 400))
+        since = now - days * 86400
+        jobs = self.acme_jobs_list(since, now)
+        db = self.db
+        done = [j for j in jobs if j['state'] in ('ok', 'failed', 'stopped')]
+        renew = [j for j in done if j.get('job_kind') in ('renew', 'issue')]
+
+        def group(items, key):
+            g = {}
+            for j in items:
+                k = j.get(key) or '–'
+                one = g.setdefault(k, {'key': k, 'n': 0, 'ok': 0, 'failed': 0, 'took': []})
+                one['n'] += 1
+                if j['state'] == 'ok':
+                    one['ok'] += 1
+                elif j['state'] == 'failed':
+                    one['failed'] += 1
+                if j.get('took_ms') is not None:
+                    one['took'].append(j['took_ms'])
+            out = []
+            for one in g.values():
+                took = one.pop('took')
+                one['p50'] = self._pct(took, 50)
+                one['p90'] = self._pct(took, 90)
+                out.append(one)
+            out.sort(key=lambda x: -x['n'])
+            return out
+        # Day by day: how many ended ok and not, and how long the renewals took.
+        first = time.localtime(since)
+        at = time.mktime((first.tm_year, first.tm_mon, first.tm_mday, 0, 0, 0, 0, 0, -1))
+        days_out = []
+        while at <= now:
+            t = time.localtime(at)
+            days_out.append({'day': at, 'ok': 0, 'failed': 0, 'stopped': 0, 'interrupted': 0})
+            at = time.mktime((t.tm_year, t.tm_mon, t.tm_mday + 1, 0, 0, 0, 0, 0, -1))
+        import bisect
+        bounds = [d['day'] for d in days_out]
+        for j in jobs:
+            ts = j.get('ended') or j.get('started') or 0
+            i = bisect.bisect_right(bounds, ts) - 1
+            if 0 <= i < len(days_out) and j['state'] in days_out[i]:
+                days_out[i][j['state']] += 1
+        durations = [{'ts': j.get('ended'), 'took_ms': j['took_ms'], 'cert': j.get('cert'),
+                      'issuer': j.get('issuer'), 'ok': j['state'] == 'ok', 'job': j['job'],
+                      'node': j['node']}
+                     for j in renew if j.get('took_ms') is not None][:2000]
+        try:
+            vals = [dict(r) for r in db.execute(
+                "SELECT via, challenge_type, state, ms, error, ts, name, cert FROM acme_jobs "
+                "WHERE kind = 'job' AND event = 'validation' AND ts >= ? LIMIT 100000",
+                (since,)).fetchall()]
+            reqs = [dict(r) for r in db.execute(
+                "SELECT http_host, module, module_kind, status, ms, error, ts, method, path "
+                "FROM acme_jobs WHERE kind = 'job' AND event = 'http' AND ts >= ? "
+                'LIMIT 300000', (since,)).fetchall()]
+        except sqlite3.Error:
+            vals, reqs = [], []
+        vg = {}
+        for v in vals:
+            k = (v['via'] or '–', v['challenge_type'] or '–')
+            one = vg.setdefault(k, {'via': k[0], 'challenge_type': k[1], 'presented': 0,
+                                    'valid': 0, 'invalid': 0, 'ms': [], 'last_error': None,
+                                    'last_error_ts': 0})
+            if v['state'] in ('presented', 'valid', 'invalid'):
+                one[v['state']] += 1
+            if v['state'] == 'valid' and v['ms'] is not None:
+                one['ms'].append(v['ms'])
+            if v['state'] == 'invalid' and (v['ts'] or 0) >= one['last_error_ts']:
+                one['last_error'], one['last_error_ts'] = v['error'], v['ts']
+        validations = []
+        for one in vg.values():
+            ms = one.pop('ms')
+            one['p50'], one['p90'] = self._pct(ms, 50), self._pct(ms, 90)
+            validations.append(one)
+        validations.sort(key=lambda x: -(x['valid'] + x['invalid']))
+        hg = {}
+        for q in reqs:
+            k = (q['http_host'] or '–', q['module'] or '')
+            one = hg.setdefault(k, {'host': k[0], 'module': k[1], 'module_kind': q['module_kind'],
+                                    'n': 0, 'errors': 0, 'limited': 0, 'ms': [],
+                                    'last_error': None, 'last_error_ts': 0, 'codes': {}})
+            one['n'] += 1
+            st = q['status']
+            bad = bool(q['error']) or (st is not None and st >= 400)
+            if bad:
+                one['errors'] += 1
+                if (q['ts'] or 0) >= one['last_error_ts']:
+                    one['last_error_ts'] = q['ts']
+                    one['last_error'] = q['error'] or '%s %s -> %s' % (
+                        q['method'] or '', q['path'] or '', st)
+            if st == 429:
+                one['limited'] += 1
+            if st is not None:
+                c = '%dxx' % (st // 100)
+                one['codes'][c] = one['codes'].get(c, 0) + 1
+            elif q['error']:
+                one['codes']['error'] = one['codes'].get('error', 0) + 1
+            if q['ms'] is not None:
+                one['ms'].append(q['ms'])
+        apis = []
+        for one in hg.values():
+            ms = one.pop('ms')
+            one['p50'], one['p90'] = self._pct(ms, 50), self._pct(ms, 90)
+            apis.append(one)
+        apis.sort(key=lambda x: -x['n'])
+        who = {}
+        for j in jobs:
+            w = j.get('who') or '–'
+            who[w] = who.get(w, 0) + 1
+        queued = [j.get('queued_ms') for j in jobs if j.get('queued_ms') is not None]
+        took = [j['took_ms'] for j in renew if j.get('took_ms') is not None]
+        n_val = sum(v['valid'] + v['invalid'] for v in validations)
+        return {
+            'on': True, 'now': now, 'days': days, 'since': since,
+            'kpi': {'jobs': len(jobs), 'done': len(done),
+                    'ok': sum(1 for j in done if j['state'] == 'ok'),
+                    'failed': sum(1 for j in done if j['state'] == 'failed'),
+                    'stopped': sum(1 for j in done if j['state'] == 'stopped'),
+                    'running': sum(1 for j in jobs if j['state'] == 'running'),
+                    'interrupted': sum(1 for j in jobs if j['state'] == 'interrupted'),
+                    'renewals': len(renew), 'renew_p50': self._pct(took, 50),
+                    'renew_p90': self._pct(took, 90),
+                    'validations': n_val,
+                    'invalid': sum(v['invalid'] for v in validations),
+                    'requests': len(reqs), 'request_errors': sum(a['errors'] for a in apis),
+                    'limited': sum(a['limited'] for a in apis),
+                    'queued_p50': self._pct(queued, 50), 'queued_p90': self._pct(queued, 90)},
+            'jobs': jobs[:300], 'by_kind': group(done, 'job_kind'),
+            'by_issuer': group(renew, 'issuer'), 'by_target': group(
+                [j for j in done if j.get('job_kind') == 'deploy'], 'target'),
+            'days_jobs': days_out, 'durations': durations, 'validations': validations,
+            'apis': apis[:60],
+            'who': sorted(({'who': k, 'n': v} for k, v in who.items()), key=lambda x: -x['n']),
+            'total': len(jobs)}
+
+    def acme_job_lines(self, job, node):
+        """Every line of one job, in the order it ran."""
+        try:
+            rows = [self.acme_row(dict(r)) for r in self.db.execute(
+                "SELECT * FROM acme_jobs WHERE kind = 'job' AND job = ? AND node = ? "
+                'ORDER BY t_ms, seq, ts LIMIT 2000', (str(job)[:40], str(node)[:200])).fetchall()]
+        except sqlite3.Error:
+            rows = []
+        for r in rows:
+            r['tag'] = 'acme-jobs'
+        order = {'start': 0, 'end': 2}
+        rows.sort(key=lambda r: (order.get(r.get('event'), 1), r.get('t_ms') or 0,
+                                 r.get('seq') or 0, r.get('ts') or 0))
+        return rows
+
+    def acme_checks_view(self, days=30, now=None):
+        """The checks page: every test of a certificate, as it stands - and
+        how it went, run by run, and when one began or stopped failing."""
+        now = now or time.time()
+        days = max(1, min(int(days or 30), 400))
+        since = now - days * 86400
+        try:
+            rows = [dict(r) for r in self.db.execute(
+                "SELECT ts, node, level, check_id, test, test_kind, cert, cert_id, endpoint, "
+                "state, ok, ms, fails, went, prior, msg, extra FROM acme_jobs "
+                "WHERE kind = 'check' AND ts >= ? ORDER BY ts LIMIT 200000",
+                (since,)).fetchall()]
+        except sqlite3.Error:
+            rows = []
+        checks = {}
+        incidents = []
+        for r in rows:
+            key = r['check_id'] or '%s|%s|%s' % (r['cert'], r['test'], r['endpoint'])
+            c = checks.setdefault(key, {'check_id': r['check_id'], 'runs': [], 'n': 0, 'good': 0,
+                                        'ms': []})
+            c.update({k: r[k] for k in ('test', 'test_kind', 'cert', 'endpoint', 'state', 'ok',
+                                        'fails', 'msg', 'level', 'node') if r[k] is not None})
+            c['last_ts'] = r['ts']
+            c['n'] += 1
+            if r['ok']:
+                c['good'] += 1
+            if r['ms'] is not None:
+                c['ms'].append(r['ms'])
+            c['runs'].append({'ts': r['ts'], 'state': r['state'], 'ok': r['ok']})
+            if r['went'] in ('bad', 'back'):
+                incidents.append({'ts': r['ts'], 'went': r['went'], 'cert': r['cert'],
+                                  'test': r['test'], 'endpoint': r['endpoint'],
+                                  'state': r['state'], 'msg': r['msg']})
+        out = []
+        states = {}
+        for c in checks.values():
+            ms = c.pop('ms')
+            c['p50'] = self._pct(ms, 50)
+            c['runs'] = c['runs'][-40:]
+            c['share'] = (c['good'] / float(c['n'])) if c['n'] else None
+            states[c.get('state') or '–'] = states.get(c.get('state') or '–', 0) + 1
+            out.append(c)
+        rank = {'unreachable': 0, 'other': 1, 'old': 2, 'answer': 3, 'warn': 4, 'ok': 5}
+        out.sort(key=lambda c: (rank.get(c.get('state'), 6), str(c.get('cert') or ''),
+                                str(c.get('test') or '')))
+        incidents.sort(key=lambda x: -x['ts'])
+        return {'on': True, 'now': now, 'days': days, 'checks': out, 'states': states,
+                'incidents': incidents[:100], 'runs': len(rows)}
+
     def acme_note(self, rec):
         """One line of acme's, kept - once, however often it is read."""
         f = dict(rec.fields or {})
@@ -42516,8 +42915,8 @@ class Storage(object):
         """
         out = {}
         for table in ('failed', 'passed', 'win_events', 'win_rollup', 'seen_values',
-                      'otp_asked', 'acme_events', 'eduroam_seen', 'fw_events', 'fw_roll',
-                      'fw_ready',
+                      'otp_asked', 'acme_events', 'acme_jobs', 'eduroam_seen', 'fw_events',
+                      'fw_roll', 'fw_ready',
                       'blocked', 'blocked_log', 'block_events',
                       'events', 'feed_ranges', 'geo_ranges', 'ptr', 'mac_vendors',
                       'users', 'sessions', 'fold_versions'):
@@ -42662,7 +43061,7 @@ class Storage(object):
                     'were read up to, so whatever is still in the files is read again from '
                     'the beginning. Lines that have already been rotated away do not come '
                     'back.',
-            'tables': ['acme_events'],
+            'tables': ['acme_events', 'acme_jobs'],
             'reread': ('acmelog',),
         },
         'eduroam': {
@@ -48226,6 +48625,8 @@ class Daemon(object):
             names = [str(CONFIG.get('acmelog_certs_name') or 'acme-certs.log').strip()]
             if int(CONFIG.get('acmelog_events', 1) or 0):
                 names.append(str(CONFIG.get('acmelog_events_name') or 'acme.log').strip())
+            if int(CONFIG.get('acmelog_jobs', 1) or 0):
+                names.append(str(CONFIG.get('acmelog_jobs_name') or 'acme-jobs.log').strip())
             for folder in CONFIG.get('acmelog_paths') or []:
                 folder = str(folder).strip()
                 if not folder:
@@ -49650,7 +50051,11 @@ class Daemon(object):
         """
         # A line of acme's (1.10.287): kept as what acme did, never judged.
         if isinstance(record, AcmeLine):
-            self.store.acme_note(record)
+            if record.tag == 'acme-jobs':
+                if not record.raw:
+                    self.store.acme_job_note(record)
+            else:
+                self.store.acme_note(record)
             return False
         # An accounting record is not an authentication and is never a row:
         # what it says is what one machine's session is, kept beside the
@@ -57578,6 +57983,7 @@ class Daemon(object):
         'otp': (0, 1), 'otp_paths': 'list', 'otp_name': 'str',
         'acmelog': (0, 1), 'acmelog_paths': 'list', 'acmelog_certs_name': 'str',
         'acmelog_events': (0, 1), 'acmelog_events_name': 'str', 'retain_acmelog_days': (1, 3650),
+        'acmelog_jobs': (0, 1), 'acmelog_jobs_name': 'str', 'retain_acmelog_jobs_days': (1, 3650),
         'otp_detail': (0, 1), 'otp_detail_name': 'str',
         'otp_from': 'str', 'otp_from_mark': (0, 1),
         'eduroam': (0, 1), 'eduroam_paths': 'list', 'eduroam_name': 'str',
@@ -57808,6 +58214,9 @@ class Daemon(object):
         'acmelog_events': 'Read the rest of what acme does as well',
         'acmelog_events_name': 'That log in each',
         'retain_acmelog_days': 'Keep what acme did (days)',
+        'acmelog_jobs': 'Read acme\u2019s jobs, step by step',
+        'acmelog_jobs_name': 'Its jobs\u2019 log in each',
+        'retain_acmelog_jobs_days': 'Keep the jobs\u2019 steps (days)',
         'otp': 'Read the one-time password logs',
         'otp_paths': 'Where the token servers write',
         'otp_name': 'The name of the log file in each',
@@ -58457,6 +58866,15 @@ class Daemon(object):
                        'accounts, settings, backups, the portal, HA - where isemon_events is on '
                        'in acme.',
         'acmelog_events_name': 'What that one is called in each folder.',
+        'acmelog_jobs': 'The third log: what acme sends as acme-jobs (isemon_detail in acme, on '
+                        'as it comes) - every renewal, deployment, test and import step by step, '
+                        'each request to a CA, a DNS API or a target, each validation of a name, '
+                        'and every run of a check. The Jobs and Checks pages of the acme tab are '
+                        'made of it.',
+        'acmelog_jobs_name': 'What the jobs\u2019 log is called in each folder.',
+        'retain_acmelog_jobs_days':
+            'How long the jobs\u2019 steps are kept: a renewal is twenty to sixty lines, so '
+            'this is the one of acme\'s that grows.',
         'otp_paths': 'One folder per token server, comma separated. Two is as usual as one: '
                      'the pair answers active/active exactly as the ISE nodes do, so both are '
                      'read and what comes out of them is one list. A path may name the file '
@@ -63473,6 +63891,7 @@ class Daemon(object):
             out['eduroam'] = self.store.tidy_eduroam_seen() or 0
             out['otp'] = self.store.tidy_otp_asked() or 0
             out['acmelog'] = self.store.tidy_acme() or 0
+            out['acmelog_jobs'] = self.store.tidy_acme_jobs() or 0
             # What was written down beside bans long over. Once an hour is
             # plenty: it is a few rows per address.
             if time.time() - getattr(self, '_marks_tidied', 0) >= 3600:
@@ -65497,12 +65916,16 @@ class WebRoot(object):
         got = self._meta('web_fw', {})
         logs = got.get('logs') if isinstance(got.get('logs'), dict) else {}
         otl = got.get('otptls') if isinstance(got.get('otptls'), dict) else {}
+        atl = got.get('acmetls') if isinstance(got.get('acmetls'), dict) else {}
         return {'on': bool(got.get('on')), 'off': [str(x) for x in got.get('off') or []][:20],
                 'rules': [r for r in got.get('rules') or [] if isinstance(r, dict)][:500],
                 'logs': {'any': logs.get('any', True) is not False,
                          'from': [str(x) for x in logs.get('from') or []][:400]},
                 'otptls': {'any': otl.get('any', True) is not False,
                            'from': [str(x) for x in otl.get('from') or []][:400]},
+                # acme's nodes (1.10.288): their logs over TLS, and plain.
+                'acmetls': {'any': atl.get('any', True) is not False,
+                            'from': [str(x) for x in atl.get('from') or []][:400]},
                 'touched': bool(got)}
 
     def access_conf(self):
@@ -65609,10 +66032,12 @@ class WebRoot(object):
                 'action': action, 'note': note, 'disabled': bool(x.get('disabled'))}
 
     # ---- what isemon lets in by itself -----------------------------------------
-    AUTO = ('ssh', 'icmp', 'dhcpv6', 'web', 'logs', 'otptls', 'ntp', 'acme')
+    AUTO = ('ssh', 'icmp', 'dhcpv6', 'web', 'logs', 'otptls', 'acmetls', 'ntp', 'acme')
     # The file of rsyslog's encrypted input for otp's nodes (1.10.245-246):
     # its port is a card of its own, with senders of its own.
     OTPTLS_FILES = ('99-otp-tls.conf', '10-otp-tls.conf')
+    # ...and acme's (1.10.288): a card of its own as well.
+    ACMETLS_FILES = ('99-tls-acme.conf', '10-acme-tls.conf')
 
     def auto_rules(self, look=None, fw=None, access=None):
         """What the machine needs let in for what isemon does here, worked out
@@ -65663,7 +66088,9 @@ class WebRoot(object):
                       'rules': web})
         ports = look.get('rsyslog') or []
         tls = [p for p in ports if p.get('file') in self.OTPTLS_FILES and p.get('proto') == 'tcp']
-        ports = [p for p in ports if p not in tls]
+        atls = [p for p in ports if p.get('file') in self.ACMETLS_FILES and
+                p.get('proto') == 'tcp']
+        ports = [p for p in ports if p not in tls and p not in atls]
         logs = []
         for p in ports[:12]:
             note = 'logs (%s %s)' % (p.get('proto'), p.get('port'))
@@ -65701,6 +66128,36 @@ class WebRoot(object):
                                      'from anywhere' if ot['any'] or not ot['from']
                                      else 'only from the nodes named'),
                           'rules': rules, 'senders': ot})
+        # acme's logs (1.10.288): there when Settings → The acme logs is on or
+        # rsyslog has acme's encrypted input - its TLS port, and the plain
+        # syslog port its nodes send to until they are switched over, from
+        # anywhere unless acme's nodes are named.
+        reading = False
+        try:
+            reading = bool(self.daemon.acmelog_on())
+        except Exception:
+            pass
+        if atls or reading:
+            at = fw['acmetls']
+            plain = [p for p in ports if str(p.get('port')) == '514'][:2]
+            rules = []
+            for p in atls[:4] + plain:
+                note = ('the acme logs over TLS (tcp %s)' % p.get('port')) if p in atls \
+                    else 'the acme logs (%s %s)' % (p.get('proto'), p.get('port'))
+                if at['any'] or not at['from']:
+                    rules += both(p.get('proto') or 'tcp', str(p.get('port')), '', note)
+                else:
+                    for n in at['from']:
+                        rules += both(p.get('proto') or 'tcp', str(p.get('port')), n, note)
+            said = ', '.join(['tcp %s (TLS)' % p.get('port') for p in atls[:4]] +
+                             ['%s %s' % (p.get('proto'), p.get('port')) for p in plain])
+            items.append({'key': 'acmetls', 'title': 'acme - the certificate manager',
+                          'why': '%s, %s - what acme\'s nodes send (Settings → The acme logs%s)'
+                                 % (said or 'no port of its own yet',
+                                    'from anywhere' if at['any'] or not at['from']
+                                    else 'only from acme\'s nodes named',
+                                    ' → Encrypted receiving' if atls else ''),
+                          'rules': rules, 'senders': at})
         # The time served to the networks set under Settings → Time (1.10.228).
         nc = self._meta('ntp_conf', {})
         if nc.get('manage') and nc.get('allow'):
@@ -65876,6 +66333,13 @@ class WebRoot(object):
             if not fw['otptls']['any'] and not fw['otptls']['from']:
                 raise WebRootError('the otp logs over TLS would come from nobody: name otp\'s '
                                    'nodes, or anywhere')
+        if 'acmetls' in data:
+            at = data.get('acmetls') if isinstance(data.get('acmetls'), dict) else {}
+            fw['acmetls'] = {'any': bool(at.get('any', True)),
+                             'from': self.nets(at.get('from'), 'acme\'s nodes')}
+            if not fw['acmetls']['any'] and not fw['acmetls']['from']:
+                raise WebRootError('the acme logs would come from nobody: name acme\'s nodes, '
+                                   'or anywhere')
         said = []
         acc = self.access_checked(data['access']) if data.get('access') is not None else None
         np = getattr(self.daemon, 'netpower', None)
@@ -70992,10 +71456,10 @@ def acmetls_view(wr):
             'fw_open': now.get('fw_open'), 'trouble': now.get('trouble') or [],
             'plain': [p for p in now.get('others') or [] if str(p.get('port')) == '514'],
             'others': now.get('others') or [],
-            # Its port is one of the logs arriving to isemon's firewall.
-            'fw_isemon': {'on': fw['on'], 'let': 'logs' not in fw['off'],
-                          'any': fw['logs']['any'] or not fw['logs']['from'],
-                          'from': fw['logs']['from']},
+            # Its port is a card of its own in isemon's firewall (1.10.288).
+            'fw_isemon': {'on': fw['on'], 'let': 'acmetls' not in fw['off'],
+                          'any': fw['acmetls']['any'] or not fw['acmetls']['from'],
+                          'from': fw['acmetls']['from']},
             'kept': wr._meta('acme_tls', {}), 'pending': pending, 'busy': ACMETLS_WORK['busy'],
             'error': ACMETLS_WORK.get('error') or '', 'said': ACMETLS_WORK.get('said') or [],
             'last': ACMETLS_WORK.get('last') or {}, 'suggest': otptls_suggest(),
@@ -77307,7 +77771,8 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         # ---- acme's log (1.10.287): the acme tab, for anybody signed in,
         # and only while it is read.
-        if path in ('/api/acmelog', '/api/acmelog/events'):
+        if path in ('/api/acmelog', '/api/acmelog/events', '/api/acmelog/jobs',
+                    '/api/acmelog/job', '/api/acmelog/checks'):
             me = self.need_login()
             if not me:
                 return None
@@ -77317,6 +77782,17 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.send_json(daemon.held(
                     'acmelog/view/%d' % number('days', 30, 1, 400), 5,
                     lambda: store.acme_view(number('days', 30, 1, 400))))
+            if path == '/api/acmelog/jobs':
+                return self.send_json(daemon.held(
+                    'acmelog/jobs/%d' % number('days', 30, 1, 400), 5,
+                    lambda: store.acme_jobs_view(number('days', 30, 1, 400))))
+            if path == '/api/acmelog/checks':
+                return self.send_json(daemon.held(
+                    'acmelog/checks/%d' % number('days', 30, 1, 400), 5,
+                    lambda: store.acme_checks_view(number('days', 30, 1, 400))))
+            if path == '/api/acmelog/job':
+                return self.send_json({'on': True, 'rows': store.acme_job_lines(
+                    one('job'), one('node'))})
             want = {k: one(k) for k in store.ACME_FILTERS + ('q', 'before', 'since')}
             got = store.acme_events_list(want, number('limit', 200, 1, 1000))
             got['on'] = True

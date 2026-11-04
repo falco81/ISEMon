@@ -152,12 +152,14 @@ try:
     logs = work / 'remote' / 'acme'
     logs.mkdir(parents=True)
     isemon.CONFIG.update({'acmelog': 1, 'acmelog_paths': [str(logs)]})
-    ok('on: both files in the folder', [x for x in daemon.log_files() if x[0] == 'acmelog'],
+    ok('on: its files in the folder (acme-jobs.log too, from 1.10.288)',
+       [x for x in daemon.log_files() if x[0] == 'acmelog'],
        [('acmelog', str(logs / 'acme-certs.log'), 'acmelog'),
-        ('acmelog', str(logs / 'acme.log'), 'acmelog')])
+        ('acmelog', str(logs / 'acme.log'), 'acmelog'),
+        ('acmelog', str(logs / 'acme-jobs.log'), 'acmelog')])
     isemon.CONFIG['acmelog_events'] = 0
     ok('...the certificates\' alone with isemon_events off here',
-       len([x for x in daemon.log_files() if x[0] == 'acmelog']), 1)
+       len([x for x in daemon.log_files() if x[0] == 'acmelog']), 2)
     isemon.CONFIG['acmelog_events'] = 1
     ok('its reader', isemon.LOG_PARSERS['acmelog'] is isemon.acme_parse_lines)
 

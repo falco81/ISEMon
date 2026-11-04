@@ -43,9 +43,10 @@ PORT = 19400 + random.randint(0, 90)
 # treats apart. The same in 1.10.226 and 1.10.232. 1.10.287 added a table of
 # its own (acme_events, acme's log) and nothing else: an older version never
 # reads it, never writes it and never copies it - its tables are the ones its
-# own SCHEMA names - so the floor stays where it was.
+# own SCHEMA names - so the floor stays where it was. 1.10.288 added another
+# the same way (acme_jobs, acme's jobs step by step).
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '3f625a59804ce4fda0d70db7542327febf0f59c85c605d240edaa13217aac8c2'}
+               'sha256': '03370bb2f34b1a3849c0e86a181618bf0d582dc2b9e93ac6a21a66f0c132127b'}
 
 
 def ok(what, got, want=True):
