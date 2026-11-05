@@ -23,7 +23,8 @@ in the header of the page, every 3 s while the page is shown and live.
   where they were.
 
 Where the header has no room for the four numbers beside everything else
-(below 2150 px), the meter is a row of its own under it.
+(below 1850 px), the meter is a row of its own under it; up to 2050 px it is
+a little narrower.
 
 Temperatures come from hwmon (`coretemp`, `k10temp`, `zenpower`, `nvme`,
 `drivetemp`, …) and the thermal zones. A virtual machine has none, and the

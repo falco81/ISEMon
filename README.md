@@ -372,6 +372,14 @@ working.
 
 ## Version
 
+1.10.299
+
+- **The performance meter** is in the row of the header beside the state of
+  the daemon, as it should be. Up to 2050 px wide its graphs are a little
+  narrower, so on a 1920 px screen all four numbers fit there with their
+  graphs. Only below 1850 px does it move to a row of its own under the
+  header.
+
 1.10.298
 
 - **The performance meter**: how busy this server is (the processor,

@@ -4686,9 +4686,11 @@ function srcText(el) {
   .hl-panel .hp-core-top{white-space:nowrap}
   
   .hl-panel .small,.hl-pickers .small,.hl-panel.small{font-size:12px}
-  /* isemon's header holds more than ai's: where the four do not fit beside
-     it, the meter is a row of its own under it, and nothing else moves. */
-  @media (max-width:2150px){header .hload{order:10;flex-basis:100%}}
+  /* isemon's header holds more than ai's: the meter beside the state of the
+     daemon, a little narrower where it has to be, and only where even that
+     does not fit a row of its own under it - nothing else moves. */
+  @media (max-width:2050px){.hload.look-graphs .hl-spark{width:34px}.hload .hl{padding:3px 7px;gap:5px}}
+  @media (max-width:1850px){header .hload{order:10;flex-basis:100%}}
 </style>
 </head>
 <body class="app-shell<?= $me ? ' framed' : '' ?>">
