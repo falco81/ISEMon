@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.296'
+__version__ = '1.10.297'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2349,7 +2349,8 @@ def narrow_on(name):
     """The table one of `Storage.REDUNDANT_INDEXES` stands on, in the shape
     `Storage.index_table` reads."""
     return 'ON %s' % {'failed_ts': 'failed', 'passed_ts': 'passed', 'passed_mac_ts': 'passed',
-                      'win_ts': 'win_events'}.get(name, '')
+                      'win_ts': 'win_events', 'failed_ip': 'failed',
+                      'passed_ip': 'passed'}.get(name, '')
 
 
 def write_replacing(where, text, mode=0o640):
@@ -2621,11 +2622,13 @@ def write_config_file(values, path=None):
 _LOG_FILE = None
 _LOG_PATH = None
 _LOG_LOCK = threading.Lock()
+_LOG_BIG = {'n': 0, 'said': False, 'big': False}   # see _log_too_big
 
 
 def open_log(path=None):
     global _LOG_FILE, _LOG_PATH
     want = Path(path) if path else (LOG_DIR / 'isemon.log')
+    _LOG_BIG.update(n=0, said=False, big=False)
     try:
         want.parent.mkdir(parents=True, exist_ok=True)
         _LOG_FILE = open(want, 'a', encoding='utf-8')
@@ -2697,6 +2700,7 @@ def reopen_log():
     global _LOG_FILE, _LOG_PATH
     want = Path(_LOG_PATH) if _LOG_PATH else (LOG_DIR / 'isemon.log')
     with _LOG_LOCK:
+        _LOG_BIG.update(n=0, said=False, big=False)
         if _LOG_FILE:
             try:
                 _LOG_FILE.close()
@@ -2750,6 +2754,8 @@ def log(msg, level='info'):
     with _LOG_LOCK:
         if _LOG_FILE is None and _LOG_PATH is None:
             open_log()
+        if _LOG_FILE and level == 'debug' and _log_too_big():
+            return
         if _LOG_FILE:
             try:
                 _LOG_FILE.write(line + '\n')
@@ -2759,6 +2765,33 @@ def log(msg, level='info'):
     if level in ('warn', 'error') or not _LOG_FILE:
         sys.stderr.write(log_paint(line, level) + '\n')
         sys.stderr.flush()
+
+
+# The debug switch left on fills the log at a megabyte a minute, and
+# logrotate looks at its size once a day (1.10.297): past this the debug
+# lines are held back - said once - until the file is rotated.
+LOG_DEBUG_MOST = 1024 ** 3
+
+
+def _log_too_big():
+    _LOG_BIG['n'] += 1
+    if _LOG_BIG['n'] % 200 == 1:
+        try:
+            _LOG_BIG['big'] = _LOG_FILE.tell() > LOG_DEBUG_MOST
+        except (OSError, ValueError, AttributeError):
+            _LOG_BIG['big'] = False
+        if not _LOG_BIG['big']:
+            _LOG_BIG['said'] = False
+    if _LOG_BIG['big'] and not _LOG_BIG['said']:
+        _LOG_BIG['said'] = True
+        try:
+            _LOG_FILE.write('%s [warn] the log is past %d MB with debug on: debug lines are '
+                            'held back until it is rotated (isemon --set debug=0)\n'
+                            % (time.strftime('%d-%m-%Y %H:%M:%S'), LOG_DEBUG_MOST >> 20))
+            _LOG_FILE.flush()
+        except (OSError, ValueError):
+            pass
+    return _LOG_BIG['big']
 
 
 _LOG_COLOURS = None
@@ -19380,8 +19413,9 @@ CREATE TABLE IF NOT EXISTS failed (
 );
 -- "how many times has this address failed in the last ten minutes" is asked
 -- for every arriving record, so it is asked by address and not by reading the
--- whole table
-CREATE INDEX IF NOT EXISTS failed_ip ON failed (ip, ts);
+-- whole table - of failed_ip_ts_kind (ip, ts, kind, country), which begins
+-- with the address and the time; failed_ip (ip, ts) beside it was the same
+-- again, a write on every row and gigabytes for nothing (1.10.297).
 CREATE INDEX IF NOT EXISTS failed_user ON failed (username, ts);
 
 CREATE TABLE IF NOT EXISTS passed (
@@ -19427,7 +19461,6 @@ CREATE TABLE IF NOT EXISTS passed (
     detail   TEXT
 );
 
-CREATE INDEX IF NOT EXISTS passed_ip ON passed (ip, ts);
 CREATE INDEX IF NOT EXISTS passed_user ON passed (username, ts);
 
 -- Who is kept out now. A row here is the whole truth about that: the router
@@ -19963,6 +19996,7 @@ CREATE INDEX IF NOT EXISTS acme_jobs_ts ON acme_jobs (ts);
 CREATE INDEX IF NOT EXISTS acme_jobs_job ON acme_jobs (job, node);
 CREATE INDEX IF NOT EXISTS acme_jobs_event ON acme_jobs (kind, event, ts);
 CREATE INDEX IF NOT EXISTS acme_jobs_cert ON acme_jobs (cert, ts);
+CREATE INDEX IF NOT EXISTS acme_jobs_kind_ts ON acme_jobs (kind, ts);
 
 CREATE TABLE IF NOT EXISTS otp_asked (
     ident    TEXT PRIMARY KEY,  -- server/second/port: one transaction, once
@@ -19990,7 +20024,6 @@ CREATE TABLE IF NOT EXISTS otp_asked (
 CREATE INDEX IF NOT EXISTS otp_asked_ts ON otp_asked (ts);
 CREATE INDEX IF NOT EXISTS otp_asked_who ON otp_asked (username, ts);
 CREATE INDEX IF NOT EXISTS otp_asked_ip ON otp_asked (ip, ts);
-CREATE INDEX IF NOT EXISTS otp_asked_session ON otp_asked (session);
 
 -- The names behind the addresses, as they were at the time.
 --
@@ -20017,7 +20050,6 @@ CREATE TABLE IF NOT EXISTS ptr (
     server TEXT                -- which of the servers answered
 );
 CREATE INDEX IF NOT EXISTS ptr_ip ON ptr (ip, last);
-CREATE INDEX IF NOT EXISTS ptr_name ON ptr (name);
 CREATE INDEX IF NOT EXISTS ptr_last ON ptr (last);
 
 -- Who made the machine behind a MAC address.
@@ -21684,6 +21716,10 @@ class SqliteDialect(Dialect):
             except sqlite3.Error:
                 pass
         raw.execute('PRAGMA journal_mode=WAL')
+        # The write-ahead log cut back to 64 MB once it is checkpointed
+        # (1.10.297): after a long read - the nightly copy - it stayed at the
+        # largest it had ever been, gigabytes beside the file, for good.
+        raw.execute('PRAGMA journal_size_limit=67108864')
         raw.execute('PRAGMA synchronous=NORMAL')
         raw.execute('PRAGMA busy_timeout=20000')
         raw.execute('PRAGMA foreign_keys=ON')
@@ -25964,11 +26000,17 @@ class Storage(object):
     # tenth of the table's size. Picked out of a day's lines by time, the
     # few with a verdict or a firewall in the search are found as quickly
     # without them.
-    OBSOLETE_INDEXES = (('fw_verdict_ts', 'fw_events'), ('fw_fw_ts', 'fw_events'))
+    OBSOLETE_INDEXES = (('fw_verdict_ts', 'fw_events'), ('fw_fw_ts', 'fw_events'),
+                        # Nothing is looked up by a packet's session, and a
+                        # name is only ever searched as LIKE '%x%', which no
+                        # index can seek (1.10.297).
+                        ('otp_asked_session', 'otp_asked'), ('ptr_name', 'ptr'))
 
     # An index that is the leading column of a wider one, and the wider one.
     REDUNDANT_INDEXES = (('failed_ts', 'failed_ts_ip'), ('passed_ts', 'passed_ts_ip'),
-                         ('win_ts', 'win_ts_kind'), ('passed_mac_ts', 'passed_mac_kind_ts'))
+                         ('win_ts', 'win_ts_kind'), ('passed_mac_ts', 'passed_mac_kind_ts'),
+                         # (ip, ts) beside (ip, ts, kind, country) - 1.10.297.
+                         ('failed_ip', 'failed_ip_ts_kind'), ('passed_ip', 'passed_ip_ts_kind'))
     # ...and on PostgreSQL only (1.10.176): the refusals carry sixteen indexes,
     # and these two are the first columns of two others. The file names them
     # in its hints, so there they stay.
@@ -35529,13 +35571,65 @@ class Storage(object):
         went to - and what that adds up to: ok, expiring, expired, failing,
         a deployment failed, revoked, deleted."""
         now = now or time.time()
+        certs = self.acme_cert_facts()
+        if certs is None:
+            return []
+        out = []
+        for c in certs.values():
+            c = dict(c)
+            c['targets'] = dict(c['targets'])
+            out.append(c)
+        return self._acme_cert_states(out, now)
+
+    # The facts of every certificate are worked out of its lines once and
+    # kept until another line arrives (1.10.297): the header asked for them
+    # every half minute and the tab on every visit, each a read of the
+    # newest 50 000 lines and a loop over them - seconds on a big table.
+    ACME_FACTS_KEEP_S = 120
+    ACME_FACTS_LINES = 50000
+
+    def acme_cert_facts(self):
+        """{cert: what its lines say} - kept, see ACME_FACTS_KEEP_S."""
+        gen = getattr(self, '_acme_gen', 0)
+        kept = getattr(self, '_acme_facts', None)
+        if kept and kept[0] == gen and time.time() - kept[1] < self.ACME_FACTS_KEEP_S:
+            return kept[2]
+        # A line is said to have come as it is written, before the reader's
+        # batch is committed: worked out from another connection in between,
+        # the answer is not kept as the newest (1.10.297).
+        fresh = time.time() - getattr(self, '_acme_gen_at', 0.0) > 15
         try:
             rows = self.db.execute(
                 'SELECT ts, node, level, action, result, cert, names, serial, not_after, issuer, '
                 'target, target_kind, version, reason, msg FROM acme_events '
-                'WHERE cert IS NOT NULL ORDER BY ts DESC LIMIT 50000').fetchall()
+                'WHERE cert IS NOT NULL ORDER BY ts DESC LIMIT %d'
+                % self.ACME_FACTS_LINES).fetchall()
+            if len(rows) >= self.ACME_FACTS_LINES:
+                # A certificate whose last line is older than the newest
+                # 50 000 was left out altogether: its own newest lines, by
+                # the index on it (1.10.297).
+                oldest = float(rows[-1]['ts'])
+                missing = [r['cert'] for r in self.db.execute(
+                    'SELECT cert, MAX(ts) AS last FROM acme_events WHERE cert IS NOT NULL '
+                    'GROUP BY cert').fetchall() if float(r['last'] or 0) < oldest][:5000]
+                for name in missing:
+                    rows += self.db.execute(
+                        'SELECT ts, node, level, action, result, cert, names, serial, '
+                        'not_after, issuer, target, target_kind, version, reason, msg '
+                        'FROM acme_events WHERE cert = ? ORDER BY ts DESC LIMIT 500',
+                        (name,)).fetchall()
         except sqlite3.Error:
-            return []
+            return None
+        certs = self._acme_cert_fold(rows)
+        self._acme_facts = (gen if fresh else -1, time.time(), certs)
+        return certs
+
+    def acme_lines_came(self):
+        """A line of acme's was kept, or let go: the facts are worked out again."""
+        self._acme_gen = getattr(self, '_acme_gen', 0) + 1
+        self._acme_gen_at = time.time()
+
+    def _acme_cert_fold(self, rows):
         certs = {}
         for row in rows:
             r = dict(row)
@@ -35579,8 +35673,11 @@ class Storage(object):
                         'target': r['target'], 'kind': r['target_kind'], 'ok': ok,
                         'ts': r['ts'], 'version': r['version'], 'node': r['node'],
                         'msg': r['msg']}
+        return certs
+
+    def _acme_cert_states(self, certs, now):
         out = []
-        for c in certs.values():
+        for c in certs:
             issued = c['issued_at'] or 0
             # Added again after it was deleted: there again (1.10.294).
             back = max(issued, c['added_at'] or 0)
@@ -35630,12 +35727,22 @@ class Storage(object):
         certs = self.acme_certificates(now)
         live = [c for c in certs if c['state'] != 'deleted']
         db = self.db
+        # Counted by the database, a quarter of an hour at a time (every
+        # zone there is is a whole number of quarters from UTC, so each
+        # quarter falls in one day of this machine's calendar), rather than
+        # every line of the period brought here and counted one by one - up
+        # to 300 000 of them, and past that the counts were short (1.10.297).
         try:
             rows = db.execute(
-                'SELECT ts, tag, level, kind, action, result, who, node FROM acme_events '
-                'WHERE ts >= ? ORDER BY ts DESC LIMIT 300000', (since,)).fetchall()[::-1]
+                'SELECT CAST(ts/900 AS INTEGER) AS slot, level, action, result, '
+                'COUNT(*) AS n FROM acme_events WHERE ts >= ? '
+                'GROUP BY CAST(ts/900 AS INTEGER), level, action, result',
+                (since,)).fetchall()
+            parts = db.execute(
+                'SELECT tag, kind, who, node, COUNT(*) AS n FROM acme_events WHERE ts >= ? '
+                'GROUP BY tag, kind, who, node', (since,)).fetchall()
         except sqlite3.Error:
-            rows = []
+            rows, parts = [], []
         # Day by day, on this machine's calendar.
         first = time.localtime(since)
         start = time.mktime((first.tm_year, first.tm_mon, first.tm_mday, 0, 0, 0, 0, 0, -1))
@@ -35654,15 +35761,16 @@ class Storage(object):
         kinds, who, nodes_n = {}, {}, {}
         for row in rows:
             r = dict(row)
-            sums['events'] += 1
+            n = int(r['n'] or 0)
+            sums['events'] += n
             act, res, lvl = r['action'] or '', r['result'] or '', r['level'] or 'info'
-            i = bisect.bisect_right(bounds, r['ts']) - 1
+            i = bisect.bisect_right(bounds, max(float(r['slot'] or 0) * 900, since)) - 1
             b = buckets[i] if 0 <= i < len(buckets) else None
             if act in self.ACME_ISSUE and res in ('', 'ok'):
-                sums['issued'] += 1
+                sums['issued'] += n
                 key = 'issued'
             elif act == 'deployed' and res in ('', 'ok'):
-                sums['deployed'] += 1
+                sums['deployed'] += n
                 key = 'deployed'
             elif lvl == 'bad' or res == 'failed':
                 key = 'failed'
@@ -35671,23 +35779,26 @@ class Storage(object):
             else:
                 key = 'other'
             if act == 'deploy' or (act == 'deployed' and res == 'failed'):
-                sums['deploy_failed'] += 1
+                sums['deploy_failed'] += n
             if act == 'renew' or (act in self.ACME_ISSUE and res == 'failed'):
-                sums['renew_failed'] += 1
+                sums['renew_failed'] += n
             if act in ('expiring', 'expired', 'revoked'):
-                sums[act] += 1
+                sums[act] += n
             if lvl == 'bad':
-                sums['bad'] += 1
+                sums['bad'] += n
             elif lvl == 'warn':
-                sums['warn'] += 1
+                sums['warn'] += n
             if b is not None:
-                b[key] += 1
+                b[key] += n
+        for row in parts:
+            r = dict(row)
+            n = int(r['n'] or 0)
             k = r['kind'] or ('test' if r['tag'] == 'acme' else 'certificates')
-            kinds[k] = kinds.get(k, 0) + 1
+            kinds[k] = kinds.get(k, 0) + n
             if r['who'] and r['who'] != 'acme':
-                who[r['who']] = who.get(r['who'], 0) + 1
+                who[r['who']] = who.get(r['who'], 0) + n
             if r['node']:
-                nodes_n[r['node']] = nodes_n.get(r['node'], 0) + 1
+                nodes_n[r['node']] = nodes_n.get(r['node'], 0) + n
         # The targets, from every deployment there is.
         targets = {}
         for c in certs:
@@ -35713,9 +35824,13 @@ class Storage(object):
                     'SELECT node, MAX(ts) AS last_ts, COUNT(*) AS n FROM acme_events '
                     'WHERE node IS NOT NULL GROUP BY node ORDER BY node').fetchall():
                 r = dict(row)
+                # Down the index on level and time, newest first, until a
+                # line of this node's: on (node, ts) a node that never said
+                # anything bad was every one of its lines read (1.10.297).
                 got = db.execute(
-                    "SELECT ts, msg FROM acme_events WHERE node = ? AND level = 'bad' "
-                    'ORDER BY ts DESC LIMIT 1', (r['node'],)).fetchone()
+                    "SELECT ts, msg FROM acme_events WHERE level = 'bad' "
+                    "AND COALESCE(node, '') = ? ORDER BY ts DESC LIMIT 1",
+                    (r['node'],)).fetchone()
                 tags = [str(x['tag']) for x in db.execute(
                     'SELECT DISTINCT tag FROM acme_events WHERE node = ? AND ts >= ?',
                     (r['node'], now - 7 * 86400)).fetchall()]
@@ -35726,9 +35841,16 @@ class Storage(object):
             failures = [self.acme_row(dict(r)) for r in db.execute(
                 "SELECT * FROM acme_events WHERE ts >= ? AND (level = 'bad' OR result = 'failed') "
                 'ORDER BY ts DESC LIMIT 100', (since,)).fetchall()]
-            total = int(db.execute('SELECT COUNT(*) AS n FROM acme_events').fetchone()['n'])
-            seen = db.execute('SELECT MAX(at) AS a, MAX(ts) AS t, MIN(ts) AS f '
-                              'FROM acme_events').fetchone()
+            # How many there are as the header counts them, and the ends
+            # each by its own index: MAX(at) had none, and was a read of the
+            # whole table on every visit (1.10.297).
+            total = int(self.rows_in('acme_events') or 0)
+            t = db.execute('SELECT MAX(ts) AS t FROM acme_events').fetchone()
+            f = db.execute('SELECT MIN(ts) AS f FROM acme_events').fetchone()
+            a = db.execute('SELECT MAX(at) AS a FROM (SELECT at FROM acme_events '
+                           'ORDER BY ts DESC LIMIT 500) AS newest').fetchone()
+            seen = {'t': t['t'] if t else None, 'f': f['f'] if f else None,
+                    'a': a['a'] if a else None}
         except sqlite3.Error:
             failures, total, seen = [], 0, None
         states = {}
@@ -35830,17 +35952,21 @@ class Storage(object):
                 total = offset + len(rows)
         # The choices of the drop-downs: a scan of the table each, kept a
         # minute rather than made again on every page asked (1.10.294).
+        # ...kept longer the longer they took (1.10.297): two of them have
+        # no index, and on a big table each is seconds.
         kept = getattr(self, '_acme_facets', None)
-        if kept and time.time() - kept[0] < 60:
+        if kept and time.time() - kept[0] < kept[2]:
             facets = kept[1]
         else:
             try:
+                t0 = time.time()
                 facets = {}
                 for k in ('node', 'kind', 'action', 'level', 'tag'):
                     facets[k] = [str(r['v']) for r in self.db.execute(
                         'SELECT DISTINCT %s AS v FROM acme_events WHERE %s IS NOT NULL '
                         'ORDER BY %s LIMIT 100' % (k, k, k)).fetchall()]
-                self._acme_facets = (time.time(), facets)
+                self._acme_facets = (time.time(), facets,
+                                     min(1800.0, max(60.0, (time.time() - t0) * 60)))
             except sqlite3.Error:
                 facets = {}
         return {'rows': rows, 'more': more, 'facets': facets,
@@ -35932,8 +36058,7 @@ class Storage(object):
     def tidy_acme_jobs(self):
         days = int(CONFIG.get('retain_acmelog_jobs_days') or 90)
         try:
-            with self.db_write() as db:
-                db.execute('DELETE FROM acme_jobs WHERE ts < ?', (time.time() - days * 86400,))
+            self.tidy_older('acme_jobs', time.time() - days * 86400)
         except sqlite3.Error:
             return 0
         return 1
@@ -35961,12 +36086,34 @@ class Storage(object):
             heads = db.execute(
                 "SELECT * FROM acme_jobs WHERE kind = 'job' AND event IN ('start', 'end') "
                 'AND ts >= ? ORDER BY ts DESC LIMIT 200000', (since - 86400,)).fetchall()[::-1]
-            lasts = db.execute(
-                "SELECT job, node, MAX(ts) AS last_ts, MAX(at) AS last_at, COUNT(*) AS n "
-                "FROM acme_jobs WHERE kind = 'job' AND ts >= ? GROUP BY job, node",
-                (since - 86400,)).fetchall()
         except sqlite3.Error:
             return []
+        # When the last line of a job came is wanted only of one that has
+        # not ended - running or interrupted - and is asked of those alone,
+        # by the index on the job (1.10.297): grouped over every job line of
+        # the period it was a read of most of the table.
+        ended = set((r['job'], r['node']) for r in heads if r['event'] == 'end')
+        # A line with no job= or node= is None there: never sorted against
+        # a name, and never asked by one.
+        open_jobs = sorted((k for k in set((r['job'], r['node']) for r in heads
+                                           if r['event'] == 'start') - ended
+                            if k[0] is not None),
+                           key=lambda k: (str(k[0]), str(k[1] or '')))[:20000]
+        lasts = []
+        try:
+            for i in range(0, len(open_jobs), 200):
+                lump = open_jobs[i:i + 200]
+                names = sorted(set(str(j) for j, _n in lump))
+                want = set(lump)
+                # The kind told apart here, not in the WHERE: there it took
+                # the planner to the index on kind and time instead.
+                lasts += [r for r in db.execute(
+                    "SELECT job, node, kind, MAX(ts) AS last_ts, MAX(at) AS last_at, "
+                    "COUNT(*) AS n FROM acme_jobs WHERE job IN (%s) GROUP BY job, node, kind"
+                    % ','.join('?' * len(names)), names).fetchall()
+                    if (r['job'], r['node']) in want and r['kind'] == 'job']
+        except sqlite3.Error:
+            pass
         jobs = {}
         for r in heads:
             r = dict(r)
@@ -36173,7 +36320,7 @@ class Storage(object):
         try:
             rows = [dict(r) for r in self.db.execute(
                 "SELECT ts, node, level, check_id, test, test_kind, cert, cert_id, endpoint, "
-                "state, ok, ms, fails, went, prior, msg, extra FROM acme_jobs "
+                "state, ok, ms, fails, went, prior, msg FROM acme_jobs "
                 "WHERE kind = 'check' AND ts >= ? ORDER BY ts DESC LIMIT 200000",
                 (since,)).fetchall()][::-1]
         except sqlite3.Error:
@@ -36236,6 +36383,7 @@ class Storage(object):
                      str(rec.msg or '')[:4000],
                      json.dumps(f, ensure_ascii=False, sort_keys=True)[:8000] if f else None,
                      1 if rec.raw else 0, 1 if rec.truncated else 0))
+            self.acme_lines_came()
             return True
         except sqlite3.Error as e:
             log('a line of acme\'s could not be written down: %s' % e, 'warn')
@@ -36244,11 +36392,15 @@ class Storage(object):
     def tidy_acme(self):
         """What acme did longer ago than the site keeps it, let go."""
         days = int(CONFIG.get('retain_acmelog_days') or 400)
+        # A stride at a time (1.10.297): a retention shortened, or a year of
+        # lines read at once, was one delete of millions of rows that held
+        # every other writer back until it was done.
         try:
-            with self.db_write() as db:
-                db.execute('DELETE FROM acme_events WHERE ts < ?', (time.time() - days * 86400,))
+            gone = self.tidy_older('acme_events', time.time() - days * 86400)
         except sqlite3.Error:
             return 0
+        if gone:
+            self.acme_lines_came()
         return 1
 
     def tidy_otp_asked(self):
@@ -40195,7 +40347,7 @@ class Storage(object):
             # many different ones there are.
             try:
                 ips = self.db.execute(
-                    'SELECT COUNT(*) AS n FROM (SELECT ip FROM %s INDEXED BY %s_ip '
+                    'SELECT COUNT(*) AS n FROM (SELECT ip FROM %s INDEXED BY %s_ip_ts_kind '
                     "WHERE COALESCE(ip,'')<>'' GROUP BY ip) AS counted"
                     % (table, table)).fetchone()['n']
             except sqlite3.Error:
@@ -43726,6 +43878,7 @@ class Storage(object):
         wanted = [g for g in groups if g in self.ERASABLE]
         if not wanted:
             raise StorageError('there is nothing named there to erase')
+        self.acme_lines_came()
         job = DbJob('forgetting old records: %s' % ', '.join(wanted))
         gone = {}
         for key in wanted:
@@ -44296,31 +44449,7 @@ class Storage(object):
     def prune_backups(self, keep=14, folder=None):
         rows = self.backups(folder)
         gone = 0
-        # Halves of copies that never finished - a daemon stopped mid-copy -
-        # once they are old enough that nothing can still be writing them.
-        try:
-            for half in Path(folder or BACKUP_DIR).glob('isemon-*.db.part'):
-                if time.time() - half.stat().st_mtime > 6 * 3600:
-                    half.unlink()
-        except OSError:
-            pass
-        # ...and the folders an upload for a restore or a download is put
-        # together in, and the spool a list is read into (1.10.200): a daemon
-        # stopped in the middle left them - gigabytes - for good.
-        stale = time.time() - 6 * 3600
-        for where, pattern, whole in ((Path(folder or BACKUP_DIR), 'isemon-restore-*', True),
-                                      (Path(folder or BACKUP_DIR), 'isemon-send-*', True),
-                                      (Path(STATE_DIR), 'isemon-ranges-*', False)):
-            try:
-                for left in where.glob(pattern):
-                    if left.stat().st_mtime > stale or left.is_symlink():
-                        continue
-                    if left.is_dir() and whole:
-                        shutil.rmtree(str(left), ignore_errors=True)
-                    elif left.is_file():
-                        left.unlink()
-            except OSError:
-                pass
+        tidy_halves(folder, every=0)
         for one in rows[max(1, int(keep)):]:
             try:
                 (Path(folder or BACKUP_DIR) / one['name']).unlink()
@@ -72024,8 +72153,59 @@ def rb_folder(name):
     return p
 
 
+_HALVES_AT = [0.0]
+
+
+def tidy_halves(folder=None, every=600):
+    """What a copy, an upload or a list left behind when the daemon stopped
+    in the middle of it - gigabytes - taken away once nothing can still be
+    writing it. Done by the daemon every ten minutes (1.10.297): it was done
+    only when somebody made a copy by hand, so on a machine whose copies are
+    all the nightly ones it was never done at all."""
+    now = time.time()
+    if folder is None:
+        if now - _HALVES_AT[0] < every:
+            return
+        _HALVES_AT[0] = now
+    stale = now - 6 * 3600
+    # Halves of copies that never finished - a daemon stopped mid-copy -
+    # once they are old enough that nothing can still be writing them.
+    try:
+        for half in Path(folder or BACKUP_DIR).glob('isemon-*.db.part'):
+            if half.stat().st_mtime < stale and not half.is_symlink():
+                half.unlink()
+    except OSError:
+        pass
+    # ...and the folders an upload for a restore or a download is put
+    # together in, and the spool a list is read into (1.10.200).
+    for where, pattern, whole in ((Path(folder or BACKUP_DIR), 'isemon-restore-*', True),
+                                  (Path(folder or BACKUP_DIR), 'isemon-send-*', True),
+                                  (Path(STATE_DIR), 'isemon-ranges-*', False)):
+        try:
+            for left in where.glob(pattern):
+                if left.is_symlink() or left.stat().st_mtime > stale:
+                    continue
+                if left.is_dir() and whole:
+                    # ...by when anything in it last moved, not the folder:
+                    # a restore of a big database writes into a file of a
+                    # folder made hours before.
+                    newest = 0.0
+                    for top, _dirs, files in os.walk(str(left)):
+                        for f in files:
+                            try:
+                                newest = max(newest, os.lstat(os.path.join(top, f)).st_mtime)
+                            except OSError:
+                                pass
+                    if newest <= stale:
+                        shutil.rmtree(str(left), ignore_errors=True)
+                elif left.is_file():
+                    left.unlink()
+        except OSError:
+            pass
+
+
 RB_WORK_PREFIXES = ('isemon-rbackup-', 'isemon-rbhere-', 'isemon-putback-', 'isemon-fetch-',
-                    'isemon-verify-')
+                    'isemon-verify-', 'isemon-online-', 'isemon-package-')
 
 
 def rb_tidy_work(idle=86400):
@@ -72058,6 +72238,7 @@ def rb_tidy_work(idle=86400):
 def rb_tidy_folders(most=3600):
     """What waited there longer than an hour, taken away."""
     rb_tidy_work()
+    tidy_halves()
     now = time.time()
     for name in ('rbackup-made', 'rbackup-uploads'):
         p = Path(STATE_DIR) / name
@@ -89061,24 +89242,31 @@ class Console(object):
             if not path:
                 return
             folder = path
+            made = None
             if path.endswith('.tar.gz'):
-                folder = tempfile.mkdtemp(prefix='isemon-up-')
+                folder = made = tempfile.mkdtemp(prefix='isemon-up-')
                 subprocess.call(['tar', '-xzf', path, '-C', folder])
                 inner = [x for x in os.listdir(folder) if x.startswith('isemon')]
                 folder = os.path.join(folder, inner[0]) if inner else folder
-            script = os.path.join(folder, 'install.sh')
-            if not os.path.isfile(script):
-                self.note('Upgrade', 'there is no install.sh in %s' % folder, 'bad')
-                return
-            if self.confirm('Upgrade', 'This server is upgraded with %s.' % script, 'Upgrade'):
-                def go():
-                    self.clear_screen()
-                    try:
-                        subprocess.call(['bash', script, '--upgrade'])
-                    except KeyboardInterrupt:
-                        print()
-                    self.pause()
-                self.live(go)
+            try:
+                script = os.path.join(folder, 'install.sh')
+                if not os.path.isfile(script):
+                    self.note('Upgrade', 'there is no install.sh in %s' % folder, 'bad')
+                    return
+                if self.confirm('Upgrade', 'This server is upgraded with %s.' % script,
+                                'Upgrade'):
+                    def go():
+                        self.clear_screen()
+                        try:
+                            subprocess.call(['bash', script, '--upgrade'])
+                        except KeyboardInterrupt:
+                            print()
+                        self.pause()
+                    self.live(go)
+            finally:
+                # What was unpacked, taken away again (1.10.297).
+                if made:
+                    shutil.rmtree(made, ignore_errors=True)
         def back():
             # Going back (1.10.232): only to a version marked safe - the
             # database is left as it is, nothing is copied or put back.

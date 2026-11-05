@@ -372,6 +372,31 @@ working.
 
 ## Version
 
+1.10.297
+
+- **Quicker on a big database**:
+  - acme: what every certificate is gets worked out once and kept until
+    another line arrives. Before, the header and the tab each read the
+    newest 50 000 lines again, every half minute. A certificate whose last
+    line is older than those is no longer left out.
+  - acme: the tab's day by day is counted by the database. It is now right
+    past 300 000 lines, and it no longer reads the whole table for its
+    totals.
+  - acme: a job's last line is looked up only for jobs that have not ended.
+  - acme: the checks have an index of their own.
+  - acme: old lines are let go a stride at a time, so other writes are
+    never held back for minutes.
+- **No space taken for nothing**:
+  - Indexes no query uses are dropped by themselves: the refusals' and the
+    sign-ins' `(ip, ts)`, because `(ip, ts, kind, country)` does the same
+    work, plus a token packet's session and a reverse name. On a busy site
+    that is gigabytes, and one write less for every row.
+  - SQLite's write-ahead log is cut back to 64 MB once it is checkpointed.
+  - Halves of copies, uploads and an upgrade's unpacked package left by a
+    daemon stopped midway are now removed by the daemon itself.
+  - With the debug switch left on, the log stops taking debug lines at
+    1 GB until it is rotated, and says so once.
+
 1.10.296
 
 - **Remote backups**: a backup fetched from a destination is put back only

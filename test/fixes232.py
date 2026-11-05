@@ -46,8 +46,12 @@ PORT = 19400 + random.randint(0, 90)
 # own SCHEMA names - so the floor stays where it was. 1.10.288 added another
 # the same way (acme_jobs, acme's jobs step by step). 1.10.292 named those
 # two tables as lists the search boxes read (LIST_TABLES) - no table changed.
+# 1.10.297 took four indexes out of SCHEMA that no query needs (failed_ip,
+# passed_ip, otp_asked_session, ptr_name) and gave acme_jobs one more: an
+# older version makes the four again and asks nothing of the new one - every
+# table and column is as it was.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '064f72296bccf1c98402c7dee867161147102378aa4cb4860a5aa3e37fda689f'}
+               'sha256': 'eb1f0fbece470530d0969e0f9953712ffb8481410e22bb564deb5c29e486753f'}
 
 
 def ok(what, got, want=True):
