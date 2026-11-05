@@ -372,6 +372,24 @@ working.
 
 ## Version
 
+1.10.303
+
+- **Face ID as the second step of signing in**: Face ID, Touch ID, Windows
+  Hello or a device's PIN (passkeys, WebAuthn), after the password and never
+  instead of it. Off as it comes; switch it on under Settings → Accounts,
+  from a page opened by name over https.
+  - The first sign-in after it is on sets Face ID up (onboarding). Every
+    sign-in after that asks for it.
+  - Under Settings → Accounts a full admin can set it up again for anybody,
+    for example after a lost iPad, and that person's next sign-in sets it up
+    again. From the server: `isemon --passkey-reset NAME`.
+  - Your account lists every passkey, adds another device and takes one
+    away. Another device can be added only within ten minutes of Face ID.
+  - A reset ends that person's sign-ins too. Switched off, a sign-in still
+    waiting for Face ID ends instead of becoming whole. Out of the
+    directory, a person's passkeys count under each of their names.
+  - See [docs/face-id.md](docs/face-id.md).
+
 1.10.302
 
 - **An icon on the home screen**: a shortcut added from Safari on an iPad

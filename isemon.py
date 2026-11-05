@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.302'
+__version__ = '1.10.303'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -86,6 +86,7 @@ import signal
 import socket
 import ssl
 import sqlite3
+import struct
 import subprocess
 import sys
 import tempfile
@@ -846,6 +847,9 @@ DEFAULTS = {
     'session_idle_min': 120,      # ...and how long it may sit untouched
     'login_tries': 5,             # wrong passwords from one address before it waits
     'login_wait_min': 15,
+    # Face ID, Touch ID or Windows Hello as the second step of every sign-in
+    # (1.10.303): off as it comes.
+    'passkeys': 0,
     # Changes that could cut this server off, taken back unless kept
     # (1.10.228, after otp 1.0.137): a new network (Settings - Network) and
     # a change of the firewall or of who may reach which page go back to what
@@ -19608,7 +19612,8 @@ CREATE TABLE IF NOT EXISTS sessions (
     made   REAL NOT NULL,
     seen   REAL NOT NULL,
     ip     TEXT,
-    agent  TEXT
+    agent  TEXT,
+    second TEXT                -- the second step still owed: enrol, verify (1.10.303)
 );
 CREATE INDEX IF NOT EXISTS sessions_name ON sessions (name);
 
@@ -25964,6 +25969,8 @@ class Storage(object):
         # and filtering a history by country means the answer has to be in
         # the row rather than worked out for every row on every page.
         'blocked_log': [('country', 'TEXT'), ('src', 'TEXT')],
+        # The second step a sign-in still owes, Face ID (1.10.303).
+        'sessions': [('second', 'TEXT')],
         # Where each ban came from (1.10.193): see `BAN_SOURCES`.
         'blocked': [('src', 'TEXT')],
         # `rid` came after the table it is in, so an installation upgraded
@@ -42700,6 +42707,11 @@ class Storage(object):
             db.execute('DELETE FROM user_cols WHERE name=?', (name,))
             db.execute('DELETE FROM user_finds WHERE name=?', (name,))
             db.execute('DELETE FROM user_prefs WHERE name=?', (name,))
+        # ...and its passkeys (1.10.303): a new account of the same name later
+        # is somebody else.
+        keys = self.passkeys()
+        if any(k['user'] == name for k in keys):
+            self.put_passkeys([k for k in keys if k['user'] != name])
 
     # ---- how somebody has laid out the tables -------------------------------
     # The most one person's layout may take. It is a few dozen tables at most
@@ -43073,15 +43085,35 @@ class Storage(object):
     def session_key(token):
         return 'h1:' + hashlib.sha256(str(token or '').encode('utf-8')).hexdigest()
 
-    def new_session(self, name, role, ip='', agent=''):
+    def new_session(self, name, role, ip='', agent='', second=''):
         token = secrets.token_urlsafe(32)
         now = time.time()
         with self.db_write() as db:
-            db.execute('INSERT INTO sessions (token, name, role, made, seen, ip, agent) '
-                       'VALUES (?,?,?,?,?,?,?)',
+            db.execute('INSERT INTO sessions (token, name, role, made, seen, ip, agent, second) '
+                       'VALUES (?,?,?,?,?,?,?,?)',
                        (self.session_key(token), name, role, now, now, str(ip)[:60],
-                        str(agent)[:160]))
+                        str(agent)[:160], second or None))
         return token
+
+    def session_second(self, token, second):
+        with self.db_write() as db:
+            db.execute('UPDATE sessions SET second=? WHERE token IN (?, ?)',
+                       (second or None,) + self.session_pair(token))
+
+    # ---- passkeys (1.10.303): the public halves, in meta ------------------
+    def passkeys(self, name=None):
+        try:
+            got = json.loads(self.get_meta('passkeys') or '[]')
+        except ValueError:
+            got = []
+        got = [p for p in got if isinstance(p, dict) and p.get('id') and p.get('user')]
+        if name is not None:
+            name = str(name or '').strip().lower()
+            got = [p for p in got if p['user'] == name]
+        return got
+
+    def put_passkeys(self, keys):
+        self.set_meta('passkeys', json.dumps(keys, separators=(',', ':')))
 
     def session_pair(self, token):
         """The two values a session can be stored under: its hash, and - for
@@ -57796,13 +57828,15 @@ class Daemon(object):
                 self._login_forget(where)
                 self._login_forget('user:' + name)
                 self._login_known(name, where, now)
-                token = self.store.new_session(name, said['role'], where, agent)
+                second = self.second_owed(name)
+                token = self.store.new_session(name, said['role'], where, agent, second)
                 self.store.note_login(name, where)
                 self.store.add_event('login', '%s signed in from %s, out of the directory, '
-                                              'as %s' % (name, where or 'somewhere',
-                                                         said['role']), who=name)
+                                              'as %s%s' % (name, where or 'somewhere',
+                                                           said['role'], self.second_words(second)),
+                                     who=name)
                 return {'token': token, 'name': name, 'role': said['role'],
-                        'must_change': False, 'from_dir': True,
+                        'must_change': False, 'from_dir': True, 'second': second,
                         'display': said.get('display') or ''}
 
         user = self.store.user(name)
@@ -57840,12 +57874,30 @@ class Daemon(object):
         self._login_forget(where)
         self._login_forget('user:' + name)
         self._login_known(name, where, now)
-        token = self.store.new_session(name, user['role'], where, agent)
+        second = self.second_owed(name)
+        token = self.store.new_session(name, user['role'], where, agent, second)
         self.store.note_login(name, where)
-        self.store.add_event('login', '%s signed in from %s' % (name, where or 'somewhere'),
-                             who=name)
-        return {'token': token, 'name': name, 'role': user['role'],
+        self.store.add_event('login', '%s signed in from %s%s'
+                             % (name, where or 'somewhere', self.second_words(second)), who=name)
+        return {'token': token, 'name': name, 'role': user['role'], 'second': second,
                 'must_change': bool(user.get('must_change'))}
+
+    @staticmethod
+    def passkeys_on():
+        return bool(int(CONFIG.get('passkeys') or 0))
+
+    def second_owed(self, name):
+        """What a fresh sign-in of this account still owes (1.10.303): to make
+        its first passkey, to use one, or - Face ID switched off - nothing."""
+        if not self.passkeys_on():
+            return ''
+        people = set(self.store.same_person(name))
+        return 'verify' if any(k['user'] in people for k in self.store.passkeys()) else 'enrol'
+
+    @staticmethod
+    def second_words(second):
+        return {'enrol': ' - Face ID still to be set up', 'verify': ' - Face ID still to come'
+                }.get(second, '')
 
     @staticmethod
     def _cols_key(token):
@@ -57911,8 +57963,15 @@ class Daemon(object):
         # Whether the domain owns this account travels with it. The page hides
         # what it must not offer - a password that lives in the directory
         # cannot be changed here - and it can only hide it if it is told.
+        second = row.get('second') or ''
+        if second in ('enrol', 'verify') and not self.passkeys_on():
+            # Face ID switched off with half a sign-in open (1.10.303): it
+            # ends, rather than becoming a whole one nobody finished.
+            self.store.drop_session(token=token)
+            return None
         return {'name': row['name'], 'role': row['role'], 'made': row['made'],
                 'seen': now, 'ip': row['ip'],
+                'second': second if second in ('enrol', 'verify') else '',
                 'must_change': bool(user.get('must_change')),
                 'from_dir': bool(user.get('from_dir')),
                 'display': user.get('display') or ''}
@@ -58410,7 +58469,7 @@ class Daemon(object):
         'geolist_family': ('ipv4', 'ipv6', 'both'), 'geolist_auto': (0, 1),
         'geolist_chunk': (20, 500), 'mikrotik_chunk': (1, 200), 'mikrotik_read_s': (30, 1800),
         'session_hours': (1, 720), 'session_idle_min': (5, 10080),
-        'login_tries': (1, 100), 'login_wait_min': (1, 1440),
+        'login_tries': (1, 100), 'login_wait_min': (1, 1440), 'passkeys': (0, 1),
         'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
         'retain_failed_days': (0, 3650), 'retain_passed_days': (0, 3650),
         'retain_events_days': (0, 3650),
@@ -58700,6 +58759,7 @@ class Daemon(object):
         'session_idle_min': 'Or until untouched for (min)',
         'login_tries': 'Wrong passwords before waiting',
         'login_wait_min': 'Then wait (min)',
+        'passkeys': 'Face ID as the second step of signing in (passkeys)',
         'net_confirm_min': 'A new network goes back unless kept within (min)',
         'fw_confirm_min': 'A firewall change goes back unless kept within (min)',
         'retain_failed_days': 'Keep failed attempts for (days)',
@@ -59804,6 +59864,14 @@ class Daemon(object):
         'session_idle_min': 'How long a sign-in may sit untouched before it ends.',
         'login_tries': 'Wrong passwords from one address before it has to wait.',
         'login_wait_min': 'How long it waits.',
+        'passkeys': 'After the password, everybody confirms it is them with Face ID, Touch ID, '
+                    'Windows Hello or the PIN of their device (a passkey). The first sign-in '
+                    'after this is switched on sets it up; a full admin can set it up again for '
+                    'anybody under Accounts (a lost iPad), and their next sign-in makes a new '
+                    'one. Only on pages opened by name over https, with a certificate the '
+                    'browser trusts - and so switched on only from such a page. Those signed '
+                    'in already stay signed in. Locked out: isemon --set passkeys=0 on the '
+                    'server.',
         'net_confirm_min': 'A new network (Settings - Network) is put in, the server '
                            'restarts with it - and the old one comes back by itself unless '
                            'somebody presses Keep it within these minutes: a typo in the '
@@ -72688,6 +72756,253 @@ def api_load(detail=False, hist=False, store=None):
     return out
 
 
+
+# ---- Face ID, Touch ID, Windows Hello: the second step of signing in -------
+# (1.10.303, from ai 1.0.70-1.0.76, but as a second factor rather than a way
+# in of its own.) Switched on (`passkeys`, off as it comes), every sign-in
+# with a password - local or out of the directory - is only half of one
+# until the person has confirmed it is them with a passkey of theirs: the
+# first time, they make one (onboarding); after that, they use it. A full
+# admin can take somebody's passkeys away, and their next sign-in makes a new
+# one. The server keeps only the public half of each, in `meta`.
+PK_MOST = 20
+PK_CHALLENGE_S = 300
+PK_TRIES = 5
+PK_LOCK = threading.Lock()
+PK_CHALLENGES = {}
+PK_FAILS = {}
+# When each sign-in last confirmed it is them: another device is added only
+# within ten minutes of that, so a sign-in left open on somebody's screen
+# cannot plant a second factor of its own.
+PK_FRESH = {}
+PK_FRESH_S = 600
+# What a half-made sign-in may still ask for.
+PK_OPEN = ('/api/auth/whoami', '/api/auth/logout', '/api/auth/passkey', '/api/health')
+PK_ALGS = (-7, -8, -257)
+
+
+def pk_b64d(text):
+    text = str(text or '').strip()
+    if not re.match(r'^[A-Za-z0-9_-]*$', text) or len(text) > 400000:
+        raise ValueError('not base64url')
+    return base64.urlsafe_b64decode(text + '=' * (-len(text) % 4))
+
+
+def pk_b64e(data):
+    return base64.urlsafe_b64encode(bytes(data)).rstrip(b'=').decode('ascii')
+
+
+def pk_cbor(data, at=0, depth=0):
+    """One CBOR item of `data` from `at`: (value, where the next begins).
+    What WebAuthn sends and nothing more: integers, byte and text strings,
+    arrays, maps, tags, the simple values and floats."""
+    if depth > 16:
+        raise ValueError('CBOR nested too deep')
+    if at >= len(data):
+        raise ValueError('CBOR cut short')
+    first = data[at]
+    major, info = first >> 5, first & 31
+    at += 1
+
+    def length(info, at):
+        if info < 24:
+            return info, at
+        size = {24: 1, 25: 2, 26: 4, 27: 8}.get(info)
+        if size is None or at + size > len(data):
+            raise ValueError('CBOR length not understood')
+        return int.from_bytes(data[at:at + size], 'big'), at + size
+    if major == 7:
+        if info in (25, 26, 27):
+            size = {25: 2, 26: 4, 27: 8}[info]
+            if at + size > len(data):
+                raise ValueError('CBOR cut short')
+            return struct.unpack('>' + {2: 'e', 4: 'f', 8: 'd'}[size], data[at:at + size])[0], \
+                at + size
+        return {20: False, 21: True, 22: None, 23: None}.get(info), at
+    n, at = length(info, at)
+    if major == 0:
+        return n, at
+    if major == 1:
+        return -1 - n, at
+    if major in (2, 3):
+        if at + n > len(data):
+            raise ValueError('CBOR cut short')
+        raw = bytes(data[at:at + n])
+        return (raw if major == 2 else raw.decode('utf-8')), at + n
+    if major == 4:
+        if n > 1000:
+            raise ValueError('CBOR array too long')
+        out = []
+        for _ in range(n):
+            v, at = pk_cbor(data, at, depth + 1)
+            out.append(v)
+        return out, at
+    if major == 5:
+        if n > 1000:
+            raise ValueError('CBOR map too long')
+        out = {}
+        for _ in range(n):
+            k, at = pk_cbor(data, at, depth + 1)
+            v, at = pk_cbor(data, at, depth + 1)
+            if isinstance(k, (list, dict)):
+                raise ValueError('CBOR key not understood')
+            out[k] = v
+        return out, at
+    if major == 6:
+        return pk_cbor(data, at, depth + 1)
+    raise ValueError('CBOR not understood')
+
+
+def _der_len(n):
+    if n < 128:
+        return bytes([n])
+    raw = n.to_bytes((n.bit_length() + 7) // 8, 'big')
+    return bytes([0x80 | len(raw)]) + raw
+
+
+def _der(tag, body):
+    return bytes([tag]) + _der_len(len(body)) + body
+
+
+def pk_cose_pem(cose):
+    """A COSE key as a PEM public key, and its algorithm."""
+    if not isinstance(cose, dict):
+        raise ValueError('the key is not a COSE key')
+    kty, alg = cose.get(1), cose.get(3)
+    if kty == 2 and alg == -7 and cose.get(-1) == 1:
+        x, y = cose.get(-2), cose.get(-3)
+        if not (isinstance(x, bytes) and isinstance(y, bytes) and len(x) == 32 and len(y) == 32):
+            raise ValueError('an ECDSA key that is not P-256')
+        der = bytes.fromhex('3059301306072a8648ce3d020106082a8648ce3d030107034200') + \
+            b'\x04' + x + y
+    elif kty == 1 and alg == -8 and cose.get(-1) == 6:
+        x = cose.get(-2)
+        if not (isinstance(x, bytes) and len(x) == 32):
+            raise ValueError('an Ed25519 key that is not 32 bytes')
+        der = bytes.fromhex('302a300506032b6570032100') + x
+    elif kty == 3 and alg == -257:
+        n, e = cose.get(-1), cose.get(-2)
+        if not (isinstance(n, bytes) and isinstance(e, bytes)):
+            raise ValueError('an RSA key without its numbers')
+        if int.from_bytes(n, 'big').bit_length() < 2048:
+            raise ValueError('an RSA key shorter than 2048 bits')
+
+        def num(b):
+            b = b.lstrip(b'\x00') or b'\x00'
+            return _der(0x02, (b'\x00' + b) if b[0] & 0x80 else b)
+        inner = _der(0x30, num(n) + num(e))
+        der = _der(0x30, bytes.fromhex('300d06092a864886f70d0101010500') +
+                   _der(0x03, b'\x00' + inner))
+    else:
+        raise ValueError('a kind of key this server does not take (alg %r)' % (alg,))
+    b64 = base64.b64encode(der).decode('ascii')
+    pem = '-----BEGIN PUBLIC KEY-----\n%s\n-----END PUBLIC KEY-----\n' % '\n'.join(
+        b64[i:i + 64] for i in range(0, len(b64), 64))
+    return pem, alg
+
+
+def pk_auth_data(ad):
+    """What authenticatorData says: the name's hash, its flags, the count,
+    and - when a key is made - the credential and its key."""
+    if len(ad) < 37:
+        raise ValueError('the authenticator data is too short')
+    out = {'rp_hash': bytes(ad[:32]), 'flags': ad[32],
+           'count': int.from_bytes(ad[33:37], 'big')}
+    if ad[32] & 0x40:
+        if len(ad) < 55:
+            raise ValueError('the authenticator data is too short for a key')
+        n = int.from_bytes(ad[53:55], 'big')
+        if n < 1 or n > 1023 or 55 + n > len(ad):
+            raise ValueError('the credential id does not fit')
+        out['cred'] = bytes(ad[55:55 + n])
+        out['cose'], _end = pk_cbor(ad, 55 + n)
+    return out
+
+
+def pk_verify(pem, alg, data, sig):
+    """Whether `sig` is the key's signature of `data` - by openssl."""
+    if alg not in PK_ALGS or not sig or len(sig) > 1024:
+        return False
+    folder = tempfile.mkdtemp(prefix='isemon-pk-', dir=scratch_dir())
+    try:
+        for name, body in (('k.pem', pem.encode('ascii')), ('d', data), ('s', sig)):
+            with open(os.path.join(folder, name), 'wb') as f:
+                f.write(body)
+        k, d, sg = (os.path.join(folder, x) for x in ('k.pem', 'd', 's'))
+        if alg == -8:
+            cmd = ['openssl', 'pkeyutl', '-verify', '-pubin', '-inkey', k, '-rawin', '-in', d,
+                   '-sigfile', sg]
+        else:
+            cmd = ['openssl', 'dgst', '-sha256', '-verify', k, '-signature', sg, d]
+        try:
+            got = subprocess.run(cmd, capture_output=True, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return got.returncode == 0
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def pk_rp(host, https, caller=''):
+    """The name a passkey is bound to - the page's own, without its port -
+    or why there can be none: WebAuthn takes neither an address nor plain
+    http."""
+    host = str(host or '').strip().lower()
+    name = host.rsplit(':', 1)[0] if host.count(':') == 1 else host
+    # ...localhost aside, which a browser counts as safe over plain http: a
+    # page opened on the server itself, through a tunnel.
+    if not https and name != 'localhost':
+        raise ValueError('Face ID works on pages opened over https, by name')
+    # ...and localhost only to a browser on this machine: from anywhere else
+    # the name, and its port, are only what the request says they are.
+    if name == 'localhost' and str(caller or '') not in ('127.0.0.1', '::1'):
+        raise ValueError('Face ID works on pages opened by name (https://name/), not by '
+                         'an address')
+    if not name or name.startswith('[') or re.match(r'^[0-9.]+$', name) or \
+            not re.match(r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$',
+                         name):
+        raise ValueError('Face ID works on pages opened by name (https://name/), not by '
+                         'an address')
+    return name, ('https://' if https else 'http://') + host
+
+
+def pk_challenge(kind, user, host, session):
+    raw = secrets.token_bytes(32)
+    key = pk_b64e(raw)
+    now = time.time()
+    with PK_LOCK:
+        for k in [k for k, v in PK_CHALLENGES.items() if now - v['at'] > PK_CHALLENGE_S]:
+            PK_CHALLENGES.pop(k, None)
+        if len(PK_CHALLENGES) > 2000:
+            for k in sorted(PK_CHALLENGES, key=lambda k: PK_CHALLENGES[k]['at'])[:500]:
+                PK_CHALLENGES.pop(k, None)
+        PK_CHALLENGES[key] = {'kind': kind, 'user': user, 'host': host, 'at': now,
+                              'session': session}
+    return key
+
+
+def pk_client_data(raw, kind, user, host, session):
+    """clientDataJSON read and checked: its type, a challenge this server
+    gave out for this - once, within five minutes, to this person, on this
+    sign-in - and the page it came from."""
+    try:
+        said = json.loads(raw.decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        raise ValueError('the browser’s answer is not readable')
+    if not isinstance(said, dict):
+        raise ValueError('the browser’s answer is not readable')
+    if said.get('type') != ('webauthn.create' if kind == 'enrol' else 'webauthn.get'):
+        raise ValueError('the browser answered another question')
+    with PK_LOCK:
+        got = PK_CHALLENGES.pop(str(said.get('challenge') or ''), None)
+    if not got or got['kind'] != kind or got['user'] != user or got['session'] != session \
+            or time.time() - got['at'] > PK_CHALLENGE_S:
+        raise ValueError('that question has run out, or was not this one - try again')
+    if said.get('origin') != host or got['host'] != host:
+        raise ValueError('the answer came from another page (%s)' % str(said.get('origin'))[:80])
+    return said
+
+
 # What a person may choose for the performance meter (1.10.297).
 PREF_CHOICES = {'hload': ('off', 'graphs', 'pills', 'line', 'rings'),
                 'hpanel': ('tiles', 'table', 'map', 'wide', 'off')}
@@ -78533,6 +78848,12 @@ class ApiHandler(BaseHTTPRequestHandler):
             self.spare_body()
             self.fail('sign in first', 401)
             return None
+        # Half a sign-in - Face ID still owed (1.10.303) - may finish it, or
+        # sign out, and nothing else.
+        if me.get('second') and self.path.split('?')[0] not in PK_OPEN:
+            self.spare_body()
+            self.fail('confirm it is you with Face ID first', 403)
+            return None
         # An account that has to change its password first may do that and
         # nothing else. The page already sends it there; this is what makes
         # that so for anything that is not the page.
@@ -78935,6 +79256,11 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         if path == '/api/auth/whoami':
             me = self.who()
+            # Half a sign-in is told who it is and what it still owes -
+            # nothing of what the person keeps here (1.10.303).
+            if me and me.get('second'):
+                return self.send_json({'ok': True, 'who': me, 'cols': {}, 'finds': [],
+                                       'prefs': {}, 'cols_edit': False, 'anybody': True})
             # The page is drawn with the person's own layout of the tables
             # from the first frame, rather than as it comes and then again.
             return self.send_json({'ok': True, 'who': me,
@@ -79081,6 +79407,252 @@ class ApiHandler(BaseHTTPRequestHandler):
                                 % me['name'], who=me['name'])
             return self.send_json({'ok': True, 'tables': len(kept),
                                    'edit': daemon.cols_editing(token)})
+
+        # ---- Face ID as the second step of signing in (1.10.303) ------------
+        if path == '/api/auth/passkey' and method == 'POST':
+            me = self.who()
+            if not me:
+                return self.fail('sign in first', 401)
+            if not daemon.passkeys_on():
+                return self.fail('Face ID is switched off on this server', 403)
+            data = self.body()
+            mine = self.headers.get('X-Isemon-Session') or ''
+            session = store.session_key(mine)
+            try:
+                rp, host = pk_rp(self.headers.get('X-Isemon-Host'),
+                                 self.headers.get('X-Isemon-Https') == '1', self.caller())
+            except ValueError as e:
+                return self.fail(str(e), 409)
+            name, owed = me['name'], me.get('second') or ''
+            # Every name of the person (1.10.303): out of the directory one
+            # signs in as jnovak or as jnovak@corp.example, and the passkey
+            # made under one is theirs under the other - or the other name
+            # would be a way round it.
+            names = set(store.same_person(name))
+            keys = store.passkeys()
+            theirs = [k for k in keys if k['user'] in names]
+            step = str(data.get('step') or '')
+            if step == 'begin':
+                want = str(data.get('want') or '')
+                if want == 'enrol':
+                    # A new passkey: the first one of this sign-in's onboarding,
+                    # or another device once the sign-in is whole - never by
+                    # half a sign-in that still owes one it already has.
+                    if owed == 'verify':
+                        return self.fail('confirm it is you with the passkey you have first', 403)
+                    if not owed and theirs and \
+                            time.time() - PK_FRESH.get(session, 0) > PK_FRESH_S:
+                        return self.fail('confirm it is you with Face ID first, then add the '
+                                         'other device', 428)
+                    if len(theirs) >= PK_MOST:
+                        return self.fail('an account keeps at most %d passkeys; take one away '
+                                         'first' % PK_MOST, 409)
+                    user = store.user(name) or {}
+                    return self.send_json({'ok': True, 'publicKey': {
+                        'challenge': pk_challenge('enrol', name, host, session),
+                        'rp': {'id': rp, 'name': 'isemon · ' + rp},
+                        'user': {'id': pk_b64e(hashlib.sha256(
+                            ('isemon-user:' + name).encode('utf-8')).digest()[:16]),
+                            'name': name, 'displayName': user.get('display') or name},
+                        'pubKeyCredParams': [{'type': 'public-key', 'alg': a} for a in PK_ALGS],
+                        'authenticatorSelection': {'residentKey': 'preferred',
+                                                   'userVerification': 'required'},
+                        'excludeCredentials': [{'type': 'public-key', 'id': k['id']}
+                                               for k in theirs if k.get('host') == rp],
+                        'attestation': 'none', 'timeout': PK_CHALLENGE_S * 1000}})
+                if want == 'check':
+                    here = [k for k in theirs if k.get('host') == rp]
+                    if not here:
+                        return self.fail('this account has no passkey for %s - open the page by '
+                                         'the name it was made on, or ask a full admin to '
+                                         'set Face ID up again for you' % rp, 409)
+                    return self.send_json({'ok': True, 'publicKey': {
+                        'challenge': pk_challenge('check', name, host, session),
+                        'rpId': rp, 'userVerification': 'required',
+                        'allowCredentials': [{'type': 'public-key', 'id': k['id']} for k in here],
+                        'timeout': PK_CHALLENGE_S * 1000}})
+                return self.fail('begin what?')
+            if step not in ('enrol', 'check'):
+                return self.fail('which step?')
+            if step == 'enrol' and owed == 'verify':
+                return self.fail('confirm it is you with the passkey you have first', 403)
+            if step == 'enrol' and not owed and theirs and \
+                    time.time() - PK_FRESH.get(session, 0) > PK_FRESH_S:
+                return self.fail('confirm it is you with Face ID first, then add the other '
+                                 'device', 428)
+            try:
+                said = pk_client_data(pk_b64d(data.get('clientDataJSON')), step, name, host,
+                                      session)
+                if step == 'enrol':
+                    att, _end = pk_cbor(pk_b64d(data.get('attestationObject')))
+                    ad = att.get('authData') if isinstance(att, dict) else None
+                    if not isinstance(ad, bytes):
+                        raise ValueError('the browser sent no authenticator data')
+                    facts = pk_auth_data(ad)
+                    if 'cred' not in facts:
+                        raise ValueError('the browser sent no key')
+                else:
+                    ad = pk_b64d(data.get('authenticatorData'))
+                    facts = pk_auth_data(ad)
+                if facts['rp_hash'] != hashlib.sha256(rp.encode('utf-8')).digest():
+                    raise ValueError('the passkey is for another server')
+                if not facts['flags'] & 0x01:
+                    raise ValueError('nobody was there to confirm it')
+                if not facts['flags'] & 0x04:
+                    raise ValueError('the device did not check that it is you (Face ID, Touch '
+                                     'ID or the device’s PIN) - without that it is no '
+                                     'second step')
+                if step == 'enrol':
+                    pem, alg = pk_cose_pem(facts['cose'])
+                    cid = pk_b64e(facts['cred'])
+                    with PK_LOCK:
+                        keys = store.passkeys()
+                        if any(k['id'] == cid for k in keys):
+                            raise ValueError('that passkey is here already')
+                        if len([k for k in keys if k['user'] in names]) >= PK_MOST:
+                            raise ValueError('an account keeps at most %d passkeys' % PK_MOST)
+                        label = re.sub(r'[\x00-\x1f]', '', str(data.get('name') or ''))[:80] \
+                            or 'a passkey'
+                        keys.append({'id': cid, 'user': name, 'name': label, 'pem': pem,
+                                     'alg': alg, 'count': facts['count'], 'created': time.time(),
+                                     'last_used': 0, 'host': rp,
+                                     'backed_up': bool(facts['flags'] & 0x10)})
+                        store.put_passkeys(keys)
+                    store.add_event('users', '%s set up a passkey (%s) for %s%s' % (
+                        name, label, rp, ' - Face ID is now their second step'
+                        if owed == 'enrol' else ''), who=name)
+                else:
+                    cid = str(data.get('id') or '')
+                    key = next((k for k in theirs if k['id'] == cid), None)
+                    if not key:
+                        raise ValueError('that passkey is not one of this account’s here '
+                                         '(taken away, or of another server)')
+                    signed = bytes(ad) + hashlib.sha256(pk_b64d(data.get('clientDataJSON'))).digest()
+                    if not pk_verify(key['pem'], key.get('alg'), signed,
+                                     pk_b64d(data.get('signature'))):
+                        raise ValueError('the passkey’s signature is not right')
+                    if key.get('count') and facts['count'] and facts['count'] <= key['count']:
+                        store.add_event('users', 'the counter of %s’s passkey (%s) went '
+                                        'back: it may have been copied' % (name, key['name']),
+                                        'bad', who=name)
+                        raise ValueError('the passkey’s counter went back - it may have '
+                                         'been copied')
+                    with PK_LOCK:
+                        keys = store.passkeys()
+                        for k in keys:
+                            if k['id'] == cid:
+                                k['count'] = facts['count']
+                                k['last_used'] = time.time()
+                        store.put_passkeys(keys)
+                    label = key['name']
+                    store.add_event('login', '%s confirmed it was them with a passkey (%s)'
+                                    % (name, label), who=name)
+            except (ValueError, KeyError, TypeError, IndexError, UnicodeDecodeError) as e:
+                with PK_LOCK:
+                    n = PK_FAILS[session] = PK_FAILS.get(session, 0) + 1
+                    if len(PK_FAILS) > 5000:
+                        PK_FAILS.clear()
+                store.add_event('login', 'Face ID for %s from %s was refused: %s'
+                                % (name, self.caller() or 'somewhere', str(e)[:200]), 'warn',
+                                who=name)
+                if owed and n >= PK_TRIES:
+                    store.drop_session(token=mine)
+                    return self.fail('Face ID was refused %d times - sign in again' % n, 401)
+                return self.fail(str(e), 403)
+            with PK_LOCK:
+                PK_FRESH[session] = time.time()
+                if len(PK_FRESH) > 5000:
+                    for k in sorted(PK_FRESH, key=PK_FRESH.get)[:1000]:
+                        PK_FRESH.pop(k, None)
+            if owed:
+                store.session_second(mine, '')
+                with PK_LOCK:
+                    PK_FAILS.pop(session, None)
+            return self.send_json({'ok': True, 'done': True,
+                                   'message': ('Face ID is set up: it is your second step from '
+                                               'now on' if step == 'enrol' and owed else
+                                               'the passkey was added' if step == 'enrol'
+                                               else 'it is you')})
+
+        if path == '/api/auth/passkeys':
+            me = self.need_login()
+            if not me:
+                return None
+            admin = me['role'] == 'fulladmin'
+            whose = str(one('name') or me['name']).strip().lower()
+            if method == 'GET':
+                if whose != me['name'] and not admin:
+                    return self.fail('only a full admin sees another account’s passkeys', 403)
+                try:
+                    here = pk_rp(self.headers.get('X-Isemon-Host'),
+                                 self.headers.get('X-Isemon-Https') == '1', self.caller())[0]
+                    why = ''
+                except ValueError as e:
+                    here, why = '', str(e)
+                people = set(store.same_person(whose))
+                fresh = time.time() - PK_FRESH.get(
+                    store.session_key(self.headers.get('X-Isemon-Session') or ''), 0) <= PK_FRESH_S
+                return self.send_json({'ok': True, 'on': daemon.passkeys_on(), 'here': here,
+                                       'why': why, 'fresh': fresh, 'passkeys': [
+                                           {k: v for k, v in p.items() if k != 'pem'}
+                                           for p in store.passkeys() if p['user'] in people]})
+            data = self.body()
+            do = str(data.get('do') or '')
+            if do == 'reset':
+                # Somebody's Face ID set up again (1.10.303): every passkey of
+                # theirs taken away, so their next sign-in makes a new one.
+                if not admin:
+                    return self.fail('only a full admin sets somebody’s Face ID up again',
+                                     403)
+                who = str(data.get('name') or '').strip().lower()
+                if not who or not store.user(who):
+                    return self.fail('there is no such account')
+                people = set(store.same_person(who))
+                with PK_LOCK:
+                    keys = store.passkeys()
+                    gone = [k for k in keys if k['user'] in people]
+                    store.put_passkeys([k for k in keys if k['user'] not in people])
+                # ...and their sign-ins ended: a lost iPad is signed in too.
+                ended = sum((store.drop_session(name=one) or 0) for one in people)
+                store.add_event('users', '%s set Face ID up again for %s (%d passkey(s) taken '
+                                'away, %d sign-in(s) ended): their next sign-in makes a new one'
+                                % (me['name'], who, len(gone), ended), 'warn', who=me['name'])
+                daemon.bump()
+                return self.send_json({'ok': True, 'gone': len(gone), 'ended': ended,
+                                       'message': 'the next sign-in of %s sets Face ID up again'
+                                                  % who})
+            if do in ('delete', 'rename'):
+                cid = str(data.get('id') or '')
+                with PK_LOCK:
+                    keys = store.passkeys()
+                    key = next((k for k in keys if k['id'] == cid), None)
+                    if not key:
+                        return self.fail('there is no such passkey')
+                    if key['user'] != me['name'] and not admin:
+                        return self.fail('only a full admin changes another account’s '
+                                         'passkeys', 403)
+                    if do == 'delete':
+                        keys = [k for k in keys if k['id'] != cid]
+                    else:
+                        key['name'] = re.sub(r'[\x00-\x1f]', '', str(data.get('label') or ''))[:80] \
+                            or key['name']
+                    store.put_passkeys(keys)
+                if do == 'delete':
+                    # Somebody else's taken away by an admin: that person's
+                    # sign-ins end too - it is what a lost device is.
+                    ended = 0
+                    if key['user'] not in set(store.same_person(me['name'])):
+                        ended = sum((store.drop_session(name=one) or 0)
+                                    for one in store.same_person(key['user']))
+                    store.add_event('users', '%s took away the passkey %s of %s%s'
+                                    % (me['name'], key['name'], key['user'],
+                                       ' (%d sign-in(s) ended)' % ended if ended else ''), 'warn',
+                                    who=me['name'])
+                daemon.bump()
+                return self.send_json({'ok': True, 'passkeys': [
+                    {k: v for k, v in p.items() if k != 'pem'}
+                    for p in store.passkeys(key['user'])]})
+            return self.fail('do what?')
 
         if path == '/api/auth/logout' and method == 'POST':
             mine = self.headers.get('X-Isemon-Session') or ''
@@ -81398,6 +81970,17 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not me:
                 return None
             given = self.body().get('settings') or {}
+            # Face ID switched on only from a page that can use it (1.10.303):
+            # from one opened by an address, or over plain http, nobody -
+            # whoever switched it on first - could sign in again.
+            if str(given.get('passkeys', '')) in ('1', 'True', 'true') and \
+                    not daemon.passkeys_on():
+                try:
+                    pk_rp(self.headers.get('X-Isemon-Host'),
+                          self.headers.get('X-Isemon-Https') == '1', self.caller())
+                except ValueError as e:
+                    return self.fail('Face ID is not switched on from this page: %s. Open this '
+                                     'page as https://name/ and switch it on there.' % e, 409)
             # How the database in use is reached (1.10.278): tried before it
             # is saved, and isemon starts again on it.
             try:
@@ -81565,8 +82148,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                                            'may_change': False,
                                            'cols': {me['name']: len(store.user_cols(me['name']))},
                                            'role_groups': daemon.directory_role_groups()})
+                counted = {}
+                for k in store.passkeys():
+                    counted[k['user']] = counted.get(k['user'], 0) + 1
                 return self.send_json({'ok': True, 'users': store.users(), 'may_change': True,
                                        'roles': list(Daemon.ROLES),
+                                       # Face ID (1.10.303): how many passkeys each has.
+                                       'passkeys': counted, 'passkeys_on': daemon.passkeys_on(),
                                        'cols': store.cols_counted(),
                                        'role_groups': daemon.directory_role_groups()})
             me = self.need_admin()
@@ -83534,6 +84122,36 @@ def cmd_erase(args, pal, store):
                                      for k, v in gone.items()))
     if after < before:
         pal.note('  the database went from %s to %s' % (human_size(before), human_size(after)))
+    return 0
+
+
+def cmd_passkey_reset(args, pal, store):
+    """Face ID set up again for an account (1.10.303), from the command line:
+    for whoever lost the device their passkey was on, with nobody signed in
+    to do it from the page."""
+    name = str(args.passkey_reset or '').strip().lower()
+    keys = store.passkeys()
+    if name == 'all':
+        gone, keep = keys, []
+    else:
+        if not store.user(name):
+            pal.bad('there is no account called %s' % name[:32])
+            return 1
+        people = set(store.same_person(name))
+        gone = [k for k in keys if k['user'] in people]
+        keep = [k for k in keys if k['user'] not in people]
+    store.put_passkeys(keep)
+    # ...and the sign-ins of whoever it was, ended: a lost device is signed in too.
+    if name == 'all':
+        for k in gone:
+            store.drop_session(name=k['user'])
+    else:
+        for one in store.same_person(name):
+            store.drop_session(name=one)
+    store.add_event('users', 'Face ID was set up again for %s on the command line (%d passkey(s) '
+                    'taken away)' % ('everybody' if name == 'all' else name, len(gone)), 'warn')
+    pal.good('%d passkey(s) taken away: the next sign-in %s sets Face ID up again'
+             % (len(gone), 'of each account' if name == 'all' else 'of ' + name))
     return 0
 
 
@@ -90422,6 +91040,9 @@ def main(argv=None):
     people.add_argument('--disable-user', metavar='NAME',
                         help='stop an account signing in, without removing it')
     people.add_argument('--enable-user', metavar='NAME', help='let it sign in again')
+    people.add_argument('--passkey-reset', metavar='NAME',
+                        help='set Face ID up again for an account: its passkeys taken away, '
+                             'its next sign-in makes a new one (all: everybody\'s)')
     people.add_argument('--role', metavar='ROLE', choices=list(Daemon.ROLES),
                         help='fulladmin, banadmin or readonly')
     people.add_argument('--password', metavar='PASS',
@@ -90513,6 +91134,7 @@ def main(argv=None):
         (bool(args.passwd), cmd_passwd), (bool(args.set_role), cmd_user_role),
         (bool(args.del_user), cmd_del_user),
         (bool(args.disable_user) or bool(args.enable_user), cmd_switch_user),
+        (bool(getattr(args, 'passkey_reset', None)), cmd_passkey_reset),
     ]
     # An option that only qualifies a command, given without one (1.10.197):
     # `isemon --sync` meant with --mikrotik started a whole second daemon in

@@ -103,6 +103,12 @@ function isemon_call(string $path, string $method = 'GET', ?array $payload = nul
     $headers = ['Accept: application/json'];
     $headers[] = 'X-Isemon-Client: '
         . preg_replace('/[^0-9a-fA-F:.]/', '', (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    /* The name the page was opened by, and whether over TLS (1.10.303): a
+       passkey is bound to that name, and the browser says which page it
+       answered for - the daemon checks the two against each other. */
+    $headers[] = 'X-Isemon-Host: '
+        . preg_replace('/[^a-z0-9.:\[\]-]/', '', strtolower((string) ($_SERVER['HTTP_HOST'] ?? '')));
+    $headers[] = 'X-Isemon-Https: ' . (isemon_https() ? '1' : '0');
     $session = isemon_session();
     if ($session !== '') {
         $headers[] = 'X-Isemon-Session: ' . $session;

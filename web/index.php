@@ -493,6 +493,8 @@ if (isset($_GET['api'])) {
         'acmelog-checks' => '/api/acmelog/checks',
         /* The performance meter of the header (1.10.297). */
         'load'           => '/api/load',
+        /* Face ID as the second step (1.10.303): an account's passkeys. */
+        'passkeys'       => '/api/auth/passkeys',
         /* Automatic certificates (1.10.251). */
         'acme'         => '/api/acme',
         /* Settings → Proxy → Try it (1.10.268). */
@@ -631,6 +633,9 @@ if (isset($_GET['api'])) {
         'my-settings'  => '/api/auth/settings',
         'finds'        => '/api/auth/finds',
         'prefs'        => '/api/auth/prefs',
+        /* Face ID (1.10.303): the step itself, and an account's passkeys. */
+        'passkey'      => '/api/auth/passkey',
+        'passkeys'     => '/api/auth/passkeys',
         'db-erase'     => '/api/db/erase',
         'db-engine'    => '/api/db/engine',
         'db-tune'      => '/api/db/tune',
@@ -862,6 +867,13 @@ if (isset($_GET['api'])) {
 
 /* ---- the page ------------------------------------------------------------ */
 $me      = isemon_whoami();
+/* Half a sign-in - the password right, Face ID still owed (1.10.303) - is
+   the door still: the page shows the second step and nothing behind it. */
+$second  = ($me && !empty($me['second'])) ? (string) $me['second'] : '';
+$second_name = $second !== '' ? (string) ($me['name'] ?? '') : '';
+if ($second !== '') {
+    $me = null;
+}
 $health  = isemon_get('/api/health', 5.0);
 $alive   = is_array($health);
 /* What a database that will not open may say to somebody who has NOT signed
@@ -3105,6 +3117,14 @@ function srcText(el) {
   .signin h1{font-size:19px;margin:0 0 4px;font-weight:650}
   .signin .lede{color:var(--tx-dim);font-size:13px;margin:0 0 18px}
   .signin form{display:flex;flex-direction:column;gap:12px}
+  /* Face ID, the second step (1.10.303) */
+  .signin [hidden]{display:none !important}
+  .signin .pk-step{display:flex;flex-direction:column;gap:12px;align-items:stretch;text-align:center}
+  .signin .pk-step h2{margin:0;font-size:18px}
+  .signin .pk-step .lede{margin:0}
+  .signin .pk-step .btn.cmd{justify-content:center}
+  .signin .pk-face{color:var(--info);display:flex;justify-content:center;margin-top:4px}
+  .signin .pk-out{align-self:center}
   .signin input{width:100%;padding:11px 13px;font-size:14.5px}
   .signin .btn{justify-content:center;padding:11px}
   .signin .said{font-size:13px;min-height:19px;position:relative}
@@ -4833,6 +4853,20 @@ function srcText(el) {
         d="M18 9l3 3-3 3"/></svg><span>Sign in</span></button>
       <div class="said" id="in-said"></div>
     </form>
+    <?php /* The second step (1.10.303): after the password, Face ID - made the
+             first time, used after that. */ ?>
+    <div id="pk-step" class="pk-step" hidden>
+      <div class="pk-face" aria-hidden="true"><svg viewBox="0 0 24 24" width="38" height="38"
+        fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+        stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path
+        d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9.5v1"/><path
+        d="M15 9.5v1"/><path d="M12 9.5v3.5h-1"/><path d="M9.5 15.5a3.5 3.5 0 0 0 5 0"/></svg></div>
+      <h2 id="pk-title"></h2>
+      <p class="lede" id="pk-say"></p>
+      <button class="btn primary cmd" type="button" id="pk-go"><span id="pk-go-words"></span></button>
+      <div class="said" id="pk-said"></div>
+      <button class="btn small pk-out" type="button" id="pk-out">Sign out</button>
+    </div>
     </div>
   </div>
 </div>
@@ -4861,6 +4895,132 @@ function srcText(el) {
     box.textContent = String(detail);
     said.appendChild(box);
   }
+  /* ---- Face ID, the second step (1.10.303) ------------------------------
+     After the password: the first time, a passkey is made on this device
+     (onboarding); after that, it is used. Both through WebAuthn, which a
+     browser offers only on a page opened by its name over https. */
+  var SECOND = <?= json_encode($second) ?>;
+  var SECOND_NAME = <?= json_encode($second_name, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+  function pkBytes(t) {
+    t = String(t || '').replace(/-/g, '+').replace(/_/g, '/');
+    while (t.length % 4) t += '=';
+    var bin = atob(t), out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+  function pkText(buf) {
+    var b = new Uint8Array(buf), bin = '';
+    for (var i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function pkDevice() {
+    var ua = navigator.userAgent || '';
+    if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
+    if (/iPhone/.test(ua)) return 'iPhone';
+    if (/Android/.test(ua)) return 'Android';
+    if (/Mac/.test(ua)) return 'Mac';
+    if (/Windows/.test(ua)) return 'Windows';
+    return 'this device';
+  }
+  function pkCan() {
+    return !!(window.PublicKeyCredential && navigator.credentials
+              && (location.protocol === 'https:' || location.hostname === 'localhost')
+              && !/^[0-9.]+$|^\[/.test(location.hostname));
+  }
+  function pkPost(what, body) {
+    return fetch('?api=' + what, {method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok || d.ok === false) {
+            var e = new Error(d.error || ('the server said ' + r.status));
+            e.status = r.status;
+            throw e;
+          }
+          return d;
+        });
+      });
+  }
+  var step = document.getElementById('pk-step');
+  var pkSaid = document.getElementById('pk-said');
+  var pkGo = document.getElementById('pk-go');
+  function pkSay(words, kind) {
+    pkSaid.className = 'said' + (kind ? ' ' + kind : '');
+    pkSaid.textContent = words || '';
+  }
+  function stepShow(kind) {
+    SECOND = kind;
+    form.hidden = true;
+    step.hidden = false;
+    var enrol = kind === 'enrol';
+    document.getElementById('pk-title').textContent = enrol ? 'Set up Face ID' : 'Confirm it is you';
+    document.getElementById('pk-say').textContent = enrol
+      ? 'The password was right. Signing in here takes a second step: Face ID, Touch ID, '
+        + 'Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, '
+        + 'the server only its public half.'
+      : 'The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device.';
+    document.getElementById('pk-go-words').textContent = enrol ? 'Set up Face ID' : 'Use Face ID';
+    pkSay('');
+    pkGo.disabled = false;
+    if (!pkCan()) {
+      pkGo.disabled = true;
+      pkSay('Face ID works only on this page opened by its name over https (https://name/), '
+            + 'with a certificate this browser trusts - not by an address.', 'bad');
+    } else {
+      pkGo.focus();
+    }
+  }
+  pkGo.addEventListener('click', function () {
+    var enrol = SECOND === 'enrol';
+    pkGo.disabled = true;
+    pkSay(enrol ? 'Setting it up…' : 'Waiting for Face ID…');
+    /* The browser's question straight after the press: one fetch between the
+       two at most, or Safari refuses it. */
+    pkPost('passkey', {step: 'begin', want: enrol ? 'enrol' : 'check'}).then(function (d) {
+      var o = d.publicKey;
+      o.challenge = pkBytes(o.challenge);
+      if (enrol) {
+        o.user.id = pkBytes(o.user.id);
+        o.excludeCredentials = (o.excludeCredentials || []).map(function (c) {
+          return {type: c.type, id: pkBytes(c.id)}; });
+        return navigator.credentials.create({publicKey: o}).then(function (cr) {
+          return pkPost('passkey', {step: 'enrol',
+            name: pkDevice() + ' \u00b7 ' + new Date().toLocaleDateString(),
+            clientDataJSON: pkText(cr.response.clientDataJSON),
+            attestationObject: pkText(cr.response.attestationObject)});
+        });
+      }
+      o.allowCredentials = (o.allowCredentials || []).map(function (c) {
+        return {type: c.type, id: pkBytes(c.id)}; });
+      return navigator.credentials.get({publicKey: o}).then(function (cr) {
+        return pkPost('passkey', {step: 'check', id: cr.id,
+          clientDataJSON: pkText(cr.response.clientDataJSON),
+          authenticatorData: pkText(cr.response.authenticatorData),
+          signature: pkText(cr.response.signature)});
+      });
+    }).then(function (d) {
+      pkSay(d.message || 'it is you', 'good');
+      location.reload();
+    }).catch(function (e) {
+      pkGo.disabled = false;
+      if (e && e.status === 401) { location.reload(); return; }
+      if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) {
+        pkSay('Face ID was cancelled, or did not recognise you - try again.', 'bad');
+        return;
+      }
+      if (e && e.name === 'InvalidStateError') {
+        pkSay('This device already has a passkey for this account here. Use the one there, '
+              + 'or ask a full admin to set Face ID up again for you.', 'bad');
+        return;
+      }
+      pkSay((e && e.message) || String(e), 'bad');
+    });
+  });
+  document.getElementById('pk-out').addEventListener('click', function () {
+    fetch('?api=logout', {method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'}, body: '{}'})
+      .then(function () { location.reload(); }, function () { location.reload(); });
+  });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     said.className = 'said';
@@ -4882,6 +5042,10 @@ function srcText(el) {
     }).then(function (r) { return r.json().then(function (d) { return {ok: r.ok, d: d}; }); })
       .then(function (got) {
         if (got.ok && got.d && got.d.ok !== false) {
+          if (got.d.second) {
+            stepShow(got.d.second);
+            return;
+          }
           said.className = 'said good';
           said.textContent = 'Welcome back.';
           location.reload();
@@ -4901,7 +5065,11 @@ function srcText(el) {
         if (words) words.textContent = 'Sign in'; else go.textContent = 'Sign in';
       });
   });
-  document.getElementById('in-name').focus();
+  if (SECOND) {
+    stepShow(SECOND);
+  } else {
+    document.getElementById('in-name').focus();
+  }
 }());
 </script>
 </body>
@@ -26913,7 +27081,7 @@ var PANES = {
             'mikrotik2_pfssh_auth', 'mikrotik2_pfssh_password', 'mikrotik2_pfssh_sudo'],
   geo:     ['geo', 'geolist', 'geolist_name', 'pf_geolist', 'geolist_countries',
             'geolist_family', 'geolist_auto', 'geolist_chunk'],
-  people:  ['session_hours', 'session_idle_min', 'login_tries', 'login_wait_min'],
+  people:  ['session_hours', 'session_idle_min', 'login_tries', 'login_wait_min', 'passkeys'],
   nettrial: ['net_confirm_min'],
   fwtrial: ['fw_confirm_min'],
   dir:     ['directory', 'directory_host', 'directory_port', 'directory_tls',
@@ -33239,6 +33407,31 @@ function userRows(rows, d) {
           };
           act.appendChild(back);
         }
+        /* Face ID set up again (1.10.303): a lost iPad, a new phone - every
+           passkey of theirs goes, and their next sign-in makes a new one. */
+        if (d.passkeys_on || (d.passkeys || {})[u.name]) {
+          var pkn = (d.passkeys || {})[u.name] || 0;
+          var again = cmdButton('Face ID', 'undo', 'small');
+          explain(again, pkn
+            ? u.name + ' has ' + num(pkn) + ' passkey(s). Set Face ID up again: every one of them '
+              + 'is taken away, every sign-in of theirs ends, and the next sign-in of ' + u.name
+              + ' makes a new one. For a lost or a new device.'
+            : u.name + ' has no passkey yet: their next sign-in sets Face ID up.');
+          again.disabled = !pkn;
+          again.style.marginLeft = '6px';
+          again.onclick = function () {
+            confirmThen('Face ID of ' + u.name,
+              'Every passkey of ' + htmlText(u.name) + ' is taken away and every sign-in of theirs '
+              + 'ends. Their next sign-in asks them to set Face ID up again.',
+              'Set it up again', function () {
+                api('passkeys', {do: 'reset', name: u.name}).then(function (r) {
+                  toast(r.message || 'done', 'good');
+                  loadUsers();
+                }).catch(oops);
+              });
+          };
+          act.appendChild(again);
+        }
         if (!ME || u.name !== ME.name) {
           var onoff = cmdButton(u.disabled ? 'Switch on' : 'Switch off',
                                 u.disabled ? 'check' : 'cancel', 'small');
@@ -34403,6 +34596,138 @@ function hloadPickers(lsec) {
   lsec.appendChild(g3);
 }
 
+/* ---- Face ID in Your account (1.10.303) ----------------------------------- */
+function pkBytes(t) {
+  t = String(t || '').replace(/-/g, '+').replace(/_/g, '/');
+  while (t.length % 4) t += '=';
+  var bin = atob(t), out = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+function pkText(buf) {
+  var b = new Uint8Array(buf), bin = '';
+  for (var i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function pkDevice() {
+  var ua = navigator.userAgent || '';
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
+  if (/iPhone/.test(ua)) return 'iPhone';
+  if (/Android/.test(ua)) return 'Android';
+  if (/Mac/.test(ua)) return 'Mac';
+  if (/Windows/.test(ua)) return 'Windows';
+  return 'this device';
+}
+function meFaceId(host) {
+  api('passkeys', undefined, {quiet: true}).then(function (d) {
+    if (!d.on && !(d.passkeys || []).length) return;
+    host.hidden = false;
+    clear(host);
+    host.appendChild(el('h3', '', 'Face ID'));
+    host.appendChild(el('div', 'me-say', d.on
+      ? 'After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms '
+        + 'it is you. Each device that may do it keeps a passkey; the server only its public half. '
+        + 'A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices '
+        + 'too. Take the last one away and your next sign-in sets Face ID up again.'
+      : 'Face ID is switched off on this server: these passkeys are not asked for.'));
+    var keys = d.passkeys || [];
+    if (keys.length) {
+      var t = el('table', 'plain');
+      var hr = el('tr');
+      ['Passkey', 'For', 'Added', 'Last used', ''].forEach(function (h) { hr.appendChild(el('th', '', h)); });
+      var th = el('thead'); th.appendChild(hr); t.appendChild(th);
+      var tb = el('tbody');
+      keys.forEach(function (k) {
+        var tr = el('tr');
+        tr.appendChild(noI18n(el('td', '', k.name)));
+        tr.appendChild(noI18n(el('td', 'mono', k.host || '')));
+        tr.appendChild(el('td', '', k.created ? stamp(k.created) : '\u2013'));
+        tr.appendChild(el('td', '', k.last_used ? stamp(k.last_used) : 'not yet'));
+        var td = el('td');
+        var x = cmdButton('Take away', 'trash', 'small danger');
+        x.onclick = function () {
+          confirmThen('Take this passkey away',
+            'It no longer confirms it is you. It stays on the device until you take it away '
+            + 'there (Settings - Passwords).' + (keys.length === 1 && d.on
+              ? ' It is your last one: your next sign-in sets Face ID up again.' : ''),
+            'Take it away', function () {
+              api('passkeys', {do: 'delete', id: k.id}).then(function () {
+                toast('the passkey was taken away', 'good');
+                meFaceId(host);
+              }).catch(oops);
+            }, true);
+        };
+        td.appendChild(x);
+        tr.appendChild(td);
+        tb.appendChild(tr);
+      });
+      t.appendChild(tb);
+      var sc = el('div', 'scroll');
+      sc.appendChild(t);
+      host.appendChild(sc);
+    }
+    if (!d.on) return;
+    var line = el('div', 'me-row');
+    var can = window.PublicKeyCredential && navigator.credentials && d.here;
+    line.appendChild(el('div', 'me-say', can
+      ? 'Another device - your iPhone, a Mac, a PC with Windows Hello: open this page there, or '
+        + 'add this one here.'
+      : (d.why || 'Face ID works on pages opened by name over https.')));
+    /* Another device only just after Face ID (1.10.303): a sign-in left open
+       on somebody's screen cannot plant one of its own. */
+    if (can && keys.length && !d.fresh) {
+      var first = cmdButton('Confirm it is you, to add another', 'check');
+      first.onclick = function () {
+        first.disabled = true;
+        api('passkey', {step: 'begin', want: 'check'}).then(function (b) {
+          var o = b.publicKey;
+          o.challenge = pkBytes(o.challenge);
+          o.allowCredentials = (o.allowCredentials || []).map(function (c) {
+            return {type: c.type, id: pkBytes(c.id)}; });
+          return navigator.credentials.get({publicKey: o});
+        }).then(function (cr) {
+          return api('passkey', {step: 'check', id: cr.id,
+            clientDataJSON: pkText(cr.response.clientDataJSON),
+            authenticatorData: pkText(cr.response.authenticatorData),
+            signature: pkText(cr.response.signature)});
+        }).then(function () { meFaceId(host); }).catch(function (e) {
+          first.disabled = false;
+          if (!(e && (e.name === 'NotAllowedError' || e.name === 'AbortError'))) oops(e);
+        });
+      };
+      line.appendChild(first);
+      host.appendChild(line);
+      return;
+    }
+    var add = cmdButton('Add a passkey of this device', 'add');
+    add.disabled = !can;
+    add.onclick = function () {
+      add.disabled = true;
+      api('passkey', {step: 'begin', want: 'enrol'}).then(function (b) {
+        var o = b.publicKey;
+        o.challenge = pkBytes(o.challenge);
+        o.user.id = pkBytes(o.user.id);
+        o.excludeCredentials = (o.excludeCredentials || []).map(function (c) {
+          return {type: c.type, id: pkBytes(c.id)}; });
+        return navigator.credentials.create({publicKey: o});
+      }).then(function (cr) {
+        return api('passkey', {step: 'enrol', name: pkDevice() + ' \u00b7 ' + new Date().toLocaleDateString(),
+          clientDataJSON: pkText(cr.response.clientDataJSON),
+          attestationObject: pkText(cr.response.attestationObject)});
+      }).then(function (r) {
+        toast(r.message || 'the passkey was added', 'good');
+        meFaceId(host);
+      }).catch(function (e) {
+        add.disabled = false;
+        if (e && e.name === 'InvalidStateError') toast('this device has a passkey for this account already', 'warn');
+        else if (!(e && (e.name === 'NotAllowedError' || e.name === 'AbortError'))) oops(e);
+      });
+    };
+    line.appendChild(add);
+    host.appendChild(line);
+  }).catch(function () { });
+}
+
 function showMe() {
   if (!ME) return;
   var admin = ME.role === 'fulladmin';
@@ -34497,6 +34822,13 @@ function showMe() {
       hloadPickers(meter);
       body.appendChild(meter);
     }
+
+    /* Face ID, the second step (1.10.303): this account's passkeys - every
+       device that may confirm it is them - another one added, one taken away. */
+    var face = el('div', 'me-sec');
+    face.hidden = true;
+    body.appendChild(face);
+    meFaceId(face);
 
     /* The columns of the tables. */
     var cols = el('div', 'me-sec');

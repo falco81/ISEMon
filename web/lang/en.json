@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.302",
+  "version": "1.10.303",
   "made": "2026-11-05",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -2148,6 +2148,10 @@
    "source": "Add a name server",
    "text": "Add a name server"
   },
+  "s.add-a-passkey-of-this-device.59c91963": {
+   "source": "Add a passkey of this device",
+   "text": "Add a passkey of this device"
+  },
   "s.add-a-place.29c5ff60": {
    "source": "Add a place",
    "text": "Add a place"
@@ -2408,9 +2412,17 @@
    "source": "after it where it is not 53. The first one that hands over a",
    "text": "after it where it is not 53. The first one that hands over a"
   },
+  "s.after-the-password-everybody-confirms-it.4837c412": {
+   "source": "After the password, everybody confirms it is them with Face ID, Touch ID, Windows Hello or the PIN of their device (a passkey). The first sign-in after this is switched on sets it up; a full admin can set it up again for anybody under Accounts (a lost iPad), and their next sign-in makes a new one. Only on pages opened by name over https, with a certificate the browser trusts - and so switched on only from such a page. Those signed in already stay signed in. Locked out: isemon --set passkeys=0 on the server.",
+   "text": "After the password, everybody confirms it is them with Face ID, Touch ID, Windows Hello or the PIN of their device (a passkey). The first sign-in after this is switched on sets it up; a full admin can set it up again for anybody under Accounts (a lost iPad), and their next sign-in makes a new one. Only on pages opened by name over https, with a certificate the browser trusts - and so switched on only from such a page. Those signed in already stay signed in. Locked out: isemon --set passkeys=0 on the server."
+  },
   "s.after-the-update.5d11e200": {
    "source": "After the update",
    "text": "After the update"
+  },
+  "s.after-your-password-face-id-touch.119de544": {
+   "source": "After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms it is you. Each device that may do it keeps a passkey; the server only its public half. A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices too. Take the last one away and your next sign-in sets Face ID up again.",
+   "text": "After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms it is you. Each device that may do it keeps a passkey; the server only its public half. A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices too. Take the last one away and your next sign-in sets Face ID up again."
   },
   "s.after.405906c9": {
    "source": "after",
@@ -3116,6 +3128,10 @@
    "source": "Andorra",
    "text": "Andorra"
   },
+  "s.android.1928f95c": {
+   "source": "Android",
+   "text": "Android"
+  },
   "s.angola.a42522a0": {
    "source": "Angola",
    "text": "Angola"
@@ -3135,6 +3151,10 @@
   "s.another-certificate-or-a-wrong-answer.266eea15": {
    "source": "another certificate, or a wrong answer",
    "text": "another certificate, or a wrong answer"
+  },
+  "s.another-device-your-iphone-a-mac.a9783baf": {
+   "source": "Another device - your iPhone, a Mac, a PC with Windows Hello: open this page there, or add this one here.",
+   "text": "Another device - your iPhone, a Mac, a PC with Windows Hello: open this page there, or add this one here."
   },
   "s.another-folder-for-the-same-firewall.e0665661": {
    "source": "Another folder for the same firewall - the other unit of a pair",
@@ -4316,9 +4336,17 @@
    "source": "-----BEGIN PRIVATE KEY-----",
    "text": "-----BEGIN PRIVATE KEY-----"
   },
+  "s.begin-what.4d6bdfeb": {
+   "source": "begin what?",
+   "text": "begin what?"
+  },
   "s.begin.3598517c": {
    "source": "BEGIN",
    "text": "BEGIN"
+  },
+  "s.begin.8cbd0a74": {
+   "source": "begin",
+   "text": "begin"
   },
   "s.begins-within-seconds-it-can-be.2c3d76dc": {
    "source": "begins within seconds - it can be stopped until then",
@@ -5632,6 +5660,26 @@
    "source": "configuration only",
    "text": "configuration only"
   },
+  "s.confirm-it-is-you-to-add.8059e611": {
+   "source": "Confirm it is you, to add another",
+   "text": "Confirm it is you, to add another"
+  },
+  "s.confirm-it-is-you-with-face.657828d9": {
+   "source": "confirm it is you with Face ID first",
+   "text": "confirm it is you with Face ID first"
+  },
+  "s.confirm-it-is-you-with-face.e3498243": {
+   "source": "confirm it is you with Face ID first, then add the other device",
+   "text": "confirm it is you with Face ID first, then add the other device"
+  },
+  "s.confirm-it-is-you-with-the.37c2ceff": {
+   "source": "confirm it is you with the passkey you have first",
+   "text": "confirm it is you with the passkey you have first"
+  },
+  "s.confirm-it-is-you.e6fe51aa": {
+   "source": "Confirm it is you",
+   "text": "Confirm it is you"
+  },
   "s.confirmed-by-an-administrator.52247b4f": {
    "source": "confirmed by an administrator",
    "text": "confirmed by an administrator"
@@ -6580,6 +6628,10 @@
    "source": "do what? test, cert, paste, download, forget, keygen, key, key-download, key-forget, ca, ca-forget or commands",
    "text": "do what? test, cert, paste, download, forget, keygen, key, key-download, key-forget, ca, ca-forget or commands"
   },
+  "s.do-what.0dedc6d4": {
+   "source": "do what?",
+   "text": "do what?"
+  },
   "s.docs-eduroam-nps-md.fd47735a": {
    "source": "docs/eduroam-nps.md",
    "text": "docs/eduroam-nps.md"
@@ -7367,6 +7419,10 @@
   "s.eno1.89993741": {
    "source": "eno1",
    "text": "eno1"
+  },
+  "s.enrol.95e1c2ec": {
+   "source": "enrol",
+   "text": "enrol"
   },
   "s.enter.2b9eceb7": {
    "source": "Enter",
@@ -8675,6 +8731,34 @@
   "s.eye.79df4b17": {
    "source": "eye",
    "text": "eye"
+  },
+  "s.face-id-as-the-second-step.7fe09bb7": {
+   "source": "Face ID as the second step of signing in (passkeys)",
+   "text": "Face ID as the second step of signing in (passkeys)"
+  },
+  "s.face-id-is-switched-off-on.26c90875": {
+   "source": "Face ID is switched off on this server",
+   "text": "Face ID is switched off on this server"
+  },
+  "s.face-id-is-switched-off-on.b3ae26bc": {
+   "source": "Face ID is switched off on this server: these passkeys are not asked for.",
+   "text": "Face ID is switched off on this server: these passkeys are not asked for."
+  },
+  "s.face-id-was-cancelled-or-did.3f8dcfef": {
+   "source": "Face ID was cancelled, or did not recognise you - try again.",
+   "text": "Face ID was cancelled, or did not recognise you - try again."
+  },
+  "s.face-id-works-on-pages-opened.6410bb3d": {
+   "source": "Face ID works on pages opened by name over https.",
+   "text": "Face ID works on pages opened by name over https."
+  },
+  "s.face-id-works-only-on-this.c45ff854": {
+   "source": "Face ID works only on this page opened by its name over https (https://name/), with a certificate this browser trusts - not by an address.",
+   "text": "Face ID works only on this page opened by its name over https (https://name/), with a certificate this browser trusts - not by an address."
+  },
+  "s.face-id.18b82df9": {
+   "source": "Face ID",
+   "text": "Face ID"
   },
   "s.fact-wide.0a2666f7": {
    "source": "fact wide",
@@ -12568,6 +12652,14 @@
    "source": "It is worked out behind the daemon and kept, so this wait is only the first time; from then on the page opens at once and says how old what it shows is.",
    "text": "It is worked out behind the daemon and kept, so this wait is only the first time; from then on the page opens at once and says how old what it shows is."
   },
+  "s.it-is-you.727172f6": {
+   "source": "it is you",
+   "text": "it is you"
+  },
+  "s.it-is-your-last-one-your.b4ea724f": {
+   "source": "It is your last one: your next sign-in sets Face ID up again.",
+   "text": "It is your last one: your next sign-in sets Face ID up again."
+  },
   "s.it-is.3dd5d5b4": {
    "source": "It is",
    "text": "It is"
@@ -13464,6 +13556,10 @@
    "source": "Last up",
    "text": "Last up"
   },
+  "s.last-used.f1109d3d": {
+   "source": "Last used",
+   "text": "Last used"
+  },
   "s.last-vpn-sign-in.3c4cb557": {
    "source": "Last VPN sign-in",
    "text": "Last VPN sign-in"
@@ -14315,6 +14411,10 @@
   "s.mac-vendor-registers.dd1d7369": {
    "source": "MAC vendor registers",
    "text": "MAC vendor registers"
+  },
+  "s.mac.08bce2d9": {
+   "source": "Mac",
+   "text": "Mac"
   },
   "s.mac.347ead63": {
    "source": "mac",
@@ -18060,6 +18160,18 @@
    "source": "ones",
    "text": "ones"
   },
+  "s.only-a-full-admin-changes-another.ec596e27": {
+   "source": "only a full admin changes another account’s passkeys",
+   "text": "only a full admin changes another account’s passkeys"
+  },
+  "s.only-a-full-admin-sees-another.6a55604c": {
+   "source": "only a full admin sees another account’s passkeys",
+   "text": "only a full admin sees another account’s passkeys"
+  },
+  "s.only-a-full-admin-sets-somebody.8199455f": {
+   "source": "only a full admin sets somebody’s Face ID up again",
+   "text": "only a full admin sets somebody’s Face ID up again"
+  },
   "s.only-a-full-administrator-changes-it.e150178f": {
    "source": "Only a full administrator changes it.",
    "text": "Only a full administrator changes it."
@@ -19099,6 +19211,18 @@
   "s.passive.8cf03f5f": {
    "source": "passive",
    "text": "passive"
+  },
+  "s.passkey.26bb81bc": {
+   "source": "passkey",
+   "text": "passkey"
+  },
+  "s.passkey.e35828da": {
+   "source": "Passkey",
+   "text": "Passkey"
+  },
+  "s.passkeys.6b4b37a5": {
+   "source": "passkeys",
+   "text": "passkeys"
   },
   "s.password-at-the-proxy.f48a6bae": {
    "source": "Password at the proxy",
@@ -20908,6 +21032,10 @@
    "source": "Reserved",
    "text": "Reserved"
   },
+  "s.reset.91ef0c16": {
+   "source": "reset",
+   "text": "reset"
+  },
   "s.resource-limits-reached.3d40623b": {
    "source": "Resource limits reached",
    "text": "Resource limits reached"
@@ -22028,6 +22156,10 @@
    "source": "set dstaddr \"all\"",
    "text": "set dstaddr \"all\""
   },
+  "s.set-face-id-up-again-for.6496a223": {
+   "source": "set Face ID up again for an account: its passkeys taken away, its next sign-in makes a new one (all: everybody's)",
+   "text": "set Face ID up again for an account: its passkeys taken away, its next sign-in makes a new one (all: everybody's)"
+  },
   "s.set-in-the-directory.988f4042": {
    "source": "set in the directory",
    "text": "set in the directory"
@@ -22035,6 +22167,10 @@
   "s.set-intf-wan1.abaa161c": {
    "source": "set intf \"wan1\"",
    "text": "set intf \"wan1\""
+  },
+  "s.set-it-up-again.fd6e6f69": {
+   "source": "Set it up again",
+   "text": "Set it up again"
   },
   "s.set-it-up.40fae241": {
    "source": "Set it up",
@@ -22092,6 +22228,10 @@
    "source": "Set up encrypted receiving",
    "text": "Set up encrypted receiving"
   },
+  "s.set-up-face-id.e1149de7": {
+   "source": "Set up Face ID",
+   "text": "Set up Face ID"
+  },
   "s.set-up.bb8fa05e": {
    "source": "Set up…",
    "text": "Set up…"
@@ -22119,6 +22259,10 @@
   "s.setting-it-up-mikrotik-over-ssh.bb030edb": {
    "source": "Setting it up: MikroTik over ssh (read-only)",
    "text": "Setting it up: MikroTik over ssh (read-only)"
+  },
+  "s.setting-it-up.a482e06a": {
+   "source": "Setting it up…",
+   "text": "Setting it up…"
   },
   "s.setting.d6df1ab7": {
    "source": "setting",
@@ -23788,6 +23932,10 @@
    "source": "tak.cesnet.cz",
    "text": "tak.cesnet.cz"
   },
+  "s.take-away.ea127dce": {
+   "source": "Take away",
+   "text": "Take away"
+  },
   "s.take-certificates-from-acme.8fe0e923": {
    "source": "Take certificates from acme",
    "text": "Take certificates from acme"
@@ -23923,6 +24071,10 @@
   "s.take-this-off-the-search.81dad072": {
    "source": "Take this off the search:",
    "text": "Take this off the search:"
+  },
+  "s.take-this-passkey-away.902f48a7": {
+   "source": "Take this passkey away",
+   "text": "Take this passkey away"
   },
   "s.take-this-place-away.ba9e8664": {
    "source": "Take this place away",
@@ -27456,6 +27608,14 @@
    "source": "The parts of the configuration commands changed - by the management centre deploying or by somebody on the command line: an ACL, a group policy, an interface. Commands that only looked are left out.",
    "text": "The parts of the configuration commands changed - by the management centre deploying or by somebody on the command line: an ACL, a group policy, an interface. Commands that only looked are left out."
   },
+  "s.the-passkey-was-added.3a033858": {
+   "source": "the passkey was added",
+   "text": "the passkey was added"
+  },
+  "s.the-passkey-was-taken-away.906f45f9": {
+   "source": "the passkey was taken away",
+   "text": "the passkey was taken away"
+  },
   "s.the-password-again.68f6a785": {
    "source": "The password again",
    "text": "The password again"
@@ -27507,6 +27667,14 @@
   "s.the-password-was-right-and-the.a966044d": {
    "source": "The password was right and the code from the app was asked for in a second window.",
    "text": "The password was right and the code from the app was asked for in a second window."
+  },
+  "s.the-password-was-right-now-face.1464c807": {
+   "source": "The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device.",
+   "text": "The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device."
+  },
+  "s.the-password-was-right-signing-in.3cd2e46d": {
+   "source": "The password was right. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half.",
+   "text": "The password was right. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half."
   },
   "s.the-password-was-wrong.70379bdd": {
    "source": "the password was wrong",
@@ -29156,6 +29324,10 @@
    "source": "There is no such account on this server, and the name carried no institution to send the question on to. A controller testing its RADIUS server looks exactly like this, every few seconds, for ever — which is what the list of accounts to leave out under Settings → The eduroam logs is for.",
    "text": "There is no such account on this server, and the name carried no institution to send the question on to. A controller testing its RADIUS server looks exactly like this, every few seconds, for ever — which is what the list of accounts to leave out under Settings → The eduroam logs is for."
   },
+  "s.there-is-no-such-account.6be90fb7": {
+   "source": "there is no such account",
+   "text": "there is no such account"
+  },
   "s.there-is-no-such-file-yet.6cf19fcf": {
    "source": "there is no such file yet",
    "text": "there is no such file yet"
@@ -29163,6 +29335,10 @@
   "s.there-is-no-such-firewall.83f99584": {
    "source": "there is no such firewall",
    "text": "there is no such firewall"
+  },
+  "s.there-is-no-such-passkey.a938086d": {
+   "source": "there is no such passkey",
+   "text": "there is no such passkey"
   },
   "s.there-is-no-token-line-for.377c6eff": {
    "source": "There is no token line for this attempt anywhere, because nothing reached the thing that writes them. The RADIUS reply is the whole of what is known about it, and it is here so that a token server nobody can reach is something you can see rather than an empty page.",
@@ -29407,6 +29583,18 @@
   "s.this-destination.1a2b3c0b": {
    "source": "this destination",
    "text": "this destination"
+  },
+  "s.this-device-already-has-a-passkey.61a1085e": {
+   "source": "This device already has a passkey for this account here. Use the one there, or ask a full admin to set Face ID up again for you.",
+   "text": "This device already has a passkey for this account here. Use the one there, or ask a full admin to set Face ID up again for you."
+  },
+  "s.this-device-has-a-passkey-for.8feda7d8": {
+   "source": "this device has a passkey for this account already",
+   "text": "this device has a passkey for this account already"
+  },
+  "s.this-device.eef9f92e": {
+   "source": "this device",
+   "text": "this device"
   },
   "s.this-directory-is-asked-and-no.f185e267": {
    "source": "This directory is asked, and no other — what is being tested here is this one. Nothing in it is changed; it is only read.",
@@ -30896,6 +31084,10 @@
    "source": "Use a private key you already have. Paste it whole, including its BEGIN and END lines; its public half is worked out here so you do not have to hand that over as well.",
    "text": "Use a private key you already have. Paste it whole, including its BEGIN and END lines; its public half is worked out here so you do not have to hand that over as well."
   },
+  "s.use-face-id.f3ef71ec": {
+   "source": "Use Face ID",
+   "text": "Use Face ID"
+  },
   "s.use-my-own-authority.95e67319": {
    "source": "Use my own authority",
    "text": "Use my own authority"
@@ -31259,6 +31451,10 @@
   "s.waited-in-the-queue.1f83ae19": {
    "source": "Waited in the queue",
    "text": "Waited in the queue"
+  },
+  "s.waiting-for-face-id.8b2f319b": {
+   "source": "Waiting for Face ID…",
+   "text": "Waiting for Face ID…"
   },
   "s.waiting-for-root.50f827fe": {
    "source": "waiting for root…",
@@ -33320,6 +33516,10 @@
    "source": "which step of the deployment",
    "text": "which step of the deployment"
   },
+  "s.which-step.27e37178": {
+   "source": "which step?",
+   "text": "which step?"
+  },
   "s.which-throws-away-exactly-what-those.20841def": {
    "source": ", which throws away exactly what those numbers already say is too old.",
    "text": ", which throws away exactly what those numbers already say is too old."
@@ -33699,6 +33899,10 @@
   "s.windows-started-up.d7ed7f65": {
    "source": "Windows started up",
    "text": "Windows started up"
+  },
+  "s.windows.26d9c28d": {
+   "source": "Windows",
+   "text": "Windows"
   },
   "s.windows.ab378b80": {
    "source": "windows",
@@ -34446,6 +34650,10 @@
    "source": "am-seg am-seg-{0}",
    "text": "am-seg am-seg-{0}"
   },
+  "p.an-account-keeps-at-most-passkeys.9576ce89": {
+   "source": "an account keeps at most {0} passkeys; take one away first",
+   "text": "an account keeps at most {0} passkeys; take one away first"
+  },
   "p.an-address-not-allowed-to-fetch.ef93b6a8": {
    "source": "an address not allowed to fetch it{0}{1} ·",
    "text": "an address not allowed to fetch it{0}{1} ·"
@@ -35010,6 +35218,10 @@
    "source": "Every field the firewall wrote ({0})",
    "text": "Every field the firewall wrote ({0})"
   },
+  "p.every-passkey-of-is-taken-away.bca5b5a5": {
+   "source": "Every passkey of {0} is taken away and every sign-in of theirs ends. Their next sign-in asks them to set Face ID up again.",
+   "text": "Every passkey of {0} is taken away and every sign-in of theirs ends. Their next sign-in asks them to set Face ID up again."
+  },
   "p.every-table-has-laid-out-goes.df57fdee": {
    "source": "Every table {0} has laid out goes back as it comes. They see it the next time a page loads.",
    "text": "Every table {0} has laid out goes back as it comes. They see it the next time a page loads."
@@ -35053,6 +35265,18 @@
   "p.f-md5-1.630ddf31": {
    "source": "{0}?f={1}{2}&md5=1{3}",
    "text": "{0}?f={1}{2}&md5=1{3}"
+  },
+  "p.face-id-is-not-switched-on.4eda4d79": {
+   "source": "Face ID is not switched on from this page: {0}. Open this page as https://name/ and switch it on there.",
+   "text": "Face ID is not switched on from this page: {0}. Open this page as https://name/ and switch it on there."
+  },
+  "p.face-id-of.26ac3a74": {
+   "source": "Face ID of {0}",
+   "text": "Face ID of {0}"
+  },
+  "p.face-id-was-refused-times-sign.16c4aea8": {
+   "source": "Face ID was refused {0} times - sign in again",
+   "text": "Face ID was refused {0} times - sign in again"
   },
   "p.failed-attempt-s-in.536a90f1": {
    "source": "{0} failed attempt(s) in {1}",
@@ -35294,9 +35518,17 @@
    "source": "{0} has no ban of its own: it is kept out because",
    "text": "{0} has no ban of its own: it is kept out because"
   },
+  "p.has-no-passkey-yet-their-next.0b94eff1": {
+   "source": "{0} has no passkey yet: their next sign-in sets Face ID up.",
+   "text": "{0} has no passkey yet: their next sign-in sets Face ID up."
+  },
   "p.has-not-answered-yet.96ecbe35": {
    "source": "{0} has not answered yet",
    "text": "{0} has not answered yet"
+  },
+  "p.has-passkey-s-set-face-id.54337313": {
+   "source": "{0} has {1} passkey(s). Set Face ID up again: every one of them is taken away, every sign-in of theirs ends, and the next sign-in of {2} makes a new one. For a lost or a new device.",
+   "text": "{0} has {1} passkey(s). Set Face ID up again: every one of them is taken away, every sign-in of theirs ends, and the next sign-in of {2} makes a new one. For a lost or a new device."
   },
   "p.hidden-line-s.b0e1062d": {
    "source": "Hidden - {0} line(s).",
@@ -35633,6 +35865,10 @@
   "p.it-is-tried-again-at-the.5d7d19f5": {
    "source": "{0}{1}. It is tried again at the next round rather than given up on.",
    "text": "{0}{1}. It is tried again at the next round rather than given up on."
+  },
+  "p.it-no-longer-confirms-it-is.2d7866e3": {
+   "source": "It no longer confirms it is you. It stays on the device until you take it away there (Settings - Passwords).{0}",
+   "text": "It no longer confirms it is you. It stays on the device until you take it away there (Settings - Passwords).{0}"
   },
   "p.it-says.4245a678": {
    "source": "it says: {0}",
@@ -36838,6 +37074,10 @@
    "source": "· said by {0}",
    "text": "· said by {0}"
   },
+  "p.said.5d5a6885": {
+   "source": "said{0}",
+   "text": "said{0}"
+  },
   "p.saved.cdf8bf34": {
    "source": ", saved {0}",
    "text": ", saved {0}"
@@ -37522,6 +37762,10 @@
    "source": "The next page of this list.{0}",
    "text": "The next page of this list.{0}"
   },
+  "p.the-next-sign-in-of-sets.755f422d": {
+   "source": "the next sign-in of {0} sets Face ID up again",
+   "text": "the next sign-in of {0} sets Face ID up again"
+  },
   "p.the-oldest-is-from.7f7713a1": {
    "source": "the oldest is from {0}",
    "text": "the oldest is from {0}"
@@ -37689,6 +37933,10 @@
   "p.this-account-has-been-locked-time.652b592b": {
    "source": "This account has been locked {0} time(s) in the last week. The machine and the program on the refusals below it are almost always the answer: a saved password in a mail client, a mapped drive, a phone.",
    "text": "This account has been locked {0} time(s) in the last week. The machine and the program on the refusals below it are almost always the answer: a saved password in a mail client, a mapped drive, a phone."
+  },
+  "p.this-account-has-no-passkey-for.7b61a309": {
+   "source": "this account has no passkey for {0} - open the page by the name it was made on, or ask a full admin to set Face ID up again for you",
+   "text": "this account has no passkey for {0} - open the page by the name it was made on, or ask a full admin to set Face ID up again for you"
   },
   "p.this-address-is-kept-out-because.0e154a5b": {
    "source": "This address is kept out because the range {0} is banned. Letting it go lets in every address of it with no ban of its own; the ones it was folded from, if any, stay banned as themselves.",

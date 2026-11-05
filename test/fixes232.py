@@ -52,8 +52,10 @@ PORT = 19400 + random.randint(0, 90)
 # table and column is as it was.
 # 1.10.301 added a table of its own (load_samples, the performance meter's
 # readings), which an older version never reads.
+# 1.10.303 gave sessions a column (second, the Face ID a sign-in still
+# owes): an older version writes its sessions without it and never reads it.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '57f002ee8a3a81b6d8dfcd701c344ba698815516195072cefc9d6fca06cba1ba'}
+               'sha256': '31129ac5b8f93914b8c34c98bcc585559e048cf9b7196866ef7428b981b61d30'}
 
 
 def ok(what, got, want=True):
