@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.292",
+  "version": "1.10.293",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -17984,13 +17984,9 @@
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Jen pro server, který si o něj řekne. Vytvořený zde – jeho klíč nikdy neopustí tento stroj; server dostane"
   },
-  "s.only-from-acme-s-nodes.89667324": {
-   "source": "Only from acme's nodes",
-   "text": "Jen z uzlů acme"
-  },
-  "s.only-from-otp-s-nodes.cec2d00b": {
-   "source": "Only from otp's nodes",
-   "text": "Jen z uzlů otp"
+  "s.only-from-the-nodes.215f90c6": {
+   "source": "Only from the nodes",
+   "text": "Jen od uzlů"
   },
   "s.only-from-the-senders.92a4b4ca": {
    "source": "Only from the senders",
@@ -40589,6 +40585,14 @@
   "s.one-remembered-value-written-the-way.060e70f2": {
    "source": "One remembered value, written the way the page writes it.",
    "text": "Jedna zapamatovaná hodnota, zapsaná tak, jak ji zapisuje stránka."
+  },
+  "s.only-from-acme-s-nodes.89667324": {
+   "source": "Only from acme's nodes",
+   "text": "Jen z uzlů acme"
+  },
+  "s.only-from-otp-s-nodes.cec2d00b": {
+   "source": "Only from otp's nodes",
+   "text": "Jen z uzlů otp"
   },
   "s.only-needed-the-first-time-or.86a95f44": {
    "source": "Only needed the first time, or if the account below cannot get in. Leave it empty to check over a database that is already there.",

@@ -3867,6 +3867,12 @@ function srcText(el) {
   .fw-auto-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
     display:flex;flex-direction:column;gap:10px}
   .fw-auto-card.off{opacity:.55}
+  /* From anywhere / Only from …: the same in every card (1.10.293) - the
+     card's width, two equal halves, one line each; a longer name is cut
+     with … and said whole when pointed at. */
+  .fw-auto-card .seg{display:flex;flex-wrap:nowrap;width:100%}
+  .fw-auto-card .seg button{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;padding:7px 8px}
   .fw-auto-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
   .fw-auto-rules{display:flex;flex-direction:column;gap:5px}
   .fw-rl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
@@ -40347,9 +40353,11 @@ function drawFwBody(d, auto) {
       senders.disabled = !d.may;
       senders.hidden = lg.any;
       senders.onchange = function () { lg.from = senders.value.split(/[\s,;]+/).filter(Boolean); fwDirty(); };
-      card.appendChild(wrSeg([[true, 'From anywhere'], [false, item.key === 'logs' ? 'Only from the senders'
-        : (item.key === 'acmetls' ? 'Only from acme\'s nodes' : 'Only from otp\'s nodes')]], lg.any,
-        function (v) { lg.any = v; senders.hidden = v; fwDirty(); }, !d.may));
+      var seg = wrSeg([[true, 'From anywhere'], [false, item.key === 'logs' ? 'Only from the senders'
+        : 'Only from the nodes']], lg.any,
+        function (v) { lg.any = v; senders.hidden = v; fwDirty(); }, !d.may);
+      Array.prototype.forEach.call(seg.children, function (b) { b.title = b.textContent; });
+      card.appendChild(seg);
       card.appendChild(senders);
     }
     var list = el('div', 'fw-auto-rules');

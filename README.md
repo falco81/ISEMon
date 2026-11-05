@@ -372,6 +372,12 @@ working.
 
 ## Version
 
+1.10.293
+
+- **The firewall's tiles choose who may send the same way**: From anywhere
+  and Only from the senders (or the nodes) take the tile's whole width, in
+  two equal halves on one line - the acme tile's had broken onto two lines.
+
 1.10.292
 
 - **The acme tab is searched as every other list is.** Its certificates,

@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.292",
+  "version": "1.10.293",
   "made": "2026-11-05",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -17984,13 +17984,9 @@
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the"
   },
-  "s.only-from-acme-s-nodes.89667324": {
-   "source": "Only from acme's nodes",
-   "text": "Only from acme's nodes"
-  },
-  "s.only-from-otp-s-nodes.cec2d00b": {
-   "source": "Only from otp's nodes",
-   "text": "Only from otp's nodes"
+  "s.only-from-the-nodes.215f90c6": {
+   "source": "Only from the nodes",
+   "text": "Only from the nodes"
   },
   "s.only-from-the-senders.92a4b4ca": {
    "source": "Only from the senders",
