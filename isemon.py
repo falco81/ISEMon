@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.293'
+__version__ = '1.10.294'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -17164,6 +17164,7 @@ ACME_ENVELOPE = re.compile(
     r'(?:(?P<iso>\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?)'
     r'|(?P<bsd>[A-Z][a-z]{2} [ \d]\d \d\d:\d\d:\d\d))\s+'
     r'(?P<host>\S+)\s+(?P<tag>[A-Za-z0-9_.-]+)(?:\[(?P<pid>\d+)\])?:\s?(?P<msg>.*)$')
+ACME_NEXT_KEY = re.compile(r' (?=[a-z][a-z0-9_]{0,31}=)')
 ACME_TOKEN = re.compile(r'([a-z][a-z0-9_]{0,31})=("(?:[^"\\]|\\.)*"?|[^ ]*)')
 # What each line may carry and what is kept in a column of its own; every
 # other field is kept beside it, as it came.
@@ -17220,13 +17221,21 @@ def acme_fields(text):
         text = text[:-len(' ...TRUNCATED')]
     if not text.startswith('level='):
         return None, truncated
-    out, at = {}, 0
+    out, at, last = {}, 0, None
     while at < len(text):
         while at < len(text) and text[at] == ' ':
             at += 1
         m = ACME_TOKEN.match(text, at)
         if not m:
-            break
+            # A quote left inside a value (acme's own scrub leaves `"[hidden]"`
+            # as it was): what runs to the next key is the value before's
+            # (1.10.294) - the rest of the line was lost.
+            nxt = ACME_NEXT_KEY.search(text, at)
+            if not nxt or not out or last is None:
+                break
+            out[last[0]] = acme_unquote(text[last[1]:nxt.start()])
+            at = nxt.end()
+            continue
         key, value = m.group(1), m.group(2)
         if key == 'msg':
             # msg is always the last: whatever follows is its own, however it
@@ -17234,7 +17243,9 @@ def acme_fields(text):
             rest = text[m.start(2):]
             out['msg'] = acme_unquote(rest) if rest.startswith('"') else rest
             break
-        out.setdefault(key, acme_unquote(value))
+        if key not in out:
+            out[key] = acme_unquote(value)
+            last = (key, m.start(2))
         at = m.end()
     return out, truncated
 
@@ -17260,14 +17271,18 @@ def acme_when(m, now=None):
             return now
     text = re.sub(r'\s+', ' ', m.group('bsd'))
     year = time.localtime(now).tm_year
-    for y in (year, year - 1):
+    # The year that puts it nearest now and no later than tomorrow - next
+    # year's too, for a node a few seconds ahead at New Year, and a 29
+    # February tried in the years that have one (1.10.294).
+    best = None
+    for y in (year + 1, year, year - 1, year - 2, year - 3, year - 4):
         try:
             ts = time.mktime(time.strptime('%d %s' % (y, text), '%Y %b %d %H:%M:%S'))
         except (ValueError, OverflowError):
-            return now
-        if ts <= now + 86400:
-            return ts
-    return now
+            continue
+        if ts <= now + 86400 and (best is None or abs(now - ts) < abs(now - best)):
+            best = ts
+    return best if best is not None else now
 
 
 def acme_parse_lines(lines, hold=None, now=None):
@@ -35531,7 +35546,7 @@ class Storage(object):
                     'node': r['node'], 'names': None, 'serial': None, 'not_after': None,
                     'issuer': None, 'version': None, 'reason': None, 'targets': {},
                     'issued_at': None, 'failed_at': None, 'failed_msg': None,
-                    'expired_at': None, 'revoked_at': None, 'deleted_at': None,
+                    'expired_at': None, 'revoked_at': None, 'deleted_at': None, 'added_at': None,
                     'events': 0, 'deploys_ok': 0, 'deploys_failed': 0}
             c['events'] += 1
             for k in ('names', 'serial', 'not_after', 'issuer', 'version', 'reason'):
@@ -35549,6 +35564,8 @@ class Storage(object):
                 c['revoked_at'] = r['ts']
             if act == 'deleted' and c['deleted_at'] is None:
                 c['deleted_at'] = r['ts']
+            if act in ('added', 'imported') and c['added_at'] is None:
+                c['added_at'] = r['ts']
             if r['target'] and act in ('deployed', 'deploy'):
                 ok = act == 'deployed' and r['result'] in (None, 'ok')
                 if ok:
@@ -35563,12 +35580,14 @@ class Storage(object):
         out = []
         for c in certs.values():
             issued = c['issued_at'] or 0
+            # Added again after it was deleted: there again (1.10.294).
+            back = max(issued, c['added_at'] or 0)
             na = c['not_after']
             c['days_left'] = None if na is None else (na - now) / 86400.0
             failing_deploy = any(not t['ok'] for t in c['targets'].values())
-            if c['deleted_at'] and c['deleted_at'] >= issued:
+            if c['deleted_at'] and c['deleted_at'] >= back:
                 state = 'deleted'
-            elif c['revoked_at'] and c['revoked_at'] >= issued:
+            elif c['revoked_at'] and c['revoked_at'] >= back:
                 state = 'revoked'
             elif (na is not None and na <= now) or (c['expired_at'] and c['expired_at'] >= issued):
                 state = 'expired'
@@ -35612,7 +35631,7 @@ class Storage(object):
         try:
             rows = db.execute(
                 'SELECT ts, tag, level, kind, action, result, who, node FROM acme_events '
-                'WHERE ts >= ? ORDER BY ts LIMIT 300000', (since,)).fetchall()
+                'WHERE ts >= ? ORDER BY ts DESC LIMIT 300000', (since,)).fetchall()[::-1]
         except sqlite3.Error:
             rows = []
         # Day by day, on this machine's calendar.
@@ -35807,14 +35826,21 @@ class Storage(object):
                     ' LIMIT %d) AS counted' % (self.COUNT_CAP + 1), tuple(args)).fetchone()['n'])
             except sqlite3.Error:
                 total = offset + len(rows)
-        try:
-            facets = {}
-            for k in ('node', 'kind', 'action', 'level', 'tag'):
-                facets[k] = [str(r['v']) for r in self.db.execute(
-                    'SELECT DISTINCT %s AS v FROM acme_events WHERE %s IS NOT NULL ORDER BY %s '
-                    'LIMIT 100' % (k, k, k)).fetchall()]
-        except sqlite3.Error:
-            facets = {}
+        # The choices of the drop-downs: a scan of the table each, kept a
+        # minute rather than made again on every page asked (1.10.294).
+        kept = getattr(self, '_acme_facets', None)
+        if kept and time.time() - kept[0] < 60:
+            facets = kept[1]
+        else:
+            try:
+                facets = {}
+                for k in ('node', 'kind', 'action', 'level', 'tag'):
+                    facets[k] = [str(r['v']) for r in self.db.execute(
+                        'SELECT DISTINCT %s AS v FROM acme_events WHERE %s IS NOT NULL '
+                        'ORDER BY %s LIMIT 100' % (k, k, k)).fetchall()]
+                self._acme_facets = (time.time(), facets)
+            except sqlite3.Error:
+                facets = {}
         return {'rows': rows, 'more': more, 'facets': facets,
                 'total': min(total, self.COUNT_CAP), 'capped': total > self.COUNT_CAP}
 
@@ -35871,8 +35897,11 @@ class Storage(object):
         for k in self.ACME_JOB_NUMBERS:
             v = f.pop(k, None)
             try:
-                row[k] = int(float(v)) if v not in (None, '') else None
-            except (TypeError, ValueError):
+                n = int(float(v)) if v not in (None, '') else None
+                # Held to what a BIGINT holds (1.10.294): bytes=1e20 or
+                # status=inf stopped every pass over the file at that line.
+                row[k] = None if n is None else max(-BIGINT_MOST, min(BIGINT_MOST, n))
+            except (TypeError, ValueError, OverflowError):
                 row[k] = None
                 if v is not None:
                     f[k] = v
@@ -35929,10 +35958,11 @@ class Storage(object):
         try:
             heads = db.execute(
                 "SELECT * FROM acme_jobs WHERE kind = 'job' AND event IN ('start', 'end') "
-                'AND ts >= ? ORDER BY ts LIMIT 200000', (since - 86400,)).fetchall()
+                'AND ts >= ? ORDER BY ts DESC LIMIT 200000', (since - 86400,)).fetchall()[::-1]
             lasts = db.execute(
-                "SELECT job, node, MAX(ts) AS last_ts, COUNT(*) AS n FROM acme_jobs "
-                "WHERE kind = 'job' AND ts >= ? GROUP BY job, node", (since - 86400,)).fetchall()
+                "SELECT job, node, MAX(ts) AS last_ts, MAX(at) AS last_at, COUNT(*) AS n "
+                "FROM acme_jobs WHERE kind = 'job' AND ts >= ? GROUP BY job, node",
+                (since - 86400,)).fetchall()
         except sqlite3.Error:
             return []
         jobs = {}
@@ -35957,13 +35987,22 @@ class Storage(object):
             j = jobs.get((r['job'], r['node']))
             if j:
                 j['last_ts'], j['lines'] = r['last_ts'], int(r['n'])
+                j['last_at'] = r['last_at']
         out = []
         for j in jobs.values():
-            if (j.get('started') or j.get('ended') or 0) < since:
+            # Begun or ended in the window: one begun just before it and
+            # ended inside it is one of its jobs too (1.10.294).
+            if max(j.get('started') or 0, j.get('ended') or 0) < since:
                 continue
             if j['state'] is None:
-                j['state'] = 'interrupted' if now - (j.get('last_ts') or 0) > \
-                    self.ACME_JOB_STALE_S else 'running'
+                # How long since its last line ARRIVED: the node's clock may
+                # be in another zone than this one (1.10.294) - or, for lines
+                # read again long after, its own time beyond any zone there is.
+                arrived = j.get('last_at') or j.get('last_ts') or 0
+                written = j.get('last_ts') or 0
+                j['state'] = 'interrupted' if (
+                    now - arrived > self.ACME_JOB_STALE_S or
+                    now - written > self.ACME_JOB_STALE_S + 14 * 3600) else 'running'
             out.append(j)
         out.sort(key=lambda j: -(j.get('started') or j.get('ended') or 0))
         return out[:limit]
@@ -36133,8 +36172,8 @@ class Storage(object):
             rows = [dict(r) for r in self.db.execute(
                 "SELECT ts, node, level, check_id, test, test_kind, cert, cert_id, endpoint, "
                 "state, ok, ms, fails, went, prior, msg, extra FROM acme_jobs "
-                "WHERE kind = 'check' AND ts >= ? ORDER BY ts LIMIT 200000",
-                (since,)).fetchall()]
+                "WHERE kind = 'check' AND ts >= ? ORDER BY ts DESC LIMIT 200000",
+                (since,)).fetchall()][::-1]
         except sqlite3.Error:
             rows = []
         checks = {}
@@ -50068,7 +50107,9 @@ class Daemon(object):
                     if not quiet:
                         failure = failure or e
                         break
-                    log('a record from %s could not be taken: %s' % (record.server, e), 'warn')
+                    log('a record from %s could not be taken: %s' % (
+                        getattr(record, 'server', None) or getattr(record, 'host', '') or '?', e),
+                        'warn')
             if self._router_owed:
                 self._router_owed = False
                 self.mikrotik_after_change()
@@ -68846,6 +68887,15 @@ def push_checked(store, op, raw, head, app_id):
                           'running on both?' % (abs(off), 'behind' if off > 0 else 'ahead of'))
     if not push_ed25519_verify(pub, push_canonical(op, app_id, kid, ts, nonce, raw), sig_raw):
         raise PushRefused('bad_signature', 401, 'the signature does not match')
+    # A pairing signs with the key it brings, so anybody can sign one: it is
+    # refused before anything of it is kept unless a code is waiting
+    # (1.10.294) - its nonces filled the store that keeps the paired acmes'
+    # requests from being replayed.
+    if op == 'pair':
+        waiting = _push_meta(store, 'acme_push:pairing', {})
+        if not waiting.get('code') or float(waiting.get('until') or 0) < time.time():
+            raise PushRefused('pairing_closed', 403, 'no pairing code is waiting here: Pair with '
+                              'an acme on Certificates and TLS shows one')
     with PUSH_LOCK:
         seen = _push_meta(store, 'acme_push:nonces', {})
         now = time.time()
@@ -68853,9 +68903,12 @@ def push_checked(store, op, raw, head, app_id):
                 if isinstance(v, (int, float)) and now - v < PUSH_NONCE_S}
         if '%s:%s' % (kid, nonce) in seen:
             raise PushRefused('replay', 401, 'that request was seen already')
+        # Full of nonces still inside the window: refused, never one of them
+        # let go - a request it held could then be sent again (1.10.294).
+        if len(seen) >= PUSH_NONCES_MOST:
+            raise PushRefused('busy', 503, 'too many requests in the last minutes - try again '
+                              'later')
         seen['%s:%s' % (kid, nonce)] = now
-        if len(seen) > PUSH_NONCES_MOST:
-            seen = dict(sorted(seen.items(), key=lambda kv: kv[1])[-PUSH_NONCES_MOST:])
         _push_put(store, 'acme_push:nonces', seen)
     return kid, (body if body is not None else _push_json(raw)), nonce
 
@@ -70966,7 +71019,12 @@ def _winzip_aes(raw, extra, password, crc, ae_crc):
     stream = _aes_ecb(enc_key, b''.join(struct.pack('<QQ', i + 1, 0) for i in range(n)))
     plain = bytes(a ^ b for a, b in zip(body, stream))
     if extra['method'] == 8:
-        plain = zlib.decompress(plain, -15)
+        # Never more than an entry may be, whatever its header says (1.10.294):
+        # a stream that unpacks a thousand times over is cut, not held.
+        unpack = zlib.decompressobj(-15)
+        plain = unpack.decompress(plain, 262145)
+        if len(plain) > 262144 or unpack.unconsumed_tail:
+            raise ValueError('an entry unpacks to far more than the file otp or acme makes')
     elif extra['method'] != 0:
         raise ValueError('a compression this does not know (%d)' % extra['method'])
     if ae_crc and (zlib.crc32(plain) & 0xffffffff) != crc:

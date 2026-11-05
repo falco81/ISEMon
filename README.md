@@ -372,6 +372,41 @@ working.
 
 ## Version
 
+1.10.294
+
+- **Root's helper no longer opens a port for another program**: the
+  encrypted receiving of the OTP or acme logs refuses a port another program
+  listens on (it could have been asked for 5432, and firewalld and SELinux
+  opened for the database), checks that rsyslog itself listens after the
+  restart, and never takes a port from another service in SELinux.
+  Switching one receiver off checks rsyslog when the other's file changed
+  with it; a file is isemon's by its own mark only; a request whose time is
+  not a number is not fresh; every file is put back on its own.
+- **acme push**: a pairing nobody may make (no code waiting) is refused
+  before anything of it is kept, and a full store of nonces refuses new
+  requests rather than letting one go - its nonces could have been filled
+  from anywhere and a request replayed.
+- **The ZIPs of otp and acme**: an entry is unpacked no further than an
+  entry may be, whatever its header says.
+- **acme's logs**:
+  - a number too big for the database no longer stops every pass over the
+    file at that line;
+  - a quote left inside a value no longer loses the rest of the line;
+  - 1 January read on New Year's Eve, and 29 February, get their year;
+  - a certificate deleted and added again is there again;
+  - a job begun before the window and ended in it is counted, and whether
+    one was interrupted goes by when its last line arrived;
+  - the pages keep the newest lines, not the oldest, where there are more
+    than they hold.
+- **The acme tab**:
+  - only the answer to the newest question is drawn;
+  - the axis of when they run out goes no further back than 400 days;
+  - its cards, marks and lines are reached by the keyboard;
+  - Kinds and accounts narrow the lines with it shown in their boxes;
+  - Read again comes back after a failure;
+  - the minute's refresh keeps what is drawn and stops when the tab is
+    left.
+
 1.10.293
 
 - **The firewall's tiles choose who may send the same way**: From anywhere

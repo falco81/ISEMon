@@ -211,6 +211,10 @@ try:
                cert='c', issuer='ZS')
     lines += J('5', 60, [('start', 0, {})], job_kind='renew', cert='d', issuer='ZS')
     daemon.read_records(lines, kind='acmelog')
+    # Job 4's lines arrived when they were written, five hours ago (1.10.294:
+    # whether a job was interrupted goes by when its last line arrived).
+    with store.db_write() as db:
+        db.execute("UPDATE acme_jobs SET at = ? WHERE job = '4'", (now - 5 * 3600,))
     v = store.acme_jobs_view(30)
     k = v['kpi']
     states = {j['job']: j['state'] for j in v['jobs']}

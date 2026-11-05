@@ -43892,7 +43892,21 @@ function amTip() {
   }
   return t;
 }
+/* A thing a click opens, also opened from the keyboard (1.10.294). */
+function amKeys(node, go) {
+  if (!node.getAttribute('tabindex')) node.setAttribute('tabindex', '0');
+  node.setAttribute('role', 'button');
+  node.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(ev); }
+  });
+}
 function amHover(node, lines) {
+  /* ...and its tooltip shown when it is reached by Tab, beside it. */
+  node.addEventListener('focus', function () {
+    var r = node.getBoundingClientRect();
+    node.dispatchEvent(new MouseEvent('mousemove', {clientX: r.right, clientY: r.bottom}));
+  });
+  node.addEventListener('blur', function () { amTip().hidden = true; });
   node.addEventListener('mousemove', function (ev) {
     var t = amTip();
     clear(t);
@@ -43918,10 +43932,15 @@ function amHover(node, lines) {
   node.addEventListener('mouseleave', function () { amTip().hidden = true; });
 }
 
+var AM_ASKED = 0;
 function loadAcmeLog(quiet) {
-  if (!$('am-host')) return;
+  if (!$('am-host')) return Promise.resolve();
   AM.asked = Date.now();
-  api('acmelog&days=' + AM.days, undefined, {quiet: !!quiet}).then(function (d) {
+  /* Only the answer to the newest question is drawn (1.10.294): a year
+     asked, then seven days, and the year's answer came last. */
+  var mine = ++AM_ASKED, days = AM.days;
+  var asked = api('acmelog&days=' + days, undefined, {quiet: !!quiet}).then(function (d) {
+    if (mine !== AM_ASKED || days !== AM.days) return;
     AM.d = d;
     /* Not drawn again under somebody typing in one of its boxes or
        choosing in a drop-down: what they typed would go. */
@@ -43934,16 +43953,21 @@ function loadAcmeLog(quiet) {
   }).catch(function (e) { if (!quiet) oops(e); });
   if (!AM.timer) {
     AM.timer = setInterval(function () {
-      if (TAB !== 'acmelog' || document.hidden) return;
-      if (Date.now() - AM.asked > 60000) { loadAcmeLog(true); amEvents(true, true); }
+      /* Let go once the tab is left; showing it again starts it again. */
+      if (TAB !== 'acmelog') { clearInterval(AM.timer); AM.timer = null; return; }
+      if (document.hidden) return;
+      if (Date.now() - AM.asked > 60000) loadAcmeLog(true);
     }, 5000);
   }
+  return asked;
 }
 
 function drawAcmeLog() {
   var host = $('am-host');
   var d = AM.d;
   if (!host || !d) return;
+  /* A tooltip over a mark that is drawn again would stay on the page. */
+  amTip().hidden = true;
   clear(host);
   if (!d.on) {
     host.appendChild(el('p', 'note', 'acme’s logs are not read: Settings → The acme logs.'));
@@ -44023,7 +44047,13 @@ function amHead(d) {
   });
   right.appendChild(seg);
   var again = cmdButton('Read again', 'refresh', 'small');
-  again.onclick = function () { busy(again, true); AMJ.asked = 0; loadAcmeLog(); amEvents(true); };
+  again.onclick = function () {
+    busy(again, true);
+    if (AMJ.d) AMJ.d._at = 0;
+    if (AMJ.c) AMJ.c._at = 0;
+    /* Back to itself however the answer goes (1.10.294). */
+    loadAcmeLog().then(function () { busy(again, false); }, function () { busy(again, false); });
+  };
   right.appendChild(again);
   head.appendChild(right);
   return head;
@@ -44060,6 +44090,7 @@ function amKpis(d) {
       card.tabIndex = 0;
       card.title = 'Show these certificates only';
       card.onclick = function () { AM.state = AM.state === c[5] ? '' : c[5]; drawAcmeLog(); var t = $('am-certs'); if (t) t.scrollIntoView({behavior: 'smooth', block: 'start'}); };
+      amKeys(card, card.onclick);
     }
     grid.appendChild(card);
   });
@@ -44276,7 +44307,10 @@ function amRunway(d) {
   var now = d.now || Date.now() / 1000;
   var soon = d.soon_days || 30;
   var dl = certs.map(function (c) { return (c.not_after - now) / 86400; });
-  var lo = Math.min(-14, Math.floor(Math.min.apply(null, dl) / 7) * 7 - 7);
+  /* No further back than 400 days, whatever ran out when (1.10.294): the
+     dots are held at the edge, and the axis does not grow a line a month
+     back to 1970. */
+  var lo = Math.max(-400, Math.min(-14, Math.floor(Math.min.apply(null, dl) / 7) * 7 - 7));
   var hi = Math.max(120, Math.ceil(Math.max.apply(null, dl) / 30) * 30);
   hi = Math.min(hi, 800);
   var W = 640, padL = 14, padR = 14, axisY = 0, rowH = 22;
@@ -44296,13 +44330,17 @@ function amRunway(d) {
                           'aria-label': 'When each certificate runs out'});
   svg.appendChild(amSvg('rect', {x: x(lo), y: 10, width: x(0) - x(lo), height: axisY - 10, 'class': 'am-zone-gone'}));
   svg.appendChild(amSvg('rect', {x: x(0), y: 10, width: x(soon) - x(0), height: axisY - 10, 'class': 'am-zone-soon'}));
-  for (var t = Math.ceil(lo / 30) * 30; t <= hi; t += (hi - lo > 300 ? 90 : 30)) {
+  /* From today both ways, so today is always one of them. */
+  var tstep = hi - lo > 300 ? 90 : 30, ticks = [];
+  for (var tt = 0; tt <= hi; tt += tstep) ticks.push(tt);
+  for (tt = -tstep; tt >= lo; tt -= tstep) ticks.push(tt);
+  ticks.forEach(function (t) {
     svg.appendChild(amSvg('line', {x1: x(t), x2: x(t), y1: 10, y2: axisY, 'class': 'am-grid'}));
     var lab = amSvg('text', {x: x(t), y: axisY + 16, 'class': 'am-axis',
                              'text-anchor': x(t) > W - 40 ? 'end' : (x(t) < 40 ? 'start' : 'middle')});
     lab.textContent = t === 0 ? 'today' : (t > 0 ? '+' + t + ' d' : t + ' d');
     svg.appendChild(lab);
-  }
+  });
   svg.appendChild(amSvg('line', {x1: x(0), x2: x(0), y1: 6, y2: axisY + 4, 'class': 'am-today'}));
   svg.appendChild(amSvg('line', {x1: padL, x2: W - padR, y1: axisY, y2: axisY, 'class': 'am-base'}));
   placed.forEach(function (p) {
@@ -44319,6 +44357,7 @@ function amRunway(d) {
               {text: (AM_STATE[p.c.state] || [p.c.state])[0]}];
     });
     g.addEventListener('click', function () { amCert(p.c); });
+    amKeys(g, function () { amCert(p.c); });
     svg.appendChild(g);
   });
   var wrap = el('div', 'am-chart');
@@ -44545,7 +44584,7 @@ function amKinds(d) {
     track.appendChild(fill);
     row.appendChild(track);
     row.appendChild(noI18n(el('b', '', num(k.n))));
-    row.onclick = function () { AM.evq = {kind: k.kind === 'test' ? '' : k.kind}; amEvents(true); var c = $('am-events'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); };
+    row.onclick = function () { amEventsAs({kind: k.kind === 'test' ? '' : k.kind}); };
     bars.appendChild(row);
   });
   card.appendChild(bars);
@@ -44557,7 +44596,7 @@ function amKinds(d) {
       chip.type = 'button';
       chip.appendChild(noI18n(el('span', '', w.who)));
       chip.appendChild(noI18n(el('b', '', ' ' + num(w.n))));
-      chip.onclick = function () { AM.evq = {who: w.who}; amEvents(true); var c = $('am-events'); if (c) c.scrollIntoView({behavior: 'smooth', block: 'start'}); };
+      chip.onclick = function () { amEventsAs({q: 'who:"' + String(w.who).replace(/"/g, '') + '"'}); };
       who.appendChild(chip);
     });
     card.appendChild(who);
@@ -44668,6 +44707,19 @@ function amEventsCard() {
   }, 0);
   return card;
 }
+/* The lines narrowed from elsewhere on the tab: the card drawn again with
+   what narrows them in its own boxes, from the first page (1.10.294). */
+function amEventsAs(want) {
+  AM.evq = want;
+  AM.evPage = 0;
+  var c = $('am-events');
+  if (c) {
+    var n = amEventsCard();
+    c.parentNode.replaceChild(n, c);
+    n.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+  amEvents();
+}
 var AM_EV_SORT_KEYS = {'When': 'ts', 'Level': 'level', 'Node': 'node', 'Kind': 'kind', 'Who': 'who',
                        'What': 'action', 'Message': 'msg'};
 var AM_EV_ASKED = 0;
@@ -44702,6 +44754,8 @@ function amEvents(fresh, quiet) {
         o.value = v;
         s2.appendChild(o);
       });
+      /* What narrows the list, shown as chosen once its choice is there. */
+      if (w[k] && s2.value !== w[k]) s2.value = w[k];
     });
     amDrawEvents();
     var cnt = $('am-ev-count');
@@ -44793,12 +44847,22 @@ function amLoadPage(host) {
   box.id = 'am-page';
   box.appendChild(el('p', 'note', 'Reading…'));
   host.appendChild(box);
-  var page = AM.page;
+  var page = AM.page, days = AM.days;
   var have = page === 'jobs' ? AMJ.d : AMJ.c;
-  if (have && have.days === AM.days && Date.now() - AMJ.asked < 30000) { amDrawPage(); return; }
-  AMJ.asked = Date.now();
-  api((page === 'jobs' ? 'acmelog-jobs' : 'acmelog-checks') + '&days=' + AM.days, undefined, {quiet: true}).then(function (d) {
+  /* What there is, drawn at once; asked again behind it when it is old. */
+  if (have && have.days === days) {
+    amDrawPage();
+    if (Date.now() - (have._at || 0) < 30000) return;
+  }
+  var mine = AMJ.seq = (AMJ.seq || 0) + 1;
+  api((page === 'jobs' ? 'acmelog-jobs' : 'acmelog-checks') + '&days=' + days, undefined, {quiet: true}).then(function (d) {
+    d._at = Date.now();
     if (page === 'jobs') AMJ.d = d; else AMJ.c = d;
+    /* Only the newest question's answer, on the page it was asked for. */
+    if (mine !== AMJ.seq || page !== AM.page || days !== AM.days) return;
+    var act = document.activeElement;
+    if (have && act && $('am-page') && $('am-page').contains(act)
+        && /^(INPUT|SELECT|TEXTAREA)$/.test(act.tagName)) return;
     amDrawPage();
   }).catch(function (e) { oops(e); });
 }
@@ -44945,10 +45009,11 @@ function amDurations(d) {
   var card = el('div', 'card');
   var h = el('h2', '', 'How long a renewal takes');
   card.appendChild(h);
-  var pts = (d.durations || []).filter(function (p) { return p.ts && p.took_ms !== null; });
+  var pts = (d.durations || []).filter(function (p) { return isFinite(p.ts) && p.ts && isFinite(p.took_ms) && p.took_ms !== null; });
   if (!pts.length) { card.appendChild(el('p', 'note', 'No renewal has ended yet.')); return card; }
   var W = 640, H = 200, padL = 70, padR = 10, padT = 10, padB = 26;
-  var t0 = d.since, t1 = d.now;
+  var t1 = isFinite(d.now) && d.now ? d.now : Date.now() / 1000;
+  var t0 = isFinite(d.since) && d.since ? d.since : t1 - AM.days * 86400;
   var max = Math.max.apply(null, pts.map(function (p) { return p.took_ms; }));
   var log = max > 20 * Math.max(1, Math.min.apply(null, pts.map(function (p) { return p.took_ms || 1; })));
   var lo = log ? Math.max(1, Math.pow(10, Math.floor(Math.log10(Math.max(1, Math.min.apply(null, pts.map(function (p) { return p.took_ms || 1; }))))))) : 0;
@@ -44989,6 +45054,7 @@ function amDurations(d) {
               {text: stamp(p.ts)}, {text: p.ok ? 'done' : 'failed'}];
     });
     g.addEventListener('click', function () { amJob({job: p.job, node: p.node, cert: p.cert}); });
+    amKeys(g, function () { amJob({job: p.job, node: p.node, cert: p.cert}); });
     svg.appendChild(g);
   });
   var chart = el('div', 'am-chart');
@@ -45429,6 +45495,7 @@ function amCert(c) {
         li.appendChild(top);
         li.appendChild(noI18n(el('div', 'am-tl-msg', r.msg || '')));
         li.onclick = function () { amLine(r); };
+        amKeys(li, li.onclick);
         ol.appendChild(li);
       });
       hist.appendChild(ol);

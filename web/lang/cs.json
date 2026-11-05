@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.293",
+  "version": "1.10.294",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -14935,6 +14935,10 @@
   "s.morocco.32e087f0": {
    "source": "Morocco",
    "text": "Maroko"
+  },
+  "s.mousemove.9864b9aa": {
+   "source": "mousemove",
+   "text": "mousemove"
   },
   "s.move-to-another-database.0e7e7a0c": {
    "source": "Move to another database",

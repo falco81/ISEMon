@@ -60,6 +60,7 @@ plain input, which is never touched (see otptls_part).
 """
 import ipaddress
 import json
+import math
 import os
 import re
 import shutil
@@ -529,13 +530,17 @@ def snapshot(paths):
 
 
 def put_back(snap):
+    # Each file on its own (1.10.294): one that cannot be written back no
+    # longer stops the others from being.
+    failed = []
     for p, was in snap.items():
         if was is None:
             try:
                 os.unlink(p)
             except OSError:
                 pass
-        else:
+            continue
+        try:
             fd, tmp = tempfile.mkstemp(dir=os.path.dirname(p))
             with os.fdopen(fd, 'wb') as f:
                 f.write(was[0])
@@ -543,6 +548,10 @@ def put_back(snap):
             os.replace(tmp, p)
             if shutil.which('restorecon') and not NO_SERVICES:
                 subprocess.run(['restorecon', p], capture_output=True)
+        except OSError:
+            failed.append(p)
+    if failed:
+        print('isemon_web.py: not put back: %s' % ', '.join(failed), file=sys.stderr)
 
 
 # ---- who may reach which page ---------------------------------------------------
@@ -1786,7 +1795,7 @@ def sshkeys_do(r):
             at = float(r.get('at') or 0)
         except (TypeError, ValueError):
             at = 0.0
-        if abs(time.time() - at) > SSHKEYS_FRESH_S:
+        if not math.isfinite(at) or abs(time.time() - at) > SSHKEYS_FRESH_S:
             raise Refused('that was asked too long ago - ask again on the page if it is still '
                           'wanted')
     lines = auth_lines()
@@ -2793,6 +2802,21 @@ def tls_siblings():
 IMTCP_LOAD = 'module(load="imtcp")'
 
 
+def rsyslog_check():
+    """rsyslogd -N1 on what is written: refused - and put back - when it says no."""
+    if NO_SERVICES and not os.environ.get('ISEMON_RSYSLOGD'):
+        return
+    chk = subprocess.run([RSYSLOGD, '-N1'], capture_output=True, text=True, timeout=120)
+    if chk.returncode != 0:
+        bad = [l for l in (chk.stderr + chk.stdout).splitlines()
+               if re.search(r'error|warn', l, re.I)][:3]
+        raise Refused('rsyslog does not take it, so nothing was changed: %s' % (
+            ' | '.join(bad) or 'rsyslogd -N1 says why'))
+
+
+TLS_MARKS = ('# isemon: the otp logs over TLS', '# isemon: the acme logs over TLS')
+
+
 def tls_loads_fix(said):
     """otp's receiver and acme's, both isemon's files: imtcp loaded by the
     one rsyslog reads first, and by neither where another file of rsyslog's
@@ -2802,7 +2826,8 @@ def tls_loads_fix(said):
     away, may have to load it now (1.10.287)."""
     files = [f for f in [OTPTLS_CONF] + tls_siblings() if os.path.isfile(f)]
     if not files or files == [OTPTLS_CONF]:
-        return
+        return False
+    changed = False
     files.sort(key=lambda f: os.path.basename(f))
     real = tuple(os.path.realpath(f) for f in files)
     outside = False
@@ -2816,7 +2841,9 @@ def tls_loads_fix(said):
     for i, path in enumerate(files):
         with open(path, encoding='utf-8', errors='replace') as f:
             text = f.read(65536)
-        if '# isemon: the ' not in text:
+        # isemon's by its own mark at the start of a line of its head, not by
+        # the words anywhere in it (1.10.294).
+        if not any(l.startswith(TLS_MARKS) for l in text.split('\n')[:4]):
             continue                    # not isemon's: never written over
         lines = text.split('\n')
         has = IMTCP_LOAD in lines
@@ -2829,7 +2856,9 @@ def tls_loads_fix(said):
         else:
             lines = [l for l in lines if l != IMTCP_LOAD]
         write_root(path, '\n'.join(lines), 0o644)
+        changed = True
         said.append('%s %s imtcp' % (path, 'loads' if want else 'no longer loads'))
+    return changed
 
 
 def rsyslog_conf_files():
@@ -3015,6 +3044,18 @@ def listening(port):
     return bool(got.stdout.strip()) if got.returncode == 0 else None
 
 
+def port_holders(port):
+    """The programs that listen on a TCP port here, by name (`ss -p`) - None
+    where that cannot be known (1.10.294)."""
+    if NO_SERVICES or not shutil.which('ss'):
+        return None
+    got = subprocess.run(['ss', '-Hltnp', 'sport = :%d' % port], capture_output=True, text=True)
+    if got.returncode != 0:
+        return None
+    return sorted(set(re.findall(r'\(\("([^"]+)"', got.stdout))) or \
+        (['something'] if got.stdout.strip() else [])
+
+
 TLS_WORDS = r'gtls|gnutls|ossl|openssl|tls|certificate|permitted|peer|netstream|imtcp|6514'
 TLS_BAD = (r'error|fail|not permitted|unknown ca|untrusted|expired|not yet valid|denied|refus|'
            r'could not|cannot|invalid|unable|abort|alert|bad |mismatch')
@@ -3188,7 +3229,9 @@ def otptls_restart(port, said):
     if port:
         end = time.time() + 12
         while time.time() < end:
-            if listening(port) is not False:
+            # rsyslog itself, not whatever else may listen there (1.10.294).
+            who = port_holders(port)
+            if who is None or 'rsyslogd' in who:
                 said.append('rsyslog listens on %d/tcp' % port)
                 return
             time.sleep(0.5)
@@ -3223,12 +3266,26 @@ def otptls_selinux(port, said):
         if shutil.which('getenforce') else None
     if got is None or got.stdout.strip() == 'Disabled':
         return
-    for how in ('-a', '-m'):
-        r = subprocess.run(['semanage', 'port', how, '-t', 'syslog_tls_port_t', '-p', 'tcp',
-                            str(port)], capture_output=True, text=True, timeout=120)
-        if r.returncode == 0:
-            said.append('SELinux lets rsyslog listen on %d/tcp' % port)
-            return
+    r = subprocess.run(['semanage', 'port', '-a', '-t', 'syslog_tls_port_t', '-p', 'tcp',
+                        str(port)], capture_output=True, text=True, timeout=120)
+    if r.returncode == 0:
+        said.append('SELinux lets rsyslog listen on %d/tcp' % port)
+        return
+    # Already a port of the policy's: rsyslog's, or another service's - and
+    # that one is never taken away from it (1.10.294; it used to be, `-m`).
+    got = subprocess.run(['semanage', 'port', '-l'], capture_output=True, text=True, timeout=120)
+    for line in (got.stdout or '').splitlines():
+        parts = line.split()
+        if len(parts) < 3 or parts[1] != 'tcp':
+            continue
+        for one in ' '.join(parts[2:]).split(','):
+            one = one.strip()
+            lo, _, hi = one.partition('-')
+            if lo.isdigit() and int(lo) <= port <= int(hi or lo):
+                if parts[0] in ('syslog_tls_port_t', 'syslogd_port_t'):
+                    return
+                raise Refused('SELinux keeps %d/tcp for another service (%s): choose another '
+                              'port' % (port, parts[0]))
 
 
 def otptls_apply(r):
@@ -3272,7 +3329,10 @@ def otptls_apply(r):
                 os.unlink(OTPTLS_CONF)
             except FileNotFoundError:
                 pass
-            tls_loads_fix(said)
+            # The other receiver's file changed with it: rsyslog asked first,
+            # as when one is put in (1.10.294).
+            if tls_loads_fix(said):
+                rsyslog_check()
             otptls_restart(0, said)
             restarted = True
             otptls_firewalld(old_port, False, st, said)
@@ -3309,6 +3369,13 @@ def otptls_apply(r):
             raise Refused('rsyslog listens on %d/tcp already (%s): choose another port' % (
                 port, ', '.join(sorted({p['file'] for p in others['ports']
                                         if int(p['port']) == port}))))
+        # ...nor one another program listens on (1.10.294): rsyslog could not
+        # have it, and the firewall and SELinux would be opened for that
+        # program instead.
+        holders = port_holders(port) if port != old_port else None
+        if holders:
+            raise Refused('%d/tcp is taken here already (%s): choose another port'
+                          % (port, ', '.join(holders)[:120]))
         if not per_input and others['global']:
             raise Refused('rsyslog %d.%d takes the TLS files once for all of it, and %s sets '
                           'them already: rsyslog 8.2108 or later takes them per input' % (
@@ -3376,13 +3443,7 @@ def otptls_apply(r):
         tls_loads_fix(said)
         if shutil.which('restorecon') and not NO_SERVICES:
             subprocess.run(['restorecon', '-R', os.path.dirname(OTPTLS_DIR)], capture_output=True)
-        if not NO_SERVICES or os.environ.get('ISEMON_RSYSLOGD'):
-            chk = subprocess.run([RSYSLOGD, '-N1'], capture_output=True, text=True, timeout=120)
-            if chk.returncode != 0:
-                bad = [l for l in (chk.stderr + chk.stdout).splitlines()
-                       if re.search(r'error|warn', l, re.I)][:3]
-                raise Refused('rsyslog does not take it, so nothing was changed: %s' % (
-                    ' | '.join(bad) or 'rsyslogd -N1 says why'))
+        rsyslog_check()
         otptls_selinux(port, said)
         restarted = True
         otptls_restart(port, said)
@@ -3430,7 +3491,7 @@ def otptls_part():
                 at = float(r.get('at') or 0)
             except (TypeError, ValueError):
                 at = 0.0
-            if abs(time.time() - at) > OTPTLS_FRESH_S:
+            if not math.isfinite(at) or abs(time.time() - at) > OTPTLS_FRESH_S:
                 raise Refused('that was asked too long ago - ask again on the page')
             out['said'] = otptls_apply(r)
         out['data'] = otptls_read()
