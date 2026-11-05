@@ -6,9 +6,13 @@ in the header of the page, every 3 s while the page is shown and live.
 - **For a full admin only.** What the server is doing is not for a read-only
   or ban admin: the header has no meter for them and `GET /api/load` refuses
   them.
-- **Off unless chosen.** Your account → *Performance meter*: how the numbers
-  look (a graph of the last two minutes, pills with a bar, one plain line,
-  rings, or not shown - the default) and how their details look when a
+- **Off unless switched on.** Settings → About → *The performance meter in
+  the header* (`isemon --set perf_meter=1`): off - as it comes - there is no
+  meter on any page and the daemon reads nothing of it, not one file.
+- **Each full admin's own look.** Your account → *Performance meter*: how
+  the numbers look (a graph of the last two minutes - the default - pills
+  with a bar, one plain line, rings, or not shown, and then nothing is asked
+  for them) and how their details look when a
   number is pointed at or tapped (tiles, a table as htop, a map of the cores
   with rings, one wide panel, or only a short tip). Each choice is kept with
   the account, so it is the same in every browser.
@@ -26,9 +30,12 @@ Where the header has no room for the four numbers beside everything else
 (below 1850 px), the meter is a row of its own under it; up to 2050 px it is
 a little narrower.
 
-Temperatures come from hwmon (`coretemp`, `k10temp`, `zenpower`, `nvme`,
-`drivetemp`, …) and the thermal zones. A virtual machine has none, and the
-panel says so; a SATA disk needs `modprobe drivetemp`.
+Temperatures come from hwmon (`coretemp`, `k10temp`, `zenpower`, `nvme`, …)
+and the thermal zones; each logical processor is given the temperature of
+the core it is on, by its topology. A virtual machine has none, and the
+panel says so; a SATA disk's temperature needs `drivetemp` (`modprobe
+drivetemp`). Free space is never asked of a share of another machine (NFS,
+CIFS, sshfs, …): one that is down would hang the meter.
 
 ## API
 

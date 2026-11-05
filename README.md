@@ -372,6 +372,23 @@ working.
 
 ## Version
 
+1.10.300
+
+- **The performance meter** has a switch for the whole server in Settings →
+  About, off as it comes. Off, there is no meter on any page and nothing of
+  it is read. On, each full admin chooses its look under Your account, or
+  not shown, and then nothing is read for them either.
+- **The performance meter**: what another application found in the same
+  code, fixed here too.
+  - Each logical processor now shows the temperature of the core it is on,
+    read from its topology. With hyperthreading, cores numbered 0, 4, … or
+    two processors, half of them showed none.
+  - Free space is never asked of a share of another machine (NFS, CIFS,
+    sshfs, …). One that is down hung every ask of the meter.
+  - A bar is what it says: nothing at 0 %, and no dot on a ring. A
+    process's bar is its real share, of one core or of the memory in use,
+    not a share of the busiest process.
+
 1.10.299
 
 - **The performance meter** is in the row of the header beside the state of

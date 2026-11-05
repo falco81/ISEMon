@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.299'
+__version__ = '1.10.300'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -995,6 +995,7 @@ DEFAULTS = {
     # is let go when it is already empty (1.10.160b).
     'db_split_whole_days': 1,
     'site_name': '',              # what to call this installation on the page
+    'perf_meter': 0,              # the performance meter of the header (1.10.300)
     'api_port': 9851,
     'debug': False,
     # ...and WHAT to write down while it is on. One switch a thing, so any
@@ -58406,7 +58407,7 @@ class Daemon(object):
         'proxy_no': 'str', 'proxy_upgrade': (0, 1), 'proxy_os': (0, 1), 'proxy_acme': (0, 1),
         'proxy_acme_dns': (0, 1), 'proxy_lists': (0, 1), 'proxy_geo': (0, 1), 'proxy_mac': (0, 1),
         'db_split': (0, 1), 'db_split_whole_days': (0, 1),
-        'site_name': 'str', 'api_port': (1, 65535), 'debug': (0, 1),
+        'site_name': 'str', 'perf_meter': (0, 1), 'api_port': (1, 65535), 'debug': (0, 1),
         'debug_sql': (0, 1), 'debug_ldap': (0, 1), 'debug_api': (0, 1),
         'debug_logs': (0, 1), 'debug_router': (0, 1),
         'db_engine': ENGINES, 'db_host': 'str', 'db_port': (0, 65535),
@@ -58743,6 +58744,7 @@ class Daemon(object):
         'db_password': 'Its password',
         'db_timeout_s': 'Give up reaching it after (s)',
         'site_name': 'What to call this installation',
+        'perf_meter': 'The performance meter in the header',
         'api_port': 'The daemon answers on port',
         'debug': 'Write down everything it does (loud)',
         'debug_sql': 'Write down: every statement put to the database',
@@ -59986,6 +59988,11 @@ class Daemon(object):
                        'hold the address of itself.' % CONFIG_FILE,
         'db_timeout_s': 'How long to wait for that server before giving up on one attempt.',
         'site_name': 'What to call this installation at the top of the page.',
+        'perf_meter': 'How busy the server is - the processor, the memory, the disks and the '
+                      'network - beside the state at the top of the page, every 3 s, with the '
+                      'cores, the temperatures, the disks and the processes behind each number. '
+                      'For the full admins, each choosing for themselves how it looks under Your '
+                      'account. Off, nothing of it is read at all.',
         'api_port': 'The port the daemon answers on, for the dashboard to reach. It listens on '
                     'localhost only. Changing it needs the same change in isemon-api.php.',
         'debug': 'Everything, in the daemon’s log: every decision, every command sent to '
@@ -61672,6 +61679,9 @@ class Daemon(object):
             # acme's log (1.10.287): its tab, and how many of its
             # certificates want looking at, there only while it is read.
             'acmelog_on': self.acmelog_on(),
+            # The performance meter of the header (1.10.300): off, the page
+            # draws none and asks nothing.
+            'perf_meter': bool(int(CONFIG.get('perf_meter') or 0)),
             'acmelog_attention': (self.held('acmelog/attention', 30, self.store.acme_attention)
                                   if self.acmelog_on() else 0),
             'eduroam_on': self.eduroam_on(),
@@ -72237,6 +72247,9 @@ def _load_raw():
 
 
 LOAD_SYS = '/sys'                # the tests point it at a sysfs of their own
+# The filesystems free space is never asked of (see load_detail).
+LOAD_FS_REMOTE = ('nfs', 'nfs4', 'cifs', 'smb3', 'smbfs', 'fuse.sshfs', 'ceph', 'glusterfs',
+                  'fuse.glusterfs', '9p')
 LOAD_DETAIL = {'at': 0.0, 'raw': None, 'out': None}
 
 
@@ -72263,7 +72276,7 @@ def _read_first(path, default=''):
 def load_temps():
     """What the sensors say: {'cpu': [(label, °C)], 'cores': {core n: °C}, 'disks': {name: °C}, 'other': [...]}.
     hwmon first (coretemp, k10temp, zenpower, nvme, drivetemp, acpitz...), then the thermal zones."""
-    out = {'cpu': [], 'cores': {}, 'disks': {}, 'other': []}
+    out = {'cpu': [], 'cores': {}, 'pkg_cores': {}, 'disks': {}, 'other': []}
     base = os.path.join(LOAD_SYS, 'class/hwmon')
     try:
         mons = sorted(os.listdir(base))
@@ -72289,6 +72302,11 @@ def load_temps():
             if chip in ('coretemp', 'k10temp', 'zenpower', 'cpu_thermal', 'soc_thermal', 'k8temp', 'via_cputemp'):
                 if core:
                     out['cores'][int(core.group(1))] = round(t, 1)
+                    # ...with its package (coretemp.P), for the cores of a
+                    # machine of two processors (1.10.300).
+                    pkg = re.search(r'\.(\d+)$', os.path.realpath(os.path.join(d, 'device')))
+                    out['pkg_cores']['%s:%s' % (pkg.group(1) if pkg else '0',
+                                                core.group(1))] = round(t, 1)
                 else:
                     out['cpu'].append([label, round(t, 1)])
             elif chip in ('nvme', 'drivetemp'):
@@ -72407,8 +72425,20 @@ def load_detail():
                 if allc > pa:
                     busy = round(max(0.0, min(1.0, 1 - (idle - pi) / float(allc - pa))) * 100, 1)
             mhz = _read_first(os.path.join(LOAD_SYS, 'devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq' % n))
+            # The temperature of the core this logical processor is on, by
+            # the topology (1.10.300): with hyperthreading cpu2 is the second
+            # thread of core 0, and a Xeon's cores are numbered 0, 1, 4, 5...
+            topo = os.path.join(LOAD_SYS, 'devices/system/cpu/cpu%d/topology' % n)
+            cid = _read_first(os.path.join(topo, 'core_id'))
+            pid = _read_first(os.path.join(topo, 'physical_package_id'), '0')
+            if cid.isdigit():
+                temp = temps['pkg_cores'].get('%s:%s' % (pid if pid.isdigit() else '0', cid))
+                if temp is None:
+                    temp = temps['cores'].get(int(cid))
+            else:
+                temp = temps['cores'].get(n)
             cores.append({'n': n, 'busy': busy, 'mhz': round(int(mhz) / 1000) if mhz.isdigit() else None,
-                          'temp': temps['cores'].get(n)})
+                          'temp': temp})
         if cores and not any(c['mhz'] for c in cores):
             try:
                 with open('/proc/cpuinfo') as f:
@@ -72448,7 +72478,12 @@ def load_detail():
                                 'fusectl', 'configfs', 'hugetlbfs', 'binfmt_misc', 'efivarfs', 'nsfs', 'ramfs',
                                 'rpc_pipefs', 'selinuxfs', 'fuse.lxcfs', 'iso9660') or dev in seen:
                         continue
-                    if not dev.startswith('/') and kind not in ('nfs', 'nfs4', 'cifs', 'smb3', 'zfs', 'btrfs'):
+                    # Never a share of another machine (1.10.300): statvfs on
+                    # one that is down hangs - and every ask of /api/load with
+                    # it, behind LOAD_LOCK.
+                    if kind in LOAD_FS_REMOTE:
+                        continue
+                    if not dev.startswith('/') and kind not in ('zfs', 'btrfs'):
                         continue
                     seen.add(dev)
                     try:
@@ -78616,6 +78651,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             me = self.need_admin()
             if not me:
                 return None
+            # Switched off - for the whole server, or by this person for
+            # themselves: nothing is read, not one file (1.10.300).
+            if not int(CONFIG.get('perf_meter') or 0) or \
+                    store.user_prefs(me['name']).get('hload') == 'off':
+                return self.send_json({'off': True})
             return self.send_json(api_load(detail=str(one('detail') or '') in ('1', 'true'),
                                            hist=str(one('hist') or '') in ('1', 'true')))
 

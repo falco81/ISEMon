@@ -104,9 +104,10 @@ try:
     ok('in the header for a full admin only',
        "<?php if (($me['role'] ?? '') === 'fulladmin'): ?>\n  <div class=\"hload\" id=\"hload\""
        in page)
-    ok('off unless chosen: nothing asked of the daemon while it is',
-       ("HLOAD.look = hlPrefs().hload || 'off';" in page,
-        "if (HLOAD.look === 'off') { $('hload').hidden = true; return; }" in page), (True, True))
+    ok('off unless switched on: nothing asked of the daemon while it is',
+       ("HLOAD.look = PERF_ON ? (hlPrefs().hload || 'graphs') : 'off';" in page,
+        "if (HLOAD.look === 'off') { hloadPanelClose(); $('hload').hidden = true; return; }"
+        in page, isemon.DEFAULTS['perf_meter']), (True, True, 0))
     ok('the choice kept with the account', "return api('prefs', {prefs: change})" in page)
     ok('after F5 the last two minutes asked for, and drawn from',
        ("(withHist ? '&hist=1' : '')" in page, 'if (d.hist && d.hist.length) {' in page),

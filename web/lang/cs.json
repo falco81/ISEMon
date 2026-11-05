@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.299",
+  "version": "1.10.300",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -10484,9 +10484,13 @@
    "source": "How busy its processor was at the last look.",
    "text": "Jak vytížený byl jeho procesor při posledním pohledu."
   },
-  "s.how-busy-this-server-is-the.69f394e1": {
-   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, for you alone, every 3 s while the page is shown. Off unless you choose a look; off, nothing is asked of the server at all.",
-   "text": "Jak je tento server vytížený – procesor, paměť, disky a síť – v záhlaví, jen pro vás, každé 3 s, dokud je stránka vidět. Vypnutý, dokud nevyberete vzhled; vypnutý se serveru na nic neptá."
+  "s.how-busy-the-server-is-the.655d4bb9": {
+   "source": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all.",
+   "text": "Jak je server vytížený – procesor, paměť, disky a síť – vedle stavu nahoře na stránce, každé 3 s, s jádry, teplotami, disky a procesy za každým číslem. Pro plné administrátory; každý si pod Vaším účtem volí, jak vypadá. Vypnutý se z něj nečte vůbec nic."
+  },
+  "s.how-busy-this-server-is-the.9fd3a5dd": {
+   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, every 3 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About.",
+   "text": "Jak je tento server vytížený – procesor, paměť, disky a síť – v záhlaví, každé 3 s, dokud je stránka vidět. Jak vypadá, je jen vaše volba; nezobrazený se serveru na nic neptá. Pro všechny se zapíná a vypíná v Nastavení → O aplikaci."
   },
   "s.how-close.3bf92a7e": {
    "source": "How close",
@@ -27524,6 +27528,10 @@
    "source": "The peer’s side",
    "text": "Strana protistrany"
   },
+  "s.the-performance-meter-in-the-header.1a062327": {
+   "source": "The performance meter in the header",
+   "text": "Měřič výkonu v záhlaví"
+  },
   "s.the-person-s-own-address.ea0a9fe5": {
    "source": "The person’s own address",
    "text": "Vlastní adresa uživatele"
@@ -40589,6 +40597,10 @@
   "s.go-back-to-this-version.6ea7735b": {
    "source": "Go back to this version",
    "text": "Vrátit se k této verzi"
+  },
+  "s.how-busy-this-server-is-the.69f394e1": {
+   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, for you alone, every 3 s while the page is shown. Off unless you choose a look; off, nothing is asked of the server at all.",
+   "text": "Jak je tento server vytížený – procesor, paměť, disky a síť – v záhlaví, jen pro vás, každé 3 s, dokud je stránka vidět. Vypnutý, dokud nevyberete vzhled; vypnutý se serveru na nic neptá."
   },
   "s.how-long-a-block-lasts-said.57775b76": {
    "source": "How long a block lasts, said as the settings actually work.",

@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.299",
+  "version": "1.10.300",
   "made": "2026-11-05",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -10484,9 +10484,13 @@
    "source": "How busy its processor was at the last look.",
    "text": "How busy its processor was at the last look."
   },
-  "s.how-busy-this-server-is-the.69f394e1": {
-   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, for you alone, every 3 s while the page is shown. Off unless you choose a look; off, nothing is asked of the server at all.",
-   "text": "How busy this server is - the processor, memory, the disks and the network - in the header, for you alone, every 3 s while the page is shown. Off unless you choose a look; off, nothing is asked of the server at all."
+  "s.how-busy-the-server-is-the.655d4bb9": {
+   "source": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all.",
+   "text": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all."
+  },
+  "s.how-busy-this-server-is-the.9fd3a5dd": {
+   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, every 3 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About.",
+   "text": "How busy this server is - the processor, memory, the disks and the network - in the header, every 3 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About."
   },
   "s.how-close.3bf92a7e": {
    "source": "How close",
@@ -27523,6 +27527,10 @@
   "s.the-peer-s-side.4117d4e1": {
    "source": "The peer’s side",
    "text": "The peer’s side"
+  },
+  "s.the-performance-meter-in-the-header.1a062327": {
+   "source": "The performance meter in the header",
+   "text": "The performance meter in the header"
   },
   "s.the-person-s-own-address.ea0a9fe5": {
    "source": "The person’s own address",

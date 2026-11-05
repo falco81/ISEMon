@@ -4686,6 +4686,8 @@ function srcText(el) {
   .hl-panel .hp-core-top{white-space:nowrap}
   
   .hl-panel .small,.hl-pickers .small,.hl-panel.small{font-size:12px}
+  /* nothing at 0 %: a round cap drew a dot there (1.10.300) */
+  .hl-ring-fg[stroke-dasharray^="0.0 "],.hp-ring-fg[stroke-dasharray^="0.0 "]{stroke:transparent}
   /* isemon's header holds more than ai's: the meter beside the state of the
      daemon, a little narrower where it has to be, and only where even that
      does not fit a row of its own under it - nothing else moves. */
@@ -11002,6 +11004,10 @@ function paintHeader(s, quiet) {
   var acmeTab = document.querySelector('.tabs button[data-tab="acmelog"]');
   if (acmeTab) {
     acmeTab.hidden = !s.acmelog_on;
+    /* The performance meter (1.10.300): switched off in About, gone at once. */
+    var perfWas = PERF_ON;
+    PERF_ON = !!s.perf_meter;
+    if (perfWas !== PERF_ON) hloadTick();
     var an = $('tabn-acmelog');
     if (an) {
       an.textContent = s.acmelog_on && s.acmelog_attention ? String(s.acmelog_attention) : '';
@@ -26936,7 +26942,7 @@ var PANES = {
             'acme_dns_url', 'acme_dns_user', 'acme_dns_key', 'acme_dns_subdomain',
             'acme_desec_domain', 'acme_desec_token', 'acme_dns_alias', 'acme_dns_wait',
             'acme_resolvers'],
-  about:   ['site_name', 'api_port', 'debug',
+  about:   ['site_name', 'perf_meter', 'api_port', 'debug',
             'debug_sql', 'debug_ldap', 'debug_api', 'debug_logs', 'debug_router']
 };
 /* Settings that are set somewhere else on this page and are not to be set
@@ -33637,6 +33643,9 @@ function hlSave(change) {
    is shown and live, nothing while it is hidden; the daemon reads /proc only
    when asked. CPU, memory, the disks, the network. */
 var HLOAD = {timer: null, busy: false};
+/* Whether the meter is on for this server at all (Settings → About): off,
+   nothing is drawn and nothing asked. */
+var PERF_ON = !!(typeof STATUS === 'object' && STATUS && STATUS.perf_meter);
 function hloadRate(n) {
   if (n === null || n === undefined) return '–';
   if (n < 1024) return Math.round(n) + ' B/s';
@@ -33662,7 +33671,7 @@ function hlVal(v) {
   return s;
 }
 function hloadRing(pct) {
-  var r = 7, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct || 0));
+  var r = 7, c = 2 * Math.PI * r, p = hlWidth(pct);
   return '<svg class="hl-ring" viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="' + r + '" class="hl-ring-bg"/>'
     + '<circle cx="9" cy="9" r="' + r + '" class="hl-ring-fg" stroke-dasharray="' + (c * p / 100).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 9 9)"/></svg>';
 }
@@ -33731,7 +33740,7 @@ function hloadDraw(d, into, asLook) {
       c.appendChild(hlVal(x[1]));
       if (look === 'pills' && x[3] !== null && x[3] !== undefined) {
         var bar = el('span', 'hl-bar'), fill = el('span', '');
-        fill.style.width = Math.max(2, Math.min(100, x[3])) + '%';
+        fill.style.width = hlWidth(x[3]) + '%';
         bar.appendChild(fill); c.appendChild(bar);
       }
       if (look === 'graphs') {
@@ -33873,10 +33882,17 @@ function hloadPanelPlace(chip) {
   p.style.top = Math.round(r.bottom + 6) + 'px';
   p.style.maxHeight = Math.max(200, window.innerHeight - r.bottom - 20) + 'px';
 }
+/* How wide a bar is (1.10.300): exactly what it says - nothing at 0 %, at
+   least a hairline for anything that rounds to 1 % or more. */
+function hlWidth(pct) {
+  pct = Number(pct) || 0;
+  if (pct < 0.5) return 0;
+  return Math.max(1, Math.min(100, pct));
+}
 function hlBar(pct, cls) {
   var b = el('span', 'hp-bar ' + (cls || ''));
   var f = el('span', '');
-  f.style.width = Math.max(1, Math.min(100, pct || 0)) + '%';
+  f.style.width = hlWidth(pct) + '%';
   if (pct >= 90) b.classList.add('hot'); else if (pct >= 70) b.classList.add('warm');
   b.appendChild(f);
   return b;
@@ -33931,7 +33947,7 @@ function hpArea(k, h, grid) {
 }
 function hpRing(pct, label, cls, size) {
   size = size || 78;
-  var r = size / 2 - 7, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, pct || 0));
+  var r = size / 2 - 7, c = 2 * Math.PI * r, v = hlWidth(pct);
   var col = cls || (v >= 90 ? 'hot' : (v >= 70 ? 'warm' : ''));
   var box = el('span', 'hp-ring ' + col);
   box.innerHTML = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" aria-hidden="true">'
@@ -33963,11 +33979,16 @@ function hpMemRows(host, x) {
   host.appendChild(t);
 }
 function hpProcs(host, list, what) {
-  var t = el('table', 'hp-t'), top = 1;
-  list.forEach(function (q) { top = Math.max(top, what === 'cpu' ? q.cpu : q.rss); });
+  /* The bar is the real share (1.10.300), not a share of the busiest: one
+     core is 100 % (or the busiest, where one takes more than a core), and
+     memory is the memory in use. */
+  var t = el('table', 'hp-t'), top = 100;
+  var memAll = (HLOAD.last && (HLOAD.last.mem_used || HLOAD.last.mem_total)) || 0;
+  list.forEach(function (q) { if (what === 'cpu') top = Math.max(top, q.cpu || 0); });
   list.slice(0, 5).forEach(function (q) {
     var tr = el('tr', ''), v = what === 'cpu' ? q.cpu : q.rss;
-    hpTd(tr, q.name, 'mono hp-name'); hpTd(tr, hlBar(100 * v / top, 'hp-info'), 'hp-barc');
+    var share = what === 'cpu' ? 100 * (v || 0) / top : (memAll ? 100 * (v || 0) / memAll : 0);
+    hpTd(tr, q.name, 'mono hp-name'); hpTd(tr, hlBar(share, 'hp-info'), 'hp-barc');
     hpTd(tr, what === 'cpu' ? Math.round(v) + ' %' : bytes(v), 'num');
     t.appendChild(tr);
   });
@@ -34287,8 +34308,8 @@ function hpTiles(p, k) {
 }
 function hloadTick(now) {
   if (!$('hload') || (HLOAD.busy && !now) || document.hidden || !LIVE) return;
-  HLOAD.look = hlPrefs().hload || 'off';
-  if (HLOAD.look === 'off') { $('hload').hidden = true; return; }
+  HLOAD.look = PERF_ON ? (hlPrefs().hload || 'graphs') : 'off';
+  if (HLOAD.look === 'off') { hloadPanelClose(); $('hload').hidden = true; return; }
   HLOAD.busy = true;
   var withDetail = !!HLOAD.open;
   /* The first ask of this page, or the first after a while hidden: the
@@ -34296,6 +34317,7 @@ function hloadTick(now) {
   var withHist = !HLOAD.hist || !HLOAD.histAt || Date.now() - HLOAD.histAt > 20000;
   api('load' + (withDetail ? '&detail=1' : '') + (withHist ? '&hist=1' : ''), undefined,
       {quiet: true}).then(function (d) {
+    if (d.off) { hloadPanelClose(); $('hload').hidden = true; return; }
     if (d.detail) { HLOAD.detail = d.detail; HLOAD.detailAt = Date.now(); }
     HLOAD.histAt = Date.now();
     hloadDraw(d);
@@ -34318,7 +34340,7 @@ function hloadPickers(lsec) {
                   ['rings', 'with rings'], ['off', 'not shown']];
   var g3 = el('div', 'hl-pickers');
   g3.appendChild(el('div', 'hl-pick-h', 'The load of the server in the header (CPU, RAM, the disks, the network)'));
-  g3.appendChild(hlPicker(HL_LOOKS, hlPrefs().hload || 'off', hlPreviewLook, function (v) {
+  g3.appendChild(hlPicker(HL_LOOKS, hlPrefs().hload || 'graphs', hlPreviewLook, function (v) {
     hlSave({hload: v}).then(function () {
       HLOAD.look = v;
       if (v === 'off') { hloadPanelClose(); $('hload').hidden = true; } else if (HLOAD.last) hloadDraw(HLOAD.last); else hloadTick();
@@ -34421,12 +34443,13 @@ function showMe() {
 
     /* The performance meter of the header (1.10.297): a full admin's,
        off until they choose how it looks. */
-    if (admin && $('hload')) {
+    if (admin && $('hload') && PERF_ON) {
       var meter = el('div', 'me-sec');
       meter.appendChild(el('h3', '', 'Performance meter'));
       meter.appendChild(el('div', 'me-say', 'How busy this server is - the processor, memory, '
-        + 'the disks and the network - in the header, for you alone, every 3 s while the page '
-        + 'is shown. Off unless you choose a look; off, nothing is asked of the server at all.'));
+        + 'the disks and the network - in the header, every 3 s while the page is shown. How it '
+        + 'looks is yours alone; not shown, nothing is asked of the server at all. For everybody '
+        + 'it is switched on and off under Settings → About.'));
       hloadPickers(meter);
       body.appendChild(meter);
     }
