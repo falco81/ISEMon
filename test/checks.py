@@ -2837,10 +2837,13 @@ ok('...and it opens with that name',
 ok('...with a deny line for each address that is out for good',
    (' deny   ip host 203.0.113.9 any' in four['text'],
     ' deny   ip 198.51.100.0 0.0.0.255 any' in four['text']), (True, True))
-ok('...and the four lines of the ending underneath them, in order',
-   four['text'].strip().split('\n')[-4:],
-   [' remark ==== ours ====', ' permit tcp any any established',
-    ' deny   udp any any eq snmp', ' permit ip any any'])
+ok('...and the four lines of the ending numbered after them, in order, and put in first '
+   '(never a moment with denies and no ending)',
+   [l for l in four['text'].split('\n') if l.startswith(' 20000000')],
+   [' 2000000000 remark ==== ours ====', ' 2000000010 permit tcp any any established',
+    ' 2000000020 deny   udp any any eq snmp', ' 2000000030 permit ip any any'])
+ok('...before the first deny', four['text'].index(' 2000000030 permit ip any any')
+   < four['text'].index(' deny   ip host 203.0.113.9 any'), True)
 ok('...and nothing of the other family in it', '2001:db8::5' in four['text'], False)
 ok('...which is said rather than left out quietly', four['skipped'], 1)
 six = daemon.ios_acl(family='ipv6')
@@ -2853,17 +2856,20 @@ ok('...and with one set, that is what it is called', six['name'], 'BORDER-IN-V6'
 ok('...opening the way a v6 list opens',
    'ipv6 access-list BORDER-IN-V6' in six['text'], True)
 ok('...with its own ending, not the v4 one',
-   six['text'].strip().split('\n')[-2:], [' permit icmp any any', ' permit ipv6 any any'])
+   [l for l in six['text'].split('\n') if l.startswith(' sequence 20000000')],
+   [' sequence 2000000000 permit icmp any any', ' sequence 2000000010 permit ipv6 any any'])
 ok('...and the v6 address in it', ' deny   ipv6 host 2001:db8::5 any' in six['text'], True)
 # An ending nobody has set is the one this ships with, and an empty one is
 # not an access list that stops everything.
 isemon.CONFIG['ios_acl_tail'] = ''
 ok('an ending that has been emptied falls back to the one that ships',
-   daemon.ios_acl()['text'].strip().split('\n')[-2:],
-   [' deny   udp any any eq snmp', ' permit ip any any'])
+   [l.split(' ', 2)[2] for l in daemon.ios_acl()['text'].split('\n')
+    if l.startswith(' 20000000')][-2:],
+   ['deny   udp any any eq snmp', 'permit ip any any'])
 isemon.CONFIG['ios_acl_tail6'] = ''
-ok('...on both sides', daemon.ios_acl(family='ipv6')['text'].strip().split('\n')[-1:],
-   [' permit ipv6 any any'])
+ok('...on both sides', [l for l in daemon.ios_acl(family='ipv6')['text'].split('\n')
+                        if l.startswith(' sequence 20000000')][-1:],
+   [' sequence 2000000000 permit ipv6 any any'])
 for key in ('ios_acl_name', 'ios_acl_name6', 'ios_acl_tail', 'ios_acl_tail6'):
     isemon.CONFIG[key] = isemon.DEFAULTS[key]
 shutil.rmtree(folder, ignore_errors=True)

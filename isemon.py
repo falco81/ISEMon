@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.303'
+__version__ = '1.10.304'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2895,7 +2895,8 @@ def range_of(cidr):
         lo_text, _, hi_text = text.partition('-')
         lo, fam = pack_address(lo_text)
         hi, fam2 = pack_address(hi_text)
-        if lo is None or hi is None or fam != fam2:
+        # ...and one written backwards is not a range (1.10.304).
+        if lo is None or hi is None or fam != fam2 or lo > hi:
             return None
         return lo, hi, fam
     try:
@@ -37948,6 +37949,18 @@ class Storage(object):
             (float(since), int(bar))).fetchall()
         return [(str(r['ip']), int(r['n'] or 0), float(r['last'] or 0)) for r in rows]
 
+    def source_newest(self, source):
+        """How far the source has been read: the moment of the newest row of
+        its table, or 0. Of any row, not only a failure - that is the index
+        on time alone, where a failure on a firewall's table was a walk back
+        through every line it let through."""
+        table, _col, _who, _where = self.SOURCE_FAILURES[source]
+        try:
+            row = self.db.execute('SELECT MAX(ts) AS t FROM %s' % table).fetchone()
+            return float((row['t'] if row else 0) or 0)
+        except sqlite3.Error:
+            return 0.0
+
     def source_failures_back(self, source, since, most=500000):
         """Every failure at one source since a moment, as {address:
         [(moment, name)]} in order - what going back over the logs weighs
@@ -41476,6 +41489,16 @@ class Storage(object):
                 out.add(ip)
         return out
 
+    def ban_marked(self, ip):
+        """Whether this address's ban is written down on the ladder at all
+        (1.10.304): a ban made as one that keeps somebody out has its
+        'blocked' already, and another one put it a rung higher; only one
+        from before 1.10.197, with no mark, wants one."""
+        row = self.db.execute(
+            "SELECT 1 AS x FROM block_events WHERE ip=? AND what IN ('blocked', 'watched') "
+            'LIMIT 1', (str(ip),)).fetchone()
+        return bool(row)
+
     def note_carried(self, ip, why):
         """A ban that was only watched, carried from now on (1.10.197): a
         ban the ladder counts, and whose end the counting starts again from,
@@ -44769,6 +44792,9 @@ class Storage(object):
         with maintenance_while('a backup is being put back'):
             return self._restore_dump(path, say=say)
 
+    # Tables a dump made by an older version may not have (see _restore_dump).
+    DUMP_MAY_LACK = ('acme_events', 'acme_jobs', 'load_samples')
+
     def _restore_dump(self, path, say=None):
         """Replace everything in this database with what is in that dump.
 
@@ -44793,6 +44819,20 @@ class Storage(object):
             job.__exit__(None, None, None)
             return self.restore(path, say=say)
         safety = self.backup(label='before-restore')
+        # The tables a dump of an older version cannot hold (1.10.304):
+        # pg_restore drops and makes again only those in it, so these kept
+        # today's rows beside the dump's point in time. Only these: a table
+        # split by day holds its rows in parts the list names apart.
+        newer = []
+        if self.dialect.name == 'postgres':
+            try:
+                listed = run_program([shutil.which('pg_restore') or 'pg_restore', '--list',
+                                      str(path)], capture=True, words='pg_restore --list',
+                                     seconds=300) or ''
+                newer = [t for t in self.DUMP_MAY_LACK
+                         if not re.search(r'TABLE(?: DATA)?\s+\S+\s+%s\b' % t, listed)]
+            except (StorageError, OSError):
+                newer = []
         try:
             with self._catch_up:
                 self.dialect.dump_in(self, path, say=say)
@@ -44825,8 +44865,18 @@ class Storage(object):
         self.forget_the_old_contents()
         # An older dump is missing whatever the database has gained since it
         # was made: the columns, the indexes and the rules of this version
-        # are put back over it, exactly as a start would.
+        # are put back over it, exactly as a start would - and its rows put
+        # through this version's rules, as a copy's are (1.10.304).
         self.mend()
+        for table in newer:
+            try:
+                with self.db_write() as db:
+                    db.execute('DELETE FROM %s' % table)
+            except sqlite3.Error as e:
+                log('after the dump: %s could not be emptied (%s)' % (table, e), 'warn')
+        self.mend_tacplus_refusals()
+        self.mend_fw_areas()
+        self.mend_fw_other()
         self.catch_up()
         job.came_of('the one it replaced was kept as %s' % safety.name)
         job.__exit__(None, None, None)
@@ -49159,7 +49209,15 @@ class Daemon(object):
         that and unpacks to several times it.
         """
         if os.path.splitext(tail.path)[1] not in LogTail.OPENERS:
-            return tail.read()
+            # A window with nothing in it for us is not the end of the file
+            # (1.10.304): a FreeRADIUS log of Info lines, an OTP log shared
+            # with sshd - the pass back stopped at the first 8 MB of those
+            # and never read the rest.
+            while True:
+                before = tail.offset
+                got = tail.read()
+                if got or tail.offset == before:
+                    return got
         _READING_FROM.source = tail.path        # see `_LastBySource`
         if getattr(tail, 'packed_done', False):
             # Finished. Without this the next call would find no handle and
@@ -50970,8 +51028,15 @@ class Daemon(object):
         except (TypeError, ValueError):
             cleared = 0.0
         for source in sources:
+            # The window ends at the newest line of the source, not at the
+            # clock (1.10.304): the firewall's reader is let fall hours behind
+            # on purpose, a domain controller catches up after a restart, and
+            # what they wrote late was counted against a window that had
+            # already gone. Six hours back at most: a source silent for days
+            # does not ban for what it said then.
+            end = min(now, max(self.store.source_newest(source), now - 6 * 3600))
             try:
-                over = self.store.source_failures(source, max(now - window, cleared), bar)
+                over = self.store.source_failures(source, max(end - window, cleared), bar)
             except sqlite3.Error as e:
                 log('banning from %s: %s' % (self.door_source_words(source), str(e)[:120]),
                     'warn')
@@ -50992,7 +51057,7 @@ class Daemon(object):
                     charged = 0.0
                 if last <= charged:
                     continue
-                floor = max(now - window, charged, self.store.let_back_in_at(ip), cleared)
+                floor = max(end - window, charged, self.store.let_back_in_at(ip), cleared)
                 seen = [r for r in self.store.source_failures_of(source, raw, floor)
                         if r[0] > floor]
                 if len(seen) < bar:
@@ -51530,7 +51595,7 @@ class Daemon(object):
                 was_watched = self.store.made_watched(ip)
                 for one in sorted(set(ban_src_parse(listed_src)) & ban_sources_on()):
                     self.ban_add_source(ip, one)
-                if not was_watched:
+                if not was_watched and not self.store.ban_marked(ip):
                     self.store.note_carried(ip, 'carried from now: %s' % why)
                 if own.get('until') is not None:
                     self.store.lengthen(ip, None, own.get('why') or why)
@@ -51693,7 +51758,7 @@ class Daemon(object):
             was_watched = self.store.made_watched(ip)
             for one in sorted(set(ban_src_parse(made_src)) & ban_sources_on()):
                 self.ban_add_source(ip, one)
-            if not was_watched:
+            if not was_watched and not self.store.ban_marked(ip):
                 self.store.note_carried(ip, 'carried from now: %s' % why)
             if own.get('until') is not None and (until is None or until > float(own['until'])):
                 self.store.lengthen(ip, until, own.get('why') or why)
@@ -52963,22 +53028,45 @@ class Daemon(object):
         # numbered 10 took the place of the first deny.
         tail = [re.sub(r'^(\s*)(?:sequence\s+)?\d+\s+(?=(?:permit|deny|remark)\b)', r'\1',
                        one, flags=re.I) for one in tail]
+        # Numbered, and the ending first (1.10.304): pasted as it was - the
+        # denies, then the ending - the list between its first deny and its
+        # last permit dropped everything through the interface it is on, the
+        # session of whoever was pasting over it included, and a paste cut
+        # short there left a router with no permit at all. Its own lines go
+        # in first at the top of the numbers; every deny is numbered below
+        # them, so the order is the same as ever and there is never a moment
+        # with denies and no ending.
+        top = 2000000000
         if want6:
             lines.append('no ipv6 access-list %s' % listed)
             lines.append('ipv6 access-list %s' % listed)
+            for i, one in enumerate(tail):
+                if re.match(r'^\s*remark\b', one, re.I):
+                    lines.append(one)
+                else:
+                    lines.append(' sequence %d %s' % (top + i * 10, one.strip()))
+            n = 10
             for net in ranges:
-                lines.append(' deny   ipv6 %s any' % net.with_prefixlen)
+                lines.append(' sequence %d deny   ipv6 %s any' % (n, net.with_prefixlen))
+                n += 10
             for one in singles:
-                lines.append(' deny   ipv6 host %s any' % one)
+                lines.append(' sequence %d deny   ipv6 host %s any' % (n, one))
+                n += 10
         else:
             lines.append('no ip access-list extended %s' % listed)
             lines.append('ip access-list extended %s' % listed)
+            for i, one in enumerate(tail):
+                lines.append(' %d %s' % (top + i * 10, one.strip()))
+            n = 10
             for net in ranges:
                 wild = str(ipaddress.IPv4Address(int(net.hostmask)))
-                lines.append(' deny   ip %s %s any' % (net.network_address, wild))
+                lines.append(' %d deny   ip %s %s any' % (n, net.network_address, wild))
+                n += 10
             for one in singles:
-                lines.append(' deny   ip host %s any' % one)
-        lines.extend(tail)
+                lines.append(' %d deny   ip host %s any' % (n, one))
+                n += 10
+            lines.append('exit')
+            lines.append('ip access-list resequence %s 10 10' % listed)
         return {'name': listed, 'family': 'ipv6' if want6 else 'ipv4',
                 'ranges': len(ranges), 'singles': len(singles),
                 'skipped': len(left_out), 'at': time.time(),
@@ -53660,7 +53748,9 @@ class Daemon(object):
             return True
         now = time.localtime()
         minutes = now.tm_hour * 60 + now.tm_min
-        return want <= minutes < want + 60
+        # ...an hour that goes on past midnight (1.10.304): at 23:50 it was ten
+        # minutes long, and the pass every quarter of an hour mostly missed it.
+        return (minutes - want) % 1440 < 60
 
     @staticmethod
     def update_at_applies(every_s):
@@ -54550,8 +54640,11 @@ class Daemon(object):
                     raise
                 out = str(e)
             # A RouterOS that does not know proplist says so in words (and
-            # not always with a code): then the whole print, as before.
-            if not re.search(refused, out or ''):
+            # not always with a code): then the whole print, as before. A list
+            # that came back is not a refusal, whatever its comments say
+            # (1.10.304): a name somebody typed at the VPN, `bad command`,
+            # is in one, and switched the quick read off for good.
+            if 'address=' in (out or '') or not re.search(refused, out or ''):
                 self.MIKROTIK_PROPLIST[fw] = True
                 return out
             self.MIKROTIK_PROPLIST[fw] = False
@@ -55018,7 +55111,11 @@ class Daemon(object):
                                         'warn')
                         else:
                             self._router_said = False
+                        # Tried again by the minute loop while any of them
+                        # would not take it (1.10.304).
+                        self._mikrotik_retry = bool(got['trouble'])
                     except Exception as e:
+                        self._mikrotik_retry = True
                         log('the firewalls: %s' % str(e)[:160], 'warn')
                         if not self._router_said:
                             self._router_said = True
@@ -55592,8 +55689,11 @@ class Daemon(object):
         # stayed on the router, never refreshed again. (1.10.159)
         for family in ('/ip', '/ipv6'):
             try:
+                # ...waited for as long as a list is read (1.10.304): tens of
+                # thousands of ranges took longer than the 45 s a command gets.
                 self.mikrotik_run('%s firewall address-list remove [find list=%s comment~"^%s"]'
-                                  % (family, listed, self.GEO_MARK), fw=fw)
+                                  % (family, listed, self.GEO_MARK), fw=fw,
+                                  timeout=self.mikrotik_read_s())
             except Exception as e:
                 if family == '/ip':
                     raise
@@ -60766,9 +60866,14 @@ class Daemon(object):
                # two installations writing to one - the very thing every
                # other road here refuses. The new machine is told where its
                # database is once, on the page, like this one was.
-               'settings': {k: v for k, v in CONFIG.items()
+               'settings': {k: (v if secrets_too or k != 'fwlog_sources'
+                                else rosapi_masked(v, False))
+                            for k, v in CONFIG.items()
                             if v != DEFAULTS[k] and k not in FILE_ONLY
                             and (secrets_too or k not in SECRET_KEYS)},
+               # ...the firewalls' API passwords out of the shape without the
+               # secrets too (1.10.304): they were in it, sealed - and the
+               # complete one carries what opens them.
                'users': people,
                # Never banned. Hand-made, never worked out again from
                # anything, and the one list where being without it is
@@ -60786,7 +60891,8 @@ class Daemon(object):
             out['keys'] = {name: (self.store.get_meta(name) or '')
                            for name in ('mikrotik_key', 'mikrotik_public',
                                         'mikrotik2_key', 'mikrotik2_public',
-                                        'directory_ca', 'directory2_ca') + FW_OTHER_KEYS}
+                                        'directory_ca', 'directory2_ca', 'passkeys')
+                           + FW_OTHER_KEYS}
             # The key in the published ban list's URL. It lives in a file
             # beside the database rather than in it, and was left behind: a
             # machine stood up from a complete export gave the list a new
@@ -60962,9 +61068,12 @@ class Daemon(object):
 
         if isinstance(given.get('keys'), dict):
             put = 0
+            # ...the passkeys' public halves among them (1.10.304): left
+            # behind, every account owed a new one, and whoever had a
+            # password first made it.
             for name in ('mikrotik_key', 'mikrotik_public',
                          'mikrotik2_key', 'mikrotik2_public', 'directory_ca',
-                         'directory2_ca') + FW_OTHER_KEYS:
+                         'directory2_ca', 'passkeys') + FW_OTHER_KEYS:
                 value = given['keys'].get(name)
                 if value:
                     self.store.set_meta(name, str(value))
@@ -65228,6 +65337,15 @@ class Daemon(object):
                     log('the firewall: %s' % e, 'warn')
                 try:
                     how, every = self.mikrotik_interval()
+                    # Synced on a change only, and the last one did not land
+                    # (1.10.304): tried again every few minutes until it does,
+                    # rather than when the next ban happens to come - which
+                    # on a quiet site, for a ban for good, was never.
+                    if (how != 'every' and getattr(self, '_mikrotik_retry', False)
+                            and self.any_firewall() and int(CONFIG.get('mikrotik_sync') or 0)
+                            and now - getattr(self, '_mikrotik_retry_at', 0) > 300):
+                        self._mikrotik_retry_at = now
+                        self.mikrotik_after_change()
                     if (how == 'every' and self.any_firewall()
                             and int(CONFIG.get('mikrotik_sync') or 0)
                             and now - self._mikrotik_at > max(60, every * 60)):
@@ -66749,7 +66867,11 @@ class WebRoot(object):
         if 'on' in data:
             fw['on'] = bool(data.get('on'))
         if 'off' in data:
-            fw['off'] = [k for k in (data.get('off') or []) if k in self.AUTO]
+            off = data.get('off') or []
+            if not isinstance(off, list):
+                raise WebRootError('what is let in by itself is switched off by a list of '
+                                   'its names')
+            fw['off'] = [k for k in off if k in self.AUTO]
         if 'rules' in data:
             rules = data.get('rules') or []
             if not isinstance(rules, list) or len(rules) > 500:
@@ -72200,7 +72322,7 @@ RB_INSIDE = ('about.json', 'RESTORE.md', RB_DB, RB_CONF, 'manifest.json')
 # the pages' certificate, firewall and lists, the destinations of the
 # backups, the names of the VLANs and the routers' API keys. Never where a
 # log was read up to, nor anything counted or fetched.
-RB_CONF_META = ('web_tls', 'web_fw', 'web_access', 'rbackup:targets', 'vlan_names')
+RB_CONF_META = ('web_tls', 'web_fw', 'web_access', 'rbackup:targets', 'vlan_names', 'passkeys')
 RB_CONF_META_RE = re.compile(r'^rosapi_(ca|cert|certkey|pin|sshkey|sshpub)_[A-Za-z0-9_]{1,40}\Z')
 
 
@@ -76607,6 +76729,19 @@ class Upgrades(object):
             return ('isemon %s is older than %s, the oldest version that can run on this '
                     'database: going back that far would need the database put back as well, '
                     'which is done by hand' % (version, floor))
+        # Face ID (1.10.304): a version before it knows nothing of it - it
+        # would ask nobody for it, and take a sign-in still owing it for a
+        # whole one. Switched off first; and the sign-ins still owing it end.
+        if v < (1, 10, 303):
+            if int(CONFIG.get('passkeys') or 0):
+                return ('Face ID is the second step of signing in here, and isemon %s knows '
+                        'nothing of it: switch it off first (Settings - Accounts, or isemon '
+                        '--set passkeys=0)' % version)
+            try:
+                with self.daemon.store.db_write() as db:
+                    db.execute("DELETE FROM sessions WHERE second IN ('enrol', 'verify')")
+            except Exception:                       # noqa: BLE001
+                pass
         busy = self.back_blocked()
         if busy:
             return 'not now: %s' % '; '.join(busy)
@@ -79628,9 +79763,18 @@ class ApiHandler(BaseHTTPRequestHandler):
                     key = next((k for k in keys if k['id'] == cid), None)
                     if not key:
                         return self.fail('there is no such passkey')
-                    if key['user'] != me['name'] and not admin:
+                    mine_too = key['user'] in set(store.same_person(me['name']))
+                    if not mine_too and not admin:
                         return self.fail('only a full admin changes another account’s '
                                          'passkeys', 403)
+                    # One's own taken away only just after Face ID (1.10.304):
+                    # a sign-in left open would otherwise take the last one,
+                    # and the next sign-in needed the password alone.
+                    if mine_too and do == 'delete' and time.time() - PK_FRESH.get(
+                            store.session_key(self.headers.get('X-Isemon-Session') or ''),
+                            0) > PK_FRESH_S:
+                        return self.fail('confirm it is you with Face ID first, then take it '
+                                         'away', 428)
                     if do == 'delete':
                         keys = [k for k in keys if k['id'] != cid]
                     else:
@@ -79641,7 +79785,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                     # Somebody else's taken away by an admin: that person's
                     # sign-ins end too - it is what a lost device is.
                     ended = 0
-                    if key['user'] not in set(store.same_person(me['name'])):
+                    if not mine_too:
                         ended = sum((store.drop_session(name=one) or 0)
                                     for one in store.same_person(key['user']))
                     store.add_event('users', '%s took away the passkey %s of %s%s'
@@ -79697,7 +79841,17 @@ class ApiHandler(BaseHTTPRequestHandler):
             if len(fresh) < 8:
                 return self.fail('a password is at least eight characters')
             daemon.set_password(me['name'], fresh, by=me['name'], must_change=False)
-            token = store.new_session(me['name'], me['role'], self.caller())
+            token = store.new_session(me['name'], me['role'], self.caller(),
+                                      str(self.headers.get('User-Agent') or ''))
+            # ...as old as the one it replaces (1.10.304): a new password was
+            # a way to sign in afresh, past how long a sign-in lasts, without
+            # Face ID.
+            try:
+                with store.db_write() as db:
+                    db.execute('UPDATE sessions SET made=? WHERE token IN (?, ?)',
+                               (float(me.get('made') or time.time()),) + store.session_pair(token))
+            except sqlite3.Error:
+                pass
             return self.send_json({'ok': True, 'token': token,
                                    'message': 'the password was changed; every other sign-in of '
                                               'this account was ended'})
@@ -81970,6 +82124,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not me:
                 return None
             given = self.body().get('settings') or {}
+            if not isinstance(given, dict):
+                return self.fail('settings are an object of names and values')
             # Face ID switched on only from a page that can use it (1.10.303):
             # from one opened by an address, or over plain http, nobody -
             # whoever switched it on first - could sign in again.

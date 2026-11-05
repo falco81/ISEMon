@@ -372,6 +372,62 @@ working.
 
 ## Version
 
+1.10.304
+
+What the first of three rounds of looking for bugs across the whole
+application found, fixed:
+
+- **Reading and judging**:
+  - Going back over the logs no longer stops reading a file at the first
+    8 MB with nothing in it for us, such as a FreeRADIUS log full of Info
+    lines or an OTP log shared with sshd. The rest of the file was never
+    read.
+  - The firewall, the domain controllers and the other sources counted by a
+    pass of their own now count up to the newest line read, not up to the
+    clock. A reader that fell behind (on purpose, as the firewall's does)
+    never banned what it read late. The window reaches back six hours at
+    most.
+  - A ban already on the ladder is no longer written there twice when the
+    counting carries it, which put the next ban one rung higher.
+- **The firewalls**:
+  - The Cisco access list is numbered, and its own ending (the last permit)
+    goes in first. Pasted as before, everything through the interface was
+    dropped between the first deny and the last permit, including the
+    session of whoever was pasting.
+  - A sync on a change that did not land is tried again every five minutes
+    until it does.
+  - A username such as `bad command` in a comment no longer switches the
+    quick read of a RouterOS list off for good.
+  - Clearing the country list waits as long as reading a list does.
+  - The hour the lists are fetched in may run past midnight.
+  - A range from a feed written backwards is refused.
+- **Data**:
+  - A complete export and a backup of the settings now carry the passkeys.
+    Without them, after a rebuild the first person to type a password
+    enrolled their own.
+  - An export without the secrets no longer carries the firewalls' API
+    passwords, even sealed.
+  - Putting back an older PostgreSQL dump empties the tables it cannot
+    hold, and puts the rows through this version's rules as a copy does.
+  - Going back to a version from before Face ID is refused while Face ID is
+    on, and sign-ins still owing it end.
+- **Signing in**:
+  - Taking away one's own passkey, like adding one, takes Face ID within
+    the last ten minutes.
+  - Out of the directory, a person's passkeys are theirs under each of
+    their names.
+  - A password changed keeps the age of the sign-in, so it no longer lasts
+    longer or skips Face ID.
+  - A settings or firewall request of the wrong shape is now refused with a
+    reason instead of a 500.
+- **The page**:
+  - Banned and the other lists held in the page read a search as the
+    daemon does: brackets, NOT, an address whole, a range.
+  - Tab in the find box opened over a popup stays in the find box.
+  - A refresh no longer draws the previous search's answer under a new
+    search.
+  - The fast polls while root works ask one at a time.
+
 1.10.303
 
 - **Face ID as the second step of signing in**: Face ID, Touch ID, Windows

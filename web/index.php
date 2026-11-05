@@ -7838,6 +7838,7 @@ setInterval(paintAsking, 250);
 
 function api(what, body, how) {
   how = how || {};
+  var plain = what;
   /* Whether this is the five-second refresh rather than somebody asking. */
   var quietAsk = !!(how.quiet || QUIET_TICK);
   var opts = {credentials: 'same-origin'};
@@ -7858,8 +7859,10 @@ function api(what, body, how) {
     if (quiet && lane.ctrl && lane.promise) return lane.promise;
     if (quiet && lane.took > 1500
         && Date.now() - lane.at < Math.max(60000, 20 * lane.took)) {
-      /* Slow, and asked not long ago: the refresh draws what it has. */
-      if (lane.last) return Promise.resolve(lane.last);
+      /* Slow, and asked not long ago: the refresh draws what it has - the
+         answer to this very question only (1.10.304), never the last search's
+         under a new one that failed. */
+      if (lane.last && lane.lastWhat === plain) return Promise.resolve(lane.last);
       return new Promise(function () {});    // nothing in this list to wait for
     }
     stopLane(how.lane);
@@ -7922,6 +7925,7 @@ function api(what, body, how) {
       }
       if (lane && lane.job === '' && lane.ctrl === null && lane.lastJob === mine) {
         lane.last = data;
+        lane.lastWhat = plain;
       }
       /* A search the daemon could not read says why, under its box. */
       if (how.lane && Q_LANES[how.lane] && 'q_error' in data) Q_LANES[how.lane](data.q_error);
@@ -8197,6 +8201,8 @@ function closeModal() {
 /* Tab and Shift+Tab go round inside the popup while it is open. */
 document.addEventListener('keydown', function (e) {
   if (e.key !== 'Tab' || $('modal').hidden) return;
+  /* The find box opened over the popup keeps its own Tab (1.10.304). */
+  if ($('findback') && !$('findback').hidden) return;
   var inside = Array.prototype.filter.call(
     $('modal-box').querySelectorAll('button, input, select, textarea, a[href], [tabindex]'),
     function (n) { return !n.disabled && n.tabIndex >= 0 && n.getClientRects().length; });
@@ -15132,36 +15138,105 @@ function qTokens(text) {
     words: null when it names no field this list has, so the box searches
     as it always did. `known` is {name: true}. */
 function qLocalParse(text, known) {
-  var groups = [{terms: [], words: []}], any = false;
-  qTokens(String(text || '')).forEach(function (t) {
-    var group = groups[groups.length - 1];
-    if (t === 'OR' || t === '|' || t === '||') {
-      if (group.terms.length || group.words.length) groups.push({terms: [], words: []});
-      return;
-    }
-    if (t === '(' || t === ')' || t === 'AND' || t === '&' || t === '&&') return;
+  /* Read as the daemon reads the same box (1.10.304): brackets group, AND
+     binds before OR, NOT and ! turn the next term round. It used to drop the
+     brackets and take NOT for a word to look for, so a list held in the page
+     (Banned) showed other rows than the same search on Failed attempts. */
+  var toks = qTokens(String(text || '')), at = 0, any = false;
+  function term(t) {
     var m = t.match(/^([-!]?)([A-Za-z_][\w.-]*)(!=|>=|<=|[:~=<>])(.*)$/);
     if (m && known[m[2].toLowerCase()]) {
       any = true;
       var v = m[4];
       var quoted = v.charAt(0) === '"';
       v = v.replace(/^"|"$/g, '');
-      if (v === '') return;                 /* still being typed */
-      group.terms.push({neg: !!m[1] !== (m[3] === '!='), field: m[2].toLowerCase(), op: m[3],
-                        values: quoted ? [v] : v.split(',').filter(function (x) { return x !== ''; })});
-    } else {
-      var w = t.replace(/^"|"$/g, '').toLowerCase();
-      if (w) group.words.push(w);
+      if (v === '') return null;                 /* still being typed */
+      return {t: 'term', neg: !!m[1] !== (m[3] === '!='), field: m[2].toLowerCase(), op: m[3],
+              values: quoted ? [v] : v.split(',').filter(function (x) { return x !== ''; })};
     }
-  });
+    var w = t.replace(/^"|"$/g, '').toLowerCase();
+    return w ? {t: 'word', w: w} : null;
+  }
+  function primary() {
+    var t = toks[at];
+    if (t === undefined) return null;
+    if (t === '(') {
+      at++;
+      var inner = expr();
+      if (toks[at] === ')') at++;
+      return inner;
+    }
+    if (t === ')') return null;
+    at++;
+    return term(t);
+  }
+  function unary() {
+    var t = toks[at];
+    if (t === 'NOT' || t === '!') {
+      at++;
+      var x = unary();
+      return x ? {t: 'not', x: x} : null;
+    }
+    return primary();
+  }
+  function and() {
+    var parts = [];
+    while (at < toks.length) {
+      var t = toks[at];
+      if (t === ')' || t === 'OR' || t === '|' || t === '||') break;
+      if (t === 'AND' || t === '&' || t === '&&') { at++; continue; }
+      var before = at, x = unary();
+      if (x) parts.push(x);
+      if (at === before) at++;
+    }
+    return parts.length === 1 ? parts[0] : (parts.length ? {t: 'and', xs: parts} : null);
+  }
+  function expr() {
+    var sides = [];
+    while (at < toks.length) {
+      var x = and();
+      /* A side still being typed - `ip:1 OR ` - is no side at all, rather
+         than one that every row matches. */
+      if (x) sides.push(x);
+      var t = toks[at];
+      if (t === 'OR' || t === '|' || t === '||') { at++; continue; }
+      break;
+    }
+    return sides.length === 1 ? sides[0] : (sides.length ? {t: 'or', xs: sides} : null);
+  }
+  var tree = null;
+  while (at < toks.length) {
+    var got = expr();
+    if (got) tree = tree ? {t: 'and', xs: [tree, got]} : got;
+    if (toks[at] === ')') at++;
+  }
   if (!any) return null;
-  /* Either side of an OR: each a set of terms and words that all hold. One
-     still being typed - `ip:1 OR ` - is no side at all, rather than one that
-     every row matches. */
-  groups = groups.filter(function (g) { return g.terms.length || g.words.length; });
-  if (!groups.length) groups = [{terms: [], words: []}];
-  var first = groups[0];
-  return {terms: first.terms, words: first.words, groups: groups};
+  return {tree: tree};
+}
+
+/** Whether an address is the one typed, or inside the range typed. */
+function qAddressMatch(have, want) {
+  have = String(have || '').trim().toLowerCase();
+  want = String(want || '').trim().toLowerCase();
+  var cidr = want.match(/^(\d{1,3}(?:\.\d{1,3}){3})\/(\d{1,2})$/);
+  var num = function (a) {
+    var p = String(a).split('/')[0].split('.');
+    if (p.length !== 4) return null;
+    var n = 0;
+    for (var i = 0; i < 4; i++) {
+      var x = parseInt(p[i], 10);
+      if (isNaN(x) || x < 0 || x > 255) return null;
+      n = n * 256 + x;
+    }
+    return n;
+  };
+  if (cidr) {
+    var bits = parseInt(cidr[2], 10), base = num(cidr[1]), h = num(have);
+    if (base === null || h === null || bits > 32) return false;
+    var size = Math.pow(2, 32 - bits);
+    return Math.floor(h / size) === Math.floor(base / size);
+  }
+  return have === want || have.split('/')[0] === want;
 }
 
 /** Whether one value of a row matches one value typed for it. */
@@ -15187,29 +15262,37 @@ function qLocalMatch(have, op, want) {
 
 /** One row against what was parsed: every field term and every word. */
 function qLocalTest(parsed, valueOf, hay) {
-  if (parsed.groups && parsed.groups.length > 1) {
-    return parsed.groups.some(function (g) {
-      return qLocalTest({terms: g.terms, words: g.words}, valueOf, hay);
-    });
-  }
-  for (var i = 0; i < parsed.terms.length; i++) {
-    var t = parsed.terms[i];
+  function one(t) {
     var have = valueOf(t.field);
     /* A cell as it is kept and as it is shown, and a value typed in the
        page's language as well as what it translates (1.10.167). */
     var haves = Array.isArray(have) ? have : [have];
     var wants = t.values.concat([].concat.apply([], t.values.map(qUntranslate)));
+    /* An address is the address, or a range around it - not any address
+       that starts the same (1.10.304): ip:203.0.113.1 was .10 to .199 too. */
+    var addr = (t.field === 'ip' || t.field === 'address') && (t.op === ':' || t.op === '=');
     var hit = wants.some(function (v) {
-      return haves.some(function (h) { return qLocalMatch(h, t.op, v); });
+      return haves.some(function (h) {
+        return addr && String(v).indexOf('*') < 0 ? qAddressMatch(h, v) : qLocalMatch(h, t.op, v);
+      });
     });
-    if (hit === t.neg) return false;
+    return hit !== t.neg;
   }
-  for (var w = 0; w < parsed.words.length; w++) {
-    var word = parsed.words[w], not = /^[-!]./.test(word);
-    var found = hay().indexOf(not ? word.slice(1) : word) >= 0;
-    if (found === not) return false;
+  function word(w) {
+    var not = /^[-!]./.test(w);
+    var found = hay().indexOf(not ? w.slice(1) : w) >= 0;
+    return found !== not;
   }
-  return true;
+  function test(x) {
+    if (!x) return true;
+    if (x.t === 'term') return one(x);
+    if (x.t === 'word') return word(x.w);
+    if (x.t === 'not') return !test(x.x);
+    if (x.t === 'and') return x.xs.every(test);
+    if (x.t === 'or') return x.xs.some(test);
+    return true;
+  }
+  return test(parsed.tree);
 }
 
 /** A heading's words as the name of a field: `How it ended` is how-it-ended. */
@@ -34676,7 +34759,7 @@ function meFaceId(host) {
     /* Another device only just after Face ID (1.10.303): a sign-in left open
        on somebody's screen cannot plant one of its own. */
     if (can && keys.length && !d.fresh) {
-      var first = cmdButton('Confirm it is you, to add another', 'check');
+      var first = cmdButton('Confirm it is you, to add or take one away', 'check');
       first.onclick = function () {
         first.disabled = true;
         api('passkey', {step: 'begin', want: 'check'}).then(function (b) {
@@ -43777,9 +43860,13 @@ function skPoll(on) {
   if (on && !SK.poll) {
     SK.poll = setInterval(function () {
       if (!paneLive('sshkeys')) { skPoll(false); return; }
+      /* One ask at a time (1.10.304): slower than 700 ms, they piled up and
+         an older answer drawn after a newer one left the pane pending. */
+      if (SK.asking) return;
+      SK.asking = true;
       api('sshkeys', undefined, {quiet: true}).then(function (d) {
         SK.d = d; drawSshKeys(); if (!skPending()) skPoll(false);
-      }).catch(function () {});
+      }).catch(function () {}).then(function () { SK.asking = false; });
     }, 700);      /* only while root has it to do: 2 s before 1.10.270 */
   }
   if (!on && SK.poll) { clearInterval(SK.poll); SK.poll = null; }
@@ -44049,10 +44136,12 @@ function otPoll(on) {
   if (on && !OT.poll) {
     OT.poll = setInterval(function () {
       if (!paneLive('otp')) { otPoll(false); return; }
+      if (OT.asking) return;              /* one at a time (1.10.304) */
+      OT.asking = true;
       api('otptls', undefined, {quiet: true}).then(function (d) {
         OT.d = d; drawOtpTls();
         if (!otPending()) { otPoll(false); otDone(); }
-      }).catch(function () {});
+      }).catch(function () {}).then(function () { OT.asking = false; });
     }, 700);      /* only while root has it to do: 1.5 s before 1.10.270 */
   }
   if (!on && OT.poll) { clearInterval(OT.poll); OT.poll = null; }
@@ -44710,10 +44799,12 @@ function atPoll(on) {
   if (on && !AT.poll) {
     AT.poll = setInterval(function () {
       if (!paneLive('acmelog')) { atPoll(false); return; }
+      if (AT.asking) return;              /* one at a time (1.10.304) */
+      AT.asking = true;
       api('acmetls', undefined, {quiet: true}).then(function (d) {
         AT.d = d; drawAcmeTls();
         if (!atPending()) { atPoll(false); atDone(); }
-      }).catch(function () {});
+      }).catch(function () {}).then(function () { AT.asking = false; });
     }, 700);      /* only while root has it to do: 1.5 s before 1.10.270 */
   }
   if (!on && AT.poll) { clearInterval(AT.poll); AT.poll = null; }

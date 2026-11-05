@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.303",
+  "version": "1.10.304",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -5660,13 +5660,17 @@
    "source": "configuration only",
    "text": "jen konfigurace"
   },
-  "s.confirm-it-is-you-to-add.8059e611": {
-   "source": "Confirm it is you, to add another",
-   "text": "Potvrďte, že jste to vy, a přidejte další"
+  "s.confirm-it-is-you-to-add.882c1354": {
+   "source": "Confirm it is you, to add or take one away",
+   "text": "Potvrďte, že jste to vy, a přidejte nebo odeberte"
   },
   "s.confirm-it-is-you-with-face.657828d9": {
    "source": "confirm it is you with Face ID first",
    "text": "nejdřív potvrďte přes Face ID, že jste to vy"
+  },
+  "s.confirm-it-is-you-with-face.dae5feb1": {
+   "source": "confirm it is you with Face ID first, then take it away",
+   "text": "nejdřív potvrďte přes Face ID, že jste to vy, pak ji odeberte"
   },
   "s.confirm-it-is-you-with-face.e3498243": {
    "source": "confirm it is you with Face ID first, then add the other device",
@@ -22272,6 +22276,10 @@
    "source": "Setting",
    "text": "Nastavení"
   },
+  "s.settings-are-an-object-of-names.ae99db6c": {
+   "source": "settings are an object of names and values",
+   "text": "nastavení je objekt jmen a hodnot"
+  },
   "s.settings-automatic-certificates-renews-it-before.a9806e0a": {
    "source": "Settings → Automatic certificates renews it before it runs out. Uploading one here, or making one self-signed, takes it out of ACME’s care - it is kept as it is.",
    "text": "Nastavení → Automatické certifikáty ho obnoví, než vyprší. Nahrání certifikátu zde nebo vytvoření self-signed ho z péče ACME vyjme – zůstane, jak je."
@@ -24211,6 +24219,10 @@
   "s.ten-minutes.6fbb060d": {
    "source": "ten minutes",
    "text": "deset minut"
+  },
+  "s.term.2a4c3b84": {
+   "source": "term",
+   "text": "term"
   },
   "s.terminal.46d551da": {
    "source": "terminal",
@@ -34160,6 +34172,10 @@
    "source": "without",
    "text": "bez"
   },
+  "s.word.3cbcd90a": {
+   "source": "word",
+   "text": "word"
+  },
   "s.words.efb89361": {
    "source": "words",
    "text": "words"
@@ -40705,6 +40721,10 @@
   "s.code.adac6937": {
    "source": "Code",
    "text": "Kód"
+  },
+  "s.confirm-it-is-you-to-add.8059e611": {
+   "source": "Confirm it is you, to add another",
+   "text": "Potvrďte, že jste to vy, a přidejte další"
   },
   "s.copy-everything-that-is-here-into.be93daef": {
    "source": "Copy everything that is here into that database: every record, every ban, every setting and every account. What is here is left exactly as it is.",

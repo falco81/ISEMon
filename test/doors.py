@@ -711,12 +711,15 @@ ok('...the list of before taken away first, so it can be pasted again (1.10.200)
    lines[len([l for l in lines if l.startswith('!')])],
    'no ip access-list extended SECURE-IPv4-IN')
 ok('a range is written with the wildcard mask IOS wants',
-   ' deny   ip 80.94.95.0 0.0.0.255 any' in lines, True)
-ok('...and a single address as a host', ' deny   ip host 193.37.69.104 any' in lines, True)
+   any(l.endswith(' deny   ip 80.94.95.0 0.0.0.255 any') for l in lines), True)
+ok('...and a single address as a host',
+   any(l.endswith(' deny   ip host 193.37.69.104 any') for l in lines), True)
 ok('an address on a clock is left out: it will have lapsed before this is pasted',
    any('9.9.9.9' in l for l in lines), False)
-ok('...and the two lines that must end it, always, in that order',
-   lines[-2:], [' deny   udp any any eq snmp', ' permit ip any any'])
+ok('...and the two lines that must end it, always, in that order - numbered after every '
+   'deny, and put in before them (1.10.304)',
+   [l.split(' ', 2)[2] for l in lines if l.startswith(' 20000000')][-2:],
+   ['deny   udp any any eq snmp', 'permit ip any any'])
 
 title('The controller writes the access point and the network in one field')
 # Called-Station-ID=AP-HQ-8F-EAST:CORPWIFI - the access point before the
