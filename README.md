@@ -372,11 +372,17 @@ working.
 
 ## Version
 
+1.10.291
+
+- **The acme tab's head stays where it is**: acme's card with the period and
+  Read again, and the Certificates · Jobs · Checks switch, are held at the top
+  of the page while what is under them scrolls.
+
 1.10.290
 
-- **acme's logs are read**: from 1.10.287 to 1.10.289 every pass over
-  `acme-certs.log`, `acme.log` and `acme-jobs.log` failed ("object of type
-  'generator' has no len()" in the daemon's log) and nothing of them was
+- **acme's logs are read**: every pass over `acme-certs.log`, `acme.log`
+  and `acme-jobs.log` failed ("object of type 'generator' has no len()" in
+  the daemon's log, from 1.10.287 to 1.10.289) and nothing of them was
   kept. Their reader hands back a list as every other one does, and once,
   after the upgrade, acme's files are read again from their beginning - every
   line kept once, so nothing that arrived in the meantime is lost (while it

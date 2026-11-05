@@ -4195,6 +4195,10 @@ function srcText(el) {
     .am-wf-row{grid-template-columns:56px minmax(0,1fr) 56px}.am-wf-track{display:none}}
   /* ---- the acme tab (1.10.287) ------------------------------------------- */
   #am-host{display:flex;flex-direction:column;gap:14px}
+  /* Held at the top of the page while the rest of it scrolls (1.10.291). */
+  .am-top{position:sticky;top:0;z-index:5;display:flex;flex-direction:column;gap:14px;
+    background:var(--bg);padding-bottom:12px;margin-bottom:-2px;
+    box-shadow:0 10px 12px -12px rgba(0,0,0,.7)}
   #am-host .card + .card{margin-top:0}
   .am-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
     background:linear-gradient(120deg,rgba(163,113,247,.13),rgba(88,166,255,.07) 55%,var(--panel) 85%)}
@@ -43902,9 +43906,13 @@ function drawAcmeLog() {
     host.appendChild(el('p', 'note', 'acme’s logs are not read: Settings → The acme logs.'));
     return;
   }
-  host.appendChild(amHead(d));
+  /* The head and the pages stay where they are while what is under them
+     scrolls (1.10.291). */
+  var top = el('div', 'am-top');
+  top.appendChild(amHead(d));
   /* Certificates, and - from acme-jobs (1.10.288) - Jobs and Checks. */
-  host.appendChild(amPages());
+  top.appendChild(amPages());
+  host.appendChild(top);
   if (AM.page !== 'certs') { amLoadPage(host); return; }
   if (!d.total) {
     var empty = el('div', 'card full am-empty');
