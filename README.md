@@ -372,6 +372,17 @@ working.
 
 ## Version
 
+1.10.298
+
+- **The performance meter**: how busy this server is (the processor,
+  memory, the disks, the network) in the header, for a full admin. It is
+  **off unless chosen** under Your account, in four looks, with the details
+  of each number in five styles: each core with its frequency and
+  temperature, the sensors, each disk and filesystem, each card, and the
+  processes taking most. Off, the page asks the server nothing. The daemon
+  keeps the last two minutes, so after F5 the graphs go on where they were.
+  See [docs/performance-meter.md](docs/performance-meter.md).
+
 1.10.297
 
 - **Quicker on a big database**:

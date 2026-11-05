@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.297",
+  "version": "1.10.298",
   "made": "2026-11-05",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -924,6 +924,10 @@
    "source": "· a machine",
    "text": "· a machine"
   },
+  "s.a-map-of-the-cores-with.e59259e9": {
+   "source": "a map of the cores with rings",
+   "text": "a map of the cores with rings"
+  },
   "s.a-mariadb-dump.55a87f15": {
    "source": "a MariaDB dump",
    "text": "a MariaDB dump"
@@ -1547,6 +1551,10 @@
   "s.a-subnet-is-only-made-where.367c35c9": {
    "source": "A subnet is only made where",
    "text": "A subnet is only made where"
+  },
+  "s.a-table-a-row-for-each.82268c40": {
+   "source": "a table - a row for each core (as htop)",
+   "text": "a table - a row for each core (as htop)"
   },
   "s.a-tacacs-daemon-of-this-site.e0145a6c": {
    "source": "A TACACS+ daemon of this site's own — tac_plus rather than ISE — in front of the switches and routers: whether its logs are read at all, which folders it writes into, and what its two files are called. Off unless somebody switches it on, and off it changes nothing. Nothing read here is ever judged.",
@@ -2516,6 +2524,10 @@
    "source": "alt",
    "text": "alt"
   },
+  "s.altogether.444e8349": {
+   "source": "Altogether",
+   "text": "Altogether"
+  },
   "s.always-let-in.3cf52f0d": {
    "source": "Always let in:",
    "text": "Always let in:"
@@ -2523,6 +2535,10 @@
   "s.am-axis-am-median-l.2daac9f7": {
    "source": "am-axis am-median-l",
    "text": "am-axis am-median-l"
+  },
+  "s.amd-ryzen-7-5800x-8-core.01bda185": {
+   "source": "AMD Ryzen 7 5800X 8-Core Processor",
+   "text": "AMD Ryzen 7 5800X 8-Core Processor"
   },
   "s.american-samoa.ca0b36fe": {
    "source": "American Samoa",
@@ -4776,6 +4792,10 @@
    "source": "Cabo Verde",
    "text": "Cabo Verde"
   },
+  "s.cache-given-back-when-needed.0008ccab": {
+   "source": "Cache (given back when needed)",
+   "text": "Cache (given back when needed)"
+  },
   "s.called-station-id.e6ced3bb": {
    "source": "Called-Station-ID",
    "text": "Called-Station-ID"
@@ -5344,6 +5364,10 @@
    "source": "City",
    "text": "City"
   },
+  "s.claude.f1dda22f": {
+   "source": "claude",
+   "text": "claude"
+  },
   "s.clear-all.c043160a": {
    "source": "Clear all",
    "text": "Clear all"
@@ -5884,9 +5908,17 @@
    "source": "countweb",
    "text": "countweb"
   },
+  "s.cpu-49.497bc455": {
+   "source": "CPU 49 %",
+   "text": "CPU 49 %"
+  },
   "s.cpu-in-use.437b0ba1": {
    "source": "CPU in use (%)",
    "text": "CPU in use (%)"
+  },
+  "s.cpu.ca49ca4b": {
+   "source": "cpu",
+   "text": "cpu"
   },
   "s.cpu.ff221d47": {
    "source": "CPU",
@@ -6468,6 +6500,10 @@
    "source": "disk in use (%)",
    "text": "disk in use (%)"
   },
+  "s.disk.a07bdcbc": {
+   "source": "disk",
+   "text": "disk"
+  },
   "s.disk.ef995260": {
    "source": "Disk",
    "text": "Disk"
@@ -6948,6 +6984,18 @@
    "source": "Each bar is split by the door: the VPN underneath, then TACACS+, the network, and the token server and the visitors’ network above those. Different systems with different people in front of them, so the height means everything in that hour and the colours say which door.",
    "text": "Each bar is split by the door: the VPN underneath, then TACACS+, the network, and the token server and the visitors’ network above those. Different systems with different people in front of them, so the height means everything in that hour and the colours say which door."
   },
+  "s.each-card.dd4fb59f": {
+   "source": "Each card",
+   "text": "Each card"
+  },
+  "s.each-core.132d98ae": {
+   "source": "Each core",
+   "text": "Each core"
+  },
+  "s.each-disk.a748d3dd": {
+   "source": "Each disk",
+   "text": "Each disk"
+  },
   "s.each-name-a-ca-had-proved.1753ec71": {
    "source": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof.",
    "text": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof."
@@ -7315,6 +7363,10 @@
   "s.english.649df08a": {
    "source": "English",
    "text": "English"
+  },
+  "s.eno1.89993741": {
+   "source": "eno1",
+   "text": "eno1"
   },
   "s.enter.2b9eceb7": {
    "source": "Enter",
@@ -8600,6 +8652,10 @@
    "source": "export, which cannot hold a password, a key or a certificate. Until these are set, this machine cannot do the part of its job that needs them:",
    "text": "export, which cannot hold a password, a key or a certificate. Until these are set, this machine cannot do the part of its job that needs them:"
   },
+  "s.ext4.efd44a70": {
+   "source": "ext4",
+   "text": "ext4"
+  },
   "s.external-advanced-save-and.dd18f4c0": {
    "source": "External (advanced). Save and",
    "text": "External (advanced). Save and"
@@ -9015,6 +9071,10 @@
   "s.files.a1f13b3b": {
    "source": "files",
    "text": "files"
+  },
+  "s.filesystems.946d7116": {
+   "source": "Filesystems",
+   "text": "Filesystems"
   },
   "s.fill-in-the-ones-with-no.3d9a38af": {
    "source": "Fill in the ones with no name…",
@@ -9560,6 +9620,10 @@
    "source": "France",
    "text": "France"
   },
+  "s.free-for-programs.68c41442": {
+   "source": "Free for programs",
+   "text": "Free for programs"
+  },
   "s.free-now.52786f8a": {
    "source": "Free now",
    "text": "Free now"
@@ -10072,6 +10136,10 @@
    "source": "good",
    "text": "good"
   },
+  "s.graphs.12c891d3": {
+   "source": "graphs",
+   "text": "graphs"
+  },
   "s.gre.430502bf": {
    "source": "gre",
    "text": "gre"
@@ -10415,6 +10483,10 @@
   "s.how-busy-its-processor-was-at.78ab17f6": {
    "source": "How busy its processor was at the last look.",
    "text": "How busy its processor was at the last look."
+  },
+  "s.how-busy-this-server-is-the.69f394e1": {
+   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, for you alone, every 3 s while the page is shown. Off unless you choose a look; off, nothing is asked of the server at all.",
+   "text": "How busy this server is - the processor, memory, the disks and the network - in the header, for you alone, every 3 s while the page is shown. Off unless you choose a look; off, nothing is asked of the server at all."
   },
   "s.how-close.3bf92a7e": {
    "source": "How close",
@@ -11463,6 +11535,10 @@
   "s.in-use.092a1ca8": {
    "source": "In use.",
    "text": "In use."
+  },
+  "s.in-use.20716e92": {
+   "source": "In use",
+   "text": "In use"
   },
   "s.in-your-dns-put-the-cname.03b0632c": {
    "source": "In your DNS put the CNAME record below - once.",
@@ -12584,6 +12660,10 @@
    "source": "its destination",
    "text": "its destination"
   },
+  "s.its-details-when-a-number-is.adc5a456": {
+   "source": "Its details, when a number is pointed at (or tapped)",
+   "text": "Its details, when a number is pointed at (or tapped)"
+  },
   "s.its-every-source-is-switched-off.84feb249": {
    "source": "its every source is switched off",
    "text": "its every source is switched off"
@@ -13091,6 +13171,10 @@
   "s.kept.1e61fe1e": {
    "source": "kept",
    "text": "kept"
+  },
+  "s.kept.727edd6b": {
+   "source": "Kept",
+   "text": "Kept"
   },
   "s.kerberos-policy-was-changed.d1f83219": {
    "source": "Kerberos policy was changed",
@@ -13848,6 +13932,10 @@
    "source": "Load one…",
    "text": "Load one…"
   },
+  "s.load.5dbc716c": {
+   "source": "load",
+   "text": "load"
+  },
   "s.loading.33ce4174": {
    "source": "Loading…",
    "text": "Loading…"
@@ -14552,6 +14640,14 @@
    "source": "manual",
    "text": "manual"
   },
+  "s.map-of-the-cores-colour-how.f2ffc358": {
+   "source": "Map of the cores (colour = how busy, number = temperature)",
+   "text": "Map of the cores (colour = how busy, number = temperature)"
+  },
+  "s.map.37745ed7": {
+   "source": "map",
+   "text": "map"
+  },
   "s.margin-6px-0-8px-padding-left.6866ffa0": {
    "source": "margin:-6px 0 8px;padding-left:2px",
    "text": "margin:-6px 0 8px;padding-left:2px"
@@ -14748,6 +14844,10 @@
    "source": "mediumcount",
    "text": "mediumcount"
   },
+  "s.mem.eccc4fdd": {
+   "source": "mem",
+   "text": "mem"
+  },
   "s.member.6467baa3": {
    "source": "member",
    "text": "member"
@@ -14875,6 +14975,10 @@
   "s.monitoring-and-updates.aac20f53": {
    "source": "Monitoring and updates",
    "text": "Monitoring and updates"
+  },
+  "s.mono-hp-name.89c01459": {
+   "source": "mono hp-name",
+   "text": "mono hp-name"
   },
   "s.mono-muted.e0ef4884": {
    "source": "mono muted",
@@ -15011,6 +15115,10 @@
   "s.must-log-the-sign-ins.4c9877d9": {
    "source": "must log the sign-ins:",
    "text": "must log the sign-ins:"
+  },
+  "s.muted-small.98921c40": {
+   "source": "muted small",
+   "text": "muted small"
   },
   "s.muted.e4b074a0": {
    "source": "muted",
@@ -15276,6 +15384,10 @@
    "source": "net",
    "text": "net"
   },
+  "s.net.9bb81c2e": {
+   "source": "Net",
+   "text": "Net"
+  },
   "s.netbios.9480c4a6": {
    "source": "NetBIOS",
    "text": "NetBIOS"
@@ -15512,6 +15624,10 @@
    "source": "No backup sent yet.",
    "text": "No backup sent yet."
   },
+  "s.no-card.904d31c6": {
+   "source": "no card",
+   "text": "no card"
+  },
   "s.no-certificate-is-like-that.d511d8bd": {
    "source": "No certificate is like that.",
    "text": "No certificate is like that."
@@ -15567,6 +15683,10 @@
   "s.no-destination-yet-backups-go-nowhere.518686ad": {
    "source": "No destination yet - backups go nowhere",
    "text": "No destination yet - backups go nowhere"
+  },
+  "s.no-details-only-a-short-tip.f26815fa": {
+   "source": "no details - only a short tip",
+   "text": "no details - only a short tip"
   },
   "s.no-device-has-fetched-this-acl.108f63e2": {
    "source": "No device has fetched this ACL while these logs have been read, so its rules cannot be shown. A device fetches an ACL only when it does not already hold it — this one it has held throughout. It appears after a reload of the device, after its cache drops it, or as soon as the ACL is edited on ISE.",
@@ -15835,6 +15955,10 @@
   "s.no-such-version.57ccc9ad": {
    "source": "no such version",
    "text": "no such version"
+  },
+  "s.no-temperature-this-machine-has-no.9d4e097f": {
+   "source": "No temperature: this machine has no sensors the kernel reads (a virtual machine has none).",
+   "text": "No temperature: this machine has no sensors the kernel reads (a virtual machine has none)."
   },
   "s.no-tls-driver-yet-rsyslog-gnutls.790d06ca": {
    "source": ", no TLS driver yet - rsyslog-gnutls is installed with the first setup",
@@ -16392,6 +16516,10 @@
    "source": "not set",
    "text": "not set"
   },
+  "s.not-shown.357eaffe": {
+   "source": "not shown",
+   "text": "not shown"
+  },
   "s.not-somebody-signing-in-the-code.ad06ec1f": {
    "source": "Not somebody signing in: the code was typed for this. otp writes the page a new token is made on, an administrator’s test and the like on the same line as a sign-in, with what it was for in the line.",
    "text": "Not somebody signing in: the code was typed for this. otp writes the page a new token is made on, an administrator’s test and the like on the same line as a sign-in, with what it was for in the line."
@@ -16499,6 +16627,10 @@
   "s.nothing-beside-this-one-yet-these.96f73a6e": {
    "source": "Nothing beside this one yet. These are shipped by a script that runs once a minute, so an attempt from the last minute or two normally has nothing here — open it again shortly.",
    "text": "Nothing beside this one yet. These are shipped by a script that runs once a minute, so an attempt from the last minute or two normally has nothing here — open it again shortly."
+  },
+  "s.nothing-busy-just-now.0ec19e42": {
+   "source": "nothing busy just now",
+   "text": "nothing busy just now"
   },
   "s.nothing-but-the-ise-records-is.f2c820f0": {
    "source": "Nothing but the ISE records is in those two tables.",
@@ -16643,6 +16775,10 @@
   "s.nothing-in-the-directory-answers-to.abe7d03e": {
    "source": "Nothing in the directory answers to this name.",
    "text": "Nothing in the directory answers to this name."
+  },
+  "s.nothing-in-the-header.1ff75926": {
+   "source": "nothing in the header",
+   "text": "nothing in the header"
   },
   "s.nothing-in-the-way.730029a2": {
    "source": "nothing in the way",
@@ -17060,6 +17196,14 @@
    "source": "NTS",
    "text": "NTS"
   },
+  "s.num-muted-small.544760ed": {
+   "source": "num muted small",
+   "text": "num muted small"
+  },
+  "s.num-muted.fffe68d9": {
+   "source": "num muted",
+   "text": "num muted"
+  },
   "s.num.9c6c337e": {
    "source": "num",
    "text": "num"
@@ -17075,6 +17219,10 @@
   "s.numeric.cd3975cf": {
    "source": "numeric",
    "text": "numeric"
+  },
+  "s.nvme0n1.d9765497": {
+   "source": "nvme0n1",
+   "text": "nvme0n1"
   },
   "s.nxdomain.73e177d7": {
    "source": "*NXDOMAIN*",
@@ -17796,6 +17944,10 @@
    "source": "One place. A sign-in from anywhere else is marked.",
    "text": "One place. A sign-in from anywhere else is marked."
   },
+  "s.one-plain-line.4d5806d7": {
+   "source": "one plain line",
+   "text": "one plain line"
+  },
   "s.one-put-in-here-by-hand.6f5f734f": {
    "source": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back.",
    "text": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back."
@@ -17875,6 +18027,10 @@
   "s.one-time-passwords.a5720802": {
    "source": "One-time passwords",
    "text": "One-time passwords"
+  },
+  "s.one-wide-panel-with-everything-at.b6599417": {
+   "source": "one wide panel with everything at once",
+   "text": "one wide panel with everything at once"
   },
   "s.one-windows-event-number-on-its.ea38fbbd": {
    "source": "One Windows event number on its own, where that is the question — 4740 is a lockout, 4625 a refused sign-in, 4624 a sign-in.",
@@ -18612,6 +18768,10 @@
    "source": "Other names",
    "text": "Other names"
   },
+  "s.other-sensors.049b08e1": {
+   "source": "Other sensors",
+   "text": "Other sensors"
+  },
   "s.other.6e6a6f20": {
    "source": "Other",
    "text": "Other"
@@ -19084,6 +19244,10 @@
    "source": "People",
    "text": "People"
   },
+  "s.performance-meter.a6c8730d": {
+   "source": "Performance meter",
+   "text": "Performance meter"
+  },
   "s.permission-denied.d0160044": {
    "source": "Permission denied",
    "text": "Permission denied"
@@ -19183,6 +19347,14 @@
   "s.pick.4c2e8554": {
    "source": "pick",
    "text": "pick"
+  },
+  "s.pills-with-a-bar.f0cf5a11": {
+   "source": "pills with a bar",
+   "text": "pills with a bar"
+  },
+  "s.pills.860038f7": {
+   "source": "pills",
+   "text": "pills"
   },
   "s.pim.79779d64": {
    "source": "pim",
@@ -19567,6 +19739,10 @@
   "s.process.c2e2d662": {
    "source": "process",
    "text": "process"
+  },
+  "s.processes.da2c4eba": {
+   "source": "processes",
+   "text": "processes"
   },
   "s.processors.2aee1b9d": {
    "source": "Processors",
@@ -19987,6 +20163,10 @@
   "s.ram.77c7960e": {
    "source": "ram",
    "text": "ram"
+  },
+  "s.ram.ac698b84": {
+   "source": "RAM",
+   "text": "RAM"
   },
   "s.ran-out-a-day-ago.42deb2a7": {
    "source": "ran out a day ago",
@@ -20936,6 +21116,10 @@
    "source": "Right now",
    "text": "Right now"
   },
+  "s.rings.7a843240": {
+   "source": "rings",
+   "text": "rings"
+  },
   "s.rm-etc-my-cnf-d-zz.03a7c92c": {
    "source": "rm /etc/my.cnf.d/zz-isemon-tuning.cnf",
    "text": "rm /etc/my.cnf.d/zz-isemon-tuning.cnf"
@@ -21328,6 +21512,10 @@
    "source": "Samoa",
    "text": "Samoa"
   },
+  "s.samsung-ssd-980-pro.03a6bca3": {
+   "source": "Samsung SSD 980 PRO",
+   "text": "Samsung SSD 980 PRO"
+  },
   "s.san-marino.87fd3bef": {
    "source": "San Marino",
    "text": "San Marino"
@@ -21495,6 +21683,10 @@
   "s.sctp.a1226bd8": {
    "source": "SCTP",
    "text": "SCTP"
+  },
+  "s.sda.7b4b1085": {
+   "source": "sda",
+   "text": "sda"
   },
   "s.search-domains.da70dd6d": {
    "source": "Search domains",
@@ -22031,6 +22223,10 @@
   "s.share.aab90dfe": {
    "source": "share",
    "text": "share"
+  },
+  "s.shared.50d0d8dd": {
+   "source": "Shared",
+   "text": "Shared"
   },
   "s.shell-profile.8add2bf5": {
    "source": "Shell profile",
@@ -23204,6 +23400,10 @@
    "source": "svg",
    "text": "svg"
   },
+  "s.swap.210dd62a": {
+   "source": "Swap",
+   "text": "Swap"
+  },
   "s.sweden.72ddd2b6": {
    "source": "Sweden",
    "text": "Sweden"
@@ -23776,6 +23976,14 @@
    "source": "Takes",
    "text": "Takes"
   },
+  "s.taking-most-memory.c254b9c8": {
+   "source": "Taking most memory",
+   "text": "Taking most memory"
+  },
+  "s.taking-most-of-the-processor.3766c3e1": {
+   "source": "Taking most of the processor",
+   "text": "Taking most of the processor"
+  },
   "s.taking-our-address-lists-off-the.06a3b06c": {
    "source": "Taking our address lists off the router",
    "text": "Taking our address lists off the router"
@@ -23831,6 +24039,10 @@
   "s.tcp.f544fb30": {
    "source": "TCP",
    "text": "TCP"
+  },
+  "s.tctl.a2699339": {
+   "source": "Tctl",
+   "text": "Tctl"
   },
   "s.telnet.89307d41": {
    "source": "Telnet",
@@ -25424,6 +25636,14 @@
    "source": "The disk:",
    "text": "The disk:"
   },
+  "s.the-disks-read-and-written-every.68fec471": {
+   "source": "The disks: read ↓ and written ↑, every disk together",
+   "text": "The disks: read ↓ and written ↑, every disk together"
+  },
+  "s.the-disks.432cac7e": {
+   "source": "The disks",
+   "text": "The disks"
+  },
   "s.the-display-name-out-of-the.f86dcc9a": {
    "source": "The display name out of the directory, and the distinguished name it was found under.",
    "text": "The display name out of the directory, and the distinguished name it was found under."
@@ -26408,6 +26628,10 @@
    "source": "the last try failed",
    "text": "the last try failed"
   },
+  "s.the-last-two-minutes.4c8f74aa": {
+   "source": "the last two minutes",
+   "text": "the last two minutes"
+  },
   "s.the-last-upgrade-the-package-waiting.dd6c7e46": {
    "source": "the last upgrade, the package waiting, and what the web has",
    "text": "the last upgrade, the package waiting, and what the web has"
@@ -26463,6 +26687,10 @@
   "s.the-list.4dbb27a0": {
    "source": "the list ·",
    "text": "the list ·"
+  },
+  "s.the-load-of-the-server-in.13658078": {
+   "source": "The load of the server in the header (CPU, RAM, the disks, the network)",
+   "text": "The load of the server in the header (CPU, RAM, the disks, the network)"
   },
   "s.the-lock-itself-says-only-that.14cb465a": {
    "source": "The lock itself says only that it happened. What everybody actually asks — which machine, which program, which password — is in the refusals in the half hour before it, so they are here too, and so is who unlocked it. Press one for the whole story.",
@@ -26860,6 +27088,10 @@
    "source": "the Netherlands",
    "text": "the Netherlands"
   },
+  "s.the-network-cards-down-in-and.0ca4ed29": {
+   "source": "The network cards: down ↓ (in) and up ↑ (out), every card together - not the loopback nor the bridges of containers",
+   "text": "The network cards: down ↓ (in) and up ↑ (out), every card together - not the loopback nor the bridges of containers"
+  },
   "s.the-network-device-the-attempt-arrived.3432f337": {
    "source": "The network device the attempt arrived through, by the name ISE calls it. Only devices listed under",
    "text": "The network device the attempt arrived through, by the name ISE calls it. Only devices listed under"
@@ -26903,6 +27135,10 @@
   "s.the-network-went-back-to-what.9b4e584c": {
    "source": "The network went back to what it was",
    "text": "The network went back to what it was"
+  },
+  "s.the-network.8bac9125": {
+   "source": "The network",
+   "text": "The network"
   },
   "s.the-networks-the-internet-storm-center.438d4264": {
    "source": "The networks the Internet Storm Center sees the most scanning from, as whole /24s. Twenty or so ranges, changed daily.",
@@ -27423,6 +27659,14 @@
   "s.the-private-key.9e82ea5f": {
    "source": "The private key",
    "text": "The private key"
+  },
+  "s.the-processor-busy-over-the-last.20b829c4": {
+   "source": "The processor, busy over the last 3 s, all 8 core(s) together",
+   "text": "The processor, busy over the last 3 s, all 8 core(s) together"
+  },
+  "s.the-processor.e634c08d": {
+   "source": "The processor",
+   "text": "The processor"
   },
   "s.the-program-on-that-machine-that.a5d629a7": {
    "source": "The program on that machine that went and used the password.",
@@ -29700,6 +29944,14 @@
    "source": "tik.cesnet.cz",
    "text": "tik.cesnet.cz"
   },
+  "s.tiles-a-card-for-each-core.f8b64855": {
+   "source": "tiles - a card for each core",
+   "text": "tiles - a card for each core"
+  },
+  "s.tiles.e20f8d1f": {
+   "source": "tiles",
+   "text": "tiles"
+  },
   "s.time-cloudflare-com.3d2e69b8": {
    "source": "time.cloudflare.com",
    "text": "time.cloudflare.com"
@@ -31036,6 +31288,10 @@
    "source": "Wants looking at",
    "text": "Wants looking at"
   },
+  "s.warm.d83fc386": {
+   "source": "warm",
+   "text": "warm"
+  },
   "s.warn.4c8ea476": {
    "source": "warn",
    "text": "warn"
@@ -31087,6 +31343,10 @@
   "s.watching.874e70e6": {
    "source": "watching",
    "text": "watching"
+  },
+  "s.wdc-wd40efrx.73195baf": {
+   "source": "WDC WD40EFRX",
+   "text": "WDC WD40EFRX"
   },
   "s.web-blocked.c05d9d55": {
    "source": "Web blocked",
@@ -33400,6 +33660,14 @@
    "source": "whybox",
    "text": "whybox"
   },
+  "s.wide.414768af": {
+   "source": "wide",
+   "text": "wide"
+  },
+  "s.width-100-height-54.811d4adf": {
+   "source": "width=\"100%\" height=\"54\"",
+   "text": "width=\"100%\" height=\"54\""
+  },
   "s.wifi.86a28d88": {
    "source": "wifi",
    "text": "wifi"
@@ -33435,6 +33703,10 @@
   "s.wireguard-peers.7edacfc7": {
    "source": "WireGuard peers",
    "text": "WireGuard peers"
+  },
+  "s.with-a-graph-of-the-last.d3f23cea": {
+   "source": "with a graph of the last two minutes",
+   "text": "with a graph of the last two minutes"
   },
   "s.with-a-key-this-daemon-holds.67da60c8": {
    "source": "With a key this daemon holds, or with a password. A key is better: it never leaves this machine.",
@@ -33579,6 +33851,10 @@
   "s.with-restore-bundle-the-password-of.67cdca0e": {
    "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key; with --otp-tls-import: the passphrase of the file otp made",
    "text": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key; with --otp-tls-import: the passphrase of the file otp made"
+  },
+  "s.with-rings.49c73d98": {
+   "source": "with rings",
+   "text": "with rings"
   },
   "s.with-root-key-drop-it-may.89652220": {
    "source": "with --root-key-drop: it may be the last key root signs in with",
@@ -33788,6 +34064,10 @@
    "source": "Written",
    "text": "Written"
   },
+  "s.written.6180960e": {
+   "source": "written",
+   "text": "written"
+  },
   "s.wrong-passwords-before-waiting.b0ba113b": {
    "source": "Wrong passwords before waiting",
    "text": "Wrong passwords before waiting"
@@ -33811,6 +34091,10 @@
   "s.xauthuser.3c649b60": {
    "source": "xauthuser",
    "text": "xauthuser"
+  },
+  "s.xfs.db4f0edf": {
+   "source": "xfs",
+   "text": "xfs"
   },
   "s.xid.0cc393a9": {
    "source": "xid",
@@ -34494,6 +34778,18 @@
    "source": "counts/{0}",
    "text": "counts/{0}"
   },
+  "p.cpu.0d880efc": {
+   "source": "cpu{0}",
+   "text": "cpu{0}"
+  },
+  "p.cpu.68848473": {
+   "source": "CPU {0}",
+   "text": "CPU {0}"
+  },
+  "p.cpu.6f6443c9": {
+   "source": "CPU {0} · {1}",
+   "text": "CPU {0} · {1}"
+  },
   "p.curl-fss-u-password.6b89dd51": {
    "source": "curl -fsS -u '{0}:PASSWORD'",
    "text": "curl -fsS -u '{0}:PASSWORD'"
@@ -34910,6 +35206,10 @@
    "source": "{0} Gb/s",
    "text": "{0} Gb/s"
   },
+  "p.ghz.9a3ef034": {
+   "source": "{0} GHz",
+   "text": "{0} GHz"
+  },
   "p.go-back-to-isemon.f80d7474": {
    "source": "Go back to isemon {0}?",
    "text": "Go back to isemon {0}?"
@@ -34990,6 +35290,14 @@
    "source": "Hide “{0}”",
    "text": "Hide “{0}”"
   },
+  "p.hl-panel-hp.dc61a769": {
+   "source": "hl-panel hp-{0}",
+   "text": "hl-panel hp-{0}"
+  },
+  "p.hload-look.cdd46afe": {
+   "source": "hload look-{0}{1}",
+   "text": "hload look-{0}{1}"
+  },
   "p.host.c9f29d9a": {
    "source": "{0}_host",
    "text": "{0}_host"
@@ -35009,6 +35317,10 @@
   "p.how-much-the-sessions-it-let.2ba4e637": {
    "source": "How much the sessions it let through carried, both ways: out is what the side that started each session sent, in is what came back.{0}",
    "text": "How much the sessions it let through carried, both ways: out is what the side that started each session sent, in is what came back.{0}"
+  },
+  "p.hsl-62.b6c4cb30": {
+   "source": "hsl({0},62%,{1}%)",
+   "text": "hsl({0},62%,{1}%)"
   },
   "p.hsts-days.c0f0db11": {
    "source": "HSTS {0} days",
@@ -35202,6 +35514,10 @@
    "source": "{0} is not on this machine: {1}",
    "text": "{0} is not on this machine: {1}"
   },
+  "p.is-not-one-of.4373bc7f": {
+   "source": "{0}: {1} is not one of {2}",
+   "text": "{0}: {1} is not one of {2}"
+  },
   "p.is-not.467af214": {
    "source": "{0} is not “{1}”",
    "text": "{0} is not “{1}”"
@@ -35333,6 +35649,10 @@
   "p.job.c1affedf": {
    "source": "&job={0}",
    "text": "&job={0}"
+  },
+  "p.kb-s.61577ea3": {
+   "source": "{0} kB/s",
+   "text": "{0} kB/s"
   },
   "p.kb-s.fefe4170": {
    "source": "{0} kb/s",
@@ -35522,6 +35842,14 @@
    "source": "list-{0}",
    "text": "list-{0}"
   },
+  "p.load.4951c424": {
+   "source": "· load {0}",
+   "text": "· load {0}"
+  },
+  "p.load.ce6518ac": {
+   "source": "load {0} · {1}",
+   "text": "load {0} · {1}"
+  },
   "p.locked-out.b5a15705": {
    "source": "{0} locked out",
    "text": "{0} locked out"
@@ -35594,9 +35922,21 @@
    "source": "{0} may come back",
    "text": "{0} may come back"
   },
+  "p.mb-s.59e320b8": {
+   "source": "{0} MB/s",
+   "text": "{0} MB/s"
+  },
   "p.mb-s.9c8fef7a": {
    "source": "{0} Mb/s",
    "text": "{0} Mb/s"
+  },
+  "p.memory-in-use-without-what-the.8257abc6": {
+   "source": "Memory in use (without what the kernel keeps as cache and gives back){0}",
+   "text": "Memory in use (without what the kernel keeps as cache and gives back){0}"
+  },
+  "p.mhz.55dd8e98": {
+   "source": "{0} MHz",
+   "text": "{0} MHz"
   },
   "p.min-ago.b9e7312c": {
    "source": "{0} min ago",
@@ -35605,6 +35945,10 @@
   "p.min-s.3f40e738": {
    "source": "{0} min {1} s",
    "text": "{0} min {1} s"
+  },
+  "p.min.12911270": {
+   "source": "{0}{1}{2} min",
+   "text": "{0}{1}{2} min"
   },
   "p.min.e802d434": {
    "source": "{0} min",
@@ -36178,6 +36522,10 @@
    "source": "{0}-pick-{1}",
    "text": "{0}-pick-{1}"
   },
+  "p.pid.91f96e98": {
+   "source": "pid {0}",
+   "text": "pid {0}"
+  },
   "p.pill.4bbd4f3c": {
    "source": "pill {0}",
    "text": "pill {0}"
@@ -36594,6 +36942,10 @@
    "source": "{0} signs in with an API key, not over ssh",
    "text": "{0} signs in with an API key, not over ssh"
   },
+  "p.since-start.d1ffa517": {
+   "source": "since start ↓{0} ↑{1}",
+   "text": "since start ↓{0} ↑{1}"
+  },
   "p.since-the-daemon-started.abed8935": {
    "source": "{0} since the daemon started{1}",
    "text": "{0} since the daemon started{1}"
@@ -36721,6 +37073,10 @@
   "p.sw3word.520077fd": {
    "source": "sw3word {0}",
    "text": "sw3word {0}"
+  },
+  "p.swap-in-use.f198147d": {
+   "source": "· swap in use {0}",
+   "text": "· swap in use {0}"
   },
   "p.switch-over-isemon-targets-to-this.5673aad9": {
    "source": "Switch over: isemon_targets to this machine's name:{0}/tls - the nodes send over TLS from then on. The plain input here stays for any node not switched over.",
@@ -37169,6 +37525,10 @@
   "p.the-password-for-lives-in-the.58cb7188": {
    "source": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\".",
    "text": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\"."
+  },
+  "p.the-processor-busy-over-the-last.f50f06d7": {
+   "source": "The processor, busy over the last {0} s, all {1} core(s) together{2}",
+   "text": "The processor, busy over the last {0} s, all {1} core(s) together{2}"
   },
   "p.the-proxy-looked-up.22445829": {
    "source": "the proxy looked up ({0})",
