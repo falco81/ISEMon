@@ -44,9 +44,10 @@ PORT = 19400 + random.randint(0, 90)
 # its own (acme_events, acme's log) and nothing else: an older version never
 # reads it, never writes it and never copies it - its tables are the ones its
 # own SCHEMA names - so the floor stays where it was. 1.10.288 added another
-# the same way (acme_jobs, acme's jobs step by step).
+# the same way (acme_jobs, acme's jobs step by step). 1.10.292 named those
+# two tables as lists the search boxes read (LIST_TABLES) - no table changed.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '03370bb2f34b1a3849c0e86a181618bf0d582dc2b9e93ac6a21a66f0c132127b'}
+               'sha256': '064f72296bccf1c98402c7dee867161147102378aa4cb4860a5aa3e37fda689f'}
 
 
 def ok(what, got, want=True):

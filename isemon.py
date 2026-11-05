@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.291'
+__version__ = '1.10.292'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -16405,6 +16405,34 @@ LIST_FIELDS = {
         'kind': ('kind', 'text'), 'who': ('who', 'text'), 'what': ('detail', 'text'),
         'detail': ('detail', 'text'), 'level': ('level', 'text'),
     },
+    # What acme sent (1.10.292): its lines, and its jobs' - searched the way
+    # every other list is, `field:value` and all.
+    'acme': {
+        'cert': ('cert', 'text'), 'certificate': ('cert', 'text'),
+        'names': ('names', 'text'), 'name': ('names', 'text'),
+        'serial': ('serial', 'text'), 'issuer': ('issuer', 'text'), 'source': ('issuer', 'text'),
+        'target': ('target', 'text'), 'target_kind': ('target_kind', 'text'),
+        'node': ('node', 'text'), 'who': ('who', 'text'), 'level': ('level', 'text'),
+        'kind': ('kind', 'text'), 'action': ('action', 'text'), 'result': ('result', 'text'),
+        'log': ('tag', 'text'), 'version': ('version', 'text'), 'reason': ('reason', 'text'),
+        'what': ('msg', 'text'), 'msg': ('msg', 'text'),
+    },
+    'acmejobs': {
+        'job': ('job', 'text'), 'kind': ('job_kind', 'text'), 'job_kind': ('job_kind', 'text'),
+        'event': ('event', 'text'), 'cert': ('cert', 'text'), 'certificate': ('cert', 'text'),
+        'names': ('names', 'text'), 'name': ('name', 'text'),
+        'issuer': ('issuer', 'text'), 'source': ('issuer', 'text'),
+        'issuer_kind': ('issuer_kind', 'text'), 'challenge': ('challenge', 'text'),
+        'via': ('via', 'text'), 'challenge_type': ('challenge_type', 'text'),
+        'state': ('state', 'text'), 'target': ('target', 'text'),
+        'target_kind': ('target_kind', 'text'), 'module': ('module', 'text'),
+        'module_kind': ('module_kind', 'text'), 'host': ('http_host', 'text'),
+        'server': ('http_host', 'text'), 'method': ('method', 'text'), 'path': ('path', 'text'),
+        'status': ('status', 'num'), 'ms': ('ms', 'num'), 'took': ('took_ms', 'num'),
+        'error': ('error', 'text'), 'who': ('who', 'text'), 'node': ('node', 'text'),
+        'level': ('level', 'text'), 'test': ('test', 'text'), 'test_kind': ('test_kind', 'text'),
+        'endpoint': ('endpoint', 'text'), 'what': ('msg', 'text'), 'msg': ('msg', 'text'),
+    },
     'history': {
         'ip': ('ip', 'ip'), 'address': ('ip', 'ip'), 'why': ('why', 'text'),
         'how': ('how', 'text'), 'by': ('by', 'text', 'empty_word', 'the counting'),
@@ -16415,7 +16443,8 @@ LIST_FIELDS = {
 # Which table each list is, and what a bare word inside brackets or after NOT
 # is looked for in - the same columns the box searches a word in at the top.
 LIST_TABLES = {'failed': 'failed', 'passed': 'passed', 'win': 'win_events',
-               'events': 'events', 'history': 'blocked_log'}
+               'events': 'events', 'history': 'blocked_log',
+               'acme': 'acme_events', 'acmejobs': 'acme_jobs'}
 LIST_WORDS = {
     'failed': ('ip', 'username', 'reason', 'tunnel', 'device'),
     'passed': ('ip', 'username', 'profile', 'tunnel', 'device'),
@@ -16423,6 +16452,8 @@ LIST_WORDS = {
             'service'),
     'events': ('detail', 'who', 'kind'),
     'history': ('ip', 'why', 'by'),
+    'acme': ('msg', 'cert', 'names', 'target', 'who', 'serial'),
+    'acmejobs': ('msg', 'cert', 'error', 'http_host', 'target', 'name'),
 }
 LIST_TERM = re.compile(r'^([-!]?)([A-Za-z_][\w]*)(!=|>=|<=|[:~=<>])(.*)$', re.S)
 
@@ -35715,39 +35746,67 @@ class Storage(object):
 
     ACME_FILTERS = ('tag', 'level', 'kind', 'node', 'cert', 'action', 'result', 'target', 'who')
 
-    def acme_events_list(self, want, limit=200):
+    ACME_SORTS = {'ts': 'ts', 'level': 'level', 'node': 'node', 'kind': 'kind', 'who': 'who',
+                  'action': 'action', 'cert': 'cert', 'msg': 'msg'}
+
+    @staticmethod
+    def _acme_words(text, columns):
+        """The words typed, anywhere in `columns`, each - folded, as every box."""
+        sql, args = [], []
+        for w in [w for w in re.split(r'\s+', str(text or '').strip()) if w][:8]:
+            sql.append('(%s)' % ' OR '.join(like_same(c) for c in columns))
+            args += [like_for(w)] * len(columns)
+        return sql, args
+
+    def acme_events_list(self, want, limit=200, offset=0, words=None, where=None, sort='',
+                         desc=True):
         """acme's lines, newest first, narrowed by what is asked: any of
-        ACME_FILTERS exactly, `q` anywhere in the message, the certificate's
-        names or the target, and `before` for the page after."""
-        where, args = [], []
+        ACME_FILTERS exactly, the words typed (`q`, or `words` once the box
+        was read for its fields) in the message, the certificate, its names,
+        the target, who and the serial; `where` - the fields typed
+        (`ListQuery`); `since`, `until`, and `before` for the page after.
+        A page, how many there are in all, and the choices for the filters."""
+        conds, args = [], []
         for k in self.ACME_FILTERS:
             v = str(want.get(k) or '').strip()
             if v:
-                where.append('%s = ?' % k)
+                conds.append('%s = ?' % k)
                 args.append(v[:200])
-        q = str(want.get('q') or '').strip().lower()
-        if q:
-            where.append('(LOWER(msg) LIKE ? OR LOWER(cert) LIKE ? OR LOWER(names) LIKE ? '
-                         'OR LOWER(target) LIKE ? OR LOWER(serial) LIKE ? OR LOWER(who) LIKE ?)')
-            like = '%' + q.replace('\\', '').replace('%', '').replace('_', '')[:200] + '%'
-            args.extend([like] * 6)
-        for key, op in (('before', '<'), ('since', '>=')):
+        text = words if words is not None else want.get('q')
+        more_sql, more_args = self._acme_words(text, LIST_WORDS['acme'])
+        conds += more_sql
+        args += more_args
+        if where and where[0]:
+            conds.append('(%s)' % where[0])
+            args += list(where[1])
+        for key, op in (('before', '<'), ('since', '>='), ('until', '<=')):
             try:
                 v = float(want.get(key) or 0)
             except (TypeError, ValueError):
                 v = 0
             if v:
-                where.append('ts %s ?' % op)
+                conds.append('ts %s ?' % op)
                 args.append(v)
         limit = max(1, min(int(limit or 200), 1000))
-        sql = 'SELECT * FROM acme_events%s ORDER BY ts DESC, ident LIMIT %d' % (
-            (' WHERE ' + ' AND '.join(where)) if where else '', limit + 1)
+        offset = max(0, int(offset or 0))
+        body = 'FROM acme_events%s' % ((' WHERE ' + ' AND '.join(conds)) if conds else '')
         try:
-            rows = [self.acme_row(dict(r)) for r in self.db.execute(sql, tuple(args)).fetchall()]
+            rows = [self.acme_row(dict(r)) for r in self.db.execute(
+                'SELECT * ' + body + order_by(sort, desc, self.ACME_SORTS, 'ts DESC, ident')
+                + ' LIMIT ? OFFSET ?', tuple(args) + (limit + 1, offset)).fetchall()]
         except sqlite3.Error:
             rows = []
         more = len(rows) > limit
         rows = rows[:limit]
+        if not offset and not more:
+            total = len(rows)
+        else:
+            try:
+                total = int(self.db.execute(
+                    'SELECT COUNT(*) AS n FROM (SELECT 1 AS one ' + body +
+                    ' LIMIT %d) AS counted' % (self.COUNT_CAP + 1), tuple(args)).fetchone()['n'])
+            except sqlite3.Error:
+                total = offset + len(rows)
         try:
             facets = {}
             for k in ('node', 'kind', 'action', 'level', 'tag'):
@@ -35756,7 +35815,34 @@ class Storage(object):
                     'LIMIT 100' % (k, k, k)).fetchall()]
         except sqlite3.Error:
             facets = {}
-        return {'rows': rows, 'more': more, 'facets': facets}
+        return {'rows': rows, 'more': more, 'facets': facets,
+                'total': min(total, self.COUNT_CAP), 'capped': total > self.COUNT_CAP}
+
+    def acme_matching(self, table, column, words, where, extra=''):
+        """Which values of `column` the lines that match what was typed
+        carry - the certificates, the jobs - for a list worked out of them
+        to show those alone (1.10.292)."""
+        conds, args = ['%s IS NOT NULL' % column.split(',')[0].strip()], []
+        if extra:
+            conds.append(extra)
+        more_sql, more_args = self._acme_words(
+            words, LIST_WORDS['acme' if table == 'acme_events' else 'acmejobs'])
+        conds += more_sql
+        args += more_args
+        if where and where[0]:
+            conds.append('(%s)' % where[0])
+            args += list(where[1])
+        cols = [c.strip() for c in column.split(',')]
+        try:
+            rows = self.db.execute(
+                'SELECT DISTINCT %s FROM %s WHERE %s LIMIT 20000' % (
+                    ', '.join('%s AS c%d' % (c, i) for i, c in enumerate(cols)), table,
+                    ' AND '.join(conds)), tuple(args)).fetchall()
+            if len(cols) == 1:
+                return set(r['c0'] for r in rows)
+            return set(tuple(r['c%d' % i] for i in range(len(cols))) for r in rows)
+        except sqlite3.Error:
+            return set()
 
     # ---- acme's jobs, step by step (acme-jobs, 1.10.288) -------------------
 
@@ -77546,6 +77632,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                             asked_sessions=store.otp_asked_sessions)
         except (ListQueryError, FwQueryError) as e:
             return '', None, str(e)
+        except (TypeError, IndexError, AttributeError):
+            # Cut off half way - `cert:(` - and read past its end (1.10.292):
+            # said under the box, as any other search that does not read,
+            # rather than a 500 for every list.
+            return '', None, 'that search stops half way: a bracket or a quote is not closed'
         return got.words, ((got.sql, got.args) if got.sql else None), ''
 
     def spare_body(self):
@@ -77808,13 +77899,29 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not daemon.acmelog_on():
                 return self.send_json({'on': False})
             if path == '/api/acmelog':
-                return self.send_json(daemon.held(
+                got = dict(daemon.held(
                     'acmelog/view/%d' % number('days', 30, 1, 400), 5,
                     lambda: store.acme_view(number('days', 30, 1, 400))))
+                # The certificates as the search box over them narrows them
+                # (1.10.292): those that any line matching it is about.
+                if str(one('q') or '').strip():
+                    words, where, q_error = self.list_query('acme', one('q'))
+                    got['q_error'] = q_error
+                    got['match'] = [] if q_error else sorted(
+                        str(c) for c in store.acme_matching('acme_events', 'cert', words, where))
+                return self.send_json(got)
             if path == '/api/acmelog/jobs':
-                return self.send_json(daemon.held(
+                got = dict(daemon.held(
                     'acmelog/jobs/%d' % number('days', 30, 1, 400), 5,
                     lambda: store.acme_jobs_view(number('days', 30, 1, 400))))
+                # ...and the jobs: those with any line that matches.
+                if str(one('q') or '').strip():
+                    words, where, q_error = self.list_query('acmejobs', one('q'))
+                    got['q_error'] = q_error
+                    got['match'] = [] if q_error else sorted(
+                        '%s|%s' % k for k in store.acme_matching(
+                            'acme_jobs', 'job, node', words, where, "kind = 'job'"))
+                return self.send_json(got)
             if path == '/api/acmelog/checks':
                 return self.send_json(daemon.held(
                     'acmelog/checks/%d' % number('days', 30, 1, 400), 5,
@@ -77822,9 +77929,24 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path == '/api/acmelog/job':
                 return self.send_json({'on': True, 'rows': store.acme_job_lines(
                     one('job'), one('node'))})
-            want = {k: one(k) for k in store.ACME_FILTERS + ('q', 'before', 'since')}
-            got = store.acme_events_list(want, number('limit', 200, 1, 1000))
+            want = {k: one(k) for k in store.ACME_FILTERS + ('before', 'since', 'until')}
+            hours = number('hours', 0, 0, 24 * 400)
+            if hours:
+                want['since'] = time.time() - hours * 3600
+            if number('from', 0, 0):
+                want['since'] = number('from', 0, 0)
+            if number('to', 0, 0):
+                want['until'] = number('to', 0, 0)
+            words, where, q_error = self.list_query('acme', one('q'))
+            if q_error:
+                return self.send_json({'on': True, 'rows': [], 'total': 0, 'more': False,
+                                       'q_error': q_error,
+                                       'facets': store.acme_events_list({}, 1)['facets']})
+            got = store.acme_events_list(want, number('limit', 200, 1, 1000),
+                                         number('offset', 0, 0, Storage.COUNT_CAP), words,
+                                         where, one('sort'), one('dir') != 'asc')
             got['on'] = True
+            got['q_error'] = ''
             return self.send_json(got)
 
         # ---- stopping a search somebody no longer wants -------------------

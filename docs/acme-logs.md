@@ -194,7 +194,20 @@ well, how many failed in a row; and when one began (`went=bad`) or stopped
 `[hidden]` is a value acme left out on purpose (a secret, a TXT value): it
 is shown as such.
 
-API: `GET /api/acmelog?days=30` (the tab), `GET /api/acmelog/events`
-(`tag level kind node cert action result target who q before since limit`),
-`GET /api/acmelog/jobs?days=30`, `GET /api/acmelog/job?job=&node=`,
+### Searching
+
+The certificates, every line and the jobs are searched as every other list:
+a word anywhere, or fields - for the lines `cert`, `names`, `issuer`,
+`serial`, `target`, `node`, `who`, `action`, `result`, `level`, `kind`,
+`log`; for the jobs also `kind` (of job), `event`, `host`, `status`,
+`method`, `path`, `via`, `challenge_type`, `state`, `error`, `module`,
+`test`, `endpoint`, `took` - with `field:a,b`, `-field:value`, `*` and
+`(a OR b)`, offered as they are typed. The certificates and the jobs show
+those that any matching line is about.
+
+API: `GET /api/acmelog?days=30` (the tab; `&q=` adds `match`, the
+certificates), `GET /api/acmelog/events`
+(`q tag level kind node cert action result target who hours from to limit
+offset sort dir`),
+`GET /api/acmelog/jobs?days=30` (`&q=`: `match`, the jobs as `job|node`), `GET /api/acmelog/job?job=&node=`,
 `GET /api/acmelog/checks?days=30`.

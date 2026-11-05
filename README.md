@@ -372,6 +372,20 @@ working.
 
 ## Version
 
+1.10.292
+
+- **The acme tab is searched as every other list is.** Its certificates,
+  every line acme sent and its jobs have the search box of the other lists:
+  fields (`cert:www`, `level:bad -kind:sign-ins`, `target:f5-*`,
+  `host:api.cloudflare.com status:429`, `error:*NXDOMAIN*`, `took>30000`),
+  offered as they are typed with what each holds, and what is wrong with a
+  search said under the box. The lines have the drop-downs, the window
+  ("choose dates…"), the page size, Clear, the pager and the headings that
+  order them on the server; the certificates and the jobs show those any
+  matching line is about, beside a drop-down of their state.
+- A search that stops half way (`ip:(`) is said under the box, on every
+  list, rather than answered with an error.
+
 1.10.291
 
 - **The acme tab's head stays where it is**: acme's card with the period and

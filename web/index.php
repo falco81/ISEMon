@@ -14301,6 +14301,35 @@ function serverList(opts) {
    a column of the table by the words of its heading.
    ========================================================================== */
 var QF = {
+  /* acme's lines and its jobs' (1.10.292). */
+  acme: [
+    ['cert', 'the certificate, by its name in acme', 'www, *.example.cz'],
+    ['names', 'a name it holds', '*.example.cz'],
+    ['issuer', 'the source it is issued from', '"Let\'s Encrypt"'],
+    ['serial', 'its serial number', ''],
+    ['target', 'where it went', 'f5-*'],
+    ['node', 'the node of acme\'s it happened on', 'acme1'],
+    ['who', 'who did it - acme itself or an account', 'admin'],
+    ['action', 'what happened', 'renewed, deploy'],
+    ['level', 'info, warn or bad', 'bad'],
+    ['kind', 'the kind of line', 'sign-ins'],
+    ['log', 'acme-certs, or acme', '']
+  ],
+  acmejobs: [
+    ['cert', 'the certificate', 'www'],
+    ['kind', 'the kind of job', 'renew, deploy'],
+    ['event', 'start, step, http, validation, end', 'http'],
+    ['host', 'the server a request went to', 'api.cloudflare.com'],
+    ['status', 'the HTTP status it answered', '429, >=500'],
+    ['via', 'what proved a name', '*dns-cz'],
+    ['state', 'how a validation or a job ended', 'invalid, failed'],
+    ['error', 'what went wrong', '*NXDOMAIN*'],
+    ['issuer', 'the source', ''],
+    ['target', 'the target', ''],
+    ['took', 'how long a job took, ms', '>30000'],
+    ['who', 'who began it', 'admin'],
+    ['node', 'the node it ran on', 'acme1']
+  ],
   failed: [
     ['ip', 'the address it came from', '10.1.2.3, 10.1.*, 10.1.0.0/16'],
     ['user', 'the name offered', 'novak, adm*'],
@@ -15533,7 +15562,7 @@ function sortArgs(state) {
 /* The orders of the server's lists, each kept until Clear or a new door. */
 var SORTS = {failed: {key: 'ts', desc: true}, passed: {key: 'ts', desc: true},
              win: {key: 'ts', desc: true}, events: {key: 'ts', desc: true},
-             past: {key: '', desc: true}};
+             past: {key: '', desc: true}, acme: {key: 'ts', desc: true}};
 function sortReset(state) { state.key = state === SORTS.past ? '' : 'ts'; state.desc = true; }
 
 /* The keys as one door draws its columns (1.10.200): on the network's doors
@@ -43886,6 +43915,12 @@ function loadAcmeLog(quiet) {
   AM.asked = Date.now();
   api('acmelog&days=' + AM.days, undefined, {quiet: !!quiet}).then(function (d) {
     AM.d = d;
+    /* Not drawn again under somebody typing in one of its boxes or
+       choosing in a drop-down: what they typed would go. */
+    var act = document.activeElement;
+    if (quiet && act && $('am-host') && $('am-host').contains(act)
+        && /^(INPUT|SELECT|TEXTAREA)$/.test(act.tagName)) return;
+    if (AM.text) amCertsAsk();
     drawAcmeLog();
     if (!AM.ev) amEvents(true);
   }).catch(function (e) { if (!quiet) oops(e); });
@@ -43941,6 +43976,8 @@ function drawAcmeLog() {
   host.appendChild(four);
   host.appendChild(amEventsCard());
   amDrawEvents();
+  /* ...with its count and pager, which belong to the answer. */
+  if (AM.ev) setTimeout(function () { amEvents(false, true); }, 0);
   explainWhatWasDrawn(host);
 }
 
@@ -44085,29 +44122,59 @@ function amCertsCard(d) {
     });
     card.appendChild(legend);
   }
-  /* What is shown. */
-  var tools = el('div', 'am-tools');
-  var find = el('input', 'am-find');
+  /* What is shown: searched and filtered as every other list is (1.10.292) -
+     the box takes fields (cert:www target:f5-*), offered as they are typed. */
+  var tools = el('div', 'filters');
+  var find = el('input');
   find.type = 'search';
-  find.placeholder = 'Find a certificate, a name, a serial, a target…';
+  find.id = 'am-c-q';
+  find.placeholder = 'a certificate, a name, a serial, a target…';
+  find.title = 'Searches every line acme sent about a certificate - its name, its names, its serial, its source, its targets - and shows the certificates they are about. Fields work as in every other box: cert:www, target:f5-*, -issuer:"Internal CA". Case does not matter.';
   find.value = AM.text;
-  find.oninput = function () { AM.text = find.value; amFillCerts(); };
   tools.appendChild(find);
-  var chips = el('div', 'am-chips');
-  [['', 'All'], ['look', 'To look at'], ['expiring', 'Runs out soon'], ['expired', 'Run out'],
-   ['failing', 'Failing'], ['ok', 'Fine'], ['deleted', 'Deleted']].forEach(function (c) {
-    var b = el('button', 'chip' + (AM.state === c[0] ? ' on' : ''), c[1]);
-    b.type = 'button';
-    b.onclick = function () { AM.state = c[0]; Array.prototype.forEach.call(chips.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); amFillCerts(); };
-    chips.appendChild(b);
+  var pick = el('select');
+  pick.id = 'am-c-state';
+  pick.title = 'Only the certificates that stand this way now.';
+  [['', 'every certificate'], ['look', 'to look at'], ['expiring', 'runs out soon'], ['expired', 'run out'],
+   ['failing', 'failing'], ['ok', 'fine'], ['revoked', 'revoked'], ['deleted', 'deleted']].forEach(function (c) {
+    var o = el('option', '', c[1]);
+    o.value = c[0];
+    if (AM.state === c[0]) o.selected = true;
+    pick.appendChild(o);
   });
-  tools.appendChild(chips);
+  pick.onchange = function () { AM.state = pick.value; amFillCerts(); };
+  tools.appendChild(pick);
+  var clr = el('button', 'btn small', 'Clear');
+  clr.type = 'button';
+  clr.onclick = function () { find.value = ''; AM.text = ''; AM.match = null; AM.state = ''; pick.value = ''; amFillCerts(); };
+  tools.appendChild(clr);
+  var count = el('span', 'muted small am-count');
+  count.id = 'am-c-count';
+  tools.appendChild(count);
   card.appendChild(tools);
+  setTimeout(function () {
+    qSuggest(find, {lane: 'acmecerts', card: true, fields: QF.acme, values: qServerValues('acme')});
+    find.addEventListener('input', debounce(function () {
+      AM.text = find.value;
+      amCertsAsk();
+    }, 350));
+  }, 0);
   var box = el('div', 'am-certs-box');
   box.id = 'am-certs-box';
   card.appendChild(box);
   setTimeout(amFillCerts, 0);
   return card;
+}
+/* The certificates the box's words are about, asked of the daemon: the
+   lines that match them, and what those lines are about. */
+function amCertsAsk() {
+  var q = String(AM.text || '').trim();
+  if (!q) { AM.match = null; amFillCerts(); return; }
+  api('acmelog&days=' + AM.days + '&q=' + encodeURIComponent(q), undefined, {lane: 'acmecerts'})
+    .then(function (d) {
+      AM.match = d.q_error ? [] : (d.match || []);
+      amFillCerts();
+    }).catch(function () { /* the box says what is wrong with it */ });
 }
 function amCertShown(c) {
   var st = AM.state;
@@ -44115,17 +44182,16 @@ function amCertShown(c) {
   if (st === 'failing' && !(c.state === 'failing' || c.state === 'deploy_failed')) return false;
   if (st && st !== 'look' && st !== 'failing' && c.state !== st) return false;
   if (!st && c.state === 'deleted') return false;
-  var q = AM.text.trim().toLowerCase();
-  if (!q) return true;
-  var hay = [c.cert, c.names, c.serial, c.issuer, c.node].concat((c.targets || []).map(function (t) { return t.target; }))
-    .join(' ').toLowerCase();
-  return hay.indexOf(q) >= 0;
+  if (AM.match && AM.match.indexOf(c.cert) < 0) return false;
+  return true;
 }
 function amFillCerts() {
   var box = $('am-certs-box');
   if (!box || !AM.d) return;
   clear(box);
   var rows = (AM.d.certs || []).filter(amCertShown);
+  var cnt = $('am-c-count');
+  if (cnt) cnt.textContent = num(rows.length) + ' of ' + num((AM.d.certs || []).length);
   if (!rows.length) {
     box.appendChild(el('p', 'note', 'No certificate is like that.'));
     return;
@@ -44496,70 +44562,143 @@ function amEventsCard() {
   var card = el('div', 'card full');
   card.id = 'am-events';
   var h = el('h2', '', 'Every line acme sent');
+  var right = el('span', 'right');
+  right.id = 'am-ev-count';
+  h.appendChild(right);
   card.appendChild(h);
-  var f = el('div', 'am-tools');
-  var q = el('input', 'am-find');
+  /* The box, the drop-downs, the page size and Clear, as on every other
+     list (1.10.292): searched on the server, a page at a time. */
+  var f = el('div', 'filters');
+  var q = el('input');
   q.type = 'search';
-  q.placeholder = 'Find in the lines…';
+  q.id = 'am-ev-q';
+  q.placeholder = 'anything in a line…';
+  q.title = 'Searches every line acme sent, not the page in front of you: the message, the certificate, its names, the target, who and the serial. Fields work as in every other box: level:bad, cert:www, node:acme2, -kind:sign-ins. Case does not matter.';
   q.value = AM.evq.q || '';
-  var t = null;
-  q.oninput = function () { clearTimeout(t); t = setTimeout(function () { AM.evq.q = q.value; amEvents(true); }, 350); };
   f.appendChild(q);
-  var facets = (AM.ev && AM.ev.facets) || {};
-  var sel = function (key, words, values, nice) {
-    var s = el('select', 'am-sel');
+  var sel = function (key, words, title, options) {
+    var s2 = el('select');
+    s2.id = 'am-ev-' + key;
+    s2.title = title;
     var o = el('option', '', words);
     o.value = '';
-    s.appendChild(o);
-    (values || []).forEach(function (v) {
-      var op = noI18n(el('option', '', nice ? nice(v) : v));
-      op.value = v;
-      if (AM.evq[key] === v) op.selected = true;
-      s.appendChild(op);
+    s2.appendChild(o);
+    (options || []).forEach(function (v) {
+      var op = el('option', '', v[1]);
+      op.value = v[0];
+      s2.appendChild(op);
     });
-    s.onchange = function () { AM.evq[key] = s.value; amEvents(true); };
-    return s;
+    if (AM.evq[key]) s2.value = AM.evq[key];
+    s2.onchange = function () { AM.evq[key] = s2.value; AM.evPage = 0; amEvents(); };
+    f.appendChild(s2);
+    return s2;
   };
-  f.appendChild(sel('tag', 'Both logs', facets.tag, function (v) { return v === 'acme-certs' ? 'certificates (acme-certs)' : 'the rest (acme)'; }));
-  f.appendChild(sel('level', 'Any level', facets.level));
-  f.appendChild(sel('kind', 'Any kind', facets.kind));
-  f.appendChild(sel('node', 'Any node', facets.node));
-  f.appendChild(sel('action', 'Any action', facets.action, function (v) { return AM_ACTION[v] || v; }));
-  var any = Object.keys(AM.evq).some(function (k) { return AM.evq[k]; });
-  if (any) {
-    var clr = cmdButton('Clear', 'close', 'small');
-    clr.onclick = function () { AM.evq = {}; amEvents(true); };
-    f.appendChild(clr);
-  }
+  var win = el('select');
+  win.id = 'am-ev-hours';
+  win.title = 'How far back to look. A filter on what is shown; it changes nothing about what is kept.';
+  [['0', 'all of it'], ['1', 'last hour'], ['24', 'last 24 hours'], ['168', 'last week'], ['720', 'last month'],
+   ['8760', 'last year'], ['custom', 'custom'], ['pick', 'choose dates…']].forEach(function (v) {
+    var o = el('option', '', v[1]);
+    o.value = v[0];
+    if (v[0] === 'custom') o.hidden = true;
+    win.appendChild(o);
+  });
+  win.value = AM.evq.hours || '0';
+  win.onchange = function () { AM.evq.hours = win.value; AM.evPage = 0; amEvents(); };
+  f.appendChild(win);
+  sel('tag', 'both logs', 'Only the certificates\u2019 log (acme-certs) or the rest of what acme does (acme).',
+      [['acme-certs', 'certificates (acme-certs)'], ['acme', 'the rest (acme)']]);
+  sel('level', 'every level', 'Only lines of one level, as acme said it: info, warn, bad.', []);
+  sel('kind', 'every kind', 'Only one kind of line - certificates, sign-ins, settings, backups…', []);
+  sel('node', 'every node', 'Only what one of acme\u2019s nodes sent.', []);
+  sel('action', 'every action', 'Only one thing that happened to a certificate.', []);
+  var lim = el('select');
+  lim.id = 'am-ev-limit';
+  lim.title = 'How many rows are asked for at a time. A bigger page is fewer presses and a slower answer; the pager underneath walks through the rest either way.';
+  [['50', '50 a page'], ['100', '100 a page'], ['250', '250 a page']].forEach(function (v) {
+    var o = el('option', '', v[1]);
+    o.value = v[0];
+    lim.appendChild(o);
+  });
+  lim.value = String(AM.evq.limit || 100);
+  lim.onchange = function () { AM.evq.limit = Number(lim.value); AM.evPage = 0; amEvents(); };
+  f.appendChild(lim);
+  var clr = el('button', 'btn small', 'Clear');
+  clr.type = 'button';
+  clr.onclick = function () {
+    AM.evq = {};
+    AM.evPage = 0;
+    sortReset(SORTS.acme);
+    Array.prototype.forEach.call(f.querySelectorAll('select'), function (x) {
+      x.value = x === lim ? '100' : (x === win ? '0' : '');
+    });
+    if (typeof windowSet === 'function') windowSet('am-ev-hours', null);
+    q.value = '';
+    amEvents();
+  };
+  f.appendChild(clr);
   card.appendChild(f);
-  var box = el('div', '');
+  var box = el('div', 'scroll rowsonly');
   box.id = 'am-ev-box';
   card.appendChild(box);
+  var empty = el('div', 'center');
+  empty.id = 'am-ev-empty';
+  empty.hidden = true;
+  card.appendChild(empty);
+  var pg = el('div', 'pager');
+  pg.id = 'am-ev-pager';
+  card.appendChild(pg);
+  setTimeout(function () {
+    windowInstall('am-ev-hours');
+    qSuggest(q, {lane: 'acme', fields: QF.acme, card: true,
+                 values: qServerValues('acme', function () { return windowArgs('am-ev-hours') || ''; })});
+    q.addEventListener('input', debounce(function () {
+      AM.evq.q = q.value;
+      AM.evPage = 0;
+      amEvents();
+    }, 350));
+  }, 0);
   return card;
 }
+var AM_EV_SORT_KEYS = {'When': 'ts', 'Level': 'level', 'Node': 'node', 'Kind': 'kind', 'Who': 'who',
+                       'What': 'action', 'Message': 'msg'};
+var AM_EV_ASKED = 0;
 function amEvents(fresh, quiet) {
-  var q = [];
-  Object.keys(AM.evq).forEach(function (k) { if (AM.evq[k]) q.push(encodeURIComponent(k) + '=' + encodeURIComponent(AM.evq[k])); });
-  var more = !fresh && AM.ev && AM.ev.rows.length ? AM.ev.rows[AM.ev.rows.length - 1].ts : 0;
-  if (more) q.push('before=' + more);
-  q.push('limit=100');
-  api('acmelog-events&' + q.join('&'), undefined, {quiet: !!quiet}).then(function (d) {
-    if (!d.on) return;
-    if (more && AM.ev) {
-      var seen = {};
-      AM.ev.rows.forEach(function (r) { seen[r.ident] = 1; });
-      AM.ev.rows = AM.ev.rows.concat((d.rows || []).filter(function (r) { return !seen[r.ident]; }));
-      AM.ev.more = d.more;
-    } else {
-      AM.ev = d;
-    }
-    /* The filters come from what there is: drawn again when the card is. */
-    var card = $('am-events');
-    if (card && fresh) {
-      var fresh2 = amEventsCard();
-      card.parentNode.replaceChild(fresh2, card);
-    }
+  var w = AM.evq;
+  var per = Number(w.limit || 100);
+  var page = AM.evPage || 0;
+  var q = ['limit=' + per, 'offset=' + page * per];
+  ['tag', 'level', 'kind', 'node', 'action', 'cert', 'who', 'target', 'result'].forEach(function (k) {
+    if (w[k]) q.push(k + '=' + encodeURIComponent(w[k]));
+  });
+  if (w.q && w.q.trim()) q.push('q=' + encodeURIComponent(w.q.trim()));
+  var win = $('am-ev-hours') ? windowArgs('am-ev-hours') : (w.hours && w.hours !== '0' ? 'hours=' + w.hours : '');
+  if (win) q.push(win);
+  var sa = sortArgs(SORTS.acme);
+  if (sa) q.push(sa);
+  var mine = ++AM_EV_ASKED;
+  api('acmelog-events&' + q.join('&'), undefined, {lane: 'acme', quiet: !!quiet}).then(function (d) {
+    if (mine !== AM_EV_ASKED || !d.on) return;
+    AM.ev = d;
+    /* The choices of each drop-down out of what there is - added to, the
+       one chosen kept. */
+    var facets = d.facets || {};
+    ['level', 'kind', 'node', 'action'].forEach(function (k) {
+      var s2 = $('am-ev-' + k);
+      if (!s2) return;
+      var have = {};
+      Array.prototype.forEach.call(s2.options, function (o) { have[o.value] = true; });
+      (facets[k] || []).forEach(function (v) {
+        if (have[v]) return;
+        var o = noI18n(el('option', '', k === 'action' ? (AM_ACTION[v] || v) : v));
+        o.value = v;
+        s2.appendChild(o);
+      });
+    });
     amDrawEvents();
+    var cnt = $('am-ev-count');
+    if (cnt) cnt.textContent = (d.capped ? 'more than ' : '') + num(d.total || 0) + ' in all';
+    pager('am-ev-pager', page, per, d.total || 0, function (p) { AM.evPage = p; amEvents(); }, d.capped);
   }).catch(function (e) { if (!quiet) oops(e); });
 }
 function amDrawEvents() {
@@ -44567,9 +44706,15 @@ function amDrawEvents() {
   if (!box) return;
   clear(box);
   var ev = AM.ev;
+  var empty = $('am-ev-empty');
   if (!ev) { box.appendChild(el('p', 'note', 'Reading…')); return; }
-  if (!ev.rows.length) { box.appendChild(el('p', 'note', 'No line is like that.')); return; }
-  box.appendChild(listTable(['When', 'Level', 'Node', 'Kind', 'Who', 'What', 'Message'], ev.rows, function (r) {
+  if (empty) {
+    empty.hidden = !!ev.rows.length;
+    empty.textContent = Object.keys(AM.evq).some(function (k) { return AM.evq[k] && k !== 'limit' && AM.evq[k] !== '0'; })
+      ? 'Nothing matches' : 'Nothing yet';
+  }
+  if (!ev.rows.length) return;
+  var wrap = listTable(['When', 'Level', 'Node', 'Kind', 'Who', 'What', 'Message'], ev.rows, function (r) {
     var tr = el('tr', 'am-row tappable');
     tr.tabIndex = 0;
     tr.onclick = function () { amLine(r); };
@@ -44591,14 +44736,14 @@ function amDrawEvents() {
     if (r.truncated) msg.appendChild(el('span', 'tag', 'cut'));
     tr.appendChild(msg);
     return tr;
-  }, 'plain am-table'));
-  if (ev.more) {
-    var row = el('div', 'btnrow');
-    var b = cmdButton('Older lines', 'down', '');
-    b.onclick = function () { busy(b, true); amEvents(false); };
-    row.appendChild(b);
-    box.appendChild(row);
-  }
+  }, 'plain am-table');
+  /* The rows are the server's page: a heading orders them there. */
+  var table = wrap.querySelector('table');
+  Array.prototype.forEach.call(wrap.childNodes, function (n) { box.appendChild(n); });
+  serverSortHeads(table.tHead.rows[0], SORTS.acme, AM_EV_SORT_KEYS, function () {
+    AM.evPage = 0;
+    amEvents();
+  });
 }
 
 /* ---- the acme tab's Jobs and Checks pages (1.10.288, acme-jobs) -----------
@@ -44974,32 +45119,54 @@ function amWhoQueue(d) {
 }
 function amJobsTable(d) {
   var card = el('div', 'card full');
-  card.appendChild(el('h2', '', 'The jobs'));
-  var tools = el('div', 'am-tools');
-  var find = el('input', 'am-find');
+  var h = el('h2', '', 'The jobs');
+  var right = el('span', 'right');
+  h.appendChild(right);
+  card.appendChild(h);
+  /* Searched as every other list (1.10.292): the box takes the fields of a
+     job's lines - host:api.cloudflare.com status:429, via:*dns-cz state:invalid,
+     took>30000 - and shows the jobs that have such a line. */
+  var tools = el('div', 'filters');
+  var find = el('input');
   find.type = 'search';
-  find.placeholder = 'Find a certificate, a source, a target, an account…';
+  find.id = 'am-j-q';
+  find.placeholder = 'a certificate, a source, a server, an error…';
+  find.title = 'Searches every line of every job acme sent - its steps, its requests, its validations, its end - and shows the jobs with a line like that. Fields work as in every other box: host:api.cloudflare.com status:429, state:invalid, error:*NXDOMAIN*, took>30000. Case does not matter.';
+  find.value = AMJ.text || '';
   tools.appendChild(find);
-  var chips = el('div', 'am-chips');
-  var want = '';
+  var pick = el('select');
+  pick.title = 'Only the jobs that ended this way.';
+  [['', 'every job'], ['failed', 'failed'], ['ok', 'done'], ['stopped', 'stopped'], ['interrupted', 'interrupted'],
+   ['running', 'running']].forEach(function (c) {
+    var o = el('option', '', c[1]);
+    o.value = c[0];
+    pick.appendChild(o);
+  });
+  pick.value = AMJ.state || '';
+  tools.appendChild(pick);
+  var clr = el('button', 'btn small', 'Clear');
+  clr.type = 'button';
+  tools.appendChild(clr);
+  card.appendChild(tools);
   var box = el('div', '');
+  card.appendChild(box);
   var fill = function () {
     clear(box);
-    var q = find.value.trim().toLowerCase();
     var rows = (d.jobs || []).filter(function (j) {
-      if (want && j.state !== want) return false;
-      if (!q) return true;
-      return [j.cert, j.issuer, j.target, j.who, j.job_kind, j.names, j.node, j.job].join(' ').toLowerCase().indexOf(q) >= 0;
+      if (AMJ.state && j.state !== AMJ.state) return false;
+      if (AMJ.match && AMJ.match.indexOf(j.job + '|' + j.node) < 0) return false;
+      return true;
     });
+    right.textContent = num(rows.length) + ' of ' + num((d.jobs || []).length);
     if (!rows.length) { box.appendChild(el('p', 'note', 'No job is like that.')); return; }
     box.appendChild(listTable(['State', 'Job', 'Certificate', 'Source or target', 'Begun by', 'Began', {words: 'Took', cls: 'num'}, 'What it said'], rows, function (j) {
       var tr = el('tr', 'am-row tappable');
       tr.tabIndex = 0;
       tr.onclick = function () { amJob(j); };
       tr.onkeydown = function (e) { if (e.key === 'Enter') amJob(j); };
-      var s = el('td', '');
-      s.appendChild(amJobTag(j.state));
-      tr.appendChild(s);
+      var s2 = el('td', '');
+      s2.appendChild(amJobTag(j.state));
+      tr.appendChild(s2);
       var k = el('td', 'small');
       k.appendChild(noI18n(el('b', '', j.job_kind || '?')));
       k.appendChild(noI18n(el('div', 'muted', '#' + j.job + ' · ' + (j.node || ''))));
@@ -45013,16 +45180,19 @@ function amJobsTable(d) {
       return tr;
     }, 'plain am-table'));
   };
-  [['', 'All'], ['failed', 'Failed'], ['ok', 'Done'], ['interrupted', 'Interrupted'], ['running', 'Running']].forEach(function (c) {
-    var b = el('button', 'chip' + (c[0] === want ? ' on' : ''), c[1]);
-    b.type = 'button';
-    b.onclick = function () { want = c[0]; Array.prototype.forEach.call(chips.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); fill(); };
-    chips.appendChild(b);
-  });
-  tools.appendChild(chips);
-  find.oninput = fill;
-  card.appendChild(tools);
-  card.appendChild(box);
+  var ask = function () {
+    var q = String(AMJ.text || '').trim();
+    if (!q) { AMJ.match = null; fill(); return; }
+    api('acmelog-jobs&days=' + AM.days + '&q=' + encodeURIComponent(q), undefined, {lane: 'acmejobs'})
+      .then(function (x) { AMJ.match = x.q_error ? [] : (x.match || []); fill(); })
+      .catch(function () { /* the box says what is wrong with it */ });
+  };
+  pick.onchange = function () { AMJ.state = pick.value; fill(); };
+  clr.onclick = function () { find.value = ''; AMJ.text = ''; AMJ.match = null; AMJ.state = ''; pick.value = ''; fill(); };
+  setTimeout(function () {
+    qSuggest(find, {lane: 'acmejobs', fields: QF.acmejobs, card: true, values: qServerValues('acmejobs')});
+    find.addEventListener('input', debounce(function () { AMJ.text = find.value; ask(); }, 350));
+  }, 0);
   fill();
   return card;
 }

@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.289",
+  "version": "1.10.292",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -367,6 +367,14 @@
   "s.a-burst-this-big-goes-out.720d7864": {
    "source": "A burst this big goes out for good",
    "text": "Takto velký nápor znamená blokaci natrvalo"
+  },
+  "s.a-certificate-a-name-a-serial.4d80abf7": {
+   "source": "a certificate, a name, a serial, a target…",
+   "text": "certifikát, jméno, sériové číslo, cíl…"
+  },
+  "s.a-certificate-a-source-a-server.91e0db7c": {
+   "source": "a certificate, a source, a server, an error…",
+   "text": "certifikát, zdroj, server, chyba…"
   },
   "s.a-certificate-and-its-key-you.d41bedff": {
    "source": "A certificate and its key you have: PEM (both, in any order) or a PFX / PKCS#12 file with its password.",
@@ -979,6 +987,10 @@
   "s.a-name-is-2-to-32.85ce407d": {
    "source": "a name is 2 to 32 letters, digits, dot, dash or underscore",
    "text": "název má 2 až 32 znaků: písmena, číslice, tečka, pomlčka nebo podtržítko"
+  },
+  "s.a-name-it-holds.3b42887c": {
+   "source": "a name it holds",
+   "text": "jméno, které obsahuje"
   },
   "s.a-name-offered-from-it.4801d04b": {
    "source": "a name offered from it",
@@ -1904,6 +1916,10 @@
    "source": "acls",
    "text": "acls"
   },
+  "s.acme-certs-or-acme.f29c6708": {
+   "source": "acme-certs, or acme",
+   "text": "acme-certs, nebo acme"
+  },
   "s.acme-challenge-name-is-a-cname.58d030e6": {
    "source": "; _acme-challenge.NAME is a CNAME to the subdomain below.",
    "text": "; _acme-challenge.JMÉNO je CNAME na subdoménu níže."
@@ -2036,9 +2052,17 @@
    "source": "acme2",
    "text": "acme2"
   },
+  "s.acmecerts.c0a524b3": {
+   "source": "acmecerts",
+   "text": "acmecerts"
+  },
   "s.acmedns.93b5bebb": {
    "source": "acmedns",
    "text": "acmedns"
+  },
+  "s.acmejobs.90dbef69": {
+   "source": "acmejobs",
+   "text": "acmejobs"
   },
   "s.acmelog.41cbe60e": {
    "source": "acmelog",
@@ -3164,10 +3188,6 @@
    "source": "antivirus",
    "text": "antivir"
   },
-  "s.any-action.e108025a": {
-   "source": "Any action",
-   "text": "Jakákoli akce"
-  },
   "s.any-address-at-all-the-rule.fa353507": {
    "source": "Any address at all — the rule does not care where it comes from.",
    "text": "Jakákoli adresa – pravidlu je jedno, odkud přichází."
@@ -3188,14 +3208,6 @@
    "source": "Any key already stored for it is replaced",
    "text": "Případný klíč, který je pro něj už uložen, bude nahrazen"
   },
-  "s.any-kind.8cb2cddf": {
-   "source": "Any kind",
-   "text": "Jakýkoli druh"
-  },
-  "s.any-level.cb33d8da": {
-   "source": "Any level",
-   "text": "Jakákoli úroveň"
-  },
   "s.any-node-with-a-certificate-from.61debf77": {
    "source": "any node with a certificate from otp's authority",
    "text": "kterýkoli uzel s certifikátem od autority otp"
@@ -3203,10 +3215,6 @@
   "s.any-node-with-a-certificate-from.f37657c3": {
    "source": "any node with a certificate from acme's authority",
    "text": "kterýkoli uzel s certifikátem od autority acme"
-  },
-  "s.any-node.340b35d5": {
-   "source": "Any node",
-   "text": "Jakýkoli uzel"
   },
   "s.any-of-them.c214c8ea": {
    "source": "any of them",
@@ -3244,6 +3252,10 @@
    "source": "Anything: ban and unban, change the settings, talk to the router, make and change accounts.",
    "text": "Cokoli: blokovat a odblokovat, měnit nastavení, komunikovat s routerem, vytvářet a měnit účty."
   },
+  "s.anything-in-a-line.b64c3e70": {
+   "source": "anything in a line…",
+   "text": "cokoli v řádku…"
+  },
   "s.anything-in-an-event.672b2160": {
    "source": "anything in an event…",
    "text": "cokoli v události…"
@@ -3267,6 +3279,10 @@
   "s.ap.ac78b022": {
    "source": "ap",
    "text": "ap"
+  },
+  "s.api-cloudflare-com.1f34cb42": {
+   "source": "api.cloudflare.com",
+   "text": "api.cloudflare.com"
   },
   "s.api-key.47acd202": {
    "source": "API Key",
@@ -4480,9 +4496,9 @@
    "source": "both lists — the banned addresses and the countries",
    "text": "oba seznamy – zablokované adresy i země"
   },
-  "s.both-logs.501ff966": {
-   "source": "Both logs",
-   "text": "Oba logy"
+  "s.both-logs.c77dc782": {
+   "source": "both logs",
+   "text": "oba logy"
   },
   "s.both-nodes-of-the-pair-always.82461e3c": {
    "source": "Both nodes of the pair, always — only one of them is authenticating at any moment and which one changes without warning. Where each file has been read up to is kept in the database, so a restart carries on rather than reading everything again.",
@@ -6492,6 +6508,10 @@
    "source": "DNS-01: the CA reads a TXT record isemon puts in. What has to be in your DNS for it - once - is below.",
    "text": "DNS-01: CA čte záznam TXT, který vloží isemon. Co pro to musí být ve vašem DNS – jednou – je níže."
   },
+  "s.dns-cz.2db1872e": {
+   "source": "*dns-cz",
+   "text": "*dns-cz"
+  },
   "s.dns-filter-lines-written-for-this.ff0b9f6a": {
    "source": "DNS filter lines written for this session",
    "text": "řádky DNS filtru zapsané pro tuto relaci"
@@ -7360,6 +7380,10 @@
    "source": "Eritrea",
    "text": "Eritrea"
   },
+  "s.error.11f9578d": {
+   "source": "error",
+   "text": "error"
+  },
   "s.errors-drops.52e53132": {
    "source": "Errors / drops",
    "text": "Chyby / zahozené"
@@ -7488,6 +7512,10 @@
    "source": "Every account and group change in this window.",
    "text": "Všechny změny účtů a skupin v tomto časovém okně."
   },
+  "s.every-action.465c7aed": {
+   "source": "every action",
+   "text": "každá akce"
+  },
   "s.every-address-banned-by.4f3ae0d2": {
    "source": "Every address banned by",
    "text": "Každá adresa zabanovaná zdrojem"
@@ -7603,6 +7631,10 @@
   "s.every-certificate-acme-issued-renewed-deployed.5369d547": {
    "source": "every certificate acme issued, renewed, deployed, let run out or failed with - and, where it sends them, its sign-ins and settings",
    "text": "každý certifikát, který acme vydal, obnovil, nasadil, nechal vypršet nebo u něj selhal - a kde je posílá, i jeho přihlášení a nastavení"
+  },
+  "s.every-certificate.333ac1d1": {
+   "source": "every certificate",
+   "text": "každý certifikát"
   },
   "s.every-check-run-by-run.48bb0741": {
    "source": "Every check, run by run",
@@ -7788,9 +7820,21 @@
    "source": "Every interface, whether it is up, what it carries now (from the last two looks) and has carried since the router started, and its errors.",
    "text": "Každé rozhraní: zda je nahoře, co přenáší teď (z posledních dvou pohledů) a co přeneslo od startu routeru, a jeho chyby."
   },
+  "s.every-job.14be37bc": {
+   "source": "every job",
+   "text": "každá úloha"
+  },
   "s.every-kind-of-line.dd01a896": {
    "source": "every kind of line",
    "text": "všechny druhy řádků"
+  },
+  "s.every-kind.51addc5f": {
+   "source": "every kind",
+   "text": "každý druh"
+  },
+  "s.every-level.da70032f": {
+   "source": "every level",
+   "text": "každá úroveň"
   },
   "s.every-line-acme-sent.dafaab00": {
    "source": "Every line acme sent",
@@ -7935,6 +7979,10 @@
   "s.every-night-at-the-time-above.6f81a009": {
    "source": "Every night at the time above, the database in use is dumped",
    "text": "Každou noc ve výše uvedený čas se používaná databáze vyexportuje"
+  },
+  "s.every-node.bbf39707": {
+   "source": "every node",
+   "text": "každý uzel"
   },
   "s.every-nps-server.0a350878": {
    "source": "every NPS server",
@@ -8492,6 +8540,10 @@
    "source": "example.cz",
    "text": "example.cz"
   },
+  "s.example-cz.841f8435": {
+   "source": "*.example.cz",
+   "text": "*.example.cz"
+  },
   "s.example-dedyn-io.13a7708c": {
    "source": "example.dedyn.io",
    "text": "example.dedyn.io"
@@ -9004,14 +9056,6 @@
    "source": "Filling the country list on the router",
    "text": "Plnění seznamu zemí na routeru"
   },
-  "s.find-a-certificate-a-name-a.7cd1ab63": {
-   "source": "Find a certificate, a name, a serial, a target…",
-   "text": "Najít certifikát, jméno, sériové číslo, cíl…"
-  },
-  "s.find-a-certificate-a-source-a.6030e196": {
-   "source": "Find a certificate, a source, a target, an account…",
-   "text": "Najít certifikát, zdroj, cíl, účet…"
-  },
   "s.find-a-setting.2c9a67e0": {
    "source": "Find a setting…",
    "text": "Hledat nastavení…"
@@ -9028,10 +9072,6 @@
    "source": "Find anything",
    "text": "Hledat cokoli"
   },
-  "s.find-in-the-lines.d6111bf0": {
-   "source": "Find in the lines…",
-   "text": "Hledat v řádcích…"
-  },
   "s.find-the-groups.6a9747b2": {
    "source": "Find the groups",
    "text": "Najít skupiny"
@@ -9043,6 +9083,10 @@
   "s.fine.226d7ec9": {
    "source": "Fine",
    "text": "V pořádku"
+  },
+  "s.fine.2a1b875b": {
+   "source": "fine",
+   "text": "v pořádku"
   },
   "s.fingerprint.fed4c905": {
    "source": "Fingerprint",
@@ -10356,6 +10400,10 @@
    "source": "(hover: hover)",
    "text": "(hover: hover)"
   },
+  "s.how-a-validation-or-a-job.ac754980": {
+   "source": "how a validation or a job ended",
+   "text": "jak skončila validace nebo úloha"
+  },
   "s.how-bad-the-firewall-rated-it.a21e4b6a": {
    "source": "how bad the firewall rated it",
    "text": "jak závažně to firewall ohodnotil"
@@ -10455,6 +10503,10 @@
   "s.how-long-a-connection-is-waited.8c7c1ec6": {
    "source": "How long a connection is waited for.",
    "text": "Jak dlouho se čeká na spojení."
+  },
+  "s.how-long-a-job-took-ms.339df73f": {
+   "source": "how long a job took, ms",
+   "text": "jak dlouho úloha trvala, ms"
   },
   "s.how-long-a-machine-seen-on.57d95657": {
    "source": "How long a machine seen on eduroam is remembered. One row each, and it is only ever read beside a page about what is happening now - a machine that has not been back in a fortnight is a row nothing will ever ask for. A university’s eduroam is thousands of machines a day, so there is a ceiling of twenty thousand rows underneath this as well.",
@@ -11088,6 +11140,10 @@
    "source": "http://proxy.example.cz:3128",
    "text": "http://proxy.example.cz:3128"
   },
+  "s.http.77b5f8e3": {
+   "source": "http",
+   "text": "http"
+  },
   "s.http.f40b27d6": {
    "source": "HTTP",
    "text": "HTTP"
@@ -11436,6 +11492,10 @@
    "source": "Indonesia",
    "text": "Indonésie"
   },
+  "s.info-warn-or-bad.ecad80ec": {
+   "source": "info, warn or bad",
+   "text": "info, warn nebo bad"
+  },
   "s.info.59bd0a3f": {
    "source": "info",
    "text": "info"
@@ -11535,6 +11595,10 @@
   "s.intrusions.a223c4b5": {
    "source": "intrusions",
    "text": "průniky"
+  },
+  "s.invalid-failed.d3ea2797": {
+   "source": "invalid, failed",
+   "text": "invalid, failed"
   },
   "s.invalid.3abcb72b": {
    "source": "INVALID",
@@ -12236,6 +12300,10 @@
    "source": "issued",
    "text": "vydán"
   },
+  "s.issuer.9cf32721": {
+   "source": "issuer",
+   "text": "vydavatel"
+  },
   "s.it-answered-a-name-the-first.8981a6ba": {
    "source": "It answered. A name the first directory does not have will be asked of this one — and nothing else is ever asked of it.",
    "text": "Odpověděl. Na jméno, které první adresář nemá, se zeptá tohoto — a na nic jiného se ho nikdy neptá."
@@ -12679,6 +12747,10 @@
   "s.its-sealing-key-x25519.7f74a58d": {
    "source": "Its sealing key (X25519)",
    "text": "Jeho klíč pro pečetění (X25519)"
+  },
+  "s.its-serial-number.1c0dc727": {
+   "source": "its serial number",
+   "text": "jeho sériové číslo"
   },
   "s.its-server.33dcf633": {
    "source": "Its server",
@@ -13491,6 +13563,10 @@
   "s.let-s-encrypt-takes-rsa-keys.dd88a949": {
    "source": "Let’s Encrypt takes RSA keys of 2048, 3072 or 4096 bits and ECDSA keys on P-256 or P-384. Both - what Let’s Encrypt advises - orders two certificates for the name: RSA served by default, the much smaller ECDSA one to the clients that say they take it.",
    "text": "Let’s Encrypt přijímá klíče RSA o 2048, 3072 nebo 4096 bitech a klíče ECDSA na křivkách P-256 nebo P-384. Oba - jak Let’s Encrypt doporučuje - objedná pro jméno dva certifikáty: RSA se podává standardně, mnohem menší ECDSA klientům, kteří řeknou, že ho umí."
+  },
+  "s.let-s-encrypt.6c7356fe": {
+   "source": "\"Let's Encrypt\"",
+   "text": "\"Let's Encrypt\""
   },
   "s.let-s-encrypt.fb229ac4": {
    "source": "Let’s Encrypt",
@@ -15048,6 +15124,10 @@
    "source": "names the eduroam policies.",
    "text": "označuje politiky eduroam."
   },
+  "s.names.237a4713": {
+   "source": "names",
+   "text": "jména"
+  },
   "s.names.2b7c08c3": {
    "source": "Names",
    "text": "Jména"
@@ -15579,10 +15659,6 @@
   "s.no-leave-the-router-alone.f3bb5588": {
    "source": "No, leave the router alone",
    "text": "Ne, router nechat být"
-  },
-  "s.no-line-is-like-that.32b556b0": {
-   "source": "No line is like that.",
-   "text": "Žádný takový řádek."
   },
   "s.no-log-is-switched-on.fe68579b": {
    "source": "no log is switched on",
@@ -16996,6 +17072,10 @@
    "source": "numeric",
    "text": "numeric"
   },
+  "s.nxdomain.73e177d7": {
+   "source": "*NXDOMAIN*",
+   "text": "*NXDOMAIN*"
+  },
   "s.object.1615307c": {
    "source": "object",
    "text": "objekt"
@@ -17151,10 +17231,6 @@
   "s.old-passwords-kept.d8b488e7": {
    "source": "Old passwords kept",
    "text": "Uchovávaná stará hesla"
-  },
-  "s.older-lines.ccdcd2fd": {
-   "source": "Older lines",
-   "text": "Starší řádky"
   },
   "s.older-ones-are-taken-away-too.e10461e3": {
    "source": "Older ones are taken away too - 0: only the count above decides.",
@@ -17928,6 +18004,10 @@
    "source": "Only judge attempts newer than (h)",
    "text": "Vyhodnocovat jen pokusy novější než (h)"
   },
+  "s.only-lines-of-one-level-as.f301a036": {
+   "source": "Only lines of one level, as acme said it: info, warn, bad.",
+   "text": "Jen řádky jedné úrovně, jak ji acme uvedl: info, warn, bad."
+  },
   "s.only-logins-from-one-country-as.2ad493cd": {
    "source": "Only logins from one country, as the country database puts them. Addresses the database has no country for are ZZ.",
    "text": "Jen přihlášení z jedné země podle databáze zemí. Adresy, pro které databáze zemi nezná, jsou ZZ."
@@ -17972,6 +18052,10 @@
    "source": "Only one kind of event. Every ban, every change of a setting, every sign-in and every conversation with the router is written down here, which on a busy day is a lot of one kind and a little of another.",
    "text": "Jen jeden druh události. Zapisuje se sem každá blokace, každá změna nastavení, každé přihlášení a každá komunikace s routerem, což je v rušný den hodně jednoho druhu a málo jiného."
   },
+  "s.only-one-kind-of-line-certificates.db9ae8b8": {
+   "source": "Only one kind of line - certificates, sign-ins, settings, backups…",
+   "text": "Jen jeden druh řádků - certifikáty, přihlášení, nastavení, zálohy…"
+  },
   "s.only-one-kind-of-line.31b2710e": {
    "source": "Only one kind of line.",
    "text": "Jen jeden druh řádku."
@@ -17987,6 +18071,10 @@
   "s.only-one-shell-profile.c2b8861f": {
    "source": "Only one shell profile.",
    "text": "Jen jeden shell profil."
+  },
+  "s.only-one-thing-that-happened-to.4e31b1ea": {
+   "source": "Only one thing that happened to a certificate.",
+   "text": "Jen jedna věc, která se certifikátu stala."
   },
   "s.only-one-vpn-tunnel-group.3aaf1867": {
    "source": "Only one VPN tunnel group.",
@@ -18020,9 +18108,21 @@
    "source": "Only show logins from these devices",
    "text": "Zobrazovat jen přihlášení z těchto zařízení"
   },
+  "s.only-the-certificates-log-acme-certs.9b07a440": {
+   "source": "Only the certificates’ log (acme-certs) or the rest of what acme does (acme).",
+   "text": "Jen log certifikátů (acme-certs), nebo zbytek toho, co acme dělá (acme)."
+  },
+  "s.only-the-certificates-that-stand-this.0c033c4a": {
+   "source": "Only the certificates that stand this way now.",
+   "text": "Jen certifikáty, které jsou teď v tomto stavu."
+  },
   "s.only-the-dhe-ciphers-use-them.8ff83692": {
    "source": "Only the DHE ciphers use them (Mozilla intermediate, or your own). An RFC 7919 group is ready at once; made here takes from seconds to minutes.",
    "text": "Používají je jen šifry DHE (Mozilla intermediate nebo vlastní). Skupina RFC 7919 je hned; vygenerování zde trvá od sekund po minuty."
+  },
+  "s.only-the-jobs-that-ended-this.1274f411": {
+   "source": "Only the jobs that ended this way.",
+   "text": "Jen úlohy, které takto skončily."
   },
   "s.only-the-last-day.bfd847e6": {
    "source": "only the last day",
@@ -18147,6 +18247,10 @@
   "s.only-what-one-nps-network-policy.ca439668": {
    "source": "Only what one NPS network policy let on.",
    "text": "Jen to, co pustila jedna síťová politika NPS."
+  },
+  "s.only-what-one-of-acme-s.3c6ccac5": {
+   "source": "Only what one of acme’s nodes sent.",
+   "text": "Jen to, co poslal jeden z uzlů acme."
   },
   "s.only-what-one-of-the-two.e69e16bf": {
    "source": "Only what one of the two ISE nodes wrote. Both are read all the time; this only decides what is shown.",
@@ -20524,6 +20628,10 @@
    "source": "remport",
    "text": "remport"
   },
+  "s.renew-deploy.4977e80b": {
+   "source": "renew, deploy",
+   "text": "renew, deploy"
+  },
   "s.renewal-failed.f05989d2": {
    "source": "renewal failed",
    "text": "obnova selhala"
@@ -20543,6 +20651,10 @@
   "s.renewed-by-acme.9fc90159": {
    "source": "renewed by ACME",
    "text": "obnovuje ACME"
+  },
+  "s.renewed-deploy.3c800ef6": {
+   "source": "renewed, deploy",
+   "text": "renewed, deploy"
   },
   "s.renewed-when-fewer-days-are-left.505bbe85": {
    "source": "Renewed when fewer days are left than",
@@ -21056,6 +21168,10 @@
    "source": "run out, or within 7 days",
    "text": "vypršel, nebo do 7 dní"
   },
+  "s.run-out.66c9cad0": {
+   "source": "run out",
+   "text": "vypršelé"
+  },
   "s.run-out.bef8194f": {
    "source": "Run out",
    "text": "Vypršelo"
@@ -21420,6 +21536,18 @@
    "source": "Searches every event this daemon has written down, not the page in front of you. Case does not matter.",
    "text": "Prohledává všechny události, které tento démon zaznamenal, ne jen zobrazenou stránku. Na velikosti písmen nezáleží."
   },
+  "s.searches-every-line-acme-sent-about.3b327596": {
+   "source": "Searches every line acme sent about a certificate - its name, its names, its serial, its source, its targets - and shows the certificates they are about. Fields work as in every other box: cert:www, target:f5-*, -issuer:\"Internal CA\". Case does not matter.",
+   "text": "Hledá ve všech řádcích, které acme o certifikátu poslal - jeho název, jména, sériové číslo, zdroj, cíle - a ukáže certifikáty, o kterých jsou. Pole fungují jako v každém jiném poli: cert:www, target:f5-*, -issuer:\"Internal CA\". Na velikosti písmen nezáleží."
+  },
+  "s.searches-every-line-acme-sent-not.0b5bd2fc": {
+   "source": "Searches every line acme sent, not the page in front of you: the message, the certificate, its names, the target, who and the serial. Fields work as in every other box: level:bad, cert:www, node:acme2, -kind:sign-ins. Case does not matter.",
+   "text": "Hledá ve všech řádcích, které acme poslal, ne jen na zobrazené stránce: ve zprávě, certifikátu, jeho jménech, cíli, kdo a sériovém čísle. Pole fungují jako v každém jiném poli: level:bad, cert:www, node:acme2, -kind:sign-ins. Na velikosti písmen nezáleží."
+  },
+  "s.searches-every-line-of-every-job.8c23538d": {
+   "source": "Searches every line of every job acme sent - its steps, its requests, its validations, its end - and shows the jobs with a line like that. Fields work as in every other box: host:api.cloudflare.com status:429, state:invalid, error:*NXDOMAIN*, took>30000. Case does not matter.",
+   "text": "Hledá ve všech řádcích všech úloh, které acme poslal - kroky, požadavky, validace, konec - a ukáže úlohy s takovým řádkem. Pole fungují jako v každém jiném poli: host:api.cloudflare.com status:429, state:invalid, error:*NXDOMAIN*, took>30000. Na velikosti písmen nezáleží."
+  },
   "s.searches-every-refused-attempt-on-the.e7786ded": {
    "source": "Searches every refused attempt on the server, not the page in front of you: the address, the user name offered, what ISE said, the tunnel group and the device. Case does not matter.",
    "text": "Prohledává všechny odmítnuté pokusy na serveru, ne jen zobrazenou stránku: adresu, zadané uživatelské jméno, co řekl ISE, tunnel group a zařízení. Na velikosti písmen nezáleží."
@@ -21578,6 +21706,10 @@
   },
   "s.serial-number.5552ab2b": {
    "source": "serial number",
+   "text": "sériové číslo"
+  },
+  "s.serial.50de66b7": {
+   "source": "serial",
    "text": "sériové číslo"
   },
   "s.serial.83f8c31a": {
@@ -22739,6 +22871,10 @@
   "s.start-it.8962ca4a": {
    "source": "Start it",
    "text": "Spustit"
+  },
+  "s.start-step-http-validation-end.5c55adc0": {
+   "source": "start, step, http, validation, end",
+   "text": "start, step, http, validation, end"
   },
   "s.start-the-counting-again.6c9a6da7": {
    "source": "Start the counting again?",
@@ -24616,6 +24752,10 @@
    "source": "the certificate by ACME: its name, its end, who looks after it, its last order step by step (Settings - Automatic certificates)",
    "text": "certifikát od ACME: jeho jméno, konec, kdo se o něj stará, jeho poslední objednávka krok za krokem (Nastavení – Automatické certifikáty)"
   },
+  "s.the-certificate-by-its-name-in.0355a770": {
+   "source": "the certificate, by its name in acme",
+   "text": "certifikát podle jeho názvu v acme"
+  },
   "s.the-certificate-click-it-to-copy.7162e114": {
    "source": "The certificate. Click it to copy.",
    "text": "Certifikát. Kliknutím zkopírujete."
@@ -24691,6 +24831,10 @@
   "s.the-certificate-was-stored.5d83f8a2": {
    "source": "the certificate was stored",
    "text": "certifikát je uložen"
+  },
+  "s.the-certificate.6b578cc3": {
+   "source": "the certificate",
+   "text": "certifikát"
   },
   "s.the-certificate.a2525335": {
    "source": "The certificate",
@@ -25960,6 +26104,10 @@
    "source": "the HTTP method",
    "text": "metoda HTTP"
   },
+  "s.the-http-status-it-answered.f5460d2b": {
+   "source": "the HTTP status it answered",
+   "text": "HTTP stav odpovědi"
+  },
   "s.the-icmp-code.0242fcd3": {
    "source": "the ICMP code",
    "text": "kód ICMP"
@@ -26155,6 +26303,10 @@
   "s.the-kind-of-connection.d3e4886a": {
    "source": "the kind of connection",
    "text": "druh spojení"
+  },
+  "s.the-kind-of-job.89c636bf": {
+   "source": "the kind of job",
+   "text": "druh úlohy"
   },
   "s.the-kind-of-line.e75a5db2": {
    "source": "the kind of line",
@@ -26811,6 +26963,14 @@
   "s.the-nightly-dumps-made-by-the.42d21b44": {
    "source": "The nightly dumps made by the database engine’s own program, and how many are kept. A dump goes back into the engine it came off; the card below makes a copy that goes back into any of the three.",
    "text": "Noční dumpy vytvořené vlastním programem databázového stroje a kolik se jich uchovává. Dump se vrací do stroje, ze kterého vzešel; karta níže dělá kopii, která se vrátí do kteréhokoli ze tří."
+  },
+  "s.the-node-it-ran-on.586c489b": {
+   "source": "the node it ran on",
+   "text": "uzel, na kterém běžela"
+  },
+  "s.the-node-of-acme-s-it.babf5f6e": {
+   "source": "the node of acme's it happened on",
+   "text": "uzel acme, na kterém se to stalo"
   },
   "s.the-node-that-wrote-it.55b2ee7f": {
    "source": "the node that wrote it",
@@ -27736,6 +27896,10 @@
    "source": "the sequence number",
    "text": "pořadové číslo"
   },
+  "s.the-server-a-request-went-to.c38a3eb5": {
+   "source": "the server a request went to",
+   "text": "server, kam šel požadavek"
+  },
   "s.the-server-accepted-this-sign-in.8216e018": {
    "source": "The server accepted this sign-in. Where the account belongs to another institution it is that institution that said yes; this server only carried the question there and the answer back.",
    "text": "Server toto přihlášení přijal. Pokud účet patří jiné instituci, souhlas dala ta instituce; tento server jí jen předal dotaz a vrátil odpověď."
@@ -27912,6 +28076,14 @@
    "source": "the Solomon Islands",
    "text": "Šalamounovy ostrovy"
   },
+  "s.the-source-it-is-issued-from.d0c81f74": {
+   "source": "the source it is issued from",
+   "text": "zdroj, ze kterého je vydán"
+  },
+  "s.the-source.c1e1753c": {
+   "source": "the source",
+   "text": "zdroj"
+  },
   "s.the-span-those-failures-are-counted.eb209444": {
    "source": "The span those failures are counted over.",
    "text": "Období, za které se tato selhání počítají."
@@ -28011,6 +28183,10 @@
   "s.the-tar-gz-of-a-new.43e8c676": {
    "source": "The .tar.gz of a new isemon, as it was released. It is checked before anything else: it must be signed by a release key this server trusts, every file in it must be the one signed, and it must not be older than what runs here. Root checks it all again before it is put in.",
    "text": "Soubor .tar.gz nové verze isemon, tak jak byl vydán. Nejdřív se zkontroluje: musí být podepsaný klíčem vydání, kterému tento server věří, každý soubor v něm musí být ten podepsaný a nesmí být starší než to, co tu běží. Root to celé zkontroluje znovu, než ho nasadí."
+  },
+  "s.the-target.863e6308": {
+   "source": "the target",
+   "text": "cíl"
   },
   "s.the-tcp-flags.9f146fce": {
    "source": "the TCP flags",
@@ -29648,9 +29824,9 @@
    "source": "To keep them for good",
    "text": "Aby platila natrvalo"
   },
-  "s.to-look-at.4acb8297": {
-   "source": "To look at",
-   "text": "K prohlédnutí"
+  "s.to-look-at.6bd377a5": {
+   "source": "to look at",
+   "text": "k prohlédnutí"
   },
   "s.to-pick-it-from-the-directory.92073c02": {
    "source": "to pick it from the directory rather than typing it. More than one, separated by semicolons.",
@@ -30640,6 +30816,10 @@
    "source": "version",
    "text": "verze"
   },
+  "s.via.a19e070e": {
+   "source": "via",
+   "text": "via"
+  },
   "s.vietnam.681101d8": {
    "source": "Vietnam",
    "text": "Vietnam"
@@ -31096,6 +31276,10 @@
    "source": "What happened",
    "text": "Co se stalo"
   },
+  "s.what-happened.c339d3f3": {
+   "source": "what happened",
+   "text": "co se stalo"
+  },
   "s.what-happens.d208fde7": {
    "source": "What happens",
    "text": "Co se stane"
@@ -31367,6 +31551,10 @@
   "s.what-people-type-in-the-browser.74c6b876": {
    "source": "What people type in the browser.",
    "text": "Co lidé píšou do prohlížeče."
+  },
+  "s.what-proved-a-name.cf60f37e": {
+   "source": "what proved a name",
+   "text": "co ověřilo jméno"
   },
   "s.what-root-has-in-place-of.36ef59ee": {
    "source": "what root has in place of what Settings asked: nginx, TLS, the firewall, and the last upgrade from the pages",
@@ -31892,6 +32080,10 @@
    "source": "what went wrong with TLS since rsyslog started",
    "text": "co se s TLS pokazilo od startu rsyslogu"
   },
+  "s.what-went-wrong.705ebe9a": {
+   "source": "what went wrong",
+   "text": "co selhalo"
+  },
   "s.what-went-wrong.772ce8a1": {
    "source": "What went wrong",
    "text": "Co selhalo"
@@ -32119,6 +32311,10 @@
   "s.where-it-went.20d27b13": {
    "source": "Where it went",
    "text": "Kam to šlo"
+  },
+  "s.where-it-went.e4155b40": {
+   "source": "where it went",
+   "text": "kam byl nasazen"
   },
   "s.where-its-log-is-a-folder.1c6cc834": {
    "source": "Where its log is (a folder for each unit of a pair)",
@@ -32924,9 +33120,17 @@
    "source": "who banned it",
    "text": "kdo ho zablokoval"
   },
+  "s.who-began-it.abec85c4": {
+   "source": "who began it",
+   "text": "kdo ji spustil"
+  },
   "s.who-began-them-and-the-wait.95decf5a": {
    "source": "Who began them, and the wait",
    "text": "Kdo je spustil a čekání"
+  },
+  "s.who-did-it-acme-itself-or.00c7bc66": {
+   "source": "who did it - acme itself or an account",
+   "text": "kdo to udělal - acme sám nebo účet"
   },
   "s.who-did-it-where-that-is.2408e420": {
    "source": "who did it, where that is somebody else",
@@ -33588,6 +33792,14 @@
    "source": "Wrong passwords from one address before it has to wait.",
    "text": "Počet špatných hesel z jedné adresy, než musí čekat."
   },
+  "s.www-example-cz.e4ec1cdc": {
+   "source": "www, *.example.cz",
+   "text": "www, *.example.cz"
+  },
+  "s.www.c50267b9": {
+   "source": "www",
+   "text": "www"
+  },
   "s.xauthgroup.0bf531b6": {
    "source": "xauthgroup",
    "text": "xauthgroup"
@@ -33921,6 +34133,10 @@
   "p.am-dot.cf7e0738": {
    "source": "am-dot {0}",
    "text": "am-dot {0}"
+  },
+  "p.am-ev.622a335c": {
+   "source": "am-ev-{0}",
+   "text": "am-ev-{0}"
   },
   "p.am-seg-am-seg.c4f44830": {
    "source": "am-seg am-seg-{0}",
@@ -39742,6 +39958,22 @@
    "source": ", and only then",
    "text": ", a teprve pak"
   },
+  "s.any-action.e108025a": {
+   "source": "Any action",
+   "text": "Jakákoli akce"
+  },
+  "s.any-kind.8cb2cddf": {
+   "source": "Any kind",
+   "text": "Jakýkoli druh"
+  },
+  "s.any-level.cb33d8da": {
+   "source": "Any level",
+   "text": "Jakákoli úroveň"
+  },
+  "s.any-node.340b35d5": {
+   "source": "Any node",
+   "text": "Jakýkoli uzel"
+  },
   "s.anything-missing.cb960242": {
    "source": "Anything missing",
    "text": "Cokoli chybí"
@@ -39793,6 +40025,10 @@
   "s.beside-it.12d8e03f": {
    "source": "Beside it",
    "text": "Vedle něj"
+  },
+  "s.both-logs.501ff966": {
+   "source": "Both logs",
+   "text": "Oba logy"
   },
   "s.both-of-them-folded-together-a.86247148": {
    "source": "Both of them, folded together: a site with two domains has an account",
@@ -39958,6 +40194,18 @@
    "source": "files each line a second time at the new moment: erase that module's records first in that case. Logins at the firewall, to network devices, to the domain and the VPN through a FreeRADIUS are weighed over the same span as well, where they are switched on under Banning.",
    "text": ", uloží každý řádek podruhé v novém čase: v tom případě nejdřív smažte záznamy daného modulu. Přihlášení na firewallu, k síťovým zařízením, do domény a do VPN přes FreeRADIUS se posoudí za stejné období také, pokud jsou zapnuté v Banningu."
   },
+  "s.find-a-certificate-a-name-a.7cd1ab63": {
+   "source": "Find a certificate, a name, a serial, a target…",
+   "text": "Najít certifikát, jméno, sériové číslo, cíl…"
+  },
+  "s.find-a-certificate-a-source-a.6030e196": {
+   "source": "Find a certificate, a source, a target, an account…",
+   "text": "Najít certifikát, zdroj, cíl, účet…"
+  },
+  "s.find-in-the-lines.d6111bf0": {
+   "source": "Find in the lines…",
+   "text": "Hledat v řádcích…"
+  },
   "s.for-the-rest-of-what-acme.869fc39a": {
    "source": "for the rest of what acme does as well. rsyslog files the lines as",
    "text": "i pro zbytek toho, co acme dělá. rsyslog ukládá řádky jako"
@@ -40078,10 +40326,6 @@
    "source": "isemon-upgrade.path",
    "text": "isemon-upgrade.path"
   },
-  "s.issuer.9cf32721": {
-   "source": "issuer",
-   "text": "vydavatel"
-  },
   "s.it-answers-but-this-account-may.b46adc95": {
    "source": "It answers, but this account may not make anything in it. Set it up, or give the account rights on that database.",
    "text": "Odpovídá, ale tento účet v něm nesmí nic vytvářet. Nastavte ho, nebo dejte účtu práva k této databázi."
@@ -40190,10 +40434,6 @@
    "source": "Names it must hold",
    "text": "Jména, která musí obsahovat"
   },
-  "s.names.237a4713": {
-   "source": "names",
-   "text": "jména"
-  },
   "s.newer.1d47386a": {
    "source": "newer",
    "text": "novější"
@@ -40221,6 +40461,10 @@
   "s.no-key-yet.4eb24632": {
    "source": "no key yet",
    "text": "zatím žádný klíč"
+  },
+  "s.no-line-is-like-that.32b556b0": {
+   "source": "No line is like that.",
+   "text": "Žádný takový řádek."
   },
   "s.no-other-isemon-uses-this-database.6dc4673c": {
    "source": "No other isemon uses this database: it may be moved.",
@@ -40317,6 +40561,10 @@
   "s.off-a-certificate-that-does-not.f4fb954f": {
    "source": "Off: a certificate that does not hold the dashboard’s name is refused, so none can take it over silently.",
    "text": "Vypnuto: certifikát, který neobsahuje jméno dashboardu, se odmítne, takže ho žádný nemůže potichu převzít."
+  },
+  "s.older-lines.ccdcd2fd": {
+   "source": "Older lines",
+   "text": "Starší řádky"
   },
   "s.older.6fa5fbbc": {
    "source": "older",
@@ -40445,10 +40693,6 @@
   "s.secret.e5e9fa1b": {
    "source": "secret",
    "text": "tajné"
-  },
-  "s.serial.50de66b7": {
-   "source": "serial",
-   "text": "sériové číslo"
   },
   "s.set-it-up.088b14ed": {
    "source": "Set it up…",
@@ -40733,6 +40977,10 @@
   "s.time-an-hour-the-second-a.7f2b8535": {
    "source": "time, an hour the second, a day the third and for good after that.",
    "text": "hodinu napodruhé, den napotřetí a poté natrvalo."
+  },
+  "s.to-look-at.4acb8297": {
+   "source": "To look at",
+   "text": "K prohlédnutí"
   },
   "s.to-pick-it-from-the-directory.d189a986": {
    "source": "to pick it from the directory rather than typing it. More than one, comma separated.",
