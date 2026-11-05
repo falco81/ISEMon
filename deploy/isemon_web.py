@@ -2772,10 +2772,11 @@ ACMETLS_OLD = os.environ.get('ISEMON_ACMETLS_OLD', os.path.join(
     os.path.dirname(OTPTLS_OLD), '10-acme-tls.conf'))
 ACMETLS_DIR = os.environ.get('ISEMON_ACMETLS_DIR', os.path.join(
     os.path.dirname(OTPTLS_DIR), 'acme'))
-ACMETLS_P = {'who': 'acme', 'pane': 'acme\u2019s log', 'input': 'acme-tls',
+ACMETLS_P = {'who': 'acme', 'pane': 'The acme logs', 'input': 'acme-tls',
              'ca_cn': 'the acme logs',
              'filed': ['# What arrives here is filed by the same rule as what arrives plain',
-                       '# (11-acme.conf): /var/log/remote/<HOST>/acme-certs.log and acme.log.']}
+                       '# (11-acme.conf): /var/log/remote/<HOST>/acme-certs.log, acme.log and',
+                       '# acme-jobs.log.']}
 TLS_SIBLINGS = []          # the other receiver's file, while acme's is the one asked
 
 

@@ -359,7 +359,7 @@ try:
     text = ACONF.read_text()
     ok('...its own file, marked, its input named, the nodes by name',
        ('# isemon: the acme logs over TLS' in text, 'name="acme-tls"' in text,
-        'PermittedPeer=["acme1", "acme2"]' in text, 'Settings → acme’s log' in text),
+        'PermittedPeer=["acme1", "acme2"]' in text, 'Settings → The acme logs' in text),
        (True, True, True, True))
     ok('...its own folder, root\'s alone, the key 0600',
        (stat.S_IMODE(os.stat(APKI).st_mode), stat.S_IMODE(os.stat(APKI / 'isemon.key').st_mode)),

@@ -136,6 +136,34 @@ try:
     ok('...not with it off', len([x for x in daemon.log_files() if x[0] == 'acmelog']), 2)
     isemon.CONFIG['acmelog_jobs'] = 1
 
+    print('\nRead from the files themselves, as the daemon reads them')
+    ok('the reader hands back a list, as every reader does',
+       type(isemon.acme_parse_lines(SPEC[:1], now=NOW)), list)
+    (logs / 'acme-jobs.log').write_text('\n'.join(l.split('>', 1)[1] for l in SPEC) + '\n')
+    (logs / 'acme-certs.log').write_text(
+        'Nov  4 17:40:00 acme acme-certs[812]: level=bad kind=certificates node=acme1 '
+        'who=acme action=renew cert=www result=failed msg="renewing www failed"\n')
+    (logs / 'acme.log').write_text('Nov  4 16:40:02 acme acme[3021]: a test from acme\n')
+    for path in [x[1] for x in daemon.log_files() if x[0] == 'acmelog']:
+        daemon.tails.pop(path, None) if hasattr(daemon, 'tails') and \
+            isinstance(daemon.tails, dict) else None
+    daemon.read_logs()
+    daemon.read_logs()
+    said = (state / 'd.log').read_text() if (state / 'd.log').exists() else ''
+    ok('...no reader failed on them', 'has no len()' in said or 'reading %s' % logs in said, False)
+    ok('...every line of the three files kept',
+       (store.db.execute('SELECT COUNT(*) AS n FROM acme_jobs').fetchone()['n'],
+        store.db.execute('SELECT COUNT(*) AS n FROM acme_events').fetchone()['n']), (9, 2))
+    ok('...done once, and said so in the database', bool(store.get_meta(
+        'acmelog_read_again_290', '')))
+    with store.db_write() as db:
+        db.execute('DELETE FROM acme_jobs')
+        db.execute('DELETE FROM acme_events')
+    daemon._acmelog_again = False
+    daemon.read_logs()
+    ok('...not again on a later start: the files are not read from the beginning twice',
+       store.db.execute('SELECT COUNT(*) AS n FROM acme_jobs').fetchone()['n'], 0)
+
     print('\nKept, once')
     daemon.read_records(SPEC, kind='acmelog')
     daemon.read_records(SPEC, kind='acmelog')

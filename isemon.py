@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.289'
+__version__ = '1.10.290'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -17242,7 +17242,13 @@ def acme_when(m, now=None):
 def acme_parse_lines(lines, hold=None, now=None):
     """acme's lines, as AcmeLine. A line that is not acme's - another
     program in the same folder - is left alone; one of acme's that is not
-    key=value (a test from its command line) is kept as it is."""
+    key=value (a test from its command line) is kept as it is. A list, as
+    every reader's is: the file reader counts what it got (1.10.290 - 1.10.287
+    to 1.10.289 handed it a generator, and not one line of a file was read)."""
+    return list(_acme_lines(lines, now))
+
+
+def _acme_lines(lines, now=None):
     for line in lines:
         text = str(line or '').rstrip('\r\n')
         if not text.strip():
@@ -48927,6 +48933,26 @@ class Daemon(object):
             writer.drain(60)
         self.store.set_meta('tails', self.tails_state())
 
+    def acmelog_read_again_once(self):
+        """acme's logs read again from their beginning, once (1.10.290): from
+        1.10.287 to 1.10.289 their reader failed on every pass after the
+        position in the file had moved on, so what arrived then was never
+        kept. Read again, every line is kept once whatever was kept before."""
+        if getattr(self, '_acmelog_again', False):
+            return
+        self._acmelog_again = True
+        try:
+            if self.store.get_meta('acmelog_read_again_290', ''):
+                return
+            gone = self.drop_tails(['acmelog'])
+            self.store.forget_tails('acmelog')
+            self.store.set_meta('acmelog_read_again_290', str(int(time.time())))
+            if gone:
+                log('acme\'s logs are read again from their beginning, once: what '
+                    'arrived while 1.10.287-1.10.289 could not read them is kept now', 'info')
+        except Exception as e:
+            log('acme\'s logs could not be read again: %s' % e, 'warn')
+
     def drop_tails(self, sources):
         """Stop following one log's files, so the next pass starts them again
         at the beginning. What was read of them is somebody else's business:
@@ -49177,6 +49203,7 @@ class Daemon(object):
         """One pass over every file. Returns how many new records there were."""
         if not self.working():
             return 0
+        self.acmelog_read_again_once()
         began = time.time()
         # Where the files are, as of the start of this pass: an erase or a
         # restore that moves on the epoch while it reads makes the positions
