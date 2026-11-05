@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.294'
+__version__ = '1.10.295'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -57412,6 +57412,16 @@ class Daemon(object):
                 except ValueError:
                     pass
 
+    def _login_known(self, name, where, now):
+        """An address this name signed in from: the name's own count does not
+        keep it out from there (1.10.295)."""
+        good = self.__dict__.setdefault('_login_good', {})
+        with self._login_watch:
+            if len(good) > 5000:
+                for k in sorted(good, key=good.get)[:1000]:
+                    good.pop(k, None)
+            good[(name, where)] = now
+
     def _login_forget(self, where):
         """Every attempt from an address, let go: somebody got in."""
         with self._login_watch:
@@ -57440,7 +57450,13 @@ class Daemon(object):
         # for the person at the next desk, and it is let go the moment the
         # password is right; a real person behind a guesser waits the same
         # quarter of an hour the guesser does.
-        if not too_many and name:
+        # ...except from an address this name signed in from before (1.10.295):
+        # a burst of wrong passwords for `admin` from elsewhere kept the real
+        # administrator out, the right password included, for as long as it
+        # was repeated. The address's own count still holds there.
+        good = getattr(self, '_login_good', {})
+        known = bool(name) and now - good.get((name, where), 0) < 30 * 86400
+        if not too_many and name and not known:
             too_many, left = self._login_note('user:' + name, now, wait_s,
                                               times=self.LOGIN_NAME_TIMES)
         if too_many:
@@ -57595,6 +57611,7 @@ class Daemon(object):
                 self.store.remember_directory_user(said)
                 self._login_forget(where)
                 self._login_forget('user:' + name)
+                self._login_known(name, where, now)
                 token = self.store.new_session(name, said['role'], where, agent)
                 self.store.note_login(name, where)
                 self.store.add_event('login', '%s signed in from %s, out of the directory, '
@@ -57638,6 +57655,7 @@ class Daemon(object):
             raise Refused('that name and password do not go together', why_dir)
         self._login_forget(where)
         self._login_forget('user:' + name)
+        self._login_known(name, where, now)
         token = self.store.new_session(name, user['role'], where, agent)
         self.store.note_login(name, where)
         self.store.add_event('login', '%s signed in from %s' % (name, where or 'somewhere'),
@@ -65814,7 +65832,8 @@ def cert_zip_entries(raw):
                 raise WebRootError('%s in the ZIP is far bigger than a certificate file' % name)
             try:
                 data = zf.read(info)
-            except (zipfile.BadZipFile, NotImplementedError, RuntimeError, ValueError) as e:
+            except (zipfile.BadZipFile, NotImplementedError, RuntimeError, ValueError,
+                    zlib.error, EOFError) as e:
                 raise WebRootError('%s in the ZIP could not be read: %s' % (name, e))
             total += len(data)
             if len(data) > 256 * 1024 or total > CERT_ZIP_MOST:
@@ -65932,7 +65951,7 @@ KEY_KIND_WORDS = {'ec256': 'ECDSA P-256', 'ec384': 'ECDSA P-384', 'rsa2048': 'RS
 # as cert2, chain2 and key2 (sealed), put in by ACME only. Anything else that
 # puts a certificate in takes them away - one left there would go on being
 # answered with beside a certificate it has nothing to do with.
-TLS_SECOND = ('cert2', 'chain2', 'key2', 'cert2_for')
+TLS_SECOND = ('cert2', 'chain2', 'key2', 'cert2_for', 'root2')
 
 
 def tls_drop_second(tls):
@@ -66721,6 +66740,11 @@ class WebRoot(object):
                     pair.reverse()
                 got, twin = pair
                 tf = twin['facts']
+                lack = twin_lacks(got['facts'], tf)
+                if lack:
+                    raise WebRootError('the ECDSA certificate does not hold %s, which the RSA one '
+                                       'does: the two are of one name, side by side'
+                                       % ', '.join(lack[:6]))
                 if tf.get('until') and tf['until'] < time.time():
                     raise WebRootError('the ECDSA certificate ran out on %s'
                                        % time.strftime('%Y-%m-%d', time.localtime(tf['until'])))
@@ -66755,7 +66779,7 @@ class WebRoot(object):
                        key=seal_secret(key), managed=True, since=time.time(), by=by, how=how)
             tls_drop_second(tls)
             if twin:
-                tls.update(cert2=twin['cert'], chain2=twin['chain'],
+                tls.update(cert2=twin['cert'], chain2=twin['chain'], root2=twin['root'],
                            key2=seal_secret(twin['key']), cert2_for=tls_second_for(got['cert']))
             # One put in by hand is kept (otp 1.0.170): ACME does not replace
             # it at its next renewal - Automatic certificates → Look after it
@@ -66907,7 +66931,8 @@ class WebRoot(object):
         if which in ('second', 'both'):
             parts.append((tls['cert2'].strip() + '\n', ''.join(
                 m.group(0) + '\n' for m in PEM_CERT_RE.finditer(
-                    (tls.get('chain2') or '') + (tls.get('root') or ''))), tls.get('key2') or ''))
+                    (tls.get('chain2') or '') + (tls.get('root2') or tls.get('root') or ''))),
+                    tls.get('key2') or ''))
         if with_key:
             if not admin:
                 raise WebRootError('the private key is exported by a full administrator only')
@@ -68797,6 +68822,22 @@ def push_fingerprint(pem):
         return ''
 
 
+def cert_names_of(facts):
+    """Every name a certificate holds: its SANs, and its CN beside them."""
+    names = list((facts or {}).get('names') or [])
+    cn = (facts or {}).get('cn')
+    if cn and cn not in names:
+        names.append(cn)
+    return names
+
+
+def twin_lacks(main_facts, twin_facts):
+    """The names of a dual certificate's RSA half its ECDSA twin does not
+    hold (1.10.295): browsers that speak ECDSA are given the twin."""
+    have = cert_names_of(twin_facts)
+    return [n for n in cert_names_of(main_facts) if not push_name_holds(have, n)]
+
+
 def push_name_holds(names, want):
     """Whether a certificate of `names` holds the name `want` (a wildcard
     holds one label under it)."""
@@ -69028,9 +69069,14 @@ def push_install(daemon, body, box, kid):
         if not isinstance(body['alt'], dict):
             raise PushRefused('bad_request', 400, 'alt is an object')
         alt = push_one(box, body['alt'])
-        if alt['kind'][:2] == main['kind'][:2]:
+        # One RSA and one ECDSA, exactly - as an upload takes them (1.10.295).
+        if sorted([alt['kind'][:2], main['kind'][:2]]) != ['ec', 'rs']:
             raise PushRefused('bad_request', 400, 'the twin is of the same key type: one ECDSA '
                               'and one RSA')
+        lack = twin_lacks(main['facts'], alt['facts'])
+        if lack:
+            raise PushRefused('names', 422, 'the twin does not hold %s, which the certificate '
+                              'does' % ', '.join(lack[:6]))
     names = main['facts'].get('names') or []
     if main['facts'].get('cn') and main['facts']['cn'] not in names:
         names = names + [main['facts']['cn']]
@@ -69090,6 +69136,7 @@ def push_install(daemon, body, box, kid):
                 tls['how'] = 'acme push: %s' % acme_words
                 if second:
                     tls.update(cert2=second['cert'], chain2=second['chain'],
+                               root2=second.get('root') or '',
                                key2=seal_secret(second['key']),
                                cert2_for=tls_second_for(first['cert']))
                 wr._put('web_tls', tls)
@@ -71077,7 +71124,8 @@ def otp_zip_open(data, password, who='otp'):
                     out[name] = zf.read(info, pwd=password if info.flag_bits & 1 else None)
                 except RuntimeError:
                     raise PermissionError('the passphrase is not the one the file was made with')
-                except (zipfile.BadZipFile, NotImplementedError, ValueError) as e:
+                except (zipfile.BadZipFile, NotImplementedError, ValueError, zlib.error,
+                        EOFError) as e:
                     raise ValueError('%s: %s' % (name, e))
     return out
 
@@ -79700,6 +79748,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                 ip = same_address(str(data.get('clear_counting_of') or '').strip())
                 if not is_address(ip):
                     return self.fail('that is not an address')
+                # One address: the counting is of addresses, and a range said
+                # back to nought changed nobody's (1.10.295).
+                if '/' in ip:
+                    return self.fail('one address, not a range: the counting is of each address')
                 when = store.clear_counting_of(ip, by=me['name'])
                 store.add_event('blocks', 'the counting of %s was started again; it went back '
                                 'to nought' % ip, who=me['name'])
@@ -80533,6 +80585,18 @@ class ApiHandler(BaseHTTPRequestHandler):
                                                 'ok', 'done_n', 'total', 'finished')}
                 job['last'] = ''
                 job['lines'] = []
+            # A password made for a database (1.10.295): shown once, to
+            # whoever moved it, and then let go - it was handed to every poll
+            # of the job, and to every full administrator, for as long as the
+            # job was kept.
+            res = job.get('result')
+            if isinstance(res, dict) and 'password' in res:
+                shown = dict(job, result=dict(res))
+                if job.get('by') == me.get('name'):
+                    res.pop('password', None)
+                else:
+                    shown['result'].pop('password', None)
+                job = shown
             return self.send_json({'ok': True, 'job': job})
 
         # ---- settings -----------------------------------------------------------

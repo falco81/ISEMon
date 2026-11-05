@@ -49,17 +49,26 @@ function isemon_token(): ?string
     return $token !== '' ? $token : null;
 }
 
+/** The cookie's name: on TLS with the __Host- prefix (1.10.295), which the
+ *  browser takes only from this very host - Secure, Path=/, no Domain - so
+ *  a page on a neighbouring host of the same domain cannot plant a session
+ *  of its own choosing under it. Without TLS the name it always had. */
+function isemon_cookie_name(): string
+{
+    return isemon_https() ? '__Host-' . ISEMON_COOKIE : ISEMON_COOKIE;
+}
+
 /** The session of whoever is signed in, from the cookie. */
 function isemon_session(): string
 {
-    $got = (string) ($_COOKIE[ISEMON_COOKIE] ?? '');
+    $got = (string) ($_COOKIE[isemon_cookie_name()] ?? '');
     return preg_match('/^[A-Za-z0-9_-]{16,128}$/', $got) === 1 ? $got : '';
 }
 
 /** Start one. Same-site and HttpOnly, and Secure whenever the page is on TLS. */
 function isemon_set_session(string $token): void
 {
-    setcookie(ISEMON_COOKIE, $token, [
+    setcookie(isemon_cookie_name(), $token, [
         'expires'  => 0,                 /* until the browser is closed */
         'path'     => '/',
         'secure'   => isemon_https(),
@@ -70,13 +79,18 @@ function isemon_set_session(string $token): void
 
 function isemon_clear_session(): void
 {
-    setcookie(ISEMON_COOKIE, '', [
+    setcookie(isemon_cookie_name(), '', [
         'expires'  => time() - 3600,
         'path'     => '/',
         'secure'   => isemon_https(),
         'httponly' => true,
         'samesite' => 'Strict',
     ]);
+    /* ...and the one by the name before 1.10.295, never read on TLS any more. */
+    if (isemon_https() && isset($_COOKIE[ISEMON_COOKIE])) {
+        setcookie(ISEMON_COOKIE, '', ['expires' => time() - 3600, 'path' => '/', 'secure' => true,
+                                      'httponly' => true, 'samesite' => 'Strict']);
+    }
 }
 
 /**

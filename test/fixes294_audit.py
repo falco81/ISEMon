@@ -20,7 +20,6 @@
 
     ./test/fixes294_audit.py
 """
-import io
 import json
 import os
 import shutil
@@ -28,7 +27,6 @@ import struct
 import sys
 import tempfile
 import time
-import zipfile
 import zlib
 from pathlib import Path
 

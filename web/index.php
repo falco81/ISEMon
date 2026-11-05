@@ -360,6 +360,21 @@ if (isset($_GET['api'])) {
             exit;
         }
     }
+    /* ...and a GET from another page of the same site or of another one
+       (1.10.295): an <img> on a neighbouring host had the operator's browser
+       make a fresh full backup, or wait on the router, with its cookie. What
+       the page asks of itself, and an address typed or bookmarked, carry
+       `same-origin` or `none`; acme's requests carry no such header. */
+    if (!$post) {
+        $from = (string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '');
+        if ($from === 'cross-site' || $from === 'same-site') {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false,
+                              'error' => 'that request did not come from this page']);
+            exit;
+        }
+    }
 
     if ($what === 'software' && !$post) {
         /* What this server runs on (1.10.229, as otp's About) - and of the
@@ -1193,7 +1208,14 @@ function i18nRichKey(el) {
   var kids = el.childNodes, inline = false, out = '';
   for (var i = 0; i < kids.length; i++) {
     var k = kids[i];
-    if (k.nodeType === 3) { out += k.nodeValue; continue; }
+    if (k.nodeType === 3) {
+      /* Words that themselves look like a tag - a group called `<b>x</b>` -
+         cannot be told from the page's own tags in the key: such an element
+         is translated piece by piece instead (1.10.295). */
+      if (/[<>]/.test(k.nodeValue)) return '';
+      out += k.nodeValue;
+      continue;
+    }
     if (k.nodeType !== 1 || !I18N_INLINE[k.tagName]) return '';
     /* A tag the code means to find again - by an id, a class, anything -
        is never swapped away: its words are translated where they stand. */
@@ -1249,7 +1271,8 @@ function i18nRich(el) {
   Array.prototype.slice.call(made.childNodes).forEach(function (k) {
     if (k.nodeType !== 1) return;
     var old = (had[k.tagName] || []).shift();
-    if (!old) return;
+    /* A tag the translation has and the page did not: its words alone. */
+    if (!old) { made.replaceChild(document.createTextNode(k.textContent), k); return; }
     if (k.tagName !== 'BR') old.textContent = k.textContent;
     made.replaceChild(old, k);
   });
@@ -8170,6 +8193,9 @@ function countryBadge(cc) {
   var box = el('span', 'cc');
   if (!cc) { box.appendChild(el('span', 'muted', '–')); return box; }
   var two = String(cc).toUpperCase();
+  /* Two letters, or no flag at all (1.10.295): the code goes into the
+     image's address. */
+  if (!/^[A-Z]{2}$/.test(two)) { box.appendChild(noI18n(el('span', '', two.slice(0, 8)))); return box; }
   var img = document.createElement('img');
   img.className = 'flag';
   img.src = 'flags/' + two.toLowerCase() + '.svg';
@@ -8762,7 +8788,7 @@ function banMark(ip, compact) {
     perma.innerHTML = iconMarkup('ban', 13)
       + (compact ? '<span></span>' : '<span>for good</span>');
     explain(perma, 'This address is kept out <b>for good</b>' + throughWords(state)
-      + '. It stays out until somebody takes it off.\n' + (state.why || '')
+      + '. It stays out until somebody takes it off.\n' + wordsIn(state.why || '')
       + '\n' + STRIPE_SAYS);
     return perma;
   }
@@ -8832,7 +8858,7 @@ function banButtons(ip, why, after, compact) {
        the address, the daemon found no ban of it, and the page said so in
        red while the address stayed out. What lets it in is the range. */
     var range = make('Let the range in', 'undo', '');
-    explain(range, ip + ' is kept out because the range ' + htmlText(state.through)
+    explain(range, ip + ' is kept out because the range ' + wordsIn(state.through)
       + ' is banned. Letting it go lets in every address of it with no ban of its own; the ones it was folded from, if any, stay banned as themselves.');
     range.onclick = function (e) {
       e.stopPropagation();
@@ -9118,7 +9144,17 @@ function helpBox() {
     without anything that could be read as a tag, and NOT escaped here -
     escaped twice, "R&D" showed as "R&amp;D" (1.10.176). */
 function wordsIn(text) {
-  return String(text === undefined || text === null ? '' : text).replace(/[<>]/g, '');
+  /* A record's own words inside words that become a help panel: no tag and
+     no line break of its own (1.10.295) - a user name could otherwise bold a
+     forged verdict into the panel. */
+  return String(text === undefined || text === null ? '' : text).replace(/[<>]/g, '')
+    .replace(/[\r\n]+/g, ' ');
+}
+
+/* A word as the shell takes it whole, to copy into a terminal (1.10.295). */
+function shQuote(text) {
+  var t = String(text === undefined || text === null ? '' : text);
+  return /^[A-Za-z0-9_.@%+=:,\/-]+$/.test(t) ? t : "'" + t.replace(/'/g, "'\\''") + "'";
 }
 
 function richText(text) {
@@ -10595,7 +10631,7 @@ function logRow(l, inFolder) {
                  ? 'it may not read it' : (l.says || l.error));
     explain(bad, (l.says && l.says !== l.error ? l.says + '. ' : '')
             + (l.fix ? '\nOne command puts it right:\n<code>' + l.fix + '</code>\n' : '')
-            + '\nThe message itself: <code>' + l.error + '</code>');
+            + '\nThe message itself: <code>' + wordsIn(l.error) + '</code>');
     last.appendChild(bad);
   }
   else if (l.ahead) {
@@ -12661,7 +12697,7 @@ function namesLine(names, bogus) {
     pill.textContent = (one.name || '(no name)')
       + (one.tries > 1 ? ' ×' + num(one.tries) : '');
     explain(pill, (one.name
-      ? 'The name <b>' + one.name + '</b> was offered from this address '
+      ? 'The name <b>' + wordsIn(one.name) + '</b> was offered from this address '
       : 'An attempt with no name at all was made ')
       + num(one.tries) + ' time(s), first on ' + stamp(one.first) + ' and last on '
       + stamp(one.last) + '.'
@@ -12691,7 +12727,7 @@ function namesLine(names, bogus) {
 function namesSaid(names, bogus, lead) {
   var out = lead ? [lead, ''] : [];
   names.forEach(function (one) {
-    out.push('<code>' + (one.name || '(no name)') + '</code>  \u00d7' + num(one.tries)
+    out.push('<code>' + wordsIn(one.name || '(no name)') + '</code>  \u00d7' + num(one.tries)
       + (bogusName(one.name, bogus) ? '   \u2014 a name that never existed' : ''));
   });
   return out.join('\n');
@@ -13557,7 +13593,7 @@ function namesRow(names, bogus, cut) {
       + ' namepill'));
     pill.textContent = (one.name || '(no name)') + (one.tries > 1 ? ' \u00d7' + num(one.tries) : '');
     explain(pill, (one.name
-      ? 'The name <b>' + one.name + '</b> was offered from this address '
+      ? 'The name <b>' + wordsIn(one.name) + '</b> was offered from this address '
       : 'An attempt with no name at all was made ')
       + num(one.tries) + ' time(s). Press the address for every one of them.'
       + (bogusName(one.name, bogus)
@@ -17878,7 +17914,7 @@ function drawAcls(host, d) {
             var tr = el('tr');
             var name = el('td');
             name.appendChild(el('span', 'mono', r.short));
-            explain(name, 'ISE calls it <code>' + r.acl + '</code>. '
+            explain(name, 'ISE calls it <code>' + wordsIn(r.acl) + '</code>. '
               + 'The characters on the end are its version: edit the ACL and they change, '
               + 'so the same list under two names is the same list before and after an edit.');
             tr.appendChild(name);
@@ -24395,7 +24431,7 @@ function drawVpnNow() {
       tr.appendChild(el('td', 'muted', c.quiet ? ago(c.last) + ' \u2014 perhaps gone'
         : ago(c.last)));
       tr.appendChild(el('td', 'num', c.drops ? num(c.drops) : ''));
-      opensWith(tr, '<b>' + c.user + '</b> from ' + (c.srcip || '?')
+      opensWith(tr, '<b>' + wordsIn(c.user) + '</b> from ' + wordsIn(c.srcip || '?')
         + (c.inner ? ', inside the VPN ' + c.inner : '') + '. Press for everything known '
         + 'about this session.', function () { showVpnOne(c.id); });
       return tr;
@@ -24430,7 +24466,7 @@ function drawVpnNow() {
       tr.appendChild(el('td', 'num', sas ? num(sas) : '\u2013'));
       tr.appendChild(el('td', 'mono muted', (t.remote_ts || '\u2013')
         + (sels > 1 ? ' +' + (sels - 1) : '')));
-      opensWith(tr, 'The tunnel to <b>' + t.peer + '</b>' + (t.name || t.group
+      opensWith(tr, 'The tunnel to <b>' + wordsIn(t.peer) + '</b>' + wordsIn(t.name || t.group
         ? ' (' + (t.name || t.group) + ')' : '') + '. Press for its networks, its SAs and '
         + 'what crossed it.', function () { showVpnOne(t.id); });
       return tr;
@@ -29336,11 +29372,11 @@ function radiusSays(said) {
   var own = OTP_ALONE[radiusKey(said)];
   if (own) return own[2];
   var got = RADIUS_SAYS[radiusKey(said)];
-  if (got) return got + '\n\nIn its own words: <code>' + (said || '') + '</code>';
+  if (got) return got + '\n\nIn its own words: <code>' + wordsIn(said || '') + '</code>';
   var like = radiusLike(said);
-  if (like) return like[3] + '\n\nIn its own words: <code>' + (said || '') + '</code>';
+  if (like) return like[3] + '\n\nIn its own words: <code>' + wordsIn(said || '') + '</code>';
   return 'The RADIUS server in front of the token software refused the sign-in, in these '
-    + 'words: <code>' + (said || '') + '</code>\nThe token itself is a separate question, '
+    + 'words: <code>' + wordsIn(said || '') + '</code>\nThe token itself is a separate question, '
     + 'and the mark beside this says what the token server made of it.';
 }
 
@@ -29446,7 +29482,7 @@ function alsoBlock(o) {
     explain(groups, 'The groups this account is in <b>in that directory</b>, which are not '
       + 'the ones above:\n\n'
       + (o.groups || []).slice(0, 24).map(function (g) {
-          return '<code>' + g.name + '</code>'; }).join('\n'));
+          return '<code>' + wordsIn(g.name) + '</code>'; }).join('\n'));
     box.appendChild(groups);
   }
   return box;
@@ -29687,7 +29723,7 @@ function drawDirGroups(groups) {
               dirToggle(one[0], g.dn, g.name);
               paint();
             };
-            explain(b, 'Put <b>' + g.name + '</b> in this role, or take it out of it. It is a '
+            explain(b, 'Put <b>' + wordsIn(g.name) + '</b> in this role, or take it out of it. It is a '
               + 'change like any other on this page — nothing happens until you save.');
             pick.appendChild(b);
           });
@@ -31749,7 +31785,7 @@ function drawNames(d) {
   }
   if (d.trouble) {
     var bad = el('span', 'tag warn', 'the last one went wrong');
-    explain(bad, 'What the servers said: <code>' + d.trouble + '</code>');
+    explain(bad, 'What the servers said: <code>' + wordsIn(d.trouble) + '</code>');
     kv('Trouble', bad, d.trouble.slice(0, 80));
   }
   $('ptr-state-when').textContent = d.at ? shortStamp(d.at) : '';
@@ -32907,7 +32943,7 @@ function userRows(rows, d) {
       var role = el('td');
       var pill = el('span', 'tag ' + roleTone(u.role), roleWords(u.role));
       explain(pill, u.from_dir
-        ? 'What <b>' + htmlText(u.name) + '</b> may do, worked out from their groups in the directory '
+        ? 'What <b>' + wordsIn(u.name) + '</b> may do, worked out from their groups in the directory '
           + 'when they last signed in — not set here. Move them between the two groups named '
           + 'under Settings, Active Directory and this follows: at their next sign-in, and '
           + 'while they are already signed in, at the interval set there.'
@@ -32958,20 +32994,20 @@ function userRows(rows, d) {
         if (u.from_dir) {
           var said = el('span', 'muted small');
           said.textContent = 'set in the directory';
-          explain(said, 'The password for <b>' + htmlText(u.name) + '</b> is the domain\u2019s and is '
+          explain(said, 'The password for <b>' + wordsIn(u.name) + '</b> is the domain\u2019s and is '
             + 'never kept here, and what they may do comes from their groups there. Change '
             + 'either in the domain: move them between the two groups named under Settings, '
             + 'Active Directory, and this page follows at their next sign-in — and, while '
             + 'they are already signed in, at the re-check interval set there. Taking them '
             + 'out of both groups stops them getting in at all.\nIf you need a way into this '
             + 'dashboard for when the domain cannot be reached, set a password on the server '
-            + 'with <code>isemon --passwd ' + htmlText(u.name) + '</code>; it is used only while the '
+            + 'with <code>isemon --passwd ' + shQuote(wordsIn(u.name)) + '</code>; it is used only while the '
             + 'directory is unreachable.');
           said.style.marginRight = '10px';
           act.appendChild(said);
         } else {
           var pw = cmdButton('Password', 'lock', 'small');
-          explain(pw, 'Set a new password for ' + htmlText(u.name) + '. Every sign-in of that account '
+          explain(pw, 'Set a new password for ' + wordsIn(u.name) + '. Every sign-in of that account '
             + 'ends at once and they are asked to choose their own next time.');
           pw.onclick = function () { setSomebodysPassword(u.name); };
           act.appendChild(pw);
@@ -39259,7 +39295,7 @@ function drawRbTargets() {
     acts.appendChild(ls2);
     var del = iconButton('trash', 'Take this destination away');
     del.onclick = function () {
-      confirmThen('Take the destination ' + htmlText(t.name) + ' away?', 'Nothing is deleted on the server; backups simply stop going there, and its keys and certificates set here are forgotten.', 'Take it away', function () {
+      confirmThen('Take the destination ' + String(t.name || '') + ' away?', 'Nothing is deleted on the server; backups simply stop going there, and its keys and certificates set here are forgotten.', 'Take it away', function () {
         api('rbackup', {action: 'delete', id: t.id}).then(function (x) { toast(x.message, 'good'); loadRbackup(); }).catch(oops);
       });
     };
@@ -39529,7 +39565,7 @@ function rbSshBlock(body, t, f, cur) {
     P.below.appendChild(rbCopyme("mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '" + t.pub + "' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"));
   }
   mk.onclick = function () {
-    rbConfirm(cur, t.kind, 'Make a key for ' + htmlText((f.name && f.name.value) || t.name || 'this destination'),
+    rbConfirm(cur, t.kind, 'Make a key for ' + String((f.name && f.name.value) || t.name || 'this destination'),
       'A fresh ed25519 pair is made here. The private half stays on this machine and the public half is shown for you to put on the server.' + (has ? '<br><br><b>The key kept now is replaced</b>, so until the new public half is on the server, backups cannot sign in there.' : ''),
       'Make one', function () {
         return api('rbackup', {action: 'keygen', id: cur.id}).then(function () { toast('a new key was made — put the public half on the server', 'good'); });
@@ -39803,7 +39839,7 @@ function rbListThere(t) {
         a.appendChild(pb);
         var del = iconButton('trash', 'Delete it there');
         del.onclick = function () {
-          confirmThen('Delete ' + htmlText(fl.name) + '?', 'It is deleted at ' + htmlText(t.name) + ', with its checksum and its RESTORE.md.', 'Delete it', function () {
+          confirmThen('Delete ' + String(fl.name || '') + '?', 'It is deleted at ' + htmlText(t.name) + ', with its checksum and its RESTORE.md.', 'Delete it', function () {
             api('rbackup', {action: 'delete_file', id: t.id, name: fl.name}).then(function () { toast('deleted', 'good'); rbListThere(t); }).catch(oops);
           });
         };
@@ -42051,7 +42087,7 @@ if ($('up-drop')) {
     $('up-start').onclick = function () {
       var p = (UP.last || {}).package || {};
       if (p.downgrade) { upGoBack({version: p.version, waiting: true}, $('up-start')); return; }
-      confirmThen('Upgrade this server to ' + htmlText(p.version || '?'),
+      confirmThen('Upgrade this server to ' + String(p.version || '?'),
         'This server is the only one: it is taken out of service first - healthz.php says 503 - '
         + 'then root checks the package again and runs its install.sh --upgrade, and it is brought '
         + 'back once the new version answers. isemon restarts once, for a few seconds: these pages '

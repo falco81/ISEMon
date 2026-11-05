@@ -372,6 +372,31 @@ working.
 
 ## Version
 
+1.10.295
+
+- **A dual certificate is of one name**: the ECDSA certificate put in beside
+  the RSA one - uploaded, or pushed by acme - must hold the RSA one's names
+  (browsers that speak ECDSA are given it), acme's twin must be the other
+  kind of key, and the ECDSA one's own root is kept for when it is
+  downloaded.
+- **Signing in**: a burst of wrong passwords for a name from elsewhere no
+  longer keeps that account out from an address it signed in from before;
+  the address's own count still holds there, and the name's everywhere else.
+- **The session cookie** is `__Host-isemon_session` on TLS, which a page on
+  a neighbouring host of the same domain cannot set; everybody signs in once
+  more after the upgrade.
+- **A GET from another page of the same site, or another site, is refused**:
+  an image on a neighbouring host could have had the operator's browser make
+  a full backup or wait on the router.
+- The counting of a range is refused rather than said back to nought; a
+  certificate ZIP with a damaged entry is said; the password made for a
+  database is shown once, to whoever moved it.
+- The page: a record's words cannot put tags or line breaks into a help
+  panel, nor be taken by the translator for the page's own; a country that
+  is not two letters makes no flag address; a user name in a command to copy
+  is quoted for the shell; names are no longer escaped twice in help panels
+  and popup titles.
+
 1.10.294
 
 - **Root's helper no longer opens a port for another program**: the

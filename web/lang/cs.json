@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.294",
+  "version": "1.10.295",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -17607,6 +17607,10 @@
   "s.one-address-ipv4-or-ipv6-it.20246fad": {
    "source": "One address, IPv4 or IPv6. It does not have to be banned, or even known: whatever is on record for it is shown, and if there is nothing the answer says so.",
    "text": "Jedna adresa, IPv4 nebo IPv6. Nemusí být zablokovaná, ani známá: zobrazí se vše, co je k ní zaznamenáno, a pokud nic, odpověď to řekne."
+  },
+  "s.one-address-not-a-range-the.d3fd9ad6": {
+   "source": "one address, not a range: the counting is of each address",
+   "text": "jedna adresa, ne rozsah: počítá se každá adresa zvlášť"
   },
   "s.one-address-or-a-whole-range.522e167b": {
    "source": "One address or a whole range, written as a prefix. A range covers everything inside it, which is how a whole office is spared with one line.",
