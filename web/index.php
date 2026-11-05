@@ -43985,7 +43985,8 @@ function loadAcmeLog(quiet) {
         && /^(INPUT|SELECT|TEXTAREA)$/.test(act.tagName)) return;
     if (AM.text) amCertsAsk();
     drawAcmeLog();
-    if (!AM.ev) amEvents(true);
+    /* ...and the lines with it, new ones and all (1.10.296). */
+    amEvents(!AM.ev, !!quiet);
   }).catch(function (e) { if (!quiet) oops(e); });
   if (!AM.timer) {
     AM.timer = setInterval(function () {
@@ -44044,8 +44045,8 @@ function drawAcmeLog() {
   host.appendChild(four);
   host.appendChild(amEventsCard());
   amDrawEvents();
-  /* ...with its count and pager, which belong to the answer. */
-  if (AM.ev) setTimeout(function () { amEvents(false, true); }, 0);
+  /* ...with its count and pager, which belong to the answer - asked again
+     by loadAcmeLog, which draws this. */
   explainWhatWasDrawn(host);
 }
 

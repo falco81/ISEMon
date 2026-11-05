@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.295'
+__version__ = '1.10.296'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -17231,7 +17231,9 @@ def acme_fields(text):
             # as it was): what runs to the next key is the value before's
             # (1.10.294) - the rest of the line was lost.
             nxt = ACME_NEXT_KEY.search(text, at)
-            if not nxt or not out or last is None:
+            # Only a quoted value can hold a quote left in it: after a bare
+            # one, what does not read stays not read (1.10.296).
+            if not nxt or not out or last is None or text[last[1]:last[1] + 1] != '"':
                 break
             out[last[0]] = acme_unquote(text[last[1]:nxt.start()])
             at = nxt.end()
@@ -17274,15 +17276,15 @@ def acme_when(m, now=None):
     # The year that puts it nearest now and no later than tomorrow - next
     # year's too, for a node a few seconds ahead at New Year, and a 29
     # February tried in the years that have one (1.10.294).
-    best = None
+    # Newest first: the first that is no later than tomorrow is the nearest.
     for y in (year + 1, year, year - 1, year - 2, year - 3, year - 4):
         try:
             ts = time.mktime(time.strptime('%d %s' % (y, text), '%Y %b %d %H:%M:%S'))
         except (ValueError, OverflowError):
             continue
-        if ts <= now + 86400 and (best is None or abs(now - ts) < abs(now - best)):
-            best = ts
-    return best if best is not None else now
+        if ts <= now + 86400:
+            return ts
+    return now
 
 
 def acme_parse_lines(lines, hold=None, now=None):
@@ -69073,10 +69075,13 @@ def push_install(daemon, body, box, kid):
         if sorted([alt['kind'][:2], main['kind'][:2]]) != ['ec', 'rs']:
             raise PushRefused('bad_request', 400, 'the twin is of the same key type: one ECDSA '
                               'and one RSA')
-        lack = twin_lacks(main['facts'], alt['facts'])
+        # The ECDSA one must hold the RSA one's names, whichever of the two
+        # acme sent as the certificate (1.10.296), as an upload is checked.
+        rsa, ecd = (alt, main) if main['kind'].startswith('ec') else (main, alt)
+        lack = twin_lacks(rsa['facts'], ecd['facts'])
         if lack:
-            raise PushRefused('names', 422, 'the twin does not hold %s, which the certificate '
-                              'does' % ', '.join(lack[:6]))
+            raise PushRefused('names', 422, 'the ECDSA certificate does not hold %s, which the '
+                              'RSA one does' % ', '.join(lack[:6]))
     names = main['facts'].get('names') or []
     if main['facts'].get('cn') and main['facts']['cn'] not in names:
         names = names + [main['facts']['cn']]
@@ -72499,11 +72504,25 @@ class _ImplicitFTP_TLS(ftplib.FTP_TLS):
 class _ReuseMixin(object):
     """The data connection resumes the control connection's TLS session:
     vsftpd, ProFTPD and FileZilla Server refuse one that does not (522)."""
+    pin = ''
+
     def ntransfercmd(self, cmd, rest=None):
         conn, size = ftplib.FTP.ntransfercmd(self, cmd, rest)
         if self._prot_p:
             conn = self.context.wrap_socket(conn, server_hostname=self.host,
                                             session=self.sock.session)
+            # A pinned server's data connection is checked too (1.10.296):
+            # the session it is asked to resume is only asked for, and one
+            # in between could answer it with a certificate of its own.
+            if self.pin:
+                der = conn.getpeercert(True)
+                if not der or hashlib.sha256(der).hexdigest() != self.pin:
+                    try:
+                        conn.close()
+                    except OSError:
+                        pass
+                    raise RbError('the data connection answers with another certificate than '
+                                  'the one pinned')
         return conn, size
 
 
@@ -72565,6 +72584,8 @@ class RbFtp(object):
                 if (t.get('tls_check') == 'pin') and fp != (t.get('pin') or ''):
                     raise RbError('the server answers with another certificate than the one '
                                   'pinned (SHA-256 %s)' % fp)
+                if t.get('tls_check') == 'pin':
+                    self.ftp.pin = fp
             else:
                 self.ftp = ftplib.FTP(timeout=RB_TIMEOUT)
                 self.ftp.connect(t['host'], int(t['port']))
@@ -74140,6 +74161,17 @@ def rb_restore_start(daemon, by, password, upload=None, tid=None, name=None):
                 os.chmod(str(tmp), 0o700)
                 path = tmp / name
                 rb_fetch(daemon.store, t['id'], name, str(path))
+                # From a destination, only a backup isemon locked (1.10.296):
+                # isemon never leaves one there that is not, and the password
+                # opening it is what says it is this site's. A .tar.gz put
+                # there by whoever may write to it would have put a database -
+                # its accounts, its keys - of theirs in. One of your own, made
+                # by hand, is put back by sending the file, or --restore-bundle.
+                with open(str(path), 'rb') as f:
+                    if not f.read(8).startswith(b'Salted__'):
+                        raise RbError('%s at %s is not locked: isemon never leaves a backup there '
+                                      'that is not, so it is not put back from there - send '
+                                      'the file itself if it is yours' % (name, t['name']))
             return rb_restore(daemon.store, str(path), password, by, daemon, progress)
         except RbError:
             # A wrong password, nothing changed: the file sent stays for
@@ -80592,7 +80624,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             res = job.get('result')
             if isinstance(res, dict) and 'password' in res:
                 shown = dict(job, result=dict(res))
-                if job.get('by') == me.get('name'):
+                # Let go only once the job says it is done - the page reads
+                # the result then, and not before (1.10.296).
+                if job.get('by') == me.get('name') and job.get('done'):
                     res.pop('password', None)
                 else:
                     shown['result'].pop('password', None)

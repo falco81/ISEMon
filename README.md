@@ -372,6 +372,28 @@ working.
 
 ## Version
 
+1.10.296
+
+- **Remote backups**: a backup fetched from a destination is put back only
+  if it is locked - isemon never leaves one there that is not, and the
+  password opening it is what says it is this site's; a `.tar.gz` put there
+  by whoever may write to the destination would have put a database of
+  theirs in, accounts and keys and all. One of your own made by hand is put
+  back by sending the file, or with `--restore-bundle`. A pinned FTPS
+  server's data connection is checked against the pin as well.
+- **Upgrades**: a package whose tar header says it is gigabytes long is
+  refused before it is read into memory, before any signature is checked.
+- What the review of the two rounds before found in their own fixes:
+  - the password made for a database is let go only once the job is done,
+    so the page that moved it always gets it;
+  - acme push checks the ECDSA twin against the RSA one whichever of the two
+    it sent first;
+  - SELinux: a port that is rsyslog's in any line of the policy is taken,
+    and a range such as the ephemeral ports is not another service's;
+  - the acme tab's lines are asked again with the rest, on Read again and
+    every minute;
+  - a quote left in a value is recovered only after a quoted one.
+
 1.10.295
 
 - **A dual certificate is of one name**: the ECDSA certificate put in beside

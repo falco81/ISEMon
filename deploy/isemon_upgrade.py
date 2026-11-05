@@ -201,6 +201,44 @@ def inspect(path, extract_to=None):
         raise Refused('the package could not be read: %s' % str(e)[:200])
 
 
+def _headers_bounded(path):
+    """The package's tar headers walked before tarfile reads them (1.10.296):
+    tarfile holds a PAX or a GNU long-name header's whole body in memory, so
+    a small package that said its header was gigabytes long kept root - before
+    any signature was checked - until the machine ran out of memory. A
+    header of that kind longer than 1 MB is refused here."""
+    import gzip
+    seen, walked = 0, 0
+    try:
+        with gzip.open(path, 'rb') as f:
+            while True:
+                head = f.read(512)
+                if len(head) < 512 or head == b'\0' * 512:
+                    return
+                seen += 1
+                if seen > MOST_FILES * 4:
+                    raise Refused('the package holds far too many entries')
+                raw = head[124:136]
+                if raw[:1] and raw[0] & 0x80:
+                    size = int.from_bytes(raw[1:], 'big')
+                else:
+                    text = raw.replace(b'\0', b' ').strip()
+                    size = int(text, 8) if text else 0
+                if head[156:157] in (b'x', b'g', b'L', b'K') and size > 1024 * 1024:
+                    raise Refused('the package has a header far longer than any (%d bytes)' % size)
+                left = (size + 511) // 512 * 512
+                walked += 512 + left
+                if walked > MOST_UNPACKED + 64 * 1024 * 1024:
+                    raise Refused('the package unpacks to more than 256 MB')
+                while left > 0:
+                    got = f.read(min(left, 1 << 20))
+                    if not got:
+                        return
+                    left -= len(got)
+    except (OSError, EOFError, ValueError, zlib.error) as e:
+        raise Refused('the package is damaged: %s' % str(e)[:200])
+
+
 def _inspect(path, extract_to=None):
     """Everything about a package that can be said without trusting it - and
     with extract_to, the package unpacked there once it has passed."""
@@ -210,6 +248,7 @@ def _inspect(path, extract_to=None):
         raise Refused('the package cannot be read: %s' % e)
     if size > MOST_PACKED:
         raise Refused('the package is bigger than 64 MB, which no version of isemon is')
+    _headers_bounded(path)
     try:
         tar = tarfile.open(path, 'r:gz')
     except (tarfile.TarError, OSError, EOFError) as e:

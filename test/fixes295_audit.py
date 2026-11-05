@@ -102,7 +102,7 @@ try:
     a = src.index('def push_install(')
     body = src[a:a + 4000]
     ok('acme push: the twin\'s names checked, and exactly one RSA and one ECDSA',
-       ("twin_lacks(main['facts'], alt['facts'])" in body,
+       ("twin_lacks(rsa['facts'], ecd['facts'])" in body,
         "sorted([alt['kind'][:2], main['kind'][:2]]) != ['ec', 'rs']" in body), (True, True))
 
     print('\nA damaged ZIP')

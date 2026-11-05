@@ -3274,18 +3274,25 @@ def otptls_selinux(port, said):
     # Already a port of the policy's: rsyslog's, or another service's - and
     # that one is never taken away from it (1.10.294; it used to be, `-m`).
     got = subprocess.run(['semanage', 'port', '-l'], capture_output=True, text=True, timeout=120)
+    # rsyslog's already, by any line: nothing to do. Another service's by a
+    # port of its own (not a range such as ephemeral_port_t's, which a port
+    # of ours is labelled over): refused (1.10.296).
+    own = None
     for line in (got.stdout or '').splitlines():
         parts = line.split()
         if len(parts) < 3 or parts[1] != 'tcp':
             continue
         for one in ' '.join(parts[2:]).split(','):
-            one = one.strip()
-            lo, _, hi = one.partition('-')
-            if lo.isdigit() and int(lo) <= port <= int(hi or lo):
-                if parts[0] in ('syslog_tls_port_t', 'syslogd_port_t'):
-                    return
-                raise Refused('SELinux keeps %d/tcp for another service (%s): choose another '
-                              'port' % (port, parts[0]))
+            lo, _, hi = one.strip().partition('-')
+            if not lo.isdigit() or not int(lo) <= port <= int(hi or lo):
+                continue
+            if parts[0] in ('syslog_tls_port_t', 'syslogd_port_t'):
+                return
+            if not hi or int(hi) == int(lo):
+                own = parts[0]
+    if own:
+        raise Refused('SELinux keeps %d/tcp for another service (%s): choose another port'
+                      % (port, own))
 
 
 def otptls_apply(r):
