@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.288",
+  "version": "1.10.289",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -37418,10 +37418,6 @@
    "source": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen.",
    "text": "Co acme dělal za posledních {0}: aktivita, selhání, počty. Certifikáty jsou ukázané tak, jak jsou teď, ať je zvoleno cokoli."
   },
-  "p.what-acme-s-nodes-send-settings.e053af0a": {
-   "source": "{0}, {1} - what acme's nodes send (Settings → The acme logs{2})",
-   "text": "{0}, {1} - co posílají uzly acme (Nastavení → Logy acme{2})"
-  },
   "p.what-active-directory-says-about-this.3f72e1e4": {
    "source": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory.",
    "text": "Co o tomto účtu právě teď říká Active Directory: kdo to je, ve kterých skupinách je, zda je účet vypnutý, uzamčený nebo vypršelý a kdy bylo naposledy nastaveno heslo. Dotaz jde na adresář, který obsahuje {0}; nic zde nikdy do adresáře nezapisuje."
@@ -39473,6 +39469,10 @@
   "p.was-restarted-and-has-not-answered.da13ad98": {
    "source": "{0} was restarted and has not answered since - see journalctl -u {1}",
    "text": "{0} byl restartován a od té doby neodpovídá – viz journalctl -u {1}"
+  },
+  "p.what-acme-s-nodes-send-settings.e053af0a": {
+   "source": "{0}, {1} - what acme's nodes send (Settings → The acme logs{2})",
+   "text": "{0}, {1} - co posílají uzly acme (Nastavení → Logy acme{2})"
   },
   "p.where-this-machine-reaches-over-ssh.7c244ded": {
    "source": "Where this machine reaches {0} over ssh. The two halves of a pair are two different machines and two different addresses.",

@@ -259,9 +259,11 @@ try:
     items = {i['key']: i for i in wr.auto_rules(look=look_, access={'dashboard': {'any': True}})}
     a = items.get('acmetls')
     ok('there, called what it is', (a or {}).get('title'), 'acme - the certificate manager')
-    ok('...its TLS port and the plain ones its nodes send to',
-       sorted({(r['proto'], r['port']) for r in a['rules']}),
-       [('tcp', '514'), ('tcp', '6516'), ('udp', '514')])
+    ok('...its TLS port alone - the plain 514 is The logs arriving\'s (1.10.289)',
+       sorted({(r['proto'], r['port']) for r in a['rules']}), [('tcp', '6516')])
+    ok('...and 514 still let in there', sorted({(r['proto'], r['port']) for r in
+                                                items['logs']['rules']}),
+       [('tcp', '514'), ('udp', '514')])
     ok('...its TLS port no longer one of the logs arriving',
        '6516' in {r['port'] for r in items['logs']['rules']}, False)
     ok('...otp\'s as it was', sorted({r['port'] for r in items['otptls']['rules']}), ['6514'])
@@ -269,14 +271,18 @@ try:
     fw['acmetls'] = {'any': False, 'from': ['192.0.2.10/32']}
     a = {i['key']: i for i in wr.auto_rules(look=look_, fw=fw,
                                             access={'dashboard': {'any': True}})}['acmetls']
-    ok('only from acme\'s nodes: each port from each of them',
-       sorted({(r['port'], r['source']) for r in a['rules']}),
-       [('514', '192.0.2.10/32'), ('6516', '192.0.2.10/32')])
+    ok('only from acme\'s nodes: its port from each of them',
+       sorted({(r['port'], r['source']) for r in a['rules']}), [('6516', '192.0.2.10/32')])
     ok('a tile that can be turned off', 'acmetls' in isemon.WebRoot.AUTO)
     isemon.CONFIG['acmelog'] = 0
     items = {i['key'] for i in wr.auto_rules(look={'rsyslog': look_['rsyslog'][:2]},
                                              access={'dashboard': {'any': True}})}
     ok('not there while acme is not read and has no port of its own', 'acmetls' in items, False)
+    isemon.CONFIG['acmelog'] = 1
+    a = {i['key']: i for i in wr.auto_rules(look={'rsyslog': look_['rsyslog'][:2]},
+                                            access={'dashboard': {'any': True}})}['acmetls']
+    ok('read, no TLS yet: there, letting nothing in, saying why',
+       (a['rules'], 'no port of its own yet' in a['why']), ([], True))
     isemon.CONFIG['acmelog'] = 1
     try:
         wr.firewall_save({'acmetls': {'any': False, 'from': []}}, 'test')

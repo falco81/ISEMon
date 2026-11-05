@@ -117,10 +117,11 @@ Then in acme: `isemon_targets=<this machine>:6514/tls` (and
 Where isemon's own firewall is on (Settings → Firewall and access), *What
 isemon lets in by itself* has a tile **acme - the certificate manager**
 while acme's logs are read or acme's encrypted receiving is set up: the TLS
-port of that receiver and the plain syslog port (514) its nodes send to
-until they are switched over - from anywhere, or only from acme's nodes
-named there. The rules are put in by themselves (the firewall is compared
-every minute with what it should be); turned off, the tile lets nothing in.
+port of that receiver alone - from anywhere, or only from acme's nodes named
+there. The plain syslog port (514) that nodes not switched over yet send to
+is let in by *The logs arriving (rsyslog)*, as every other log's. The rules
+are put in by themselves (the firewall is compared every minute with what it
+should be); turned off, the tile lets nothing in.
 
 ## 6. The acme tab
 

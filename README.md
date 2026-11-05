@@ -372,6 +372,14 @@ working.
 
 ## Version
 
+1.10.289
+
+- **The firewall's acme tile lets in what is set for acme and nothing
+  else**: the port of acme's encrypted receiving (Settings → The acme logs →
+  Encrypted receiving). 1.10.288 put the plain syslog port 514 in it as well,
+  which *The logs arriving (rsyslog)* lets in already; read but with no
+  encrypted receiving yet, the tile says so and lets nothing in of its own.
+
 1.10.288
 
 - **acme's jobs, step by step** - the third program acme 1.0.44 sends

@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.288",
-  "made": "2026-11-04",
+  "version": "1.10.289",
+  "made": "2026-11-05",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -37417,10 +37417,6 @@
   "p.what-acme-did-over-the-last.cc066c22": {
    "source": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen.",
    "text": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen."
-  },
-  "p.what-acme-s-nodes-send-settings.e053af0a": {
-   "source": "{0}, {1} - what acme's nodes send (Settings → The acme logs{2})",
-   "text": "{0}, {1} - what acme's nodes send (Settings → The acme logs{2})"
   },
   "p.what-active-directory-says-about-this.3f72e1e4": {
    "source": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory.",

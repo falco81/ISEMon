@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.288'
+__version__ = '1.10.289'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -66129,9 +66129,10 @@ class WebRoot(object):
                                      else 'only from the nodes named'),
                           'rules': rules, 'senders': ot})
         # acme's logs (1.10.288): there when Settings → The acme logs is on or
-        # rsyslog has acme's encrypted input - its TLS port, and the plain
-        # syslog port its nodes send to until they are switched over, from
-        # anywhere unless acme's nodes are named.
+        # rsyslog has acme's encrypted input - and what it lets in is that
+        # input's port alone, the one set under Encrypted receiving (1.10.289;
+        # 1.10.288 put the plain 514 in as well, which The logs arriving lets
+        # in already), from anywhere unless acme's nodes are named.
         reading = False
         try:
             reading = bool(self.daemon.acmelog_on())
@@ -66139,25 +66140,26 @@ class WebRoot(object):
             pass
         if atls or reading:
             at = fw['acmetls']
-            plain = [p for p in ports if str(p.get('port')) == '514'][:2]
             rules = []
-            for p in atls[:4] + plain:
-                note = ('the acme logs over TLS (tcp %s)' % p.get('port')) if p in atls \
-                    else 'the acme logs (%s %s)' % (p.get('proto'), p.get('port'))
+            for p in atls[:4]:
+                note = 'the acme logs over TLS (tcp %s)' % p.get('port')
                 if at['any'] or not at['from']:
-                    rules += both(p.get('proto') or 'tcp', str(p.get('port')), '', note)
+                    rules += both('tcp', str(p.get('port')), '', note)
                 else:
                     for n in at['from']:
-                        rules += both(p.get('proto') or 'tcp', str(p.get('port')), n, note)
-            said = ', '.join(['tcp %s (TLS)' % p.get('port') for p in atls[:4]] +
-                             ['%s %s' % (p.get('proto'), p.get('port')) for p in plain])
+                        rules += both('tcp', str(p.get('port')), n, note)
+            if atls:
+                why = 'tcp %s, %s - rsyslog\'s encrypted input for acme\'s nodes (Settings → ' \
+                      'The acme logs → Encrypted receiving)' % (
+                          ','.join(str(p.get('port')) for p in atls[:4]),
+                          'from anywhere' if at['any'] or not at['from']
+                          else 'only from acme\'s nodes named')
+            else:
+                why = 'no port of its own yet - set up Encrypted receiving under Settings → ' \
+                      'The acme logs; until then acme\'s nodes send to the plain port, which ' \
+                      'The logs arriving lets in'
             items.append({'key': 'acmetls', 'title': 'acme - the certificate manager',
-                          'why': '%s, %s - what acme\'s nodes send (Settings → The acme logs%s)'
-                                 % (said or 'no port of its own yet',
-                                    'from anywhere' if at['any'] or not at['from']
-                                    else 'only from acme\'s nodes named',
-                                    ' → Encrypted receiving' if atls else ''),
-                          'rules': rules, 'senders': at})
+                          'why': why, 'rules': rules, 'senders': at})
         # The time served to the networks set under Settings → Time (1.10.228).
         nc = self._meta('ntp_conf', {})
         if nc.get('manage') and nc.get('allow'):
