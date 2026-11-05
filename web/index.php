@@ -1445,6 +1445,11 @@ function srcText(el) {
 <meta name="theme-color" content="#0d1117">
 <title><?= h($title) ?> — <?= h($host) ?></title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<?php /* The icon of a shortcut on a home screen (1.10.302): Safari on an iPad
+         or an iPhone takes no SVG for it, and without this drew a picture of
+         the page. Opaque, square - the corners are rounded by the device. */ ?>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="isemon">
 <style nonce="<?= h($nonce) ?>">
   /* Hidden for the moment the words are being swapped into the chosen
      language, so English never flashes first (and never longer: the page

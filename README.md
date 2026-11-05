@@ -372,6 +372,14 @@ working.
 
 ## Version
 
+1.10.302
+
+- **An icon on the home screen**: a shortcut added from Safari on an iPad
+  or an iPhone (Share → Add to Home Screen) now has isemon's own icon,
+  named "isemon". Before, it showed a picture of the page.
+  `./install.sh --upgrade` (or an upgrade from the web) puts the icon in
+  place.
+
 1.10.301
 
 - **The performance meter**:

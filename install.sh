@@ -1717,6 +1717,7 @@ if [[ -n "$DO_UPGRADE" ]]; then
         # before it reaches anything that could explain why.
         run install -D -m 0644 "$SOURCE_DIR/web/.user.ini" "$WEB_DIR/.user.ini"
         run install -D -m 0644 "$SOURCE_DIR/web/favicon.svg" "$WEB_DIR/favicon.svg"
+        run install -D -m 0644 "$SOURCE_DIR/web/apple-touch-icon.png" "$WEB_DIR/apple-touch-icon.png"
         run rm -rf "$WEB_DIR/flags"
         run cp -r "$SOURCE_DIR/web/flags" "$WEB_DIR/flags"
         # The languages of the page. Ours are put there afresh; a file
@@ -2182,6 +2183,7 @@ if [[ -n "$WITH_WEB" ]]; then
     run install -D -m 0644 "$SOURCE_DIR/web/acme.php" "$WEB_DIR/acme.php"
     run install -D -m 0644 "$SOURCE_DIR/web/.user.ini" "$WEB_DIR/.user.ini"
     run install -D -m 0644 "$SOURCE_DIR/web/favicon.svg" "$WEB_DIR/favicon.svg"
+    run install -D -m 0644 "$SOURCE_DIR/web/apple-touch-icon.png" "$WEB_DIR/apple-touch-icon.png"
     run rm -rf "$WEB_DIR/flags"
     run cp -r "$SOURCE_DIR/web/flags" "$WEB_DIR/flags"
     if [[ -d "$SOURCE_DIR/web/lang" ]]; then
