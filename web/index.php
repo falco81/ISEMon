@@ -4686,6 +4686,11 @@ function srcText(el) {
   .hl-panel .hp-core-top{white-space:nowrap}
   
   .hl-panel .small,.hl-pickers .small,.hl-panel.small{font-size:12px}
+  /* The slide of a graph (1.10.301): one animation of its line, at the
+     speed time passes; drawn again only when a reading arrives. */
+  @keyframes hl-slide{from{transform:translateX(0)}to{transform:translateX(var(--hl-d))}}
+  .hl-slide{animation:hl-slide 15s linear forwards}
+  @media (prefers-reduced-motion:reduce){.hl-slide{animation:none}}
   /* nothing at 0 %: a round cap drew a dot there (1.10.300) */
   .hl-ring-fg[stroke-dasharray^="0.0 "],.hp-ring-fg[stroke-dasharray^="0.0 "]{stroke:transparent}
   /* isemon's header holds more than ai's: the meter beside the state of the
@@ -33626,7 +33631,7 @@ function meDrawGroups(cell, label, found, gives, live) {
    The performance meter of the header (1.10.297, from ai 1.0.72-1.0.76)
    --------------------------------------------------------------------------
    How busy this server is - CPU, memory, the disks, the network - for a
-   full admin, every 3 s while the page is shown and live. Off unless they
+   full admin, every 5 s while the page is shown and live. Off unless they
    switch it on for themselves under Your account; off, nothing is asked of
    the daemon at all. Pointed at, a number opens its details, which are read
    only while they are open.
@@ -33639,7 +33644,7 @@ function hlSave(change) {
   });
 }
 
-/* How busy the server is, beside running (1.0.72): every 3 s while the page
+/* How busy the server is, beside running (1.0.72): every 5 s while the page
    is shown and live, nothing while it is hidden; the daemon reads /proc only
    when asked. CPU, memory, the disks, the network. */
 var HLOAD = {timer: null, busy: false};
@@ -33655,15 +33660,42 @@ function hloadRate(n) {
 /* Four looks to choose from (1.0.72): pills with a bar, one plain line,
    small graphs of the last two minutes, rings. */
 var HLOAD_KEEP = 40;
-function hloadSpark(vals, max, cls) {
-  var w = 56, h = 18, n = vals.length;
-  var svg = '<svg class="hl-spark ' + (cls || '') + '" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" preserveAspectRatio="none" aria-hidden="true">';
-  if (n > 1) {
-    var top = Math.max(max || 0, 1);
-    var pts = vals.map(function (v, i) { return (i * w / (HLOAD_KEEP - 1)).toFixed(1) + ',' + (h - 1 - (h - 2) * Math.min(1, (v || 0) / top)).toFixed(1); });
-    svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
-  }
-  return svg + '</svg>';
+/* The graphs are drawn by time (1.10.301): each reading where its moment is
+   in the last two minutes, and the whole line slid to the left by ONE SVG
+   animation per graph - smoothly, at the speed time passes, with nothing
+   redrawn by a timer. It is drawn again only when a reading arrives (every
+   5 s), from where the slide had got to, so it never jumps. */
+var HL_SPAN = 120, HL_SLIDE = 15;
+function hlNow() {
+  if (HLOAD.still) return hpSample().at;
+  return Date.now() / 1000 + (HLOAD.skew || 0);
+}
+function hlPts(k) { return ((HLOAD.hist || {})[k]) || []; }
+function hlTop(list, floor) {
+  var top = floor || 1;
+  list.forEach(function (p) { if ((p.v || 0) > top) top = p.v; });
+  return top;
+}
+function hlTrace(list, w, h, top, fill, sw, pad) {
+  var now = hlNow(), from = now - HL_SPAN;
+  var pts = list.filter(function (p) { return p.t >= from - HL_SLIDE - 10; }).map(function (p) {
+    return [w * (p.t - from) / HL_SPAN, h - 1 - (h - pad) * Math.min(1, (p.v || 0) / Math.max(top, 1))];
+  });
+  if (pts.length < 2) return '';
+  var line = pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ');
+  var out = HLOAD.still ? '<g>' : '<g class="hl-slide" style="--hl-d:'
+    + (-w * HL_SLIDE / HL_SPAN).toFixed(2) + 'px;animation-duration:' + HL_SLIDE + 's">';
+  if (fill) out += '<polygon points="' + pts[0][0].toFixed(1) + ',' + h + ' ' + line + ' '
+    + pts[pts.length - 1][0].toFixed(1) + ',' + h + '" fill="currentColor" opacity=".16"/>';
+  out += '<polyline points="' + line + '" fill="none" stroke="currentColor" stroke-width="' + sw
+    + '" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
+  return out + '</g>';
+}
+function hloadSpark(list, max, cls) {
+  var w = 56, h = 18;
+  return '<svg class="hl-spark ' + (cls || '') + '" viewBox="0 0 ' + w + ' ' + h + '" width="' + w
+    + '" height="' + h + '" preserveAspectRatio="none" aria-hidden="true">'
+    + hlTrace(list, w, h, max, false, 1.4, 2) + '</svg>';
 }
 function hlVal(v) {
   var s = noI18n(el('span', 'hl-v'));
@@ -33683,19 +33715,28 @@ function hloadDraw(d, into, asLook) {
   if (!host) return;
   var hist;
   var mp = d.mem_total ? 100 * d.mem_used / d.mem_total : null;
-  if (preview) hist = hpSample().hist;
+  var stillWas = HLOAD.still;
+  if (preview) { hist = hpSample().hist; HLOAD.still = true; }
   else {
     HLOAD.last = d;
+    /* The server's clock, which the readings are stamped with. */
+    if (d.now) HLOAD.skew = d.now - Date.now() / 1000;
     hist = HLOAD.hist || (HLOAD.hist = {cpu: [], mem: [], disk: [], net: []});
-    var push = function (k, v) { hist[k].push(v || 0); if (hist[k].length > HLOAD_KEEP) hist[k].shift(); };
+    var push = function (k, t, v) {
+      var a = hist[k];
+      if (!t || (a.length && a[a.length - 1].t >= t)) return;
+      a.push({t: t, v: v || 0});
+      while (a.length && a[0].t < t - HL_SPAN - 60) a.shift();
+    };
     if (d.hist && d.hist.length) {
-      /* The last two minutes as the server kept them (1.10.298): after F5
-         the graphs go on where they were, the reading just made among them. */
+      /* The last two minutes as the daemon wrote them down: after F5 (or a
+         restart of it) the graphs go on where they were. */
       hist = HLOAD.hist = {cpu: [], mem: [], disk: [], net: []};
-      d.hist.slice(-HLOAD_KEEP).forEach(function (h) {
-        push('cpu', h.cpu); push('mem', h.mem); push('disk', h.disk); push('net', h.net);
+      d.hist.forEach(function (h) {
+        push('cpu', h.at, h.cpu); push('mem', h.at, h.mem); push('disk', h.at, h.disk); push('net', h.at, h.net);
       });
-    } else if (d.cpu !== undefined) { push('cpu', d.cpu); push('mem', mp); push('disk', (d.disk_rd || 0) + (d.disk_wr || 0)); push('net', (d.net_rx || 0) + (d.net_tx || 0)); }
+    }
+    if (d.cpu !== undefined && d.at) { push('cpu', d.at, d.cpu); push('mem', d.at, mp); push('disk', d.at, (d.disk_rd || 0) + (d.disk_wr || 0)); push('net', d.at, (d.net_rx || 0) + (d.net_tx || 0)); }
   }
   var look = asLook || HLOAD.look || 'graphs';
   host.className = 'hload look-' + look + (preview ? ' hl-preview' : '');
@@ -33745,7 +33786,7 @@ function hloadDraw(d, into, asLook) {
       }
       if (look === 'graphs') {
         var g = el('span', 'hl-g');
-        var vals = hist[x[2]], max = x[4] || Math.max.apply(null, vals.concat([1024]));
+        var vals = hist[x[2]], max = x[4] || hlTop(vals, 1024);
         g.innerHTML = hloadSpark(vals, max);
         c.appendChild(g);
       }
@@ -33759,20 +33800,22 @@ function hloadDraw(d, into, asLook) {
     });
   }
   host.hidden = false;
+  HLOAD.still = stillWas;
   if (!preview && HLOAD.open) hloadPanelDraw();
 }
 /* Sample numbers for the previews in My account: a server with sensors, so
    every part shows (1.0.75). */
 function hpSample() {
   if (HLOAD.sample) return HLOAD.sample;
-  var h = {cpu: [], mem: [], disk: [], net: []};
+  var h = {cpu: [], mem: [], disk: [], net: []}, at = Date.now() / 1000;
   for (var i = 0; i < HLOAD_KEEP; i++) {
-    h.cpu.push(48 + 28 * Math.sin(i / 4)); h.mem.push(30 + i * 0.15);
-    h.disk.push((1 + Math.sin(i / 4 + 1)) * 9e7); h.net.push((1 + Math.sin(i / 4 + 2)) * 7e6);
+    var t = at - (HLOAD_KEEP - 1 - i) * 3;
+    h.cpu.push({t: t, v: 48 + 28 * Math.sin(i / 4)}); h.mem.push({t: t, v: 30 + i * 0.15});
+    h.disk.push({t: t, v: (1 + Math.sin(i / 4 + 1)) * 9e7}); h.net.push({t: t, v: (1 + Math.sin(i / 4 + 2)) * 7e6});
   }
   var cores = [[96, 3900, 71], [12, 1200, 48], [88, 3800, 69], [4, 800, 46], [61, 3400, 62], [9, 1100, 47], [100, 4100, 84], [22, 2000, 51]]
     .map(function (c, n) { return {n: n, busy: c[0], mhz: c[1], temp: c[2]}; });
-  HLOAD.sample = {hist: h,
+  HLOAD.sample = {hist: h, at: at,
     last: {cpu: 49, mem_used: 9.8e9, mem_total: 33.5e9, disk_rd: 190e6, disk_wr: 48e6, net_rx: 12.6e6, net_tx: 1.5e6, cores: 8, load: [3.92, 3.1, 2.71], over_s: 3},
     detail: {cores: cores, model: 'AMD Ryzen 7 5800X 8-Core Processor', temps: {cpu: [['Tctl', 73]], cores: {}, other: []},
       disks: [{name: 'nvme0n1', size: 1e12, model: 'Samsung SSD 980 PRO', rd: 190e6, wr: 48e6, util: 38, temp: 44},
@@ -33820,13 +33863,14 @@ function hlPreviewPanel(sw, st) {
     sw.appendChild(t);
     return;
   }
-  var smp = hpSample(), keep = [HLOAD.last, HLOAD.detail, HLOAD.hist, HLOAD.open];
+  var smp = hpSample(), keep = [HLOAD.last, HLOAD.detail, HLOAD.hist, HLOAD.open, HLOAD.still];
   HLOAD.last = smp.last; HLOAD.detail = smp.detail; HLOAD.hist = smp.hist; HLOAD.open = 'cpu';
+  HLOAD.still = true;
   var p = el('div', 'hl-panel hp-' + st + ' hl-prevpanel');
   p.style.width = (st === 'wide' ? 1180 : (st === 'table' ? 420 : 470)) + 'px';
   try {
     if (st === 'table') hpTable(p, 'cpu'); else if (st === 'map') hpMap(p, 'cpu'); else if (st === 'wide') hpWide(p); else hpTiles(p, 'cpu');
-  } finally { HLOAD.last = keep[0]; HLOAD.detail = keep[1]; HLOAD.hist = keep[2]; HLOAD.open = keep[3]; }
+  } finally { HLOAD.last = keep[0]; HLOAD.detail = keep[1]; HLOAD.hist = keep[2]; HLOAD.open = keep[3]; HLOAD.still = keep[4]; }
   var inner = el('div', 'hl-scale hl-scale-p' + (st === 'wide' ? ' wide' : ''));
   inner.appendChild(p);
   sw.appendChild(inner);
@@ -33927,21 +33971,15 @@ function hloadPanelDraw() {
 }
 var HP_TITLE = {cpu: 'The processor', mem: 'Memory', disk: 'The disks', net: 'The network'};
 function hpMax(k) {
-  var vals = (HLOAD.hist || {})[k] || [];
-  return (k === 'cpu' || k === 'mem') ? 100 : Math.max.apply(null, vals.concat([1024]));
+  return (k === 'cpu' || k === 'mem') ? 100 : hlTop(hlPts(k), 1024);
 }
 /* a filled graph of the last two minutes, as wide as its box */
 function hpArea(k, h, grid) {
-  var vals = (HLOAD.hist || {})[k] || [], w = 400, top = Math.max(hpMax(k), 1);
+  var w = 400, top = Math.max(hpMax(k), 1);
   var box = el('div', 'hp-area hl-' + k);
   var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none" aria-hidden="true">';
   if (grid) [0.25, 0.5, 0.75].forEach(function (g) { svg += '<line x1="0" x2="' + w + '" y1="' + h * g + '" y2="' + h * g + '" class="hp-grid" vector-effect="non-scaling-stroke"/>'; });
-  if (vals.length > 1) {
-    var pts = vals.map(function (v, i) { return (i * w / (HLOAD_KEEP - 1)).toFixed(1) + ',' + (h - 1 - (h - 3) * Math.min(1, (v || 0) / top)).toFixed(1); });
-    var last = ((vals.length - 1) * w / (HLOAD_KEEP - 1)).toFixed(1);
-    svg += '<polygon points="0,' + h + ' ' + pts.join(' ') + ' ' + last + ',' + h + '" fill="currentColor" opacity=".16"/>';
-    svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
-  }
+  svg += hlTrace(hlPts(k), w, h, top, true, 1.6, 3);
   box.innerHTML = svg + '</svg>';
   return box;
 }
@@ -34216,8 +34254,8 @@ function hpTiles(p, k) {
   var head = el('div', 'hp-head');
   head.appendChild(el('b', '', {cpu: 'The processor', mem: 'Memory', disk: 'The disks', net: 'The network'}[k]));
   var big = el('div', 'hp-graph');
-  var vals = (HLOAD.hist || {})[k] || [];
-  var max = (k === 'cpu' || k === 'mem') ? 100 : Math.max.apply(null, vals.concat([1024]));
+  var vals = hlPts(k);
+  var max = (k === 'cpu' || k === 'mem') ? 100 : hlTop(vals, 1024);
   big.innerHTML = hloadSpark(vals, max).replace('width="56" height="18"', 'width="100%" height="54"');
   big.classList.add('hl-' + k);
   var scale = el('span', 'hp-scale muted small', k === 'cpu' || k === 'mem' ? '100 %' : hloadRate(max));
@@ -34327,8 +34365,9 @@ function hloadLoop() {
   if (!$('hload')) return;
   clearInterval(HLOAD.timer);
   hloadTick();
-  setTimeout(hloadTick, 1200);      /* the first rate needs a second reading */
-  HLOAD.timer = setInterval(hloadTick, 3000);
+  setTimeout(hloadTick, 1500);      /* the first rate needs a second reading */
+  /* As often as the daemon reads (1.10.301): every 5 s. */
+  HLOAD.timer = setInterval(hloadTick, 5000);
 }
 document.addEventListener('visibilitychange', function () { if (!document.hidden) hloadTick(); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && HLOAD.open) hloadPanelClose(); });
@@ -34447,7 +34486,7 @@ function showMe() {
       var meter = el('div', 'me-sec');
       meter.appendChild(el('h3', '', 'Performance meter'));
       meter.appendChild(el('div', 'me-say', 'How busy this server is - the processor, memory, '
-        + 'the disks and the network - in the header, every 3 s while the page is shown. How it '
+        + 'the disks and the network - in the header, every 5 s while the page is shown. How it '
         + 'looks is yours alone; not shown, nothing is asked of the server at all. For everybody '
         + 'it is switched on and off under Settings → About.'));
       hloadPickers(meter);

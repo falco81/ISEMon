@@ -5,9 +5,9 @@
   admin, off unless they choose a look under Your account; off, the page
   asks the daemon nothing.
 - GET /api/load: the summary, `detail=1` each core, sensor, disk, card and
-  the processes taking most, `hist=1` the last two minutes - kept by the
-  daemon from the readings asked for anyway, so after F5 the graphs go on
-  where they were rather than starting again.
+  the processes taking most, `hist=1` the last two minutes - read by the
+  daemon every 5 s while a page shows it and written down (1.10.301), so
+  after F5 the graphs go on where they were rather than starting again.
 
     ./test/fixes298_meter.py
 """
@@ -40,27 +40,53 @@ work = Path(tempfile.mkdtemp(prefix='isemon-298-'))
 try:
     print('What the daemon reads')
     isemon.LOAD_LAST.update(at=0.0, raw=None, out=None)
-    isemon.LOAD_HIST.clear()
     first = isemon.api_load()
     ok('the first ask: no rates yet, the memory there',
        ('cpu' in first, bool(first.get('mem_total'))), (False, True))
     time.sleep(1.1)
     two = isemon.api_load()
     ok('...the second: the processor, the disks and the network as rates',
-       all(k in two for k in ('cpu', 'disk_rd', 'disk_wr', 'net_rx', 'net_tx', 'over_s')))
-    ok('...and one reading kept for the graphs', len(isemon.load_history()), 1)
-    time.sleep(1.1)
-    isemon.api_load()
-    ok('readings closer than 2.5 s apart are one in the graphs', len(isemon.load_history()), 1)
-    isemon.LOAD_HIST[-1]['at'] -= 3
-    time.sleep(1.1)
-    got = isemon.api_load(hist=True)
-    ok('...further apart, two - handed back with hist=1, oldest first',
-       (len(got['hist']), got['hist'][0]['at'] < got['hist'][1]['at']), (2, True))
-    ok('...each with what the four graphs draw', sorted(got['hist'][-1]),
-       ['at', 'cpu', 'disk', 'mem', 'net'])
-    isemon.LOAD_HIST[0]['at'] -= 600
-    ok('older than two minutes: not handed back', len(isemon.load_history()), 1)
+       all(k in two for k in ('cpu', 'disk_rd', 'disk_wr', 'net_rx', 'net_tx', 'over_s', 'now')))
+
+    print('\nRead by the daemon while a page shows it, written down (1.10.301)')
+    state = work / 'state'
+    state.mkdir()
+    for k, v in dict(STATE_DIR=state, DB_FILE=state / 'd.db', RUN_DIR=state, LOG_DIR=state,
+                     CONFIG_FILE=state / 'config.json', _LOG_PATH=state / 'd.log').items():
+        setattr(isemon, k, v)
+    (state / 'config.json').write_text('{"db_engine": "sqlite"}')
+    isemon.CONFIG.clear()
+    isemon.CONFIG.update(isemon.DEFAULTS)
+    isemon.CONFIG.update({'geo': 0, 'mikrotik1': 0, 'perf_meter': 1})
+    store = isemon.Storage(isemon.DB_FILE)
+    isemon.LOAD_EVERY, isemon.LOAD_IDLE = 0.5, 2.0
+    got = isemon.api_load(hist=True, store=store)
+    ok('a page asks: the daemon starts reading by itself', bool(
+        isemon.LOAD_WATCH['thread'] and isemon.LOAD_WATCH['thread'].is_alive()))
+    time.sleep(1.8)
+    node = isemon.load_node()
+    n1 = len(store.load_history(node, 0))
+    ok('...one small row a reading, in the database', n1 >= 2)
+    got = isemon.api_load(hist=True, store=store)
+    ok('...a page loaded again is handed them, oldest first, each with the four graphs',
+       (len(got['hist']) >= 2, got['hist'][0]['at'] <= got['hist'][-1]['at'],
+        sorted(got['hist'][-1])), (True, True, ['at', 'cpu', 'disk', 'mem', 'net']))
+    ok('...and the newest reading is the daemon\'s own, not read again',
+       got['at'], isemon.LOAD_LAST['out']['at'])
+    time.sleep(3.5)
+    ok('nobody asking: it stops by itself',
+       isemon.LOAD_WATCH['thread'] is None or not isemon.LOAD_WATCH['thread'].is_alive())
+    n2 = len(store.load_history(node, 0))
+    time.sleep(1.2)
+    ok('...and writes nothing more', len(store.load_history(node, 0)), n2)
+    isemon.api_load(store=store)
+    isemon.CONFIG['perf_meter'] = 0
+    time.sleep(1.2)
+    ok('switched off in About: it stops at once',
+       isemon.LOAD_WATCH['thread'] is None or not isemon.LOAD_WATCH['thread'].is_alive())
+    store.load_tidy(time.time() + 1)
+    ok('old rows go', store.load_history(node, 0), [])
+    isemon.LOAD_EVERY, isemon.LOAD_IDLE = 5.0, 45.0
     detail = isemon.api_load(detail=True)['detail']
     ok('the details: each core, the disks, the filesystems, the cards, the processes',
        all(k in detail for k in ('cores', 'disks', 'filesystems', 'nics', 'top_cpu', 'top_mem',
@@ -112,6 +138,9 @@ try:
     ok('after F5 the last two minutes asked for, and drawn from',
        ("(withHist ? '&hist=1' : '')" in page, 'if (d.hist && d.hist.length) {' in page),
        (True, True))
+    ok('the graphs slid by one animation each, drawn again only when a reading comes',
+       ('class="hl-slide"' in page, '@keyframes hl-slide' in page,
+        'HLOAD.timer = setInterval(hloadTick, 5000);' in page), (True, True, True))
     ok('chosen under Your account', 'hloadPickers(meter);' in page)
 finally:
     shutil.rmtree(str(work), ignore_errors=True)

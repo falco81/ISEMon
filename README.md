@@ -372,6 +372,21 @@ working.
 
 ## Version
 
+1.10.301
+
+- **The performance meter**:
+  - **Smooth graphs.** Each graph is drawn by time and slides to the left
+    with one SVG animation, at the speed time passes. It is drawn again
+    only when a reading arrives; no timer redraws it.
+  - **Read by the daemon.** While a page shows the meter, the daemon reads
+    it every 5 s and writes each reading as one small row per node in the
+    database, kept for a quarter of an hour. However many pages are open,
+    that is one reading. After F5, or a restart of the daemon, the graphs
+    go on where they were.
+  - **Stops by itself.** Within 45 s of the page being closed, the reading
+    stops on its own. Switched off in About, it stops at once. Nothing else
+    is read or written.
+
 1.10.300
 
 - **The performance meter** has a switch for the whole server in Settings →

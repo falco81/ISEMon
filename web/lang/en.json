@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.300",
+  "version": "1.10.301",
   "made": "2026-11-05",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -10484,13 +10484,17 @@
    "source": "How busy its processor was at the last look.",
    "text": "How busy its processor was at the last look."
   },
-  "s.how-busy-the-server-is-the.655d4bb9": {
-   "source": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all.",
-   "text": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all."
+  "s.how-busy-the-server-is-the.e071670e": {
+   "source": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 5 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all.",
+   "text": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 5 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all."
   },
-  "s.how-busy-this-server-is-the.9fd3a5dd": {
-   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, every 3 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About.",
-   "text": "How busy this server is - the processor, memory, the disks and the network - in the header, every 3 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About."
+  "s.how-busy-the-server-was-every.4751375e": {
+   "source": "How busy the server was, every 5 s while a page showed the meter in the header - only the last quarter of an hour is ever kept. Erased, its graphs start again from the next reading.",
+   "text": "How busy the server was, every 5 s while a page showed the meter in the header - only the last quarter of an hour is ever kept. Erased, its graphs start again from the next reading."
+  },
+  "s.how-busy-this-server-is-the.5d6715fe": {
+   "source": "How busy this server is - the processor, memory, the disks and the network - in the header, every 5 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About.",
+   "text": "How busy this server is - the processor, memory, the disks and the network - in the header, every 5 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About."
   },
   "s.how-close.3bf92a7e": {
    "source": "How close",
@@ -27831,6 +27835,10 @@
   "s.the-ranges-downloaded-from-the-lists.651ce666": {
    "source": "The ranges downloaded from the lists you have switched on. They are fetched again on the next update, or now with the button on the Lists card.",
    "text": "The ranges downloaded from the lists you have switched on. They are fetched again on the next update, or now with the button on the Lists card."
+  },
+  "s.the-readings-of-the-performance-meter.88525f69": {
+   "source": "the readings of the performance meter",
+   "text": "the readings of the performance meter"
   },
   "s.the-reason-this-address-is-being.edd8356d": {
    "source": "The reason this address is being kept out, written when the ban was made. It is kept word for word so that somebody reading it next Tuesday knows what happened without having to find the records themselves.",

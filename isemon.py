@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.300'
+__version__ = '1.10.301'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -19998,6 +19998,19 @@ CREATE INDEX IF NOT EXISTS acme_jobs_job ON acme_jobs (job, node);
 CREATE INDEX IF NOT EXISTS acme_jobs_event ON acme_jobs (kind, event, ts);
 CREATE INDEX IF NOT EXISTS acme_jobs_cert ON acme_jobs (cert, ts);
 CREATE INDEX IF NOT EXISTS acme_jobs_kind_ts ON acme_jobs (kind, ts);
+
+-- The performance meter of the header (1.10.301): one reading of a node every
+-- 5 s while a page shows it, kept a quarter of an hour - what the graphs of
+-- the last two minutes are drawn from, after F5 and a restart too.
+CREATE TABLE IF NOT EXISTS load_samples (
+    node      TEXT NOT NULL,
+    ts        REAL NOT NULL,
+    cpu       REAL,
+    mem       REAL,
+    disk      REAL,
+    net       REAL
+);
+CREATE INDEX IF NOT EXISTS load_samples_ts ON load_samples (node, ts);
 
 CREATE TABLE IF NOT EXISTS otp_asked (
     ident    TEXT PRIMARY KEY,  -- server/second/port: one transaction, once
@@ -42960,6 +42973,28 @@ class Storage(object):
                            (name, json.dumps(have, separators=(',', ':')), time.time()))
         return have
 
+    # ---- the performance meter's readings (1.10.301) ------------------------
+    def load_note(self, node, p):
+        with self.db_write() as db:
+            db.execute('INSERT INTO load_samples (node, ts, cpu, mem, disk, net) '
+                       'VALUES (?,?,?,?,?,?)',
+                       (str(node)[:100], float(p['at']), p.get('cpu'), p.get('mem'),
+                        float(p.get('disk') or 0), float(p.get('net') or 0)))
+
+    def load_history(self, node, since):
+        """The readings of one node since a moment, oldest first."""
+        try:
+            return [{'at': float(r['ts']), 'cpu': r['cpu'], 'mem': r['mem'], 'disk': r['disk'],
+                     'net': r['net']} for r in self.db.execute(
+                'SELECT ts, cpu, mem, disk, net FROM load_samples WHERE node = ? AND ts >= ? '
+                'ORDER BY ts LIMIT 400', (str(node)[:100], float(since))).fetchall()]
+        except sqlite3.Error:
+            return []
+
+    def load_tidy(self, before):
+        with self.db_write() as db:
+            db.execute('DELETE FROM load_samples WHERE ts < ?', (float(before),))
+
     def cols_counted(self):
         """How many tables each person has laid out, for the accounts page."""
         out = {}
@@ -43211,7 +43246,7 @@ class Storage(object):
         """
         out = {}
         for table in ('failed', 'passed', 'win_events', 'win_rollup', 'seen_values',
-                      'otp_asked', 'acme_events', 'acme_jobs', 'eduroam_seen', 'fw_events',
+                      'otp_asked', 'acme_events', 'acme_jobs', 'load_samples', 'eduroam_seen', 'fw_events',
                       'fw_roll', 'fw_ready',
                       'blocked', 'blocked_log', 'block_events',
                       'events', 'feed_ranges', 'geo_ranges', 'ptr', 'mac_vendors',
@@ -43359,6 +43394,13 @@ class Storage(object):
                     'back.',
             'tables': ['acme_events', 'acme_jobs'],
             'reread': ('acmelog',),
+        },
+        'perfmeter': {
+            'name': 'the readings of the performance meter',
+            'says': 'How busy the server was, every 5 s while a page showed the meter in the '
+                    'header - only the last quarter of an hour is ever kept. Erased, its '
+                    'graphs start again from the next reading.',
+            'tables': ['load_samples'],
         },
         'eduroam': {
             'name': 'the records read from the eduroam logs',
@@ -59989,7 +60031,7 @@ class Daemon(object):
         'db_timeout_s': 'How long to wait for that server before giving up on one attempt.',
         'site_name': 'What to call this installation at the top of the page.',
         'perf_meter': 'How busy the server is - the processor, the memory, the disks and the '
-                      'network - beside the state at the top of the page, every 3 s, with the '
+                      'network - beside the state at the top of the page, every 5 s, with the '
                       'cores, the temperatures, the disks and the processes behind each number. '
                       'For the full admins, each choosing for themselves how it looks under Your '
                       'account. Off, nothing of it is read at all.',
@@ -72177,19 +72219,24 @@ def rb_folder(name):
 # How busy this server is, in the header of the page for a full admin who
 # switched it on for themselves (Your account; off unless they do).
 # CPU, memory, the disks read and written, the network in and out - worked
-# out only when a page asks (every 3 s while it is shown), from the kernel's
+# out only when a page asks (every 5 s while it is shown), from the kernel's
 # counters in /proc: no thread of its own, nothing kept but the last
 # counters. Pages asking within the same second share one reading.
 LOAD_LOCK = threading.Lock()
 LOAD_LAST = {'at': 0.0, 'raw': None, 'out': None}
-# The last two minutes of it, as the header's graphs draw them, kept here
-# rather than in the page (1.10.298): a page loaded again - F5 - is handed
-# them with its first answer and goes on drawing where it was, instead of
-# starting from nothing. Made of the readings the pages ask for anyway, one
-# every 2.5 s at most however many pages ask: nothing runs in the background.
-LOAD_HIST = collections.deque(maxlen=60)
-LOAD_HIST_EVERY = 2.5
-LOAD_HIST_SPAN = 125
+# While a page shows the meter, the daemon reads it itself every 5 s and
+# writes each reading down - one small row per node in load_samples - and
+# the pages are handed what it read rather than reading anything of their
+# own (1.10.301): ten pages are one reading, and a page loaded again (F5),
+# or the daemon started again, goes on drawing the graphs where they were.
+# Nobody asking for 45 s - the page closed - it stops by itself; switched
+# off in About, at once. Rows older than a quarter of an hour go.
+LOAD_EVERY = 5.0
+LOAD_IDLE = 45.0
+LOAD_KEEP_S = 900
+LOAD_SPAN = 125
+LOAD_WATCH = {'asked': 0.0, 'thread': None}
+LOAD_WATCH_LOCK = threading.Lock()
 
 
 def _load_raw():
@@ -72565,33 +72612,79 @@ def server_load():
             for k in ('disk_rd', 'disk_wr', 'net_rx', 'net_tx'):
                 out[k] = rate(k)
             out['over_s'] = round(dt, 1)
-            if out.get('cpu') is not None and (
-                    not LOAD_HIST or now - LOAD_HIST[-1]['at'] >= LOAD_HIST_EVERY):
-                mt = out.get('mem_total') or 0
-                LOAD_HIST.append({
-                    'at': round(now, 2), 'cpu': out['cpu'],
-                    'mem': round(100.0 * (out.get('mem_used') or 0) / mt, 1) if mt else None,
-                    'disk': (out.get('disk_rd') or 0) + (out.get('disk_wr') or 0),
-                    'net': (out.get('net_rx') or 0) + (out.get('net_tx') or 0)})
         LOAD_LAST.update(at=now, raw=raw, out=out)
         return out
 
 
-def load_history(now=None):
-    """The readings of the last two minutes, oldest first."""
-    now = now or time.time()
-    with LOAD_LOCK:
-        return [dict(h) for h in LOAD_HIST if now - h['at'] <= LOAD_HIST_SPAN]
+def load_node():
+    """Which node a reading is of: this machine, by its name."""
+    try:
+        return (socket.gethostname() or 'isemon')[:100]
+    except OSError:
+        return 'isemon'
 
 
-def api_load(detail=False, hist=False):
-    """GET /api/load (full admins only): the summary; with ?detail=1 also the
-    details, with ?hist=1 the last two minutes (a page's first ask)."""
-    out = dict(server_load())
+def load_point(out):
+    """A reading as one row of the graphs: the four of them."""
+    mt = out.get('mem_total') or 0
+    return {'at': round(float(out.get('at') or time.time()), 2), 'cpu': out.get('cpu'),
+            'mem': round(100.0 * (out.get('mem_used') or 0) / mt, 1) if mt else None,
+            'disk': (out.get('disk_rd') or 0) + (out.get('disk_wr') or 0),
+            'net': (out.get('net_rx') or 0) + (out.get('net_tx') or 0)}
+
+
+def _load_watching(store):
+    node = load_node()
+    tidied = 0.0
+    wait = 1.0                  # the first rates a second after the first reading
+    while True:
+        time.sleep(wait)
+        wait = LOAD_EVERY
+        if not int(CONFIG.get('perf_meter') or 0) or \
+                time.time() - LOAD_WATCH['asked'] > LOAD_IDLE:
+            break
+        try:
+            out = server_load()
+            if out.get('cpu') is not None:
+                store.load_note(node, load_point(out))
+            if time.time() - tidied > 60:
+                store.load_tidy(time.time() - LOAD_KEEP_S)
+                tidied = time.time()
+        except Exception as e:                          # noqa: BLE001
+            log('the performance meter: %s' % str(e)[:200], 'debug')
+    with LOAD_WATCH_LOCK:
+        if LOAD_WATCH['thread'] is threading.current_thread():
+            LOAD_WATCH['thread'] = None
+
+
+def load_watch(store):
+    """A page shows the meter: the daemon reads it every 5 s until nobody
+    has asked for 45 s. True when it was reading already."""
+    with LOAD_WATCH_LOCK:
+        LOAD_WATCH['asked'] = time.time()
+        t = LOAD_WATCH['thread']
+        if t is not None and t.is_alive():
+            return True
+        t = threading.Thread(target=_load_watching, args=(store,), name='load', daemon=True)
+        LOAD_WATCH['thread'] = t
+        t.start()
+        return False
+
+
+def api_load(detail=False, hist=False, store=None):
+    """GET /api/load (full admins only): the newest reading - the daemon's own
+    every 5 s while somebody watches (see load_watch), read now only when it
+    was not watching yet; with ?detail=1 also the details, with ?hist=1 the
+    last two minutes as written down (a page's first ask)."""
+    reading = store is not None and load_watch(store)
+    got = LOAD_LAST['out'] if reading else None
+    out = dict(got or server_load())
+    out['now'] = time.time()
     if detail:
         out['detail'] = load_detail()
     if hist:
-        out['hist'] = load_history()
+        out['hist'] = store.load_history(load_node(), time.time() - LOAD_SPAN) \
+            if store is not None else []
     return out
 
 
@@ -78657,7 +78750,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                     store.user_prefs(me['name']).get('hload') == 'off':
                 return self.send_json({'off': True})
             return self.send_json(api_load(detail=str(one('detail') or '') in ('1', 'true'),
-                                           hist=str(one('hist') or '') in ('1', 'true')))
+                                           hist=str(one('hist') or '') in ('1', 'true'),
+                                           store=store))
 
         if path == '/api/acme-push-admin':
             if method != 'POST':

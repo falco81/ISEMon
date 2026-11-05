@@ -50,8 +50,10 @@ PORT = 19400 + random.randint(0, 90)
 # passed_ip, otp_asked_session, ptr_name) and gave acme_jobs one more: an
 # older version makes the four again and asks nothing of the new one - every
 # table and column is as it was.
+# 1.10.301 added a table of its own (load_samples, the performance meter's
+# readings), which an older version never reads.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': 'eb1f0fbece470530d0969e0f9953712ffb8481410e22bb564deb5c29e486753f'}
+               'sha256': '57f002ee8a3a81b6d8dfcd701c344ba698815516195072cefc9d6fca06cba1ba'}
 
 
 def ok(what, got, want=True):

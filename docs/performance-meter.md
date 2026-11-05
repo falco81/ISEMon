@@ -1,7 +1,7 @@
 # The performance meter (1.10.298)
 
 How busy this server is - the processor, memory, the disks and the network -
-in the header of the page, every 3 s while the page is shown and live.
+in the header of the page, every 5 s while the page is shown and live.
 
 - **For a full admin only.** What the server is doing is not for a read-only
   or ban admin: the header has no meter for them and `GET /api/load` refuses
@@ -16,15 +16,21 @@ in the header of the page, every 3 s while the page is shown and live.
   number is pointed at or tapped (tiles, a table as htop, a map of the cores
   with rings, one wide panel, or only a short tip). Each choice is kept with
   the account, so it is the same in every browser.
-- **Nothing in the background.** The daemon reads `/proc` and `/sys` only when
-  a page asks; pages asking within the same second share one reading. The
-  details - each core with its frequency and temperature, the sensors, each
-  disk, the filesystems, each card, the processes taking most - are read only
-  while a panel is open. Off, the page asks nothing at all.
-- **The graphs survive F5.** The daemon keeps the readings of the last two
-  minutes (one every 2.5 s at most, from those the pages ask for anyway) and
-  a page loaded again is handed them with its first answer: the graphs go on
-  where they were.
+- **Read only while a page shows it.** While a page shows the meter, the
+  daemon reads it itself every 5 s - however many pages there are, one
+  reading - and writes each reading down as one small row of `load_samples`
+  (one row per node every 5 s, kept a quarter of an hour). Nobody asking for
+  45 s - the page closed or hidden - it stops by itself; switched off in
+  About, at once. Nothing else is read or written. The details - each core
+  with its frequency and temperature, the sensors, each disk, the
+  filesystems, each card, the processes taking most - are read only while a
+  panel is open.
+- **Smooth graphs.** Each graph is drawn by time and slid to the left by one
+  SVG animation, at the speed time passes; it is drawn again only when a
+  reading arrives, nothing is redrawn by a timer.
+- **The graphs survive F5**, and a restart of the daemon: a page loaded
+  again is handed the last two minutes as written down, and goes on where
+  it was.
 
 Where the header has no room for the four numbers beside everything else
 (below 1850 px), the meter is a row of its own under it; up to 2050 px it is
@@ -42,5 +48,6 @@ CIFS, sshfs, …): one that is down would hang the meter.
 `GET /api/load` (full admin): `cpu` (%), `cores`, `load`, `mem_total`,
 `mem_used`, `swap_used`, `disk_rd`, `disk_wr`, `net_rx`, `net_tx` (B/s),
 `over_s`. `&detail=1` adds `detail`; `&hist=1` adds `hist`, the last two
-minutes as `[{at, cpu, mem, disk, net}]`, oldest first. The first answer
-after the daemon starts has no rates: there is nothing to tell them from yet.
+minutes as `[{at, cpu, mem, disk, net}]`, oldest first; `now` is the
+daemon's clock. The first answer after the daemon starts has no rates: there
+is nothing to tell them from yet.
