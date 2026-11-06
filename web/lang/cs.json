@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.309",
+  "version": "1.10.310",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -2924,9 +2924,9 @@
    "source": "An HTTP proxy for what isemon asks of the web - each use switched on by itself below; a use switched off goes as it always went. The firewalls, Active Directory, the database, syslog, the backups and the dashboard never go through it.",
    "text": "HTTP proxy pro to, co isemon stahuje z webu – každé použití se zapíná zvlášť níže; vypnuté použití jde jako vždy. Firewally, Active Directory, databáze, syslog, zálohy a dashboard přes ni nikdy nejdou."
   },
-  "s.an-index-is-what-makes-a.3302afe4": {
-   "source": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet.",
-   "text": "Index je to, co dělá hledání rychlým; na každém řádku ale zabírá místo. „Zatím nepoužitý“ se počítá od posledního vynulování počítadel serveru – je to index pro hledání, které zatím nikdo neudělal."
+  "s.an-index-is-what-makes-a.9e9e7112": {
+   "source": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet. A table split by day has each index once a day; here they are added up.",
+   "text": "Index je to, co dělá hledání rychlým; na každém řádku ale zabírá místo. „Zatím nepoužitý“ se počítá od posledního vynulování počítadel serveru – je to index pro hledání, které zatím nikdo neudělal. Tabulka dělená po dnech má každý index jednou za den; tady jsou sečtené."
   },
   "s.an-interface-an-address-a-mac.da199e7f": {
    "source": "an interface, an address, a MAC, a name…",
@@ -3083,6 +3083,18 @@
   "s.and-put.9963f078": {
    "source": "and put",
    "text": "a nahrajte"
+  },
+  "s.and-rotate-them-at-once.e8855ed4": {
+   "source": "and rotate them at once",
+   "text": "a hned je otočit"
+  },
+  "s.and-rotated-them.9a5ea4c0": {
+   "source": "and rotated them",
+   "text": "a otočil je"
+  },
+  "s.and-rotates-them-once-at-once.8beb6965": {
+   "source": ", and rotates them once at once - a rename, quick however big",
+   "text": ", a hned je jednou otočí – je to jen přejmenování, rychlé, ať jsou jakkoli velké"
   },
   "s.and-tab-or-enter-take-one.9da7799c": {
    "source": "↑ ↓ and Tab or Enter take one · Esc closes",
@@ -5840,10 +5852,6 @@
    "source": "Copies kept on this machine",
    "text": "Kopie uložené na tomto stroji"
   },
-  "s.copies-kept.5a4bbd9e": {
-   "source": "Copies kept",
-   "text": "Drží se kopií"
-  },
   "s.copies-not-packed.8ad24140": {
    "source": "copies not packed",
    "text": "kopie nezabalené"
@@ -5859,6 +5867,10 @@
   "s.copies.475f96ec": {
    "source": "copies",
    "text": "kopie"
+  },
+  "s.copies.58d744ee": {
+   "source": "Copies",
+   "text": "Kopie"
   },
   "s.copy-it.b56def7b": {
    "source": "Copy it",
@@ -6232,6 +6244,10 @@
    "source": "days",
    "text": "dní"
   },
+  "s.days.f6bb0f46": {
+   "source": "Days",
+   "text": "Dny"
+  },
   "s.db.0352a8ac": {
    "source": "db",
    "text": "db"
@@ -6263,6 +6279,10 @@
   "s.dead-rows.b0367c1d": {
    "source": "Dead rows",
    "text": "Mrtvé řádky"
+  },
+  "s.dead.9f8a73ef": {
+   "source": "Dead",
+   "text": "Mrtvé"
   },
   "s.debug.32faaeca": {
    "source": "debug",
@@ -10052,6 +10072,10 @@
    "source": "full backup",
    "text": "plná záloha"
   },
+  "s.full.11a97f9c": {
+   "source": "% full",
+   "text": "% plno"
+  },
   "s.fulladmin-banadmin-or-readonly.40602654": {
    "source": "fulladmin, banadmin or readonly",
    "text": "fulladmin, banadmin nebo readonly"
@@ -10391,10 +10415,6 @@
   "s.groups.ae9629f4": {
    "source": "Groups",
    "text": "Skupiny"
-  },
-  "s.grows-a-day.348ffa96": {
-   "source": "Grows a day",
-   "text": "Přibývá denně"
   },
   "s.guadeloupe.f0f524ff": {
    "source": "Guadeloupe",
@@ -13176,6 +13196,10 @@
    "source": "itself (self-signed)",
    "text": "sám sebou (self-signed)"
   },
+  "s.ix.d4f506d1": {
+   "source": "ix",
+   "text": "ix"
+  },
   "s.jamaica.5eedd6a1": {
    "source": "Jamaica",
    "text": "Jamajka"
@@ -14184,6 +14208,10 @@
    "source": "live files",
    "text": "živé soubory"
   },
+  "s.live.65c821a5": {
+   "source": "Live",
+   "text": "Živé"
+  },
   "s.live.98aadb37": {
    "source": "live",
    "text": "živě"
@@ -14351,6 +14379,10 @@
   "s.logons-and-the-like.a37573af": {
    "source": "logons and the like",
    "text": "přihlášení a podobné"
+  },
+  "s.logrotate-for-these-logs.f06270b9": {
+   "source": "logrotate for these logs",
+   "text": "logrotate pro tyto logy"
   },
   "s.logs-read.d9d782d5": {
    "source": "Logs read",
@@ -15288,6 +15320,14 @@
    "source": "mono small",
    "text": "mono small"
   },
+  "s.mono-st-strong-st-wrap.fcefafbe": {
+   "source": "mono st-strong st-wrap",
+   "text": "mono st-strong st-wrap"
+  },
+  "s.mono-st-wrap.20fcb0d5": {
+   "source": "mono st-wrap",
+   "text": "mono st-wrap"
+  },
   "s.mono.68caafb2": {
    "source": "mono",
    "text": "mono"
@@ -15463,6 +15503,14 @@
   "s.mysql.deaa0c39": {
    "source": "MySQL",
    "text": "MySQL"
+  },
+  "s.n-st-strong.b1ad97cc": {
+   "source": "n st-strong",
+   "text": "n st-strong"
+  },
+  "s.n-st-sub.d769c854": {
+   "source": "n st-sub",
+   "text": "n st-sub"
   },
   "s.nad.43f2a2d2": {
    "source": "nad",
@@ -16092,6 +16140,10 @@
    "source": "No, leave the router alone",
    "text": "Ne, router nechat být"
   },
+  "s.no-live-file.28b52c6c": {
+   "source": "no live file",
+   "text": "žádný živý soubor"
+  },
   "s.no-log-is-switched-on.fe68579b": {
    "source": "no log is switched on",
    "text": "není zapnutý žádný log"
@@ -16663,6 +16715,10 @@
   "s.not-good.db04b217": {
    "source": "NOT GOOD",
    "text": "NENÍ V POŘÁDKU"
+  },
+  "s.not-growing-what-arrives-is-let.cbb51a1a": {
+   "source": "not growing: what arrives is let go of as it ages",
+   "text": "neroste: co přichází, se se stářím maže"
   },
   "s.not-in-the-group-that-is.66223cc6": {
    "source": "not in the group that is allowed",
@@ -18188,9 +18244,9 @@
    "source": "One folder per RADIUS server, or a path to the file itself.",
    "text": "Jedna složka na server RADIUS, nebo cesta přímo k souboru."
   },
-  "s.one-folder-per-sender-as-rsyslog.f5917aa0": {
-   "source": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows.",
-   "text": "Jedna složka na odesílatele, jak je rsyslog ukládá. Živé soubory se právě zapisují; kopie jsou to, co z nich udělal logrotate. Složka, kterou nic nerotuje, jen roste."
+  "s.one-folder-per-sender-as-rsyslog.44031f19": {
+   "source": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows. A row opened shows its biggest files.",
+   "text": "Jedna složka na odesílatele, jak je rsyslog ukládá. Živé soubory se právě zapisují; kopie jsou to, co z nich udělal logrotate. Složka, kterou nic nerotuje, jen roste. Rozkliknutý řádek ukáže největší soubory."
   },
   "s.one-folder-per-tac-plus-server.796b8725": {
    "source": "One folder per tac_plus server, comma separated. Both of its logs are looked for in each: the accounting log, which is what people did, and the daemon’s own log, which is the only place a refusal is written down. A path may name one file itself instead of the folder it is in, and a site that writes both into one file can name that — a line is read for what it is rather than for which file it came out of.",
@@ -18487,6 +18543,10 @@
   "s.only-by-hand.ee9c7afc": {
    "source": "only by hand",
    "text": "jen ručně"
+  },
+  "s.only-copies-left.1bf220de": {
+   "source": "only copies left",
+   "text": "zbyly jen kopie"
   },
   "s.only-entries-carrying-our-own-mark.c42e461a": {
    "source": "Only entries carrying our own mark are added or removed. Anything you put there by hand, every other address list on the router, and all of your firewall rules are left exactly as they are.",
@@ -19311,6 +19371,14 @@
   "s.own.fbf63c6a": {
    "source": "own",
    "text": "vlastní"
+  },
+  "s.pack-the-old-copies.e6f57d5e": {
+   "source": "Pack the old copies",
+   "text": "Zabalit staré kopie"
+  },
+  "s.pack-them.ba05df16": {
+   "source": "Pack them",
+   "text": "Zabalit je"
   },
   "s.package-fetches-as-often-as-every.8256dcc3": {
    "source": "package fetches as often as every hour. For bans of ten minutes,",
@@ -21576,6 +21644,14 @@
    "source": "Room it takes",
    "text": "Zabrané místo"
   },
+  "s.root-can-pack-them-from-here.20a04bad": {
+   "source": "Root can pack them from here",
+   "text": "Root je může zabalit odsud"
+  },
+  "s.root-can-put-this-right-from.95b19337": {
+   "source": "Root can put this right from here",
+   "text": "Root to může napravit odsud"
+  },
   "s.root-delay-dispersion.e3bc6970": {
    "source": "Root delay / dispersion",
    "text": "Root delay / disperze"
@@ -21644,6 +21720,10 @@
    "source": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is",
    "text": "root během několika sekund odebere šifrovaný vstup, jeho certifikát i klíč; nešifrovaný zůstává, jak je"
   },
+  "s.root-writes.8b36a904": {
+   "source": "Root writes",
+   "text": "Root zapíše"
+  },
   "s.root.dc76e9f0": {
    "source": "root",
    "text": "root"
@@ -21704,9 +21784,17 @@
    "source": "Row",
    "text": "Řádek"
   },
+  "s.rows-indexes-the-rest.fc683a63": {
+   "source": "Rows · indexes · the rest",
+   "text": "Řádky · indexy · ostatní"
+  },
   "s.rows-written-meanwhile-elsewhere.f117b8dc": {
    "source": "rows written meanwhile elsewhere",
    "text": "řádky mezitím zapsané jinde"
+  },
+  "s.rows.52d0b352": {
+   "source": "Rows",
+   "text": "Řádky"
   },
   "s.rows.6c30d261": {
    "source": "rows",
@@ -29784,6 +29872,10 @@
    "source": "There is nothing to fold: no two banned addresses share a subnet this wide.",
    "text": "Není co sloučit: žádné dvě zablokované adresy nesdílejí takto širokou podsíť."
   },
+  "s.there-was-nothing-to-pack.4130092e": {
+   "source": "there was nothing to pack",
+   "text": "nebylo co zabalit"
+  },
   "s.there.02a81a8e": {
    "source": "There",
    "text": "Tam"
@@ -34724,6 +34816,10 @@
    "source": "Writing to them",
    "text": "Zápis na ně"
   },
+  "s.written-a-day.05de45d6": {
+   "source": "Written a day",
+   "text": "Zapsáno denně"
+  },
   "s.written-as.e5678a4e": {
    "source": ", written as",
    "text": ", zapsáno jako"
@@ -35474,6 +35570,10 @@
    "source": "Copies kept ({0} at most)",
    "text": "Uchovávané kopie (nejvýše {0})"
   },
+  "p.copies-packed.fb0d16f1": {
+   "source": "{0} copies packed",
+   "text": "zabaleno {0} kopií"
+  },
   "p.could-not-be-read.111f9968": {
    "source": "{0} could not be read",
    "text": "{0} nejde přečíst"
@@ -35566,10 +35666,6 @@
    "source": "{0} days",
    "text": "{0} {0:den|dny|dní}"
   },
-  "p.days.b291297d": {
-   "source": "× {0} days",
-   "text": "× {0} dní"
-  },
   "p.db-ms.db6d5710": {
    "source": "· DB {0} ms",
    "text": "· DB {0} ms"
@@ -35577,10 +35673,6 @@
   "p.dead-rows-in.ea13ec51": {
    "source": "Dead rows in {0}",
    "text": "Mrtvé řádky v {0}"
-  },
-  "p.dead.e09cfed4": {
-   "source": "{0} % dead",
-   "text": "{0} % mrtvých"
   },
   "p.delete-this.62446462": {
    "source": "Delete this {0}?",
@@ -35890,13 +35982,9 @@
    "source": "Filling {0} on the router",
    "text": "Plní se {0} na routeru"
   },
-  "p.fills-a-day-at-the-rate.204033ac": {
-   "source": "fills {0} a day at the rate measured",
-   "text": "přibývá {0} denně podle naměřené rychlosti"
-  },
-  "p.find-type-f-regextype-posix-extended.62c57bdc": {
-   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +",
-   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +"
+  "p.find-type-f-regextype-posix-extended.8dac81a9": {
+   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +",
+   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +"
   },
   "p.fine-to-look-at.a6d06684": {
    "source": "{0} fine · {1} to look at",
@@ -35929,6 +36017,10 @@
   "p.for-good-on-a-clock.21cd2978": {
    "source": "{0} for good · {1} on a clock",
    "text": "{0} natrvalo · {1} časově omezeně"
+  },
+  "p.for-keeping-copies-logrotate-is-asked.3db8b9f2": {
+   "source": "for {0}, keeping {1} copies{2}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was.",
+   "text": "pro {0}, drží {1} kopií{2}. logrotate se zeptá na všechny své soubory před i po; pokud najde něco špatně, co předtím nebylo, soubor se vrátí, jak byl."
   },
   "p.for.aaf0f881": {
    "source": "for {0}",
@@ -36037,6 +36129,14 @@
   "p.groups.458ef911": {
    "source": "Groups ({0})",
    "text": "Skupiny ({0})"
+  },
+  "p.grows-a-day-for-good-at.c7c4dba9": {
+   "source": "grows {0} a day for good, at the rate measured",
+   "text": "trvale přibývá {0} denně podle naměřené rychlosti"
+  },
+  "p.gzips-the-copies-older-than-three.84eb5226": {
+   "source": "gzips the copies older than three days in {0}, behind and at the lowest priority",
+   "text": "zabalí gzipem kopie starší než tři dny v {0}, na pozadí a s nejnižší prioritou"
   },
   "p.h-ago.f29997e6": {
    "source": "{0} h ago",
@@ -36673,14 +36773,6 @@
   "p.list.fe578e69": {
    "source": "list-{0}",
    "text": "list-{0}"
-  },
-  "p.live-copies-packed.560870e5": {
-   "source": "live {0} · copies {1} · packed {2}",
-   "text": "živé {0} · kopie {1} · zabalené {2}"
-  },
-  "p.live-copies.60b12a57": {
-   "source": "{0} live · {1} copies",
-   "text": "{0} živých · {1} kopií"
   },
   "p.load.4951c424": {
    "source": "· load {0}",
@@ -37346,6 +37438,10 @@
    "source": "pace{0}",
    "text": "pace{0}"
   },
+  "p.packing-copies-behind.6eb3ad9a": {
+   "source": "packing {0} copies behind",
+   "text": "na pozadí se balí {0} kopií"
+  },
   "p.page-of-more-than-more-than.7316f9b1": {
    "source": "page {0}{1} of more than {2} · more than {3} row(s)",
    "text": "stránka {0}{1} z více než {2} · více než {3} řádků"
@@ -37626,9 +37722,17 @@
    "source": "{0}{1} right now.",
    "text": "{0}{1} právě teď."
   },
+  "p.root-gzips-the-copies-of-logs.1af649ad": {
+   "source": "Root gzips the copies of logs older than three days that were never compressed, in {0} - behind, at the lowest priority.",
+   "text": "Root zabalí gzipem kopie logů starší než tři dny, které nikdy nebyly zabaleny, v {0} – na pozadí, s nejnižší prioritou."
+  },
   "p.root-or-an-account-allowed-to.a44d0358": {
    "source": "({0}). Root, or an account allowed to run",
    "text": "({0}). Root, nebo účet, který smí spouštět"
+  },
+  "p.root-wrote.ab87af9d": {
+   "source": "root wrote {0}{1}{2}",
+   "text": "root zapsal {0}{1}{2}"
   },
   "p.rotate.0979bdf7": {
    "source": "rotate {0}",
@@ -37661,10 +37765,6 @@
   "p.rows-indexes-the-rest.834ea75a": {
    "source": "rows {0} · indexes {1} · the rest {2}",
    "text": "řádky {0} · indexy {1} · ostatní {2}"
-  },
-  "p.rows.1b97d070": {
-   "source": "{0} rows",
-   "text": "{0} řádků"
   },
   "p.rsyslog.81d686b1": {
    "source": "rsyslog {0}{1}",
@@ -38734,10 +38834,6 @@
    "source": "({0} times in a row)",
    "text": "({0}krát po sobě)"
   },
-  "p.times.72f0ed16": {
-   "source": "{0} times",
-   "text": "{0}×"
-  },
   "p.tls-by.0e5b3c73": {
    "source": ", TLS by {0}",
    "text": ", TLS přes {0}"
@@ -39113,6 +39209,10 @@
   "p.write-this-as-etc-logrotate-d.2668a80e": {
    "source": "Write this as /etc/logrotate.d/{0} (as root):",
    "text": "Zapište tohle jako /etc/logrotate.d/{0} (jako root):"
+  },
+  "p.writes-for-copies-kept-asks-logrotate.e586163b": {
+   "source": "writes {0} for {1} ({2} copies kept), asks logrotate whether all is well and puts it back if not",
+   "text": "zapíše {0} pro {1} (drží {2} kopií), zeptá se logrotate, zda je vše v pořádku, a když ne, vrátí to"
   },
   "p.written.acd887d3": {
    "source": "· written {0}",
@@ -39968,6 +40068,10 @@
    "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
    "text": "Root se už nepřihlásí pomocí <code>{0}</code>{1} na tomto serveru.{2}"
   },
+  "r.root-writes-for-keeping-copies-logrotate.44f0a5bc": {
+   "source": "Root writes <b>{0}</b> for {1}, keeping {2} copies{3}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was.",
+   "text": "Root zapíše <b>{0}</b> pro {1}, drží {2} kopií{3}. logrotate se zeptá na všechny své soubory před i po; pokud najde něco špatně, co předtím nebylo, soubor se vrátí, jak byl."
+  },
   "r.rsyslog-stops-taking-acme-s-lines.974384fa": {
    "source": "rsyslog stops taking acme's lines over TLS, and isemon's certificate, its key, acme's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch acme's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into acme again.",
    "text": "rsyslog přestane přijímat řádky acme přes TLS a certifikát isemonu, jeho klíč, autorita acme i zde vytvořená autorita se z tohoto stroje smažou. Nešifrovaný vstup na 514 zůstává, jak je.<br><br>Nejdřív přepněte uzly acme zpět na nešifrované posílání, jinak jejich řádky přestanou chodit. Pro TLS ho nastavte znovu - certifikát zde vytvořený znovu pochází z nové autority, kterou je třeba do acme vložit znovu."
@@ -40762,6 +40866,14 @@
    "source": "{0} days {1} h",
    "text": "{0} dní {1} h"
   },
+  "p.days.b291297d": {
+   "source": "× {0} days",
+   "text": "× {0} dní"
+  },
+  "p.dead.e09cfed4": {
+   "source": "{0} % dead",
+   "text": "{0} % mrtvých"
+  },
   "p.did-not-restart-within-a-minute.ce82bd55": {
    "source": "{0} did not restart within a minute - see journalctl -u {1}",
    "text": "{0} se do minuty nerestartoval – viz journalctl -u {1}"
@@ -40813,6 +40925,14 @@
   "p.files.c4897534": {
    "source": "· {0} files{1}",
    "text": "· {0} {0:soubor|soubory|souborů}{1}"
+  },
+  "p.fills-a-day-at-the-rate.204033ac": {
+   "source": "fills {0} a day at the rate measured",
+   "text": "přibývá {0} denně podle naměřené rychlosti"
+  },
+  "p.find-type-f-regextype-posix-extended.62c57bdc": {
+   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +",
+   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +"
   },
   "p.has-passkey-s-set-face-id.7e4ddbbb": {
    "source": "{0} has {1} passkey(s). Set Face ID up again: every one of them is taken away, and the next sign-in of {2} makes a new one. For a lost or a new device. Sign-ins already open stay open.",
@@ -40894,6 +41014,14 @@
    "source": "{0} line(s) kept{1} · {2} counted bucket(s) behind the cards and the chart · kept {3}{4} day(s) for the rest",
    "text": "{0} řádků uchováno{1} · {2} započtených intervalů za kartami a grafem · ostatní uchovávány {3}{4} dní"
   },
+  "p.live-copies-packed.560870e5": {
+   "source": "live {0} · copies {1} · packed {2}",
+   "text": "živé {0} · kopie {1} · zabalené {2}"
+  },
+  "p.live-copies.60b12a57": {
+   "source": "{0} live · {1} copies",
+   "text": "{0} živých · {1} kopií"
+  },
   "p.made-here-and-pinned-download-both.c994c3e4": {
    "source": "Made here and pinned ({0}). Download both files, put them on the router (Files, or scp), and run the commands below. The key is not kept on this machine: download it now.",
    "text": "Vytvořeno zde a připnuto ({0}). Stáhněte oba soubory, nahrajte je na router (Files nebo scp) a spusťte příkazy níže. Klíč se na tomto stroji neuchovává: stáhněte ho hned."
@@ -40937,6 +41065,10 @@
   "p.routeros.8a81790b": {
    "source": "(RouterOS {0}{1})",
    "text": "(RouterOS {0}{1})"
+  },
+  "p.rows.1b97d070": {
+   "source": "{0} rows",
+   "text": "{0} řádků"
   },
   "p.setting-up.d846bce0": {
    "source": "Setting up {0}",
@@ -41013,6 +41145,10 @@
   "p.throw-away-what-is-in-it.05da9eef": {
    "source": "Throw away what is in it first - {0} record(s). Moving into a database that is not empty would mix two installations.",
    "text": "Nejdřív zahodit, co v ní je – {0} záznam(ů). Přesun do databáze, která není prázdná, by smíchal dvě instalace."
+  },
+  "p.times.72f0ed16": {
+   "source": "{0} times",
+   "text": "{0}×"
   },
   "p.was-restarted-and-has-not-answered.da13ad98": {
    "source": "{0} was restarted and has not answered since - see journalctl -u {1}",
@@ -41274,6 +41410,10 @@
    "source": "An account on the router in a group that may only read and use the API - \"What to type on the router\" makes one. Never the administrator’s.",
    "text": "Účet na routeru ve skupině, která smí jen číst a používat API – „Co zadat na routeru“ ho vytvoří. Nikdy ne účet administrátora."
   },
+  "s.an-index-is-what-makes-a.3302afe4": {
+   "source": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet.",
+   "text": "Index je to, co dělá hledání rychlým; na každém řádku ale zabírá místo. „Zatím nepoužitý“ se počítá od posledního vynulování počítadel serveru – je to index pro hledání, které zatím nikdo neudělal."
+  },
   "s.and-a-machine-that-has-fetched.35e0c077": {
    "source": "and a machine that has fetched one and then turned the switch off",
    "text": "a stroj, který ji už stáhl a pak přepínač vypnul,"
@@ -41413,6 +41553,10 @@
   "s.confirm-it-is-you-to-add.8059e611": {
    "source": "Confirm it is you, to add another",
    "text": "Potvrďte, že jste to vy, a přidejte další"
+  },
+  "s.copies-kept.5a4bbd9e": {
+   "source": "Copies kept",
+   "text": "Drží se kopií"
   },
   "s.copy-everything-that-is-here-into.be93daef": {
    "source": "Copy everything that is here into that database: every record, every ban, every setting and every account. What is here is left exactly as it is.",
@@ -41569,6 +41713,10 @@
   "s.go-back-to-this-version.6ea7735b": {
    "source": "Go back to this version",
    "text": "Vrátit se k této verzi"
+  },
+  "s.grows-a-day.348ffa96": {
+   "source": "Grows a day",
+   "text": "Přibývá denně"
   },
   "s.how-busy-the-server-is-the.655d4bb9": {
    "source": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all.",
@@ -41937,6 +42085,10 @@
   "s.once-everything-is-in-the-other.5feaa877": {
    "source": "Once everything is in the other database and it is the one in use, the one it came from is just a spare copy: the file may be deleted, or the server uninstalled. Going the other way is these same steps with the file chosen instead — which is what makes it safe to try a server at all.",
    "text": "Jakmile je vše v druhé databázi a ta se používá, ta původní je už jen záložní kopie: soubor lze smazat nebo server odinstalovat. Opačný směr jsou tytéž kroky, jen se zvolí soubor — a právě to dělá vyzkoušení serveru bezpečným."
+  },
+  "s.one-folder-per-sender-as-rsyslog.f5917aa0": {
+   "source": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows.",
+   "text": "Jedna složka na odesílatele, jak je rsyslog ukládá. Živé soubory se právě zapisují; kopie jsou to, co z nich udělal logrotate. Složka, kterou nic nerotuje, jen roste."
   },
   "s.one-pfx-pkcs-12-file-at.3f7959ad": {
    "source": "one PFX / PKCS#12 file at a time",

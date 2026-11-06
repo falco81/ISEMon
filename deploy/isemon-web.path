@@ -19,6 +19,7 @@ PathExists=/var/lib/isemon/web/look.ask
 PathExists=/var/lib/isemon/web/net.ask
 PathExists=/var/lib/isemon/web/ntp.ask
 PathExists=/var/lib/isemon/web/sshkeys.ask
+PathExists=/var/lib/isemon/web/logfix.ask
 PathExists=/var/lib/isemon/web/osup.ask
 PathExists=/var/lib/isemon/web/otptls.ask
 PathExists=/var/lib/isemon/web/acmetls.ask

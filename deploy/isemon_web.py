@@ -47,7 +47,7 @@ into osup.json (see osup_part). dnf and apt through Settings → Proxy
 /run/isemon-osup-proxy.json (root's, 0600), read into the work's own
 environment and taken away - never on a command line.
 
-  isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask,
+  isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask, logfix.ask,
                            osup.ask and otptls.ask (as root, from systemd)
 The otp logs over TLS (1.10.245): asked in otptls.ask, answered in
 otptls.json - rsyslog's encrypted input for otp's nodes, its certificate and
@@ -1881,6 +1881,216 @@ def sshkeys_part():
     write_here(SSHKEYS_FILE, json.dumps(out))
 
 
+# ---- logrotate for the logs nothing rotates, and packing old copies (1.10.310) --
+# Asked in logfix.ask from Settings - Disk and logs; answered in logfix.json.
+# `cover`: the folders under /var/log/remote that no logrotate file takes go
+# into /etc/logrotate.d/remote-isemon - a file of isemon's own, written whole
+# HERE from the folder names alone: nothing the page sends is ever written as
+# it was sent. A name is one folder straight under the logs' root, a real
+# folder and not a link. logrotate is asked about the whole of its
+# configuration before and after (`logrotate -d`); anything it says is wrong
+# after that it did not say before - two files taking one log, which stops
+# every rotation there is - and the file is put back as it was. Then, where
+# asked, the folders are rotated once at once (`logrotate -f` of that file
+# alone: a rename, quick however big). `pack`: the copies older than three
+# days that were never compressed, in the folders named, gzipped - behind,
+# at the lowest priority, in a unit of its own where systemd is there.
+LOGFIX_ASK = 'logfix.ask'
+LOGFIX_FILE = 'logfix.json'
+REMOTE_LOGS = os.environ.get('ISEMON_REMOTE_LOGS', '/var/log/remote')
+LOGROTATE_D = os.environ.get('ISEMON_LOGROTATE_D', '/etc/logrotate.d')
+LOGROTATE_CONF = os.environ.get('ISEMON_LOGROTATE_CONF', '/etc/logrotate.conf')
+LOGROTATE = os.environ.get('ISEMON_LOGROTATE', 'logrotate')
+LOGFIX_NAME = 'remote-isemon'
+LOGFIX_MARK = '# Written by isemon (Settings - Disk and logs).'
+LOGFIX_FOLDER_RE = re.compile(r'^[A-Za-z0-9._%@=+-]{1,120}\Z')
+LOGFIX_RAW_RE = re.compile(r'(\.\d{1,4}|-\d{8}([-_.]?\d{1,12})?)\Z')
+LOGFIX_MOST_FILES = 5000
+
+
+def logfix_folders(names):
+    """The folders asked for, each one checked: one name straight under the
+    logs' root, a real folder there - never a link, never a path."""
+    if not isinstance(names, list) or not names or len(names) > 200:
+        raise Refused('which folders?')
+    out = []
+    for n in names:
+        n = str(n or '')
+        if not LOGFIX_FOLDER_RE.match(n) or n in ('.', '..'):
+            raise Refused('%s is not the name of a folder of logs' % n[:60])
+        path = os.path.join(REMOTE_LOGS, n)
+        try:
+            st = os.lstat(path)
+        except OSError:
+            raise Refused('there is no folder %s' % path[:160])
+        if not stat.S_ISDIR(st.st_mode):
+            raise Refused('%s is not a folder' % path[:160])
+        if n not in out:
+            out.append(n)
+    return out
+
+
+def logfix_check():
+    """What logrotate says is wrong with its whole configuration, as a set of
+    lines: the errors, and the logs two files take."""
+    got = subprocess.run([LOGROTATE, '-d', LOGROTATE_CONF], capture_output=True, text=True,
+                         timeout=120)
+    said = set()
+    for ln in (got.stdout + '\n' + got.stderr).splitlines():
+        low = ln.lower()
+        if 'error' in low or 'duplicate' in low:
+            said.add(re.sub(r'\s+', ' ', ln.strip())[:300])
+    return said
+
+
+def logfix_text(folders, keep):
+    lines = ['# /etc/logrotate.d/%s' % LOGFIX_NAME, LOGFIX_MARK,
+             '#',
+             '# The folders under %s that no other logrotate file took. A file' % REMOTE_LOGS,
+             '# of its own, beside the others: logrotate refuses two stanzas that take',
+             '# the same log, and refuses the whole run over it. isemon adds to it',
+             '# when it is asked to; a line taken away by hand stays away.', '']
+    lines += ['%s/%s/*.log' % (REMOTE_LOGS, n) for n in folders]
+    lines += ['{', '    daily', '    dateext', '    rotate %d' % keep, '    compress',
+              '    delaycompress', '    missingok', '    notifempty',
+              '    create 0640 root %s' % SERVICE_GROUP, '', '    sharedscripts',
+              '    postrotate',
+              '        /usr/bin/systemctl reload rsyslog > /dev/null 2>&1 || \\',
+              '            /usr/bin/systemctl kill -s HUP --kill-who=main rsyslog.service'
+              ' > /dev/null 2>&1 || true',
+              '    endscript', '}']
+    return '\n'.join(lines) + '\n'
+
+
+def logfix_ours():
+    """isemon's own logrotate file as it is: (its text or None, the folders
+    in it). One there that isemon did not write is never touched."""
+    path = os.path.join(LOGROTATE_D, LOGFIX_NAME)
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return None, []
+    if not stat.S_ISREG(st.st_mode):
+        raise Refused('%s is not a plain file - not touched' % path)
+    with open(path, encoding='utf-8', errors='replace') as f:
+        text = f.read(262144)
+    if LOGFIX_MARK not in text:
+        raise Refused('%s is there and was not written by isemon - not touched' % path)
+    pre = re.escape(REMOTE_LOGS.rstrip('/') + '/')
+    had = re.findall(r'^%s([A-Za-z0-9._%%@=+-]{1,120})/\*\.log\s*$' % pre, text, re.M)
+    return text, had
+
+
+def logfix_write(text):
+    path = os.path.join(LOGROTATE_D, LOGFIX_NAME)
+    tmp = os.path.join(LOGROTATE_D, '.%s.%d' % (LOGFIX_NAME, os.getpid()))
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+    try:
+        os.write(fd, text.encode('utf-8'))
+        os.fchmod(fd, 0o644)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    os.rename(tmp, path)
+
+
+def logfix_do(r):
+    if ask_stale(r):
+        raise Refused('that was asked too long ago - ask again on the page if it is still wanted')
+    do = r.get('do')
+    if do == 'cover':
+        folders = logfix_folders(r.get('folders'))
+        try:
+            keep = int(r.get('keep') or 30)
+        except (TypeError, ValueError):
+            keep = 30
+        keep = max(1, min(90, keep))
+        was, had = logfix_ours()
+        want = had + [n for n in folders if n not in had]
+        before = logfix_check()
+        logfix_write(logfix_text(want, keep))
+        after = logfix_check()
+        new = sorted(after - before)
+        if new:
+            path = os.path.join(LOGROTATE_D, LOGFIX_NAME)
+            if was is None:
+                os.unlink(path)
+            else:
+                logfix_write(was)
+            raise Refused('logrotate said this was wrong, so the file was put back as it was: '
+                          + ' | '.join(new)[:600])
+        out = {'file': os.path.join(LOGROTATE_D, LOGFIX_NAME), 'folders': want,
+               'added': [n for n in folders if n not in had], 'keep': keep, 'rotated': False}
+        if r.get('rotate_now'):
+            got = subprocess.run([LOGROTATE, '-f', os.path.join(LOGROTATE_D, LOGFIX_NAME)],
+                                 capture_output=True, text=True, timeout=600)
+            out['rotated'] = got.returncode == 0
+            out['rotate_said'] = (got.stderr or got.stdout).strip()[-400:]
+        return out
+    if do == 'pack':
+        folders = logfix_folders(r.get('folders'))
+        cut = time.time() - 3 * 86400
+        files, room = [], 0
+        for n in folders:
+            for top, dirs, names in os.walk(os.path.join(REMOTE_LOGS, n), followlinks=False):
+                for name in names:
+                    if not LOGFIX_RAW_RE.search(name):
+                        continue
+                    p = os.path.join(top, name)
+                    try:
+                        st = os.lstat(p)
+                    except OSError:
+                        continue
+                    if stat.S_ISREG(st.st_mode) and st.st_mtime < cut and len(files) < LOGFIX_MOST_FILES:
+                        files.append(p)
+                        room += st.st_size
+        if not files:
+            return {'files': 0, 'bytes': 0, 'behind': False}
+        argv = ['gzip', '-6', '--'] + files
+        if shutil.which('nice'):
+            argv = ['nice', '-n', '19'] + argv
+        if shutil.which('systemd-run') and not NO_SERVICES and os.path.isdir('/run/systemd/system'):
+            got = subprocess.run(['systemd-run', '--unit', 'isemon-pack-%d' % int(time.time()),
+                                  '--collect', '--quiet', '--property', 'IOSchedulingClass=idle',
+                                  '--property', 'Nice=19'] + argv,
+                                 capture_output=True, text=True, timeout=30)
+            if got.returncode != 0:
+                raise Refused('systemd-run: %s' % (got.stderr or got.stdout).strip()[-200:])
+            return {'files': len(files), 'bytes': room, 'behind': True}
+        got = subprocess.run(argv, capture_output=True, text=True, timeout=1500)
+        if got.returncode not in (0, 2):
+            raise Refused('gzip: %s' % (got.stderr or got.stdout).strip()[-300:])
+        return {'files': len(files), 'bytes': room, 'behind': False}
+    raise Refused('cover or pack')
+
+
+def logfix_part():
+    try:
+        raw = read_req(LOGFIX_ASK, 65536)
+    except FileNotFoundError:
+        return
+    except (Refused, OSError):
+        drop_entry(LOGFIX_ASK)
+        return
+    drop_entry(LOGFIX_ASK)
+    out = {'at': time.time(), 'ok': False, 'id': ''}
+    try:
+        try:
+            r = json.loads(raw.decode('utf-8'))
+        except ValueError:
+            raise Refused('the request does not read')
+        if not isinstance(r, dict):
+            raise Refused('the request is not an object')
+        out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
+        out['data'] = logfix_do(r)
+        out['ok'] = True
+    except Refused as e:
+        out['said'] = str(e)[:700]
+    except Exception as e:                              # noqa: BLE001 - said, never lost
+        out['said'] = 'it went wrong: %s' % str(e)[:300]
+    write_here(LOGFIX_FILE, json.dumps(out))
+
+
 # ---- this machine's network, its name, and switching it off (1.10.228) -----------
 # After otp's otp_web.py. Asked in net.ask: what the network is now (read), a
 # new one put in NetworkManager with the host name and /etc/hosts (apply), or
@@ -3616,6 +3826,10 @@ def serve():
         sshkeys_part()
     except Exception as e:                              # noqa: BLE001
         print('isemon_web.py: root\'s SSH keys: %s' % e, file=sys.stderr)
+    try:
+        logfix_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: logrotate for the logs: %s' % e, file=sys.stderr)
     try:
         osup_part()
     except Exception as e:                              # noqa: BLE001

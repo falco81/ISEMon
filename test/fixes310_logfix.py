@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""1.10.310: Settings -> Disk and logs puts it right by root's helper - a
+logrotate file of isemon's own for the folders nothing rotates, checked with
+logrotate before and after and put back if it says no; old copies packed.
+
+    ./test/fixes310_logfix.py
+"""
+import json
+import os
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path.insert(0, str(ROOT))
+import isemon                                        # noqa: E402
+
+PASS = FAIL = 0
+
+
+def ok(what, got, want=True):
+    global PASS, FAIL
+    if got == want:
+        PASS += 1
+        print('  ok    %s' % what)
+    else:
+        FAIL += 1
+        print('  FAIL  %s\n          got  %r\n          want %r' % (what, got, want))
+
+
+def put(p, size, age_days=0.0):
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_bytes(b'x' * int(size))
+    t = time.time() - age_days * 86400
+    os.utime(str(p), (t, t))
+
+
+work = Path(tempfile.mkdtemp(prefix='isemon-310-'))
+try:
+    state = work / 'state'
+    (state / 'web').mkdir(parents=True)
+    remote = work / 'remote'
+    lrd = work / 'logrotate.d'
+    lrd.mkdir()
+    conf = work / 'logrotate.conf'
+    conf.write_text('weekly\nrotate 4\ninclude %s\n' % lrd)
+    fake = work / 'logrotate'
+    # What logrotate says: a duplicate where the folder "twice" is in two files.
+    fake.write_text('#!/bin/sh\n'
+                    'if [ "$1" = "-d" ]; then\n'
+                    '  n=$(grep -l "/twice/" %s/* 2>/dev/null | wc -l)\n'
+                    '  [ "$n" -gt 1 ] && echo "error: %s/twice/a.log:1 duplicate log entry for %s/twice/a.log"\n'
+                    '  exit 0\nfi\n'
+                    'if [ "$1" = "-f" ]; then echo rotated > %s/rotated; exit 0; fi\n'
+                    % (lrd, remote, remote, work))
+    fake.chmod(0o755)
+    ENV = dict(os.environ, ISEMON_STATE=str(state), ISEMON_WEB_NO_SERVICES='1',
+               ISEMON_REMOTE_LOGS=str(remote), ISEMON_LOGROTATE_D=str(lrd),
+               ISEMON_LOGROTATE_CONF=str(conf), ISEMON_LOGROTATE=str(fake), ISEMON_GROUP='root',
+               ISEMON_NGINX_CONF=str(work / 'none.conf'))
+    HELPER = ROOT / 'deploy' / 'isemon_web.py'
+
+    def ask(req, fresh=True):
+        if fresh and 'at' not in req:
+            req = dict(req, at=time.time())
+        (state / 'web' / 'logfix.ask').write_text(json.dumps(req))
+        got = subprocess.run(['python3', '-I', str(HELPER)], env=ENV, capture_output=True,
+                             text=True)
+        if got.returncode:
+            print(got.stderr)
+        return json.loads((state / 'web' / 'logfix.json').read_text())
+
+    for n in ('fw1', 'fw2', 'twice'):
+        put(remote / n / 'a.log', 10)
+    (remote / 'elsewhere').mkdir()
+    os.symlink(str(remote / 'elsewhere'), str(remote / 'linked'))
+    mine = lrd / 'remote-isemon'
+
+    print('Root\'s helper: logrotate for the folders nothing rotates')
+    got = ask({'do': 'cover', 'folders': ['fw1'], 'keep': 2})
+    text = mine.read_text() if mine.exists() else ''
+    ok('written, isemon\'s own, root\'s 0644', (got['ok'], '# Written by isemon' in text,
+                                               stat.S_IMODE(mine.stat().st_mode)), (True, True, 0o644))
+    ok('...one stanza for the folder, as it was asked: two copies, compressed, made for the daemon',
+       ('%s/fw1/*.log\n{' % remote in text, 'rotate 2' in text, '    compress' in text,
+        'create 0640 root root' in text, 'systemctl reload rsyslog' in text), (True,) * 5)
+    got = ask({'do': 'cover', 'folders': ['fw2'], 'keep': 2, 'rotate_now': True})
+    text = mine.read_text()
+    ok('asked again for another: added to it, the first kept', ('%s/fw1/*.log' % remote in text,
+                                                               '%s/fw2/*.log' % remote in text,
+                                                               got['data']['added']), (True, True, ['fw2']))
+    ok('...and rotated at once, that file alone', (got['data']['rotated'], (work / 'rotated').exists()),
+       (True, True))
+    for bad in (['../etc'], ['fw1/../../etc'], ['linked'], ['nothere'], [], 'fw1', ['a' * 200]):
+        r = ask({'do': 'cover', 'folders': bad})
+        ok('refused: %r' % (bad if not isinstance(bad, list) or not bad or len(bad[0]) < 40 else 'long'),
+           r['ok'], False)
+    ok('nothing written by any of them', '../' not in mine.read_text() and 'linked' not in mine.read_text())
+    r = ask({'do': 'cover', 'folders': ['fw1'], 'at': time.time() - 3600}, fresh=False)
+    ok('asked an hour ago: not done', (r['ok'], 'too long ago' in r.get('said', '')), (False, True))
+
+    print('\nWhat logrotate says decides')
+    (lrd / 'remote-other').write_text('%s/twice/*.log {\n daily\n}\n' % remote)
+    was = mine.read_text()
+    r = ask({'do': 'cover', 'folders': ['twice']})
+    ok('a log two files now take: refused with what logrotate said',
+       (r['ok'], 'duplicate log entry' in r.get('said', '')), (False, True))
+    ok('...and the file put back exactly as it was', mine.read_text(), was)
+    (lrd / 'remote-other').unlink()
+    mine.unlink()
+    (lrd / 'remote-other').write_text('%s/twice/*.log {\n daily\n}\n' % remote)
+    r = ask({'do': 'cover', 'folders': ['twice']})
+    ok('...where there was none before, none left after', (r['ok'], mine.exists()), (False, False))
+    (lrd / 'remote-other').unlink()
+    mine.write_text('# somebody\'s own\n/var/log/x/*.log {\n daily\n}\n')
+    r = ask({'do': 'cover', 'folders': ['fw1']})
+    ok('a remote-isemon somebody else wrote: never touched',
+       (r['ok'], 'not written by isemon' in r.get('said', ''), mine.read_text().startswith('# somebody')),
+       (False, True, True))
+    mine.unlink()
+    if shutil.which('logrotate'):
+        ENV2 = dict(ENV, ISEMON_LOGROTATE=shutil.which('logrotate'))
+        (state / 'web' / 'logfix.ask').write_text(json.dumps(
+            {'do': 'cover', 'folders': ['fw1', 'fw2'], 'keep': 2, 'at': time.time()}))
+        subprocess.run(['python3', '-I', str(HELPER)], env=ENV2, capture_output=True, text=True)
+        r = json.loads((state / 'web' / 'logfix.json').read_text())
+        chk = subprocess.run([shutil.which('logrotate'), '-d', str(mine)], capture_output=True,
+                             text=True)
+        ok('the real logrotate reads the file it writes, with nothing wrong in it',
+           (r['ok'], [ln for ln in (chk.stdout + chk.stderr).splitlines() if 'error' in ln.lower()]),
+           (True, []))
+        mine.unlink()
+
+    print('\nPacking the old copies')
+    put(remote / 'fw1' / 'a.log-20261101', 5000, 5)
+    put(remote / 'fw1' / 'a.log-20261105', 5000, 1)
+    put(remote / 'fw1' / 'a.log.3', 5000, 6)
+    put(remote / 'fw1' / 'b.log-20261101.gz', 50, 5)
+    r = ask({'do': 'pack', 'folders': ['fw1']})
+    names = sorted(os.listdir(str(remote / 'fw1')))
+    ok('the copies older than three days packed; yesterday\'s, the live file and a packed one not',
+       (r['ok'], r['data']['files'], names),
+       (True, 2, ['a.log', 'a.log-20261101.gz', 'a.log-20261105', 'a.log.3.gz', 'b.log-20261101.gz']))
+
+    print('\nThe daemon asks it, only for what its own look offers')
+    for k, v in dict(STATE_DIR=state, DB_FILE=state / 'd.db', BACKUP_DIR=state / 'b',
+                     DUMP_DIR=state / 'dumps', RUN_DIR=state, LOG_DIR=state,
+                     CONFIG_FILE=state / 'config.json', _LOG_PATH=state / 'd.log',
+                     TOKEN_FILE=state / 'token').items():
+        setattr(isemon, k, v)
+    isemon.CONFIG.clear()
+    isemon.CONFIG.update(isemon.DEFAULTS)
+    isemon.CONFIG.update({'geo': 0, 'mikrotik1': 0})
+    (state / 'config.json').write_text(json.dumps({'db_engine': 'sqlite'}))
+    store = isemon.Storage(isemon.DB_FILE)
+    isemon.STORE_LOG_ROOTS[:] = [str(remote)]
+    isemon.STORE_LOGROTATE[:] = [str(conf), str(lrd)]
+
+    class WR(object):
+        def helper_there(self):
+            return True
+
+        def folder(self):
+            return state / 'web'
+
+        def write(self, name, data):
+            (state / 'web' / name).write_text(json.dumps(data))
+            subprocess.run(['python3', '-I', str(HELPER)], env=ENV, capture_output=True)
+
+        def read(self, name):
+            try:
+                return json.loads((state / 'web' / name).read_text())
+            except (OSError, ValueError):
+                return None
+    try:
+        isemon.storage_fix(store, WR(), {'do': 'cover', 'folders': ['../etc']}, 'boss')
+        ok('a folder the look did not offer: refused', False)
+    except ValueError:
+        ok('a folder the look did not offer: refused', True)
+    got = isemon.storage_fix(store, WR(), {'do': 'cover', 'folders': ['fw1', 'fw2', 'twice']}, 'boss')
+    ok('the ones it offered: put in by root, said in Events',
+       (got['ok'], sorted(got['folders']), 'had root put' in json.dumps(
+           [dict(e) for e in store.db.execute('SELECT * FROM events')])),
+       (True, ['fw1', 'fw2', 'twice'], True))
+    look = isemon.storage_health(store)
+    ok('looked at again at once: nothing left that nothing rotates',
+       [p['key'] for p in look['problems'] if p['key'] == 'unrotated'], [])
+    try:
+        isemon.storage_fix(store, WR(), {'do': 'cover'}, 'boss')
+        ok('asked again with nothing to do: said so', False)
+    except ValueError as e:
+        ok('asked again with nothing to do: said so', 'nothing of that' in str(e))
+finally:
+    shutil.rmtree(str(work), ignore_errors=True)
+
+page = (ROOT / 'web' / 'index.php').read_text()
+web = (ROOT / 'deploy' / 'isemon_web.py').read_text()
+unit = (ROOT / 'deploy' / 'isemon-web.path').read_text()
+print('\nThe page and the path unit')
+ok('the path unit hands logfix.ask to root', 'PathExists=/var/lib/isemon/web/logfix.ask' in unit)
+ok('relayed as a write, for a full admin, with the button on the problem',
+   ("'storage'      => '/api/storage'," in page, "box.appendChild(stApply(p.apply))" in page),
+   (True, True))
+ok('...the folder names in the question made safe as text', "htmlText(ap.folders.join(', '))" in page)
+ok('root writes from the names alone, never what the page sent',
+   ("def logfix_text(folders, keep):" in web, "r.get('text')" not in web), (True, True))
+print('\n%d ok, %d failed' % (PASS, FAIL))
+sys.exit(1 if FAIL else 0)

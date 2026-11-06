@@ -173,12 +173,22 @@ try:
     disks = [{'mount': '/', 'total': 571 * G, 'used': 508 * G, 'free': 38 * G, 'share': 94.0,
               'parts': [{'key': 'logs', 'label': 'logs that arrive over syslog', 'bytes': 418 * G}],
               'other': 0}]
-    logs = [dict(by['ise1'], a_day=45 * G)]
+    logs = [dict(by['ise1'], a_day=45 * G, uncovered_n=1)]
     got = isemon.store_problems(disks, logs, lr, {'tables': [], 'indexes': []}, {'a_day': 0}, {})
     ok('94 % full and filling in a day: trouble, said with what fills it',
        (got[0]['level'], 'full' in got[0]['title'], 'logs that arrive over syslog' in got[0]['says']),
        ('crit', True, True))
     ok('...how many days it holds, on the disk', disks[0]['days_left'], 0)
+    steady = dict(by['ise1'], a_day=45 * G, oldest=time.time() - 31 * 86400)
+    filling = dict(by['ise1'], a_day=12 * G, oldest=time.time() - 2 * 86400)
+    disks2 = [dict(disks[0], free=380 * G, share=29.0)]
+    got = isemon.store_problems(disks2, [steady, filling], lr, {'tables': [], 'indexes': []},
+                                {'a_day': 0}, {})
+    ok('a log rotated and let go of after its copies: as big tomorrow - nothing it writes counted; '
+       'one still filling its copies: a packed copy a day', (steady['lasting'], filling['lasting'],
+                                                            disks2[0]['days_left']),
+       (0, 1 * G, 380))
+    ok('...so 380 GB free is not "full in 13 days"', [p['key'] for p in got if p['key'].startswith('disk:')], [])
     big = {'tables': [{'name': 'fw_events', 'kind': 1, 'total': 37 * G, 'dead': 0, 'live': 1},
                       {'name': 'fw_events', 'kind': 0, 'total': 23 * G, 'dead': 0, 'live': 1}],
            'indexes': [{'name': 'x', 'table': 'fw_events_p20261105_c1', 'group': 'fw_events',

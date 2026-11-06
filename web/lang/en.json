@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.309",
+  "version": "1.10.310",
   "made": "2026-11-06",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -2924,9 +2924,9 @@
    "source": "An HTTP proxy for what isemon asks of the web - each use switched on by itself below; a use switched off goes as it always went. The firewalls, Active Directory, the database, syslog, the backups and the dashboard never go through it.",
    "text": "An HTTP proxy for what isemon asks of the web - each use switched on by itself below; a use switched off goes as it always went. The firewalls, Active Directory, the database, syslog, the backups and the dashboard never go through it."
   },
-  "s.an-index-is-what-makes-a.3302afe4": {
-   "source": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet.",
-   "text": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet."
+  "s.an-index-is-what-makes-a.9e9e7112": {
+   "source": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet. A table split by day has each index once a day; here they are added up.",
+   "text": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet. A table split by day has each index once a day; here they are added up."
   },
   "s.an-interface-an-address-a-mac.da199e7f": {
    "source": "an interface, an address, a MAC, a name…",
@@ -3083,6 +3083,18 @@
   "s.and-put.9963f078": {
    "source": "and put",
    "text": "and put"
+  },
+  "s.and-rotate-them-at-once.e8855ed4": {
+   "source": "and rotate them at once",
+   "text": "and rotate them at once"
+  },
+  "s.and-rotated-them.9a5ea4c0": {
+   "source": "and rotated them",
+   "text": "and rotated them"
+  },
+  "s.and-rotates-them-once-at-once.8beb6965": {
+   "source": ", and rotates them once at once - a rename, quick however big",
+   "text": ", and rotates them once at once - a rename, quick however big"
   },
   "s.and-tab-or-enter-take-one.9da7799c": {
    "source": "↑ ↓ and Tab or Enter take one · Esc closes",
@@ -5840,10 +5852,6 @@
    "source": "Copies kept on this machine",
    "text": "Copies kept on this machine"
   },
-  "s.copies-kept.5a4bbd9e": {
-   "source": "Copies kept",
-   "text": "Copies kept"
-  },
   "s.copies-not-packed.8ad24140": {
    "source": "copies not packed",
    "text": "copies not packed"
@@ -5859,6 +5867,10 @@
   "s.copies.475f96ec": {
    "source": "copies",
    "text": "copies"
+  },
+  "s.copies.58d744ee": {
+   "source": "Copies",
+   "text": "Copies"
   },
   "s.copy-it.b56def7b": {
    "source": "Copy it",
@@ -6232,6 +6244,10 @@
    "source": "days",
    "text": "days"
   },
+  "s.days.f6bb0f46": {
+   "source": "Days",
+   "text": "Days"
+  },
   "s.db.0352a8ac": {
    "source": "db",
    "text": "db"
@@ -6263,6 +6279,10 @@
   "s.dead-rows.b0367c1d": {
    "source": "Dead rows",
    "text": "Dead rows"
+  },
+  "s.dead.9f8a73ef": {
+   "source": "Dead",
+   "text": "Dead"
   },
   "s.debug.32faaeca": {
    "source": "debug",
@@ -10052,6 +10072,10 @@
    "source": "full backup",
    "text": "full backup"
   },
+  "s.full.11a97f9c": {
+   "source": "% full",
+   "text": "% full"
+  },
   "s.fulladmin-banadmin-or-readonly.40602654": {
    "source": "fulladmin, banadmin or readonly",
    "text": "fulladmin, banadmin or readonly"
@@ -10391,10 +10415,6 @@
   "s.groups.ae9629f4": {
    "source": "Groups",
    "text": "Groups"
-  },
-  "s.grows-a-day.348ffa96": {
-   "source": "Grows a day",
-   "text": "Grows a day"
   },
   "s.guadeloupe.f0f524ff": {
    "source": "Guadeloupe",
@@ -13176,6 +13196,10 @@
    "source": "itself (self-signed)",
    "text": "itself (self-signed)"
   },
+  "s.ix.d4f506d1": {
+   "source": "ix",
+   "text": "ix"
+  },
   "s.jamaica.5eedd6a1": {
    "source": "Jamaica",
    "text": "Jamaica"
@@ -14184,6 +14208,10 @@
    "source": "live files",
    "text": "live files"
   },
+  "s.live.65c821a5": {
+   "source": "Live",
+   "text": "Live"
+  },
   "s.live.98aadb37": {
    "source": "live",
    "text": "live"
@@ -14351,6 +14379,10 @@
   "s.logons-and-the-like.a37573af": {
    "source": "logons and the like",
    "text": "logons and the like"
+  },
+  "s.logrotate-for-these-logs.f06270b9": {
+   "source": "logrotate for these logs",
+   "text": "logrotate for these logs"
   },
   "s.logs-read.d9d782d5": {
    "source": "Logs read",
@@ -15288,6 +15320,14 @@
    "source": "mono small",
    "text": "mono small"
   },
+  "s.mono-st-strong-st-wrap.fcefafbe": {
+   "source": "mono st-strong st-wrap",
+   "text": "mono st-strong st-wrap"
+  },
+  "s.mono-st-wrap.20fcb0d5": {
+   "source": "mono st-wrap",
+   "text": "mono st-wrap"
+  },
   "s.mono.68caafb2": {
    "source": "mono",
    "text": "mono"
@@ -15463,6 +15503,14 @@
   "s.mysql.deaa0c39": {
    "source": "MySQL",
    "text": "MySQL"
+  },
+  "s.n-st-strong.b1ad97cc": {
+   "source": "n st-strong",
+   "text": "n st-strong"
+  },
+  "s.n-st-sub.d769c854": {
+   "source": "n st-sub",
+   "text": "n st-sub"
   },
   "s.nad.43f2a2d2": {
    "source": "nad",
@@ -16092,6 +16140,10 @@
    "source": "No, leave the router alone",
    "text": "No, leave the router alone"
   },
+  "s.no-live-file.28b52c6c": {
+   "source": "no live file",
+   "text": "no live file"
+  },
   "s.no-log-is-switched-on.fe68579b": {
    "source": "no log is switched on",
    "text": "no log is switched on"
@@ -16663,6 +16715,10 @@
   "s.not-good.db04b217": {
    "source": "NOT GOOD",
    "text": "NOT GOOD"
+  },
+  "s.not-growing-what-arrives-is-let.cbb51a1a": {
+   "source": "not growing: what arrives is let go of as it ages",
+   "text": "not growing: what arrives is let go of as it ages"
   },
   "s.not-in-the-group-that-is.66223cc6": {
    "source": "not in the group that is allowed",
@@ -18188,9 +18244,9 @@
    "source": "One folder per RADIUS server, or a path to the file itself.",
    "text": "One folder per RADIUS server, or a path to the file itself."
   },
-  "s.one-folder-per-sender-as-rsyslog.f5917aa0": {
-   "source": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows.",
-   "text": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows."
+  "s.one-folder-per-sender-as-rsyslog.44031f19": {
+   "source": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows. A row opened shows its biggest files.",
+   "text": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows. A row opened shows its biggest files."
   },
   "s.one-folder-per-tac-plus-server.796b8725": {
    "source": "One folder per tac_plus server, comma separated. Both of its logs are looked for in each: the accounting log, which is what people did, and the daemon’s own log, which is the only place a refusal is written down. A path may name one file itself instead of the folder it is in, and a site that writes both into one file can name that — a line is read for what it is rather than for which file it came out of.",
@@ -18487,6 +18543,10 @@
   "s.only-by-hand.ee9c7afc": {
    "source": "only by hand",
    "text": "only by hand"
+  },
+  "s.only-copies-left.1bf220de": {
+   "source": "only copies left",
+   "text": "only copies left"
   },
   "s.only-entries-carrying-our-own-mark.c42e461a": {
    "source": "Only entries carrying our own mark are added or removed. Anything you put there by hand, every other address list on the router, and all of your firewall rules are left exactly as they are.",
@@ -19311,6 +19371,14 @@
   "s.own.fbf63c6a": {
    "source": "own",
    "text": "own"
+  },
+  "s.pack-the-old-copies.e6f57d5e": {
+   "source": "Pack the old copies",
+   "text": "Pack the old copies"
+  },
+  "s.pack-them.ba05df16": {
+   "source": "Pack them",
+   "text": "Pack them"
   },
   "s.package-fetches-as-often-as-every.8256dcc3": {
    "source": "package fetches as often as every hour. For bans of ten minutes,",
@@ -21576,6 +21644,14 @@
    "source": "Room it takes",
    "text": "Room it takes"
   },
+  "s.root-can-pack-them-from-here.20a04bad": {
+   "source": "Root can pack them from here",
+   "text": "Root can pack them from here"
+  },
+  "s.root-can-put-this-right-from.95b19337": {
+   "source": "Root can put this right from here",
+   "text": "Root can put this right from here"
+  },
   "s.root-delay-dispersion.e3bc6970": {
    "source": "Root delay / dispersion",
    "text": "Root delay / dispersion"
@@ -21644,6 +21720,10 @@
    "source": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is",
    "text": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is"
   },
+  "s.root-writes.8b36a904": {
+   "source": "Root writes",
+   "text": "Root writes"
+  },
   "s.root.dc76e9f0": {
    "source": "root",
    "text": "root"
@@ -21704,9 +21784,17 @@
    "source": "Row",
    "text": "Row"
   },
+  "s.rows-indexes-the-rest.fc683a63": {
+   "source": "Rows · indexes · the rest",
+   "text": "Rows · indexes · the rest"
+  },
   "s.rows-written-meanwhile-elsewhere.f117b8dc": {
    "source": "rows written meanwhile elsewhere",
    "text": "rows written meanwhile elsewhere"
+  },
+  "s.rows.52d0b352": {
+   "source": "Rows",
+   "text": "Rows"
   },
   "s.rows.6c30d261": {
    "source": "rows",
@@ -29784,6 +29872,10 @@
    "source": "There is nothing to fold: no two banned addresses share a subnet this wide.",
    "text": "There is nothing to fold: no two banned addresses share a subnet this wide."
   },
+  "s.there-was-nothing-to-pack.4130092e": {
+   "source": "there was nothing to pack",
+   "text": "there was nothing to pack"
+  },
   "s.there.02a81a8e": {
    "source": "There",
    "text": "There"
@@ -34724,6 +34816,10 @@
    "source": "Writing to them",
    "text": "Writing to them"
   },
+  "s.written-a-day.05de45d6": {
+   "source": "Written a day",
+   "text": "Written a day"
+  },
   "s.written-as.e5678a4e": {
    "source": ", written as",
    "text": ", written as"
@@ -35474,6 +35570,10 @@
    "source": "Copies kept ({0} at most)",
    "text": "Copies kept ({0} at most)"
   },
+  "p.copies-packed.fb0d16f1": {
+   "source": "{0} copies packed",
+   "text": "{0} copies packed"
+  },
   "p.could-not-be-read.111f9968": {
    "source": "{0} could not be read",
    "text": "{0} could not be read"
@@ -35566,10 +35666,6 @@
    "source": "{0} days",
    "text": "{0} days"
   },
-  "p.days.b291297d": {
-   "source": "× {0} days",
-   "text": "× {0} days"
-  },
   "p.db-ms.db6d5710": {
    "source": "· DB {0} ms",
    "text": "· DB {0} ms"
@@ -35577,10 +35673,6 @@
   "p.dead-rows-in.ea13ec51": {
    "source": "Dead rows in {0}",
    "text": "Dead rows in {0}"
-  },
-  "p.dead.e09cfed4": {
-   "source": "{0} % dead",
-   "text": "{0} % dead"
   },
   "p.delete-this.62446462": {
    "source": "Delete this {0}?",
@@ -35890,13 +35982,9 @@
    "source": "Filling {0} on the router",
    "text": "Filling {0} on the router"
   },
-  "p.fills-a-day-at-the-rate.204033ac": {
-   "source": "fills {0} a day at the rate measured",
-   "text": "fills {0} a day at the rate measured"
-  },
-  "p.find-type-f-regextype-posix-extended.62c57bdc": {
-   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +",
-   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +"
+  "p.find-type-f-regextype-posix-extended.8dac81a9": {
+   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +",
+   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +"
   },
   "p.fine-to-look-at.a6d06684": {
    "source": "{0} fine · {1} to look at",
@@ -35929,6 +36017,10 @@
   "p.for-good-on-a-clock.21cd2978": {
    "source": "{0} for good · {1} on a clock",
    "text": "{0} for good · {1} on a clock"
+  },
+  "p.for-keeping-copies-logrotate-is-asked.3db8b9f2": {
+   "source": "for {0}, keeping {1} copies{2}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was.",
+   "text": "for {0}, keeping {1} copies{2}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was."
   },
   "p.for.aaf0f881": {
    "source": "for {0}",
@@ -36037,6 +36129,14 @@
   "p.groups.458ef911": {
    "source": "Groups ({0})",
    "text": "Groups ({0})"
+  },
+  "p.grows-a-day-for-good-at.c7c4dba9": {
+   "source": "grows {0} a day for good, at the rate measured",
+   "text": "grows {0} a day for good, at the rate measured"
+  },
+  "p.gzips-the-copies-older-than-three.84eb5226": {
+   "source": "gzips the copies older than three days in {0}, behind and at the lowest priority",
+   "text": "gzips the copies older than three days in {0}, behind and at the lowest priority"
   },
   "p.h-ago.f29997e6": {
    "source": "{0} h ago",
@@ -36673,14 +36773,6 @@
   "p.list.fe578e69": {
    "source": "list-{0}",
    "text": "list-{0}"
-  },
-  "p.live-copies-packed.560870e5": {
-   "source": "live {0} · copies {1} · packed {2}",
-   "text": "live {0} · copies {1} · packed {2}"
-  },
-  "p.live-copies.60b12a57": {
-   "source": "{0} live · {1} copies",
-   "text": "{0} live · {1} copies"
   },
   "p.load.4951c424": {
    "source": "· load {0}",
@@ -37346,6 +37438,10 @@
    "source": "pace{0}",
    "text": "pace{0}"
   },
+  "p.packing-copies-behind.6eb3ad9a": {
+   "source": "packing {0} copies behind",
+   "text": "packing {0} copies behind"
+  },
   "p.page-of-more-than-more-than.7316f9b1": {
    "source": "page {0}{1} of more than {2} · more than {3} row(s)",
    "text": "page {0}{1} of more than {2} · more than {3} row(s)"
@@ -37626,9 +37722,17 @@
    "source": "{0}{1} right now.",
    "text": "{0}{1} right now."
   },
+  "p.root-gzips-the-copies-of-logs.1af649ad": {
+   "source": "Root gzips the copies of logs older than three days that were never compressed, in {0} - behind, at the lowest priority.",
+   "text": "Root gzips the copies of logs older than three days that were never compressed, in {0} - behind, at the lowest priority."
+  },
   "p.root-or-an-account-allowed-to.a44d0358": {
    "source": "({0}). Root, or an account allowed to run",
    "text": "({0}). Root, or an account allowed to run"
+  },
+  "p.root-wrote.ab87af9d": {
+   "source": "root wrote {0}{1}{2}",
+   "text": "root wrote {0}{1}{2}"
   },
   "p.rotate.0979bdf7": {
    "source": "rotate {0}",
@@ -37661,10 +37765,6 @@
   "p.rows-indexes-the-rest.834ea75a": {
    "source": "rows {0} · indexes {1} · the rest {2}",
    "text": "rows {0} · indexes {1} · the rest {2}"
-  },
-  "p.rows.1b97d070": {
-   "source": "{0} rows",
-   "text": "{0} rows"
   },
   "p.rsyslog.81d686b1": {
    "source": "rsyslog {0}{1}",
@@ -38734,10 +38834,6 @@
    "source": "({0} times in a row)",
    "text": "({0} times in a row)"
   },
-  "p.times.72f0ed16": {
-   "source": "{0} times",
-   "text": "{0} times"
-  },
   "p.tls-by.0e5b3c73": {
    "source": ", TLS by {0}",
    "text": ", TLS by {0}"
@@ -39113,6 +39209,10 @@
   "p.write-this-as-etc-logrotate-d.2668a80e": {
    "source": "Write this as /etc/logrotate.d/{0} (as root):",
    "text": "Write this as /etc/logrotate.d/{0} (as root):"
+  },
+  "p.writes-for-copies-kept-asks-logrotate.e586163b": {
+   "source": "writes {0} for {1} ({2} copies kept), asks logrotate whether all is well and puts it back if not",
+   "text": "writes {0} for {1} ({2} copies kept), asks logrotate whether all is well and puts it back if not"
   },
   "p.written.acd887d3": {
    "source": "· written {0}",
@@ -39967,6 +40067,10 @@
   "r.root-no-longer-signs-in-with.c3b654aa": {
    "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
    "text": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}"
+  },
+  "r.root-writes-for-keeping-copies-logrotate.44f0a5bc": {
+   "source": "Root writes <b>{0}</b> for {1}, keeping {2} copies{3}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was.",
+   "text": "Root writes <b>{0}</b> for {1}, keeping {2} copies{3}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was."
   },
   "r.rsyslog-stops-taking-acme-s-lines.974384fa": {
    "source": "rsyslog stops taking acme's lines over TLS, and isemon's certificate, its key, acme's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch acme's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into acme again.",

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.309'
+__version__ = '1.10.310'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73074,7 +73074,7 @@ STORE_LAST = {'at': 0.0, 'out': None}
 STORE_LOCK = threading.Lock()
 # A copy logrotate (or anybody) made: x.log.1, x.log-20261106, x.log.2.gz,
 # x.log-2026110613.xz; compressed ones whatever they are called.
-STORE_ROTATED = re.compile(r'(\.\d{1,4}|-\d{8}(\d{2})?)(\.(gz|xz|bz2|zst|lz4))?$|'
+STORE_ROTATED = re.compile(r'(\.\d{1,4}|-\d{8}([-_.]?\d{1,12})?)(\.(gz|xz|bz2|zst|lz4))?$|'
                            r'\.(gz|xz|bz2|zst|lz4)$')
 STORE_PACKED = re.compile(r'\.(gz|xz|bz2|zst|lz4)$')
 STORE_READERS = (('ise', 'ise_paths', 'ISE'), ('otp', 'otp_paths', 'token logs'),
@@ -73181,7 +73181,8 @@ def store_logrotate(paths=None):
                 pending, inside = [], False
                 continue
             store_logrotate_opt(opts, line)
-        out.append({'file': str(f), 'stanzas': stanzas})
+        out.append({'file': str(f), 'stanzas': stanzas,
+                    'ours': '# Written by isemon (Settings - Disk and logs)' in text})
     return {'files': out, 'defaults': defaults}
 
 
@@ -73385,8 +73386,21 @@ def store_disks(store, logs, parts_extra):
                 sum(f['bytes'] for f in logs if f['path'].startswith(root + '/')))
     for item in parts_extra:
         add(*item)
-    out = []
+    # One disk is one filesystem, whatever it is mounted as: / and
+    # /var/lib/isemon bound onto the same one were two bars with the same
+    # numbers (1.10.310).
+    same = {}
     for m, parts in want.items():
+        try:
+            dev = os.stat(m).st_dev
+        except OSError:
+            dev = m
+        if dev in same:
+            same[dev][1].extend(parts)
+        else:
+            same[dev] = [m, list(parts)]
+    out = []
+    for m, parts in same.values():
         try:
             room = shutil.disk_usage(m)
         except OSError:
@@ -73550,16 +73564,24 @@ def store_template(folders, big, group, lr):
     """A logrotate file for folders nothing rotates, in the shape of the ones
     already there: one stanza for them, `create` so the daemon can go on
     reading, the reload rsyslog needs."""
-    # A name of its own beside the ones there: never one already taken.
-    taken = {os.path.basename(f['file']) for f in lr['files']}
-    name, n = 'remote-isemon', 2
-    while name in taken:
+    # isemon's own file, added to where it is there already (what root's
+    # helper writes, 1.10.310); a file of that name somebody else wrote is
+    # left alone and another name taken.
+    name, n, had = 'remote-isemon', 2, []
+    while True:
+        f = next((x for x in lr['files'] if os.path.basename(x['file']) == name), None)
+        if f is None:
+            break
+        if f.get('ours'):
+            had = [p for s_ in f['stanzas'] for p in s_['patterns']]
+            break
         name, n = 'remote-isemon-%d' % n, n + 1
     lines = ['# /etc/logrotate.d/%s' % name, '#',
              '# Written by isemon (Settings - Disk and logs) for folders under',
              '# /var/log/remote that no logrotate file took. Kept apart from the other',
              '# files: logrotate refuses two stanzas that take the same file.',
              '# A folder added later has to be added here or to another file.', '']
+    lines += had
     for f in folders:
         whole = not f.get('covered_by') and not f.get('deeper')
         if whole:
@@ -73597,7 +73619,31 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
         group = 'isemon'
     if group == 'root':
         group = 'isemon'
-    logs_a_day = sum(f['a_day'] or 0 for f in logs)
+    # What the logs add to the disk for good, a day - not how much they
+    # write (1.10.310): a folder logrotate rotates and lets go of after its
+    # copies is as big tomorrow as today once all its copies are there; it
+    # was counted at its whole day, and a disk with 380 GB free was "full in
+    # 13 days". Nothing rotating it: all of it. Rotated, but its copies not
+    # all there yet: what one more packed copy a day takes. Rotated and full:
+    # nothing.
+    now_ = time.time()
+
+    def lasting(f):
+        day = f.get('a_day') or 0
+        if not day:
+            return 0
+        if f.get('uncovered_n') or not f.get('covered_by'):
+            return day
+        keep = f.get('keep_days') or 0
+        oldest = f.get('oldest') or now_
+        if keep and (now_ - oldest) / 86400.0 >= keep * 0.9:
+            f['lasting'] = 0
+            return 0
+        return day / 12.0
+    logs_a_day = 0
+    for f in logs:
+        f['lasting'] = lasting(f)
+        logs_a_day += f['lasting']
     for d in disks:
         a_day = logs_a_day + max(0, (growth or {}).get('a_day') or 0)
         days = int(d['free'] / a_day) if a_day > 0 else None
@@ -73630,7 +73676,13 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
         big = [f for f in unrot if f['uncovered_bytes'] > G or (f['a_day'] or 0) > 2 * G]
         name, text = store_template(unrot, bool(big), group, lr)
         total = sum(f['uncovered_bytes'] for f in unrot)
+        # What root's helper can put in by itself (1.10.310): whole folders
+        # that nothing takes any file of; one partly taken by another file
+        # stays a step for root by hand.
+        whole = [f['name'] for f in unrot if not f['covered_by'] and not f.get('deeper')]
         out.append({'level': 'crit' if total > 5 * G else 'warn', 'key': 'unrotated',
+                    'apply': {'do': 'cover', 'folders': whole, 'keep': 2 if big else 30,
+                              'file': '/etc/logrotate.d/remote-isemon'} if whole else None,
                     'title': '%d folder(s) of logs that nothing rotates' % len(unrot),
                     'says': ('%s in %s: no logrotate file takes these files, so they only '
                              'ever grow. A site whose logrotate files list their folders one '
@@ -73692,6 +73744,7 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
     raw = [f for f in logs if f['old_raw_bytes'] > G]
     if raw:
         out.append({'level': 'warn', 'key': 'raw-copies',
+                    'apply': {'do': 'pack', 'folders': [f['name'] for f in raw]},
                     'title': 'Copies of logs kept uncompressed',
                     'says': ('%s in copies older than three days that were never compressed '
                              '(%s). Syslog text packs ten to twenty times over.'
@@ -73699,9 +73752,13 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
                                 ', '.join(f['name'] for f in raw[:6]))),
                     'fix': [{'say': 'Put `compress` in the logrotate file that takes them; the '
                                     'ones there now can be packed by hand:',
+                             # -mmin, not -mtime +3, which is four whole
+                             # days: the copies three to four days old were
+                             # left and still said here (1.10.310).
                              'text': '\n'.join("find %s -type f -regextype posix-extended "
-                                               "-regex '.*(\\.[0-9]+|-[0-9]{8})$' -mtime +3 "
-                                               "-exec gzip -6 {} +" % f['path'] for f in raw)}]})
+                                               "-regex '.*(\\.[0-9]+|-[0-9]{8}([-_.]?[0-9]{1,12})?)$' "
+                                               "-mmin +4320 -exec gzip -6 {} +"
+                                               % f['path'] for f in raw)}]})
     # Big senders kept long, one card for them all, by the file that keeps
     # them: what that comes to on the disk once every copy is there.
     long_ = [f for f in logs if f['keep_days'] and f['keep_days'] > 14
@@ -73793,6 +73850,70 @@ def store_human(n):
 
 def store_num(n):
     return '{:,}'.format(int(n or 0))
+
+
+def store_root_ask(wr, data, wait=90):
+    """One question for root's helper in logfix.ask and its answer out of
+    logfix.json - the one with the same id; one not taken in time is taken
+    back, so it is never done long after."""
+    ask_id = secrets.token_hex(8)
+    wr.write('logfix.ask', dict(data, id=ask_id, at=time.time()))
+    end = time.time() + wait
+    while time.time() < end:
+        got = wr.read('logfix.json')
+        if isinstance(got, dict) and got.get('id') == ask_id:
+            if not got.get('ok'):
+                raise WebRootError(got.get('said') or 'root\'s helper said no')
+            return got.get('data') if isinstance(got.get('data'), dict) else {}
+        time.sleep(0.4)
+    try:
+        if (wr.read('logfix.ask') or {}).get('id') == ask_id:
+            os.unlink(str(wr.folder() / 'logfix.ask'))
+    except OSError:
+        pass
+    raise WebRootError('root\'s helper did not answer in %d s - it is asked about logrotate '
+                       'from 1.10.310 on: ./install.sh --upgrade puts in the isemon-web.path '
+                       'that hands it over' % wait)
+
+
+def storage_fix(store, wr, body, by):
+    """POST /api/storage: what Settings → Disk and logs offers to put right,
+    done by root's helper (1.10.310). Only what the last look found and
+    offered - the folders are those of the offer, never names the page
+    sends of its own - and root's helper checks every one again and writes
+    the logrotate file itself from the names."""
+    if not wr.helper_there():
+        raise WebRootError('root\'s half is not installed on this machine yet: run '
+                           './install.sh --upgrade once')
+    do = str((body or {}).get('do') or '')
+    if do not in ('cover', 'pack'):
+        raise ValueError('cover or pack')
+    look = storage_health(store, fresh=True)
+    offer = next((p.get('apply') for p in look.get('problems') or []
+                  if p.get('apply') and p['apply'].get('do') == do), None)
+    if not offer or not offer.get('folders'):
+        raise ValueError('there is nothing of that to put right now - the page may be from '
+                         'before; look again')
+    asked = [str(x) for x in (body.get('folders') or [])]
+    folders = [f for f in offer['folders'] if not asked or f in asked]
+    if not folders:
+        raise ValueError('none of those folders is one to put right now')
+    data = {'do': do, 'folders': folders}
+    if do == 'cover':
+        data.update(keep=int(offer.get('keep') or 30), rotate_now=bool(body.get('rotate_now')))
+    got = store_root_ask(wr, data, wait=75)
+    if do == 'cover':
+        store.add_event('control', '%s had root put %s into %s (%d copies kept)%s'
+                        % (by, ', '.join(folders), got.get('file') or 'logrotate',
+                           int(got.get('keep') or 0),
+                           ', rotated at once' if got.get('rotated') else ''), 'info', who=by)
+    else:
+        store.add_event('control', '%s had root pack %d old copies of logs (%s) in %s'
+                        % (by, int(got.get('files') or 0), store_human(got.get('bytes') or 0),
+                           ', '.join(folders)), 'info', who=by)
+    with STORE_LOCK:
+        STORE_LAST.update(at=0.0, out=None)
+    return dict(got, ok=True)
 
 
 def storage_health(store, fresh=False):
@@ -80212,6 +80333,12 @@ class ApiHandler(BaseHTTPRequestHandler):
             me = self.need_admin()
             if not me:
                 return None
+            if method == 'POST':
+                try:
+                    return self.send_json(storage_fix(store, daemon.webroot, self.body(),
+                                                      me.get('name') or ''))
+                except (WebRootError, ValueError, OSError) as e:
+                    return self.fail(str(e))
             return self.send_json(storage_health(store, fresh=str(one('fresh') or '')
                                                  in ('1', 'true')))
 

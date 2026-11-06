@@ -56,10 +56,55 @@ written since the firewalls were added and never rotated.
 | worth knowing | the sessions a firewall let through over 30 % of the database | the setting that keeps them |
 | worth knowing | indexes over 1 GB not used yet | nothing to do unless room is short |
 
-How much a day a folder grows is measured: what its live files gained
+When a disk is full is worked out from what *stays* on it a day: a folder
+nothing rotates, all it writes; one rotated whose copies are not all there
+yet, one packed copy a day; one rotated with all its copies there, nothing -
+as much goes as comes. Then the database's own growth.
+
+How much a day a folder writes is measured: what its live files gained
 between two looks at least ten minutes apart (noted in `meta`, so a restart
 does not lose it), or else, where it is rotated daily, the size of
 yesterday's uncompressed copy.
+
+## Put right from the page (1.10.310)
+
+Two of the findings can be put right by root's helper (`isemon_web.py`, as
+the network, the clock and root's SSH keys are) with one button, for a full
+admin:
+
+- **Folders nothing rotates** - *Put it in*: root writes
+  `/etc/logrotate.d/remote-isemon`, isemon's own file, with one line
+  `/var/log/remote/<folder>/*.log` for each of those folders (daily, `dateext`,
+  2 copies where they are big - over 1 GB, or 2 GB a day - else 30;
+  `compress`, `delaycompress`, `create 0640 root isemon`, the reload of
+  rsyslog). Asked again later for another folder, it is added to the same
+  file. With *and rotate them at once*, `logrotate -f` of that file alone
+  follows: a rename, quick however big the files are.
+- **Copies kept uncompressed** - *Pack them*: root gzips the copies older
+  than three days that were never compressed, in those folders, behind and
+  at the lowest priority (a unit of its own, `isemon-pack-…`).
+
+What makes it safe:
+
+- Root writes the file **from the folder names alone**; no text the page
+  sends is written as it was sent. Each name is checked again by root: one
+  folder straight under `/var/log/remote`, a real folder, never a link or a
+  path.
+- The daemon asks only for what its own look found and offered a moment
+  before - a folder of which no file is taken by any other logrotate file
+  (one partly taken stays a step for root by hand).
+- logrotate is asked about the whole of its configuration (`logrotate -d
+  /etc/logrotate.conf`) before and after. Anything it says is wrong after
+  that it did not say before - above all two files taking one log, which
+  stops every rotation there is - and the file is put back exactly as it
+  was, or taken away where there was none.
+- A `remote-isemon` that isemon did not write (no `# Written by isemon` line)
+  is never touched.
+- A request older than five minutes is not done; each one is in Events.
+
+The helper is handed `logfix.ask` by `isemon-web.path`: an installation from
+before 1.10.310 needs `./install.sh --upgrade` once (an upgrade from the web
+does it).
 
 ## Limits
 

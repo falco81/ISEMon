@@ -372,6 +372,26 @@ working.
 
 ## Version
 
+1.10.310
+
+- Disk and logs puts it right by root's helper: *Put it in* writes
+  `/etc/logrotate.d/remote-isemon` for the folders under `/var/log/remote`
+  that nothing rotates - written by root from the folder names alone,
+  logrotate asked about all its files before and after and the file put back
+  if it says anything new is wrong - and rotates them at once if asked;
+  *Pack them* gzips the copies older than three days never compressed. The
+  tables of the pane in aligned columns, nothing cut short: the logs with
+  their state beside the name, the tables of the database each figure in a
+  column of its own, the kind of day of a table split by day said in words;
+  each disk once even where it is mounted twice (`/` and `/var/lib/isemon`
+  bound onto one); copies named with a time after the date (`dateext` with
+  `dateformat`) known for copies. When a disk is full is worked out from what
+  stays on it, not from what the logs write: a folder logrotate rotates and
+  lets go of after its copies adds nothing once they are all there (a disk
+  with 380 GB free was "full in 13 days"). The command that packs old copies
+  takes the ones older than three days (`-mmin +4320`; `-mtime +3` was four).
+  See [docs/disk-and-logs.md](docs/disk-and-logs.md).
+
 1.10.309
 
 - **Disk and logs**, a new pane under Settings → Data, for a full admin: what
