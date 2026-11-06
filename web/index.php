@@ -35123,12 +35123,15 @@ function stApply(ap) {
   ic.innerHTML = iconMarkup('terminal', 18);
   line.appendChild(ic);
   var words = el('div', 'st-apply-w');
-  words.appendChild(el('div', 'st-strong', ap.do === 'cover'
-    ? 'Root can put this right from here'
+  words.appendChild(el('div', 'st-strong', ap.do === 'cover' || ap.do === 'dayfix'
+    ? 'Root can put this right from here, for good'
     : (ap.do === 'age' ? 'Root can let the old copies go from here' : 'Root can pack them from here')));
   words.appendChild(el('div', 'st-sub', ap.do === 'cover'
     ? 'writes ' + ap.file + ' for ' + ap.folders.join(', ') + ' (' + ap.keep + ' copies kept), asks logrotate whether all is well and puts it back if not'
-    : (ap.do === 'age'
+    : (ap.do === 'dayfix'
+      ? 'takes ' + ap.folders.join(', ') + ' out of ' + (ap.from || []).join(', ') + ', checks with logrotate and puts it back if not well, '
+        + 'and writes ' + ap.cron + ': every day the day files and copies older than two days packed, those older than ' + ap.keep + ' days let go of - and runs it once now'
+      : ap.do === 'age'
       ? 'deletes the copies in ' + ap.folders.join(', ') + ' older than ' + ap.keep + ' days, as long as its logrotate file means to keep them, and packs the rest older than three days'
       : 'gzips the copies older than three days in ' + ap.folders.join(', ') + ', behind and at the lowest priority')));
   line.appendChild(words);
@@ -35142,10 +35145,29 @@ function stApply(ap) {
     lab.appendChild(el('span', '', 'and rotate them at once'));
     line.appendChild(lab);
   }
-  var go = cmdButton(ap.do === 'cover' ? 'Put it in' : (ap.do === 'age' ? 'Let them go' : 'Pack them'),
-    ap.do === 'cover' ? 'check' : (ap.do === 'age' ? 'trash' : 'archive'), 'primary');
+  var go = cmdButton(ap.do === 'cover' || ap.do === 'dayfix' ? 'Put it right'
+    : (ap.do === 'age' ? 'Let them go' : 'Pack them'),
+    ap.do === 'cover' || ap.do === 'dayfix' ? 'check' : (ap.do === 'age' ? 'trash' : 'archive'), 'primary');
   go.onclick = function () {
     var rot = !!(now && now.checked);
+    if (ap.do === 'dayfix') {
+      confirmThen('Logs written a file a day, aged for good',
+        'Root takes <b>' + htmlText(ap.folders.join(', ')) + '</b> out of ' + htmlText((ap.from || []).join(', '))
+          + ' - its own line only - and asks logrotate about all of its files before and after; if it '
+          + 'says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>'
+          + htmlText(ap.cron) + '</b>: every day the day files and their copies older than two days packed, '
+          + 'those older than <b>' + ap.keep + ' days</b> deleted - and runs it once now, behind. What isemon '
+          + 'read of them stays in the database.',
+        'Put it right', function () {
+          go.disabled = true;
+          api('storage', {do: 'dayfix', folders: ap.folders}).then(function (r) {
+            toast('taken out of ' + (r.out_of || []).join(', ') + '; ' + (r.cron || '') + ' ages it every day'
+              + (r.behind ? ' and is running now' : ''), 'good');
+            loadStorage(true);
+          }).catch(function (e) { go.disabled = false; oops(e); });
+        }, true);
+      return;
+    }
     if (ap.do === 'age') {
       confirmThen('Let the old copies go',
         'Root <b>deletes</b> the copies of logs in ' + htmlText(ap.folders.join(', ')) + ' older than <b>'
@@ -35351,6 +35373,10 @@ function stStatus(f) {
   if (f.dupes) return ['crit', 'two files take it'];
   if (f.biggest_live && f.biggest_live.bytes > 2 * 1073741824 && (!f.newest_copy || Date.now() / 1000 - f.newest_copy > 3 * 86400)) return ['warn', 'not being rotated'];
   if (f.old_raw_bytes > 1073741824) return ['warn', 'copies not packed'];
+  /* Rotated by name, but a file a day: each rotated once, never let go of
+     (1.10.316) - not "rotated", whatever the file says. */
+  if ((f.per_day || 0) >= 3 && f.keep_days && f.oldest_copy
+      && Date.now() / 1000 - f.oldest_copy > (f.keep_days + 2) * 86400) return ['warn', 'copies never let go'];
   if (!f.live) return ['dim', f.copies ? 'only copies left' : 'empty'];
   return ['ok', 'rotated'];
 }
@@ -38350,10 +38376,32 @@ function tuneDraw(d) {
     }
     if (changes.length || lacking.length) {
       body.appendChild(el('h4', '', 'Who puts it in'));
-      if (d.may_own) {
+      if (d.may_own && !lacking.length) {
         body.appendChild(el('p', 'note good', 'This program’s own account may change the '
           + 'server’s settings: no administrator is needed.'));
         TUNE.boxes = null;
+      } else if (d.may_own) {
+        /* It may change the settings, but not give itself a role
+           (1.10.316): that takes an administrator, every time. */
+        body.appendChild(el('p', 'note', (changes.length
+          ? 'This program’s own account may change the server’s settings, but it may not give '
+            + 'itself a right: an administrator on the server is needed for that - postgres, or any '
+            + 'account that is a superuser.'
+          : 'Giving this program’s account a right takes an administrator on the server - '
+            + 'postgres, or any account that is a superuser.')));
+        if (TUNE.user && TUNE.granted === false) {
+          body.appendChild(el('p', 'note bad', 'That account may not give it.'));
+        }
+        TUNE.boxes = tuneAdminBoxes(body, d.engine, TUNE);
+        if (d.engine === 'postgres') {
+          body.appendChild(el('p', 'btnhelp', 'A PostgreSQL installed as it comes lets postgres '
+            + 'in only on the machine itself, without a password. Give it one first, on the '
+            + 'server:'));
+          body.appendChild(guideCode('sudo -u postgres psql -c "\\password postgres"'));
+          body.appendChild(el('p', 'btnhelp', 'Or, once, on this machine as root, from the '
+            + 'unpacked folder (it gives this right too):'));
+          body.appendChild(guideCode('sudo ./install.sh --db-rights'));
+        }
       } else {
         if (TUNE.user && !d.may) {
           body.appendChild(el('p', 'note bad', 'That account may not change the server’s '

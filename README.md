@@ -372,6 +372,28 @@ working.
 
 ## Version
 
+1.10.316
+
+- Tune it for this machine asks for an administrator where `pg_monitor` is
+  missing even when this program's own account may change the settings
+  itself (after `./install.sh --db-rights`): it may not give itself a role,
+  and the fields for the administrator were not there, so Put it in could
+  not give it. Disk and logs no longer marks a folder written a file a day
+  "rotated" while its copies are never let go of: *copies never let go*.
+- A log written **a file a day** is put right **for good** from Disk and
+  logs (*Put it right*): root takes the folder's own line out of the
+  logrotate file that names it - only a line naming that folder alone; a
+  pattern for several folders (`ftd*/*.log`), a line that is all its stanza
+  has, or a configuration of its own outside `/etc/logrotate.d` is refused
+  and left to be changed by hand - asks logrotate about all of its files
+  before and after and that nothing takes the folder any more, puts every
+  file back if not, then writes `/etc/cron.daily/isemon-day-logs` (isemon's
+  own, 0755, added to for each such folder): every day, in each folder, the
+  files with a date in their name older than two days packed and those older
+  than the days the folder's logrotate file kept let go of - and runs it once
+  at once, behind. Disk and logs then counts the folder as aged by that cron.
+  Any folder whose logs are named by the day, not only a firewall's.
+
 1.10.315
 
 - Disk and logs asks PostgreSQL for the size of its write-ahead log only

@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.315",
+  "version": "1.10.316",
   "made": "2026-11-06",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -3028,6 +3028,10 @@
    "source": "(and IPv6)",
    "text": "(and IPv6)"
   },
+  "s.and-is-running-now.7fc7c831": {
+   "source": "and is running now",
+   "text": "and is running now"
+  },
   "s.and-it-has-nothing-to-do.2826cb6e": {
    "source": ", and it has nothing to do with the person or their token: the token server was never even asked.",
    "text": ", and it has nothing to do with the person or their token: the token server was never even asked."
@@ -5872,6 +5876,10 @@
    "source": "Copies kept on this machine",
    "text": "Copies kept on this machine"
   },
+  "s.copies-never-let-go.5c7c8c2c": {
+   "source": "copies never let go",
+   "text": "copies never let go"
+  },
   "s.copies-not-packed.8ad24140": {
    "source": "copies not packed",
    "text": "copies not packed"
@@ -6260,6 +6268,10 @@
    "source": "day",
    "text": "day"
   },
+  "s.dayfix.e27093b2": {
+   "source": "dayfix",
+   "text": "dayfix"
+  },
   "s.days-is-a-number-of-days.eeeb7099": {
    "source": "days is a number of days",
    "text": "days is a number of days"
@@ -6375,6 +6387,10 @@
   "s.delete.f6fdbe48": {
    "source": "Delete",
    "text": "Delete"
+  },
+  "s.deleted-and-runs-it-once-now.a9e265fa": {
+   "source": "deleted - and runs it once now, behind. What isemon read of them stays in the database.",
+   "text": "deleted - and runs it once now, behind. What isemon read of them stays in the database."
   },
   "s.deleted-by.c546091d": {
    "source": "Deleted by",
@@ -7907,6 +7923,10 @@
   "s.every-country.d7e9d464": {
    "source": "every country",
    "text": "every country"
+  },
+  "s.every-day-the-day-files-and.12e2eafd": {
+   "source": ": every day the day files and their copies older than two days packed, those older than",
+   "text": ": every day the day files and their copies older than two days packed, those older than"
   },
   "s.every-day.a3fd743a": {
    "source": "every day",
@@ -10279,6 +10299,14 @@
   "s.gives-the-space-back-to-the.e82609f6": {
    "source": "Gives the space back to the DISK. Deleting rows frees room inside the database file and the engine reuses it; nothing hands it back to the operating system until the whole thing is rebuilt. All three do that the same way — SQLite's VACUUM, MariaDB's OPTIMIZE TABLE, PostgreSQL's VACUUM FULL — and all three hold the table shut while they do it and need room for a second copy of the biggest one. Worth doing after throwing a lot away, and not otherwise.",
    "text": "Gives the space back to the DISK. Deleting rows frees room inside the database file and the engine reuses it; nothing hands it back to the operating system until the whole thing is rebuilt. All three do that the same way — SQLite's VACUUM, MariaDB's OPTIMIZE TABLE, PostgreSQL's VACUUM FULL — and all three hold the table shut while they do it and need room for a second copy of the biggest one. Worth doing after throwing a lot away, and not otherwise."
+  },
+  "s.giving-it-takes-an-administrator-on.b08b02c5": {
+   "source": "giving it takes an administrator on the server (postgres, or a superuser) - type one in and put it in again",
+   "text": "giving it takes an administrator on the server (postgres, or a superuser) - type one in and put it in again"
+  },
+  "s.giving-this-program-s-account-a.865c852c": {
+   "source": "Giving this program’s account a right takes an administrator on the server - postgres, or any account that is a superuser.",
+   "text": "Giving this program’s account a right takes an administrator on the server - postgres, or any account that is a superuser."
   },
   "s.globe.1d5ea82f": {
    "source": "globe",
@@ -14459,6 +14487,10 @@
   "s.logs-that-arrive-over-syslog.a9ca51fd": {
    "source": "logs that arrive over syslog",
    "text": "logs that arrive over syslog"
+  },
+  "s.logs-written-a-file-a-day.32454616": {
+   "source": "Logs written a file a day, aged for good",
+   "text": "Logs written a file a day, aged for good"
   },
   "s.logs.126dd3b7": {
    "source": "Logs",
@@ -19168,6 +19200,10 @@
    "source": "Or, once, on this machine as root, from the unpacked folder - this program’s account may then change these settings, and only these, and no administrator is asked for again (PostgreSQL 15 and newer):",
    "text": "Or, once, on this machine as root, from the unpacked folder - this program’s account may then change these settings, and only these, and no administrator is asked for again (PostgreSQL 15 and newer):"
   },
+  "s.or-once-on-this-machine-as.c2602786": {
+   "source": "Or, once, on this machine as root, from the unpacked folder (it gives this right too):",
+   "text": "Or, once, on this machine as root, from the unpacked folder (it gives this right too):"
+  },
   "s.or-one-per-line-each-with.946b9027": {
    "source": ", or one per line, each with",
    "text": ", or one per line, each with"
@@ -20536,6 +20572,10 @@
    "source": "Put it into your password vault now - this is the only time it is shown whole. Without it no backup can be opened, by anybody. Then save the changes.",
    "text": "Put it into your password vault now - this is the only time it is shown whole. Without it no backup can be opened, by anybody. Then save the changes."
   },
+  "s.put-it-right.007c55dd": {
+   "source": "Put it right",
+   "text": "Put it right"
+  },
   "s.put-my-columns-back-as-they.0ac5b767": {
    "source": "Put my columns back as they come",
    "text": "Put my columns back as they come"
@@ -21764,9 +21804,9 @@
    "source": "Root can pack them from here",
    "text": "Root can pack them from here"
   },
-  "s.root-can-put-this-right-from.95b19337": {
-   "source": "Root can put this right from here",
-   "text": "Root can put this right from here"
+  "s.root-can-put-this-right-from.34df0f64": {
+   "source": "Root can put this right from here, for good",
+   "text": "Root can put this right from here, for good"
   },
   "s.root-delay-dispersion.e3bc6970": {
    "source": "Root delay / dispersion",
@@ -21835,6 +21875,10 @@
   "s.root-takes-the-encrypted-input-its.2228ad0a": {
    "source": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is",
    "text": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is"
+  },
+  "s.root-takes.cc418bd8": {
+   "source": "Root takes",
+   "text": "Root takes"
   },
   "s.root-writes.8b36a904": {
    "source": "Root writes",
@@ -24795,6 +24839,10 @@
   "s.that-account-may-not-change-the.135660c1": {
    "source": "That account may not change the server’s settings.",
    "text": "That account may not change the server’s settings."
+  },
+  "s.that-account-may-not-give-it.d5181b92": {
+   "source": "That account may not give it.",
+   "text": "That account may not give it."
   },
   "s.that-account-may-not-write-to.51c1b626": {
    "source": "that account may not write to it",
@@ -30483,6 +30531,10 @@
   "s.this-program-s-account-may-not.b5ae25e8": {
    "source": "This program’s account may not change the server’s settings, so an administrator on it is needed: postgres, or any account that is a superuser.",
    "text": "This program’s account may not change the server’s settings, so an administrator on it is needed: postgres, or any account that is a superuser."
+  },
+  "s.this-program-s-own-account-may.6c727f7f": {
+   "source": "This program’s own account may change the server’s settings, but it may not give itself a right: an administrator on the server is needed for that - postgres, or any account that is a superuser.",
+   "text": "This program’s own account may change the server’s settings, but it may not give itself a right: an administrator on the server is needed for that - postgres, or any account that is a superuser."
   },
   "s.this-program-s-own-account-may.77c9d312": {
    "source": "This program’s own account may change the server’s settings: no administrator is needed.",
@@ -37610,6 +37662,10 @@
    "source": "↑ {0} out · ↓ {1} in",
    "text": "↑ {0} out · ↓ {1} in"
   },
+  "p.out-of-its-own-line-only.0131492a": {
+   "source": "out of {0} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes",
+   "text": "out of {0} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes"
+  },
   "p.out-of-step.a223cf8b": {
    "source": "Out of step: {0}",
    "text": "Out of step: {0}"
@@ -38325,6 +38381,14 @@
   "p.taken-away.3035bbb4": {
    "source": "· taken away: {0}",
    "text": "· taken away: {0}"
+  },
+  "p.taken-out-of-ages-it-every.ce9dc04f": {
+   "source": "taken out of {0}; {1} ages it every day{2}",
+   "text": "taken out of {0}; {1} ages it every day{2}"
+  },
+  "p.takes-out-of-checks-with-logrotate.b7194feb": {
+   "source": "takes {0} out of {1}, checks with logrotate and puts it back if not well, and writes {2}: every day the day files and copies older than two days packed, those older than {3} days let go of - and runs it once now",
+   "text": "takes {0} out of {1}, checks with logrotate and puts it back if not well, and writes {2}: every day the day files and copies older than two days packed, those older than {3} days let go of - and runs it once now"
   },
   "p.tcp-from-anywhere-the-way-in.68852f87": {
    "source": "tcp {0} from anywhere - the way in to this machine. Turned off, keep a rule of your own for it.",
@@ -40287,6 +40351,10 @@
   "r.root-no-longer-signs-in-with.c3b654aa": {
    "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
    "text": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}"
+  },
+  "r.root-takes-out-of-its-own.2a1d1f3e": {
+   "source": "Root takes <b>{0}</b> out of {1} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>{2}</b>: every day the day files and their copies older than two days packed, those older than <b>{3} days</b> deleted - and runs it once now, behind. What isemon read of them stays in the database.",
+   "text": "Root takes <b>{0}</b> out of {1} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>{2}</b>: every day the day files and their copies older than two days packed, those older than <b>{3} days</b> deleted - and runs it once now, behind. What isemon read of them stays in the database."
   },
   "r.root-writes-for-keeping-copies-logrotate.44f0a5bc": {
    "source": "Root writes <b>{0}</b> for {1}, keeping {2} copies{3}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was.",

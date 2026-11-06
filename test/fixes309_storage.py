@@ -216,6 +216,13 @@ ok('...and Tune it gives it: looked at with the plan, granted by the administrat
 ok('...and install.sh --db-rights and the move to PostgreSQL give it too',
    ('sql+="GRANT pg_monitor TO' in inst, "cur.execute(pgsql.SQL('GRANT pg_monitor TO {}')" in src),
    (True, True))
+ok('...the administrator asked for even where the account may change the settings itself, '
+   'since it may not give itself a role (1.10.316)', "} else if (d.may_own) {" in page
+   and "TUNE.boxes = tuneAdminBoxes(body, d.engine, TUNE);" in page)
+ok('a folder written a file a day not marked rotated: copies never let go (1.10.316)',
+   "return ['warn', 'copies never let go'];" in page)
+ok('...and without an administrator the right is not tried as the own account, but said',
+   "if missing and not admin_user:" in src)
 print('\nThe page')
 ok('a pane of its own under Data, for a full admin',
    ('data-pane="storage"' in page and 'id="pane-storage"' in page,

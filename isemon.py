@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.315'
+__version__ = '1.10.316'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -24913,6 +24913,13 @@ class DbTune(object):
         changes = [it for it in plan['items'] if it['change']]
         missing = [r_ for r_ in plan.get('rights') or [] if r_.get('has') is False]
         granted, grant_failed = [], []
+        if missing and not admin_user:
+            # This program's own account may not give itself a role, even
+            # where it may change the settings (1.10.316): said so, not tried.
+            grant_failed = [{'name': r_['name'], 'why': 'giving it takes an administrator on the '
+                             'server (postgres, or a superuser) - type one in and put it in again'}
+                            for r_ in missing]
+            missing = []
         if missing:
             # The rights the account lacks, given by the administrator of
             # this request (1.10.315) - a role the server has by name, to
@@ -73133,7 +73140,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '4a0cedfbae9da8d7902fbce74fb12aa50b50da51017612f9174a83813fa52746'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'd4fe96ed0837b96a28cdcedf52d3fbbee3ef932c6fb0897c53735d481471b78a'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '36df0674ead5ee2eda48c011577cb57116b0da7f7e34daa6e886a6e433ccbe83'),
@@ -73365,6 +73372,31 @@ STORE_ROTATED = re.compile(r'(\.\d{1,4}|-\d{8}([-_.]?\d{1,12})?)(\.(gz|xz|bz2|zs
                            r'\.(gz|xz|bz2|zst|lz4)$')
 STORE_PACKED = re.compile(r'\.(gz|xz|bz2|zst|lz4)$')
 STORE_DAY_NAME = re.compile(r'(19|20)\d\d-?[01]\d-?[0-3]\d')
+# What root's helper writes for logs written a file a day (1.10.316): the
+# folders it ages itself, out of logrotate.
+STORE_DAYLOGS = '/etc/cron.daily/isemon-day-logs'
+
+
+def store_daylogs():
+    """{folder: days kept} of /etc/cron.daily/isemon-day-logs, isemon's own."""
+    try:
+        text = Path(STORE_DAYLOGS).read_text(encoding='utf-8', errors='replace')
+    except OSError:
+        return {}
+    if '# Written by isemon (Settings - Disk and logs)' not in text:
+        return {}
+    got, inside = {}, False
+    for line in text.splitlines():
+        if line.strip() == "FOLDERS='":
+            inside = True
+            continue
+        if inside and line.strip() == "'":
+            break
+        if inside:
+            bits = line.split()
+            if len(bits) == 2 and bits[1].isdigit():
+                got[bits[0]] = int(bits[1])
+    return got
 STORE_READERS = (('ise', 'ise_paths', 'ISE'), ('otp', 'otp_paths', 'token logs'),
                  ('acmelog', 'acmelog_paths', 'acme'), ('eduroam', 'eduroam_paths', 'eduroam'),
                  ('tacplus', 'tacplus_paths', 'TACACS+'), ('nps', 'nps_paths', 'NPS'),
@@ -73578,6 +73610,7 @@ def store_logs(lr, seen_before, now):
     """The folders under the log roots: each with its size, its files, what
     rotates them and how fast it grows."""
     readers = store_readers()
+    daylogs = store_daylogs()
     folders, looked = [], 0
     for root in STORE_LOG_ROOTS:
         try:
@@ -73655,6 +73688,15 @@ def store_logs(lr, seen_before, now):
                                                   if p.startswith(folder) or '*' in p][:6]}
                     covers[k]['files'] += 1
             one['covered_by'] = sorted(covers.values(), key=lambda c: -c['files'])
+            # Aged by isemon's own cron rather than logrotate (1.10.316).
+            if one['name'] in daylogs and not one['covered_by']:
+                k = daylogs[one['name']]
+                one['covered_by'] = [{'file': STORE_DAYLOGS, 'line': 0, 'files': one['live'],
+                                      'opts': {'every': 'daily', 'rotate': str(k),
+                                               'compress': True},
+                                      'keep_days': k, 'patterns': [], 'cron': True}]
+                one['uncovered'] = []
+                one['by_cron'] = True
             one['dupes'] = sum(1 for path, name, room, mtime, depth in files
                                if not STORE_ROTATED.search(name)
                                and len(store_rotated_by(path, lr)) > 1)
@@ -74061,7 +74103,7 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
                                  'text': 'logrotate -d /etc/logrotate.conf 2>&1 | '
                                          "grep -iE 'duplicate|error: '"}]})
     for f in logs:
-        if not f['covered_by'] or not f['biggest_live']:
+        if not f['covered_by'] or not f['biggest_live'] or f.get('by_cron'):
             continue
         opts = f['covered_by'][0]['opts']
         every = opts.get('every') or lr['defaults'].get('every') or 'weekly'
@@ -74092,7 +74134,8 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
     aged = []
     for f in logs:
         keep = f.get('keep_days') or 0
-        if f.get('per_day', 0) >= 3 and f['covered_by'] and keep and f.get('oldest_copy') \
+        if f.get('per_day', 0) >= 3 and f['covered_by'] and not f.get('by_cron') and keep \
+                and f.get('oldest_copy') \
                 and time.time() - f['oldest_copy'] > (keep + 2) * 86400:
             aged.append(f)
             k = int(round(keep))
@@ -74107,7 +74150,11 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
                                  % (f['biggest_live']['name'] if f.get('biggest_live') else '',
                                     os.path.basename(f['covered_by'][0]['file']), f['copies'],
                                     time.strftime('%d-%m-%Y', time.localtime(f['oldest_copy'])), k)),
-                        'apply': {'do': 'age', 'folders': [f['name']], 'keep': k},
+                        # For good (1.10.316): out of logrotate, aged by a cron
+                        # of its own - and once now.
+                        'apply': {'do': 'dayfix', 'folders': [f['name']], 'keep': k,
+                                  'cron': '/etc/cron.daily/isemon-day-logs',
+                                  'from': [c['file'] for c in f['covered_by']]},
                         'fix': [{'say': 'The copies older than %d days let go of, the rest older '
                                         'than three days packed - every day, as a line in '
                                         '/etc/cron.daily of its own:' % k,
@@ -74266,8 +74313,8 @@ def storage_fix(store, wr, body, by):
         raise WebRootError('root\'s half is not installed on this machine yet: run '
                            './install.sh --upgrade once')
     do = str((body or {}).get('do') or '')
-    if do not in ('cover', 'pack', 'age'):
-        raise ValueError('cover, pack or age')
+    if do not in ('cover', 'pack', 'age', 'dayfix'):
+        raise ValueError('cover, pack, age or dayfix')
     look = storage_health(store, fresh=True)
     offers = [p['apply'] for p in look.get('problems') or []
               if p.get('apply') and p['apply'].get('do') == do and p['apply'].get('folders')]
@@ -74285,7 +74332,7 @@ def storage_fix(store, wr, body, by):
     data = {'do': do, 'folders': folders}
     if do == 'cover':
         data.update(keep=int(offer.get('keep') or 30), rotate_now=bool(body.get('rotate_now')))
-    if do == 'age':
+    if do in ('age', 'dayfix'):
         # How long is the folder's own logrotate file's - what the look
         # worked out - never a number the page sends.
         data.update(keep=int(offer.get('keep') or 30))
@@ -74295,6 +74342,11 @@ def storage_fix(store, wr, body, by):
                         % (by, ', '.join(folders), got.get('file') or 'logrotate',
                            int(got.get('keep') or 0),
                            ', rotated at once' if got.get('rotated') else ''), 'info', who=by)
+    elif do == 'dayfix':
+        store.add_event('control', '%s had root take %s out of %s and age it every day in %s '
+                        '(%d days kept)'
+                        % (by, ', '.join(folders), ', '.join(got.get('out_of') or []) or 'logrotate',
+                           got.get('cron') or 'cron', int(got.get('keep') or 0)), 'warn', who=by)
     elif do == 'age':
         store.add_event('control', '%s had root let go of %d copies of logs older than %d days '
                         '(%s) and pack %d in %s'

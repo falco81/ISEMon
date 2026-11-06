@@ -2255,7 +2255,244 @@ def logfix_do(r):
         behind = logfix_gzip(pack) if pack else False
         return {'gone': gone, 'gone_bytes': room, 'packed': len(pack), 'keep': keep,
                 'behind': behind}
-    raise Refused('cover, pack or age')
+    if do == 'dayfix':
+        return logfix_dayfix(r)
+    raise Refused('cover, pack, age or dayfix')
+
+
+# ---- A log written a file a day: out of logrotate, aged by a cron of its own
+# (1.10.316). logrotate rotates each day's file once and never sees it again:
+# its copies are never let go of and never packed. Root takes the folder's
+# own line out of the logrotate file that names it - only a line that names
+# that folder and nothing else; a pattern for several folders is left as it
+# is and refused - checks with logrotate that nothing it did not say before
+# is wrong and that no file takes the folder any more, puts it all back if
+# not, and writes /etc/cron.daily/isemon-day-logs: every day, in each of its
+# folders, the day files and copies older than two days packed and those
+# older than the days kept let go of. Written here from the names and the
+# numbers alone; run once, behind, at once.
+CRON_DAILY = os.environ.get('ISEMON_CRON_DAILY', '/etc/cron.daily')
+DAYLOGS_NAME = 'isemon-day-logs'
+DAYLOGS_MARK = '# Written by isemon (Settings - Disk and logs): logs written a file a day.'
+DAY_NAME_RE = re.compile(r'(19|20)\d\d-?[01]\d-?[0-3]\d')
+
+
+def daylogs_ours():
+    """isemon's cron file as it is: (its text or None, {folder: days})."""
+    path = os.path.join(CRON_DAILY, DAYLOGS_NAME)
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return None, {}
+    if not stat.S_ISREG(st.st_mode):
+        raise Refused('%s is not a plain file - not touched' % path)
+    with open(path, encoding='utf-8', errors='replace') as f:
+        text = f.read(262144)
+    if DAYLOGS_MARK not in text:
+        raise Refused('%s is there and was not written by isemon - not touched' % path)
+    got = {}
+    inside = False
+    for line in text.splitlines():
+        if line.strip() == "FOLDERS='":
+            inside = True
+            continue
+        if inside and line.strip() == "'":
+            break
+        if inside:
+            bits = line.split()
+            if len(bits) == 2 and LOGFIX_FOLDER_RE.match(bits[0]) and bits[1].isdigit():
+                got[bits[0]] = int(bits[1])
+    return text, got
+
+
+def daylogs_text(folders):
+    lines = ['#!/bin/sh', '# /etc/cron.daily/%s' % DAYLOGS_NAME, DAYLOGS_MARK, '#',
+             '# Folders under %s whose logs are written a file a day (a date in the' % REMOTE_LOGS,
+             '# name). logrotate rotates such a file once and never sees it again, so its',
+             '# copies were never let go of nor packed; these folders are taken out of',
+             '# logrotate and aged here instead, every day: the day files and their copies',
+             '# older than two days packed, those older than the days kept let go of. Only',
+             '# files with a date in their name, straight in each folder, never a link.',
+             '# isemon adds a folder here when asked; a line taken away by hand stays away.',
+             '',
+             "ROOT='%s'" % REMOTE_LOGS,
+             "DAY='.*/[^/]*(19|20)[0-9]{2}-?[01][0-9]-?[0-3][0-9][^/]*'",
+             "FOLDERS='"]
+    lines += ['%s %d' % (n, k) for n, k in sorted(folders.items())]
+    lines += ["'",
+              'echo "$FOLDERS" | while read -r name keep; do',
+              '    [ -n "$name" ] && [ -n "$keep" ] || continue',
+              '    d="$ROOT/$name"',
+              '    [ -d "$d" ] && [ ! -L "$d" ] || continue',
+              '    find "$d" -maxdepth 1 -type f -regextype posix-extended -regex "$DAY" \\',
+              '        -mmin +$((keep * 1440)) -delete 2>/dev/null',
+              '    find "$d" -maxdepth 1 -type f -regextype posix-extended -regex "$DAY" \\',
+              "        ! -name '*.gz' -mmin +2880 -exec nice -n 19 gzip -6 {} + 2>/dev/null",
+              'done',
+              'exit 0']
+    return '\n'.join(lines) + '\n'
+
+
+def daylogs_write(text):
+    path = os.path.join(CRON_DAILY, DAYLOGS_NAME)
+    tmp = os.path.join(CRON_DAILY, '.%s.%d' % (DAYLOGS_NAME, os.getpid()))
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o755)
+    try:
+        os.write(fd, text.encode('utf-8'))
+        os.fchmod(fd, 0o755)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    os.rename(tmp, path)
+
+
+def logfix_untake(folder):
+    """{file: (before, after)} of the logrotate files with that folder's own
+    line taken out - refused where a pattern for several folders takes it,
+    or where its line is all its stanza has."""
+    confs = logfix_confs()
+    probe = os.path.join(REMOTE_LOGS, folder, 'isemon-probe.log')
+    live = logfix_live(folder) + [probe]
+    own = re.compile(r'^\s*"?%s/\*\.log"?\s*$' % re.escape(os.path.join(REMOTE_LOGS, folder)))
+    out = {}
+    for f, text in confs.items():
+        pats = logfix_patterns(text)
+        hits = [p for p in pats if any(logfix_glob(p, x) for x in live)]
+        if not hits:
+            continue
+        if not f.startswith(LOGROTATE_D.rstrip('/') + '/'):
+            raise Refused('%s is taken by %s, which is not under %s - not changed from here'
+                          % (folder, f, LOGROTATE_D))
+        if any(p != os.path.join(REMOTE_LOGS, folder, '*.log') for p in hits):
+            raise Refused('%s is taken in %s by a pattern for more than it (%s) - it cannot be '
+                          'taken out of that alone; change that file by hand'
+                          % (folder, f, ', '.join(p for p in hits
+                                                  if p != os.path.join(REMOTE_LOGS, folder,
+                                                                       '*.log'))[:120]))
+        lines = text.splitlines(True)
+        kept = [ln for ln in lines if not own.match(ln.split('#', 1)[0])]
+        if len(kept) == len(lines):
+            raise Refused('%s names %s on a line with something else - change it by hand'
+                          % (f, folder))
+        after = ''.join(kept)
+        if not logfix_stanzas_have_patterns(after):
+            raise Refused('%s is all a stanza of %s has - change that file by hand' % (folder, f))
+        out[f] = (text, after)
+    return out
+
+
+def logfix_stanzas_have_patterns(text):
+    """Whether every stanza of a logrotate file still names a log."""
+    pending, script = 0, False
+    for raw in text.splitlines():
+        line = raw.strip() if script else raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        if script:
+            if line.split()[0] == 'endscript':
+                script = False
+            continue
+        if line.split()[0] in ('postrotate', 'prerotate', 'firstaction', 'lastaction',
+                               'preremove'):
+            script = True
+            continue
+        if '{' in line:
+            pending += len(line.split('{', 1)[0].split())
+            if not pending:
+                return False
+            pending = 0
+        elif line.startswith('/') or line.startswith('"'):
+            pending += len(line.split())
+    return True
+
+
+def logfix_dayfix(r):
+    folders = logfix_folders(r.get('folders'))
+    try:
+        keep = int(r.get('keep') or 30)
+    except (TypeError, ValueError):
+        keep = 30
+    if keep < 7 or keep > 3650:
+        raise Refused('kept for 7 days at the least')
+    for n in folders:
+        if not any(DAY_NAME_RE.search(os.path.basename(x)) for x in logfix_live(n)):
+            raise Refused('%s has no log named by the day' % n)
+    was_cron, had = daylogs_ours()
+    changes = {}
+    for n in folders:
+        for f, (before, after) in logfix_untake(n).items():
+            if f in changes:
+                after2 = logfix_untake_text(changes[f][1], n)
+                changes[f] = (changes[f][0], after2)
+            else:
+                changes[f] = (before, after)
+    before_check = logfix_check()
+    written = []
+    try:
+        for f, (_b, after) in changes.items():
+            logfix_write_file(f, after)
+            written.append(f)
+        new = sorted(logfix_check() - before_check)
+        confs = logfix_confs()
+        still = []
+        for n in folders:
+            for x, by in logfix_takers(logfix_live(n), confs).items():
+                if by:
+                    still.append('%s: %s' % (x, ', '.join(by)))
+        if new or still:
+            raise Refused('logrotate said this was wrong, so it was all put back as it was: '
+                          + ' | '.join(new + ['still taken - ' + s for s in still[:4]])[:600])
+        want = dict(had)
+        want.update({n: keep for n in folders})
+        daylogs_write(daylogs_text(want))
+    except BaseException:
+        for f in written:
+            logfix_write_file(f, changes[f][0])
+        raise
+    # ...and once now, behind.
+    script = os.path.join(CRON_DAILY, DAYLOGS_NAME)
+    behind = False
+    if shutil.which('systemd-run') and not NO_SERVICES and os.path.isdir('/run/systemd/system'):
+        got = subprocess.run(['systemd-run', '--unit', 'isemon-day-logs-%d' % int(time.time()),
+                              '--collect', '--quiet', '--property', 'IOSchedulingClass=idle',
+                              '--property', 'Nice=19', '/bin/sh', script],
+                             capture_output=True, text=True, timeout=30)
+        behind = got.returncode == 0
+    if not behind:
+        subprocess.run(['/bin/sh', script], capture_output=True, text=True, timeout=1500)
+    return {'folders': folders, 'keep': keep, 'out_of': sorted(changes),
+            'cron': script, 'behind': behind}
+
+
+def logfix_untake_text(text, folder):
+    own = re.compile(r'^\s*"?%s/\*\.log"?\s*$' % re.escape(os.path.join(REMOTE_LOGS, folder)))
+    lines = text.splitlines(True)
+    after = ''.join(ln for ln in lines if not own.match(ln.split('#', 1)[0]))
+    if not logfix_stanzas_have_patterns(after):
+        raise Refused('%s is all a stanza has - change that file by hand' % folder)
+    return after
+
+
+def logfix_write_file(path, text):
+    """A logrotate file of the site's own written over, as it is made: beside
+    it and renamed, its owner and mode kept."""
+    st = os.lstat(path)
+    if not stat.S_ISREG(st.st_mode):
+        raise Refused('%s is not a plain file' % path)
+    folder = os.path.dirname(path)
+    tmp = os.path.join(folder, '.%s.isemon.%d' % (os.path.basename(path), os.getpid()))
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    try:
+        os.write(fd, text.encode('utf-8'))
+        os.fchmod(fd, stat.S_IMODE(st.st_mode))
+        try:
+            os.fchown(fd, st.st_uid, st.st_gid)
+        except OSError:
+            pass
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    os.rename(tmp, path)
 
 
 def logfix_part():

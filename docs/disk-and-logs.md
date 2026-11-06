@@ -91,6 +91,19 @@ admin:
   in the folder, never through a link. After a confirmation; in Events as a
   warning.
 
+- **A log written a file a day, for good** (1.10.316) - *Put it right*: the
+  folder's own line taken out of the logrotate file that names it, checked
+  with logrotate (and that nothing takes the folder any more), everything
+  put back if not; then `/etc/cron.daily/isemon-day-logs` written or added
+  to - every day, in each of its folders, the files with a date in their name
+  older than two days packed (`gzip -6`, at the lowest priority) and those
+  older than the folder's own days let go of - and run once at once. Refused,
+  and left as they are, where a pattern for more than that folder takes it,
+  where its line is all its stanza has, or where a configuration outside
+  `/etc/logrotate.d` takes it. `/etc/cron.daily` is run by cron (cronie and
+  anacron on AlmaLinux, cron on Debian): see that it is installed and
+  running.
+
 What makes it safe:
 
 - Root writes the file **from the folder names alone**; no text the page

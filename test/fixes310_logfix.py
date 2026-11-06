@@ -239,12 +239,13 @@ try:
     pd = next((p for p in look['problems'] if p['key'].startswith('per-day:')), None)
     ok('said: a file a day, its copies never let go of - with what root can do, kept as its file keeps',
        (pd and pd['level'], pd and pd['apply'], pd and 'never lets a copy go' in pd['says']),
-       ('warn', {'do': 'age', 'folders': ['fw.merit.cz'], 'keep': 30}, True))
+       ('warn', {'do': 'dayfix', 'folders': ['fw.merit.cz'], 'keep': 30,
+                 'cron': '/etc/cron.daily/isemon-day-logs', 'from': [str(lrd / 'remote-logs')]}, True))
     ok('...not said twice as copies kept unpacked', [p['key'] for p in look['problems']
                                                      if p['key'] == 'raw-copies'], [])
     r = ask({'do': 'age', 'folders': ['fw.merit.cz'], 'keep': 3})
     ok('kept fewer than 7 days: refused', r['ok'], False)
-    got = isemon.storage_fix(store, WR(), {'do': 'age', 'folders': ['fw.merit.cz'], 'keep': 1}, 'boss')
+    got = ask({'do': 'age', 'folders': ['fw.merit.cz'], 'keep': 30})['data']
     names = sorted(os.listdir(str(fm)))
     ok('the copies older than its 30 days let go of, the days kept by the page not asked',
        (got['gone'], got['keep'], 'date=2026-09-20.log-20260921' in names,
@@ -256,8 +257,90 @@ try:
     ok('...and a link among them neither followed nor taken', ((work / 'outside.log-20200101').read_text(),
                                                                os.path.islink(str(fm / 'link.log-20200101'))),
        ('keep me', True))
-    ok('in Events, as a warning', 'let go of 2 copies' in json.dumps(
+
+    print('\nA file a day, for good: out of logrotate, aged by a cron of its own (1.10.316)')
+    cron = work / 'cron.daily'
+    cron.mkdir()
+    ENV['ISEMON_CRON_DAILY'] = str(cron)
+    isemon.STORE_DAYLOGS = str(cron / 'isemon-day-logs')
+    (lrd / 'remote-logs').write_text('# the ones listed\n%s/isemon/*.log\n%s/fw.merit.cz/*.log\n{\n'
+                                     '    daily\n    rotate 30\n    compress\n    delaycompress\n'
+                                     '    postrotate\n        /usr/bin/systemctl reload rsyslog\n'
+                                     '    endscript\n}\n' % (remote, remote))
+    put(remote / 'isemon' / 'systemd.log', 10)
+    put(fm / 'date=2026-10-01.log', 100, 36)
+    put(fm / 'date=2026-11-03.log', 100, 3)
+    put(fm / 'date=2026-10-02.log-20261003', 5000, 35)
+    look = isemon.storage_health(store, fresh=True)
+    got = isemon.storage_fix(store, WR(), {'do': 'dayfix', 'folders': ['fw.merit.cz'], 'keep': 1}, 'boss')
+    lr_text = (lrd / 'remote-logs').read_text()
+    ok('its own line out of remote-logs, every other line of it as it was',
+       ('fw.merit.cz' in lr_text, '%s/isemon/*.log' % remote in lr_text, 'postrotate' in lr_text,
+        '# the ones listed' in lr_text), (False, True, True, True))
+    ctext = (cron / 'isemon-day-logs').read_text()
+    ok('...and /etc/cron.daily/isemon-day-logs written, 0755, with it and its own 30 days',
+       ('fw.merit.cz 30' in ctext, oct(os.stat(str(cron / 'isemon-day-logs')).st_mode & 0o777),
+        got['keep'], 'Written by isemon' in ctext), (True, '0o755', 30, True))
+    names = sorted(os.listdir(str(fm)))
+    ok('...run once at once: older than 30 days let go of, older than two days packed, the newest left',
+       ('date=2026-10-01.log' in names, 'date=2026-10-02.log-20261003' in names,
+        'date=2026-11-03.log.gz' in names, 'date=2026-11-06.log' in names,
+        'date=2026-11-05.log' in names), (False, False, True, True, True))
+    ok('...the link left alone', ((work / 'outside.log-20200101').read_text(),
+                                  os.path.islink(str(fm / 'link.log-20200101'))), ('keep me', True))
+    sh = subprocess.run(['sh', '-n', str(cron / 'isemon-day-logs')], capture_output=True)
+    ok('...a script sh reads', sh.returncode, 0)
+    look = isemon.storage_health(store, fresh=True)
+    fmrow = next(f for f in look['logs'] if f['name'] == 'fw.merit.cz')
+    ok('looked at again: aged by the cron, not "nothing rotates it", not a file a day never let go of',
+       (fmrow['uncovered_n'], fmrow.get('by_cron'), [p['key'] for p in look['problems']
+                                                     if 'fw.merit.cz' in p['key'] or p['key'] == 'unrotated']),
+       (0, True, []))
+    ok('in Events, as a warning', 'out of' in json.dumps(
+        [dict(e) for e in store.db.execute('SELECT * FROM events')]) and 'isemon-day-logs' in json.dumps(
         [dict(e) for e in store.db.execute('SELECT * FROM events')]))
+    # Where it cannot be taken out of one folder alone: refused, nothing changed.
+    put(remote / 'ftd1.x' / 'date=2026-11-06.log', 10)
+    put(remote / 'ftd1.x' / 'date=2026-11-05.log', 10)
+    put(remote / 'ftd1.x' / 'date=2026-11-04.log', 10)
+    (lrd / 'remote-ftd').write_text('%s/ftd*/*.log\n{\n daily\n}\n' % remote)
+    r = ask({'do': 'dayfix', 'folders': ['ftd1.x'], 'keep': 30})
+    ok('a folder taken by a pattern for more than it (ftd*): refused, that file as it was',
+       (r['ok'], 'pattern for more than it' in r.get('said', ''), (lrd / 'remote-ftd').read_text().count('ftd*')),
+       (False, True, 1))
+    (lrd / 'remote-ftd').write_text('%s/ftd1.x/*.log\n{\n daily\n}\n' % remote)
+    r = ask({'do': 'dayfix', 'folders': ['ftd1.x'], 'keep': 30})
+    ok('...its line all a stanza has: refused, as it was', (r['ok'], 'all a stanza' in r.get('said', ''),
+                                                           'ftd1.x' in (lrd / 'remote-ftd').read_text()),
+       (False, True, True))
+    (lrd / 'remote-ftd').unlink()
+    dcc = work / 'logrotate.dc.conf'
+    dcc.write_text('%s/ftd1.x/*.log {\n hourly\n}\n' % remote)
+    r = ask({'do': 'dayfix', 'folders': ['ftd1.x'], 'keep': 30})
+    ok('...taken by a configuration of its own (logrotate.dc.conf): refused', (r['ok'], 'not under' in r.get('said', '')),
+       (False, True))
+    dcc.unlink()
+    r = ask({'do': 'dayfix', 'folders': ['isemon'], 'keep': 30})
+    ok('a folder with no log named by the day: refused', (r['ok'], 'named by the day' in r.get('said', '')),
+       (False, True))
+    # logrotate saying something new is wrong after: all of it put back.
+    (lrd / 'remote-logs').write_text('%s/isemon/*.log\n%s/ftd1.x/*.log\n{\n daily\n}\n' % (remote, remote))
+    was_lr, was_cron = (lrd / 'remote-logs').read_text(), (cron / 'isemon-day-logs').read_text()
+    bad = work / 'logrotate-bad'
+    bad.write_text('#!/bin/sh\nif [ "$1" = "-d" ] && ! grep -q ftd1.x %s/remote-logs; then '
+                   'echo "error: injected after"; fi\nexit 0\n' % lrd)
+    bad.chmod(0o755)
+    ENV['ISEMON_LOGROTATE'], keep_lr = str(bad), ENV['ISEMON_LOGROTATE']
+    r = ask({'do': 'dayfix', 'folders': ['ftd1.x'], 'keep': 30})
+    ENV['ISEMON_LOGROTATE'] = keep_lr
+    ok('logrotate saying something is wrong after it: refused, remote-logs and the cron as they were',
+       (r['ok'], 'injected after' in r.get('said', ''), (lrd / 'remote-logs').read_text() == was_lr,
+        (cron / 'isemon-day-logs').read_text() == was_cron), (False, True, True, True))
+    (lrd / 'remote-logs').write_text('%s/isemon/*.log\n{\n daily\n}\n' % remote)
+    (cron / 'isemon-day-logs').write_text('#!/bin/sh\n# mine\n')
+    r = ask({'do': 'dayfix', 'folders': ['ftd1.x'], 'keep': 30})
+    ok('an isemon-day-logs somebody else wrote: never touched', (r['ok'], (cron / 'isemon-day-logs').read_text()),
+       (False, '#!/bin/sh\n# mine\n'))
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 

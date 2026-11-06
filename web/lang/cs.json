@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.315",
+  "version": "1.10.316",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -3028,6 +3028,10 @@
    "source": "(and IPv6)",
    "text": "(a IPv6)"
   },
+  "s.and-is-running-now.7fc7c831": {
+   "source": "and is running now",
+   "text": "a právě běží"
+  },
   "s.and-it-has-nothing-to-do.2826cb6e": {
    "source": ", and it has nothing to do with the person or their token: the token server was never even asked.",
    "text": ", a nemá to nic společného s osobou ani jejím tokenem: tokenový server nebyl vůbec dotázán."
@@ -5872,6 +5876,10 @@
    "source": "Copies kept on this machine",
    "text": "Kopie uložené na tomto stroji"
   },
+  "s.copies-never-let-go.5c7c8c2c": {
+   "source": "copies never let go",
+   "text": "kopie se nemažou"
+  },
   "s.copies-not-packed.8ad24140": {
    "source": "copies not packed",
    "text": "kopie nezabalené"
@@ -6260,6 +6268,10 @@
    "source": "day",
    "text": "den"
   },
+  "s.dayfix.e27093b2": {
+   "source": "dayfix",
+   "text": "dayfix"
+  },
   "s.days-is-a-number-of-days.eeeb7099": {
    "source": "days is a number of days",
    "text": "days je počet dní"
@@ -6375,6 +6387,10 @@
   "s.delete.f6fdbe48": {
    "source": "Delete",
    "text": "Smazat"
+  },
+  "s.deleted-and-runs-it-once-now.a9e265fa": {
+   "source": "deleted - and runs it once now, behind. What isemon read of them stays in the database.",
+   "text": "smazány – a hned ho jednou spustí na pozadí. Co z nich isemon přečetl, zůstává v databázi."
   },
   "s.deleted-by.c546091d": {
    "source": "Deleted by",
@@ -7907,6 +7923,10 @@
   "s.every-country.d7e9d464": {
    "source": "every country",
    "text": "všechny země"
+  },
+  "s.every-day-the-day-files-and.12e2eafd": {
+   "source": ": every day the day files and their copies older than two days packed, those older than",
+   "text": ": každý den denní soubory a jejich kopie starší než dva dny zabalí, starší než"
   },
   "s.every-day.a3fd743a": {
    "source": "every day",
@@ -10279,6 +10299,14 @@
   "s.gives-the-space-back-to-the.e82609f6": {
    "source": "Gives the space back to the DISK. Deleting rows frees room inside the database file and the engine reuses it; nothing hands it back to the operating system until the whole thing is rebuilt. All three do that the same way — SQLite's VACUUM, MariaDB's OPTIMIZE TABLE, PostgreSQL's VACUUM FULL — and all three hold the table shut while they do it and need room for a second copy of the biggest one. Worth doing after throwing a lot away, and not otherwise.",
    "text": "Vrátí místo na DISK. Mazáním řádků se uvolní místo uvnitř souboru databáze a engine ho znovu využije; operačnímu systému ho nic nevrátí, dokud se celá věc nepřestaví. Všechny tři to dělají stejně — VACUUM v SQLite, OPTIMIZE TABLE v MariaDB, VACUUM FULL v PostgreSQL — a všechny tři po dobu běhu drží tabulku zamčenou a potřebují místo na druhou kopii té největší. Vyplatí se po zahození velkého množství dat, jinak ne."
+  },
+  "s.giving-it-takes-an-administrator-on.b08b02c5": {
+   "source": "giving it takes an administrator on the server (postgres, or a superuser) - type one in and put it in again",
+   "text": "přidělit ho může jen administrátor na serveru (postgres nebo superuživatel) – zadejte ho a dejte Put it in znovu"
+  },
+  "s.giving-this-program-s-account-a.865c852c": {
+   "source": "Giving this program’s account a right takes an administrator on the server - postgres, or any account that is a superuser.",
+   "text": "Přidělit účtu tohoto programu právo může jen administrátor na serveru – postgres nebo jakýkoli superuživatel."
   },
   "s.globe.1d5ea82f": {
    "source": "globe",
@@ -14459,6 +14487,10 @@
   "s.logs-that-arrive-over-syslog.a9ca51fd": {
    "source": "logs that arrive over syslog",
    "text": "logy přicházející přes syslog"
+  },
+  "s.logs-written-a-file-a-day.32454616": {
+   "source": "Logs written a file a day, aged for good",
+   "text": "Logy psané po souboru za den, natrvalo"
   },
   "s.logs.126dd3b7": {
    "source": "Logs",
@@ -19168,6 +19200,10 @@
    "source": "Or, once, on this machine as root, from the unpacked folder - this program’s account may then change these settings, and only these, and no administrator is asked for again (PostgreSQL 15 and newer):",
    "text": "Nebo jednou, na tomto stroji jako root, z rozbalené složky - účet tohoto programu pak smí měnit tato nastavení, a jen tato, a administrátor už se nebude vyžadovat (PostgreSQL 15 a novější):"
   },
+  "s.or-once-on-this-machine-as.c2602786": {
+   "source": "Or, once, on this machine as root, from the unpacked folder (it gives this right too):",
+   "text": "Nebo jednou na tomto stroji jako root, ze složky rozbaleného balíku (přidělí i toto právo):"
+  },
   "s.or-one-per-line-each-with.946b9027": {
    "source": ", or one per line, each with",
    "text": ", nebo jeden na řádek, každý s"
@@ -20536,6 +20572,10 @@
    "source": "Put it into your password vault now - this is the only time it is shown whole. Without it no backup can be opened, by anybody. Then save the changes.",
    "text": "Uložte ho hned do trezoru hesel – celé se ukazuje jen teď. Bez něj nikdo neotevře žádnou zálohu. Pak změny uložte."
   },
+  "s.put-it-right.007c55dd": {
+   "source": "Put it right",
+   "text": "Napravit"
+  },
   "s.put-my-columns-back-as-they.0ac5b767": {
    "source": "Put my columns back as they come",
    "text": "Vrátit mé sloupce do výchozího stavu"
@@ -21764,9 +21804,9 @@
    "source": "Root can pack them from here",
    "text": "Root je může zabalit odsud"
   },
-  "s.root-can-put-this-right-from.95b19337": {
-   "source": "Root can put this right from here",
-   "text": "Root to může napravit odsud"
+  "s.root-can-put-this-right-from.34df0f64": {
+   "source": "Root can put this right from here, for good",
+   "text": "Root to může napravit odsud, natrvalo"
   },
   "s.root-delay-dispersion.e3bc6970": {
    "source": "Root delay / dispersion",
@@ -21835,6 +21875,10 @@
   "s.root-takes-the-encrypted-input-its.2228ad0a": {
    "source": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is",
    "text": "root během několika sekund odebere šifrovaný vstup, jeho certifikát i klíč; nešifrovaný zůstává, jak je"
+  },
+  "s.root-takes.cc418bd8": {
+   "source": "Root takes",
+   "text": "Root vyjme"
   },
   "s.root-writes.8b36a904": {
    "source": "Root writes",
@@ -24795,6 +24839,10 @@
   "s.that-account-may-not-change-the.135660c1": {
    "source": "That account may not change the server’s settings.",
    "text": "Tento účet nesmí měnit nastavení serveru."
+  },
+  "s.that-account-may-not-give-it.d5181b92": {
+   "source": "That account may not give it.",
+   "text": "Tento účet ho přidělit nesmí."
   },
   "s.that-account-may-not-write-to.51c1b626": {
    "source": "that account may not write to it",
@@ -30483,6 +30531,10 @@
   "s.this-program-s-account-may-not.b5ae25e8": {
    "source": "This program’s account may not change the server’s settings, so an administrator on it is needed: postgres, or any account that is a superuser.",
    "text": "Účet tohoto programu nesmí měnit nastavení serveru, proto je potřeba jeho správce: postgres nebo jakýkoli účet s rolí superuser."
+  },
+  "s.this-program-s-own-account-may.6c727f7f": {
+   "source": "This program’s own account may change the server’s settings, but it may not give itself a right: an administrator on the server is needed for that - postgres, or any account that is a superuser.",
+   "text": "Vlastní účet tohoto programu smí měnit nastavení serveru, ale sám sobě právo přidělit nesmí: na to je potřeba administrátor na serveru – postgres nebo jakýkoli superuživatel."
   },
   "s.this-program-s-own-account-may.77c9d312": {
    "source": "This program’s own account may change the server’s settings: no administrator is needed.",
@@ -37610,6 +37662,10 @@
    "source": "↑ {0} out · ↓ {1} in",
    "text": "↑ {0} ven · ↓ {1} dovnitř"
   },
+  "p.out-of-its-own-line-only.0131492a": {
+   "source": "out of {0} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes",
+   "text": "z {0} – jen její vlastní řádek – a zeptá se logrotate na všechny jeho soubory před i po; když hlásí něco nového špatně, nebo složku pořád něco bere, vrátí se všechno zpět. Pak zapíše"
+  },
   "p.out-of-step.a223cf8b": {
    "source": "Out of step: {0}",
    "text": "Nesouhlasí: {0}"
@@ -38325,6 +38381,14 @@
   "p.taken-away.3035bbb4": {
    "source": "· taken away: {0}",
    "text": "· odstraněno: {0}"
+  },
+  "p.taken-out-of-ages-it-every.ce9dc04f": {
+   "source": "taken out of {0}; {1} ages it every day{2}",
+   "text": "vyjmuto z {0}; {1} ji každý den uklízí{2}"
+  },
+  "p.takes-out-of-checks-with-logrotate.b7194feb": {
+   "source": "takes {0} out of {1}, checks with logrotate and puts it back if not well, and writes {2}: every day the day files and copies older than two days packed, those older than {3} days let go of - and runs it once now",
+   "text": "vyjme {0} z {1}, zkontroluje to logrotate a když ne, vrátí to, a zapíše {2}: každý den zabalí denní soubory a kopie starší než dva dny, starší než {3} dní smaže – a hned ho jednou spustí"
   },
   "p.tcp-from-anywhere-the-way-in.68852f87": {
    "source": "tcp {0} from anywhere - the way in to this machine. Turned off, keep a rule of your own for it.",
@@ -40287,6 +40351,10 @@
   "r.root-no-longer-signs-in-with.c3b654aa": {
    "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
    "text": "Root se už nepřihlásí pomocí <code>{0}</code>{1} na tomto serveru.{2}"
+  },
+  "r.root-takes-out-of-its-own.2a1d1f3e": {
+   "source": "Root takes <b>{0}</b> out of {1} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>{2}</b>: every day the day files and their copies older than two days packed, those older than <b>{3} days</b> deleted - and runs it once now, behind. What isemon read of them stays in the database.",
+   "text": "Root vyjme <b>{0}</b> z {1} – jen její vlastní řádek – a zeptá se logrotate na všechny jeho soubory před i po; když hlásí něco nového špatně, nebo složku pořád něco bere, vrátí se všechno zpět. Pak zapíše <b>{2}</b>: každý den denní soubory a jejich kopie starší než dva dny zabalí, starší než <b>{3} dní</b> smaže – a hned ho jednou spustí na pozadí. Co z nich isemon přečetl, zůstává v databázi."
   },
   "r.root-writes-for-keeping-copies-logrotate.44f0a5bc": {
    "source": "Root writes <b>{0}</b> for {1}, keeping {2} copies{3}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was.",
@@ -42401,6 +42469,10 @@
   "s.refusals-a-controller-wrote-for-it.868d296c": {
    "source": "refusals a controller wrote for it - in words, or None when too few",
    "text": "odmítnutím, která pro něj zapsal řadič - slovy, nebo None, když se jich"
+  },
+  "s.root-can-put-this-right-from.95b19337": {
+   "source": "Root can put this right from here",
+   "text": "Root to může napravit odsud"
   },
   "s.root-checks-the-package-again-and.b0d688ed": {
    "source": "Root checks the package again and runs its install.sh --upgrade. isemon restarts once, for a few seconds: these pages stop answering for that moment and the logs are read on from where they were. The database, the settings and the accounts are kept.",
