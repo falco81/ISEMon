@@ -2284,6 +2284,23 @@ function srcText(el) {
     background:var(--panel2);border:1px solid var(--line);color:var(--tx-dim)}
   .me-chip.on{border-color:rgba(163,113,247,.5);color:var(--violet)}
   .me-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  /* The passkeys in Your account (1.10.307) */
+  .me-sec .pk-keys{width:100%;margin:2px 0 4px;table-layout:fixed}
+  .me-sec .pk-keys th:nth-child(1){width:30%}
+  .me-sec .pk-keys th:nth-child(2){width:20%}
+  .me-sec .pk-keys th:nth-child(5){width:84px}
+  .me-sec .pk-keys td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .me-sec .pk-keys td{vertical-align:middle}
+  .me-sec .pk-keys td.pk-name{font-weight:600;color:var(--tx)}
+  .me-sec .pk-keys td.pk-acts{text-align:right;white-space:nowrap}
+  .me-sec .pk-keys td.pk-acts .iconbtn+.iconbtn{margin-left:6px}
+  .me-sec .pk-keys .pk-rename{width:100%;box-sizing:border-box;padding:6px 10px;border-radius:8px;
+    border:1px solid var(--info);background:var(--panel2);color:var(--tx);font:inherit;font-weight:600}
+  .me-sec .pk-add{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+  .me-sec .pk-add .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  .me-sec .pk-add .btn.primary:hover:not(:disabled){filter:brightness(1.1)}
+  .me-sec .pk-add .btn.primary:disabled{opacity:.5}
+  .me-sec .pk-why{font-size:13px;color:var(--tx-dim);line-height:1.5}
   .me-row .me-say{font-size:13px;color:var(--tx-dim);line-height:1.5}
   .me-row .me-say b{color:var(--tx)}
   .me-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -34737,28 +34754,66 @@ function meFaceId(host) {
     if (!d.on && !(d.passkeys || []).length) return;
     host.hidden = false;
     clear(host);
-    host.appendChild(el('h3', '', 'Face ID'));
-    host.appendChild(el('div', 'me-say', d.on
-      ? 'After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms '
-        + 'it is you. Each device that may do it keeps a passkey; the server only its public half. '
-        + 'A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices '
-        + 'too. Take the last one away and your next sign-in sets Face ID up again.'
+    /* Drawn as the one in Plexmon (1.10.307): a table of the passkeys with
+       the name changed in place and an icon to take one away, the button
+       to add this device's underneath it. */
+    host.appendChild(el('h3', '', 'Passkeys - Face ID, Touch ID'));
+    host.appendChild(el('p', '', d.on
+      ? 'After your password, the face, a finger or the PIN of this device confirms it is you. '
+        + 'A passkey is kept in the device (on an iPad and an iPhone in the iCloud Keychain, so '
+        + 'on your other Apple devices too); the server has only its public half. Take the last '
+        + 'one away and your next sign-in sets Face ID up again.'
       : 'Face ID is switched off on this server: these passkeys are not asked for.'));
     var keys = d.passkeys || [];
     if (keys.length) {
-      var t = el('table', 'plain');
+      var t = el('table', 'plain pk-keys');
       var hr = el('tr');
       ['Passkey', 'For', 'Added', 'Last used', ''].forEach(function (h) { hr.appendChild(el('th', '', h)); });
       var th = el('thead'); th.appendChild(hr); t.appendChild(th);
       var tb = el('tbody');
       keys.forEach(function (k) {
         var tr = el('tr');
-        tr.appendChild(noI18n(el('td', '', k.name)));
+        var nameCell = noI18n(el('td', 'pk-name', k.name));
+        tr.appendChild(nameCell);
         tr.appendChild(noI18n(el('td', 'mono', k.host || '')));
-        tr.appendChild(el('td', '', k.created ? stamp(k.created) : '\u2013'));
-        tr.appendChild(el('td', '', k.last_used ? stamp(k.last_used) : 'not yet'));
-        var td = el('td');
-        var x = cmdButton('Take away', 'trash', 'small danger');
+        tr.appendChild(stampCell(k.created));
+        if (k.last_used) tr.appendChild(stampCell(k.last_used));
+        else tr.appendChild(el('td', 'dim', 'not yet'));
+        var td = el('td', 'pk-acts');
+        var pen = iconButton('edit', 'Rename');
+        pen.classList.add('go');
+        pen.onclick = function () {
+          if (nameCell.querySelector('input')) { nameCell.querySelector('input').focus(); return; }
+          var box = el('input', 'pk-rename');
+          box.type = 'text';
+          box.maxLength = 80;
+          box.value = k.name;
+          box.setAttribute('aria-label', 'The name of this passkey');
+          clear(nameCell);
+          nameCell.appendChild(box);
+          box.focus();
+          box.select();
+          var done = false;
+          var back = function () { clear(nameCell); nameCell.textContent = k.name; };
+          var save = function () {
+            if (done) return;
+            done = true;
+            var name = box.value.trim();
+            if (!name || name === k.name) { back(); return; }
+            box.disabled = true;
+            api('passkeys', {do: 'rename', id: k.id, label: name}).then(function () {
+              k.name = name;
+              back();
+              toast('the passkey was renamed', 'good');
+            }).catch(function (e) { back(); oops(e); });
+          };
+          box.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); save(); }
+            else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done = true; back(); }
+          });
+          box.addEventListener('blur', save);
+        };
+        var x = iconButton('trash', 'Take away');
         x.onclick = function () {
           confirmThen('Take this passkey away',
             'It no longer confirms it is you. It stays on the device until you take it away '
@@ -34771,6 +34826,7 @@ function meFaceId(host) {
               }).catch(oops);
             }, true);
         };
+        td.appendChild(pen);
         td.appendChild(x);
         tr.appendChild(td);
         tb.appendChild(tr);
@@ -34781,16 +34837,12 @@ function meFaceId(host) {
       host.appendChild(sc);
     }
     if (!d.on) return;
-    var line = el('div', 'me-row');
+    var line = el('div', 'pk-add');
     var can = window.PublicKeyCredential && navigator.credentials && d.here;
-    line.appendChild(el('div', 'me-say', can
-      ? 'Another device - your iPhone, a Mac, a PC with Windows Hello: open this page there, or '
-        + 'add this one here.'
-      : (d.why || 'Face ID works on pages opened by name over https.')));
     /* Another device only just after Face ID (1.10.303): a sign-in left open
        on somebody's screen cannot plant one of its own. */
     if (can && keys.length && !d.fresh) {
-      var first = cmdButton('Confirm it is you, to add or take one away', 'check');
+      var first = cmdButton('Confirm it is you, to add or take one away', 'check', 'primary');
       first.onclick = function () {
         first.disabled = true;
         api('passkey', {step: 'begin', want: 'check'}).then(function (b) {
@@ -34813,7 +34865,7 @@ function meFaceId(host) {
       host.appendChild(line);
       return;
     }
-    var add = cmdButton('Add a passkey of this device', 'add');
+    var add = cmdButton('Add a passkey of this device', 'key', 'primary');
     add.disabled = !can;
     add.onclick = function () {
       add.disabled = true;
@@ -34825,7 +34877,7 @@ function meFaceId(host) {
           return {type: c.type, id: pkBytes(c.id)}; });
         return navigator.credentials.create({publicKey: o});
       }).then(function (cr) {
-        return api('passkey', {step: 'enrol', name: pkDevice() + ' \u00b7 ' + new Date().toLocaleDateString(),
+        return api('passkey', {step: 'enrol', name: pkDevice() + ' · ' + new Date().toLocaleDateString(),
           clientDataJSON: pkText(cr.response.clientDataJSON),
           attestationObject: pkText(cr.response.attestationObject)});
       }).then(function (r) {
@@ -34838,6 +34890,7 @@ function meFaceId(host) {
       });
     };
     line.appendChild(add);
+    if (!can) line.appendChild(el('div', 'pk-why', d.why || 'Face ID works on pages opened by name over https.'));
     host.appendChild(line);
   }).catch(function () { });
 }

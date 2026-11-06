@@ -372,6 +372,13 @@ working.
 
 ## Version
 
+1.10.307
+
+- The passkeys in Your account drawn as in Plexmon: a table of them with
+  the date and the time of when each was added and last used, a pencil that
+  renames one in place (Enter keeps the name, Escape leaves it), a bin that
+  takes one away, and the button that adds this device's underneath.
+
 1.10.306
 
 - What the third of three rounds of looking for bugs found, fixed: a big

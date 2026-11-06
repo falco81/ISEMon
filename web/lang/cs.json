@@ -2420,9 +2420,9 @@
    "source": "After the update",
    "text": "Po aktualizaci"
   },
-  "s.after-your-password-face-id-touch.119de544": {
-   "source": "After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms it is you. Each device that may do it keeps a passkey; the server only its public half. A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices too. Take the last one away and your next sign-in sets Face ID up again.",
-   "text": "Po vašem hesle potvrdí Face ID, Touch ID, Windows Hello nebo PIN vašeho zařízení, že jste to vy. Každé zařízení, které to smí, má passkey; server má jen její veřejnou část. Passkey na iPhonu nebo Macu v Klíčence na iCloudu je i na vašich dalších zařízeních Apple. Odeberete-li poslední, vaše další přihlášení nastaví Face ID znovu."
+  "s.after-your-password-the-face-a.918c4035": {
+   "source": "After your password, the face, a finger or the PIN of this device confirms it is you. A passkey is kept in the device (on an iPad and an iPhone in the iCloud Keychain, so on your other Apple devices too); the server has only its public half. Take the last one away and your next sign-in sets Face ID up again.",
+   "text": "Po zadání hesla potvrdí, že jste to vy, obličej, otisk prstu nebo PIN tohoto zařízení. Přístupový klíč je uložen v zařízení (na iPadu a iPhonu v Klíčence na iCloudu, takže i na vašich dalších zařízeních Apple); server má jen jeho veřejnou část. Když odeberete poslední, při dalším přihlášení se Face ID nastaví znovu."
   },
   "s.after.405906c9": {
    "source": "after",
@@ -3151,10 +3151,6 @@
   "s.another-certificate-or-a-wrong-answer.266eea15": {
    "source": "another certificate, or a wrong answer",
    "text": "jiný certifikát, nebo špatná odpověď"
-  },
-  "s.another-device-your-iphone-a-mac.a9783baf": {
-   "source": "Another device - your iPhone, a Mac, a PC with Windows Hello: open this page there, or add this one here.",
-   "text": "Další zařízení – váš iPhone, Mac, PC s Windows Hello: otevřete tuto stránku tam, nebo přidejte toto zde."
   },
   "s.another-folder-for-the-same-firewall.e0665661": {
    "source": "Another folder for the same firewall - the other unit of a pair",
@@ -7183,6 +7179,10 @@
   "s.edit.5301648d": {
    "source": "Edit",
    "text": "Upravit"
+  },
+  "s.edit.9ead47a8": {
+   "source": "edit",
+   "text": "upravit"
   },
   "s.editing-the-columns-has-been-switched.d2f5f785": {
    "source": "editing the columns has been switched off - the service restarted or this is a new sign-in - so that change was not kept. Switch it on again under your name.",
@@ -19228,6 +19228,10 @@
    "source": "Passkey",
    "text": "Passkey"
   },
+  "s.passkeys-face-id-touch-id.fc12f81b": {
+   "source": "Passkeys - Face ID, Touch ID",
+   "text": "Přístupové klíče - Face ID, Touch ID"
+  },
   "s.passkeys.6b4b37a5": {
    "source": "passkeys",
    "text": "passkeys"
@@ -20951,6 +20955,14 @@
   "s.remport.9f020e0f": {
    "source": "remport",
    "text": "remport"
+  },
+  "s.rename.04a26d6f": {
+   "source": "rename",
+   "text": "přejmenovat"
+  },
+  "s.rename.d3f4cb89": {
+   "source": "Rename",
+   "text": "Přejmenovat"
   },
   "s.renew-deploy.4977e80b": {
    "source": "renew, deploy",
@@ -27144,6 +27156,10 @@
    "source": "The name of the TSIG key",
    "text": "Název klíče TSIG"
   },
+  "s.the-name-of-this-passkey.3f1794c9": {
+   "source": "The name of this passkey",
+   "text": "Název tohoto přístupového klíče"
+  },
   "s.the-name-offered.d2ba867e": {
    "source": "the name offered",
    "text": "zadané jméno"
@@ -27627,6 +27643,10 @@
   "s.the-passkey-was-added.3a033858": {
    "source": "the passkey was added",
    "text": "passkey je přidaná"
+  },
+  "s.the-passkey-was-renamed.d12aba0a": {
+   "source": "the passkey was renamed",
+   "text": "přístupový klíč byl přejmenován"
   },
   "s.the-passkey-was-taken-away.906f45f9": {
    "source": "the passkey was taken away",
@@ -40586,6 +40606,10 @@
    "source": "acme - the certificate manager of ours - gives this dashboard its certificate and renews it by itself, as it does for otp and zigmon. Pair it once here; each certificate it pushes is checked (signed by the paired acme, its key the certificate's, valid, holding the dashboard's name) and goes in as an upload does.",
    "text": "acme – náš správce certifikátů – dává tomuto dashboardu certifikát a sám ho obnovuje, stejně jako u otp a zigmonu. Spárujte ho tu jednou; každý certifikát, který dodá, se zkontroluje (podepsaný spárovaným acme, klíč patří k certifikátu, je platný, obsahuje jméno dashboardu) a uloží se jako ruční nahrání."
   },
+  "s.after-your-password-face-id-touch.119de544": {
+   "source": "After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms it is you. Each device that may do it keeps a passkey; the server only its public half. A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices too. Take the last one away and your next sign-in sets Face ID up again.",
+   "text": "Po vašem hesle potvrdí Face ID, Touch ID, Windows Hello nebo PIN vašeho zařízení, že jste to vy. Každé zařízení, které to smí, má passkey; server má jen její veřejnou část. Passkey na iPhonu nebo Macu v Klíčence na iCloudu je i na vašich dalších zařízeních Apple. Odeberete-li poslední, vaše další přihlášení nastaví Face ID znovu."
+  },
   "s.also-an-ecdsa-certificate-dual-cert.a1b619c8": {
    "source": "Also an ECDSA certificate (dual-cert)",
    "text": "Také certifikát ECDSA (dual-cert)"
@@ -40613,6 +40637,10 @@
   "s.and-only-then.15ce705f": {
    "source": ", and only then",
    "text": ", a teprve pak"
+  },
+  "s.another-device-your-iphone-a-mac.a9783baf": {
+   "source": "Another device - your iPhone, a Mac, a PC with Windows Hello: open this page there, or add this one here.",
+   "text": "Další zařízení – váš iPhone, Mac, PC s Windows Hello: otevřete tuto stránku tam, nebo přidejte toto zde."
   },
   "s.any-action.e108025a": {
    "source": "Any action",

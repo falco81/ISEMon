@@ -135,5 +135,10 @@ try:
     ok('...no quotes: as it always was', isemon.ListQuery('failed', 'novak').words, 'novak')
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
+print('\nThe passkeys in Your account (1.10.307)')
+ok('renamed in place, by the name the daemon reads',
+   ("api('passkeys', {do: 'rename', id: k.id, label: name})" in page,
+    "iconButton('edit', 'Rename')" in page, "iconButton('trash', 'Take away')" in page,
+    "cmdButton('Add a passkey of this device', 'key', 'primary')" in page), (True,) * 4)
 print('\n%d ok, %d failed' % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)
