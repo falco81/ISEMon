@@ -1,7 +1,8 @@
 # Alerts on every page (1.10.312)
 
 What wants doing is said on every page, to a full admin, as a band under the
-header - one for each thing, worst first (red: trouble, amber: worth a look).
+header - except what is about upgrading, which is under Settings → Upgrades
+(1.10.313), with a number on the Settings tab and on Upgrades - - one for each thing, worst first (red: trouble, amber: worth a look).
 Each says what was found, why it matters and the steps, with every command
 ready to copy; *Open it* goes to the pane that says more; *Not now* puts it
 away on that browser for a day, or until what it says changes. Nobody else is

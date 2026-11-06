@@ -90,6 +90,8 @@ try:
     isemon.ROOT_PARTS_SEEN.update(at=0.0, out=[])
 
     print('\nTrouble on the disks and in the logs, looked at behind')
+    isemon.ROOT_INSTALLED = str(work / 'none')
+    isemon.ROOT_PARTS_SEEN.update(at=0.0, out=[])
     state = work / 'state'
     state.mkdir()
     for k, v in dict(STATE_DIR=state, DB_FILE=state / 'd.db', BACKUP_DIR=state / 'b',
@@ -136,12 +138,16 @@ ok('in the status every page asks for every few seconds', "'alerts': alerts_now(
 ok('...for a full admin alone: nobody else is sent them',
    "if isinstance(said, dict) and said.get('alerts') and me.get('role') != 'fulladmin':" in src)
 ok('said by isemon --status too', "for a in data.get('alerts') or []:" in src)
-ok('a band each under the header, for a full admin, its commands with a copy button',
-   ('<div id="alerts" class="alerts" hidden></div>' in page,
-    "if (!ME || ME.role !== 'fulladmin') { host.hidden = true; return; }" in page,
+ok('under Settings -> Upgrades, for a full admin, its commands with a copy button (1.10.313)',
+   ('<div class="card full" id="up-alerts-card" hidden>' in page,
+    "var mine = !!(ME && ME.role === 'fulladmin');" in page,
     "copyText(st.text, 'the command was copied')" in page,
     "drawAlerts(data.alerts || [])" in page), (True, True, True, True))
-ok('put away on this browser for a day, or until what it says changes',
-   ("until: Date.now() + 86400000" in page, "h.sig === alertSig(a)" in page), (True, True))
+ok('...the one about upgrading there, with a number on the Settings tab and on Upgrades',
+   ("'place': 'upgrade'," in src, "var up = all.filter(function (a) { return a.place === 'upgrade'; });" in page,
+    'id="tabn-settings" hidden' in page, "u.id = 'up-alert-n';" in page), (True, True, True, True))
+ok('...the rest across the top of every page as before, each put away for a day by Not now',
+   ('<div id="alerts-top" class="alerts" hidden></div>' in page, "if (a.place) return false;" in page,
+    "until: Date.now() + 86400000" in page), (True, True, True))
 print('\n%d ok, %d failed' % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

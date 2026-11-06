@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.312",
+  "version": "1.10.313",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -5963,6 +5963,10 @@
   "s.count-them-all-again.20ac2b38": {
    "source": "Count them all again",
    "text": "Spočítat je všechny znovu"
+  },
+  "s.count.ee9f38e1": {
+   "source": "count",
+   "text": "count"
   },
   "s.counted-ahead-of-time.750323a8": {
    "source": "Counted ahead of time",
@@ -30968,6 +30972,10 @@
    "source": "took",
    "text": "trvalo"
   },
+  "s.top.af2c7b4c": {
+   "source": "top",
+   "text": "top"
+  },
   "s.touched-but-the-failed-attempts-that.3eca7343": {
    "source": "touched — but the failed attempts that earned a ban are what its reason points at, so forgetting them leaves the reason without its evidence.",
    "text": "dotčeny — ale neúspěšné pokusy, které vynesly blokaci, jsou to, na co odkazuje její důvod, takže jejich zapomenutí ponechá důvod bez důkazů."
@@ -33103,6 +33111,10 @@
   "s.what-to-put-right.957bbe1c": {
    "source": "What to put right",
    "text": "Co napravit"
+  },
+  "s.what-wants-doing.5a20c541": {
+   "source": "What wants doing",
+   "text": "Co je potřeba udělat"
   },
   "s.what-was-asked.1189b54f": {
    "source": "What was asked",
@@ -38821,6 +38833,10 @@
   "p.thing-s-to-put-right.e5aab9d0": {
    "source": "{0} thing(s) to put right",
    "text": "{0} věcí k nápravě"
+  },
+  "p.thing-s-want-doing-settings-upgrades.8dc4ce66": {
+   "source": "{0} thing(s) want doing - Settings → Upgrades",
+   "text": "{0} věcí je potřeba udělat – Nastavení → Upgrades"
   },
   "p.thing-s-worth-a-look.f5677ab0": {
    "source": "{0} thing(s) worth a look",

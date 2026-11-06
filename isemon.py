@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.312'
+__version__ = '1.10.313'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73122,7 +73122,9 @@ def root_parts_alert(version):
                  for x in stale)
     names = ', '.join(x['part'] for x in stale[:6]) + (
         ' and %d more' % (len(stale) - 6) if len(stale) > 6 else '')
-    return {'key': 'root-parts', 'level': 'crit' if helper else 'warn',
+    # Said under Settings → Upgrades, not across the top of every page
+    # (1.10.313): `place` says where an alert goes; none, the top.
+    return {'key': 'root-parts', 'level': 'crit' if helper else 'warn', 'place': 'upgrade',
             'title': 'isemon %s is running, but the parts root installs are from before it'
                      % version,
             'says': ('Not as this version ships them: %s. What needs root - %s - may not work '

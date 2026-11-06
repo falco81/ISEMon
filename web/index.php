@@ -2288,7 +2288,15 @@ function srcText(el) {
   .me-chip.on{border-color:rgba(163,113,247,.5);color:var(--violet)}
   .me-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
   /* The alerts on every page (1.10.312) */
+  #alerts{display:flex;flex-direction:column;gap:8px}
   .alerts{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+  .ctl-nav button[data-pane] .n.hot,.ctl-nav button[data-pane] .n.warm{padding:1px 7px;border-radius:999px;
+    font-weight:700}
+  .ctl-nav button[data-pane] .n.hot{background:var(--crit-bg);color:var(--crit)}
+  .ctl-nav button[data-pane] .n.warm{background:var(--warn-bg);color:var(--warn)}
+  .tabs .count.warm{background:var(--warn-bg);color:var(--warn)}
+  .tabs button[aria-selected="true"] .count.hot{background:var(--crit-bg);color:var(--crit)}
+  .tabs button[aria-selected="true"] .count.warm{background:var(--warn-bg);color:var(--warn)}
   .alertband{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:12px;
     border:1px solid var(--line);border-left:5px solid var(--info);background:var(--panel)}
   .alertband.lvl-crit{border-color:rgba(248,81,73,.55);border-left-color:var(--crit);
@@ -5337,9 +5345,11 @@ function srcText(el) {
 <!-- This server in maintenance (1.10.266, as otp's header says it): only when
      it really is, with why - its health check says 503 meanwhile. -->
 <div id="maint-band" class="maintband" hidden></div>
-<!-- Everything the daemon says wants doing (1.10.312): one band each, for a
-     full admin, with its commands ready to copy. -->
-<div id="alerts" class="alerts" hidden></div>
+<!-- What the daemon says wants doing (1.10.312): one band each, for a full
+     admin, with its commands ready to copy - those about upgrading under
+     Settings → Upgrades instead (1.10.313). -->
+<div id="alerts-top" class="alerts" hidden></div>
+
 
 <!-- What the directory says has changed since somebody remembered it. On
      every page rather than on the Domain page: an account appearing in the
@@ -5383,7 +5393,8 @@ function srcText(el) {
   <button role="tab" aria-selected="false" data-tab="logs" data-icon="log"
           title="Every log file this reads - ISE, NPS, TACACS+, eduroam, the token servers, the domain controllers: how far each has been read, when, and whether anything is wrong with it.">Logs</button>
   <button role="tab" aria-selected="false" data-tab="settings" data-icon="gear"
-          title="Everything this installation is configured to do, the whitelist, the public lists, GeoIP, the router, the accounts and the database.">Settings</button>
+          title="Everything this installation is configured to do, the whitelist, the public lists, GeoIP, the router, the accounts and the database.">Settings<span class="count hot"
+          id="tabn-settings" hidden></span></button>
 </div>
 
 <!-- ===================== Overview ===================== -->
@@ -7290,6 +7301,13 @@ function srcText(el) {
         upgraded - taken out of service first, so the load balancer and the monitoring leave it
         alone, and brought back only once it answers again. The command line (install.sh
         --upgrade) works as it always has.</p></div>
+    <!-- What wants doing (1.10.312, here since 1.10.313): the parts root
+         installs older than the program, trouble on the disks - each with
+         its steps, ready to copy. -->
+    <div class="card full" id="up-alerts-card" hidden>
+      <h2>What wants doing <span class="right" id="up-alerts-n"></span></h2>
+      <div id="alerts"></div>
+    </div>
     <div class="card full" id="up-nodes-card">
       <h2>The nodes</h2>
       <p class="note">A server in maintenance says 503 on its health check (healthz.php), so a
@@ -30615,6 +30633,12 @@ Array.prototype.forEach.call(document.querySelectorAll('#ctl-nav button[data-pan
       n.id = 'white-n';
       b.appendChild(n);
     }
+    /* How many things want doing (1.10.313): told under Upgrades. */
+    if (b.dataset.pane === 'upgrade') {
+      var u = el('span', 'n hot');
+      u.id = 'up-alert-n';
+      b.appendChild(u);
+    }
     b.onclick = function () { showPane(b.dataset.pane); };
   });
 
@@ -35636,13 +35660,14 @@ function drawStorageDb(host, d) {
    The alerts on every page (1.10.312)
    --------------------------------------------------------------------------
    What the daemon says wants doing - the parts root installs older than the
-   program, a disk filling, logs that nothing rotates - one band each under
-   the header, for a full admin: what, why, and the steps with their
-   commands ready to copy. "Not now" puts one away on this browser for a
-   day, or until what it says changes.
+   program, a disk filling, logs that nothing rotates - for a full admin:
+   what, why, and the steps with their commands ready to copy. Under
+   Settings → Upgrades, with a number on the Settings tab and on Upgrades
+   (1.10.313) where they are about upgrading; across the top of every page,
+   as the other bands are, the rest.
    ========================================================================== */
+var ALERTS_DRAWN = {};
 var ALERT_HIDE_KEY = 'isemon-alerts-hidden';
-var ALERTS_DRAWN = '';
 function alertSig(a) {
   var t = String(a.key) + '|' + String(a.title) + '|' + String(a.says), h = 0;
   for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
@@ -35656,56 +35681,83 @@ function alertHide(a) {
   h[a.key] = {sig: alertSig(a), until: Date.now() + 86400000};
   try { localStorage.setItem(ALERT_HIDE_KEY, JSON.stringify(h)); } catch (e) { }
 }
-function drawAlerts(list) {
-  var host = $('alerts');
+/* One band, with its steps and their commands. */
+function alertBand(a, canHide) {
+  var band = el('div', 'alertband lvl-' + (a.level || 'info'));
+  var ic = el('span', 'alert-ic');
+  ic.innerHTML = iconMarkup(a.level === 'crit' ? 'close' : 'info', 20);
+  band.appendChild(ic);
+  var body = el('div', 'alert-body');
+  body.appendChild(el('div', 'alert-t', a.title));
+  if (a.says) body.appendChild(el('div', 'alert-s', a.says));
+  (a.steps || []).forEach(function (st) {
+    var line = el('div', 'alert-step');
+    if (st.say) line.appendChild(el('div', 'alert-say', st.say));
+    if (st.text) {
+      var code = el('div', 'alert-code');
+      code.appendChild(noI18n(el('code', '', st.text)));
+      var c = cmdButton('Copy', 'copy', 'small');
+      c.onclick = function () { copyText(st.text, 'the command was copied'); };
+      code.appendChild(c);
+      line.appendChild(code);
+    }
+    body.appendChild(line);
+  });
+  band.appendChild(body);
+  var acts = el('div', 'alert-acts');
+  if (a.pane) {
+    var go = cmdButton('Open it', 'gear', 'small');
+    go.onclick = function () { showTab('settings'); showPane(a.pane); };
+    acts.appendChild(go);
+  }
+  if (canHide) {
+    var later = cmdButton('Not now', 'close', 'small');
+    later.title = 'Puts it away on this browser for a day, or until what it says changes.';
+    later.onclick = function () { alertHide(a); ALERTS_DRAWN = {}; drawAlerts(STATUS ? STATUS.alerts : []); };
+    acts.appendChild(later);
+  }
+  if (acts.childNodes.length) band.appendChild(acts);
+  return band;
+}
+function alertsInto(host, list, canHide, key) {
   if (!host) return;
-  if (!ME || ME.role !== 'fulladmin') { host.hidden = true; return; }
+  var drawn = JSON.stringify(list.map(alertSig));
+  if (ALERTS_DRAWN[key] === drawn) return;
+  ALERTS_DRAWN[key] = drawn;
+  clear(host);
+  list.forEach(function (a) { host.appendChild(alertBand(a, canHide)); });
+}
+/* Across the top of every page, as the other bands are; those about
+   upgrading - the parts root installs older than the program - under
+   Settings → Upgrades instead, with a number on the Settings tab and on
+   Upgrades to say they are there (1.10.313). */
+function drawAlerts(list) {
+  var mine = !!(ME && ME.role === 'fulladmin');
+  var all = mine ? (list || []) : [];
   var hidden = alertsHidden();
-  var show = (list || []).filter(function (a) {
+  var top = all.filter(function (a) {
+    if (a.place) return false;
     var h = hidden[a.key];
     return !(h && h.sig === alertSig(a) && h.until > Date.now());
   });
-  var drawn = JSON.stringify(show.map(alertSig));
-  if (drawn === ALERTS_DRAWN && !host.hidden === !!show.length) return;
-  ALERTS_DRAWN = drawn;
-  clear(host);
-  host.hidden = !show.length;
-  show.forEach(function (a) {
-    var band = el('div', 'alertband lvl-' + (a.level || 'info'));
-    var ic = el('span', 'alert-ic');
-    ic.innerHTML = iconMarkup(a.level === 'crit' ? 'close' : 'info', 20);
-    band.appendChild(ic);
-    var body = el('div', 'alert-body');
-    body.appendChild(el('div', 'alert-t', a.title));
-    if (a.says) body.appendChild(el('div', 'alert-s', a.says));
-    (a.steps || []).forEach(function (st) {
-      var line = el('div', 'alert-step');
-      if (st.say) line.appendChild(el('div', 'alert-say', st.say));
-      if (st.text) {
-        var code = el('div', 'alert-code');
-        code.appendChild(noI18n(el('code', '', st.text)));
-        var c = cmdButton('Copy', 'copy', 'small');
-        c.onclick = function () { copyText(st.text, 'the command was copied'); };
-        code.appendChild(c);
-        line.appendChild(code);
-      }
-      body.appendChild(line);
-    });
-    band.appendChild(body);
-    var acts = el('div', 'alert-acts');
-    if (a.pane) {
-      var go = cmdButton('Open it', 'gear', 'small');
-      go.onclick = function () { showTab('settings'); showPane(a.pane); };
-      acts.appendChild(go);
-    }
-    var later = cmdButton('Not now', 'close', 'small');
-    later.title = 'Puts it away on this browser for a day, or until what it says changes.';
-    later.onclick = function () { alertHide(a); ALERTS_DRAWN = ''; drawAlerts(STATUS ? STATUS.alerts : []); };
-    acts.appendChild(later);
-    band.appendChild(acts);
-    host.appendChild(band);
+  var up = all.filter(function (a) { return a.place === 'upgrade'; });
+  var topHost = $('alerts-top');
+  if (topHost) { topHost.hidden = !top.length; alertsInto(topHost, top, true, 'top'); }
+  var card = $('up-alerts-card');
+  if (card) card.hidden = !up.length;
+  if ($('up-alerts-n')) $('up-alerts-n').textContent = up.length ? num(up.length) : '';
+  alertsInto($('alerts'), up, false, 'upgrade');
+  var crit = up.filter(function (a) { return a.level === 'crit'; }).length;
+  [['tabn-settings', 'count'], ['up-alert-n', 'n']].forEach(function (x) {
+    var c = $(x[0]);
+    if (!c) return;
+    c.textContent = up.length ? String(up.length) : '';
+    c.hidden = !up.length;
+    c.className = x[1] + (crit ? ' hot' : (up.length ? ' warm' : ''));
+    c.title = up.length ? up.length + ' thing(s) want doing - Settings → Upgrades' : '';
   });
 }
+
 /* ---- Face ID in Your account (1.10.303) ----------------------------------- */
 function pkBytes(t) {
   t = String(t || '').replace(/-/g, '+').replace(/_/g, '/');

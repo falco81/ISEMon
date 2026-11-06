@@ -372,6 +372,14 @@ working.
 
 ## Version
 
+1.10.313
+
+- The alert that the parts root installs are older than the program (run
+  `./install.sh --upgrade`) is said under Settings → Upgrades, in a card of
+  its own at the top of the pane, with a number on the Settings tab and on
+  Upgrades in the menu - red where it is root's helper - rather than across
+  the top of every page. Every other band stays where it was, at the top.
+
 1.10.312
 
 - **Alerts on every page**: one way for the daemon to say to a full admin what
