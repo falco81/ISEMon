@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.314'
+__version__ = '1.10.315'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -23859,6 +23859,10 @@ def db_make(config, admin_user, admin_password, admin_db=''):
                                         .format(pgsql.Identifier(one), pgsql.Identifier(who)))
                         cur.execute(pgsql.SQL('GRANT pg_read_all_settings TO {}')
                                     .format(pgsql.Identifier(who)))
+                        # ...and its statistics (1.10.315): the write-ahead
+                        # log's size under Disk and logs.
+                        cur.execute(pgsql.SQL('GRANT pg_monitor TO {}')
+                                    .format(pgsql.Identifier(who)))
                         # A function's rights are its database's: given in
                         # the one this program uses, not in `postgres`.
                         there = psycopg2.connect(
@@ -24721,6 +24725,7 @@ class DbTune(object):
                 version = str(cur.fetchone()[0]).split(' on ')[0].split(',')[0]
             except Exception:
                 pass
+            rights = self.rights(conn)
         finally:
             try:
                 conn.close()
@@ -24759,7 +24764,7 @@ class DbTune(object):
                # Nothing of the machine was read, only typed: said, and put
                # in only once somebody says the numbers are that server's.
                'typed': facts.get('source') == 'typed',
-               'may': bool(may), 'may_own': may_own, 'items': [],
+               'may': bool(may), 'may_own': may_own, 'items': [], 'rights': rights,
                'restart': self.restart_ready(facts), 'last': self.last()}
         if not facts.get('ram') or not facts.get('cpus'):
             out['need_facts'] = True
@@ -24799,6 +24804,29 @@ class DbTune(object):
                 it['other'] = True
         if self.engine == 'mariadb':
             out['cnf'] = self.cnf(out['items'])
+        return out
+
+    # The rights of this program's own account the pages need, beside the
+    # settings (1.10.315): looked at with the plan, given with Put it in by
+    # an administrator. Only these, by these names.
+    RIGHTS_PG = (('pg_monitor', 'the server\u2019s own statistics: the size of its write-ahead '
+                                'log under Settings \u2192 Disk and logs'),)
+
+    def rights(self, conn):
+        if self.engine != 'postgres':
+            return []
+        who = str(self.store.dialect.config.get('user') or '')
+        out = []
+        cur = conn.cursor()
+        for name, what in self.RIGHTS_PG:
+            try:
+                cur.execute("SELECT r.rolsuper OR pg_has_role(r.rolname, %s, 'MEMBER') "
+                            "FROM pg_roles r WHERE r.rolname = %s", (name, who))
+                row = cur.fetchone()
+                has = bool(row and row[0])
+            except Exception:
+                has = None
+            out.append({'name': name, 'what': what, 'has': has, 'who': who})
         return out
 
     def cnf(self, items):
@@ -24883,8 +24911,38 @@ class DbTune(object):
                                'administrator on that server is needed - postgres on '
                                'PostgreSQL, root on MariaDB')
         changes = [it for it in plan['items'] if it['change']]
+        missing = [r_ for r_ in plan.get('rights') or [] if r_.get('has') is False]
+        granted, grant_failed = [], []
+        if missing:
+            # The rights the account lacks, given by the administrator of
+            # this request (1.10.315) - a role the server has by name, to
+            # this program's own account, nothing else.
+            gconn = tune_connect(self.store, admin_user, admin_password)
+            try:
+                from psycopg2 import sql as pgsql
+                gcur = gconn.cursor()
+                for r_ in missing:
+                    if r_['name'] not in [n for n, _w in self.RIGHTS_PG]:
+                        continue
+                    try:
+                        gcur.execute(pgsql.SQL('GRANT {} TO {}').format(
+                            pgsql.Identifier(r_['name']), pgsql.Identifier(r_['who'])))
+                        granted.append(r_['name'])
+                    except Exception as e:
+                        grant_failed.append({'name': r_['name'],
+                                             'why': db_said(e).split('\n')[0][:160]})
+            finally:
+                try:
+                    gconn.close()
+                except Exception:
+                    pass
+            if granted:
+                self.store._may_waldir = None
+                self.store.add_event('control', '%s gave this program\'s database account %s'
+                                     % (by or 'somebody', ', '.join(granted)), 'info', who=by)
         if not changes:
-            return {'done': [], 'failed': [], 'pending': [], 'at_start': [], 'set': {},
+            return {'done': [], 'failed': grant_failed, 'pending': [], 'at_start': [], 'set': {},
+                    'granted': granted,
                     'items': plan['items'], 'cnf': plan.get('cnf'), 'restart': plan['restart']}
         conn = tune_connect(self.store, admin_user, admin_password)
         del admin_user, admin_password
@@ -24968,7 +25026,8 @@ class DbTune(object):
                 kept[key] = merged
         self.store.set_meta('db_tune', json.dumps(kept))
         pending = [n for n in done if (after.get(n) or {}).get('pending')]
-        return {'done': done, 'failed': failed, 'pending': pending, 'at_start': at_start,
+        return {'done': done, 'failed': failed + grant_failed, 'pending': pending,
+                'at_start': at_start, 'granted': granted,
                 'set': {it['name']: tune_words(it['kind'], it['want']) for it in changes},
                 'items': tune_judge([dict(it) for it in plan['items']], after),
                 'cnf': plan.get('cnf'), 'restart': plan['restart']}
@@ -73743,12 +73802,28 @@ def store_db(store):
                                        'kind': (int(m.group(2)) if m.group(2).isdigit() else m.group(2)) if m and m.group(2) else None,
                                        'bytes': int(r['size'] or 0),
                                        'scans': int(r['scans'] or 0)})
-            try:
-                row = db.execute('SELECT COALESCE(SUM(size), 0) AS n, COUNT(*) AS f '
-                                 'FROM pg_ls_waldir()').fetchone()
-                out['wal'] = {'bytes': int(row['n'] or 0), 'files': int(row['f'] or 0)}
-            except Exception:                            # noqa: BLE001
-                out['wal'] = None
+            # The write-ahead log only where the account may ask for it
+            # (1.10.315): asked without pg_monitor, the server refused it and
+            # the log said so every time the pane was looked at.
+            may = getattr(store, '_may_waldir', None)
+            if may is None:
+                try:
+                    row = db.execute(
+                        "SELECT (r.rolsuper OR pg_has_role(current_user, 'pg_monitor', 'MEMBER')) "
+                        "AS may FROM pg_roles r WHERE r.rolname = current_user").fetchone()
+                    may = bool(row and row['may'])
+                except Exception:                        # noqa: BLE001
+                    may = False
+                store._may_waldir = may
+            out['wal'] = None
+            out['wal_why'] = '' if may else 'pg_monitor'
+            if may:
+                try:
+                    row = db.execute('SELECT COALESCE(SUM(size), 0) AS n, COUNT(*) AS f '
+                                     'FROM pg_ls_waldir()').fetchone()
+                    out['wal'] = {'bytes': int(row['n'] or 0), 'files': int(row['f'] or 0)}
+                except Exception:                        # noqa: BLE001
+                    store._may_waldir = False
             try:
                 out['slots'] = [dict(r) for r in db.execute(
                     'SELECT slot_name AS name, active, '

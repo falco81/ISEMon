@@ -35550,6 +35550,8 @@ function drawStorageDb(host, d) {
   fact('Indexes', bytes(idx), stPct(idx, db.bytes).toFixed(0) + ' % of it', 'k-idx');
   if (db.engine === 'postgres') fact('Dead rows', num(dead), 'room autovacuum reuses');
   if (db.wal) fact('Write-ahead log', bytes(db.wal.bytes), num(db.wal.files) + ' file(s)');
+  /* Not asked for where the account may not (1.10.315): said why. */
+  else if (db.wal_why === 'pg_monitor') fact('Write-ahead log', '\u2013', 'the server tells it to pg_monitor only: GRANT pg_monitor TO the isemon account');
   if (db.free_inside !== null && db.free_inside !== undefined) fact('Free inside the file', bytes(db.free_inside), 'given back by tidying');
   c.appendChild(facts);
   if (db.error) c.appendChild(noI18n(el('p', 'note bad', db.error)));
@@ -38174,11 +38176,14 @@ function tuneLook(button) {
 
 function tuneDraw(d) {
   var changes = (d.items || []).filter(function (it) { return it.change; });
+  /* The rights of this program's own account beside the settings
+     (1.10.315): pg_monitor for the write-ahead log under Disk and logs. */
+  var lacking = (d.rights || []).filter(function (r) { return r.has === false; });
   var buttons = [
     {words: 'Read again', icon: 'refresh', left: true, go: function (b) { tuneLook(b); }},
     {words: 'Close', close: true}
   ];
-  if (changes.length) {
+  if (changes.length || lacking.length) {
     buttons.splice(1, 0, {words: 'Put it in', cls: 'primary', icon: 'gear', admin: true,
                           go: function (b) { tuneApply(b); }});
   }
@@ -38329,7 +38334,21 @@ function tuneDraw(d) {
       body.appendChild(el('h4', '', 'An administrator, to read the machine'));
       TUNE.boxes = tuneAdminBoxes(body, d.engine, TUNE);
     }
-    if (changes.length) {
+    if ((d.rights || []).length) {
+      body.appendChild(el('h4', '', 'What this program\u2019s account may do'));
+      (d.rights || []).forEach(function (r) {
+        var p = el('p', 'note ' + (r.has ? 'good' : (r.has === false ? 'bad' : '')));
+        p.appendChild(el('span', 'mono', r.name));
+        p.appendChild(document.createTextNode(' - '));
+        p.appendChild(document.createTextNode(r.what));
+        p.appendChild(document.createTextNode(': '));
+        p.appendChild(document.createTextNode(r.has ? 'it has it' : (r.has === false
+          ? 'it has not; Put it in gives it, as the administrator below'
+          : 'could not be asked')));
+        body.appendChild(p);
+      });
+    }
+    if (changes.length || lacking.length) {
       body.appendChild(el('h4', '', 'Who puts it in'));
       if (d.may_own) {
         body.appendChild(el('p', 'note good', 'This program’s own account may change the '
@@ -38410,6 +38429,13 @@ function tuneResult(title, d, engine, back) {
       p.appendChild(el('span', 'mono', n + ((d.set || {})[n] ? ' = ' + d.set[n] : '')));
       body.appendChild(p);
     });
+    (d.granted || []).forEach(function (n) {
+      var p = el('p', 'note good');
+      p.appendChild(document.createTextNode('given to this program\u2019s account:'));
+      p.appendChild(document.createTextNode(' '));
+      p.appendChild(el('span', 'mono', n));
+      body.appendChild(p);
+    });
     (d.failed || []).forEach(function (f) {
       var p = el('p', 'note bad');
       p.appendChild(el('span', 'mono', f.name));
@@ -38417,7 +38443,8 @@ function tuneResult(title, d, engine, back) {
       p.appendChild(document.createTextNode(f.why));
       body.appendChild(p);
     });
-    if (!(d.done || []).length && !(d.failed || []).length && !(d.at_start || []).length) {
+    if (!(d.done || []).length && !(d.failed || []).length && !(d.at_start || []).length
+        && !(d.granted || []).length) {
       body.appendChild(el('p', 'note', 'Nothing needed changing.'));
     }
     if (pending.length) {

@@ -1613,6 +1613,9 @@ PY
         sql+="GRANT ALTER SYSTEM ON PARAMETER $one TO \"$user\";"$'\n'
     done
     sql+="GRANT pg_read_all_settings TO \"$user\";"$'\n'
+    # ...and the server's own statistics (1.10.315): the size of its
+    # write-ahead log under Settings -> Disk and logs, refused without it.
+    sql+="GRANT pg_monitor TO \"$user\";"$'\n'
     # A function's rights are its database's: given in the one this program
     # uses, not in `postgres`.
     local fn_sql="GRANT EXECUTE ON FUNCTION pg_reload_conf() TO \"$user\";"

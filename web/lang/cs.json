@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.314",
+  "version": "1.10.315",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -5940,6 +5940,10 @@
    "source": "Costa Rica",
    "text": "Kostarika"
   },
+  "s.could-not-be-asked.08fa1099": {
+   "source": "could not be asked",
+   "text": "nepodařilo se zjistit"
+  },
   "s.could-not-be-counted.9c3bae5b": {
    "source": "could not be counted",
    "text": "nelze spočítat"
@@ -10260,6 +10264,10 @@
    "source": "- given to api-ssl, open to this machine alone:",
    "text": "– přiřazený api-ssl, otevřenému jen pro tento stroj:"
   },
+  "s.given-to-this-program-s-account.63a0008d": {
+   "source": "given to this program’s account:",
+   "text": "přiděleno účtu tohoto programu:"
+  },
   "s.given.1d71315e": {
    "source": "given",
    "text": "dodán"
@@ -12780,6 +12788,10 @@
    "source": "It has got in",
    "text": "Dostal se dovnitř"
   },
+  "s.it-has-it.cdf60ce6": {
+   "source": "it has it",
+   "text": "má ho"
+  },
   "s.it-has-made.ed09df33": {
    "source": "It has made",
    "text": "Provedl"
@@ -12795,6 +12807,10 @@
   "s.it-has-not-begun-nothing-is.aa3db164": {
    "source": "It has not begun: nothing is updated.",
    "text": "Ještě nezačala: nic se neaktualizuje."
+  },
+  "s.it-has-not-put-it-in.6716961c": {
+   "source": "it has not; Put it in gives it, as the administrator below",
+   "text": "nemá ho; Put it in ho přidělí jako administrátor níže"
   },
   "s.it-has-now-knocked-on-this.1461d5de": {
    "source": "it has now knocked on this door, which is two things rather than one. The third group is whatever somebody put there by hand.",
@@ -28996,6 +29012,10 @@
    "source": "The server shows this host key. Compare it with the server’s own fingerprint before you trust it:",
    "text": "Server ukazuje tento klíč. Než mu uvěříte, porovnejte ho s otiskem přímo na serveru:"
   },
+  "s.the-server-tells-it-to-pg.53c325db": {
+   "source": "the server tells it to pg_monitor only: GRANT pg_monitor TO the isemon account",
+   "text": "server ho prozradí jen roli pg_monitor: GRANT pg_monitor TO účet isemonu"
+  },
   "s.the-server-that-said-who-the.916e2b3d": {
    "source": "the server that said who the person is",
    "text": "server, který určil, kdo je uživatel"
@@ -33127,6 +33147,10 @@
   "s.what-this-program-does.0badee83": {
    "source": "What this program does",
    "text": "Co tento program dělá"
+  },
+  "s.what-this-program-s-account-may.64b43d30": {
+   "source": "What this program’s account may do",
+   "text": "Co smí účet tohoto programu"
   },
   "s.what-this-range-is-in-your.6a4048e3": {
    "source": "What this range is, in your own words. It is shown beside the entry for ever after, which is the difference between a whitelist somebody can prune in a year and one nobody dares touch.",

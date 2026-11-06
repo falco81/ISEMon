@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.314",
+  "version": "1.10.315",
   "made": "2026-11-06",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -5940,6 +5940,10 @@
    "source": "Costa Rica",
    "text": "Costa Rica"
   },
+  "s.could-not-be-asked.08fa1099": {
+   "source": "could not be asked",
+   "text": "could not be asked"
+  },
   "s.could-not-be-counted.9c3bae5b": {
    "source": "could not be counted",
    "text": "could not be counted"
@@ -10260,6 +10264,10 @@
    "source": "- given to api-ssl, open to this machine alone:",
    "text": "- given to api-ssl, open to this machine alone:"
   },
+  "s.given-to-this-program-s-account.63a0008d": {
+   "source": "given to this program’s account:",
+   "text": "given to this program’s account:"
+  },
   "s.given.1d71315e": {
    "source": "given",
    "text": "given"
@@ -12780,6 +12788,10 @@
    "source": "It has got in",
    "text": "It has got in"
   },
+  "s.it-has-it.cdf60ce6": {
+   "source": "it has it",
+   "text": "it has it"
+  },
   "s.it-has-made.ed09df33": {
    "source": "It has made",
    "text": "It has made"
@@ -12795,6 +12807,10 @@
   "s.it-has-not-begun-nothing-is.aa3db164": {
    "source": "It has not begun: nothing is updated.",
    "text": "It has not begun: nothing is updated."
+  },
+  "s.it-has-not-put-it-in.6716961c": {
+   "source": "it has not; Put it in gives it, as the administrator below",
+   "text": "it has not; Put it in gives it, as the administrator below"
   },
   "s.it-has-now-knocked-on-this.1461d5de": {
    "source": "it has now knocked on this door, which is two things rather than one. The third group is whatever somebody put there by hand.",
@@ -28996,6 +29012,10 @@
    "source": "The server shows this host key. Compare it with the server’s own fingerprint before you trust it:",
    "text": "The server shows this host key. Compare it with the server’s own fingerprint before you trust it:"
   },
+  "s.the-server-tells-it-to-pg.53c325db": {
+   "source": "the server tells it to pg_monitor only: GRANT pg_monitor TO the isemon account",
+   "text": "the server tells it to pg_monitor only: GRANT pg_monitor TO the isemon account"
+  },
   "s.the-server-that-said-who-the.916e2b3d": {
    "source": "the server that said who the person is",
    "text": "the server that said who the person is"
@@ -33127,6 +33147,10 @@
   "s.what-this-program-does.0badee83": {
    "source": "What this program does",
    "text": "What this program does"
+  },
+  "s.what-this-program-s-account-may.64b43d30": {
+   "source": "What this program’s account may do",
+   "text": "What this program’s account may do"
   },
   "s.what-this-range-is-in-your.6a4048e3": {
    "source": "What this range is, in your own words. It is shown beside the entry for ever after, which is the difference between a whitelist somebody can prune in a year and one nobody dares touch.",

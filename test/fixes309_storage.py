@@ -207,6 +207,15 @@ try:
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 
+ok('the write-ahead log asked for only where the account may: never refused into the log (1.10.315)',
+   ("pg_has_role(current_user, 'pg_monitor', 'MEMBER')" in src, "if may:" in src), (True, True))
+inst = (ROOT / 'install.sh').read_text()
+ok('...and Tune it gives it: looked at with the plan, granted by the administrator of Put it in',
+   ("RIGHTS_PG = (('pg_monitor'," in src, "pgsql.SQL('GRANT {} TO {}')" in src,
+    "'rights': rights," in src, "var lacking = (d.rights || []).filter" in page), (True,) * 4)
+ok('...and install.sh --db-rights and the move to PostgreSQL give it too',
+   ('sql+="GRANT pg_monitor TO' in inst, "cur.execute(pgsql.SQL('GRANT pg_monitor TO {}')" in src),
+   (True, True))
 print('\nThe page')
 ok('a pane of its own under Data, for a full admin',
    ('data-pane="storage"' in page and 'id="pane-storage"' in page,

@@ -372,6 +372,21 @@ working.
 
 ## Version
 
+1.10.315
+
+- Disk and logs asks PostgreSQL for the size of its write-ahead log only
+  where the account may (a superuser, or a member of `pg_monitor`): asked
+  without it, the server refused it and the daemon's log said "permission
+  denied for function pg_ls_waldir" every time the pane was looked at and
+  every half hour. Without it the pane says what it would take
+  (`GRANT pg_monitor TO` the isemon account).
+- **Tune it for this machine** looks at it too: beside the settings, *what
+  this program's account may do* - `pg_monitor` it has, or has not - and
+  *Put it in* gives it, as the administrator of that request (offered even
+  when only the right is missing). `./install.sh --db-rights` and the move to
+  PostgreSQL give it as well. For the sister applications, the problem and
+  its fix: [docs/pg-monitor-for-other-apps.md](docs/pg-monitor-for-other-apps.md).
+
 1.10.314
 
 - Settings → Upgrades → **To be done by hand**, as upsmon has it: always
