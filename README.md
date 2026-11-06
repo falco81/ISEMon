@@ -372,6 +372,17 @@ working.
 
 ## Version
 
+1.10.314
+
+- Settings → Upgrades → **To be done by hand**, as upsmon has it: always
+  there for a full admin, saying *Nothing is to be done by hand* when there
+  is nothing; each step a band with its command to copy, when it was first
+  noticed, *Look again* and *Done* - Done looks again too, and is taken only
+  once it is so (run `./install.sh --upgrade` first, it says, else); under
+  them **Done lately**: what, how (done, or gone by itself), who and when. A
+  number on the Upgrades icon itself, seen with the menu shut too, and on
+  the Settings tab.
+
 1.10.313
 
 - The alert that the parts root installs are older than the program (run

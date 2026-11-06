@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.313'
+__version__ = '1.10.314'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73167,6 +73167,91 @@ def storage_alerts(store):
     return STORE_ALERT['out']
 
 
+TODO_LOCK = threading.Lock()
+TODO_CACHE = {'keys': None, 'at': 0.0, 'seen': {}}
+TODO_DONE_KEEP = 30
+
+
+def todo_note(store, now_keys, titles):
+    """What is to be done by hand (the alerts placed under Upgrades), kept in
+    meta: when each was first seen, and - once it is no longer so - a line of
+    what was done lately (1.10.314). {key: first seen}."""
+    with TODO_LOCK:
+        try:
+            seen = json.loads(store.get_meta('todo_seen') or '{}')
+        except (ValueError, TypeError):
+            seen = {}
+        changed = False
+        for k in now_keys:
+            if k not in seen:
+                seen[k] = {'at': time.time(), 'title': titles.get(k, k)}
+                changed = True
+        gone = [k for k in seen if k not in now_keys]
+        if gone:
+            todo_done_add(store, [{'title': seen[k].get('title') or k, 'how': 'gone by itself',
+                                   'who': '', 'at': time.time()} for k in gone])
+            for k in gone:
+                seen.pop(k, None)
+            changed = True
+        if changed:
+            store.set_meta('todo_seen', json.dumps(seen))
+        return seen
+
+
+def todo_done_add(store, rows):
+    try:
+        done = json.loads(store.get_meta('todo_done') or '[]')
+    except (ValueError, TypeError):
+        done = []
+    done = (list(rows) + [d for d in done if isinstance(d, dict)])[:TODO_DONE_KEEP]
+    store.set_meta('todo_done', json.dumps(done))
+
+
+def todo_api(daemon, body, by):
+    """POST /api/todo: look again at what is to be done by hand, or say it is
+    done - which is looked at too: a thing that can be checked is done only
+    when it is so (1.10.314)."""
+    do = str((body or {}).get('do') or '')
+    key = str((body or {}).get('key') or '')
+    if do not in ('look', 'done'):
+        raise ValueError('look or done')
+    if key != 'root-parts':
+        raise ValueError('there is no such thing to be done')
+    still = root_parts_stale(fresh=True)
+    if do == 'done' and still:
+        raise ValueError('it is not so yet: %s still not as this version ships %s - run '
+                         './install.sh --upgrade as root first'
+                         % (', '.join(x['part'] for x in still[:6]),
+                            'it' if len(still) == 1 else 'them'))
+    TODO_CACHE.update(keys=None, at=0.0)
+    if not still:
+        with TODO_LOCK:
+            try:
+                seen = json.loads(daemon.store.get_meta('todo_seen') or '{}')
+            except (ValueError, TypeError):
+                seen = {}
+            if key in seen:
+                todo_done_add(daemon.store, [{'title': seen[key].get('title') or key,
+                                              'how': 'done' if do == 'done' else 'gone by itself',
+                                              'who': by if do == 'done' else '',
+                                              'at': time.time()}])
+                seen.pop(key, None)
+                daemon.store.set_meta('todo_seen', json.dumps(seen))
+        if do == 'done':
+            daemon.store.add_event('control', '%s said the step by hand is done: the parts '
+                                              'root installs are as this version ships them'
+                                   % by, 'info', who=by)
+    return {'ok': True, 'still': bool(still), 'parts': still}
+
+
+def todo_view(store):
+    try:
+        done = json.loads(store.get_meta('todo_done') or '[]')
+    except (ValueError, TypeError):
+        done = []
+    return {'done': [d for d in done if isinstance(d, dict)][:TODO_DONE_KEEP]}
+
+
 def alerts_now(daemon):
     """Everything that wants doing, worst first."""
     out = []
@@ -73176,6 +73261,21 @@ def alerts_now(daemon):
             out.append(a)
     except Exception as e:                          # noqa: BLE001
         log('the root parts for the alerts: %s' % str(e)[:160], 'debug')
+    # When each of those under Upgrades was first seen, and what went (1.10.314).
+    try:
+        hand = [a for a in out if a.get('place') == 'upgrade']
+        keys = tuple(sorted(a['key'] for a in hand))
+        # Asked of the database only when what is there changed, or once a
+        # minute - the status is asked for every few seconds on every page.
+        if keys != TODO_CACHE['keys'] or time.time() - TODO_CACHE['at'] > 60:
+            TODO_CACHE.update(keys=keys, at=time.time(), seen=todo_note(
+                daemon.store, list(keys), {a['key']: a['title'] for a in hand}))
+        seen = TODO_CACHE['seen']
+        for a in hand:
+            a['at'] = (seen.get(a['key']) or {}).get('at')
+            a['can'] = ['look', 'done']
+    except Exception as e:                          # noqa: BLE001
+        log('what is to be done by hand: %s' % str(e)[:160], 'debug')
     try:
         out += storage_alerts(daemon.store)
     except Exception as e:                          # noqa: BLE001
@@ -80545,6 +80645,18 @@ class ApiHandler(BaseHTTPRequestHandler):
             status, got = push_answer(daemon, op, self.body())
             return self.send_json(got, status)
         # ...and the card on Certificates and TLS.
+        if path == '/api/todo':
+            # What is to be done by hand, under Settings → Upgrades (1.10.314).
+            me = self.need_admin()
+            if not me:
+                return None
+            if method == 'POST':
+                try:
+                    return self.send_json(todo_api(daemon, self.body(), me.get('name') or ''))
+                except ValueError as e:
+                    return self.fail(str(e), 409)
+            return self.send_json(todo_view(store))
+
         if path == '/api/storage':
             # Settings → Disk and logs (1.10.309): what fills the disks, for a
             # full admin - a walk of the log folders and a look into the

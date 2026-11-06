@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.313",
+  "version": "1.10.314",
   "made": "2026-11-06",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -4096,6 +4096,10 @@
    "source": "bad",
    "text": "bad"
   },
+  "s.badge.adac3846": {
+   "source": "badge",
+   "text": "badge"
+  },
   "s.bahrain.3ae11c72": {
    "source": "Bahrain",
    "text": "Bahrain"
@@ -6828,9 +6832,17 @@
    "source": "Dominica",
    "text": "Dominica"
   },
+  "s.done-and-so-it-is.f008ccdc": {
+   "source": "done - and so it is",
+   "text": "done - and so it is"
+  },
   "s.done-by.e1ee8777": {
    "source": "Done by",
    "text": "Done by"
+  },
+  "s.done-lately.696f8bbe": {
+   "source": "Done lately",
+   "text": "Done lately"
   },
   "s.done.5a8d6cac": {
    "source": "- done",
@@ -10364,6 +10376,10 @@
    "source": "going",
    "text": "going"
   },
+  "s.gone-by-itself.8edbcce4": {
+   "source": "gone by itself",
+   "text": "gone by itself"
+  },
   "s.gone.a6dfdeaa": {
    "source": "gone",
    "text": "gone"
@@ -12828,6 +12844,10 @@
    "source": "It is never a way in.",
    "text": "It is never a way in."
   },
+  "s.it-is-not-so-yet.101d5fc2": {
+   "source": "it is not so yet",
+   "text": "it is not so yet"
+  },
   "s.it-is-one-of-the-names.cc46c017": {
    "source": "It is one of the names under",
    "text": "It is one of the names under"
@@ -14527,6 +14547,14 @@
   "s.looked-after-by.2403699f": {
    "source": "Looked after by",
    "text": "Looked after by"
+  },
+  "s.looked-again-it-is-done.8f8bfb40": {
+   "source": "looked again: it is done",
+   "text": "looked again: it is done"
+  },
+  "s.looked-again-it-is-still-so.00727832": {
+   "source": "looked again: it is still so",
+   "text": "looked again: it is still so"
   },
   "s.looked-at-first-in-this-order.d9a7d8da": {
    "source": "Looked at first, in this order: a DROP or REJECT here wins over what isemon lets in below. Each carries its note as the comment of the rule in iptables.",
@@ -17291,6 +17319,10 @@
   "s.nothing-is-switched-on-to-be.5233c906": {
    "source": "Nothing is switched on to be fetched",
    "text": "Nothing is switched on to be fetched"
+  },
+  "s.nothing-is-to-be-done-by.f89397cd": {
+   "source": "Nothing is to be done by hand.",
+   "text": "Nothing is to be done by hand."
   },
   "s.nothing-is-un-banned-and-nothing.44eab7fd": {
    "source": "Nothing is un-banned and nothing is banned twice either. An address on the whitelist is left alone, a device outside",
@@ -30860,6 +30892,10 @@
    "source": "to a few minutes rather than only on a change.",
    "text": "to a few minutes rather than only on a change."
   },
+  "s.to-be-done-by-hand.7b411f7a": {
+   "source": "To be done by hand",
+   "text": "To be done by hand"
+  },
   "s.to-erase-but-ticking-it-still.69a61003": {
    "source": "to erase, but ticking it still forgets where those files were read up to, so what is in them is read again from the beginning with the clock as it is now.",
    "text": "to erase, but ticking it still forgets where those files were read up to, so what is in them is read again from the beginning with the clock as it is now."
@@ -32460,6 +32496,10 @@
    "source": "What ISE said when it refused, word for word, with its own code beside it.",
    "text": "What ISE said when it refused, word for word, with its own code beside it."
   },
+  "s.what-isemon-cannot-do-itself-and.a076c7ba": {
+   "source": "What isemon cannot do itself and somebody has to - a step a new version needs on the command line as root. Kept here, counted beside Upgrades in the menu and said by isemon --status until it is done. One that can be checked goes by itself once it is so; Done looks at it again and is taken only when it is.",
+   "text": "What isemon cannot do itself and somebody has to - a step a new version needs on the command line as root. Kept here, counted beside Upgrades in the menu and said by isemon --status until it is done. One that can be checked goes by itself once it is so; Done looks at it again and is taken only when it is."
+  },
   "s.what-isemon-configuration.98be8933": {
    "source": "{ \"_what\": \"isemon configuration\", … }",
    "text": "{ \"_what\": \"isemon configuration\", … }"
@@ -33111,10 +33151,6 @@
   "s.what-to-put-right.957bbe1c": {
    "source": "What to put right",
    "text": "What to put right"
-  },
-  "s.what-wants-doing.5a20c541": {
-   "source": "What wants doing",
-   "text": "What wants doing"
   },
   "s.what-was-asked.1189b54f": {
    "source": "What was asked",
@@ -37297,6 +37333,10 @@
   "p.nothing-to-mark-against-until-is.fb1decab": {
    "source": "Nothing to mark against until {0} is filled in.",
    "text": "Nothing to mark against until {0} is filled in."
+  },
+  "p.noticed.131b0eb1": {
+   "source": "noticed {0} ({1})",
+   "text": "noticed {0} ({1})"
   },
   "p.now.8034b4f5": {
    "source": "Now: {0} · {1}",

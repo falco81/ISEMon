@@ -86,12 +86,63 @@ try:
     a = isemon.root_parts_alert('1.10.312') if isemon.root_parts_stale(fresh=True) else None
     ok('only the daemon\'s own logrotate file older: worth a look, not trouble',
        (a and a['level'], a and [x['part'] for x in a['parts']]), ('warn', ['isemon.logrotate']))
+    print('\nTo be done by hand: looked at again, done, and what was done lately (1.10.314)')
+    state0 = work / 'state0'
+    state0.mkdir()
+    isemon.DB_FILE = state0 / 'd.db'
+    (state0 / 'config.json').write_text(json.dumps({'db_engine': 'sqlite'}))
+    isemon.CONFIG_FILE = state0 / 'config.json'
+    st0 = isemon.Storage(isemon.DB_FILE)
+
+    class D0(object):
+        version = '1.10.314'
+    d0 = D0()
+    d0.store = st0
+    isemon.TODO_CACHE.update(keys=None, at=0.0)
+    got = isemon.alerts_now(d0)
+    hand = [x for x in got if x.get('place') == 'upgrade']
+    ok('under Upgrades, with when it was first noticed and what can be done to it',
+       (len(hand), bool(hand and hand[0].get('at')), hand and hand[0].get('can')), (1, True, ['look', 'done']))
+    try:
+        isemon.todo_api(d0, {'do': 'done', 'key': 'root-parts'}, 'boss')
+        ok('Done while it is not so: refused, with what is still not so', False)
+    except ValueError as e:
+        ok('Done while it is not so: refused, with what is still not so',
+           'isemon.logrotate' in str(e) and 'install.sh --upgrade' in str(e))
+    ok('...nothing written down as done', isemon.todo_view(st0)['done'], [])
+    shutil.copy(str(ROOT / 'deploy' / 'isemon.logrotate'), next(d for s_, d, h in parts
+                                                               if s_.endswith('isemon.logrotate')))
+    r = isemon.todo_api(d0, {'do': 'done', 'key': 'root-parts'}, 'boss')
+    done = isemon.todo_view(st0)['done']
+    ok('once it is so, Done is taken: written down as done, by whom',
+       (r['still'], [(x['how'], x['who']) for x in done]), (False, [('done', 'boss')]))
+    Path(next(d for s_, d, h in parts if s_.endswith('isemon.logrotate'))).write_text('old\n')
+    isemon.ROOT_PARTS_SEEN.update(at=0.0)
+    isemon.TODO_CACHE.update(keys=None, at=0.0)
+    isemon.alerts_now(d0)
+    shutil.copy(str(ROOT / 'deploy' / 'isemon.logrotate'), next(d for s_, d, h in parts
+                                                               if s_.endswith('isemon.logrotate')))
+    isemon.ROOT_PARTS_SEEN.update(at=0.0)
+    isemon.TODO_CACHE.update(keys=None, at=0.0)
+    isemon.alerts_now(d0)
+    ok('one that is put right without Done: gone by itself, nobody named',
+       [(x['how'], x['who']) for x in isemon.todo_view(st0)['done']][:1], [('gone by itself', '')])
+    try:
+        isemon.todo_api(d0, {'do': 'done', 'key': 'something-else'}, 'boss')
+        ok('a key that is no such thing: refused', False)
+    except ValueError:
+        ok('a key that is no such thing: refused', True)
     isemon.ROOT_PARTS, isemon.ROOT_INSTALLED = real_parts, real_inst
     isemon.ROOT_PARTS_SEEN.update(at=0.0, out=[])
 
     print('\nTrouble on the disks and in the logs, looked at behind')
     isemon.ROOT_INSTALLED = str(work / 'none')
     isemon.ROOT_PARTS_SEEN.update(at=0.0, out=[])
+    for _ in range(100):
+        if not isemon.STORE_ALERT['busy']:
+            break
+        time.sleep(0.05)
+    isemon.STORE_ALERT.update(at=0.0, out=[], busy=False)
     state = work / 'state'
     state.mkdir()
     for k, v in dict(STATE_DIR=state, DB_FILE=state / 'd.db', BACKUP_DIR=state / 'b',
@@ -139,13 +190,17 @@ ok('...for a full admin alone: nobody else is sent them',
    "if isinstance(said, dict) and said.get('alerts') and me.get('role') != 'fulladmin':" in src)
 ok('said by isemon --status too', "for a in data.get('alerts') or []:" in src)
 ok('under Settings -> Upgrades, for a full admin, its commands with a copy button (1.10.313)',
-   ('<div class="card full" id="up-alerts-card" hidden>' in page,
+   ('<div class="card full todo-card" id="up-alerts-card" hidden>' in page,
     "var mine = !!(ME && ME.role === 'fulladmin');" in page,
     "copyText(st.text, 'the command was copied')" in page,
     "drawAlerts(data.alerts || [])" in page), (True, True, True, True))
 ok('...the one about upgrading there, with a number on the Settings tab and on Upgrades',
    ("'place': 'upgrade'," in src, "var up = all.filter(function (a) { return a.place === 'upgrade'; });" in page,
     'id="tabn-settings" hidden' in page, "u.id = 'up-alert-n';" in page), (True, True, True, True))
+ok('the card always there for a full admin, saying so when there is nothing; Done lately under it',
+   ('id="todo-none" hidden>Nothing is to be done by hand.' in page, "card.hidden = !mine;" in page,
+    "host.appendChild(el('h4', 'todo-h', 'Done lately'));" in page), (True, True, True))
+ok('a number on the Upgrades icon itself, seen with the menu shut', '.ctl-nav button[data-pane] .n.badge{position:absolute' in page)
 ok('...the rest across the top of every page as before, each put away for a day by Not now',
    ('<div id="alerts-top" class="alerts" hidden></div>' in page, "if (a.place) return false;" in page,
     "until: Date.now() + 86400000" in page), (True, True, True))

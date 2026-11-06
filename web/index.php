@@ -495,6 +495,8 @@ if (isset($_GET['api'])) {
         'load'           => '/api/load',
         /* Settings → Disk and logs (1.10.309). */
         'storage'        => '/api/storage',
+        /* What is to be done by hand, under Upgrades (1.10.314). */
+        'todo'           => '/api/todo',
         /* Face ID as the second step (1.10.303): an account's passkeys. */
         'passkeys'       => '/api/auth/passkeys',
         /* Automatic certificates (1.10.251). */
@@ -589,6 +591,7 @@ if (isset($_GET['api'])) {
         'rbackup'      => '/api/rbackup',
         'sshkeys'      => '/api/sshkeys',
         'storage'      => '/api/storage',
+        'todo'         => '/api/todo',
         'otptls'       => '/api/otptls',
         'acmetls'      => '/api/acmetls',
         'acme'         => '/api/acme',
@@ -2290,10 +2293,20 @@ function srcText(el) {
   /* The alerts on every page (1.10.312) */
   #alerts{display:flex;flex-direction:column;gap:8px}
   .alerts{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
-  .ctl-nav button[data-pane] .n.hot,.ctl-nav button[data-pane] .n.warm{padding:1px 7px;border-radius:999px;
-    font-weight:700}
-  .ctl-nav button[data-pane] .n.hot{background:var(--crit-bg);color:var(--crit)}
-  .ctl-nav button[data-pane] .n.warm{background:var(--warn-bg);color:var(--warn)}
+  /* A number on the icon itself (1.10.314): seen with the menu shut too. */
+  .ctl-nav button[data-pane] .n.badge{position:absolute;left:19px;top:0;margin:0;min-width:16px;height:16px;
+    padding:0 4px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:800;line-height:1;color:#fff;background:var(--crit);
+    box-shadow:0 0 0 2px var(--panel);opacity:1 !important}
+  .ctl-nav button[data-pane] .n.badge.warm{background:var(--warn);color:#1b1300}
+  .ctl-nav button[data-pane] .n.badge[hidden]{display:none}
+  .todo-card.has{border-color:rgba(248,81,73,.35)}
+  .todo-none{margin-top:4px;padding:10px 14px;border-radius:9px;max-width:740px;font-size:13px;
+    color:var(--ok);background:var(--ok-bg);border:1px solid rgba(63,185,80,.25)}
+  .todo-card .alertband{padding:16px 18px}
+  .alert-when{font-size:12px;color:var(--tx-mut);margin-top:10px}
+  .todo-h{margin:20px 0 6px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--tx-mut)}
+  .todo-grid{grid-template-columns:minmax(220px,2fr) 140px minmax(120px,1fr) 190px}
   .tabs .count.warm{background:var(--warn-bg);color:var(--warn)}
   .tabs button[aria-selected="true"] .count.hot{background:var(--crit-bg);color:var(--crit)}
   .tabs button[aria-selected="true"] .count.warm{background:var(--warn-bg);color:var(--warn)}
@@ -7304,9 +7317,15 @@ function srcText(el) {
     <!-- What wants doing (1.10.312, here since 1.10.313): the parts root
          installs older than the program, trouble on the disks - each with
          its steps, ready to copy. -->
-    <div class="card full" id="up-alerts-card" hidden>
-      <h2>What wants doing <span class="right" id="up-alerts-n"></span></h2>
+    <div class="card full todo-card" id="up-alerts-card" hidden>
+      <h2>To be done by hand <span class="right" id="up-alerts-n"></span></h2>
+      <p class="note">What isemon cannot do itself and somebody has to - a step a new version
+        needs on the command line as root. Kept here, counted beside Upgrades in the menu and
+        said by isemon --status until it is done. One that can be checked goes by itself once it
+        is so; Done looks at it again and is taken only when it is.</p>
+      <div class="todo-none" id="todo-none" hidden>Nothing is to be done by hand.</div>
       <div id="alerts"></div>
+      <div id="todo-done"></div>
     </div>
     <div class="card full" id="up-nodes-card">
       <h2>The nodes</h2>
@@ -30608,7 +30627,7 @@ function showPane(name, quietly) {
   if (name === 'proxy' && typeof drawProxy === 'function') drawProxy();
   if (name === 'acme' && typeof loadAcme === 'function') loadAcme();
   else if (typeof acPoll === 'function') acPoll(false);
-  if (name === 'upgrade') loadUpgrade();
+  if (name === 'upgrade') { loadUpgrade(); loadTodoDone(); }
   if (name === 'network' && typeof loadNet === 'function') loadNet();
   if (name === 'time' && typeof loadNtp === 'function') loadNtp();
   if (name === 'power' && typeof loadPower === 'function') loadPower();
@@ -35703,12 +35722,23 @@ function alertBand(a, canHide) {
     }
     body.appendChild(line);
   });
+  if (a.at) body.appendChild(el('div', 'alert-when', 'noticed ' + stamp(a.at) + ' (' + ago(a.at) + ')'));
   band.appendChild(body);
   var acts = el('div', 'alert-acts');
   if (a.pane) {
     var go = cmdButton('Open it', 'gear', 'small');
     go.onclick = function () { showTab('settings'); showPane(a.pane); };
     acts.appendChild(go);
+  }
+  if ((a.can || []).indexOf('look') >= 0) {
+    var look = cmdButton('Look again', 'refresh', 'small');
+    look.onclick = function () { todoDo(a, 'look', look); };
+    acts.appendChild(look);
+  }
+  if ((a.can || []).indexOf('done') >= 0) {
+    var done = cmdButton('Done', 'check', 'small');
+    done.onclick = function () { todoDo(a, 'done', done); };
+    acts.appendChild(done);
   }
   if (canHide) {
     var later = cmdButton('Not now', 'close', 'small');
@@ -35727,6 +35757,40 @@ function alertsInto(host, list, canHide, key) {
   clear(host);
   list.forEach(function (a) { host.appendChild(alertBand(a, canHide)); });
 }
+/* Look again at one thing to be done by hand, or say it is done - done is
+   taken only once it is so (1.10.314). */
+function todoDo(a, what, button) {
+  button.disabled = true;
+  api('todo', {do: what, key: a.key}).then(function (r) {
+    if (r.still) toast(what === 'look' ? 'looked again: it is still so' : 'it is not so yet', 'warn');
+    else toast(what === 'done' ? 'done - and so it is' : 'looked again: it is done', 'good');
+    return api('status', undefined, {quiet: true}).then(function (d) {
+      if (d && d.alerts) { STATUS.alerts = d.alerts; ALERTS_DRAWN = {}; drawAlerts(d.alerts); }
+    }).catch(function () { });
+  }).catch(oops).then(function () { button.disabled = false; loadTodoDone(); });
+}
+var TODO_HOW = {done: 'done', 'gone by itself': 'gone by itself'};
+function loadTodoDone() {
+  var host = $('todo-done');
+  if (!host || !ME || ME.role !== 'fulladmin') return;
+  api('todo', undefined, {quiet: true}).then(function (d) {
+    clear(host);
+    var done = d.done || [];
+    if (!done.length) return;
+    host.appendChild(el('h4', 'todo-h', 'Done lately'));
+    var g = el('div', 'st-grid todo-grid');
+    stHead(g, [['What'], ['How'], ['Who'], ['When', 'n']]);
+    done.slice(0, 12).forEach(function (x) {
+      var row = el('div', 'st-r');
+      stCell(row, '', el('span', 'st-strong', x.title || ''));
+      stCell(row, '', el('span', 'tag ' + (x.how === 'done' ? 'ok' : 'dim'), TODO_HOW[x.how] || x.how || ''));
+      noI18n(stCell(row, '', x.who || '\u2013'));
+      stCell(row, 'n', stampCell(x.at));
+      g.appendChild(row);
+    });
+    host.appendChild(g);
+  }).catch(function () { });
+}
 /* Across the top of every page, as the other bands are; those about
    upgrading - the parts root installs older than the program - under
    Settings → Upgrades instead, with a number on the Settings tab and on
@@ -35743,8 +35807,11 @@ function drawAlerts(list) {
   var up = all.filter(function (a) { return a.place === 'upgrade'; });
   var topHost = $('alerts-top');
   if (topHost) { topHost.hidden = !top.length; alertsInto(topHost, top, true, 'top'); }
+  /* Always there for a full admin (1.10.314), saying so when there is
+     nothing: a card that came and went said nothing the day it was gone. */
   var card = $('up-alerts-card');
-  if (card) card.hidden = !up.length;
+  if (card) { card.hidden = !mine; card.classList.toggle('has', !!up.length); }
+  if ($('todo-none')) $('todo-none').hidden = !!up.length;
   if ($('up-alerts-n')) $('up-alerts-n').textContent = up.length ? num(up.length) : '';
   alertsInto($('alerts'), up, false, 'upgrade');
   var crit = up.filter(function (a) { return a.level === 'crit'; }).length;
@@ -35753,7 +35820,7 @@ function drawAlerts(list) {
     if (!c) return;
     c.textContent = up.length ? String(up.length) : '';
     c.hidden = !up.length;
-    c.className = x[1] + (crit ? ' hot' : (up.length ? ' warm' : ''));
+    c.className = x[1] + (x[1] === 'n' ? ' badge' : '') + (crit ? ' hot' : (up.length ? ' warm' : ''));
     c.title = up.length ? up.length + ' thing(s) want doing - Settings → Upgrades' : '';
   });
 }
