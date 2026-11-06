@@ -2257,6 +2257,8 @@ def logfix_do(r):
                 'behind': behind}
     if do == 'dayfix':
         return logfix_dayfix(r)
+    if do == 'prune':
+        return logfix_prune(r)
     raise Refused('cover, pack, age or dayfix')
 
 
@@ -2493,6 +2495,87 @@ def logfix_write_file(path, text):
     finally:
         os.close(fd)
     os.rename(tmp, path)
+
+
+# ---- isemon's own rotation no longer wanted (1.10.317) ------------------------
+# What root's helper wrote itself - /etc/logrotate.d/remote-isemon and
+# /etc/cron.daily/isemon-day-logs, each with isemon's mark - for a folder that
+# is gone from the logs' root, or that another (somebody's own) file takes now:
+# that folder's line out of isemon's file, the file away where nothing is
+# left. Only those two files, only with the mark; anything somebody made by
+# hand is never touched - it is what isemon's own gives way to.
+def logfix_prune_plan():
+    """(remote-isemon: (text, keep, gone, keep_folders), day-logs: (text, days,
+    gone)) as root sees them now."""
+    mine = os.path.join(LOGROTATE_D, LOGFIX_NAME)
+    # A file of that name without isemon's mark is somebody's own: passed
+    # over, never touched, rather than the whole question refused.
+    try:
+        text, had = logfix_ours()
+    except Refused:
+        text, had = None, []
+    confs = logfix_confs()
+    others = {f: t for f, t in confs.items() if f != mine}
+    lr_gone, lr_keep = [], []
+    for n in had:
+        base = os.path.join(REMOTE_LOGS, n)
+        if not os.path.isdir(base) or os.path.islink(base):
+            lr_gone.append((n, 'gone'))
+            continue
+        probe = logfix_live(n) + [os.path.join(base, 'isemon-probe.log')]
+        by = sorted(set(f for v in logfix_takers(probe, others).values() for f in v))
+        if by:
+            lr_gone.append((n, 'taken by ' + ', '.join(by)))
+        else:
+            lr_keep.append(n)
+    keep = 30
+    if text:
+        m = re.search(r'^\s*rotate\s+(\d+)\s*$', text, re.M)
+        keep = int(m.group(1)) if m else 30
+    try:
+        ctext, days = daylogs_ours()
+    except Refused:
+        ctext, days = None, {}
+    dl_gone = []
+    for n in sorted(days):
+        base = os.path.join(REMOTE_LOGS, n)
+        if not os.path.isdir(base) or os.path.islink(base):
+            dl_gone.append((n, 'gone'))
+            continue
+        probe = logfix_live(n) + [os.path.join(base, 'isemon-probe.log')]
+        by = sorted(set(f for v in logfix_takers(probe, confs).values() for f in v))
+        if by:
+            dl_gone.append((n, 'taken by ' + ', '.join(by)))
+    return (text, keep, lr_gone, lr_keep), (ctext, days, dl_gone)
+
+
+def logfix_prune(r):
+    (text, keep, lr_gone, lr_keep), (ctext, days, dl_gone) = logfix_prune_plan()
+    mine = os.path.join(LOGROTATE_D, LOGFIX_NAME)
+    cron = os.path.join(CRON_DAILY, DAYLOGS_NAME)
+    done = []
+    if lr_gone and text is not None:
+        before = logfix_check()
+        if lr_keep:
+            logfix_write(logfix_text(lr_keep, keep))
+        else:
+            os.unlink(mine)
+        new = sorted(logfix_check() - before)
+        if new:
+            logfix_write(text)
+            raise Refused('logrotate said this was wrong, so %s was put back as it was: %s'
+                          % (mine, ' | '.join(new)[:500]))
+        done += ['%s: %s (%s)' % (os.path.basename(mine), n, why) for n, why in lr_gone]
+    if dl_gone and ctext is not None:
+        left = {n: k for n, k in days.items() if n not in dict(dl_gone)}
+        if left:
+            daylogs_write(daylogs_text(left))
+        else:
+            os.unlink(cron)
+        done += ['%s: %s (%s)' % (DAYLOGS_NAME, n, why) for n, why in dl_gone]
+    return {'done': done, 'removed': {'remote-isemon': not lr_keep and bool(lr_gone),
+                                      'day-logs': bool(dl_gone) and not
+                                      [n for n in days if n not in dict(dl_gone)]}}
 
 
 def logfix_part():

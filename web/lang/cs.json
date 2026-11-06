@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.316",
+  "version": "1.10.317",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -12660,6 +12660,10 @@
    "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
    "text": "firewall isemonu ho pouští jen z uzlů otp (Nastavení → Firewall a přístup)"
   },
+  "s.isemon-s-own-rotation-no-longer.6c9f5e52": {
+   "source": "isemon’s own rotation, no longer wanted",
+   "text": "Vlastní rotace isemonu, už nepotřebná"
+  },
   "s.isemon-service.141f5596": {
    "source": "isemon.service",
    "text": "isemon.service"
@@ -19412,6 +19416,10 @@
    "source": "· out of the directory, where the password and the groups that decide this live",
    "text": "· z adresáře, kde jsou uložena hesla a skupiny, které o tom rozhodují"
   },
+  "s.out-of-what-isemon-wrote-itself.fc0a20fc": {
+   "source": "out of what isemon wrote itself (remote-isemon, isemon-day-logs - each only with isemon’s own mark in it), and the file away where nothing is left; logrotate is asked before and after and the file put back if it says no. A file somebody made by hand is never touched.",
+   "text": "z toho, co isemon napsal sám (remote-isemon, isemon-day-logs – každý jen s vlastní značkou isemonu), a soubor smaže, když v něm nic nezbude; logrotate se zeptá před i po a když nesouhlasí, soubor se vrátí. Na soubor, který někdo udělal ručně, se nikdy nesáhne."
+  },
   "s.out-on.cde5dba2": {
    "source": "Out on",
    "text": "Ven na"
@@ -20411,6 +20419,10 @@
   "s.proxy.d799bae6": {
    "source": "proxy",
    "text": "proxy"
+  },
+  "s.prune.83000ea0": {
+   "source": "prune",
+   "text": "prune"
   },
   "s.psycopg2-postgresql.226c3657": {
    "source": "psycopg2 (PostgreSQL)",
@@ -21808,6 +21820,10 @@
    "source": "Root can put this right from here, for good",
    "text": "Root to může napravit odsud, natrvalo"
   },
+  "s.root-can-take-isemon-s-own.379fae69": {
+   "source": "Root can take isemon’s own away from here",
+   "text": "Root může odsud odebrat to, co udělal isemon"
+  },
   "s.root-delay-dispersion.e3bc6970": {
    "source": "Root delay / dispersion",
    "text": "Root delay / disperze"
@@ -21875,6 +21891,10 @@
   "s.root-takes-the-encrypted-input-its.2228ad0a": {
    "source": "root takes the encrypted input, its certificate and key away within seconds; the plain one stays as it is",
    "text": "root během několika sekund odebere šifrovaný vstup, jeho certifikát i klíč; nešifrovaný zůstává, jak je"
+  },
+  "s.root-takes-the-lines-for.642b073b": {
+   "source": "Root takes the lines for",
+   "text": "Root vyjme řádky pro"
   },
   "s.root-takes.cc418bd8": {
    "source": "Root takes",
@@ -30052,6 +30072,10 @@
    "source": "there was nothing to pack",
    "text": "nebylo co zabalit"
   },
+  "s.there-was-nothing-to-take-away.e45c422b": {
+   "source": "there was nothing to take away",
+   "text": "nebylo co odebrat"
+  },
   "s.there.02a81a8e": {
    "source": "There",
    "text": "Tam"
@@ -36718,6 +36742,10 @@
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
   },
+  "p.isemon-s-own-rotation-for-folder.b1c366a3": {
+   "source": "isemon's own rotation for {0} folder(s) no longer wanted",
+   "text": "Vlastní rotace isemonu pro {0} složek už není potřeba"
+  },
   "p.isemon-set.4e4102ba": {
    "source": "isemon --set {0}=…",
    "text": "isemon --set {0}=…"
@@ -37622,6 +37650,14 @@
    "source": "{0} · only watched: carried nowhere",
    "text": "{0} · jen sledováno: nikam se nepředává"
   },
+  "p.only-what-isemon-wrote-itself-is.89cb86ca": {
+   "source": "{0}. Only what isemon wrote itself is taken away - the folder's line in {1}, and the file where nothing is left; nobody's own file is touched.",
+   "text": "{0}. Odebere se jen to, co isemon napsal sám – řádek složky v {1} a soubor, ve kterém nic nezbude; žádný cizí soubor se nezmění."
+  },
+  "p.only-what-isemon-wrote-itself-remote.0e5a9192": {
+   "source": "only what isemon wrote itself - remote-isemon, isemon-day-logs - for {0}; nobody’s own file is touched",
+   "text": "jen to, co isemon napsal sám – remote-isemon, isemon-day-logs – pro {0}; žádný cizí soubor se nezmění"
+  },
   "p.only.98cbccbe": {
    "source": "only {0} – {1} ×",
    "text": "jen {0} – {1} ×"
@@ -38378,9 +38414,17 @@
    "source": "Take this {0} away",
    "text": "Odebrat toto: {0}"
   },
+  "p.taken-away.14f949f2": {
+   "source": "taken away: {0}",
+   "text": "odebráno: {0}"
+  },
   "p.taken-away.3035bbb4": {
    "source": "· taken away: {0}",
    "text": "· odstraněno: {0}"
+  },
+  "p.taken-by-now.1ad2ede5": {
+   "source": "taken by {0} now",
+   "text": "teď ji bere {0}"
   },
   "p.taken-out-of-ages-it-every.ce9dc04f": {
    "source": "taken out of {0}; {1} ages it every day{2}",
@@ -40355,6 +40399,10 @@
   "r.root-takes-out-of-its-own.2a1d1f3e": {
    "source": "Root takes <b>{0}</b> out of {1} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>{2}</b>: every day the day files and their copies older than two days packed, those older than <b>{3} days</b> deleted - and runs it once now, behind. What isemon read of them stays in the database.",
    "text": "Root vyjme <b>{0}</b> z {1} – jen její vlastní řádek – a zeptá se logrotate na všechny jeho soubory před i po; když hlásí něco nového špatně, nebo složku pořád něco bere, vrátí se všechno zpět. Pak zapíše <b>{2}</b>: každý den denní soubory a jejich kopie starší než dva dny zabalí, starší než <b>{3} dní</b> smaže – a hned ho jednou spustí na pozadí. Co z nich isemon přečetl, zůstává v databázi."
+  },
+  "r.root-takes-the-lines-for-out.bf581d03": {
+   "source": "Root takes the lines for <b>{0}</b> out of what isemon wrote itself (remote-isemon, isemon-day-logs - each only with isemon’s own mark in it), and the file away where nothing is left; logrotate is asked before and after and the file put back if it says no. A file somebody made by hand is never touched.",
+   "text": "Root vyjme řádky pro <b>{0}</b> z toho, co isemon napsal sám (remote-isemon, isemon-day-logs – každý jen s vlastní značkou isemonu), a soubor smaže, když v něm nic nezbude; logrotate se zeptá před i po a když nesouhlasí, soubor se vrátí. Na soubor, který někdo udělal ručně, se nikdy nesáhne."
   },
   "r.root-writes-for-keeping-copies-logrotate.44f0a5bc": {
    "source": "Root writes <b>{0}</b> for {1}, keeping {2} copies{3}. logrotate is asked about all of its files before and after; if it finds anything wrong that it did not before, the file is put back as it was.",

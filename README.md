@@ -372,6 +372,20 @@ working.
 
 ## Version
 
+1.10.317
+
+- Disk and logs finds **isemon's own rotation no longer wanted**: a folder in
+  what root's helper wrote itself - `/etc/logrotate.d/remote-isemon`,
+  `/etc/cron.daily/isemon-day-logs` - that is gone from `/var/log/remote`, or
+  that a file of somebody's own takes now (in logrotate that is two files on
+  one log, which stops every rotation; in the cron, the folder tidied twice).
+  *Take it away*: root takes that folder's line out of isemon's file, and the
+  file away where nothing is left, logrotate asked before and after. Only
+  those two files, and only with the exact mark root's helper writes in
+  them: a file of the same name somebody made by hand - pasted from the
+  page's own text included - is passed over and never touched; isemon's own
+  is what gives way.
+
 1.10.316
 
 - Tune it for this machine asks for an administrator where `pg_monitor` is

@@ -35123,10 +35123,14 @@ function stApply(ap) {
   ic.innerHTML = iconMarkup('terminal', 18);
   line.appendChild(ic);
   var words = el('div', 'st-apply-w');
-  words.appendChild(el('div', 'st-strong', ap.do === 'cover' || ap.do === 'dayfix'
+  if (ap.do === 'prune') {
+    words.appendChild(el('div', 'st-strong', 'Root can take isemon\u2019s own away from here'));
+    words.appendChild(el('div', 'st-sub', 'only what isemon wrote itself - remote-isemon, isemon-day-logs - for '
+      + ap.folders.join(', ') + '; nobody\u2019s own file is touched'));
+  } else words.appendChild(el('div', 'st-strong', ap.do === 'cover' || ap.do === 'dayfix'
     ? 'Root can put this right from here, for good'
     : (ap.do === 'age' ? 'Root can let the old copies go from here' : 'Root can pack them from here')));
-  words.appendChild(el('div', 'st-sub', ap.do === 'cover'
+  if (ap.do !== 'prune') words.appendChild(el('div', 'st-sub', ap.do === 'cover'
     ? 'writes ' + ap.file + ' for ' + ap.folders.join(', ') + ' (' + ap.keep + ' copies kept), asks logrotate whether all is well and puts it back if not'
     : (ap.do === 'dayfix'
       ? 'takes ' + ap.folders.join(', ') + ' out of ' + (ap.from || []).join(', ') + ', checks with logrotate and puts it back if not well, '
@@ -35145,11 +35149,26 @@ function stApply(ap) {
     lab.appendChild(el('span', '', 'and rotate them at once'));
     line.appendChild(lab);
   }
-  var go = cmdButton(ap.do === 'cover' || ap.do === 'dayfix' ? 'Put it right'
+  var go = cmdButton(ap.do === 'prune' ? 'Take it away' : ap.do === 'cover' || ap.do === 'dayfix' ? 'Put it right'
     : (ap.do === 'age' ? 'Let them go' : 'Pack them'),
     ap.do === 'cover' || ap.do === 'dayfix' ? 'check' : (ap.do === 'age' ? 'trash' : 'archive'), 'primary');
   go.onclick = function () {
     var rot = !!(now && now.checked);
+    if (ap.do === 'prune') {
+      confirmThen('isemon\u2019s own rotation, no longer wanted',
+        'Root takes the lines for <b>' + htmlText(ap.folders.join(', ')) + '</b> out of what isemon wrote itself '
+          + '(remote-isemon, isemon-day-logs - each only with isemon\u2019s own mark in it), and the file away '
+          + 'where nothing is left; logrotate is asked before and after and the file put back if it says no. '
+          + 'A file somebody made by hand is never touched.',
+        'Take it away', function () {
+          go.disabled = true;
+          api('storage', {do: 'prune', folders: ap.folders}).then(function (r) {
+            toast((r.done || []).length ? 'taken away: ' + r.done.join('; ') : 'there was nothing to take away', 'good');
+            loadStorage(true);
+          }).catch(function (e) { go.disabled = false; oops(e); });
+        }, true);
+      return;
+    }
     if (ap.do === 'dayfix') {
       confirmThen('Logs written a file a day, aged for good',
         'Root takes <b>' + htmlText(ap.folders.join(', ')) + '</b> out of ' + htmlText((ap.from || []).join(', '))

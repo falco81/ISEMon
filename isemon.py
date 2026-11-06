@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.316'
+__version__ = '1.10.317'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73140,7 +73140,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'd4fe96ed0837b96a28cdcedf52d3fbbee3ef932c6fb0897c53735d481471b78a'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'b4c051a29523f91e2a7b330078c8df6f02cb254ad8fc12e072f9338ea8d0e7c3'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '36df0674ead5ee2eda48c011577cb57116b0da7f7e34daa6e886a6e433ccbe83'),
@@ -73383,7 +73383,7 @@ def store_daylogs():
         text = Path(STORE_DAYLOGS).read_text(encoding='utf-8', errors='replace')
     except OSError:
         return {}
-    if '# Written by isemon (Settings - Disk and logs)' not in text:
+    if '# Written by isemon (Settings - Disk and logs): logs written a file a day.' not in text:
         return {}
     got, inside = {}, False
     for line in text.splitlines():
@@ -73531,7 +73531,9 @@ def store_logrotate(paths=None):
                 continue
             store_logrotate_opt(opts, line)
         out.append({'file': str(f), 'stanzas': stanzas,
-                    'ours': '# Written by isemon (Settings - Disk and logs)' in text})
+                    # isemon's own: the mark root's helper writes, exactly - a
+                    # file somebody made from the page's text is theirs (1.10.317).
+                    'ours': '# Written by isemon (Settings - Disk and logs).\n' in text})
     return {'files': out, 'defaults': defaults}
 
 
@@ -73944,6 +73946,45 @@ def store_db(store):
     return out
 
 
+def store_own_stale(lr):
+    """[{folder, file, why}] of the folders in isemon's own two files that
+    are gone, or that a file not isemon's takes now (1.10.317)."""
+    out = []
+    root = (STORE_LOG_ROOTS or ['/var/log/remote'])[0].rstrip('/')
+    own_re = re.compile(r'^%s/([^/]+)/\*\.log$' % re.escape(root))
+    ours = [f for f in lr['files'] if f.get('ours')]
+    for f in ours:
+        others = {'files': [x for x in lr['files'] if x['file'] != f['file']],
+                  'defaults': lr['defaults']}
+        seen = set()
+        for st in f['stanzas']:
+            for p in st['patterns']:
+                m = own_re.match(p)
+                if not m or m.group(1) in seen:
+                    continue
+                seen.add(m.group(1))
+                path = os.path.join(root, m.group(1))
+                if not os.path.isdir(path) or os.path.islink(path):
+                    out.append({'folder': m.group(1), 'file': f['file'], 'why': 'gone'})
+                    continue
+                by = store_rotated_by(os.path.join(path, 'isemon-probe.log'), others)
+                if by:
+                    out.append({'folder': m.group(1), 'file': f['file'],
+                                'why': 'taken by %s now' % ', '.join(sorted(set(
+                                    os.path.basename(x[0]) for x in by)))})
+    for name in sorted(store_daylogs()):
+        path = os.path.join(root, name)
+        if not os.path.isdir(path) or os.path.islink(path):
+            out.append({'folder': name, 'file': STORE_DAYLOGS, 'why': 'gone'})
+            continue
+        by = store_rotated_by(os.path.join(path, 'isemon-probe.log'), lr)
+        if by:
+            out.append({'folder': name, 'file': STORE_DAYLOGS,
+                        'why': 'taken by %s now' % ', '.join(sorted(set(
+                            os.path.basename(x[0]) for x in by)))})
+    return out
+
+
 def store_template(folders, big, group, lr):
     """A logrotate file for folders nothing rotates, in the shape of the ones
     already there: one stanza for them, `create` so the daemon can go on
@@ -74166,6 +74207,27 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
                                          "    -mmin +4320 -exec gzip -6 {} +"
                                          % (f['path'], k * 1440, f['path'])}]})
     raw = [f for f in logs if f['old_raw_bytes'] > G and f not in aged]
+    # isemon's own rotation no longer wanted (1.10.317): a folder in what
+    # root's helper wrote - remote-isemon, isemon-day-logs - that is gone, or
+    # that somebody's own file takes now. Only isemon's own two files are
+    # ever looked at for this; what somebody made by hand is what they give
+    # way to, never what is taken away.
+    try:
+        stale = store_own_stale(lr)
+    except Exception:                                    # noqa: BLE001
+        stale = []
+    if stale:
+        out.append({'level': 'warn', 'key': 'isemon-own',
+                    'title': 'isemon\'s own rotation for %d folder(s) no longer wanted' % len(stale),
+                    'says': ('%s. Only what isemon wrote itself is taken away - the folder\'s line '
+                             'in %s, and the file where nothing is left; nobody\'s own file is '
+                             'touched.' % ('; '.join('%s in %s: %s' % (x['folder'],
+                                                                       os.path.basename(x['file']),
+                                                                       x['why']) for x in stale[:8]),
+                                           ' and '.join(sorted(set(os.path.basename(x['file'])
+                                                                   for x in stale))))),
+                    'apply': {'do': 'prune', 'folders': sorted(set(x['folder'] for x in stale)),
+                              'what': stale}})
     if raw:
         out.append({'level': 'warn', 'key': 'raw-copies',
                     'apply': {'do': 'pack', 'folders': [f['name'] for f in raw]},
@@ -74313,8 +74375,8 @@ def storage_fix(store, wr, body, by):
         raise WebRootError('root\'s half is not installed on this machine yet: run '
                            './install.sh --upgrade once')
     do = str((body or {}).get('do') or '')
-    if do not in ('cover', 'pack', 'age', 'dayfix'):
-        raise ValueError('cover, pack, age or dayfix')
+    if do not in ('cover', 'pack', 'age', 'dayfix', 'prune'):
+        raise ValueError('cover, pack, age, dayfix or prune')
     look = storage_health(store, fresh=True)
     offers = [p['apply'] for p in look.get('problems') or []
               if p.get('apply') and p['apply'].get('do') == do and p['apply'].get('folders')]
@@ -74342,6 +74404,10 @@ def storage_fix(store, wr, body, by):
                         % (by, ', '.join(folders), got.get('file') or 'logrotate',
                            int(got.get('keep') or 0),
                            ', rotated at once' if got.get('rotated') else ''), 'info', who=by)
+    elif do == 'prune':
+        store.add_event('control', '%s had root take away isemon\'s own rotation no longer '
+                        'wanted: %s' % (by, '; '.join(got.get('done') or []) or 'nothing'),
+                        'info', who=by)
     elif do == 'dayfix':
         store.add_event('control', '%s had root take %s out of %s and age it every day in %s '
                         '(%d days kept)'

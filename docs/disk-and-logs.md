@@ -104,6 +104,15 @@ admin:
   anacron on AlmaLinux, cron on Debian): see that it is installed and
   running.
 
+- **isemon's own, no longer wanted** (1.10.317) - *Take it away*: a folder in
+  `remote-isemon` or `isemon-day-logs` that is gone, or that a file not
+  isemon's takes now, taken out of isemon's file; the file away where nothing
+  is left. Only isemon's own two files, only with the exact mark root's
+  helper writes (`# Written by isemon (Settings - Disk and logs).` and
+  `...: logs written a file a day.`); one of the same name without it is
+  somebody's own and is passed over. What somebody made by hand is never
+  changed by any of this - isemon's own gives way to it.
+
 What makes it safe:
 
 - Root writes the file **from the folder names alone**; no text the page
