@@ -173,7 +173,9 @@ try:
     ok('SELinux: never -m, a port of another service refused',
        ("'semanage', 'port', '-m'" in helper or "('-a', '-m')" in helper,
         'SELinux keeps %d/tcp for another service' in helper), (False, True))
-    ok('a time that is not a number is not fresh', helper.count('math.isfinite(at)'), 2)
+    # ...three since 1.10.305: a change of the network or the clock asked
+    # too long ago is not done either.
+    ok('a time that is not a number is not fresh', helper.count('math.isfinite(at)'), 3)
     ok('a file is isemon\'s by its mark at the start of a line',
        'l.startswith(TLS_MARKS)' in helper and "'# isemon: the ' not in text" not in helper)
     ok('off or removed with the other file changed: rsyslog asked first',

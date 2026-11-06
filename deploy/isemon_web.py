@@ -1626,6 +1626,9 @@ def ntp_part():
             raise Refused('the request is not an object')
         out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
         what = r.get('do')
+        if what != 'read' and ask_stale(r):
+            raise Refused('that was asked too long ago - ask again on the page if it is still '
+                          'wanted')
         if what == 'read':
             out['data'] = ntp_read()
             if r.get('zones'):
@@ -1675,6 +1678,21 @@ ROOT_AUTH = os.environ.get('ISEMON_ROOT_AUTHKEYS', '/root/.ssh/authorized_keys')
 SSH_KEYGEN = os.environ.get('ISEMON_SSH_KEYGEN', 'ssh-keygen')
 SSHD = os.environ.get('ISEMON_SSHD', 'sshd')
 SSHKEYS_FRESH_S = 600              # an add or a drop asked longer ago is not done
+ASK_FRESH_S = 300                  # a change of the network, the clock or a restart (1.10.305)
+
+
+def ask_stale(r):
+    """Whether a request says it was asked longer ago than ASK_FRESH_S: one
+    the daemon gave up on and that lay here - a busy run, the path unit
+    stopped - is never done minutes or a boot later. One that says nothing
+    of when (an older daemon) is taken as it is."""
+    if 'at' not in r:
+        return False
+    try:
+        at = float(r.get('at'))
+    except (TypeError, ValueError):
+        return True
+    return not math.isfinite(at) or abs(time.time() - at) > ASK_FRESH_S
 KEY_TYPES = ('ssh-ed25519', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521',
              'ssh-rsa', 'sk-ssh-ed25519@openssh.com', 'sk-ecdsa-sha2-nistp256@openssh.com')
 KEY_LINE_RE = re.compile(r'^(?P<type>[a-z0-9@.-]+) (?P<blob>[A-Za-z0-9+/]{40,16000}={0,3})'
@@ -2245,6 +2263,24 @@ def net_apply(n):
             args += ['ipv6.method', 'manual', 'ipv6.addresses', n['addr6'],
                      'ipv6.gateway', n['gw6'], 'ipv6.dns', ','.join(n['dns6'])]
     net_run(args, 'nmcli connection modify')
+    try:
+        return net_apply_rest(n, ex, said, before)
+    except BaseException:
+        # What comes after the profile went wrong (1.10.305): the profile is
+        # put back as it was, or it held the new address with nobody told -
+        # to come up at the next boot, on no trial and with no way back.
+        back = [NMCLI, 'connection', 'modify', n['con']]
+        for k in NM_BEFORE:
+            if k in before:
+                back += [k, before[k]]
+        try:
+            net_run(back, 'nmcli connection modify (back)')
+        except Exception:                           # noqa: BLE001
+            pass
+        raise
+
+
+def net_apply_rest(n, ex, said, before):
     said.append('NetworkManager: %s - %s via %s, DNS %s%s' % (
         n['con'], n['addr4'], n['gw4'] or 'no gateway', ', '.join(n['dns4']) or 'none',
         {'off': ', IPv6 off', 'auto': ', IPv6 automatic',
@@ -2321,6 +2357,9 @@ def net_part():
             raise Refused('the request is not an object')
         out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
         what = r.get('do')
+        if what != 'read' and ask_stale(r):
+            raise Refused('that was asked too long ago - ask again on the page if it is still '
+                          'wanted')
         if what == 'read':
             out['data'] = net_read()
         elif what == 'apply':

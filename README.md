@@ -372,10 +372,55 @@ working.
 
 ## Version
 
+1.10.305
+
+- What the second of three rounds of looking for bugs found, fixed:
+
+- **Root's work**:
+  - A change of the network or the clock, or a restart, that the daemon
+    gave up waiting for is taken back. Root refuses one asked more than
+    five minutes ago. Before, it could still be done minutes later, or at
+    the next boot, after the page had said it failed.
+  - When something after the NetworkManager profile goes wrong, the
+    profile is put back. Before, it held the new address, which came up at
+    the next boot with no trial.
+  - No restart and no change of the network in the middle of an upgrade of
+    isemon, and no upgrade while one of them is under way.
+  - A certificate root would not put in, for example one renewed by
+    Automatic certificates, is asked for again every six hours.
+- **The daemon**:
+  - Stopping it no longer waits for ever on a lock its own thread holds.
+  - A clock that steps back no longer holds up everything that runs on a
+    schedule. It is all done at once instead.
+  - A job whose thread would not start is not left running for good.
+  - A dump that hangs is stopped at its time, and a failed one leaves no
+    program behind.
+- **The views**:
+  - The cards on the Domain and Traffic tabs open lists from the same
+    moment they count from, so the two numbers agree.
+  - An acme job with no node can be opened.
+  - The end of a stretch of acme's lines is no longer counted in it.
+- **The command line**:
+  - `--set` with the daemon down no longer saves a secret's display
+    (`••••••22`) over the real one, and it seals the firewalls' API
+    passwords.
+  - Root's own session works when the only full admin has to change their
+    password, or when Face ID is on.
+  - `--passkey-reset` refuses a database that will not open.
+  - `./install.sh --upgrade --log-from ISE1,ISE2` now narrows port 514, as
+    the fresh install tells you it will.
+- **What the review of round one found**:
+  - A comment, `exit` or `end` in the ending of the Cisco list is not
+    numbered.
+  - tac_plus and FreeRADIUS behind the VPN are judged by their own newest
+    line.
+  - One's own passkey can be taken away where Face ID cannot be asked for:
+    when it is off, or on a page of another name.
+
 1.10.304
 
-What the first of three rounds of looking for bugs across the whole
-application found, fixed:
+- What the first of three rounds of looking for bugs across the whole
+  application found, fixed:
 
 - **Reading and judging**:
   - Going back over the logs no longer stops reading a file at the first

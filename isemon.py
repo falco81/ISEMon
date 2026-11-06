@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.304'
+__version__ = '1.10.305'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -14696,7 +14696,9 @@ class RosReaders(object):
         self.daemon = daemon
         self.readers = {}
         self.wanted = {}
-        self.lock = threading.Lock()
+        # Re-entrant (1.10.305): stopping runs in the signal handler, on the
+        # main thread - which may be inside `sync`, holding this very lock.
+        self.lock = threading.RLock()
 
     @staticmethod
     def configured():
@@ -21019,6 +21021,22 @@ def run_program(args, env=None, stdout=None, stdin=None, words='', seconds=6 * 3
         if wrote is not None:
             wrote.close()
         raise StorageError('%s could not be started: %s' % (args[0], e))
+    # The time it is given covers the pumping as well (1.10.305): a dump
+    # waiting on a lock wrote nothing, the copy waited with it for ever and
+    # the time below was never reached. Past it, the program is stopped and
+    # the copy ends with it.
+    stopped = []
+
+    def overdue():
+        stopped.append(True)
+        try:
+            proc.kill()
+        except OSError:
+            pass
+    timer = threading.Timer(seconds, overdue) if (into is not None or feed is not None) else None
+    if timer is not None:
+        timer.daemon = True
+        timer.start()
     try:
         if into is not None:
             shutil.copyfileobj(proc.stdout, into, 1024 * 1024)
@@ -21036,11 +21054,31 @@ def run_program(args, env=None, stdout=None, stdin=None, words='', seconds=6 * 3
             except (OSError, BrokenPipeError):
                 pass
         code = proc.wait(timeout=seconds)
+        if stopped:
+            raise subprocess.TimeoutExpired(args, seconds)
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
+        said.close()
+        if wrote is not None:
+            wrote.close()
         raise StorageError('%s was still going after %d minute(s) and was stopped'
                            % (words or args[0], seconds // 60))
+    except BaseException:
+        # Whatever else went wrong on the way - the disk full under `into`,
+        # a pipe gone - the program is not left running behind it.
+        try:
+            proc.kill()
+            proc.wait(timeout=30)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        said.close()
+        if wrote is not None:
+            wrote.close()
+        raise
+    finally:
+        if timer is not None:
+            timer.cancel()
     said.seek(0)
     noise = said.read().decode('utf-8', 'replace').strip()
     said.close()
@@ -35944,7 +35982,9 @@ class Storage(object):
         if where and where[0]:
             conds.append('(%s)' % where[0])
             args += list(where[1])
-        for key, op in (('before', '<'), ('since', '>='), ('until', '<=')):
+        # The end not in it (1.10.305), as every other list's: the end of one
+        # stretch is the start of the next.
+        for key, op in (('before', '<'), ('since', '>='), ('until', '<')):
             try:
                 v = float(want.get(key) or 0)
             except (TypeError, ValueError):
@@ -36322,8 +36362,11 @@ class Storage(object):
         """Every line of one job, in the order it ran."""
         try:
             rows = [self.acme_row(dict(r)) for r in self.db.execute(
-                "SELECT * FROM acme_jobs WHERE kind = 'job' AND job = ? AND node = ? "
-                'ORDER BY t_ms, seq, ts LIMIT 2000', (str(job)[:40], str(node)[:200])).fetchall()]
+                # A job with no node= is NULL there, and asked for as ''
+                # (1.10.305): its lines could never be opened.
+                "SELECT * FROM acme_jobs WHERE kind = 'job' AND job = ? AND COALESCE(node, '') = ? "
+                'ORDER BY t_ms, seq, ts LIMIT 2000',
+                (str(job)[:500], str(node or '')[:200])).fetchall()]
         except sqlite3.Error:
             rows = []
         for r in rows:
@@ -37954,10 +37997,19 @@ class Storage(object):
         its table, or 0. Of any row, not only a failure - that is the index
         on time alone, where a failure on a firewall's table was a walk back
         through every line it let through."""
-        table, _col, _who, _where = self.SOURCE_FAILURES[source]
+        table, _col, _who, where = self.SOURCE_FAILURES[source]
         try:
-            row = self.db.execute('SELECT MAX(ts) AS t FROM %s' % table).fetchone()
-            return float((row['t'] if row else 0) or 0)
+            if table == 'failed':
+                # ...of its own kind on the table it shares with the VPN
+                # (1.10.305): there the newest row is the VPN's, about now,
+                # however far behind tac_plus or FreeRADIUS are. An index on
+                # the kind and the time answers it at once.
+                row = self.db.execute('SELECT MAX(ts) AS t FROM failed WHERE %s AND ts <= ?'
+                                      % where, (time.time() + 300,)).fetchone()
+                return float((row['t'] if row else 0) or 0)
+            # A table of its own: its newest row of any kind, asked the way a
+            # split one is asked (the last two days first).
+            return self.newest_in(table)
         except sqlite3.Error:
             return 0.0
 
@@ -53026,8 +53078,15 @@ class Daemon(object):
         lines.append('! the list of before is taken away first, so this can be pasted again')
         # ...and the lines of the tail without numbers of their own: a tail
         # numbered 10 took the place of the first deny.
-        tail = [re.sub(r'^(\s*)(?:sequence\s+)?\d+\s+(?=(?:permit|deny|remark)\b)', r'\1',
-                       one, flags=re.I) for one in tail]
+        tail = [re.sub(r'^(\s*)(?:sequence\s+)?\d+\s+(?=(?:permit|deny|remark|evaluate)\b)',
+                       r'\1', one, flags=re.I) for one in tail]
+        # ...and what is not an entry is not numbered (1.10.305): a comment
+        # numbered was `% Invalid input`, and an exit or an end in the ending
+        # left the list before its last lines.
+        tail = [one for one in tail if not re.match(r'^\s*(exit|end)\s*$', one, re.I)]
+
+        def entry(one):
+            return bool(one.strip()) and not one.lstrip().startswith('!')
         # Numbered, and the ending first (1.10.304): pasted as it was - the
         # denies, then the ending - the list between its first deny and its
         # last permit dropped everything through the interface it is on, the
@@ -53041,7 +53100,7 @@ class Daemon(object):
             lines.append('no ipv6 access-list %s' % listed)
             lines.append('ipv6 access-list %s' % listed)
             for i, one in enumerate(tail):
-                if re.match(r'^\s*remark\b', one, re.I):
+                if not entry(one) or re.match(r'^\s*remark\b', one, re.I):
                     lines.append(one)
                 else:
                     lines.append(' sequence %d %s' % (top + i * 10, one.strip()))
@@ -53056,7 +53115,7 @@ class Daemon(object):
             lines.append('no ip access-list extended %s' % listed)
             lines.append('ip access-list extended %s' % listed)
             for i, one in enumerate(tail):
-                lines.append(' %d %s' % (top + i * 10, one.strip()))
+                lines.append(' %d %s' % (top + i * 10, one.strip()) if entry(one) else one)
             n = 10
             for net in ranges:
                 wild = str(ipaddress.IPv4Address(int(net.hostmask)))
@@ -56412,7 +56471,15 @@ class Daemon(object):
                 job['done'] = True
                 job['finished'] = time.time()
                 self.bump()
-        threading.Thread(target=run, name=kind, daemon=True).start()
+        try:
+            threading.Thread(target=run, name=kind, daemon=True).start()
+        except RuntimeError as e:
+            # No thread to be had (1.10.305): left as it was, the job stayed
+            # "running" for good and every later press of it joined a job
+            # that would never end.
+            job.update(ok=False, done=True, finished=time.time(), error=str(e)[:300],
+                       last='not started: %s' % str(e)[:200])
+            raise
         return job
 
     def job(self, jid):
@@ -61190,7 +61257,7 @@ class Daemon(object):
             # eight seconds, was a search that never stopped running.
             cost = got[2] if got and len(got) > 2 else 0.0
             again = max(self.LISTS_FOR, min(cost * 10, 300.0))
-            if got and now - got[0] < again * 4:
+            if got and 0 <= now - got[0] < again * 4:
                 rows, total = got[1]
                 if now - got[0] >= again and not busy \
                         and len(self._lists_busy) < self.REFRESH_MOST:
@@ -65249,8 +65316,23 @@ class Daemon(object):
         # exactly when a backlog of packets has just been read.
         last_refused = 0.0
         caught_up = False
+        was = time.time()
         while not self.stopping.is_set():
             began = time.time()
+            # The clock stepped back (1.10.305) - chrony after a change of
+            # its servers, a machine that booted ahead: every "this long since
+            # it was last done" was then negative, and for as long as the step
+            # nothing periodic ran - no housekeeping, no lists, no sync of the
+            # router. Everything is due at once instead.
+            if began < was - 5:
+                log('the clock went back %s: everything that runs on a schedule here is '
+                    'done now' % human_span(was - began), 'warn')
+                last_house = last_feeds = last_router = last_settings = last_dir = 0.0
+                last_weigh = last_fold = last_sources = last_refused = 0.0
+                for name in ('_net_at', '_mikrotik_at', '_mikrotik_retry_at', '_rosapi_synced'):
+                    if hasattr(self, name):
+                        setattr(self, name, 0.0)
+            was = began
             self._loop_at = began
             # logrotate has moved the log out from under us. Done here, in
             # the loop, because the handler that was asked may not: see
@@ -66828,7 +66910,13 @@ class WebRoot(object):
             return False
         st = self.read('status.json') or {}
         if st.get('hash') == want['hash']:
-            return False
+            # ...one that failed, asked again every six hours (1.10.305): a
+            # certificate renewed by Automatic certificates that nginx would
+            # not take once - a hand edit elsewhere in its files, since put
+            # right - was never put in, and the old one ran out.
+            if st.get('state') != 'failed' or \
+                    time.time() - float(st.get('at') or 0) < 6 * 3600:
+                return False
         if self._pushed.get('hash') == want['hash'] and \
                 time.time() - float(self._pushed.get('at') or 0) < 3600:
             return False
@@ -70822,7 +70910,7 @@ def ntp_root_ask(wr, data, wait=60):
     """One question for root's helper in ntp.ask, and its answer out of
     ntp.json - the one with the same id."""
     ask_id = secrets.token_hex(8)
-    wr.write('ntp.ask', dict(data, id=ask_id))
+    wr.write('ntp.ask', dict(data, id=ask_id, at=time.time()))
     end = time.time() + wait
     while time.time() < end:
         got = wr.read('ntp.json')
@@ -70831,6 +70919,13 @@ def ntp_root_ask(wr, data, wait=60):
                 raise WebRootError(got.get('said') or 'root\'s helper said no')
             return got.get('data') if isinstance(got.get('data'), dict) else {}
         time.sleep(0.4)
+    # Given up on, so taken back (1.10.305): left lying, root did it minutes
+    # later - or at the next boot - after the page had said it failed.
+    try:
+        if (wr.read('ntp.ask') or {}).get('id') == ask_id:
+            os.unlink(str(wr.folder() / 'ntp.ask'))
+    except OSError:
+        pass
     raise WebRootError('root\'s helper did not answer in %d s - is isemon-web.path running? '
                        '(systemctl status isemon-web.path; ./install.sh --upgrade puts in the '
                        'one that is asked about the clock)' % wait)
@@ -76303,6 +76398,14 @@ class Upgrades(object):
             if osup_updating(self.daemon.store):
                 raise WebRootError('the system is being updated (Settings - System updates) - '
                                    'wait for it to end')
+            # ...nor while the machine is about to restart, or its network is
+            # being changed (1.10.305).
+            np_ = getattr(self.daemon, 'netpower', None)
+            if np_ is not None:
+                if np_.power_busy():
+                    raise WebRootError('a restart or a power-off is under way')
+                if np_.job_active(np_._get('net:job')):
+                    raise WebRootError('the network is being changed')
             pk = self.package()
             if not pk:
                 raise WebRootError('send the package first')
@@ -76951,7 +77054,7 @@ class NetPower(object):
         wr = self.daemon.webroot
         with self.ask_lock:
             ask_id = secrets.token_hex(8)
-            wr.write(NET_ASK_NAME, dict(data, id=ask_id))
+            wr.write(NET_ASK_NAME, dict(data, id=ask_id, at=time.time()))
             end = time.time() + wait
             while time.time() < end:
                 got = wr.read(NET_ANSWER_NAME, 1024 * 1024)
@@ -76960,6 +77063,14 @@ class NetPower(object):
                         raise WebRootError(got.get('said') or 'root said no')
                     return got.get('data') or {}
                 time.sleep(0.4)
+            # Given up on, so taken back (1.10.305): left lying, root changed
+            # the network or restarted the machine minutes later - or at the
+            # next boot - after the page had said it failed.
+            try:
+                if (wr.read(NET_ASK_NAME) or {}).get('id') == ask_id:
+                    os.unlink(str(wr.folder() / NET_ASK_NAME))
+            except OSError:
+                pass
         raise WebRootError('root did not answer in %d s - is isemon-web.path running?  '
                            'systemctl status isemon-web.path' % wait)
 
@@ -77254,6 +77365,11 @@ class NetPower(object):
             raise WebRootError('a restart or a power-off is under way')
         if osup_updating(self.store) and not rollback:
             raise WebRootError('the system is being updated - wait for it to end')
+        # ...nor in the middle of an upgrade of isemon, which a change of the
+        # network restarts the machine under (1.10.305).
+        ups = getattr(self.daemon, 'upgrades', None)
+        if not rollback and ups is not None and ups.running():
+            raise WebRootError('isemon is being upgraded - wait for it to end')
         w = checked or self.check(want)
         job = {'id': secrets.token_hex(6), 'state': 'asked', 'at': time.time(), 'pct': 0,
                'by': by, 'want': w, 'steps': [], 'boot': boot_time(), 'boot_id': boot_id(),
@@ -77632,6 +77748,9 @@ class NetPower(object):
             raise WebRootError('the network is being changed')
         if osup_updating(self.store):
             raise WebRootError('the system is being updated - wait for it to end')
+        ups = getattr(self.daemon, 'upgrades', None)
+        if ups is not None and ups.running():
+            raise WebRootError('isemon is being upgraded - wait for it to end')
         plan = {'id': secrets.token_hex(6), 'how': how, 'by': by, 'at': time.time(),
                 'boot': boot_time(), 'boot_id': boot_id(), 'state': 'asked',
                 'moved': time.time()}
@@ -78985,14 +79104,19 @@ class ApiHandler(BaseHTTPRequestHandler):
             return None
         # Half a sign-in - Face ID still owed (1.10.303) - may finish it, or
         # sign out, and nothing else.
-        if me.get('second') and self.path.split('?')[0] not in PK_OPEN:
+        # ...root's own session on the command line aside (1.10.305): with the
+        # only full admin made to change their password, or Face ID on,
+        # every command through the daemon was refused.
+        cli = me.get('ip') == 'command line'
+        if me.get('second') and not cli and self.path.split('?')[0] not in PK_OPEN:
             self.spare_body()
             self.fail('confirm it is you with Face ID first', 403)
             return None
         # An account that has to change its password first may do that and
         # nothing else. The page already sends it there; this is what makes
         # that so for anything that is not the page.
-        if me.get('must_change') and not self.path.startswith(('/api/auth/', '/api/health')):
+        if me.get('must_change') and not cli and \
+                not self.path.startswith(('/api/auth/', '/api/health')):
             self.spare_body()
             self.fail('change the password first', 403)
             return None
@@ -79770,7 +79894,19 @@ class ApiHandler(BaseHTTPRequestHandler):
                     # One's own taken away only just after Face ID (1.10.304):
                     # a sign-in left open would otherwise take the last one,
                     # and the next sign-in needed the password alone.
-                    if mine_too and do == 'delete' and time.time() - PK_FRESH.get(
+                    # ...only where Face ID can be had (1.10.305): switched off,
+                    # or on a page of another name than the passkeys', it never
+                    # could, and nothing could be taken away at all.
+                    try:
+                        rp_here = pk_rp(self.headers.get('X-Isemon-Host'),
+                                        self.headers.get('X-Isemon-Https') == '1',
+                                        self.caller())[0]
+                    except ValueError:
+                        rp_here = ''
+                    checkable = daemon.passkeys_on() and any(
+                        k['user'] in set(store.same_person(me['name'])) and k.get('host') == rp_here
+                        for k in keys)
+                    if mine_too and do == 'delete' and checkable and time.time() - PK_FRESH.get(
                             store.session_key(self.headers.get('X-Isemon-Session') or ''),
                             0) > PK_FRESH_S:
                         return self.fail('confirm it is you with Face ID first, then take it '
@@ -79954,6 +80090,12 @@ class ApiHandler(BaseHTTPRequestHandler):
             # offers. Without a start every protection below - the window a
             # day at a time, the count stopped in time - was off. (1.10.175)
             since = time.time() - (hours or 24 * 90) * 3600
+            # ...from where the cards' sums start (1.10.305): they are made of
+            # hours, or of whole UTC days past two days, and a card's number
+            # opened a list that started up to a day later.
+            if hours:
+                span = store.fw_window(since)
+                since = int(since // span) * span
             # ...or exactly the stretch a bar of the chart covers.
             low = number('from', 0, 0)
             high = number('to', 0, 0)
@@ -80198,8 +80340,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             rows, total = ([], 0) if q_error else store.win_rows(
                 limit=number('limit', 100, 1, 1000),
                 offset=number('offset', 0, 0, Storage.COUNT_CAP),
+                # ...from the hour the cards count from (1.10.305): a card of
+                # the last hour counted from 09:00 and the list it opened from
+                # 09:55, so the two never said the same number.
                 since=number('from', 0, 0) or (
-                    (time.time() - number('hours', 0, 0, 8760) * 3600)
+                    store.roll_floor(time.time() - number('hours', 0, 0, 8760) * 3600)
                     if number('hours', 0, 0, 8760) else 0),
                 until=number('to', 0, 0), text=words, kind=one('kind'), where=where,
                 account=one('account'), ip=one('ip'), machine=one('machine'),
@@ -84747,6 +84892,18 @@ def set_settings_directly(want, pal, store):
     changed = []
     try:
         for key, value in want.items():
+            # As the daemon takes them (1.10.305): a secret given back as it is
+            # shown - its dots and its last two letters - is the one kept, not
+            # a new one; and the firewalls' API passwords are sealed, each
+            # left empty keeping the one saved.
+            if key in SECRET_KEYS and (value is None or str(value).startswith('\u2022')):
+                continue
+            if key == 'fwlog_sources':
+                try:
+                    given = json.loads(value) if isinstance(value, str) else value
+                except ValueError:
+                    given = value
+                value = rosapi_kept_passwords(given, CONFIG.get('fwlog_sources') or [])
             value = check_setting(key, value)
             if fresh.get(key) != value:
                 changed.append(key)
@@ -91347,7 +91504,7 @@ def main(argv=None):
     # open (1.10.198): an account made there, or an import, said "ok" and was
     # gone when the real one came back - as `--set` already refused.
     stand_in_refused = (cmd_add_user, cmd_passwd, cmd_import, cmd_erase, cmd_user_role,
-                        cmd_del_user, cmd_switch_user)
+                        cmd_del_user, cmd_switch_user, cmd_passkey_reset)
     for wanted, work in table:
         if wanted and store.trouble and work in stand_in_refused:
             pal.bad('nothing was done: the database this is set to use will not open, and '

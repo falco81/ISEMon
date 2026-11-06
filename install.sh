@@ -1040,7 +1040,10 @@ while [[ $# -gt 0 ]]; do
         --no-php-update)   PHP_UPDATE=""; shift;;
         --no-python-update) PYTHON_UPDATE=""; shift;;
         --db-rights)       DO_DB_RIGHTS="yes"; shift;;
-        --log-from)        LOG_FROM="$2"; shift 2;;
+        # ...which is a word about receiving, so on an upgrade it is done
+        # (1.10.305): `--upgrade --log-from` - the advice a fresh install
+        # gives - changed nothing at all.
+        --log-from)        LOG_FROM="$2"; SYSLOG_ASKED="yes"; shift 2;;
         --with-db)         WITH_DB="$2"
                            case "$WITH_DB" in
                                mariadb|mysql|postgres|postgresql|pgsql|both|all) ;;
@@ -1481,10 +1484,16 @@ setup_receiving() {       # setup_receiving fresh|upgrade
 
     # The port, to the senders named - and on a fresh install with none
     # named, to anybody, said loudly. An upgrade never opens it to anybody.
-    if [[ -n "${RECV_LISTENER:-}" ]] && command -v firewall-cmd >/dev/null \
-            && systemctl is-active --quiet firewalld; then
+    # ...and the senders named narrow a receiver of ours that was there
+    # already, not only one made in this run (1.10.305).
+    if { [[ -n "${RECV_LISTENER:-}" ]] || { [[ -n "$LOG_FROM" ]] && [[ -f "$RSYSLOG_FILE" ]]; }; } \
+            && command -v firewall-cmd >/dev/null && systemctl is-active --quiet firewalld; then
         if [[ -n "$LOG_FROM" ]]; then
             local senders fam proto
+            # The port open to anybody, as a fresh install with no senders
+            # named left it, closed: the senders are let in below.
+            run firewall-cmd --permanent --remove-port=514/udp >/dev/null 2>&1 || true
+            run firewall-cmd --permanent --remove-port=514/tcp >/dev/null 2>&1 || true
             IFS=',' read -r -a senders <<< "$LOG_FROM"
             for one in "${senders[@]}"; do
                 one="$(echo "$one" | xargs)"
