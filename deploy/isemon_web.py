@@ -64,6 +64,7 @@ import math
 import os
 import re
 import shutil
+import socket
 import stat
 import subprocess
 import sys
@@ -2263,9 +2264,16 @@ def net_apply(n):
             args += ['ipv6.method', 'manual', 'ipv6.addresses', n['addr6'],
                      'ipv6.gateway', n['gw6'], 'ipv6.dns', ','.join(n['dns6'])]
     net_run(args, 'nmcli connection modify')
+    undo = []
     try:
-        return net_apply_rest(n, ex, said, before)
+        return net_apply_rest(n, ex, said, before, undo)
     except BaseException:
+        # ...and what it had changed after the profile, too (1.10.306).
+        for one in reversed(undo):
+            try:
+                one()
+            except Exception:                       # noqa: BLE001
+                pass
         # What comes after the profile went wrong (1.10.305): the profile is
         # put back as it was, or it held the new address with nobody told -
         # to come up at the next boot, on no trial and with no way back.
@@ -2280,7 +2288,7 @@ def net_apply(n):
         raise
 
 
-def net_apply_rest(n, ex, said, before):
+def net_apply_rest(n, ex, said, before, undo):
     said.append('NetworkManager: %s - %s via %s, DNS %s%s' % (
         n['con'], n['addr4'], n['gw4'] or 'no gateway', ', '.join(n['dns4']) or 'none',
         {'off': ', IPv6 off', 'auto': ', IPv6 automatic',
@@ -2305,7 +2313,10 @@ def net_apply_rest(n, ex, said, before):
         if ours:
             os.unlink(SYSCTL_IPV6)
     if n['hostname']:
+        was_name = socket.gethostname()
         net_run([HOSTNAMECTL, 'set-hostname', n['hostname']], 'hostnamectl set-hostname')
+        undo.append(lambda: net_run([HOSTNAMECTL, 'set-hostname', was_name],
+                                    'hostnamectl set-hostname (back)'))
         said.append('host name: %s' % n['hostname'])
     try:
         with open(HOSTS_FILE) as f:
@@ -2322,6 +2333,7 @@ def net_apply_rest(n, ex, said, before):
             except OSError:
                 pass
         write_root(HOSTS_FILE, new, 0o644)
+        undo.append(lambda: write_root(HOSTS_FILE, had, 0o644))
         said.append('%s: this machine\'s lines' % HOSTS_FILE)
     if n['reboot_in']:
         said.append(power_after('reboot', n['reboot_in']))

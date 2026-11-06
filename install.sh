@@ -1489,22 +1489,29 @@ setup_receiving() {       # setup_receiving fresh|upgrade
     if { [[ -n "${RECV_LISTENER:-}" ]] || { [[ -n "$LOG_FROM" ]] && [[ -f "$RSYSLOG_FILE" ]]; }; } \
             && command -v firewall-cmd >/dev/null && systemctl is-active --quiet firewalld; then
         if [[ -n "$LOG_FROM" ]]; then
-            local senders fam proto
-            # The port open to anybody, as a fresh install with no senders
-            # named left it, closed: the senders are let in below.
-            run firewall-cmd --permanent --remove-port=514/udp >/dev/null 2>&1 || true
-            run firewall-cmd --permanent --remove-port=514/tcp >/dev/null 2>&1 || true
+            local senders fam proto took=0
             IFS=',' read -r -a senders <<< "$LOG_FROM"
             for one in "${senders[@]}"; do
                 one="$(echo "$one" | xargs)"
                 [[ -z "$one" ]] && continue
                 fam=ipv4; [[ "$one" == *:* ]] && fam=ipv6
                 for proto in udp tcp; do
-                    run firewall-cmd --permanent --add-rich-rule="rule family=$fam source address=$one port port=514 protocol=$proto accept" >/dev/null 2>&1 || true
+                    if run firewall-cmd --permanent --add-rich-rule="rule family=$fam source address=$one port port=514 protocol=$proto accept" >/dev/null 2>&1; then
+                        took=$((took + 1))
+                    fi
                 done
             done
-            run firewall-cmd --reload >/dev/null 2>&1 || true
-            say "opened 514/udp and 514/tcp to the senders given: $LOG_FROM"
+            # ...and only then, and only if the firewall took a sender, the
+            # port open to anybody closed (1.10.306): closed first, a list it
+            # would not take left the logs nowhere to arrive.
+            if (( took > 0 )); then
+                run firewall-cmd --permanent --remove-port=514/udp >/dev/null 2>&1 || true
+                run firewall-cmd --permanent --remove-port=514/tcp >/dev/null 2>&1 || true
+                run firewall-cmd --reload >/dev/null 2>&1 || true
+                say "opened 514/udp and 514/tcp to the senders given: $LOG_FROM"
+            else
+                warn "the firewall took none of the senders given ($LOG_FROM): 514 was left as it was"
+            fi
         elif [[ "$how" == "fresh" ]]; then
             run firewall-cmd --permanent --add-port=514/udp >/dev/null 2>&1 || true
             run firewall-cmd --permanent --add-port=514/tcp >/dev/null 2>&1 || true

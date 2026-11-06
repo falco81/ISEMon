@@ -39,6 +39,19 @@ function isemon_https(): bool
     return strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 }
 
+/** A big upload is taken only from a full admin who is wholly signed in
+ *  (1.10.306): asked before a byte of the body is read. Refused, it exits. */
+function isemon_full_admin_or_refuse(): void
+{
+    $who = isemon_session() !== '' ? isemon_whoami() : null;
+    if (!is_array($who) || !empty($who['second']) || ($who['role'] ?? '') !== 'fulladmin') {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'sign in as a full admin first']);
+        exit;
+    }
+}
+
 /** Read the API token the daemon wrote for us, or null if we can't. */
 function isemon_token(): ?string
 {

@@ -713,6 +713,10 @@ if (isset($_GET['api'])) {
            multipart form for PHP to take apart first (php2shell). */
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
+        /* Nobody's file written down before it is known who is sending it
+           (1.10.306): a signed-out client had the server write gigabytes to
+           its disk, the daemon asked only once all of it had arrived. */
+        isemon_full_admin_or_refuse();
         [$tmp, $why] = isemon_take_body(4 * 1024 * 1024 * 1024);
         if ($tmp === null) {
             http_response_code(400);
@@ -758,6 +762,10 @@ if (isset($_GET['api'])) {
            - never a multipart form (php2shell). */
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
+        /* Nobody's file written down before it is known who is sending it
+           (1.10.306): a signed-out client had the server write gigabytes to
+           its disk, the daemon asked only once all of it had arrived. */
+        isemon_full_admin_or_refuse();
         [$tmp, $why] = isemon_take_body(4 * 1024 * 1024 * 1024);
         if ($tmp === null) {
             http_response_code(400);
@@ -786,6 +794,10 @@ if (isset($_GET['api'])) {
            has it checked - never a multipart form (php2shell). */
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
+        /* Nobody's file written down before it is known who is sending it
+           (1.10.306): a signed-out client had the server write gigabytes to
+           its disk, the daemon asked only once all of it had arrived. */
+        isemon_full_admin_or_refuse();
         [$tmp, $why] = isemon_take_body(64 * 1024 * 1024);
         if ($tmp === null) {
             http_response_code(400);
@@ -8193,6 +8205,8 @@ function closeModal() {
   }
   MODAL_GEN = ++MODAL_SEQ;
   $('modal').hidden = true;
+  MODAL_LOCKED = false;
+  $('modal-x').hidden = false;
   if (MODAL_CLOSE) { var f = MODAL_CLOSE; MODAL_CLOSE = null; f(); }
   var back = MODAL_FROM;
   MODAL_FROM = null;
@@ -8214,7 +8228,11 @@ document.addEventListener('keydown', function (e) {
     inside[0].focus();
   }
 });
-$('modal-x').onclick = closeModal;
+/* A popup that must be answered (the password set by an administrator,
+   1.10.306) is not closed by its cross or by Escape: closed, it left a page
+   that could do nothing. */
+var MODAL_LOCKED = false;
+$('modal-x').onclick = function () { if (!MODAL_LOCKED) closeModal(); };
 /* A click beside the popup closes nothing (1.10.241): only its own buttons,
    its cross and Escape do. */
 document.addEventListener('keydown', function (e) {
@@ -8230,6 +8248,7 @@ document.addEventListener('keydown', function (e) {
      (1.10.155) */
   if (typeof COLS_MENU !== 'undefined' && COLS_MENU) return;
   if ($('findback') && !$('findback').hidden) return;
+  if (MODAL_LOCKED) return;
   closeModal();
 });
 
@@ -8708,6 +8727,9 @@ function askNames() {
   var want = PTR_WANT;
   PTR_WANT = [];
   if (!want.length) return;
+  /* Not while a password set by an administrator is still to be changed
+     (1.10.306): the daemon refuses it, with a red note behind the popup. */
+  if (typeof ME !== 'undefined' && ME && ME.must_change && !ME.from_dir) return;
   var seen = {}, list = [], later = [];
   want.forEach(function (one) {
     var key = one.ts ? one.ip + '@' + Math.round(one.ts) : one.ip;
@@ -27203,7 +27225,7 @@ var PANES = {
             'acme_dns_url', 'acme_dns_user', 'acme_dns_key', 'acme_dns_subdomain',
             'acme_desec_domain', 'acme_desec_token', 'acme_dns_alias', 'acme_dns_wait',
             'acme_resolvers'],
-  about:   ['site_name', 'perf_meter', 'api_port', 'debug',
+  about:   ['site_name', 'perf_meter', 'debug',
             'debug_sql', 'debug_ldap', 'debug_api', 'debug_logs', 'debug_router']
 };
 /* Settings that are set somewhere else on this page and are not to be set
@@ -27213,6 +27235,11 @@ var PANES = {
    own as well, under About, they were a second and older way of saying the
    same thing. (1.10.159) */
 var SETTINGS_ELSEWHERE = ['fwlog_type', 'fwlog_paths', 'fwlog_name', 'feeds',
+  /* The daemon's port (1.10.306): changed from the page it took effect at the
+     next start, where the page - which asks the port written in
+     isemon-api.php - could no longer reach it, nor so put it back. Only on
+     the command line now: isemon --set api_port=N. */
+  'api_port',
   /* The NPS source's switch of before (1.10.194): not a setting of its own any more. */
   'judge_nps_vpn'];
 /* A heading inside a pane, where one pane holds two different things. */
@@ -28077,6 +28104,10 @@ var ONLY_WHEN = {
   mikrotik2_pfssh_password: ['mikrotik2_pfssh_auth', 'password'],
   block_minutes: ['block_ladder', ''],
   block_repeat: ['block_ladder', ''],
+  /* ...and the longest a ban may be: a ladder says every length itself
+     (1.10.306), and the ceiling was shown and did nothing beside one. */
+  block_max_minutes: ['block_ladder', ''],
+  block_over_max: ['block_ladder', ''],
   tacacs_from_mark: ['tacacs_from', '*'],
   otp_detail_name: ['otp_detail', '1'],
   otp_from: ['otp_detail', '1'],
@@ -35107,6 +35138,8 @@ $('me-btn').onclick = showMe;
 
 function myPassword(must) {
   modal('Change my password', function (body) {
+    MODAL_LOCKED = !!must;
+    if (must) $('modal-x').hidden = true;
     var p = el('p', 'note');
     p.textContent = must
       ? 'This password was set for you, and has to be changed before anything else here '
@@ -39376,7 +39409,13 @@ function qBoxesInstall() {
      second firewall's settings are a group inside the router pane rather
      than a pane of their own, and `#settings/router2` would show nothing. */
   showPane(pane && $('pane-' + pane) ? pane : 'logs', true);
-  if (['overview', 'bans', 'failed', 'logins', 'traffic', 'windows', 'router', 'events',
+  /* Nothing is asked of the daemon while a password set by an administrator
+     still has to be changed (1.10.306): it refuses all of it, and the page
+     filled with red "403" notes behind the popup. */
+  var mustFirst = !!(ME && ME.must_change && !ME.from_dir);
+  if (mustFirst) {
+    /* the popup below is all there is until the password is changed */
+  } else if (['overview', 'bans', 'failed', 'logins', 'traffic', 'windows', 'router', 'events',
        'logs', 'settings'].indexOf(want) >= 0) {
     showTab(want);
     if (want !== 'settings') openHashSub(want, pane);
@@ -39388,7 +39427,7 @@ function qBoxesInstall() {
   /* Somebody whose password was set for them by an administrator chooses
      their own before anything else: the daemon answers nothing else until
      they have (1.10.200), so nothing is asked of it meanwhile. */
-  if (ME && ME.must_change && !ME.from_dir) {
+  if (mustFirst) {
     setTimeout(function () { myPassword(true); }, 600);
   } else {
     startLive();

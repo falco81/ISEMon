@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.305'
+__version__ = '1.10.306'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2123,6 +2123,10 @@ def check_setting(key, value):
                 or re.match(r'^\[[0-9A-Fa-f:]+\]$', said)):
             raise ValueError('%s is an address or a host name' % key)
         want = said
+    # The blocked list has to be called something (1.10.306): emptied, every
+    # sync with the firewall failed from then on, the page having said saved.
+    if key in ('mikrotik_list', 'pf_list') and not str(want or '').strip():
+        raise ValueError('the blocked list on the firewall has to be called something')
     if key in ('mikrotik_list', 'geolist_name') and str(want or '').strip():
         # The router is only ever told the name with everything but letters,
         # digits, dash and underscore taken out (and cut at 40), so "isemon
@@ -2307,6 +2311,21 @@ def check_settings_together(values):
         if said and len(said) < 12:
             raise ValueError('basic authentication for the published list needs a password '
                              'of at least twelve characters')
+    # The banning's numbers that only mean something together (1.10.306).
+    try:
+        tries = int(values.get('block_tries') or 5)
+        lots = int(values.get('block_lots') or 0)
+        most = int(values.get('block_max_minutes') or 0)
+        first = int(values.get('block_minutes') or 60)
+    except (TypeError, ValueError):
+        tries, lots, most, first = 5, 0, 0, 60
+    if 0 < lots <= tries:
+        raise ValueError('a burst that goes out for good (%d) has to be bigger than the '
+                         'failed logins that earn a ban (%d): as it is, every ban would be '
+                         'for good' % (lots, tries))
+    if not str(values.get('block_ladder') or '').strip() and 0 < most < first:
+        raise ValueError('the longest a ban may be (%d min) is shorter than the first ban '
+                         '(%d min)' % (most, first))
     if str(values.get('geolist_name') or '').strip() and \
             Daemon.mikrotik_name(values.get('geolist_name') or 'x') == \
             Daemon.mikrotik_name(values.get('mikrotik_list') or 'y'):
@@ -14712,11 +14731,19 @@ class RosReaders(object):
     def sync(self):
         want = self.configured()
         with self.lock:
+            # Stopping, perhaps from the signal handler on this very thread in
+            # the middle of this (1.10.306): no reader started after it.
+            if self.daemon.stopping.is_set():
+                return
             for name in list(self.readers):
                 if name not in want or want[name] != self.wanted.get(name):
-                    self.readers.pop(name).halt()
+                    gone = self.readers.pop(name, None)
+                    if gone is not None:
+                        gone.halt()
                     self.wanted.pop(name, None)
             for name, api in want.items():
+                if self.daemon.stopping.is_set():
+                    return
                 if name not in self.readers:
                     one = RosReader(self.daemon, name, api)
                     self.readers[name] = one
@@ -16648,7 +16675,12 @@ class ListQuery(object):
         self.sql, self.args, self.words, self.used = '', [], self.text, []
         self.tokens = FwQuery._tokens(self.text) if self.text else []
         if not any(self._field_of(t) for t in self.tokens):
-            return                       # no field at all: the box as it always was
+            # No field at all: the box as it always was - but a word typed in
+            # quotes is the word, not the word with quotes round it, which
+            # matched nothing (1.10.306).
+            if '"' in self.text:
+                self.words = ' '.join(self.text.replace('"', ' ').split())
+            return
         if len(self.tokens) > SEARCH_MOST_PARTS:
             raise ListQueryError('that search has too many parts - %d at most'
                                  % SEARCH_MOST_PARTS)
@@ -36559,17 +36591,27 @@ class Storage(object):
                 break
         return out
 
-    def blocked_before_many(self, ips):
-        """`blocked_before` for a page of addresses, in one statement."""
+    def blocked_before_many(self, ips, since=None):
+        """`blocked_before` for a page of addresses, in one statement.
+
+        With `since` ({ip: when its present ban began}) the present ban is
+        not one of them (1.10.306): an address banned for the first time
+        read "banned 1× before"."""
         out = {}
+        since = since or {}
         ips = [str(ip) for ip in ips if ip]
         for at in range(0, len(ips), 200):
             lump = ips[at:at + 200]
             try:
                 for row in self.db.execute(
-                        "SELECT ip, COUNT(*) AS n FROM block_events WHERE what='blocked' "
+                        "SELECT ip, COUNT(*) AS n, MAX(ts) AS last FROM block_events "
+                        "WHERE what='blocked' "
                         'AND ip IN (%s) GROUP BY ip' % ','.join('?' * len(lump)), lump):
-                    out[str(row['ip'])] = int(row['n'] or 0)
+                    n = int(row['n'] or 0)
+                    began = since.get(str(row['ip']))
+                    if n and began and float(row['last'] or 0) >= float(began) - 5:
+                        n -= 1
+                    out[str(row['ip'])] = n
             except sqlite3.Error:
                 break
         return out
@@ -41900,7 +41942,10 @@ class Storage(object):
     def add_whitelist(self, ip, note='', by=''):
         with self.db_write() as db:
             db.execute('INSERT INTO whitelist (ip, note, by, at) VALUES (?,?,?,?) '
-                       'ON CONFLICT(ip) DO UPDATE SET note=excluded.note, by=excluded.by',
+                       # Added again without a note keeps the note it had (1.10.306).
+                       'ON CONFLICT(ip) DO UPDATE SET '
+                       "note=COALESCE(NULLIF(excluded.note, ''), whitelist.note), "
+                       'by=excluded.by',
                        (str(ip), str(note)[:200], by or '', time.time()))
 
     def drop_whitelist(self, ip):
@@ -52554,7 +52599,8 @@ class Daemon(object):
         notes = self.store.meta_many(['blocked_%s_%s' % (what, ip) for ip in ips
                                       for what in ('how', 'feed', 'proof', 'netfeeds',
                                                    'members')])
-        befores = self.store.blocked_before_many(ips)
+        befores = self.store.blocked_before_many(
+            ips, since={str(x['ip']): x.get('since') for x in rows if x.get('since')})
         tries = self.per_ban('tries', [ip for ip in ips if '/' not in str(ip)], 60,
                              lambda some: self.store.failed_count_many(some, 86400))
 
@@ -53492,6 +53538,14 @@ class Daemon(object):
         key = 'addr/%s/%d' % (str(ip).strip().lower(), self._serial)
         return copy.deepcopy(self.held(key, 10, lambda: self._address_story_now(ip)))
 
+    def blocked_before_this(self, plain, until, row):
+        """How many times the address was banned before the ban it has now,
+        if any (1.10.306): the present one is not "before"."""
+        if until is None or not (row or {}).get('since'):
+            return self.store.blocked_before(plain)
+        got = self.store.blocked_before_many([plain], since={str(plain): row['since']})
+        return got.get(str(plain), 0)
+
     def _address_story_now(self, ip):
         text = str(ip).strip()
         if not is_address(text):
@@ -53553,7 +53607,7 @@ class Daemon(object):
             'how': self.store.get_meta('blocked_how_%s' % text) or '',
             'since': (row or {}).get('since'),
             'hits': (row or {}).get('hits') or 0,
-            'before': self.store.blocked_before(plain),
+            'before': self.blocked_before_this(plain, until, row),
             'failed_total': n_failed, 'passed_total': n_passed,
             'failed': failed, 'passed': passed,
             # Which names it offered, counted over everything recorded from
@@ -69232,6 +69286,13 @@ def push_key_take(store, pub, comment, name, by, how):
         keys = [k for k in push_keys(store) if k.get('key_id') != push_key_id(pub)]
         keys.append({'key': push_b64(pub), 'key_id': push_key_id(pub), 'comment': comment[:200],
                      'name': str(name or '')[:200], 'at': time.time(), 'by': by, 'how': how})
+        # ...and one let go to make room is said (1.10.306): its pushes were
+        # refused as an unknown key and nobody knew why.
+        for gone in keys[:-PUSH_KEYS_MOST]:
+            store.add_event('control', 'acme push: the key of %s was let go to make room for '
+                            'a new one (at most %d are kept)'
+                            % (gone.get('name') or gone.get('comment') or gone.get('key_id'),
+                               PUSH_KEYS_MOST), 'warn', who=by)
         _push_put(store, 'acme_push:keys', keys[-PUSH_KEYS_MOST:])
     return push_key_id(pub)
 
@@ -72884,6 +72945,10 @@ def server_load():
             out['load'] = [round(x, 2) for x in os.getloadavg()]
         except OSError:
             out['load'] = None
+        # ...against a reading of moments ago only (1.10.306): the first after a
+        # quiet night was the average of the night, drawn as now.
+        if was and raw['at'] - was['at'] > 30:
+            was = None
         if was:
             dt = max(0.2, raw['at'] - was['at'])
 
@@ -79690,6 +79755,13 @@ class ApiHandler(BaseHTTPRequestHandler):
             names = set(store.same_person(name))
             keys = store.passkeys()
             theirs = [k for k in keys if k['user'] in names]
+            # A half sign-in made while the person had no passkey, and since
+            # then they have made one (1.10.306): it owes that one now, not a
+            # new one of its own - or whoever had the password and stopped at
+            # the step made theirs after the person had set Face ID up.
+            if owed == 'enrol' and theirs:
+                owed = 'verify'
+                store.session_second(mine, 'verify')
             step = str(data.get('step') or '')
             if step == 'begin':
                 want = str(data.get('want') or '')
@@ -79903,9 +79975,17 @@ class ApiHandler(BaseHTTPRequestHandler):
                                         self.caller())[0]
                     except ValueError:
                         rp_here = ''
+                    # Whether there is Face ID to ask for at all: switched on,
+                    # and the person has a passkey (1.10.306) - never by the
+                    # name the request says it came by, which the browser
+                    # sends and anybody can write.
                     checkable = daemon.passkeys_on() and any(
-                        k['user'] in set(store.same_person(me['name'])) and k.get('host') == rp_here
-                        for k in keys)
+                        k['user'] in set(store.same_person(me['name'])) for k in keys)
+                    if mine_too and do == 'delete' and checkable and not any(
+                            k['user'] in set(store.same_person(me['name']))
+                            and k.get('host') == rp_here for k in keys):
+                        return self.fail('open this page by the name your passkeys are for, '
+                                         'confirm it is you with Face ID, then take it away', 428)
                     if mine_too and do == 'delete' and checkable and time.time() - PK_FRESH.get(
                             store.session_key(self.headers.get('X-Isemon-Session') or ''),
                             0) > PK_FRESH_S:

@@ -372,6 +372,27 @@ working.
 
 ## Version
 
+1.10.306
+
+- What the third of three rounds of looking for bugs found, fixed: a big
+  upload (a restore, an import) is refused before a byte is read unless it
+  comes from a full administrator wholly signed in; Face ID: a half sign-in
+  that owed a first passkey and has made one owes only the check, and one's
+  own passkey can be taken away whatever name the page was opened by; the
+  firewall readers stop when the daemon stops; installing with `--log-from`
+  no longer closes the syslog ports before the rules that let the senders in
+  are there; a performance meter reading older than half a minute is not
+  used for the rate; an acme push key let go to make room is written down;
+  a network change that failed half way also puts the host name and
+  /etc/hosts back; an empty name for the blocked list on the firewall, a
+  burst for good no bigger than the bar, and a longest ban shorter than the
+  first are refused; the daemon's port is no longer offered on the About
+  page; the popup for a password set by an administrator can no longer be
+  closed by its cross or Escape, and nothing is asked of the daemon behind
+  it; "banned N× before" no longer counts the ban the address has now; a
+  word typed in quotes into a search box is searched for; an address
+  whitelisted again without a note keeps its note.
+
 1.10.305
 
 - What the second of three rounds of looking for bugs found, fixed:

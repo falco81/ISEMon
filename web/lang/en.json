@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.305",
-  "made": "2026-11-05",
+  "version": "1.10.306",
+  "made": "2026-11-06",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -18639,6 +18639,10 @@
   "s.open-this-one-where-it-is.9ab27b32": {
    "source": "Open this one where it is recorded, and light the row.",
    "text": "Open this one where it is recorded, and light the row."
+  },
+  "s.open-this-page-by-the-name.b112f14d": {
+   "source": "open this page by the name your passkeys are for, confirm it is you with Face ID, then take it away",
+   "text": "open this page by the name your passkeys are for, confirm it is you with Face ID, then take it away"
   },
   "s.open-this-record-where-it-is.ecab512c": {
    "source": "Open this record where it is listed, and light the row.",

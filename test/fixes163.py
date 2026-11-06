@@ -54,7 +54,8 @@ print('\nA box with no field in it is searched as it always was')
 for text in ('novak', '98:fc:84:e0:29:d6', '2001:db8::1', '07:30', 'EXAMPLE\\novak',
              'a:b c', 'the password was wrong', 'OR', '"quoted words"', 'x:y:z', ''):
     got = isemon.ListQuery('failed', text)
-    ok('%r is words alone' % text, (got.sql, got.words), ('', text.strip()))
+    # ...but for the quotes round a word, which are not part of it (1.10.306).
+    ok('%r is words alone' % text, (got.sql, got.words), ('', text.strip().replace('"', '')))
 
 print('\nWhat the fields become')
 

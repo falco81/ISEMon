@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.305",
+  "version": "1.10.306",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -18639,6 +18639,10 @@
   "s.open-this-one-where-it-is.9ab27b32": {
    "source": "Open this one where it is recorded, and light the row.",
    "text": "Otevřít tuto položku tam, kde je zaznamenána, a zvýraznit řádek."
+  },
+  "s.open-this-page-by-the-name.b112f14d": {
+   "source": "open this page by the name your passkeys are for, confirm it is you with Face ID, then take it away",
+   "text": "otevřete tuto stránku pod jménem, pro které jsou vaše přístupové klíče, potvrďte Face ID, že jste to vy, a pak ho odeberte"
   },
   "s.open-this-record-where-it-is.ecab512c": {
    "source": "Open this record where it is listed, and light the row.",
