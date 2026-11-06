@@ -372,6 +372,15 @@ working.
 
 ## Version
 
+1.10.308
+
+- The performance meter asked in step with the daemon: the page asks just
+  after the daemon reads and is handed every reading since its newest one,
+  so the graphs no longer skip a reading now and then and slide evenly; the
+  last state is drawn at once when the page is opened again or come back
+  to, from what this browser kept and the newest reading written down, and
+  the next reading only brings it up to date.
+
 1.10.307
 
 - The passkeys in Your account drawn as in Plexmon: a table of them with

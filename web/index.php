@@ -34053,19 +34053,30 @@ function hloadDraw(d, into, asLook) {
     hist = HLOAD.hist || (HLOAD.hist = {cpu: [], mem: [], disk: [], net: []});
     var push = function (k, t, v) {
       var a = hist[k];
-      if (!t || (a.length && a[a.length - 1].t >= t)) return;
+      /* the same reading twice - as written down (to 1/100 s) and as read - is one */
+      if (!t || (a.length && a[a.length - 1].t >= t - 0.5)) return;
       a.push({t: t, v: v || 0});
       while (a.length && a[0].t < t - HL_SPAN - 60) a.shift();
+    };
+    var row = function (h) {
+      if (h.cpu !== null && h.cpu !== undefined) push('cpu', h.at, h.cpu);
+      push('mem', h.at, h.mem); push('disk', h.at, h.disk); push('net', h.at, h.net);
     };
     if (d.hist && d.hist.length) {
       /* The last two minutes as the daemon wrote them down: after F5 (or a
          restart of it) the graphs go on where they were. */
       hist = HLOAD.hist = {cpu: [], mem: [], disk: [], net: []};
-      d.hist.forEach(function (h) {
-        push('cpu', h.at, h.cpu); push('mem', h.at, h.mem); push('disk', h.at, h.disk); push('net', h.at, h.net);
-      });
+      d.hist.forEach(row);
     }
-    if (d.cpu !== undefined && d.at) { push('cpu', d.at, d.cpu); push('mem', d.at, mp); push('disk', d.at, (d.disk_rd || 0) + (d.disk_wr || 0)); push('net', d.at, (d.net_rx || 0) + (d.net_tx || 0)); }
+    /* Every reading since the last one drawn (1.10.308): none is missed. */
+    if (d.more && d.more.length) d.more.forEach(row);
+    if (d.written) row(d.written);
+    /* The reading itself - but a part with no rate yet is not drawn as 0. */
+    if (d.at && d.cpu !== undefined && d.cpu !== null && !d.written) {
+      push('cpu', d.at, d.cpu); push('mem', d.at, mp);
+      if (d.disk_rd !== null && d.disk_rd !== undefined) push('disk', d.at, (d.disk_rd || 0) + (d.disk_wr || 0));
+      if (d.net_rx !== null && d.net_rx !== undefined) push('net', d.at, (d.net_rx || 0) + (d.net_tx || 0));
+    }
   }
   var look = asLook || HLOAD.look || 'graphs';
   host.className = 'hload look-' + look + (preview ? ' hl-preview' : '');
@@ -34674,31 +34685,87 @@ function hpTiles(p, k) {
   }
 }
 function hloadTick(now) {
-  if (!$('hload') || (HLOAD.busy && !now) || document.hidden || !LIVE) return;
+  if (!$('hload')) return;
+  /* Hidden, nothing is asked; coming back asks at once (below). Otherwise
+     looked at again in a while, as the clock that asked every 5 s did. */
+  if (document.hidden) return;
+  if ((HLOAD.busy && !now) || !LIVE) { if (!HLOAD.busy) hloadSoon(5000); return; }
   HLOAD.look = PERF_ON ? (hlPrefs().hload || 'graphs') : 'off';
-  if (HLOAD.look === 'off') { hloadPanelClose(); $('hload').hidden = true; return; }
+  if (HLOAD.look === 'off') { hloadPanelClose(); $('hload').hidden = true; hloadSoon(5000); return; }
   HLOAD.busy = true;
   var withDetail = !!HLOAD.open;
   /* The first ask of this page, or the first after a while hidden: the
      last two minutes too. */
   var withHist = !HLOAD.hist || !HLOAD.histAt || Date.now() - HLOAD.histAt > 20000;
-  api('load' + (withDetail ? '&detail=1' : '') + (withHist ? '&hist=1' : ''), undefined,
+  var newest = 0;
+  if (!withHist) ['cpu', 'mem'].forEach(function (k) {
+    var a = HLOAD.hist[k];
+    if (a.length && a[a.length - 1].t > newest) newest = a[a.length - 1].t;
+  });
+  api('load' + (withDetail ? '&detail=1' : '') + (withHist ? '&hist=1' : '')
+      + (newest ? ['&since', newest.toFixed(2)].join('=') : ''), undefined,
       {quiet: true}).then(function (d) {
-    if (d.off) { hloadPanelClose(); $('hload').hidden = true; return; }
+    if (d.off) { hloadPanelClose(); $('hload').hidden = true; hloadForget(); return; }
     if (d.detail) { HLOAD.detail = d.detail; HLOAD.detailAt = Date.now(); }
     HLOAD.histAt = Date.now();
     hloadDraw(d);
-  }).catch(function () { }).then(function () { HLOAD.busy = false; });
+    hloadKeep();
+    /* Asked again just after the daemon reads next (1.10.308), not on a
+       clock of the page's own: the two out of step, a reading was now and
+       then never shown and the line jerked. */
+    if (d.next && d.now) hloadSoon(1000 * (d.next - d.now) + 600);
+    else hloadSoon(withHist ? 1500 : 5000);
+  }).catch(function () { hloadSoon(5000); }).then(function () { HLOAD.busy = false; });
+}
+function hloadSoon(ms) {
+  clearTimeout(HLOAD.timer);
+  HLOAD.timer = setTimeout(hloadTick, Math.max(800, Math.min(6000, ms || 5000)));
+}
+/* The last state, kept in this browser (1.10.308): a page opened again, or
+   come back to, shows it at once - and the graphs of the last two minutes -
+   and the next reading only brings it up to date. A convenience of this
+   browser only: none kept, the page asks as before. */
+var HLOAD_STORE = 'isemon-hload-v1';
+function hloadKeep() {
+  try {
+    localStorage.setItem(HLOAD_STORE, JSON.stringify({kept: Date.now(), who: ME && ME.name,
+      last: HLOAD.last, hist: HLOAD.hist, skew: HLOAD.skew || 0,
+      detail: HLOAD.detail || null}));
+  } catch (e) { }
+}
+function hloadForget() { try { localStorage.removeItem(HLOAD_STORE); } catch (e) { } }
+function hloadFromKept() {
+  var got = null;
+  try { var kept = localStorage.getItem(HLOAD_STORE); got = kept ? JSON.parse(kept) : null; } catch (e) { got = null; }
+  if (!got || !got.last || !got.hist || got.who !== (ME && ME.name)
+      || Date.now() - (got.kept || 0) > 10 * 60000) return false;
+  HLOAD.hist = got.hist;
+  HLOAD.skew = got.skew || 0;
+  if (got.detail) { HLOAD.detail = got.detail; HLOAD.detailAt = 0; }
+  var d = got.last;
+  /* its clock is the one kept beside it, not its own moment of then */
+  delete d.hist; delete d.more; delete d.written; delete d.detail; delete d.now; delete d.next;
+  hloadDraw(d);
+  return true;
 }
 function hloadLoop() {
   if (!$('hload')) return;
-  clearInterval(HLOAD.timer);
-  hloadTick();
-  setTimeout(hloadTick, 1500);      /* the first rate needs a second reading */
-  /* As often as the daemon reads (1.10.301): every 5 s. */
-  HLOAD.timer = setInterval(hloadTick, 5000);
+  clearTimeout(HLOAD.timer);
+  HLOAD.look = PERF_ON ? (hlPrefs().hload || 'graphs') : 'off';
+  if (HLOAD.look !== 'off' && LIVE && !HLOAD.last) hloadFromKept();
+  hloadTick(true);
 }
-document.addEventListener('visibilitychange', function () { if (!document.hidden) hloadTick(); });
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden || !$('hload')) return;
+  /* Come back to: drawn again at once for the time it is now - where the
+     slide would have got to - and then brought up to date. */
+  if (HLOAD.last && HLOAD.look && HLOAD.look !== 'off') {
+    var d = HLOAD.last;
+    delete d.hist; delete d.more; delete d.written; delete d.now; delete d.next;
+    hloadDraw(d);
+  }
+  hloadTick(true);
+});
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && HLOAD.open) hloadPanelClose(); });
 
 /* The two pickers of My account (1.0.75): cards drawn by the same code from sample numbers. */

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.307'
+__version__ = '1.10.308'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -72988,6 +72988,7 @@ def _load_watching(store):
     tidied = 0.0
     wait = 1.0                  # the first rates a second after the first reading
     while True:
+        LOAD_WATCH['next'] = time.time() + wait
         time.sleep(wait)
         wait = LOAD_EVERY
         if not int(CONFIG.get('perf_meter') or 0) or \
@@ -73021,7 +73022,7 @@ def load_watch(store):
         return False
 
 
-def api_load(detail=False, hist=False, store=None):
+def api_load(detail=False, hist=False, store=None, since=0.0):
     """GET /api/load (full admins only): the newest reading - the daemon's own
     every 5 s while somebody watches (see load_watch), read now only when it
     was not watching yet; with ?detail=1 also the details, with ?hist=1 the
@@ -73029,12 +73030,29 @@ def api_load(detail=False, hist=False, store=None):
     reading = store is not None and load_watch(store)
     got = LOAD_LAST['out'] if reading else None
     out = dict(got or server_load())
-    out['now'] = time.time()
+    now = out['now'] = time.time()
+    node = load_node()
+    # The first ask after a quiet while has no rate of its own yet (it needs
+    # a second reading): the newest one written down stands in for it
+    # (1.10.308), rather than dashes until the next ask.
+    if out.get('cpu') is None and store is not None:
+        rows = store.load_history(node, now - 60)
+        if rows:
+            out['cpu'] = rows[-1]['cpu']
+            out['written'] = rows[-1]
     if detail:
         out['detail'] = load_detail()
+    # When the daemon reads next, so that the page asks just after it does
+    # rather than at a moment of its own (1.10.308): asked out of step, a
+    # reading was now and then never shown and the line jerked.
+    if reading and LOAD_WATCH.get('next'):
+        out['next'] = LOAD_WATCH['next']
     if hist:
-        out['hist'] = store.load_history(load_node(), time.time() - LOAD_SPAN) \
-            if store is not None else []
+        out['hist'] = store.load_history(node, now - LOAD_SPAN) if store is not None else []
+    elif since and store is not None:
+        # ...and every reading since the one the page has, so none is missed.
+        out['more'] = [x for x in store.load_history(node, max(float(since), now - LOAD_SPAN))
+                       if x['at'] > float(since)]
     return out
 
 
@@ -79396,7 +79414,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.send_json({'off': True})
             return self.send_json(api_load(detail=str(one('detail') or '') in ('1', 'true'),
                                            hist=str(one('hist') or '') in ('1', 'true'),
-                                           store=store))
+                                           store=store, since=number('since', 0, 0)))
 
         if path == '/api/acme-push-admin':
             if method != 'POST':

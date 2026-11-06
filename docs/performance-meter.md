@@ -31,6 +31,16 @@ in the header of the page, every 5 s while the page is shown and live.
 - **The graphs survive F5**, and a restart of the daemon: a page loaded
   again is handed the last two minutes as written down, and goes on where
   it was.
+- **In step with the daemon** (1.10.308): the page asks just after the
+  daemon has read (the answer says when it reads next) and is handed every
+  reading since the newest one it has, so none is missed and the line does
+  not jerk.
+- **The last state at once** (1.10.308): the browser keeps the last answer
+  and the two minutes (for the same person, ten minutes at most), so a page
+  opened again shows them before the daemon has answered; a page come back
+  to is drawn again for the time it is now and then brought up to date. The
+  first answer after a quiet while, which has no rate of its own yet, gives
+  the newest reading written down.
 
 Where the header has no room for the four numbers beside everything else
 (below 1850 px), the meter is a row of its own under it; up to 2050 px it is

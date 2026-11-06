@@ -132,7 +132,7 @@ try:
        in page)
     ok('off unless switched on: nothing asked of the daemon while it is',
        ("HLOAD.look = PERF_ON ? (hlPrefs().hload || 'graphs') : 'off';" in page,
-        "if (HLOAD.look === 'off') { hloadPanelClose(); $('hload').hidden = true; return; }"
+        "if (HLOAD.look === 'off') { hloadPanelClose(); $('hload').hidden = true; hloadSoon(5000); return; }"
         in page, isemon.DEFAULTS['perf_meter']), (True, True, 0))
     ok('the choice kept with the account', "return api('prefs', {prefs: change})" in page)
     ok('after F5 the last two minutes asked for, and drawn from',
@@ -140,7 +140,10 @@ try:
        (True, True))
     ok('the graphs slid by one animation each, drawn again only when a reading comes',
        ('class="hl-slide"' in page, '@keyframes hl-slide' in page,
-        'HLOAD.timer = setInterval(hloadTick, 5000);' in page), (True, True, True))
+        # ...asked in step with the daemon's reading rather than on a clock of
+        # the page's own (1.10.308)
+        'HLOAD.timer = setTimeout(hloadTick, Math.max(800, Math.min(6000, ms || 5000)));' in page),
+       (True, True, True))
     ok('chosen under Your account', 'hloadPickers(meter);' in page)
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
