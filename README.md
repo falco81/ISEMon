@@ -372,6 +372,32 @@ working.
 
 ## Version
 
+1.10.311
+
+- Disk and logs: the command that packs old copies of logs is written over a
+  few lines (`\` at the end of each), so a narrow terminal no longer shows it
+  cut in two; a bar of how far back the records go says, pointed at, from
+  when to when - a gap on its right is how long since the newest record.
+  A day's catch-all part of a table split by day (`_cx`) is counted with its
+  table rather than listed as a table of its own; dead rows are marked only
+  in a table with room in it (a table of one row read "96 % dead").
+- Disk and logs made sure of on three sites' logrotate files: **every**
+  configuration logrotate is run with is read - the main one, its `include`s
+  and any other `/etc/logrotate*.conf` beside it (a timer of a site's own may
+  run one) - so a folder one of them takes is never "taken by nothing";
+  `*.log` does not take a name beginning with a dot (`.log`), as logrotate's
+  glob does not. Root's helper looks for itself before it writes anything: a
+  folder any file of any of them takes, one with folders in it or logs not
+  named `*.log` is refused, and after writing every live log of the folders
+  must be taken by isemon's file and by nothing else, or it is put back; a
+  `.log` in a folder is named on a line of its own.
+- A log written **a file a day** (`date=2026-11-06.log`) taken as `*.log`:
+  each day's file is rotated once and then is gone, so `rotate N` - counted
+  for each name - never lets a copy go and `delaycompress` never packs one;
+  said, with *Let them go*: root deletes the copies older than the days the
+  folder's own logrotate file keeps (never a number the page sends; 7 at the
+  least) and packs the rest older than three days, after a confirmation.
+
 1.10.310
 
 - Disk and logs puts it right by root's helper: *Put it in* writes

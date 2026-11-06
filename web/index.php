@@ -35006,8 +35006,8 @@ var ST_TABLES = {win_events: 'events from the domain controllers',
   events: 'events', users: 'accounts', sessions: 'sign-ins', meta: 'what the program notes down',
   acme_events: 'acme’s log', acme_jobs: 'acme’s jobs', load_samples: 'the performance meter',
   fold_versions: 'foldings kept', settings: 'settings'};
-var ST_KINDS = {fw_events: {0: 'refused, and what the firewall says of itself', 1: 'sessions it let through'},
-  win_events: {0: 'everything else', 1: 'logons and the like', 2: 'reads of files'},
+var ST_KINDS = {fw_events: {0: 'refused, and what the firewall says of itself', 1: 'sessions it let through', x: 'any other kind'},
+  win_events: {0: 'everything else', 1: 'logons and the like', 2: 'reads of files', x: 'any other kind'},
   fw_roll: {3600: 'by the hour', 86400: 'by the day'}};
 function loadStorage(fresh) {
   if (ST.busy) return;
@@ -35055,10 +35055,12 @@ function stApply(ap) {
   var words = el('div', 'st-apply-w');
   words.appendChild(el('div', 'st-strong', ap.do === 'cover'
     ? 'Root can put this right from here'
-    : 'Root can pack them from here'));
+    : (ap.do === 'age' ? 'Root can let the old copies go from here' : 'Root can pack them from here')));
   words.appendChild(el('div', 'st-sub', ap.do === 'cover'
     ? 'writes ' + ap.file + ' for ' + ap.folders.join(', ') + ' (' + ap.keep + ' copies kept), asks logrotate whether all is well and puts it back if not'
-    : 'gzips the copies older than three days in ' + ap.folders.join(', ') + ', behind and at the lowest priority'));
+    : (ap.do === 'age'
+      ? 'deletes the copies in ' + ap.folders.join(', ') + ' older than ' + ap.keep + ' days, as long as its logrotate file means to keep them, and packs the rest older than three days'
+      : 'gzips the copies older than three days in ' + ap.folders.join(', ') + ', behind and at the lowest priority')));
   line.appendChild(words);
   var now = null;
   if (ap.do === 'cover') {
@@ -35070,9 +35072,25 @@ function stApply(ap) {
     lab.appendChild(el('span', '', 'and rotate them at once'));
     line.appendChild(lab);
   }
-  var go = cmdButton(ap.do === 'cover' ? 'Put it in' : 'Pack them', ap.do === 'cover' ? 'check' : 'archive', 'primary');
+  var go = cmdButton(ap.do === 'cover' ? 'Put it in' : (ap.do === 'age' ? 'Let them go' : 'Pack them'),
+    ap.do === 'cover' ? 'check' : (ap.do === 'age' ? 'trash' : 'archive'), 'primary');
   go.onclick = function () {
     var rot = !!(now && now.checked);
+    if (ap.do === 'age') {
+      confirmThen('Let the old copies go',
+        'Root <b>deletes</b> the copies of logs in ' + htmlText(ap.folders.join(', ')) + ' older than <b>'
+          + ap.keep + ' days</b> - as long as its logrotate file means them to be kept - and packs the rest '
+          + 'older than three days. What isemon read of them stays in the database. It cannot be undone.',
+        'Let them go', function () {
+          go.disabled = true;
+          api('storage', {do: 'age', folders: ap.folders}).then(function (r) {
+            toast(num(r.gone || 0) + ' copies let go of (' + bytes(r.gone_bytes || 0) + '), '
+              + num(r.packed || 0) + (r.behind ? ' being packed behind' : ' packed'), 'good');
+            loadStorage(true);
+          }).catch(function (e) { go.disabled = false; oops(e); });
+        }, true);
+      return;
+    }
     confirmThen(ap.do === 'cover' ? 'logrotate for these logs' : 'Pack the old copies',
       ap.do === 'cover'
         ? 'Root writes <b>' + htmlText(ap.file) + '</b> for ' + htmlText(ap.folders.join(', ')) + ', keeping '
@@ -35487,7 +35505,9 @@ function drawStorageDb(host, d) {
       noI18n(stCell(r, 'n', t.parts > 1 ? num(t.parts) : '–'));
       var deadPct = t.dead && t.live ? Math.round(100 * t.dead / (t.live + t.dead)) : 0;
       var dc = stCell(r, 'n');
-      if (deadPct >= 20) dc.appendChild(noI18n(el('span', 'tag warn', deadPct + ' %')));
+      /* Worth a look only where there is room in it: a table of one row
+         and 224 kB read "96 % dead" (1.10.311). */
+      if (deadPct >= 20 && t.total > 64 * 1048576) dc.appendChild(noI18n(el('span', 'tag warn', deadPct + ' %')));
       else dc.appendChild(noI18n(el('span', deadPct ? '' : 'st-sub', deadPct ? deadPct + ' %' : '–')));
       grid.appendChild(r);
     });
@@ -35515,6 +35535,9 @@ function drawStorageDb(host, d) {
       var seg = el('span', '');
       seg.style.left = (100 - stPct(now - s.from, far)) + '%';
       seg.style.width = Math.max(0.6, stPct(s.to - s.from, far)) + '%';
+      /* From the oldest record to the newest: a gap on the right is how long
+         since the newest (1.10.311). */
+      line.title = stamp(s.from) + ' \u2192 ' + stamp(s.to) + ' (' + ago(s.to) + ')';
       line.appendChild(seg);
       stCell(r, '', line);
       stCell(r, 'n st-strong', stDays(Math.max(1, Math.round((now - s.from) / 86400))) + ' back');

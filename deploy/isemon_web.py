@@ -1930,6 +1930,109 @@ def logfix_folders(names):
     return out
 
 
+LOGFIX_TABOO = re.compile(r'(~|\.(rpm\w*|dpkg-\w+|bak|orig|disabled|swp))$')
+LOGFIX_PACKED = re.compile(r'\.(gz|xz|bz2|zst|lz4)\Z')
+
+
+def logfix_confs():
+    """Every logrotate file logrotate is run with - the main one, the other
+    /etc/logrotate*.conf beside it (a timer of a site's own may run one) and
+    everything any of them includes - as {path: text}. Read here, by root,
+    rather than taken from the daemon."""
+    asked = [LOGROTATE_CONF]
+    try:
+        top = os.path.dirname(LOGROTATE_CONF) or '/'
+        asked += sorted(os.path.join(top, x) for x in os.listdir(top)
+                        if re.match(r'^logrotate.*\.conf\Z', x))
+    except OSError:
+        pass
+    asked.append(LOGROTATE_D)
+    out, seen = {}, set()
+    while asked:
+        p = asked.pop(0)
+        if p in seen:
+            continue
+        seen.add(p)
+        if os.path.isdir(p):
+            try:
+                names = sorted(x for x in os.listdir(p)
+                               if not x.startswith('.') and not LOGFIX_TABOO.search(x))
+            except OSError:
+                continue
+            asked[:0] = [os.path.join(p, x) for x in names if os.path.isfile(os.path.join(p, x))]
+            continue
+        try:
+            with open(p, encoding='utf-8', errors='replace') as f:
+                text = f.read(1048576)
+        except OSError:
+            continue
+        out[p] = text
+        asked += re.findall(r'^\s*include\s+(\S+)', text, re.M)
+    return out
+
+
+def logfix_patterns(text):
+    """The log patterns of one logrotate file: the words before each brace,
+    its scripts skipped."""
+    pats, pending, inside, script = [], [], False, False
+    for raw in text.splitlines():
+        line = raw.strip() if script else raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        if script:
+            if line.split()[0] == 'endscript':
+                script = False
+            continue
+        if line.split()[0] in ('postrotate', 'prerotate', 'firstaction', 'lastaction',
+                               'preremove'):
+            script = True
+            continue
+        if not inside:
+            if '{' in line:
+                pending += line.split('{', 1)[0].split()
+                pats += [x.strip('"') for x in pending]
+                pending, inside = [], '}' not in line.split('{', 1)[1]
+            elif line.startswith('/') or line.startswith('"'):
+                pending += line.split()
+            continue
+        if line.startswith('}'):
+            inside = False
+    return pats
+
+
+def logfix_glob(pattern, path):
+    """glob(3) as logrotate has it: within one part of the path, and a name
+    that begins with a dot only by a pattern that does too."""
+    import fnmatch
+    pp, fp = pattern.split('/'), path.split('/')
+    return len(pp) == len(fp) and all(
+        fnmatch.fnmatchcase(f, q) and (not f.startswith('.') or q.startswith('.'))
+        for q, f in zip(pp, fp))
+
+
+def logfix_live(folder):
+    """The live logs of one folder: its files that are not copies."""
+    out = []
+    path = os.path.join(REMOTE_LOGS, folder)
+    for name in sorted(os.listdir(path)):
+        p = os.path.join(path, name)
+        try:
+            st = os.lstat(p)
+        except OSError:
+            continue
+        if not stat.S_ISREG(st.st_mode) or LOGFIX_RAW_RE.search(name) or LOGFIX_PACKED.search(name):
+            continue
+        out.append(p)
+    return out
+
+
+def logfix_takers(paths, confs, skip=None):
+    """{file: [the logrotate files that take it]}, isemon's own left out
+    where asked."""
+    pats = [(f, p) for f, text in confs.items() if f != skip for p in logfix_patterns(text)]
+    return {x: sorted(set(f for f, p in pats if logfix_glob(p, x))) for x in paths}
+
+
 def logfix_check():
     """What logrotate says is wrong with its whole configuration, as a set of
     lines: the errors, and the logs two files take."""
@@ -1950,7 +2053,18 @@ def logfix_text(folders, keep):
              '# of its own, beside the others: logrotate refuses two stanzas that take',
              '# the same log, and refuses the whole run over it. isemon adds to it',
              '# when it is asked to; a line taken away by hand stays away.', '']
-    lines += ['%s/%s/*.log' % (REMOTE_LOGS, n) for n in folders]
+    for n in folders:
+        lines.append('%s/%s/*.log' % (REMOTE_LOGS, n))
+        # `*.log` does not take a name that begins with a dot: each one there
+        # named on a line of its own.
+        try:
+            hidden = sorted(x for x in os.listdir(os.path.join(REMOTE_LOGS, n))
+                            if x.startswith('.') and x.endswith('.log')
+                            and LOGFIX_FOLDER_RE.match(x)
+                            and os.path.isfile(os.path.join(REMOTE_LOGS, n, x)))
+        except OSError:
+            hidden = []
+        lines += ['%s/%s/%s' % (REMOTE_LOGS, n, x) for x in hidden]
     lines += ['{', '    daily', '    dateext', '    rotate %d' % keep, '    compress',
               '    delaycompress', '    missingok', '    notifempty',
               '    create 0640 root %s' % SERVICE_GROUP, '', '    sharedscripts',
@@ -1981,6 +2095,41 @@ def logfix_ours():
     return text, had
 
 
+def logfix_refuse_taken(folders, mine):
+    """Root's own look, whatever the daemon said: a folder any other
+    logrotate file - in any configuration logrotate is run with - takes a
+    live file of, or a name *.log would be, is not put in; nor one with
+    anything in it *.log does not take (a folder below, a file named
+    otherwise), which stays a step for root by hand."""
+    confs = logfix_confs()
+    for n in folders:
+        base = os.path.join(REMOTE_LOGS, n)
+        if any(os.path.isdir(os.path.join(base, x)) for x in os.listdir(base)):
+            raise Refused('%s has folders in it: not put in from here' % n)
+        live = logfix_live(n)
+        odd = [os.path.basename(x) for x in live if not x.endswith('.log')]
+        if odd:
+            raise Refused('%s has logs not named *.log (%s): not put in from here'
+                          % (n, ', '.join(odd[:3])))
+        taken = logfix_takers(live + [os.path.join(base, 'isemon-probe.log')], confs, skip=mine)
+        who = sorted(set(f for v in taken.values() for f in v))
+        if who:
+            raise Refused('%s is taken by %s already - two files taking one log stop every '
+                          'rotation there is' % (n, ', '.join(who)))
+
+
+def logfix_verify(folders, mine):
+    """After: every live log of the folders taken by isemon's file, and by
+    nothing else."""
+    confs = logfix_confs()
+    bad = []
+    for n in folders:
+        for x, by in logfix_takers(logfix_live(n), confs).items():
+            if by != [mine]:
+                bad.append('%s: %s' % (x, ', '.join(by) or 'nothing'))
+    return bad
+
+
 def logfix_write(text):
     path = os.path.join(LOGROTATE_D, LOGFIX_NAME)
     tmp = os.path.join(LOGROTATE_D, '.%s.%d' % (LOGFIX_NAME, os.getpid()))
@@ -1992,6 +2141,26 @@ def logfix_write(text):
     finally:
         os.close(fd)
     os.rename(tmp, path)
+
+
+def logfix_gzip(files):
+    """gzip these, at the lowest priority: behind, in a unit of its own,
+    where systemd is there (True), else here and now (False)."""
+    argv = ['gzip', '-6', '--'] + files
+    if shutil.which('nice'):
+        argv = ['nice', '-n', '19'] + argv
+    if shutil.which('systemd-run') and not NO_SERVICES and os.path.isdir('/run/systemd/system'):
+        got = subprocess.run(['systemd-run', '--unit', 'isemon-pack-%d' % int(time.time() * 1000),
+                              '--collect', '--quiet', '--property', 'IOSchedulingClass=idle',
+                              '--property', 'Nice=19'] + argv,
+                             capture_output=True, text=True, timeout=30)
+        if got.returncode != 0:
+            raise Refused('systemd-run: %s' % (got.stderr or got.stdout).strip()[-200:])
+        return True
+    got = subprocess.run(argv, capture_output=True, text=True, timeout=1500)
+    if got.returncode not in (0, 2):
+        raise Refused('gzip: %s' % (got.stderr or got.stdout).strip()[-300:])
+    return False
 
 
 def logfix_do(r):
@@ -2006,11 +2175,14 @@ def logfix_do(r):
             keep = 30
         keep = max(1, min(90, keep))
         was, had = logfix_ours()
+        mine = os.path.join(LOGROTATE_D, LOGFIX_NAME)
+        logfix_refuse_taken([n for n in folders if n not in had], mine)
         want = had + [n for n in folders if n not in had]
         before = logfix_check()
         logfix_write(logfix_text(want, keep))
         after = logfix_check()
         new = sorted(after - before)
+        new += ['not taken as it should be: %s' % x for x in logfix_verify(want, mine)][:8]
         if new:
             path = os.path.join(LOGROTATE_D, LOGFIX_NAME)
             if was is None:
@@ -2046,22 +2218,44 @@ def logfix_do(r):
                         room += st.st_size
         if not files:
             return {'files': 0, 'bytes': 0, 'behind': False}
-        argv = ['gzip', '-6', '--'] + files
-        if shutil.which('nice'):
-            argv = ['nice', '-n', '19'] + argv
-        if shutil.which('systemd-run') and not NO_SERVICES and os.path.isdir('/run/systemd/system'):
-            got = subprocess.run(['systemd-run', '--unit', 'isemon-pack-%d' % int(time.time()),
-                                  '--collect', '--quiet', '--property', 'IOSchedulingClass=idle',
-                                  '--property', 'Nice=19'] + argv,
-                                 capture_output=True, text=True, timeout=30)
-            if got.returncode != 0:
-                raise Refused('systemd-run: %s' % (got.stderr or got.stdout).strip()[-200:])
-            return {'files': len(files), 'bytes': room, 'behind': True}
-        got = subprocess.run(argv, capture_output=True, text=True, timeout=1500)
-        if got.returncode not in (0, 2):
-            raise Refused('gzip: %s' % (got.stderr or got.stdout).strip()[-300:])
-        return {'files': len(files), 'bytes': room, 'behind': False}
-    raise Refused('cover or pack')
+        return {'files': len(files), 'bytes': room, 'behind': logfix_gzip(files)}
+    if do == 'age':
+        # A folder of logs written a file a day (1.10.311): the copies older
+        # than the days asked for let go of, the others older than three
+        # days packed. Copies only - a name that ends as logrotate's do -
+        # straight in the folder, never through a link.
+        folders = logfix_folders(r.get('folders'))
+        try:
+            keep = int(r.get('keep') or 30)
+        except (TypeError, ValueError):
+            keep = 30
+        if keep < 7 or keep > 3650:
+            raise Refused('kept for 7 days at the least')
+        now = time.time()
+        gone, room, pack = 0, 0, []
+        for n in folders:
+            base = os.path.join(REMOTE_LOGS, n)
+            for name in sorted(os.listdir(base)):
+                p = os.path.join(base, name)
+                try:
+                    st = os.lstat(p)
+                except OSError:
+                    continue
+                if not stat.S_ISREG(st.st_mode):
+                    continue
+                plain = LOGFIX_PACKED.sub('', name)
+                if not LOGFIX_RAW_RE.search(plain):
+                    continue
+                if st.st_mtime < now - keep * 86400:
+                    os.unlink(p)
+                    gone += 1
+                    room += st.st_size
+                elif name == plain and st.st_mtime < now - 3 * 86400 and len(pack) < LOGFIX_MOST_FILES:
+                    pack.append(p)
+        behind = logfix_gzip(pack) if pack else False
+        return {'gone': gone, 'gone_bytes': room, 'packed': len(pack), 'keep': keep,
+                'behind': behind}
+    raise Refused('cover, pack or age')
 
 
 def logfix_part():

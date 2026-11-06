@@ -62,7 +62,7 @@ try:
     print('Reading the files of logrotate')
     lrd = work / 'logrotate.d'
     lrd.mkdir()
-    (work / 'logrotate.conf').write_text('weekly\nrotate 4\ncreate\ninclude /etc/logrotate.d\n')
+    (work / 'logrotate.conf').write_text('weekly\nrotate 4\ncreate\ninclude %s\n' % lrd)
     (lrd / 'remote-logs').write_text(
         '# the ones listed\n%s/ise1/*.log\n%s/blacklistmt/*.log\n{\n    daily\n    rotate 30\n'
         '    compress\n    delaycompress\n    create 0640 root isemon\n    sharedscripts\n'
@@ -87,6 +87,10 @@ try:
        (isemon.store_glob_match('/v/r/*.log', '/v/r/a/b.log'),
         isemon.store_glob_match('/v/r/*/*.log', '/v/r/a/b.log'),
         isemon.store_glob_match('/v/r/a/*.log', '/v/r/a/%FTD-6-302014.log')), (False, True, True))
+    ok('...and *.log does not take .log, as logrotate\'s glob does not (1.10.311)',
+       (isemon.store_glob_match('/v/r/a/*.log', '/v/r/a/.log'),
+        isemon.store_glob_match('/v/r/a/.log', '/v/r/a/.log'),
+        isemon.store_glob_match('/v/r/ftd*/*.log', '/v/r/ftd1.kr/%FTD-6-302014.log')), (False, True, True))
     ok('how long copies are kept', (isemon.store_keep_days({'every': 'daily', 'rotate': '30'}, {}),
                                     isemon.store_keep_days({'rotate': '2'}, {'every': 'weekly'}),
                                     isemon.store_keep_days({'every': 'daily', 'rotate': '30',
@@ -168,6 +172,8 @@ try:
        (isemon.STORE_PART_SPLIT.search('fw_events_p20261105_c1').group(2),
         'fw_events_p20261105_c1'[:isemon.STORE_PART_SPLIT.search('fw_events_p20261105_c1').start()]),
        ('1', 'fw_events'))
+    ok('...its catch-all part (_cx) with it, not a table of its own (1.10.311)',
+       isemon.STORE_PART_SPLIT.search('win_events_p20261025_cx').group(2), 'x')
 
     print('\nWhat fills the disk soonest')
     disks = [{'mount': '/', 'total': 571 * G, 'used': 508 * G, 'free': 38 * G, 'share': 94.0,

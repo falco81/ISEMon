@@ -108,8 +108,8 @@ try:
     (lrd / 'remote-other').write_text('%s/twice/*.log {\n daily\n}\n' % remote)
     was = mine.read_text()
     r = ask({'do': 'cover', 'folders': ['twice']})
-    ok('a log two files now take: refused with what logrotate said',
-       (r['ok'], 'duplicate log entry' in r.get('said', '')), (False, True))
+    ok('a folder another file takes already: refused by root\'s own look, before logrotate (1.10.311)',
+       (r['ok'], 'taken by' in r.get('said', '') and 'remote-other' in r.get('said', '')), (False, True))
     ok('...and the file put back exactly as it was', mine.read_text(), was)
     (lrd / 'remote-other').unlink()
     mine.unlink()
@@ -117,6 +117,31 @@ try:
     r = ask({'do': 'cover', 'folders': ['twice']})
     ok('...where there was none before, none left after', (r['ok'], mine.exists()), (False, False))
     (lrd / 'remote-other').unlink()
+    print('\nWhat a site\'s own logrotate files are like (1.10.311)')
+    for n in ('ftd9.example', 'dc77', 'hidden', 'odd', 'deep'):
+        put(remote / n / 'a.log', 10)
+    put(remote / 'hidden' / '.log', 10)
+    put(remote / 'odd' / 'detail-today', 10)
+    put(remote / 'deep' / 'sub' / 'b.log', 10)
+    (lrd / 'remote-ftd').write_text('%s/ftd*/*.log\n%s/ftd*/.log\n{\n daily\n maxsize 1G\n'
+                                    ' dateformat -%%Y%%m%%d-%%s\n rotate 100\n maxage 30\n}\n'
+                                    % (remote, remote))
+    dc = work / 'logrotate.dc.conf'
+    dc.write_text('%s/dc77/*.log {\n hourly\n}\n' % remote)
+    for n, why in (('ftd9.example', 'remote-ftd'), ('dc77', 'logrotate.dc.conf'),
+                   ('odd', 'not named *.log'), ('deep', 'folders in it')):
+        r = ask({'do': 'cover', 'folders': [n]})
+        ok('%s: refused (%s)' % (n, why), (r['ok'], why in r.get('said', '')), (False, True))
+    ok('...nothing written for any of them', mine.exists(), False)
+    r = ask({'do': 'cover', 'folders': ['hidden']})
+    text = mine.read_text() if mine.exists() else ''
+    ok('a folder with a log named .log: that one named on a line of its own, since *.log does not take it',
+       (r['ok'], '%s/hidden/*.log' % remote in text, '%s/hidden/.log' % remote in text), (True, True, True))
+    mine.unlink()
+    (lrd / 'remote-ftd').unlink()
+    dc.unlink()
+    for n in ('ftd9.example', 'dc77', 'hidden', 'odd', 'deep'):
+        shutil.rmtree(str(remote / n))
     mine.write_text('# somebody\'s own\n/var/log/x/*.log {\n daily\n}\n')
     r = ask({'do': 'cover', 'folders': ['fw1']})
     ok('a remote-isemon somebody else wrote: never touched',
@@ -195,6 +220,44 @@ try:
         ok('asked again with nothing to do: said so', False)
     except ValueError as e:
         ok('asked again with nothing to do: said so', 'nothing of that' in str(e))
+
+    print('\nA log written a file a day (1.10.311)')
+    fm = remote / 'fw.merit.cz'
+    for d in range(1, 7):
+        put(fm / ('date=2026-11-%02d.log' % d), 100, 6 - d)
+    put(fm / 'date=2026-09-20.log-20260921', 5000, 46)
+    put(fm / 'date=2026-09-21.log-20260922.gz', 500, 45)
+    put(fm / 'date=2026-10-27.log-20261028', 5000, 10)
+    put(fm / 'date=2026-11-01.log-20261102', 5000, 4.5)
+    put(fm / 'date=2026-11-05.log-20261106', 5000, 1)
+    os.symlink(str(work / 'outside.log-20200101'), str(fm / 'link.log-20200101'))
+    (work / 'outside.log-20200101').write_text('keep me')
+    os.utime(str(work / 'outside.log-20200101'), (time.time() - 99 * 86400,) * 2)
+    (lrd / 'remote-logs').write_text('%s/fw.merit.cz/*.log\n{\n    daily\n    dateext\n    rotate 30\n'
+                                     '    compress\n    delaycompress\n}\n' % remote)
+    look = isemon.storage_health(store, fresh=True)
+    pd = next((p for p in look['problems'] if p['key'].startswith('per-day:')), None)
+    ok('said: a file a day, its copies never let go of - with what root can do, kept as its file keeps',
+       (pd and pd['level'], pd and pd['apply'], pd and 'never lets a copy go' in pd['says']),
+       ('warn', {'do': 'age', 'folders': ['fw.merit.cz'], 'keep': 30}, True))
+    ok('...not said twice as copies kept unpacked', [p['key'] for p in look['problems']
+                                                     if p['key'] == 'raw-copies'], [])
+    r = ask({'do': 'age', 'folders': ['fw.merit.cz'], 'keep': 3})
+    ok('kept fewer than 7 days: refused', r['ok'], False)
+    got = isemon.storage_fix(store, WR(), {'do': 'age', 'folders': ['fw.merit.cz'], 'keep': 1}, 'boss')
+    names = sorted(os.listdir(str(fm)))
+    ok('the copies older than its 30 days let go of, the days kept by the page not asked',
+       (got['gone'], got['keep'], 'date=2026-09-20.log-20260921' in names,
+        'date=2026-09-21.log-20260922.gz' in names), (2, 30, False, False))
+    ok('...those older than three days packed, yesterday\'s and every live day file left',
+       ('date=2026-10-27.log-20261028.gz' in names, 'date=2026-11-01.log-20261102.gz' in names,
+        'date=2026-11-05.log-20261106' in names, sum(1 for n in names if n.endswith('.log'))),
+       (True, True, True, 6))
+    ok('...and a link among them neither followed nor taken', ((work / 'outside.log-20200101').read_text(),
+                                                               os.path.islink(str(fm / 'link.log-20200101'))),
+       ('keep me', True))
+    ok('in Events, as a warning', 'let go of 2 copies' in json.dumps(
+        [dict(e) for e in store.db.execute('SELECT * FROM events')]))
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 

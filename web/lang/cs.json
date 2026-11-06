@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.310",
+  "version": "1.10.311",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -2452,6 +2452,10 @@
    "source": "Against the last fill",
    "text": "Oproti poslednímu naplnění"
   },
+  "s.age.5dc56b9a": {
+   "source": "age",
+   "text": "age"
+  },
   "s.agent-curl-kind-utm-webfilter.7d60c89a": {
    "source": "agent~curl kind:utm/webfilter",
    "text": "agent~curl kind:utm/webfilter"
@@ -3284,6 +3288,10 @@
    "source": "Any order is taken: they are sorted by themselves.",
    "text": "Na pořadí nezáleží: seřadí se samy."
   },
+  "s.any-other-kind.a140b4f2": {
+   "source": "any other kind",
+   "text": "jakýkoli jiný druh"
+  },
   "s.any-save-and.e3380e5d": {
    "source": "any. Save and",
    "text": "any. Uložte a"
@@ -3507,6 +3515,10 @@
   "s.as-it-is-now.5acc75ce": {
    "source": "As it is now",
    "text": "Jak je to teď"
+  },
+  "s.as-long-as-its-logrotate-file.408bbf19": {
+   "source": "- as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone.",
+   "text": "- tak dlouho, jak je jeho soubor logrotate chce držet - a zbytek starší než tři dny zabalí. Co z nich isemon přečetl, zůstává v databázi. Nelze to vrátit."
   },
   "s.as-nginx-has-it.0bd9b744": {
    "source": "as nginx has it",
@@ -4411,6 +4423,10 @@
   "s.being-in-this-group-means-being.ef2e5b78": {
    "source": "Being in this group means being able to change everything: ban, unban, the router, settings, accounts. Press Find the groups to pick it from the directory rather than typing it. More than one, separated by semicolons.",
    "text": "Členství v této skupině znamená možnost měnit všechno: blokovat, odblokovat, router, nastavení, účty. Stiskněte Najít skupiny a vyberte ji z adresáře, místo abyste ji psali ručně. Více skupin oddělte středníkem."
+  },
+  "s.being-packed-behind.9e515c65": {
+   "source": "being packed behind",
+   "text": "balí se na pozadí"
   },
   "s.being-put-in.cb48aa9f": {
    "source": "being put in",
@@ -6359,6 +6375,10 @@
   "s.deleted.b639f5cc": {
    "source": "deleted",
    "text": "smazáno"
+  },
+  "s.deletes.db4ba572": {
+   "source": "deletes",
+   "text": "smaže"
   },
   "s.denmark.89da124e": {
    "source": "Denmark",
@@ -13964,6 +13984,10 @@
    "source": "Let the FortiGate reach this server",
    "text": "Povolit FortiGate přístup k tomuto serveru"
   },
+  "s.let-the-old-copies-go.64c605db": {
+   "source": "Let the old copies go",
+   "text": "Smazat staré kopie"
+  },
   "s.let-the-opnsense-reach-this-server.b52d3600": {
    "source": "Let the OPNsense reach this server",
    "text": "Povolte OPNsense přístup na tento server"
@@ -15271,6 +15295,10 @@
   "s.mkdir-p-etc-systemd-system-isemon.7ad47ded": {
    "source": "mkdir -p /etc/systemd/system/isemon.service.d",
    "text": "mkdir -p /etc/systemd/system/isemon.service.d"
+  },
+  "s.mmin-4320-exec-gzip-6.dc7c9374": {
+   "source": "-mmin +4320 -exec gzip -6 () +",
+   "text": "-mmin +4320 -exec gzip -6 () +"
   },
   "s.mode.e78fe704": {
    "source": "mode",
@@ -19392,6 +19420,10 @@
    "source": "packed copies",
    "text": "zabalené kopie"
   },
+  "s.packed.7aca22de": {
+   "source": "packed",
+   "text": "zabaleno"
+  },
   "s.packetmark.1ecb8c18": {
    "source": "packetmark",
    "text": "packetmark"
@@ -21224,6 +21256,22 @@
    "source": "refused",
    "text": "odmítnuto"
   },
+  "s.regex-0-9-0-9-8.59991cff": {
+   "source": "-regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\",
+   "text": "-regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\"
+  },
+  "s.regex-0-9-8-0-9.3b506715": {
+   "source": "-regex '.*-[0-9](8)([-_.]?[0-9](1,12))?$' \\",
+   "text": "-regex '.*-[0-9](8)([-_.]?[0-9](1,12))?$' \\"
+  },
+  "s.regex-0-9-8-0-9.9020e9a8": {
+   "source": "-regex '.*-[0-9](8)([-_.]?[0-9](1,12))?(\\.gz)?$' \\",
+   "text": "-regex '.*-[0-9](8)([-_.]?[0-9](1,12))?(\\.gz)?$' \\"
+  },
+  "s.regextype-posix-extended.138f62d6": {
+   "source": "-regextype posix-extended \\",
+   "text": "-regextype posix-extended \\"
+  },
   "s.register-at-the-acme-dns-server.d2616f98": {
    "source": "Register at the acme-dns server (POST /register) - it gives a user, a key and a subdomain; give them below.",
    "text": "Zaregistrujte se na serveru acme-dns (POST /register) – dá uživatele, klíč a subdoménu; zadejte je níže."
@@ -21643,6 +21691,10 @@
   "s.room-it-takes.1ee48c3b": {
    "source": "Room it takes",
    "text": "Zabrané místo"
+  },
+  "s.root-can-let-the-old-copies.ac1babe3": {
+   "source": "Root can let the old copies go from here",
+   "text": "Root může smazat staré kopie odsud"
   },
   "s.root-can-pack-them-from-here.20a04bad": {
    "source": "Root can pack them from here",
@@ -35570,6 +35622,10 @@
    "source": "Copies kept ({0} at most)",
    "text": "Uchovávané kopie (nejvýše {0})"
   },
+  "p.copies-let-go-of.be58918f": {
+   "source": "{0} copies let go of ({1}), {2}{3}",
+   "text": "smazáno {0} kopií ({1}), {2}{3}"
+  },
   "p.copies-packed.fb0d16f1": {
    "source": "{0} copies packed",
    "text": "zabaleno {0} kopií"
@@ -35681,6 +35737,10 @@
   "p.delete.4c92d153": {
    "source": "Delete {0}?",
    "text": "Smazat {0}?"
+  },
+  "p.deletes-the-copies-in-older-than.b700c9c1": {
+   "source": "deletes the copies in {0} older than {1} days, as long as its logrotate file means to keep them, and packs the rest older than three days",
+   "text": "smaže kopie v {0} starší než {1} dní, tak dlouho, jak je jeho soubor logrotate chce držet, a zbytek starší než tři dny zabalí"
   },
   "p.devices.4bf27799": {
    "source": "{0} devices",
@@ -35982,9 +36042,21 @@
    "source": "Filling {0} on the router",
    "text": "Plní se {0} na routeru"
   },
-  "p.find-type-f-regextype-posix-extended.8dac81a9": {
-   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +",
-   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +"
+  "p.find-maxdepth-1-type-f-regextype.3de1b7df": {
+   "source": "find {0} -maxdepth 1 -type f -regextype posix-extended \\ -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?(\\.gz)?$' \\ -mmin +{1} -delete find {2} -maxdepth 1 -type f -regextype posix-extended \\ -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?$' \\ -mmin +4320 -exec gzip -6 () +",
+   "text": "find {0} -maxdepth 1 -type f -regextype posix-extended \\ -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?(\\.gz)?$' \\ -mmin +{1} -delete find {2} -maxdepth 1 -type f -regextype posix-extended \\ -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?$' \\ -mmin +4320 -exec gzip -6 () +"
+  },
+  "p.find-maxdepth-1-type-f-regextype.59b0d8f1": {
+   "source": "find {0} -maxdepth 1 -type f -regextype posix-extended \\",
+   "text": "find {0} -maxdepth 1 -type f -regextype posix-extended \\"
+  },
+  "p.find-type-f-regextype-posix-extended.638f63a3": {
+   "source": "find {0} -type f \\ -regextype posix-extended \\ -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\ -mmin +4320 -exec gzip -6 () +",
+   "text": "find {0} -type f \\ -regextype posix-extended \\ -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\ -mmin +4320 -exec gzip -6 () +"
+  },
+  "p.find-type-f.aa11ca50": {
+   "source": "find {0} -type f \\",
+   "text": "find {0} -type f \\"
   },
   "p.fine-to-look-at.a6d06684": {
    "source": "{0} fine · {1} to look at",
@@ -36566,6 +36638,10 @@
    "source": "Its extensions ({0}):",
    "text": "Jeho rozšíření ({0}):"
   },
+  "p.its-logs-are-named-by-the.090a867b": {
+   "source": "Its logs are named by the day ({0}), and {1} takes them as *.log: each day's file is rotated once and then is gone, so \"rotate\" - counted for each name - never lets a copy go, and delaycompress never packs one. {2} copies, the oldest from {3}, where {4} days are meant to be kept.",
+   "text": "Jeho logy jsou pojmenované podle dne ({0}) a {1} je bere jako *.log: soubor každého dne se otočí jednou a pak už neexistuje, takže „rotate“ – počítané pro každé jméno zvlášť – nikdy žádnou kopii nesmaže a delaycompress žádnou nezabalí. {2} kopií, nejstarší z {3}, přičemž se má držet {4} dní."
+  },
   "p.its-password-this-and-the-whole.7b783f5c": {
    "source": "Its password. This, and the whole address above, are the only settings kept in {0} rather than in the database - a database cannot hold the address of itself.",
    "text": "Jeho heslo. Toto a celá adresa výše jsou jediná nastavení uložená v {0}, a ne v databázi - databáze nemůže uchovávat svou vlastní adresu."
@@ -36909,6 +36985,10 @@
   "p.mkdir-p-ssh-chmod-700-ssh.0c44f6b3": {
    "source": "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '{0}' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys",
    "text": "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '{0}' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+  },
+  "p.mmin-delete.faec7a93": {
+   "source": "-mmin +{0} -delete",
+   "text": "-mmin +{0} -delete"
   },
   "p.more-away-from-a-ban.b8544c4f": {
    "source": "more away from a ban.{0}",
@@ -38294,6 +38374,14 @@
    "source": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}",
    "text": "Řadiče domény nejsou na této stránce nikde označeny. Tento program označuje za řadič to, co za něj považuje DOMÉNA — účet počítače, jehož primární skupinou je Domain Controllers — a Active Directory zde není zapnuto, takže se nikdo nikoho nezeptal.{0}"
   },
+  "p.the-copies-of-logs-in-older.bf08a9cf": {
+   "source": "the copies of logs in {0} older than",
+   "text": "kopie logů v {0} starší než"
+  },
+  "p.the-copies-older-than-days-let.b75826c9": {
+   "source": "The copies older than {0} days let go of, the rest older than three days packed - every day, as a line in /etc/cron.daily of its own:",
+   "text": "Kopie starší než {0} dní smazat, zbytek starší než tři dny zabalit – každý den, jako vlastní řádek v /etc/cron.daily:"
+  },
   "p.the-counting-was-last-started-again.c2eb4399": {
    "source": "The counting was last started again on {0}. Nothing before that moment counts towards a ban; every record of it is still here, on the Failed attempts page.",
    "text": "Počítání bylo naposledy spuštěno znovu {0}. Nic před tímto okamžikem se do blokace nepočítá; všechny záznamy z té doby tu stále jsou, na stránce Neúspěšné pokusy."
@@ -39210,6 +39298,10 @@
    "source": "Write this as /etc/logrotate.d/{0} (as root):",
    "text": "Zapište tohle jako /etc/logrotate.d/{0} (jako root):"
   },
+  "p.writes-a-file-a-day-and.f547d863": {
+   "source": "{0} writes a file a day, and its copies are never let go of",
+   "text": "{0} zapisuje soubor za den a jeho kopie se nikdy nemažou"
+  },
   "p.writes-for-copies-kept-asks-logrotate.e586163b": {
    "source": "writes {0} for {1} ({2} copies kept), asks logrotate whether all is well and puts it back if not",
    "text": "zapíše {0} pro {1} (drží {2} kopií), zeptá se logrotate, zda je vše v pořádku, a když ne, vrátí to"
@@ -39644,6 +39736,14 @@
    "source": "Find anything on this machine, from anywhere — <kbd>Ctrl</kbd> <kbd>K</kbd> opens it without the mouse.<br>Type a whole address and it answers the question this dashboard is asked most: whether it is banned, what it has been trying, and the buttons to ban it for good, let it back in, or put it beyond banning — without going to a page first. Type part of an address and it lists the ones that start that way; type a user name and it lists the names being tried; type anything else and it finds the page, the card or the setting of that name.",
    "text": "Najděte cokoli na tomto stroji odkudkoli — <kbd>Ctrl</kbd> <kbd>K</kbd> hledání otevře i bez myši.<br>Zadejte celou adresu a dostanete odpověď na otázku, kterou tento dashboard slyší nejčastěji: zda je zablokovaná, o co se pokoušela, a tlačítka pro její zablokování natrvalo, odblokování nebo vyřazení z blokování — aniž byste museli nejdřív přejít na nějakou stránku. Zadejte část adresy a zobrazí se adresy, které tak začínají; zadejte uživatelské jméno a zobrazí se zkoušená jména; zadejte cokoli jiného a najde se stránka, karta nebo nastavení s tímto názvem."
   },
+  "r.find-maxdepth-1-type-f-regextype.3d65c7bc": {
+   "source": "find {0} -maxdepth 1 -type f -regextype posix-extended \\<br> -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?(\\.gz)?$' \\<br> -mmin +{1} -delete<br>find {2} -maxdepth 1 -type f -regextype posix-extended \\<br> -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?$' \\<br> -mmin +4320 -exec gzip -6 () +",
+   "text": "find {0} -maxdepth 1 -type f -regextype posix-extended \\<br> -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?(\\.gz)?$' \\<br> -mmin +{1} -delete<br>find {2} -maxdepth 1 -type f -regextype posix-extended \\<br> -regex '.*-[0-9](8)([-_.]?[0-9](1,12))?$' \\<br> -mmin +4320 -exec gzip -6 () +"
+  },
+  "r.find-type-f-regextype-posix-extended.135474de": {
+   "source": "find {0} -type f \\<br> -regextype posix-extended \\<br> -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\<br> -mmin +4320 -exec gzip -6 () +",
+   "text": "find {0} -type f \\<br> -regextype posix-extended \\<br> -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\<br> -mmin +4320 -exec gzip -6 () +"
+  },
   "r.firewall-aliases-ip-add-type-network.377127be": {
    "source": "<b>Firewall → Aliases → IP → Add</b>: <b>Type</b> Network(s),",
    "text": "<b>Firewall → Aliases → IP → Add</b>: <b>Type</b> Network(s),"
@@ -40063,6 +40163,10 @@
   "r.refused-the-domain.0185c2fe": {
    "source": "<i></i>refused · the domain",
    "text": "<i></i>odmítnuto · doména"
+  },
+  "r.root-deletes-the-copies-of-logs.5c498c24": {
+   "source": "Root <b>deletes</b> the copies of logs in {0} older than <b>{1} days</b> - as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone.",
+   "text": "Root <b>smaže</b> kopie logů v {0} starší než <b>{1} dní</b> – tak dlouho, jak je jeho soubor logrotate chce držet – a zbytek starší než tři dny zabalí. Co z nich isemon přečetl, zůstává v databázi. Nelze to vrátit."
   },
   "r.root-no-longer-signs-in-with.c3b654aa": {
    "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
@@ -40933,6 +41037,10 @@
   "p.find-type-f-regextype-posix-extended.62c57bdc": {
    "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +",
    "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +"
+  },
+  "p.find-type-f-regextype-posix-extended.8dac81a9": {
+   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +",
+   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' -mmin +4320 -exec gzip -6 () +"
   },
   "p.has-passkey-s-set-face-id.7e4ddbbb": {
    "source": "{0} has {1} passkey(s). Set Face ID up again: every one of them is taken away, and the next sign-in of {2} makes a new one. For a lost or a new device. Sign-ins already open stay open.",

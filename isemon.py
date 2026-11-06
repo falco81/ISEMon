@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.310'
+__version__ = '1.10.311'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73077,6 +73077,7 @@ STORE_LOCK = threading.Lock()
 STORE_ROTATED = re.compile(r'(\.\d{1,4}|-\d{8}([-_.]?\d{1,12})?)(\.(gz|xz|bz2|zst|lz4))?$|'
                            r'\.(gz|xz|bz2|zst|lz4)$')
 STORE_PACKED = re.compile(r'\.(gz|xz|bz2|zst|lz4)$')
+STORE_DAY_NAME = re.compile(r'(19|20)\d\d-?[01]\d-?[0-3]\d')
 STORE_READERS = (('ise', 'ise_paths', 'ISE'), ('otp', 'otp_paths', 'token logs'),
                  ('acmelog', 'acmelog_paths', 'acme'), ('eduroam', 'eduroam_paths', 'eduroam'),
                  ('tacplus', 'tacplus_paths', 'TACACS+'), ('nps', 'nps_paths', 'NPS'),
@@ -73119,7 +73120,11 @@ def store_glob_match(pattern, path):
     pp, fp = str(pattern).split('/'), str(path).split('/')
     if len(pp) != len(fp):
         return False
-    return all(fnmatch.fnmatchcase(f, p) for p, f in zip(pp, fp))
+    # ...and a name that begins with a dot only by a pattern that does too:
+    # `*.log` does not take `.log` (1.10.311), which is why a site with
+    # FTD's nameless lines in `.log` names that file in a line of its own.
+    return all(fnmatch.fnmatchcase(f, p) and (not f.startswith('.') or p.startswith('.'))
+               for p, f in zip(pp, fp))
 
 
 def store_logrotate(paths=None):
@@ -73128,8 +73133,25 @@ def store_logrotate(paths=None):
     a log is rotated by and how: the patterns, how often, how many, whether
     compressed. Scripts are skipped whole."""
     files = []
-    for one in (paths if paths is not None else STORE_LOGROTATE):
-        p = Path(one)
+    asked = list(paths if paths is not None else STORE_LOGROTATE)
+    # Every configuration logrotate is run with, not only the main one
+    # (1.10.311): a site that runs its domain controllers from a timer of its
+    # own (/etc/logrotate.dc.conf) has files the main run never sees, and a
+    # folder they take must not be "taken by nothing". Its siblings, and what
+    # each of them includes.
+    mains = [a for a in asked if Path(a).is_file()]
+    for m in mains[:1]:
+        try:
+            asked += sorted(str(x) for x in Path(m).parent.glob('logrotate*.conf')
+                            if str(x) not in asked)
+        except OSError:
+            pass
+    seen = set()
+    while asked:
+        p = Path(asked.pop(0))
+        if str(p) in seen:
+            continue
+        seen.add(str(p))
         if p.is_dir():
             try:
                 names = sorted(x for x in os.listdir(str(p))
@@ -73137,9 +73159,17 @@ def store_logrotate(paths=None):
                                    r'(~|\.(rpm\w*|dpkg-\w+|bak|orig|disabled|swp))$', x))
             except OSError:
                 names = []
-            files += [p / x for x in names if (p / x).is_file()]
+            files += [p / x for x in names if (p / x).is_file() and str(p / x) not in seen]
+            seen.update(str(p / x) for x in names)
         elif p.is_file():
             files.append(p)
+            try:
+                for inc in re.findall(r'^\s*include\s+(\S+)', p.read_text(
+                        encoding='utf-8', errors='replace'), re.M):
+                    if inc not in seen:
+                        asked.append(inc)
+            except OSError:
+                pass
     out, defaults = [], {}
     for f in files:
         try:
@@ -73311,9 +73341,17 @@ def store_logs(lr, seen_before, now):
                             one['old_raw_bytes'] += room
                     if one['newest_copy'] is None or mtime > one['newest_copy']:
                         one['newest_copy'] = mtime
+                    if one.get('oldest_copy') is None or mtime < one['oldest_copy']:
+                        one['oldest_copy'] = mtime
                     continue
                 one['live'] += 1
                 one['live_bytes'] += room
+                if not name.endswith('.log'):
+                    one['odd_live'] = one.get('odd_live', 0) + 1
+                # A log written a file a day (date=2026-11-06.log): logrotate
+                # rotates each once and never sees it again (1.10.311).
+                if STORE_DAY_NAME.search(name):
+                    one['per_day'] = one.get('per_day', 0) + 1
                 if depth:
                     one['deeper'] += 1
                 by = store_rotated_by(path, lr)
@@ -73414,7 +73452,8 @@ def store_disks(store, logs, parts_extra):
     return out
 
 
-STORE_PART_SPLIT = re.compile(r'_p\d{8}(_c(\d+))?$')
+# ...and `_cx`, a day's catch-all for a kind no other part takes (1.10.311).
+STORE_PART_SPLIT = re.compile(r'_p\d{8}(_c(\d+|x))?$')
 
 
 def store_db(store):
@@ -73445,7 +73484,7 @@ def store_db(store):
                 name = str(r['name'])
                 m = STORE_PART_SPLIT.search(name)
                 base = name[:m.start()] if m else name
-                kind = int(m.group(2)) if m and m.group(2) else None
+                kind = (int(m.group(2)) if m.group(2).isdigit() else m.group(2)) if m and m.group(2) else None
                 k = (base, kind)
                 g = groups.setdefault(k, {'name': base, 'kind': kind, 'parts': 0, 'data': 0,
                                           'index': 0, 'other': 0, 'total': 0, 'live': 0,
@@ -73473,7 +73512,7 @@ def store_db(store):
                 m = STORE_PART_SPLIT.search(tab)
                 out['indexes'].append({'name': str(r['name']), 'table': tab,
                                        'group': tab[:m.start()] if m else tab,
-                                       'kind': int(m.group(2)) if m and m.group(2) else None,
+                                       'kind': (int(m.group(2)) if m.group(2).isdigit() else m.group(2)) if m and m.group(2) else None,
                                        'bytes': int(r['size'] or 0),
                                        'scans': int(r['scans'] or 0)})
             try:
@@ -73679,7 +73718,8 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
         # What root's helper can put in by itself (1.10.310): whole folders
         # that nothing takes any file of; one partly taken by another file
         # stays a step for root by hand.
-        whole = [f['name'] for f in unrot if not f['covered_by'] and not f.get('deeper')]
+        whole = [f['name'] for f in unrot if not f['covered_by'] and not f.get('deeper')
+                 and not f.get('odd_live')]
         out.append({'level': 'crit' if total > 5 * G else 'warn', 'key': 'unrotated',
                     'apply': {'do': 'cover', 'folders': whole, 'keep': 2 if big else 30,
                               'file': '/etc/logrotate.d/remote-isemon'} if whole else None,
@@ -73741,7 +73781,41 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
                                 {'say': 'Whether it runs at all:',
                                  'text': 'systemctl status logrotate.timer logrotate.service '
                                          '--no-pager'}]})
-    raw = [f for f in logs if f['old_raw_bytes'] > G]
+    # A log written a file a day, taken by logrotate as `*.log`: each day's
+    # file is rotated once and then is gone, so `rotate N` - counted for each
+    # name - never lets any copy go, and `delaycompress` never packs it: the
+    # folder only grows (1.10.311). Copies older than the file keeps are the
+    # proof of it.
+    aged = []
+    for f in logs:
+        keep = f.get('keep_days') or 0
+        if f.get('per_day', 0) >= 3 and f['covered_by'] and keep and f.get('oldest_copy') \
+                and time.time() - f['oldest_copy'] > (keep + 2) * 86400:
+            aged.append(f)
+            k = int(round(keep))
+            out.append({'level': 'warn', 'key': 'per-day:' + f['path'],
+                        'title': '%s writes a file a day, and its copies are never let go of'
+                                 % f['name'],
+                        'says': ('Its logs are named by the day (%s), and %s takes them as '
+                                 '*.log: each day\'s file is rotated once and then is gone, so '
+                                 '"rotate" - counted for each name - never lets a copy go, and '
+                                 'delaycompress never packs one. %d copies, the oldest from %s, '
+                                 'where %d days are meant to be kept.'
+                                 % (f['biggest_live']['name'] if f.get('biggest_live') else '',
+                                    os.path.basename(f['covered_by'][0]['file']), f['copies'],
+                                    time.strftime('%d-%m-%Y', time.localtime(f['oldest_copy'])), k)),
+                        'apply': {'do': 'age', 'folders': [f['name']], 'keep': k},
+                        'fix': [{'say': 'The copies older than %d days let go of, the rest older '
+                                        'than three days packed - every day, as a line in '
+                                        '/etc/cron.daily of its own:' % k,
+                                 'text': "find %s -maxdepth 1 -type f -regextype posix-extended \\\n"
+                                         "    -regex '.*-[0-9]{8}([-_.]?[0-9]{1,12})?(\\.gz)?$' \\\n"
+                                         "    -mmin +%d -delete\n"
+                                         "find %s -maxdepth 1 -type f -regextype posix-extended \\\n"
+                                         "    -regex '.*-[0-9]{8}([-_.]?[0-9]{1,12})?$' \\\n"
+                                         "    -mmin +4320 -exec gzip -6 {} +"
+                                         % (f['path'], k * 1440, f['path'])}]})
+    raw = [f for f in logs if f['old_raw_bytes'] > G and f not in aged]
     if raw:
         out.append({'level': 'warn', 'key': 'raw-copies',
                     'apply': {'do': 'pack', 'folders': [f['name'] for f in raw]},
@@ -73755,9 +73829,12 @@ def store_problems(disks, logs, lr, dbi, growth, dumps):
                              # -mmin, not -mtime +3, which is four whole
                              # days: the copies three to four days old were
                              # left and still said here (1.10.310).
-                             'text': '\n'.join("find %s -type f -regextype posix-extended "
-                                               "-regex '.*(\\.[0-9]+|-[0-9]{8}([-_.]?[0-9]{1,12})?)$' "
-                                               "-mmin +4320 -exec gzip -6 {} +"
+                             # Over a few lines (1.10.311): one long line came
+                             # back from a narrow terminal cut in two.
+                             'text': '\n'.join("find %s -type f \\\n"
+                                               "    -regextype posix-extended \\\n"
+                                               "    -regex '.*(\\.[0-9]+|-[0-9]{8}([-_.]?[0-9]{1,12})?)$' \\\n"
+                                               "    -mmin +4320 -exec gzip -6 {} +"
                                                % f['path'] for f in raw)}]})
     # Big senders kept long, one card for them all, by the file that keeps
     # them: what that comes to on the disk once every copy is there.
@@ -73886,27 +73963,41 @@ def storage_fix(store, wr, body, by):
         raise WebRootError('root\'s half is not installed on this machine yet: run '
                            './install.sh --upgrade once')
     do = str((body or {}).get('do') or '')
-    if do not in ('cover', 'pack'):
-        raise ValueError('cover or pack')
+    if do not in ('cover', 'pack', 'age'):
+        raise ValueError('cover, pack or age')
     look = storage_health(store, fresh=True)
-    offer = next((p.get('apply') for p in look.get('problems') or []
-                  if p.get('apply') and p['apply'].get('do') == do), None)
-    if not offer or not offer.get('folders'):
+    offers = [p['apply'] for p in look.get('problems') or []
+              if p.get('apply') and p['apply'].get('do') == do and p['apply'].get('folders')]
+    asked = [str(x) for x in (body.get('folders') or [])]
+    # One offer a folder for some (how long a folder's copies are kept is
+    # its own): the one that has the folders asked for.
+    offer = next((o for o in offers if asked and all(a in o['folders'] for a in asked)),
+                 offers[0] if offers and not asked else None)
+    if not offer:
         raise ValueError('there is nothing of that to put right now - the page may be from '
                          'before; look again')
-    asked = [str(x) for x in (body.get('folders') or [])]
     folders = [f for f in offer['folders'] if not asked or f in asked]
     if not folders:
         raise ValueError('none of those folders is one to put right now')
     data = {'do': do, 'folders': folders}
     if do == 'cover':
         data.update(keep=int(offer.get('keep') or 30), rotate_now=bool(body.get('rotate_now')))
+    if do == 'age':
+        # How long is the folder's own logrotate file's - what the look
+        # worked out - never a number the page sends.
+        data.update(keep=int(offer.get('keep') or 30))
     got = store_root_ask(wr, data, wait=75)
     if do == 'cover':
         store.add_event('control', '%s had root put %s into %s (%d copies kept)%s'
                         % (by, ', '.join(folders), got.get('file') or 'logrotate',
                            int(got.get('keep') or 0),
                            ', rotated at once' if got.get('rotated') else ''), 'info', who=by)
+    elif do == 'age':
+        store.add_event('control', '%s had root let go of %d copies of logs older than %d days '
+                        '(%s) and pack %d in %s'
+                        % (by, int(got.get('gone') or 0), int(got.get('keep') or 0),
+                           store_human(got.get('gone_bytes') or 0), int(got.get('packed') or 0),
+                           ', '.join(folders)), 'warn', who=by)
     else:
         store.add_event('control', '%s had root pack %d old copies of logs (%s) in %s'
                         % (by, int(got.get('files') or 0), store_human(got.get('bytes') or 0),
