@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.311'
+__version__ = '1.10.312'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -61950,6 +61950,8 @@ class Daemon(object):
             'version': self.version,
             'now': now,
             'php_notice': self.php_notice(),
+            # Everything that wants doing, on every page (1.10.312).
+            'alerts': alerts_now(self),
             # Changes waiting to be kept (1.10.228): the banner on every page.
             'trials': self._trials_now(),
             'uptime': now - self.started,
@@ -73057,6 +73059,130 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 
 
 
+# ---- The alerts on every page (1.10.312) ------------------------------------
+# One way for the daemon to say on every page, to a full admin, that
+# something wants doing: a list in the status, each {key, level, title, says,
+# steps: [{say, text}], pane}, drawn as a band under the header with its
+# commands ready to copy. The first two: this version's root parts not put
+# in by ./install.sh --upgrade, and trouble that Settings → Disk and logs
+# has found. Another is one more function whose answer is added in
+# alerts_now.
+#
+# ROOT_PARTS: the files install.sh puts in as they are, where, and the
+# sha256 of this version's - made by tools/root_parts.py, and checked against
+# deploy/ by test/fixes312_alerts.py, so a change to one of them that is not
+# made here fails the tests rather than going unsaid on a server.
+# -- ROOT_PARTS from tools/root_parts.py --
+ROOT_PARTS = [
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '4a0cedfbae9da8d7902fbce74fb12aa50b50da51017612f9174a83813fa52746'),
+    ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
+    ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
+    ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '36df0674ead5ee2eda48c011577cb57116b0da7f7e34daa6e886a6e433ccbe83'),
+    ('deploy/isemon-web.path', '/etc/systemd/system/isemon-web.path', '78aa34ce2560407360b266bfc43eda41c344d6ef359b0bf53a7d4fa32ade3a5c'),
+    ('deploy/isemon-upgrade.service', '/etc/systemd/system/isemon-upgrade.service', '5d00f89ecff1cafb664f901450662414c97485955456f0221bd3c746255d5425'),
+    ('deploy/isemon-upgrade.path', '/etc/systemd/system/isemon-upgrade.path', '029181225b378f9dbf03ea99ba5c1d0b280e166bb7aef3c06246a1dbabd239ec'),
+    ('deploy/isemon.service', '/etc/systemd/system/isemon.service', 'f3d41034b806fe82510fc52bcbaaf39a3005f845a3ba57b3e3800c9f2b51180f'),
+    ('deploy/isemon.logrotate', '/etc/logrotate.d/isemon', 'a774a76e01b153d5180ee391a25c67505ca301d12b6f45726568788078e54e72'),
+]
+# -- end of ROOT_PARTS --
+ROOT_PARTS_SEEN = {'at': 0.0, 'out': []}
+ROOT_PARTS_EVERY_S = 600
+ROOT_INSTALLED = '/etc/systemd/system/isemon.service'
+
+
+def root_parts_stale(fresh=False):
+    """[{part, where, why}] of the root parts installed otherwise than this
+    version ships them - none on a machine isemon was not installed on as a
+    service (a copy run by hand, the tests)."""
+    now = time.time()
+    if not fresh and now - ROOT_PARTS_SEEN['at'] < ROOT_PARTS_EVERY_S:
+        return ROOT_PARTS_SEEN['out']
+    out = []
+    if os.path.exists(ROOT_INSTALLED):
+        for src, dest, sha in ROOT_PARTS:
+            try:
+                with open(dest, 'rb') as f:
+                    got = hashlib.sha256(f.read()).hexdigest()
+            except FileNotFoundError:
+                out.append({'part': os.path.basename(src), 'where': dest, 'why': 'missing'})
+                continue
+            except OSError:
+                continue                    # not ours to read: nothing said of it
+            if got != sha:
+                out.append({'part': os.path.basename(src), 'where': dest, 'why': 'older'})
+    ROOT_PARTS_SEEN.update(at=now, out=out)
+    return out
+
+
+def root_parts_alert(version):
+    stale = root_parts_stale()
+    if not stale:
+        return None
+    helper = any(x['part'] in ('isemon_web.py', 'isemon-web.path', 'isemon-web.service')
+                 for x in stale)
+    names = ', '.join(x['part'] for x in stale[:6]) + (
+        ' and %d more' % (len(stale) - 6) if len(stale) > 6 else '')
+    return {'key': 'root-parts', 'level': 'crit' if helper else 'warn',
+            'title': 'isemon %s is running, but the parts root installs are from before it'
+                     % version,
+            'says': ('Not as this version ships them: %s. What needs root - %s - may not work '
+                     'until ./install.sh --upgrade is run once as root. An upgrade from the web '
+                     'runs it by itself; a package copied over by hand, or an install.sh that '
+                     'stopped half way, does not.'
+                     % (names, 'the firewall and TLS from the pages, the network, the clock, '
+                               'root\'s keys, logrotate' if helper
+                        else 'the service and its units')),
+            'steps': [{'say': 'As root, in the folder the isemon-%s package was unpacked in:'
+                              % version,
+                       'text': './install.sh --upgrade'},
+                      {'say': 'This band goes by itself within ten minutes once it is right.'}],
+            'parts': stale}
+
+
+STORE_ALERT = {'at': 0.0, 'out': [], 'busy': False}
+STORE_ALERT_EVERY_S = 1800
+
+
+def storage_alerts(store):
+    """What Disk and logs counts as trouble, looked at behind every half
+    hour, never in the way of the status that carries it."""
+    now = time.time()
+    if now - STORE_ALERT['at'] > STORE_ALERT_EVERY_S and not STORE_ALERT['busy']:
+        STORE_ALERT['busy'] = True
+
+        def look():
+            try:
+                got = storage_health(store, fresh=True)
+                STORE_ALERT['out'] = [
+                    {'key': 'storage:' + p['key'], 'level': 'crit', 'title': p['title'],
+                     'says': p['says'], 'pane': 'storage', 'steps': []}
+                    for p in got.get('problems') or [] if p.get('level') == 'crit']
+            except Exception as e:                  # noqa: BLE001
+                log('looking at the disks for the alerts: %s' % str(e)[:160], 'debug')
+            finally:
+                STORE_ALERT.update(at=time.time(), busy=False)
+        threading.Thread(target=look, name='store-alert', daemon=True).start()
+    return STORE_ALERT['out']
+
+
+def alerts_now(daemon):
+    """Everything that wants doing, worst first."""
+    out = []
+    try:
+        a = root_parts_alert(daemon.version)
+        if a:
+            out.append(a)
+    except Exception as e:                          # noqa: BLE001
+        log('the root parts for the alerts: %s' % str(e)[:160], 'debug')
+    try:
+        out += storage_alerts(daemon.store)
+    except Exception as e:                          # noqa: BLE001
+        log('the disks for the alerts: %s' % str(e)[:160], 'debug')
+    order = {'crit': 0, 'warn': 1, 'info': 2}
+    out.sort(key=lambda a: order.get(a.get('level'), 3))
+    return out
+
+
 # ---- Where the room goes: the disks, the logs, the database (1.10.309) -----
 # Settings → Disk and logs. One place that answers "what is filling the disk"
 # with numbers rather than guesses: each disk and what is on it, the logs
@@ -81130,6 +81256,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not me:
                 return None
             said = daemon.status(me)
+            # What wants doing is a full admin's to be told (1.10.312): the
+            # paths and folders in it are nobody else's.
+            if isinstance(said, dict) and said.get('alerts') and me.get('role') != 'fulladmin':
+                said = dict(said, alerts=[])
             if one('logs') == '0' and isinstance(said, dict) and 'logs' in said:
                 # Every file being read, every five seconds, on every page:
                 # most of the status, and only the Overview and the Logs page
@@ -84900,6 +85030,12 @@ def cmd_status(args, pal, store):
     # A change waiting to be kept (1.10.228).
     for line in NetPower.trial_words(data.get('trials') or []):
         pal.warn(line)
+    # What wants doing, as the bands on the pages say it (1.10.312).
+    for a in data.get('alerts') or []:
+        (pal.bad if a.get('level') == 'crit' else pal.warn)(a.get('title') or '')
+        for st in a.get('steps') or []:
+            if st.get('text'):
+                pal.note('  %s  %s' % (st.get('say') or '', st['text']))
     # How fast it reads, as the header of the page says it: out of memory,
     # nothing asked of the database to say it.
     pace = data.get('pace') or {}

@@ -2287,6 +2287,28 @@ function srcText(el) {
     background:var(--panel2);border:1px solid var(--line);color:var(--tx-dim)}
   .me-chip.on{border-color:rgba(163,113,247,.5);color:var(--violet)}
   .me-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  /* The alerts on every page (1.10.312) */
+  .alerts{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+  .alertband{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:12px;
+    border:1px solid var(--line);border-left:5px solid var(--info);background:var(--panel)}
+  .alertband.lvl-crit{border-color:rgba(248,81,73,.55);border-left-color:var(--crit);
+    background:linear-gradient(90deg,var(--crit-bg),var(--panel) 55%)}
+  .alertband.lvl-warn{border-color:rgba(210,153,34,.5);border-left-color:var(--warn);
+    background:linear-gradient(90deg,var(--warn-bg),var(--panel) 55%)}
+  .alert-ic{display:flex;color:var(--info);margin-top:1px}
+  .alertband.lvl-crit .alert-ic{color:var(--crit)}
+  .alertband.lvl-warn .alert-ic{color:var(--warn)}
+  .alert-body{flex:1;min-width:0}
+  .alert-t{font-weight:700;color:var(--tx)}
+  .alert-s{font-size:13.5px;color:var(--tx-dim);margin-top:3px;line-height:1.5}
+  .alert-step{margin-top:8px}
+  .alert-say{font-size:12.5px;color:var(--tx-dim);margin-bottom:4px}
+  .alert-code{display:flex;align-items:center;gap:10px;background:#0a0e14;border:1px solid var(--line);
+    border-radius:8px;padding:6px 6px 6px 12px;max-width:760px}
+  .alert-code code{flex:1;min-width:0;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#c9d1d9;white-space:pre-wrap;overflow-wrap:anywhere}
+  .alert-acts{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  @media (max-width:760px){.alertband{flex-wrap:wrap}.alert-acts{flex-direction:row;width:100%;justify-content:flex-end}}
   /* Settings → Disk and logs (1.10.309) */
   #pane-storage .card{margin-bottom:14px}
   .st-wait{color:var(--tx-dim);text-align:center;padding:28px}
@@ -5315,6 +5337,9 @@ function srcText(el) {
 <!-- This server in maintenance (1.10.266, as otp's header says it): only when
      it really is, with why - its health check says 503 meanwhile. -->
 <div id="maint-band" class="maintband" hidden></div>
+<!-- Everything the daemon says wants doing (1.10.312): one band each, for a
+     full admin, with its commands ready to copy. -->
+<div id="alerts" class="alerts" hidden></div>
 
 <!-- What the directory says has changed since somebody remembered it. On
      every page rather than on the Domain page: an account appearing in the
@@ -10936,6 +10961,8 @@ function tick() {
       phpBox.hidden = !!(data.php_notice && data.php_notice.hidden);
     }
     paintHeader(data, !moved);
+    /* What wants doing, on every page (1.10.312). */
+    if (typeof drawAlerts === 'function') drawAlerts(data.alerts || []);
     /* A change waiting to be kept, on every page (1.10.228). */
     if (typeof drawTrials === 'function') drawTrials(data);
     /* Whatever the database is busy with, wherever somebody is watching
@@ -35604,6 +35631,81 @@ function drawStorageDb(host, d) {
   host.appendChild(cc);
 }
 
+
+/* ==========================================================================
+   The alerts on every page (1.10.312)
+   --------------------------------------------------------------------------
+   What the daemon says wants doing - the parts root installs older than the
+   program, a disk filling, logs that nothing rotates - one band each under
+   the header, for a full admin: what, why, and the steps with their
+   commands ready to copy. "Not now" puts one away on this browser for a
+   day, or until what it says changes.
+   ========================================================================== */
+var ALERT_HIDE_KEY = 'isemon-alerts-hidden';
+var ALERTS_DRAWN = '';
+function alertSig(a) {
+  var t = String(a.key) + '|' + String(a.title) + '|' + String(a.says), h = 0;
+  for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+  return String(h);
+}
+function alertsHidden() {
+  try { return JSON.parse(localStorage.getItem(ALERT_HIDE_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+function alertHide(a) {
+  var h = alertsHidden();
+  h[a.key] = {sig: alertSig(a), until: Date.now() + 86400000};
+  try { localStorage.setItem(ALERT_HIDE_KEY, JSON.stringify(h)); } catch (e) { }
+}
+function drawAlerts(list) {
+  var host = $('alerts');
+  if (!host) return;
+  if (!ME || ME.role !== 'fulladmin') { host.hidden = true; return; }
+  var hidden = alertsHidden();
+  var show = (list || []).filter(function (a) {
+    var h = hidden[a.key];
+    return !(h && h.sig === alertSig(a) && h.until > Date.now());
+  });
+  var drawn = JSON.stringify(show.map(alertSig));
+  if (drawn === ALERTS_DRAWN && !host.hidden === !!show.length) return;
+  ALERTS_DRAWN = drawn;
+  clear(host);
+  host.hidden = !show.length;
+  show.forEach(function (a) {
+    var band = el('div', 'alertband lvl-' + (a.level || 'info'));
+    var ic = el('span', 'alert-ic');
+    ic.innerHTML = iconMarkup(a.level === 'crit' ? 'close' : 'info', 20);
+    band.appendChild(ic);
+    var body = el('div', 'alert-body');
+    body.appendChild(el('div', 'alert-t', a.title));
+    if (a.says) body.appendChild(el('div', 'alert-s', a.says));
+    (a.steps || []).forEach(function (st) {
+      var line = el('div', 'alert-step');
+      if (st.say) line.appendChild(el('div', 'alert-say', st.say));
+      if (st.text) {
+        var code = el('div', 'alert-code');
+        code.appendChild(noI18n(el('code', '', st.text)));
+        var c = cmdButton('Copy', 'copy', 'small');
+        c.onclick = function () { copyText(st.text, 'the command was copied'); };
+        code.appendChild(c);
+        line.appendChild(code);
+      }
+      body.appendChild(line);
+    });
+    band.appendChild(body);
+    var acts = el('div', 'alert-acts');
+    if (a.pane) {
+      var go = cmdButton('Open it', 'gear', 'small');
+      go.onclick = function () { showTab('settings'); showPane(a.pane); };
+      acts.appendChild(go);
+    }
+    var later = cmdButton('Not now', 'close', 'small');
+    later.title = 'Puts it away on this browser for a day, or until what it says changes.';
+    later.onclick = function () { alertHide(a); ALERTS_DRAWN = ''; drawAlerts(STATUS ? STATUS.alerts : []); };
+    acts.appendChild(later);
+    band.appendChild(acts);
+    host.appendChild(band);
+  });
+}
 /* ---- Face ID in Your account (1.10.303) ----------------------------------- */
 function pkBytes(t) {
   t = String(t || '').replace(/-/g, '+').replace(/_/g, '/');

@@ -372,6 +372,22 @@ working.
 
 ## Version
 
+1.10.312
+
+- **Alerts on every page**: one way for the daemon to say to a full admin what
+  wants doing - a band under the header for each thing, worst first, with
+  what was found, why it matters and the steps, every command ready to copy;
+  *Open it* where a pane says more; *Not now* puts one away on that browser
+  for a day or until what it says changes. Also in `isemon --status`. The
+  first two: **the parts root installs older than the program** - the root
+  helpers, the systemd units and the daemon's logrotate file are compared
+  with what this version ships (their sha256, kept in `ROOT_PARTS` by
+  `tools/root_parts.py` and checked by the tests), and where one is older or
+  missing the band says to run `./install.sh --upgrade` as root (an upgrade
+  from the web does it by itself; a package copied by hand does not); and
+  **trouble Disk and logs finds** (a disk filling, logs nothing rotates),
+  looked at behind every half hour. See [docs/alerts.md](docs/alerts.md).
+
 1.10.311
 
 - Disk and logs: the command that packs old copies of logs is written over a

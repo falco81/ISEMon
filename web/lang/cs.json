@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.311",
+  "version": "1.10.312",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -15292,6 +15292,10 @@
    "source": "mine",
    "text": "mine"
   },
+  "s.missing.5a013c49": {
+   "source": "missing",
+   "text": "chybí"
+  },
   "s.mkdir-p-etc-systemd-system-isemon.7ad47ded": {
    "source": "mkdir -p /etc/systemd/system/isemon.service.d",
    "text": "mkdir -p /etc/systemd/system/isemon.service.d"
@@ -17819,6 +17823,10 @@
   "s.older-ready-to-go-back-to.8079c702": {
    "source": "- older: ready to go back to",
    "text": "– starší: připraveno k návratu"
+  },
+  "s.older.6fa5fbbc": {
+   "source": "older",
+   "text": "starší"
   },
   "s.olomouc.10046f85": {
    "source": "Olomouc",
@@ -20555,6 +20563,10 @@
   "s.put.7fd768e4": {
    "source": "Put",
    "text": "Vložit"
+  },
+  "s.puts-it-away-on-this-browser.657f9fe7": {
+   "source": "Puts it away on this browser for a day, or until what it says changes.",
+   "text": "Schová ho v tomto prohlížeči na den, nebo dokud se nezmění, co říká."
   },
   "s.puts-it-right-if-it-keeps.d965f116": {
    "source": "puts it right; if it keeps happening, one of them is refusing and the line below says why.",
@@ -26620,6 +26632,10 @@
    "source": "The firewall and the lists of who may reach which page go back to what they were before the change.",
    "text": "Firewall a seznamy toho, kdo smí na kterou stránku, se vrátí do stavu před změnou."
   },
+  "s.the-firewall-and-tls-from-the.2e20b23b": {
+   "source": "the firewall and TLS from the pages, the network, the clock, root's keys, logrotate",
+   "text": "firewall a TLS ze stránek, síť, čas, klíče roota, logrotate"
+  },
   "s.the-firewall-asking-the-directory-who.78599cb4": {
    "source": "the firewall asking the directory who is signed in where",
    "text": "firewall se ptá adresáře, kdo je kde přihlášen"
@@ -28952,6 +28968,10 @@
    "source": "The server",
    "text": "Server"
   },
+  "s.the-service-and-its-units.011fc41f": {
+   "source": "the service and its units",
+   "text": "služba a její unity"
+  },
   "s.the-service-answers-wrongly.4c29152b": {
    "source": "The service answers wrongly",
    "text": "Služba odpovídá špatně"
@@ -30103,6 +30123,10 @@
   "s.this-ban-has-not-ended-it.5617ff20": {
    "source": "This ban has not ended. It is either for good, or on a clock that has not run out — the list at the top of this page says which, and carries the button that lets it back in.",
    "text": "Tato blokace neskončila. Je buď natrvalo, nebo s časem, který ještě nevypršel — seznam v horní části stránky uvádí, která možnost platí, a obsahuje tlačítko pro odblokování."
+  },
+  "s.this-band-goes-by-itself-within.e881f742": {
+   "source": "This band goes by itself within ten minutes once it is right.",
+   "text": "Až to bude v pořádku, tento pruh do deseti minut sám zmizí."
   },
   "s.this-box-is-not-on-the.0be7dce0": {
    "source": "This box is not on the list under Settings → The OTP logs → Where OTP sign-ins come from.",
@@ -35354,6 +35378,10 @@
    "source": "as much as the machine has free now - {0} - allows; the rest once more of it is free",
    "text": "tolik, kolik dovolí současná volná paměť stroje ({0}); zbytek, až se uvolní"
   },
+  "p.as-root-in-the-folder-the.f0e6fcc8": {
+   "source": "As root, in the folder the isemon-{0} package was unpacked in:",
+   "text": "Jako root ve složce, kam byl rozbalen balík isemon-{0}:"
+  },
   "p.as-the-firewall-names-it-search.bb8ae4a3": {
    "source": "{0}, as the firewall names it. Search with",
    "text": "{0}, jak ho pojmenovává firewall. Hledejte pomocí"
@@ -36550,6 +36578,10 @@
    "source": "isemon-backup-{0}",
    "text": "isemon-backup-{0}"
   },
+  "p.isemon-is-running-but-the-parts.0c74eabc": {
+   "source": "isemon {0} is running, but the parts root installs are from before it",
+   "text": "Běží isemon {0}, ale části, které instaluje root, jsou starší"
+  },
   "p.isemon-is-there-this-server-runs.177cccd2": {
    "source": "isemon {0} is there - this server runs {1} (looked {2})",
    "text": "Je k dispozici isemon {0} – tento server běží na {1} (zkontrolováno {2})"
@@ -37137,6 +37169,10 @@
   "p.not-answering-for-the-page-asks.fe13d9ba": {
    "source": "Not answering for {0}. The page asks again every two seconds.",
    "text": "Neodpovídá {0}. Stránka se ptá znovu každé dvě sekundy."
+  },
+  "p.not-as-this-version-ships-them.e8cec71f": {
+   "source": "Not as this version ships them: {0}. What needs root - {1} - may not work until ./install.sh --upgrade is run once as root. An upgrade from the web runs it by itself; a package copied over by hand, or an install.sh that stopped half way, does not.",
+   "text": "Neodpovídají této verzi: {0}. To, co potřebuje root – {1} – nemusí fungovat, dokud se jednou jako root nespustí ./install.sh --upgrade. Upgrade z webu to udělá sám; balík zkopírovaný ručně nebo install.sh, který skončil v půlce, ne."
   },
   "p.not-deployed.a689d658": {
    "source": "{0} not deployed: {1}",
@@ -42177,10 +42213,6 @@
   "s.older-lines.ccdcd2fd": {
    "source": "Older lines",
    "text": "Starší řádky"
-  },
-  "s.older.6fa5fbbc": {
-   "source": "older",
-   "text": "starší"
   },
   "s.oldest.c47bb88f": {
    "source": "Oldest",
