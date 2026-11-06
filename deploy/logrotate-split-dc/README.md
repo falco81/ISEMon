@@ -25,7 +25,18 @@ reading after a rotation, and both let the reload's exit status through
 rather than swallowing it with `|| true`. The reasoning behind those two is
 in [../../docs/log-rotation-and-permissions.md](../../docs/log-rotation-and-permissions.md).
 
-Check the pair before trusting it:
+**`remote-fw`** is the third of the set (1.10.309): the firewalls, which on a
+site that logs the sessions they let through are by far the most of it - tens
+of GB a day - and kept only two days, because isemon keeps what it needs of
+them in the database. Put the firewalls' folders in it and in neither of the
+other two.
+
+**Settings → Disk and logs** looks at every folder under `/var/log/remote`
+and says which one no file takes, with the logrotate file that would take it
+written out, so a sender added and forgotten is found the day it is added
+rather than the day the disk is full.
+
+Check the set before trusting it:
 
 ```bash
 logrotate -d /etc/logrotate.conf 2>&1 | grep -i "duplicate\|error"

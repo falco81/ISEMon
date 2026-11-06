@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.308'
+__version__ = '1.10.309'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73057,6 +73057,811 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 
 
 
+# ---- Where the room goes: the disks, the logs, the database (1.10.309) -----
+# Settings → Disk and logs. One place that answers "what is filling the disk"
+# with numbers rather than guesses: each disk and what is on it, the logs
+# that arrive over syslog folder by folder, whether logrotate covers every
+# one of them (a site that lists its folders one by one and then adds a
+# sender has one that never rotates - 370 GB of firewall log on one install,
+# found when the disk had 38 GB left), and inside the database each table
+# and index. What looks wrong is said, with what to do about it - a
+# logrotate file written out for the folders nothing rotates.
+STORE_LOG_ROOTS = ['/var/log/remote']
+STORE_LOGROTATE = ['/etc/logrotate.conf', '/etc/logrotate.d']
+STORE_CACHE_S = 60
+STORE_WALK_MOST = 20000         # files looked at, at the most, in one scan
+STORE_LAST = {'at': 0.0, 'out': None}
+STORE_LOCK = threading.Lock()
+# A copy logrotate (or anybody) made: x.log.1, x.log-20261106, x.log.2.gz,
+# x.log-2026110613.xz; compressed ones whatever they are called.
+STORE_ROTATED = re.compile(r'(\.\d{1,4}|-\d{8}(\d{2})?)(\.(gz|xz|bz2|zst|lz4))?$|'
+                           r'\.(gz|xz|bz2|zst|lz4)$')
+STORE_PACKED = re.compile(r'\.(gz|xz|bz2|zst|lz4)$')
+STORE_READERS = (('ise', 'ise_paths', 'ISE'), ('otp', 'otp_paths', 'token logs'),
+                 ('acmelog', 'acmelog_paths', 'acme'), ('eduroam', 'eduroam_paths', 'eduroam'),
+                 ('tacplus', 'tacplus_paths', 'TACACS+'), ('nps', 'nps_paths', 'NPS'),
+                 ('radius', 'radius_paths', 'FreeRADIUS'), ('winsec', 'winsec_paths', 'domain'))
+STORE_FREQ_DAYS = {'hourly': 1.0 / 24, 'daily': 1, 'weekly': 7, 'monthly': 30, 'yearly': 365}
+
+
+def store_dir_bytes(path, most=STORE_WALK_MOST):
+    """(bytes, files) under a folder, by the room the files take, without
+    following links or leaving the disk; (None, 0) where it cannot be read."""
+    total, n = 0, 0
+    try:
+        dev = os.lstat(str(path)).st_dev
+    except OSError:
+        return None, 0
+    stack = [str(path)]
+    while stack and n < most:
+        here = stack.pop()
+        try:
+            with os.scandir(here) as it:
+                for e in it:
+                    try:
+                        st = e.stat(follow_symlinks=False)
+                    except OSError:
+                        continue
+                    if stat.S_ISDIR(st.st_mode):
+                        if st.st_dev == dev:
+                            stack.append(e.path)
+                    elif stat.S_ISREG(st.st_mode):
+                        total += st.st_blocks * 512 if st.st_blocks else st.st_size
+                        n += 1
+        except OSError:
+            continue
+    return total, n
+
+
+def store_glob_match(pattern, path):
+    """Whether logrotate's glob takes this file: `*` and `?` within one part
+    of the path, never across a slash, as glob(3) reads it."""
+    pp, fp = str(pattern).split('/'), str(path).split('/')
+    if len(pp) != len(fp):
+        return False
+    return all(fnmatch.fnmatchcase(f, p) for p, f in zip(pp, fp))
+
+
+def store_logrotate(paths=None):
+    """logrotate's own files, read: [{file, stanzas: [{patterns, opts, line}]}]
+    and the defaults of the main file. Only what is needed to say which file
+    a log is rotated by and how: the patterns, how often, how many, whether
+    compressed. Scripts are skipped whole."""
+    files = []
+    for one in (paths if paths is not None else STORE_LOGROTATE):
+        p = Path(one)
+        if p.is_dir():
+            try:
+                names = sorted(x for x in os.listdir(str(p))
+                               if not x.startswith('.') and not re.search(
+                                   r'(~|\.(rpm\w*|dpkg-\w+|bak|orig|disabled|swp))$', x))
+            except OSError:
+                names = []
+            files += [p / x for x in names if (p / x).is_file()]
+        elif p.is_file():
+            files.append(p)
+    out, defaults = [], {}
+    for f in files:
+        try:
+            text = f.read_text(encoding='utf-8', errors='replace')
+        except OSError as e:
+            out.append({'file': str(f), 'stanzas': [], 'error': str(e)[:120]})
+            continue
+        stanzas, pending, inside, script, opts, at = [], [], False, False, {}, 0
+        for n, raw in enumerate(text.splitlines(), 1):
+            line = raw.split('#', 1)[0].strip() if not script else raw.strip()
+            if not line:
+                continue
+            if script:
+                if line.split()[0] in ('endscript',):
+                    script = False
+                continue
+            word = line.split()[0]
+            if word in ('postrotate', 'prerotate', 'firstaction', 'lastaction',
+                        'preremove'):
+                script = True
+                continue
+            if not inside:
+                if '{' in line:
+                    before = line.split('{', 1)[0]
+                    pending += before.split()
+                    inside, opts, at = True, {}, n
+                    if '}' in line.split('{', 1)[1]:
+                        stanzas.append({'patterns': pending, 'opts': opts, 'line': at})
+                        pending, inside = [], False
+                    continue
+                if line.startswith('/') or line.startswith('"'):
+                    pending += [x.strip('"') for x in line.split()]
+                    continue
+                if f.name == 'logrotate.conf':
+                    store_logrotate_opt(defaults, line)
+                continue
+            if line.startswith('}'):
+                stanzas.append({'patterns': pending, 'opts': opts, 'line': at})
+                pending, inside = [], False
+                continue
+            store_logrotate_opt(opts, line)
+        out.append({'file': str(f), 'stanzas': stanzas})
+    return {'files': out, 'defaults': defaults}
+
+
+def store_logrotate_opt(opts, line):
+    bits = line.split()
+    word = bits[0].lower()
+    if word in STORE_FREQ_DAYS:
+        opts['every'] = word
+    elif word in ('rotate', 'maxage', 'size', 'maxsize', 'minsize') and len(bits) > 1:
+        opts[word] = bits[1]
+    elif word in ('compress', 'nocompress', 'delaycompress', 'nodelaycompress', 'dateext',
+                  'copytruncate', 'missingok', 'notifempty', 'sharedscripts'):
+        opts[word] = True
+    elif word == 'create':
+        opts['create'] = ' '.join(bits[1:])
+
+
+def store_rotated_by(path, lr):
+    """Which logrotate stanzas take this file: [(file, stanza)]."""
+    got = []
+    for f in lr['files']:
+        for s in f['stanzas']:
+            if any(store_glob_match(p, path) for p in s['patterns']):
+                got.append((f['file'], s))
+    return got
+
+
+def store_keep_days(opts, defaults):
+    """How many days of copies a stanza keeps, as near as can be said."""
+    every = opts.get('every') or defaults.get('every') or 'weekly'
+    try:
+        n = int(opts.get('rotate', defaults.get('rotate', 1)))
+    except (TypeError, ValueError):
+        n = 1
+    days = STORE_FREQ_DAYS.get(every, 7) * max(0, n)
+    if opts.get('maxage'):
+        try:
+            days = min(days, int(opts['maxage']))
+        except ValueError:
+            pass
+    return round(days, 2)
+
+
+def store_readers():
+    """{folder: [what reads it]} for every log this installation reads."""
+    out = {}
+    for flag, key, label in STORE_READERS:
+        if not int(CONFIG.get(flag) or 0):
+            continue
+        for p in CONFIG.get(key) or []:
+            p = str(p).strip()
+            if p:
+                out.setdefault(os.path.normpath(p), []).append(label)
+    try:
+        if int(CONFIG.get('fwlog') or 0):
+            for one in fw_sources():
+                for p in (one.get('paths') or [one.get('path')]):
+                    if p:
+                        out.setdefault(os.path.normpath(str(p)), []).append(
+                            'firewall %s' % one.get('name', ''))
+    except Exception:                                    # noqa: BLE001
+        pass
+    return out
+
+
+def store_read_by(folder, readers):
+    folder = os.path.normpath(folder)
+    got = []
+    for p, labels in readers.items():
+        if p == folder or p.startswith(folder + '/') or folder.startswith(p + '/'):
+            got += labels
+    return sorted(set(got))
+
+
+def store_logs(lr, seen_before, now):
+    """The folders under the log roots: each with its size, its files, what
+    rotates them and how fast it grows."""
+    readers = store_readers()
+    folders, looked = [], 0
+    for root in STORE_LOG_ROOTS:
+        try:
+            subs = sorted(e.path for e in os.scandir(root) if e.is_dir(follow_symlinks=False))
+        except OSError:
+            continue
+        for folder in subs:
+            one = {'path': folder, 'name': os.path.basename(folder), 'bytes': 0,
+                   'live': 0, 'live_bytes': 0, 'copies': 0, 'copies_bytes': 0,
+                   'raw_copies_bytes': 0, 'old_raw_bytes': 0, 'packed_bytes': 0,
+                   'biggest': [], 'uncovered': [], 'covered_by': [], 'deeper': 0,
+                   'newest_copy': None, 'oldest': None, 'keep_days': None,
+                   'read_by': store_read_by(folder, readers)}
+            files = []
+            stack = [(folder, 0)]
+            while stack and looked < STORE_WALK_MOST:
+                here, depth = stack.pop()
+                try:
+                    it = list(os.scandir(here))
+                except OSError:
+                    continue
+                for e in it:
+                    try:
+                        st = e.stat(follow_symlinks=False)
+                    except OSError:
+                        continue
+                    if stat.S_ISDIR(st.st_mode):
+                        stack.append((e.path, depth + 1))
+                        continue
+                    if not stat.S_ISREG(st.st_mode):
+                        continue
+                    looked += 1
+                    room = st.st_blocks * 512 if st.st_blocks else st.st_size
+                    files.append((e.path, e.name, room, st.st_mtime, depth))
+            covers = {}
+            for path, name, room, mtime, depth in files:
+                one['bytes'] += room
+                one['oldest'] = mtime if one['oldest'] is None else min(one['oldest'], mtime)
+                rotated = bool(STORE_ROTATED.search(name))
+                if rotated:
+                    one['copies'] += 1
+                    one['copies_bytes'] += room
+                    if STORE_PACKED.search(name):
+                        one['packed_bytes'] += room
+                    else:
+                        one['raw_copies_bytes'] += room
+                        if now - mtime > 3 * 86400:
+                            one['old_raw_bytes'] += room
+                    if one['newest_copy'] is None or mtime > one['newest_copy']:
+                        one['newest_copy'] = mtime
+                    continue
+                one['live'] += 1
+                one['live_bytes'] += room
+                if depth:
+                    one['deeper'] += 1
+                by = store_rotated_by(path, lr)
+                if not by:
+                    one['uncovered'].append({'name': os.path.relpath(path, folder),
+                                             'bytes': room})
+                for f, s in by:
+                    k = '%s:%d' % (f, s['line'])
+                    if k not in covers:
+                        covers[k] = {'file': f, 'line': s['line'], 'files': 0,
+                                     'opts': s['opts'],
+                                     'keep_days': store_keep_days(s['opts'], lr['defaults']),
+                                     'patterns': [p for p in s['patterns']
+                                                  if p.startswith(folder) or '*' in p][:6]}
+                    covers[k]['files'] += 1
+            one['covered_by'] = sorted(covers.values(), key=lambda c: -c['files'])
+            one['dupes'] = sum(1 for path, name, room, mtime, depth in files
+                               if not STORE_ROTATED.search(name)
+                               and len(store_rotated_by(path, lr)) > 1)
+            if one['covered_by']:
+                one['keep_days'] = max(c['keep_days'] for c in one['covered_by'])
+            one['uncovered'].sort(key=lambda x: -x['bytes'])
+            one['uncovered_bytes'] = sum(x['bytes'] for x in one['uncovered'])
+            one['uncovered_n'] = len(one['uncovered'])
+            one['uncovered'] = one['uncovered'][:12]
+            files.sort(key=lambda x: -x[2])
+            one['biggest'] = [{'name': os.path.relpath(p, folder), 'bytes': r, 'at': round(m),
+                               'copy': bool(STORE_ROTATED.search(n))}
+                              for p, n, r, m, d in files[:10]]
+            one['biggest_live'] = next(({'name': os.path.relpath(p, folder), 'bytes': r}
+                                        for p, n, r, m, d in files
+                                        if not STORE_ROTATED.search(n)), None)
+            # How fast it grows: what the live files gained since the last
+            # look (kept in meta, so it survives a restart), else the newest
+            # uncompressed copy, which is a whole day of it where the copies
+            # are daily.
+            rate, how = None, ''
+            was = (seen_before or {}).get(folder)
+            if was and now - was[0] >= 600 and one['live_bytes'] >= was[1]:
+                rate, how = (one['live_bytes'] - was[1]) * 86400.0 / (now - was[0]), 'measured'
+            if rate is None and one['covered_by']:
+                every = one['covered_by'][0]['opts'].get('every') \
+                    or lr['defaults'].get('every') or 'weekly'
+                raw = [(m, r) for p, n, r, m, d in files
+                       if STORE_ROTATED.search(n) and not STORE_PACKED.search(n)]
+                if raw and every == 'daily':
+                    newest = max(m for m, r in raw)
+                    rate = sum(r for m, r in raw if m == newest or newest - m < 120)
+                    how = 'yesterday'
+            one['a_day'] = round(rate) if rate is not None else None
+            one['a_day_how'] = how
+            folders.append(one)
+    folders.sort(key=lambda x: -x['bytes'])
+    return folders
+
+
+def store_disks(store, logs, parts_extra):
+    """Each disk something of ours is on, and what of ours is on it."""
+    want = {}
+
+    def add(label, key, path, bytes_):
+        if not path:
+            return
+        m = mount_of(str(path))
+        want.setdefault(m, []).append({'key': key, 'label': label, 'path': str(path),
+                                       'bytes': bytes_})
+    for root in STORE_LOG_ROOTS:
+        if os.path.isdir(root):
+            add('logs that arrive over syslog', 'logs', root,
+                sum(f['bytes'] for f in logs if f['path'].startswith(root + '/')))
+    for item in parts_extra:
+        add(*item)
+    out = []
+    for m, parts in want.items():
+        try:
+            room = shutil.disk_usage(m)
+        except OSError:
+            continue
+        known = sum(p['bytes'] or 0 for p in parts)
+        out.append({'mount': m, 'total': room.total, 'used': room.used, 'free': room.free,
+                    'share': round(100.0 * room.used / room.total, 1) if room.total else None,
+                    'parts': sorted(parts, key=lambda p: -(p['bytes'] or 0)),
+                    'other': max(0, room.used - known)})
+    out.sort(key=lambda d: -(d['share'] or 0))
+    return out
+
+
+STORE_PART_SPLIT = re.compile(r'_p\d{8}(_c(\d+))?$')
+
+
+def store_db(store):
+    """Inside the database: each table (a table split by day as one, by its
+    kind of day), its data, indexes and the rest, live and dead rows; the
+    biggest indexes and whether anything ever used them; how far back the
+    main tables go."""
+    eng = store.dialect.name
+    out = {'engine': eng, 'bytes': None, 'tables': [], 'indexes': [], 'wal': None,
+           'spans': [], 'free_inside': None, 'error': ''}
+    try:
+        out['bytes'] = store.size()
+    except Exception:                                    # noqa: BLE001
+        pass
+    db = store.db
+    try:
+        if eng == 'postgres':
+            groups = {}
+            for r in db.execute(
+                    "SELECT c.relname AS name, c.oid AS oid, "
+                    "pg_relation_size(c.oid) AS data, pg_indexes_size(c.oid) AS idx, "
+                    "pg_total_relation_size(c.oid) AS total, "
+                    "COALESCE(s.n_live_tup, 0) AS live, COALESCE(s.n_dead_tup, 0) AS dead, "
+                    "EXTRACT(EPOCH FROM GREATEST(s.last_autovacuum, s.last_vacuum)) AS vac "
+                    "FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+                    "LEFT JOIN pg_stat_all_tables s ON s.relid = c.oid "
+                    "WHERE c.relkind = 'r' AND n.nspname = current_schema()"):
+                name = str(r['name'])
+                m = STORE_PART_SPLIT.search(name)
+                base = name[:m.start()] if m else name
+                kind = int(m.group(2)) if m and m.group(2) else None
+                k = (base, kind)
+                g = groups.setdefault(k, {'name': base, 'kind': kind, 'parts': 0, 'data': 0,
+                                          'index': 0, 'other': 0, 'total': 0, 'live': 0,
+                                          'dead': 0, 'vacuumed': None, 'biggest_part': None})
+                g['parts'] += 1
+                g['data'] += int(r['data'] or 0)
+                g['index'] += int(r['idx'] or 0)
+                g['total'] += int(r['total'] or 0)
+                g['other'] = g['total'] - g['data'] - g['index']
+                g['live'] += int(r['live'] or 0)
+                g['dead'] += int(r['dead'] or 0)
+                if r['vac']:
+                    g['vacuumed'] = max(g['vacuumed'] or 0, float(r['vac']))
+                if m and (g['biggest_part'] is None
+                          or int(r['total'] or 0) > g['biggest_part']['bytes']):
+                    g['biggest_part'] = {'name': name, 'bytes': int(r['total'] or 0),
+                                         'rows': int(r['live'] or 0)}
+            out['tables'] = sorted(groups.values(), key=lambda g: -g['total'])
+            for r in db.execute(
+                    "SELECT s.indexrelname AS name, s.relname AS tab, "
+                    "pg_relation_size(s.indexrelid) AS size, s.idx_scan AS scans "
+                    "FROM pg_stat_user_indexes s ORDER BY pg_relation_size(s.indexrelid) DESC "
+                    "LIMIT 400"):
+                tab = str(r['tab'])
+                m = STORE_PART_SPLIT.search(tab)
+                out['indexes'].append({'name': str(r['name']), 'table': tab,
+                                       'group': tab[:m.start()] if m else tab,
+                                       'kind': int(m.group(2)) if m and m.group(2) else None,
+                                       'bytes': int(r['size'] or 0),
+                                       'scans': int(r['scans'] or 0)})
+            try:
+                row = db.execute('SELECT COALESCE(SUM(size), 0) AS n, COUNT(*) AS f '
+                                 'FROM pg_ls_waldir()').fetchone()
+                out['wal'] = {'bytes': int(row['n'] or 0), 'files': int(row['f'] or 0)}
+            except Exception:                            # noqa: BLE001
+                out['wal'] = None
+            try:
+                out['slots'] = [dict(r) for r in db.execute(
+                    'SELECT slot_name AS name, active, '
+                    'pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) AS behind '
+                    'FROM pg_replication_slots')]
+            except Exception:                            # noqa: BLE001
+                out['slots'] = []
+        elif eng == 'mariadb':
+            for r in db.execute(
+                    'SELECT table_name AS name, data_length AS data, index_length AS idx, '
+                    'data_free AS free, table_rows AS live FROM information_schema.TABLES '
+                    'WHERE table_schema = DATABASE()'):
+                d, i = int(r['data'] or 0), int(r['idx'] or 0)
+                out['tables'].append({'name': str(r['name']), 'kind': None, 'parts': 1,
+                                      'data': d, 'index': i, 'other': 0, 'total': d + i,
+                                      'live': int(r['live'] or 0), 'dead': 0,
+                                      'free': int(r['free'] or 0), 'vacuumed': None})
+            out['tables'].sort(key=lambda g: -g['total'])
+            try:
+                for r in db.execute(
+                        "SELECT index_name AS name, table_name AS tab, "
+                        "stat_value * @@innodb_page_size AS size FROM mysql.innodb_index_stats "
+                        "WHERE database_name = DATABASE() AND stat_name = 'size' "
+                        "ORDER BY size DESC LIMIT 200"):
+                    out['indexes'].append({'name': str(r['name']), 'table': str(r['tab']),
+                                           'group': str(r['tab']), 'kind': None,
+                                           'bytes': int(r['size'] or 0), 'scans': None})
+            except Exception:                            # noqa: BLE001
+                pass
+        else:
+            page = int(db.execute('PRAGMA page_size').fetchone()[0] or 4096)
+            free = int(db.execute('PRAGMA freelist_count').fetchone()[0] or 0)
+            out['free_inside'] = page * free
+            owner = {str(r['name']): str(r['tbl_name']) for r in db.execute(
+                "SELECT name, tbl_name FROM sqlite_master WHERE type IN ('table', 'index')")}
+            kinds = {str(r['name']): str(r['type']) for r in db.execute(
+                "SELECT name, type FROM sqlite_master WHERE type IN ('table', 'index')")}
+            groups = {}
+            try:
+                rows = list(db.execute('SELECT name, SUM(pgsize) AS n FROM dbstat GROUP BY name'))
+            except sqlite3.Error:
+                rows = []
+            for r in rows:
+                name = str(r['name'])
+                tab = owner.get(name, name)
+                if tab.startswith('sqlite_'):
+                    continue
+                g = groups.setdefault(tab, {'name': tab, 'kind': None, 'parts': 1, 'data': 0,
+                                            'index': 0, 'other': 0, 'total': 0, 'live': None,
+                                            'dead': 0, 'vacuumed': None})
+                n = int(r['n'] or 0)
+                if kinds.get(name) == 'index':
+                    g['index'] += n
+                    out['indexes'].append({'name': name, 'table': tab, 'group': tab,
+                                           'kind': None, 'bytes': n, 'scans': None})
+                else:
+                    g['data'] += n
+                g['total'] += n
+            out['tables'] = sorted(groups.values(), key=lambda g: -g['total'])
+            out['indexes'].sort(key=lambda i: -i['bytes'])
+            out['indexes'] = out['indexes'][:200]
+    except Exception as e:                               # noqa: BLE001
+        out['error'] = str(e).split('\n')[0][:200]
+    # How far back the main tables go (each by its own index on the moment).
+    for t in ('failed', 'passed', 'win_events', 'fw_events', 'otp_asked', 'acme_events',
+              'eduroam_seen', 'events', 'block_events'):
+        try:
+            if 'ts' not in (store.columns_of(t) or ()):
+                continue
+            r = db.execute('SELECT MIN(ts) AS a, MAX(ts) AS b FROM %s'
+                           % store.dialect.ident(t)).fetchone()
+            if r and r['a'] is not None:
+                out['spans'].append({'table': t, 'from': float(r['a']), 'to': float(r['b'])})
+        except Exception:                                # noqa: BLE001
+            continue
+    return out
+
+
+def store_template(folders, big, group, lr):
+    """A logrotate file for folders nothing rotates, in the shape of the ones
+    already there: one stanza for them, `create` so the daemon can go on
+    reading, the reload rsyslog needs."""
+    # A name of its own beside the ones there: never one already taken.
+    taken = {os.path.basename(f['file']) for f in lr['files']}
+    name, n = 'remote-isemon', 2
+    while name in taken:
+        name, n = 'remote-isemon-%d' % n, n + 1
+    lines = ['# /etc/logrotate.d/%s' % name, '#',
+             '# Written by isemon (Settings - Disk and logs) for folders under',
+             '# /var/log/remote that no logrotate file took. Kept apart from the other',
+             '# files: logrotate refuses two stanzas that take the same file.',
+             '# A folder added later has to be added here or to another file.', '']
+    for f in folders:
+        whole = not f.get('covered_by') and not f.get('deeper')
+        if whole:
+            lines.append('%s/*.log' % f['path'])
+        else:
+            lines += ['%s/%s' % (f['path'], u['name']) for u in f['uncovered']]
+    lines += ['{',
+              '    daily',
+              '    dateext',
+              '    rotate %d' % (2 if big else 30),
+              '    compress',
+              '    delaycompress',
+              '    missingok',
+              '    notifempty',
+              '    create 0640 root %s' % group,
+              '',
+              '    sharedscripts',
+              '    postrotate',
+              '        /usr/bin/systemctl reload rsyslog > /dev/null 2>&1 || \\',
+              '            /usr/bin/systemctl kill -s HUP --kill-who=main rsyslog.service'
+              ' > /dev/null 2>&1 || true',
+              '    endscript',
+              '}']
+    return name, '\n'.join(lines) + '\n'
+
+
+def store_problems(disks, logs, lr, dbi, growth, dumps):
+    """What looks wrong, worst first, each with what to do about it."""
+    out = []
+    G = 1024 ** 3
+    try:
+        import grp
+        group = grp.getgrgid(os.getegid()).gr_name
+    except Exception:                                    # noqa: BLE001
+        group = 'isemon'
+    if group == 'root':
+        group = 'isemon'
+    logs_a_day = sum(f['a_day'] or 0 for f in logs)
+    for d in disks:
+        a_day = logs_a_day + max(0, (growth or {}).get('a_day') or 0)
+        days = int(d['free'] / a_day) if a_day > 0 else None
+        d['days_left'] = days
+        d['a_day'] = a_day or None
+        level = None
+        full = (d['share'] or 0) >= 85
+        soon = days is not None and days < 14
+        if (d['share'] or 0) >= 95 or (days is not None and days < 3):
+            level = 'crit'
+        elif full or soon:
+            level = 'warn'
+        if level:
+            biggest = d['parts'][0] if d['parts'] else None
+            when = ('in less than a day' if days is not None and days < 1
+                    else 'in about %d day(s)' % days if days is not None else '')
+            out.append({'level': level, 'key': 'disk:' + d['mount'],
+                        'title': ('The disk %s is %s%% full' % (d['mount'], d['share'])
+                                  if full or not when
+                                  else 'The disk %s will be full %s' % (d['mount'], when)),
+                        'says': ('%s free, %s a day going on to it%s. The most of what is ours on '
+                                 'it is %s (%s).'
+                                 % (store_human(d['free']), store_human(a_day),
+                                    ' - full %s' % when if when else '',
+                                    biggest['label'] if biggest else 'not anything of ours',
+                                    store_human(biggest['bytes'] if biggest else d['other']))),
+                        'mount': d['mount']})
+    unrot = [f for f in logs if f['uncovered_n']]
+    if unrot:
+        big = [f for f in unrot if f['uncovered_bytes'] > G or (f['a_day'] or 0) > 2 * G]
+        name, text = store_template(unrot, bool(big), group, lr)
+        total = sum(f['uncovered_bytes'] for f in unrot)
+        out.append({'level': 'crit' if total > 5 * G else 'warn', 'key': 'unrotated',
+                    'title': '%d folder(s) of logs that nothing rotates' % len(unrot),
+                    'says': ('%s in %s: no logrotate file takes these files, so they only '
+                             'ever grow. A site whose logrotate files list their folders one '
+                             'by one has this the day a new sender is added.'
+                             % (store_human(total),
+                                ', '.join(f['name'] for f in unrot[:6])
+                                + (' and %d more' % (len(unrot) - 6) if len(unrot) > 6 else ''))),
+                    'folders': [f['name'] for f in unrot],
+                    'fix': [{'say': 'Write this as /etc/logrotate.d/%s (as root):' % name,
+                             'file': '/etc/logrotate.d/%s' % name, 'text': text},
+                            {'say': 'Check that no two files now take the same log - this '
+                                    'prints nothing when all is well:',
+                             'text': 'logrotate -d /etc/logrotate.conf 2>&1 | '
+                                     "grep -iE 'duplicate|error: '"},
+                            {'say': 'Rotate them once now rather than tonight - only a '
+                                    'rename, quick however big the files are:',
+                             'text': 'logrotate -f /etc/logrotate.d/%s' % name},
+                            {'say': 'The copies that makes are what was read already. Where '
+                                    'they are not wanted, once the daemon has gone on to the '
+                                    'new files (a minute), they can go:',
+                             'text': '\n'.join("find %s -maxdepth 1 -type f -name '*.log-*' "
+                                               "-print -delete" % f['path'] for f in unrot)}]})
+    for f in logs:
+        if f.get('dupes'):
+            files = sorted(set(c['file'] for c in f['covered_by']))
+            out.append({'level': 'crit', 'key': 'dupe:' + f['path'],
+                        'title': 'Two logrotate files take the logs of %s' % f['name'],
+                        'says': ('%d file(s) there are taken by %s. logrotate refuses the '
+                                 'WHOLE run over that ("duplicate log entry"): nothing at all '
+                                 'is rotated until one of them lets go.'
+                                 % (f['dupes'], ' and '.join(files))),
+                        'fix': [{'say': 'Take the folder out of one of the files, then check:',
+                                 'text': 'logrotate -d /etc/logrotate.conf 2>&1 | '
+                                         "grep -iE 'duplicate|error: '"}]})
+    for f in logs:
+        if not f['covered_by'] or not f['biggest_live']:
+            continue
+        opts = f['covered_by'][0]['opts']
+        every = opts.get('every') or lr['defaults'].get('every') or 'weekly'
+        period = STORE_FREQ_DAYS.get(every, 7) * 86400
+        stale = f['newest_copy'] is None or (time.time() - f['newest_copy'] > 2.5 * period)
+        if f['biggest_live']['bytes'] > 2 * G and stale and not opts.get('size') \
+                and not opts.get('maxsize'):
+            out.append({'level': 'warn', 'key': 'stuck:' + f['path'],
+                        'title': 'The logs of %s are taken by logrotate but not being rotated'
+                                 % f['name'],
+                        'says': ('%s is %s and the newest copy is %s. logrotate may not be '
+                                 'running, or may be stopping on an error elsewhere.'
+                                 % (f['biggest_live']['name'], store_human(f['biggest_live']
+                                                                            ['bytes']),
+                                    'from %s' % time.strftime('%d-%m-%Y', time.localtime(
+                                        f['newest_copy'])) if f['newest_copy'] else 'none')),
+                        'fix': [{'say': 'What logrotate says when it is run by hand:',
+                                 'text': 'logrotate -v %s 2>&1 | tail -30'
+                                         % f['covered_by'][0]['file']},
+                                {'say': 'Whether it runs at all:',
+                                 'text': 'systemctl status logrotate.timer logrotate.service '
+                                         '--no-pager'}]})
+    raw = [f for f in logs if f['old_raw_bytes'] > G]
+    if raw:
+        out.append({'level': 'warn', 'key': 'raw-copies',
+                    'title': 'Copies of logs kept uncompressed',
+                    'says': ('%s in copies older than three days that were never compressed '
+                             '(%s). Syslog text packs ten to twenty times over.'
+                             % (store_human(sum(f['old_raw_bytes'] for f in raw)),
+                                ', '.join(f['name'] for f in raw[:6]))),
+                    'fix': [{'say': 'Put `compress` in the logrotate file that takes them; the '
+                                    'ones there now can be packed by hand:',
+                             'text': '\n'.join("find %s -type f -regextype posix-extended "
+                                               "-regex '.*(\\.[0-9]+|-[0-9]{8})$' -mtime +3 "
+                                               "-exec gzip -6 {} +" % f['path'] for f in raw)}]})
+    # Big senders kept long, one card for them all, by the file that keeps
+    # them: what that comes to on the disk once every copy is there.
+    long_ = [f for f in logs if f['keep_days'] and f['keep_days'] > 14
+             and (f['a_day'] or 0) > 2 * G and f['covered_by']]
+    if long_:
+        files = sorted(set(f['covered_by'][0]['file'] for f in long_))
+        comes = sum(f['a_day'] * (2 + (f['keep_days'] - 1) / 12.0) for f in long_)
+        out.append({'level': 'info', 'key': 'long',
+                    'title': '%d big sender(s) kept %d days' % (
+                        len(long_), int(max(f['keep_days'] for f in long_))),
+                    'says': ('%s: %s a day between them, about %s on the disk once every copy '
+                             'is there (today\'s, yesterday\'s whole and the rest packed). isemon '
+                             'reads the live file as it is written and keeps what it needs in '
+                             'the database, for as long as its own settings say; the copies are '
+                             'for anybody who wants the raw lines.'
+                             % (', '.join(f['name'] for f in long_),
+                                store_human(sum(f['a_day'] for f in long_)),
+                                store_human(comes))),
+                    'folders': [f['name'] for f in long_],
+                    'fix': [{'say': 'Fewer copies, where they are not wanted: `rotate` lower in '
+                                    '%s - each one is a day where it says daily.'
+                                    % ' and '.join(files)}]})
+    G1 = G
+    for t in dbi.get('tables') or []:
+        if t['dead'] and t['live'] and t['dead'] > 0.2 * (t['live'] + t['dead']) \
+                and t['total'] > G1:
+            out.append({'level': 'warn', 'key': 'dead:' + t['name'],
+                        'title': 'Dead rows in %s' % t['name'],
+                        'says': ('%s of its %s rows are dead - room the server can reuse but '
+                                 'has not given back. Autovacuum may be behind.'
+                                 % (store_num(t['dead']), store_num(t['live'] + t['dead']))),
+                        'fix': [{'say': 'Tidied without locking it (as the postgres user):',
+                                 'text': 'VACUUM (ANALYZE) %s;' % t['name']}]})
+    if dbi.get('wal') and dbi['wal']['bytes'] > 8 * G:
+        out.append({'level': 'warn', 'key': 'wal',
+                    'title': 'PostgreSQL keeps %s of WAL' % store_human(dbi['wal']['bytes']),
+                    'says': 'Usually a replication slot nobody reads, or archiving that fails.',
+                    'fix': [{'say': 'The slots, and how far behind each is:',
+                             'text': "SELECT slot_name, active, pg_size_pretty(pg_wal_lsn_diff("
+                                     "pg_current_wal_lsn(), restart_lsn)) FROM "
+                                     "pg_replication_slots;"}]})
+    # The sessions a firewall let through are nearly all of its log: where
+    # they are most of the database, how long they are kept is the knob.
+    whole = sum(t['total'] for t in dbi.get('tables') or []) or 0
+    brief = sum(t['total'] for t in dbi.get('tables') or []
+                if t['name'] == 'fw_events' and t['kind'] == 1)
+    if whole and brief > 0.3 * whole and brief > 5 * G:
+        days = int(CONFIG.get('fwlog_allowed_days') or 2)
+        out.append({'level': 'info', 'key': 'fw-allowed',
+                    'title': 'The sessions the firewall let through are %d%% of the database'
+                             % round(100.0 * brief / whole),
+                    'says': ('%s, kept %d day(s). They stay counted on the Traffic cards and '
+                             'chart however long the rows are kept; only the rows themselves '
+                             'go sooner.' % (store_human(brief), days)),
+                    'fix': [{'say': 'Settings - The firewall log - "Keep what it let through '
+                                    'for (days)": 1 keeps about a day of them.',
+                             'pane': 'fwlog'}]})
+    unused = [i for i in dbi.get('indexes') or [] if i['scans'] == 0 and i['bytes'] > G]
+    if unused:
+        out.append({'level': 'info', 'key': 'unused-indexes',
+                    'title': '%s of indexes not used yet' % store_human(
+                        sum(i['bytes'] for i in unused)),
+                    'says': ('%d index(es) over a gigabyte the server has never been asked '
+                             'through since its counters were last reset. They are there for '
+                             'searches somebody may make (a source address, a port); nothing '
+                             'needs doing unless room is short.' % len(unused))})
+    if dumps and dumps.get('bytes') and disks:
+        d0 = next((d for d in disks if any(p['key'] == 'dumps' for p in d['parts'])), None)
+        if d0 and dumps['bytes'] > d0['free']:
+            out.append({'level': 'warn', 'key': 'dumps',
+                        'title': 'The dumps take more than is free',
+                        'says': '%s of dumps on a disk with %s free.'
+                                % (store_human(dumps['bytes']), store_human(d0['free'])),
+                        'fix': [{'say': 'Fewer kept: Settings - The database - how many '
+                                        'dumps are kept.'}]})
+    order = {'crit': 0, 'warn': 1, 'info': 2}
+    out.sort(key=lambda p: order.get(p['level'], 3))
+    return out
+
+
+def store_human(n):
+    n = float(n or 0)
+    for unit in ('B', 'kB', 'MB', 'GB', 'TB'):
+        if n < 1024 or unit == 'TB':
+            return ('%.0f %s' if unit in ('B', 'kB') or n >= 100 else '%.1f %s') % (n, unit)
+        n /= 1024.0
+    return '%d B' % n
+
+
+def store_num(n):
+    return '{:,}'.format(int(n or 0))
+
+
+def storage_health(store, fresh=False):
+    """GET /api/storage: everything Settings → Disk and logs draws, kept a
+    minute (a walk of the log folders and a look into the database)."""
+    with STORE_LOCK:
+        now = time.time()
+        if not fresh and STORE_LAST['out'] and now - STORE_LAST['at'] < STORE_CACHE_S:
+            return dict(STORE_LAST['out'], cached=True)
+        try:
+            seen_before = json.loads(store.get_meta('storage_seen') or '{}')
+        except (ValueError, TypeError):
+            seen_before = {}
+        lr = store_logrotate()
+        logs = store_logs(lr, seen_before, now)
+        # What each folder's live files held, for the next look's rate - only
+        # every half hour, so the rate is over a stretch worth measuring.
+        if not seen_before or now - max([v[0] for v in seen_before.values()] or [0]) > 1800:
+            try:
+                store.set_meta('storage_seen', json.dumps(
+                    {f['path']: [round(now), f['live_bytes']] for f in logs}))
+            except Exception:                            # noqa: BLE001
+                pass
+        dbi = store_db(store)
+        dumps_b, dumps_n = store_dir_bytes(DUMP_DIR)
+        backs_b, backs_n = store_dir_bytes(BACKUP_DIR)
+        extra = [('dumps of the database', 'dumps', DUMP_DIR, dumps_b or 0),
+                 ('copies of the database (backups)', 'backups', BACKUP_DIR, backs_b or 0)]
+        served = None
+        try:
+            served = store.server_files()
+        except Exception:                                # noqa: BLE001
+            served = None
+        if store.dialect.name == 'sqlite':
+            extra.append(('the database', 'db', str(store.path), dbi.get('bytes') or 0))
+        elif served and served.get('dir'):
+            extra.append(('the database (%s)' % served.get('engine', ''), 'db',
+                          served['dir'], dbi.get('bytes') or 0))
+            if dbi.get('wal'):
+                extra.append(('its write-ahead log (pg_wal)', 'wal', served['dir'],
+                              dbi['wal']['bytes']))
+        disks = store_disks(store, logs, extra)
+        try:
+            growth = store.growth()
+        except Exception:                                # noqa: BLE001
+            growth = {}
+        dumps = {'bytes': dumps_b, 'files': dumps_n, 'path': str(DUMP_DIR)}
+        problems = store_problems(disks, logs, lr, dbi, growth, dumps)
+        out = {'at': now, 'disks': disks, 'logs': logs, 'roots': STORE_LOG_ROOTS,
+               'logrotate': [{'file': f['file'], 'error': f.get('error', ''),
+                              'stanzas': [{'patterns': s['patterns'][:40],
+                                           'more': max(0, len(s['patterns']) - 40),
+                                           'opts': s['opts'], 'line': s['line'],
+                                           'keep_days': store_keep_days(s['opts'],
+                                                                        lr['defaults'])}
+                                          for s in f['stanzas']]}
+                             for f in lr['files']
+                             if any(p.startswith(root.rstrip('/') + '/')
+                                    for root in STORE_LOG_ROOTS
+                                    for s in f['stanzas'] for p in s['patterns'])
+                             or f.get('error')],
+               'logrotate_defaults': lr['defaults'], 'db': dbi, 'growth': growth,
+               'dumps': dumps, 'backups': {'bytes': backs_b, 'files': backs_n,
+                                           'path': str(BACKUP_DIR)},
+               'problems': problems, 'took': round(time.time() - now, 2)}
+        STORE_LAST.update(at=now, out=out)
+        return out
+
+
 # ---- Face ID, Touch ID, Windows Hello: the second step of signing in -------
 # (1.10.303, from ai 1.0.70-1.0.76, but as a second factor rather than a way
 # in of its own.) Switched on (`passkeys`, off as it comes), every sign-in
@@ -79400,6 +80205,16 @@ class ApiHandler(BaseHTTPRequestHandler):
             status, got = push_answer(daemon, op, self.body())
             return self.send_json(got, status)
         # ...and the card on Certificates and TLS.
+        if path == '/api/storage':
+            # Settings → Disk and logs (1.10.309): what fills the disks, for a
+            # full admin - a walk of the log folders and a look into the
+            # database, kept a minute.
+            me = self.need_admin()
+            if not me:
+                return None
+            return self.send_json(storage_health(store, fresh=str(one('fresh') or '')
+                                                 in ('1', 'true')))
+
         if path == '/api/load':
             # The performance meter of the header (1.10.297): what the
             # server is doing is a full admin's to see; read from /proc

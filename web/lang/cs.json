@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.308",
+  "version": "1.10.309",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -2004,9 +2004,17 @@
    "source": "acme's authority",
    "text": "Autorita acme"
   },
+  "s.acme-s-jobs.7e2b475e": {
+   "source": "acme’s jobs",
+   "text": "úlohy acme"
+  },
   "s.acme-s-key.a0c4f1bb": {
    "source": "acme’s key",
    "text": "Klíč acme"
+  },
+  "s.acme-s-log.be822828": {
+   "source": "acme’s log",
+   "text": "log acme"
   },
   "s.acme-s-logs-are-not-read.cb5b454e": {
    "source": "acme’s logs are not read: Settings → The acme logs.",
@@ -2480,6 +2488,10 @@
    "source": "all of it",
    "text": "všechno"
   },
+  "s.all-well.e586bf52": {
+   "source": "all well",
+   "text": "vše v pořádku"
+  },
   "s.all.6a720856": {
    "source": "All",
    "text": "Vše"
@@ -2911,6 +2923,10 @@
   "s.an-http-proxy-for-what-isemon.eed3c565": {
    "source": "An HTTP proxy for what isemon asks of the web - each use switched on by itself below; a use switched off goes as it always went. The firewalls, Active Directory, the database, syslog, the backups and the dashboard never go through it.",
    "text": "HTTP proxy pro to, co isemon stahuje z webu – každé použití se zapíná zvlášť níže; vypnuté použití jde jako vždy. Firewally, Active Directory, databáze, syslog, zálohy a dashboard přes ni nikdy nejdou."
+  },
+  "s.an-index-is-what-makes-a.3302afe4": {
+   "source": "An index is what makes a search quick; it costs room on every row. \"Not used yet\" counts since the server’s counters were last reset - an index for a search nobody has made yet.",
+   "text": "Index je to, co dělá hledání rychlým; na každém řádku ale zabírá místo. „Zatím nepoužitý“ se počítá od posledního vynulování počítadel serveru – je to index pro hledání, které zatím nikdo neudělal."
   },
   "s.an-interface-an-address-a-mac.da199e7f": {
    "source": "an interface, an address, a MAC, a name…",
@@ -4456,6 +4472,10 @@
    "source": "Bhutan",
    "text": "Bhútán"
   },
+  "s.biggest-live-file.84dabfc8": {
+   "source": "Biggest live file",
+   "text": "Největší živý soubor"
+  },
   "s.blacklist-example-cz-192-0-2.650252b3": {
    "source": "blacklist.example.cz, 192.0.2.11",
    "text": "blacklist.example.cz, 192.0.2.11"
@@ -4739,6 +4759,14 @@
   "s.by-target.0835693c": {
    "source": "By target",
    "text": "Podle cíle"
+  },
+  "s.by-the-day.09ccb52e": {
+   "source": "by the day",
+   "text": "po dnech"
+  },
+  "s.by-the-hour.8cb1574a": {
+   "source": "by the hour",
+   "text": "po hodinách"
   },
   "s.by-the-interval.c9f1552d": {
    "source": "By the interval",
@@ -5216,6 +5244,10 @@
    "source": "Check that it works",
    "text": "Ověřit, že to funguje"
   },
+  "s.check-that-no-two-files-now.30089a23": {
+   "source": "Check that no two files now take the same log - this prints nothing when all is well:",
+   "text": "Zkontrolujte, že teď žádné dva soubory neberou stejný log – když je vše v pořádku, nevypíše to nic:"
+  },
   "s.check-the-active-directory-connection-step.2a5d3c1e": {
    "source": "check the Active Directory connection, step by step",
    "text": "zkontrolovat připojení k Active Directory krok za krokem"
@@ -5616,6 +5648,10 @@
    "source": "Complexity",
    "text": "Složitost"
   },
+  "s.compress.89d6bb15": {
+   "source": "compress",
+   "text": "compress"
+  },
   "s.computer-name.fcb0f3c9": {
    "source": "Computer-Name",
    "text": "Computer-Name"
@@ -5799,6 +5835,30 @@
   "s.copied.3b348838": {
    "source": "copied",
    "text": "zkopírováno"
+  },
+  "s.copies-kept-on-this-machine.4a269fba": {
+   "source": "Copies kept on this machine",
+   "text": "Kopie uložené na tomto stroji"
+  },
+  "s.copies-kept.5a4bbd9e": {
+   "source": "Copies kept",
+   "text": "Drží se kopií"
+  },
+  "s.copies-not-packed.8ad24140": {
+   "source": "copies not packed",
+   "text": "kopie nezabalené"
+  },
+  "s.copies-of-logs-kept-uncompressed.ff2a4ad0": {
+   "source": "Copies of logs kept uncompressed",
+   "text": "Kopie logů držené nezabalené"
+  },
+  "s.copies-of-the-database.a57f9693": {
+   "source": "copies of the database",
+   "text": "kopie databáze"
+  },
+  "s.copies.475f96ec": {
+   "source": "copies",
+   "text": "kopie"
   },
   "s.copy-it.b56def7b": {
    "source": "Copy it",
@@ -6200,6 +6260,10 @@
    "source": "dd-mm-yyyy HH:MM:SS",
    "text": "dd-mm-yyyy HH:MM:SS"
   },
+  "s.dead-rows.b0367c1d": {
+   "source": "Dead rows",
+   "text": "Mrtvé řádky"
+  },
   "s.debug.32faaeca": {
    "source": "debug",
    "text": "ladění"
@@ -6211,6 +6275,10 @@
   "s.default.7505d64a": {
    "source": "default",
    "text": "výchozí"
+  },
+  "s.delaycompress.0d71cb08": {
+   "source": "delaycompress",
+   "text": "delaycompress"
   },
   "s.delegating.fc22fa1e": {
    "source": "delegating",
@@ -6543,6 +6611,10 @@
   "s.disconnect.ed28e068": {
    "source": "Disconnect",
    "text": "Odpojit"
+  },
+  "s.disk-and-logs.0c9c7bb6": {
+   "source": "Disk and logs",
+   "text": "Disk a logy"
   },
   "s.disk-in-use.6b9ec492": {
    "source": "disk in use (%)",
@@ -6991,6 +7063,14 @@
   "s.dumps-kept.d0cd0819": {
    "source": "Dumps kept",
    "text": "Uchovávaných dumpů"
+  },
+  "s.dumps-of-the-database.3a33bc18": {
+   "source": "dumps of the database",
+   "text": "dumpy databáze"
+  },
+  "s.dumps.c6b49e65": {
+   "source": "Dumps",
+   "text": "Dumpy"
   },
   "s.duration-1h.87bf3884": {
    "source": "duration>1h",
@@ -8460,9 +8540,17 @@
    "source": "Everything else a Windows NPS server refused, newest first. The switches’ own \"is the server there\" probes are not here — nobody is signing in to anything in those.",
    "text": "Vše ostatní, co server Windows NPS odmítl, nejnovější první. Testovací dotazy switchů „je server dostupný“ zde nejsou — v nich se nikdo nikam nepřihlašuje."
   },
+  "s.everything-else-on-the-disk.c8179452": {
+   "source": "everything else on the disk",
+   "text": "vše ostatní na disku"
+  },
   "s.everything-else-the-ise-nodes-refused.110a5aff": {
    "source": "Everything else the ISE nodes refused — mostly records they wrote about their own packet handling, which carry no address and nobody’s name.",
    "text": "Vše ostatní, co uzly ISE odmítly — většinou záznamy o jejich vlastním zpracování paketů, které nenesou žádnou adresu ani něčí jméno."
+  },
+  "s.everything-else.81ee98da": {
+   "source": "everything else",
+   "text": "vše ostatní"
   },
   "s.everything-else.b31a999e": {
    "source": "Everything else",
@@ -9088,6 +9176,10 @@
    "source": "fewer flushes while thousands of lines a second are written",
    "text": "méně vyprazdňování, když se zapisují tisíce řádků za sekundu"
   },
+  "s.fewer-kept-settings-the-database-how.272eeab3": {
+   "source": "Fewer kept: Settings - The database - how many dumps are kept.",
+   "text": "Držet jich méně: Nastavení – Databáze – kolik dumpů se drží."
+  },
   "s.ffdhe2048.97bd46b0": {
    "source": "ffdhe2048",
    "text": "ffdhe2048"
@@ -9432,6 +9524,10 @@
    "source": "folded into a subnet",
    "text": "sloučeno do podsítě"
   },
+  "s.folder.30baa249": {
+   "source": "Folder",
+   "text": "Složka"
+  },
   "s.folder.afffdd08": {
    "source": "folder",
    "text": "složka"
@@ -9712,6 +9808,10 @@
    "source": "Free for programs",
    "text": "Volné pro programy"
   },
+  "s.free-inside-the-file.c04ed527": {
+   "source": "Free inside the file",
+   "text": "Volné uvnitř souboru"
+  },
   "s.free-now.52786f8a": {
    "source": "Free now",
    "text": "Volno teď"
@@ -9719,6 +9819,10 @@
   "s.free-or-one-of-your-own.046ca5c0": {
    "source": "(free) or one of your own whose DNS is there. The records go into it; your DNS has a CNAME to it for the name -",
    "text": "(zdarma) nebo vlastní doména, jejíž DNS je tam. Záznamy jdou do ní; váš DNS má na ni pro to jméno CNAME –"
+  },
+  "s.free.4ff88aad": {
+   "source": "free",
+   "text": "volné"
   },
   "s.freeradius-802-1x-lan.05220342": {
    "source": "FreeRADIUS 802.1X LAN",
@@ -10080,6 +10184,10 @@
    "source": "Give up reaching it after (s)",
    "text": "Vzdát pokus o spojení po (s)"
   },
+  "s.given-back-by-tidying.92676a47": {
+   "source": "given back by tidying",
+   "text": "vrátí ho úklid"
+  },
   "s.given-back.bf89bb76": {
    "source": "given back",
    "text": "vráceno"
@@ -10283,6 +10391,10 @@
   "s.groups.ae9629f4": {
    "source": "Groups",
    "text": "Skupiny"
+  },
+  "s.grows-a-day.348ffa96": {
+   "source": "Grows a day",
+   "text": "Přibývá denně"
   },
   "s.guadeloupe.f0f524ff": {
    "source": "Guadeloupe",
@@ -10599,6 +10711,10 @@
   "s.how-far-back-the-ladder-looks.f08a2ec4": {
    "source": "How far back the ladder looks. An address that has behaved for this long starts at the bottom again; 0 never forgives.",
    "text": "Jak daleko do minulosti se dívají stupně blokace. Adresa, která se takto dlouho chovala slušně, začíná znovu od spodu; 0 neodpouští nikdy."
+  },
+  "s.how-far-back-the-records-go.42deb0f8": {
+   "source": "How far back the records go",
+   "text": "Jak daleko zpět záznamy sahají"
   },
   "s.how-far-back-these-patterns-are.8cb86cac": {
    "source": "How far back these patterns are counted. A window on what is shown; it changes nothing about what is kept.",
@@ -11024,6 +11140,14 @@
    "source": "how many",
    "text": "kolik"
   },
+  "s.how-much-a-day-measured-between.10898c27": {
+   "source": "How much a day: measured between two looks at it.",
+   "text": "Kolik denně: změřeno mezi dvěma pohledy."
+  },
+  "s.how-much-a-day-the-size.d838c7d8": {
+   "source": "How much a day: the size of yesterday’s copy.",
+   "text": "Kolik denně: velikost včerejší kopie."
+  },
   "s.how-much-each-person-s-remote.e57cc35d": {
    "source": "How much each person’s remote-access sessions carried, out of the line FTD writes when a session ends.",
    "text": "Kolik přenesly relace vzdáleného přístupu každého člověka, podle řádku, který FTD zapíše při ukončení relace."
@@ -11396,6 +11520,10 @@
    "source": "IdentityPolicyMatchedRule",
    "text": "IdentityPolicyMatchedRule"
   },
+  "s.idx.4e7f626d": {
+   "source": "idx",
+   "text": "idx"
+  },
   "s.ieee.080bfd5b": {
    "source": "ieee",
    "text": "ieee"
@@ -11488,6 +11616,10 @@
    "source": "in a domain called",
    "text": "v doméně s názvem"
   },
+  "s.in-about-a-day.2067de14": {
+   "source": "in about a day",
+   "text": "zhruba za den"
+  },
   "s.in-acme-targets-add-an-application.5a0f188c": {
    "source": "In acme: Targets → add An application of ours (acme push), its address below, and this code in Pairing code - then Try. The code is shown this once, works once, for 15 minutes; five wrong tries end it.",
    "text": "V acme: Cíle → přidat Naše aplikace (acme push), adresu níže a tento kód do Párovací kód – pak Vyzkoušet. Kód se ukáže jen teď, platí jednou a 15 minut; pět chybných pokusů ho zruší."
@@ -11515,6 +11647,10 @@
   "s.in-its-own-words.65ffbffb": {
    "source": "In its own words:",
    "text": "Jeho vlastními slovy:"
+  },
+  "s.in-less-than-a-day.427bdd56": {
+   "source": "in less than a day",
+   "text": "za méně než den"
   },
   "s.in-maintenance-waiting-for-root.f7accbb1": {
    "source": "in maintenance; waiting for root",
@@ -11636,6 +11772,10 @@
    "source": "In use",
    "text": "Použito"
   },
+  "s.in-years.149ebba3": {
+   "source": "in years",
+   "text": "za roky"
+  },
   "s.in-your-dns-put-the-cname.03b0632c": {
    "source": "In your DNS put the CNAME record below - once.",
    "text": "Do svého DNS vložte záznam CNAME níže – jednou."
@@ -11655,6 +11795,18 @@
   "s.include-the-bans-on-a-clock.4df46362": {
    "source": "Include the bans on a clock",
    "text": "Zahrnout blokace na časové ose"
+  },
+  "s.index.c2df9b93": {
+   "source": "Index",
+   "text": "Index"
+  },
+  "s.indexes.e0adf2be": {
+   "source": "indexes",
+   "text": "indexy"
+  },
+  "s.indexes.f642ee19": {
+   "source": "Indexes",
+   "text": "Indexy"
   },
   "s.india.967ce367": {
    "source": "India",
@@ -11691,6 +11843,10 @@
   "s.inside-each-line.1d8900a8": {
    "source": "inside each line",
    "text": "uvnitř každého řádku"
+  },
+  "s.inside-the-database.90242197": {
+   "source": "Inside the database",
+   "text": "Uvnitř databáze"
   },
   "s.inside-the-vpn.e310e3ea": {
    "source": "Inside the VPN",
@@ -13000,6 +13156,10 @@
    "source": "Its WireGuard peers: where each was last heard from, when it last shook hands and what it has carried.",
    "text": "Jeho WireGuard protějšky: odkud byl každý naposledy slyšet, kdy naposledy proběhl handshake a co přenesl."
   },
+  "s.its-write-ahead-log.bfe8e0e8": {
+   "source": "its write-ahead log",
+   "text": "její write-ahead log"
+  },
   "s.its-zone-at-desec.ec2d963c": {
    "source": "its zone at deSEC",
    "text": "její zóna u deSEC"
@@ -13684,6 +13844,10 @@
    "source": "Lesotho",
    "text": "Lesotho"
   },
+  "s.less-than-a-day.b538ba18": {
+   "source": "less than a day",
+   "text": "méně než den"
+  },
   "s.less-written-to-the-disk-for.c929a8ed": {
    "source": "less written to the disk for each page, for a little processor",
    "text": "méně zápisů na disk za každou stránku, za trochu procesoru"
@@ -14016,6 +14180,10 @@
    "source": "Lithuania",
    "text": "Litva"
   },
+  "s.live-files.13fcd6ba": {
+   "source": "live files",
+   "text": "živé soubory"
+  },
   "s.live.98aadb37": {
    "source": "live",
    "text": "živě"
@@ -14180,9 +14348,21 @@
    "source": "logon",
    "text": "logon"
   },
+  "s.logons-and-the-like.a37573af": {
+   "source": "logons and the like",
+   "text": "přihlášení a podobné"
+  },
   "s.logs-read.d9d782d5": {
    "source": "Logs read",
    "text": "Čtené logy"
+  },
+  "s.logs-that-arrive-over-syslog.52b30b18": {
+   "source": "Logs that arrive over syslog",
+   "text": "Logy přicházející přes syslog"
+  },
+  "s.logs-that-arrive-over-syslog.a9ca51fd": {
+   "source": "logs that arrive over syslog",
+   "text": "logy přicházející přes syslog"
   },
   "s.logs.126dd3b7": {
    "source": "Logs",
@@ -14207,6 +14387,10 @@
   "s.look-after-it.37321878": {
    "source": "Look after it",
    "text": "Starat se o něj"
+  },
+  "s.look-again.c394e963": {
+   "source": "Look again",
+   "text": "Podívat se znovu"
   },
   "s.look-at-every-page-ban-an.b961ca25": {
    "source": "Look at every page, ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall.",
@@ -14295,6 +14479,10 @@
   "s.looked.8db21b5c": {
    "source": "Looked",
    "text": "Zjišťováno"
+  },
+  "s.looking-at-the-disks-the-logs.1985ca0c": {
+   "source": "Looking at the disks, the logs and the database…",
+   "text": "Prohlížím disky, logy a databázi…"
   },
   "s.looking-for-lines-where.1bdc0535": {
    "source": "Looking for lines where",
@@ -15312,6 +15500,10 @@
    "source": "Names and addresses reached without it, separated by commas:",
    "text": "Jména a adresy dosažené bez ní, oddělené čárkami:"
   },
+  "s.names-and-values-for-the-search.5969d3af": {
+   "source": "names and values for the search box",
+   "text": "jména a hodnoty pro vyhledávací pole"
+  },
   "s.names-behind-addresses.85fb3488": {
    "source": "names behind addresses",
    "text": "jména za adresami"
@@ -15463,6 +15655,10 @@
   "s.needed-with-mutual-tls-otp-high.66e0a8e8": {
    "source": "Needed with mutual TLS: otp → High availability → the cluster's authority, or ca.pem from the file otp made.",
    "text": "Potřebná se vzájemným TLS: otp → High availability → autorita clusteru, nebo ca.pem ze souboru, který vytvořil otp."
+  },
+  "s.needs-a-look.408c528f": {
+   "source": "needs a look",
+   "text": "chce se podívat"
   },
   "s.negotiation.7db5a228": {
    "source": "negotiation",
@@ -16268,6 +16464,10 @@
    "source": "none of the ones switched on",
    "text": "žádný ze zapnutých"
   },
+  "s.none-of-them-names-a-folder.2da0a896": {
+   "source": "None of them names a folder of these.",
+   "text": "Žádný z nich nejmenuje žádnou z těchto složek."
+  },
   "s.none-said.61398ec7": {
    "source": "none said",
    "text": "neuvedeno"
@@ -16356,9 +16556,17 @@
    "source": "not an attempt",
    "text": "nejde o pokus"
   },
+  "s.not-anything-of-ours.e27e6742": {
+   "source": "not anything of ours",
+   "text": "nic našeho"
+  },
   "s.not-banned.1009b692": {
    "source": "not banned",
    "text": "nezablokováno"
+  },
+  "s.not-being-rotated.bc94dd91": {
+   "source": "not being rotated",
+   "text": "nerotuje se"
   },
   "s.not-carried-their-source-is-switched.9a04ad5e": {
    "source": "Not carried: their source is switched off",
@@ -16396,9 +16604,17 @@
    "source": "not combined",
    "text": "nekombinovaný"
   },
+  "s.not-compressed.86eeab93": {
+   "source": "not compressed",
+   "text": "nezabalené"
+  },
   "s.not-counted-yet.b27775d1": {
    "source": "Not counted yet.",
    "text": "Zatím nespočítáno."
+  },
+  "s.not-counted.116a5734": {
+   "source": "not counted",
+   "text": "nepočítáno"
   },
   "s.not-deployed.c2880b92": {
    "source": "Not deployed",
@@ -16576,6 +16792,10 @@
    "source": "not reached",
    "text": "nedosaženo"
   },
+  "s.not-read-by-isemon.22c6a44a": {
+   "source": "not read by isemon",
+   "text": "isemon nečte"
+  },
   "s.not-read-yet.15c59711": {
    "source": "not read yet",
    "text": "zatím nenačteno"
@@ -16675,6 +16895,10 @@
   "s.not-used-at-all.09eebcbd": {
    "source": "not used at all",
    "text": "vůbec nepoužito"
+  },
+  "s.not-used-yet.fc053921": {
+   "source": "not used yet",
+   "text": "zatím nepoužitý"
   },
   "s.not-used.487f8bcd": {
    "source": "not used",
@@ -16948,6 +17172,10 @@
    "source": "nothing is fetched by itself",
    "text": "nic se nestahuje automaticky"
   },
+  "s.nothing-is-filling-up-that-should.05594558": {
+   "source": "Nothing is filling up that should not be",
+   "text": "Nic se nezaplňuje, co by nemělo"
+  },
   "s.nothing-is-imported-so-the-server.afb92a45": {
    "source": "Nothing is imported, so the server’s certificate has to be signed by an authority this machine already trusts.",
    "text": "Nic se neimportuje, takže certifikát serveru musí být podepsán autoritou, které tento počítač už důvěřuje."
@@ -17059,6 +17287,10 @@
   "s.nothing-remembered-yet-nothing-is-being.54006b46": {
    "source": "nothing remembered yet — nothing is being weighed against anything",
    "text": "zatím nic zapamatováno — nic se s ničím neporovnává"
+  },
+  "s.nothing-rotates-it.26af4220": {
+   "source": "nothing rotates it",
+   "text": "nic ho nerotuje"
   },
   "s.nothing-sent-here-yet.a16d441b": {
    "source": "nothing sent here yet",
@@ -17904,6 +18136,10 @@
    "source": "One command puts it right:",
    "text": "Napraví to jeden příkaz:"
   },
+  "s.one-command-that-writes-it.d0eee0f8": {
+   "source": "one command that writes it",
+   "text": "jeden příkaz, který ho zapíše"
+  },
   "s.one-database-holds-everything-the-authentications.0abede90": {
    "source": "One database holds everything: the authentications read, who is banned, the story of every ban, the public lists, the country ranges and the accounts. It is a file on this machine unless you say otherwise.",
    "text": "Jedna databáze obsahuje vše: přečtené autentizace, kdo je zablokován, historii každé blokace, veřejné seznamy, rozsahy zemí a účty. Je to soubor na tomto počítači, pokud neurčíte jinak."
@@ -17951,6 +18187,10 @@
   "s.one-folder-per-radius-server-or.ae2c886e": {
    "source": "One folder per RADIUS server, or a path to the file itself.",
    "text": "Jedna složka na server RADIUS, nebo cesta přímo k souboru."
+  },
+  "s.one-folder-per-sender-as-rsyslog.f5917aa0": {
+   "source": "One folder per sender, as rsyslog files them. The live files are being written now; the copies are what logrotate has turned them into. A folder nothing rotates only ever grows.",
+   "text": "Jedna složka na odesílatele, jak je rsyslog ukládá. Živé soubory se právě zapisují; kopie jsou to, co z nich udělal logrotate. Složka, kterou nic nerotuje, jen roste."
   },
   "s.one-folder-per-tac-plus-server.796b8725": {
    "source": "One folder per tac_plus server, comma separated. Both of its logs are looked for in each: the accounting log, which is what people did, and the daemon’s own log, which is the only place a refusal is written down. A path may name one file itself instead of the folder it is in, and a site that writes both into one file can name that — a line is read for what it is rather than for which file it came out of.",
@@ -18592,6 +18832,10 @@
    "source": "Open: in its table at the last look. Ended: gone from it since, written as sessions with their bytes.",
    "text": "Otevřená: v jeho tabulce při posledním pohledu. Ukončená: od té doby z ní zmizela, zapsaná jako relace s jejich bajty."
   },
+  "s.open-it.8c00f913": {
+   "source": "Open it",
+   "text": "Otevřít"
+  },
   "s.open-or-look-a-name-up.0668d0b0": {
    "source": "open, or look a name up",
    "text": "otevřít nebo vyhledat jméno"
@@ -18888,6 +19132,10 @@
    "source": "osup",
    "text": "osup"
   },
+  "s.oth.5053112f": {
+   "source": "oth",
+   "text": "oth"
+  },
   "s.other-domains-it-trusts.6115661c": {
    "source": "Other domains it trusts",
    "text": "Další domény, kterým důvěřuje"
@@ -19071,6 +19319,10 @@
   "s.package-on-a-pfsense.a3bd0b91": {
    "source": "package on a pfSense.",
    "text": "na pfSense."
+  },
+  "s.packed-copies.a7895c34": {
+   "source": "packed copies",
+   "text": "zabalené kopie"
   },
   "s.packetmark.1ecb8c18": {
    "source": "packetmark",
@@ -19543,6 +19795,10 @@
   "s.pinned.33469d3f": {
    "source": "pinned",
    "text": "připnutý"
+  },
+  "s.pk.6924110c": {
+   "source": "pk",
+   "text": "pk"
   },
   "s.pkcs-7.38c2bc65": {
    "source": "PKCS#7",
@@ -20068,6 +20324,10 @@
    "source": "put back:",
    "text": "vráceno:"
   },
+  "s.put-compress-in-the-logrotate-file.e2d72d79": {
+   "source": "Put `compress` in the logrotate file that takes them; the ones there now can be packed by hand:",
+   "text": "Dejte `compress` do souboru logrotate, který je bere; ty, které tam už jsou, se dají zabalit ručně:"
+  },
   "s.put-every-address-that-is-counting.cce5ce42": {
    "source": "Put every address that is counting up back to nought, so each of them has to earn a ban from this moment on rather than from what it has already done. Nothing is deleted: every failed attempt stays on the Failed attempts page, every address already banned stays banned, and the ladder still remembers how many times each address has been banned before — so a returning offender still gets the longer ban. This is for after something that was not an attack: a misconfigured client, a password change, a test that filled the list with addresses you do not want banned.",
    "text": "Vynulovat počítadla všech adres, které se právě načítají, takže každá z nich si musí blokaci vysloužit až od této chvíle, ne tím, co už udělala. Nic se nemaže: každý neúspěšný pokus zůstane na stránce Neúspěšné pokusy, každá již zablokovaná adresa zůstane zablokovaná a stupně blokace si stále pamatují, kolikrát byla každá adresa dříve zablokovaná — takže opakovaný útočník stále dostane delší blokaci. Toto je pro situace po něčem, co nebyl útok: špatně nastavený klient, změna hesla, test, který seznam zaplnil adresami, jež zablokovat nechcete."
@@ -20359,6 +20619,10 @@
   "s.rather-than-in-the-database-a.b55a69b2": {
    "source": "rather than in the database - a database cannot hold the address of itself.",
    "text": "a ne v databázi – databáze nemůže obsahovat adresu sama sebe."
+  },
+  "s.raw.ce15802a": {
+   "source": "raw",
+   "text": "raw"
   },
   "s.rbackup.43bc7288": {
    "source": "rbackup",
@@ -20680,6 +20944,10 @@
    "source": "reads FortiOS’s",
    "text": "čte z FortiOS"
   },
+  "s.reads-of-files.4d8b66a4": {
+   "source": "reads of files",
+   "text": "čtení souborů"
+  },
   "s.reads-them-again-with-it.fff89c41": {
    "source": "reads them again with it.",
    "text": "je s ním přečte znovu."
@@ -20815,6 +21083,10 @@
   "s.refused-and-it-did-not-say.daa96771": {
    "source": "refused, and it did not say why",
    "text": "odmítnuto bez uvedení důvodu"
+  },
+  "s.refused-and-what-the-firewall-says.fce8ef6f": {
+   "source": "refused, and what the firewall says of itself",
+   "text": "odmítnuté a to, co firewall hlásí sám o sobě"
   },
   "s.refused-at-which-port.bf1ae605": {
    "source": "Refused, at which port",
@@ -21296,6 +21568,10 @@
    "source": "Romania",
    "text": "Rumunsko"
   },
+  "s.room-autovacuum-reuses.f975c25a": {
+   "source": "room autovacuum reuses",
+   "text": "místo, které autovacuum znovu použije"
+  },
   "s.room-it-takes.1ee48c3b": {
    "source": "Room it takes",
    "text": "Zabrané místo"
@@ -21375,6 +21651,18 @@
   "s.root.e96857c5": {
    "source": "Root",
    "text": "Kořen"
+  },
+  "s.rotate-them-once-now-rather-than.b41b9968": {
+   "source": "Rotate them once now rather than tonight - only a rename, quick however big the files are:",
+   "text": "Otočte je jednou hned, ne až v noci – je to jen přejmenování, rychlé, ať jsou soubory jakkoli velké:"
+  },
+  "s.rotated-by.ed9420d4": {
+   "source": "Rotated by",
+   "text": "Rotuje"
+  },
+  "s.rotated.b63f6f1a": {
+   "source": "rotated",
+   "text": "rotuje se"
   },
   "s.route.fc166eb8": {
    "source": "route",
@@ -22152,6 +22440,10 @@
    "source": "Sessions a policy refused - on the firewall’s own address this is mostly the internet knocking on ports that are not open. Press for the list.",
    "text": "Relace odmítnuté politikou – na vlastní adrese firewallu jde většinou o internet, který zkouší porty, jež nejsou otevřené. Klikněte pro seznam."
   },
+  "s.sessions-it-let-through.44441d60": {
+   "source": "sessions it let through",
+   "text": "spojení, která pustil"
+  },
   "s.sessions-open.06059c58": {
    "source": "sessions open",
    "text": "otevřených relací"
@@ -22327,6 +22619,10 @@
   "s.settings-the-directory.c74e057e": {
    "source": "Settings → The directory",
    "text": "Nastavení → Adresář"
+  },
+  "s.settings-the-firewall-log-keep-what.5756babb": {
+   "source": "Settings - The firewall log - \"Keep what it let through for (days)\": 1 keeps about a day of them.",
+   "text": "Nastavení – Log firewallu – „Keep what it let through for (days)“: 1 drží zhruba den."
   },
   "s.settings-the-firewall-log.40c23c0b": {
    "source": "Settings → The firewall log.",
@@ -23043,6 +23339,10 @@
   "s.sqlite.6d64a5ee": {
    "source": "sqlite",
    "text": "sqlite"
+  },
+  "s.sqlite.9f09ccbd": {
+   "source": "SQLite",
+   "text": "SQLite"
   },
   "s.src-nat-dst-nat.dd7bc131": {
    "source": "src-nat + dst-nat",
@@ -23852,6 +24152,10 @@
    "source": "systemctl status isemon",
    "text": "systemctl status isemon"
   },
+  "s.systemctl-status-logrotate-timer-logrotate-service.9e6f6ed9": {
+   "source": "systemctl status logrotate.timer logrotate.service --no-pager",
+   "text": "systemctl status logrotate.timer logrotate.service --no-pager"
+  },
   "s.systemd.5cacb1c3": {
    "source": "systemd",
    "text": "systemd"
@@ -24044,6 +24348,10 @@
    "source": "Take the entries this daemon put on the firewall(s) off them — and nothing else. Anything you added by hand, every other address list, and all your firewall rules are untouched.",
    "text": "Odebrat z firewallu (firewallů) položky, které tam vložil tento démon — a nic jiného. Cokoli, co jste přidali ručně, všechny ostatní address listy a všechna vaše pravidla firewallu zůstanou nedotčena."
   },
+  "s.take-the-folder-out-of-one.2fe39896": {
+   "source": "Take the folder out of one of the files, then check:",
+   "text": "Vyjměte složku z jednoho ze souborů a pak zkontrolujte:"
+  },
   "s.take-the-key-away.ac56a594": {
    "source": "Take the key away",
    "text": "Odebrat klíč"
@@ -24115,6 +24423,10 @@
   "s.taken-away.9ba86e20": {
    "source": "taken away",
    "text": "odebráno"
+  },
+  "s.taken-by-no-logrotate-file.c4e7ca99": {
+   "source": "Taken by no logrotate file",
+   "text": "Nebere je žádný soubor logrotate"
   },
   "s.taken-from-the-address-when-one.9099854f": {
    "source": "Taken from the address when one is given.",
@@ -25068,6 +25380,14 @@
    "source": "The bans themselves stay here. Pressing",
    "text": "Samotné blokace tu zůstávají. Kliknutím na"
   },
+  "s.the-biggest-files.b0b6f9f9": {
+   "source": "The biggest files",
+   "text": "Největší soubory"
+  },
+  "s.the-biggest-indexes.7420f6d7": {
+   "source": "The biggest indexes",
+   "text": "Největší indexy"
+  },
   "s.the-blacklist-is-off-it-is.480119b4": {
    "source": "the blacklist is off: it is empty",
    "text": "blacklist je vypnutý: je prázdný"
@@ -25324,6 +25644,10 @@
    "source": "The columns of this card — or type a word to find it anywhere",
    "text": "Sloupce této karty — nebo napište slovo a najde se kdekoli"
   },
+  "s.the-command-was-copied.b0727889": {
+   "source": "the command was copied",
+   "text": "příkaz byl zkopírován"
+  },
   "s.the-command.d4a20765": {
    "source": "the command",
    "text": "příkaz"
@@ -25375,6 +25699,10 @@
   "s.the-conversation-stopped-part-way-through.5f0905e6": {
    "source": "The conversation stopped part way through. A supplicant that gave up, or a machine that walked out of range mid-handshake.",
    "text": "Komunikace se přerušila v půlce. Supplicant, který to vzdal, nebo počítač, který uprostřed handshaku odešel z dosahu."
+  },
+  "s.the-copies-that-makes-are-what.e92e565c": {
+   "source": "The copies that makes are what was read already. Where they are not wanted, once the daemon has gone on to the new files (a minute), they can go:",
+   "text": "Kopie, které tím vzniknou, jsou to, co už bylo přečteno. Kde nejsou potřeba, mohou jít pryč, jakmile daemon přejde na nové soubory (minuta):"
   },
   "s.the-copy-in-it.e38904f2": {
    "source": "The copy in it",
@@ -25960,6 +26288,10 @@
    "source": "The dumps it keeps",
    "text": "Uchovávané výpisy"
   },
+  "s.the-dumps-take-more-than-is.f5ee9918": {
+   "source": "The dumps take more than is free",
+   "text": "Dumpy zabírají víc, než je volného místa"
+  },
   "s.the-dynamic-access-policy-records-chosen.d73b9eaa": {
    "source": "the dynamic access policy records chosen",
    "text": "vybrané záznamy dynamické přístupové politiky"
@@ -26120,6 +26452,10 @@
    "source": "The file under /var/log/isemon, as it stands. This is what the daemon said to itself — finer grained than the events above, and the place to look when something is not working rather than not happening. It is read, never written to, from this page.",
    "text": "Soubor v /var/log/isemon v aktuálním stavu. Je to, co si démon zapisoval sám pro sebe — podrobnější než události výše a místo, kam se dívat, když něco nefunguje, nikoli když se něco neděje. Tato stránka ho jen čte, nikdy do něj nezapisuje."
   },
+  "s.the-file-was-copied.a2cb52a8": {
+   "source": "the file was copied",
+   "text": "soubor byl zkopírován"
+  },
   "s.the-file-will-hold-the-router.23c2a175": {
    "source": "The file will hold the router password, the directory’s service password, the private half of the ssh key this uses to reach the router, the domain’s certificate, the key in the published ban list’s URL and every account’s password as it is kept here.",
    "text": "Soubor bude obsahovat heslo k routeru, servisní heslo adresáře, soukromou část ssh klíče, kterým se připojuje k routeru, certifikát domény, klíč v URL zveřejněného seznamu blokací a heslo každého účtu tak, jak je zde uloženo."
@@ -26135,6 +26471,10 @@
   "s.the-files-the-file-policy-saw.da9dd9e5": {
    "source": "The files the file policy saw cross, by what the cloud said of them and by type.",
    "text": "Soubory, které souborová politika viděla projít, podle toho, co o nich řekl cloud, a podle typu."
+  },
+  "s.the-files-under-etc-logrotate-d.447539a1": {
+   "source": "The files under /etc/logrotate.d that name these folders. logrotate refuses two files that take the same log - and refuses the whole run over it, not just the one file.",
+   "text": "Soubory v /etc/logrotate.d, které tyto složky jmenují. logrotate odmítne dva soubory, které berou stejný log – a odmítne kvůli tomu celý běh, nejen ten jeden soubor."
   },
   "s.the-firewall-and-the-lists-of.0df5f6e5": {
    "source": "The firewall and the lists of who may reach which page go back to what they were before the change.",
@@ -26195,6 +26535,14 @@
   "s.the-firewall-s-clock-to-the.1c1478e4": {
    "source": "the firewall’s clock, to the nanosecond",
    "text": "hodiny firewallu, na nanosekundu"
+  },
+  "s.the-firewall-s-days-made-ready.a8d65db3": {
+   "source": "the firewall’s days made ready",
+   "text": "připravené dny firewallu"
+  },
+  "s.the-firewall-s-lines-counted-ahead.f2d39436": {
+   "source": "the firewall’s lines, counted ahead of time",
+   "text": "řádky firewallu, sečtené předem"
   },
   "s.the-firewall-s-number-for-the.1b012b45": {
    "source": "the firewall’s number for the session",
@@ -27740,6 +28088,10 @@
    "source": "The performance meter in the header",
    "text": "Měřič výkonu v záhlaví"
   },
+  "s.the-performance-meter.49051154": {
+   "source": "the performance meter",
+   "text": "performance meter"
+  },
   "s.the-person-s-own-address.ea0a9fe5": {
    "source": "The person’s own address",
    "text": "Vlastní adresa uživatele"
@@ -28128,6 +28480,10 @@
    "source": "the rest of INPUT",
    "text": "zbytek INPUT"
   },
+  "s.the-rest-toast-maps.9f10155b": {
+   "source": "the rest (TOAST, maps)",
+   "text": "ostatní (TOAST, mapy)"
+  },
   "s.the-reverse-zone-calls-this-address.a7d81e30": {
    "source": "The reverse zone calls this address",
    "text": "Reverzní zóna tuto adresu nazývá"
@@ -28207,6 +28563,10 @@
   "s.the-routing-mark-mikrotik.4d69ca82": {
    "source": "the routing mark (MikroTik)",
    "text": "značka směrování (MikroTik)"
+  },
+  "s.the-rows-themselves.45ddd440": {
+   "source": "The rows themselves",
+   "text": "Samotné řádky"
   },
   "s.the-rule-it-weighs-by.412ff0ea": {
    "source": "The rule it weighs by",
@@ -28536,6 +28896,10 @@
    "source": "the size of the packet (bytes)",
    "text": "velikost paketu (bajty)"
   },
+  "s.the-slots-and-how-far-behind.e42c2653": {
+   "source": "The slots, and how far behind each is:",
+   "text": "Sloty a jak daleko je každý pozadu:"
+  },
   "s.the-socket-it-came-in-on.38a28c7a": {
    "source": "The socket it came in on, and the switch it is a socket ON: there is a GigabitEthernet1/0/16 on every switch in the building, so the port on its own is not a place. Point at it for the switch’s own address.",
    "text": "Zásuvka, kterou přišel, a switch, NA kterém tato zásuvka je: GigabitEthernet1/0/16 je na každém switchi v budově, takže samotný port ještě není místo. Najetím myší zobrazíte vlastní adresu switche."
@@ -28579,6 +28943,10 @@
   "s.the-state-of-its-connection-as.4aad1e77": {
    "source": "the state of its connection, as the router tracks it (MikroTik)",
    "text": "stav spojení, jak ho router sleduje (MikroTik)"
+  },
+  "s.the-story-of-every-ban.134e3024": {
+   "source": "the story of every ban",
+   "text": "historie každého banu"
   },
   "s.the-strongest-old-systems-and-some.a70ed9ef": {
    "source": "The strongest; old systems and some scanners cannot connect.",
@@ -28631,6 +28999,10 @@
   "s.the-table-for-the-countries-opnsense.7bae6486": {
    "source": "The table for the countries (OPNsense, pfSense)",
    "text": "Tabulka pro země (OPNsense, pfSense)"
+  },
+  "s.the-tables-biggest-first.28072a32": {
+   "source": "The tables, biggest first",
+   "text": "Tabulky, největší první"
   },
   "s.the-tac-plus-logs.65365eb3": {
    "source": "The tac_plus logs",
@@ -29348,6 +29720,10 @@
    "source": "There is no clock on this one. It stays until somebody takes it off.",
    "text": "Tato blokace nemá časový limit. Platí, dokud ji někdo neodebere."
   },
+  "s.there-is-no-folder-there-or.f9130503": {
+   "source": "There is no folder there, or it cannot be read.",
+   "text": "Žádná složka tam není, nebo ji nelze přečíst."
+  },
   "s.there-is-no-iptables-on-this.21f22380": {
    "source": "There is no iptables on this machine.",
    "text": "Na tomto stroji není iptables."
@@ -30040,6 +30416,10 @@
    "source": "those events, counted ahead of time for the Domain page",
    "text": "tyto události, předpočítané pro stránku Doména"
   },
+  "s.those-events-counted-ahead-of-time.c955f561": {
+   "source": "those events, counted ahead of time",
+   "text": "tyto události, sečtené předem"
+  },
   "s.those-lines-counted-ahead-of-time.ecfeb6c2": {
    "source": "those lines, counted ahead of time for the Traffic page",
    "text": "tyto řádky, předpočítané pro stránku Provoz"
@@ -30171,6 +30551,10 @@
   "s.ticked-a-request-and-its-answer.62d5f68e": {
    "source": "ticked. A request and its answer are two lines, and they are read together: the answer says yes or no and why, and only the request says which socket, which radio and which MAC. The switches' own \"is the server there\" probes are recognised and left out.",
    "text": "zaškrtnuto. Požadavek a odpověď na něj jsou dva řádky a čtou se společně: odpověď říká ano či ne a proč a jen požadavek říká, která zásuvka, které rádio a která MAC. Vlastní testy switchů „je server dostupný“ se rozpoznají a vynechají."
+  },
+  "s.tidied-without-locking-it-as-the.03fefc6b": {
+   "source": "Tidied without locking it (as the postgres user):",
+   "text": "Uklizení bez zamčení tabulky (jako uživatel postgres):"
   },
   "s.tidy-the-database-afterwards-so-the.217e826a": {
    "source": "Tidy the database afterwards so the space actually goes back to the disk. None of the three give room back by themselves when rows are deleted — it is reused inside instead. It takes as long again as the erasing did and needs as much free space as the database is big.",
@@ -30712,6 +31096,10 @@
    "source": "Two files per server are read, and they say different things. The",
    "text": "Z každého serveru se čtou dva soubory a každý říká něco jiného. Soubor"
   },
+  "s.two-files-take-it.118cb854": {
+   "source": "two files take it",
+   "text": "berou ho dva soubory"
+  },
   "s.two-firewalls-in-high-availability-and.1d80b554": {
    "source": "Two firewalls in high availability, and whether they are carrying the same addresses of ours. That is the whole question a pair raises: whichever of them takes the traffic next has to already hold everything the other is dropping, so one of them being behind is one of them about to let somebody in. They are written to in the same pass, so this should say they agree; if it does not, a sync puts it right and the line for each of them says whether it was reachable.",
    "text": "Dva firewally ve vysoké dostupnosti a zda nesou stejné naše adresy. To je jediná otázka, kterou dvojice přináší: ten, který příště převezme provoz, musí už mít vše, co ten druhý zahazuje, takže když jeden zaostává, chystá se jeden z nich někoho pustit dovnitř. Zapisuje se do nich v jednom průchodu, takže by zde mělo stát, že se shodují; pokud ne, synchronizace to napraví a řádek u každého z nich říká, zda byl dostupný."
@@ -31168,6 +31556,10 @@
    "source": "Used here to open it, and not kept.",
    "text": "Použije se jen k otevření a neukládá se."
   },
+  "s.used.02c0e4a1": {
+   "source": "Used",
+   "text": "Použit"
+  },
   "s.user-name-and-password-fortigate.2cbe0c9b": {
    "source": "User name and password (FortiGate)",
    "text": "Uživatelské jméno a heslo (FortiGate)"
@@ -31223,6 +31615,10 @@
   "s.usr.bd2fd56e": {
    "source": "usr",
    "text": "usr"
+  },
+  "s.usually-a-replication-slot-nobody-reads.9b705e0c": {
+   "source": "Usually a replication slot nobody reads, or archiving that fails.",
+   "text": "Obvykle replikační slot, který nikdo nečte, nebo archivace, která selhává."
   },
   "s.utc.bdfd4d8d": {
    "source": "UTC",
@@ -31772,6 +32168,14 @@
    "source": "What failed with this peer, last 24 h",
    "text": "Co selhalo s touto protistranou, posledních 24 h"
   },
+  "s.what-fills-the-disks-each-disk.afd48e5e": {
+   "source": "What fills the disks: each disk and what is on it, the logs that arrive over syslog folder by folder and whether logrotate takes every one, and inside the database each table and index - what looks wrong said at the top, with the steps that put it right.",
+   "text": "Co zaplňuje disky: každý disk a co na něm je, logy přicházející přes syslog složku po složce a zda je logrotate bere všechny, a uvnitř databáze každá tabulka a index – co vypadá špatně, řečeno nahoře, s kroky, které to napraví."
+  },
+  "s.what-fills-the-disks-of-this.6635535a": {
+   "source": "What fills the disks of this server, measured rather than guessed: each disk and what is on it, the logs that arrive over syslog folder by folder - and whether a logrotate file takes every one of them - and inside the database each table and index. What looks wrong is said first, with the steps that put it right.",
+   "text": "Co zaplňuje disky tohoto serveru, změřené, ne odhadnuté: každý disk a co na něm je, logy přicházející přes syslog složku po složce – a zda je některý soubor logrotate bere všechny – a uvnitř databáze každá tabulka a index. Co vypadá špatně, je řečeno první, s kroky, které to napraví."
+  },
   "s.what-freeradius-said-to-the-machines.df6c5e69": {
    "source": "What FreeRADIUS said to the machines that were refused and did NOT get on afterwards.",
    "text": "Co FreeRADIUS řekl strojům, které byly odmítnuty a pak se dovnitř NEDOSTALY."
@@ -32039,6 +32443,10 @@
   "s.what-level-1-is-to-bogons.cc68d931": {
    "source": "What level 1 is to bogons, this is to the last two days: addresses caught attacking somebody in that window. Nineteen thousand ranges, and the first of these where a false positive is possible at all - somebody on a dynamic address that was abused yesterday can be on it.",
    "text": "Čím je level 1 pro bogony, tím je tento pro poslední dva dny: adresy přistižené při útoku na někoho v tomto okně. Devatenáct tisíc rozsahů a první z nich, kde je falešný poplach vůbec možný – na seznamu může být někdo na dynamické adrese, která byla včera zneužita."
+  },
+  "s.what-logrotate-says-when-it-is.e9310270": {
+   "source": "What logrotate says when it is run by hand:",
+   "text": "Co logrotate řekne, když ho spustíte ručně:"
   },
   "s.what-made-this-ban-a-source.4ad2c9f6": {
    "source": "What made this ban. A source switched off under Settings → Banning is struck through; the ban is carried while any of its sources is on.",
@@ -32344,6 +32752,10 @@
    "source": "what the policy does",
    "text": "co politika dělá"
   },
+  "s.what-the-program-notes-down.812d63a7": {
+   "source": "what the program notes down",
+   "text": "co si program poznamenává"
+  },
   "s.what-the-radius-server-said-about.5a9190df": {
    "source": "What the RADIUS server said about this attempt.",
    "text": "Co o tomto pokusu řekl RADIUS server."
@@ -32519,6 +32931,10 @@
   "s.what-to-call-this-installation.30fb2126": {
    "source": "What to call this installation",
    "text": "Název této instalace"
+  },
+  "s.what-to-put-right.957bbe1c": {
+   "source": "What to put right",
+   "text": "Co napravit"
   },
   "s.what-was-asked.1189b54f": {
    "source": "What was asked",
@@ -33092,6 +33508,10 @@
    "source": "whether it is a server",
    "text": "zda jde o server"
   },
+  "s.whether-it-runs-at-all.960f456a": {
+   "source": "Whether it runs at all:",
+   "text": "Zda vůbec běží:"
+  },
   "s.whether-it-worked.56538fdb": {
    "source": "whether it worked",
    "text": "zda to fungovalo"
@@ -33427,6 +33847,10 @@
   "s.which-knows-when-summer-time-starts.7612cd81": {
    "source": ", which knows when summer time starts — or as a fixed offset:",
    "text": ", který ví, kdy začíná letní čas — nebo jako pevný posun:"
+  },
+  "s.which-logrotate-files-take-them.d8b1bc41": {
+   "source": "Which logrotate files take them",
+   "text": "Které soubory logrotate je berou"
   },
   "s.which-machine-which-program-and-how.c2b4c779": {
    "source": "Which machine, which program, and how many refusals came before it. Press one for the whole story.",
@@ -34220,6 +34644,10 @@
    "source": "working",
    "text": "pracuje se"
   },
+  "s.worth-knowing.80df1ce8": {
+   "source": "worth knowing",
+   "text": "stojí za vědomí"
+  },
   "s.worth-looking-at.052b9d44": {
    "source": "Worth looking at",
    "text": "Stojí za pozornost"
@@ -34239,6 +34667,10 @@
   "s.wraps-the-whole-connection-which-is.9f2bc416": {
    "source": "wraps the whole connection, which is what most sites use.",
    "text": "obalí celé spojení, což používá většina pracovišť."
+  },
+  "s.write-ahead-log.bd375d03": {
+   "source": "Write-ahead log",
+   "text": "Write-ahead log"
   },
   "s.write-down-every-command-sent-to.0cbb650c": {
    "source": "Write down: every command sent to a firewall",
@@ -34364,6 +34796,10 @@
    "source": "year",
    "text": "rok"
   },
+  "s.years.e21ee77d": {
+   "source": "years",
+   "text": "roky"
+  },
   "s.yemen.ac33d641": {
    "source": "Yemen",
    "text": "Jemen"
@@ -34482,6 +34918,10 @@
    "source": "a copy was made: {0} ({1})",
    "text": "byla vytvořena kopie: {0} ({1})"
   },
+  "p.a-day-between-them-about-on.604cfabe": {
+   "source": "{0}: {1} a day between them, about {2} on the disk once every copy is there (today's, yesterday's whole and the rest packed). isemon reads the live file as it is written and keeps what it needs in the database, for as long as its own settings say; the copies are for anybody who wants the raw lines.",
+   "text": "{0}: dohromady {1} denně, zhruba {2} na disku, až tam budou všechny kopie (dnešní, celá včerejší a zbytek zabalený). isemon čte živý soubor, jak se zapisuje, a co potřebuje, drží v databázi tak dlouho, jak říká jeho vlastní nastavení; kopie jsou pro toho, kdo chce surové řádky."
+  },
   "p.a-day-from-midnight-utc.53e73894": {
    "source": "– {0} (a day from midnight UTC)",
    "text": "– {0} (den od půlnoci UTC)"
@@ -34581,6 +35021,10 @@
   "p.about-a-hundred-megabytes-compressed-from.18b672b7": {
    "source": "About a hundred megabytes, compressed, from db-ip’s free monthly list. It replaces everything currently held rather than adding to it, so what is left afterwards is one month’s answer and not several stacked up. It takes a minute or two.{0}",
    "text": "Asi sto megabajtů, komprimovaně, z bezplatného měsíčního seznamu db-ip. Nahradí vše, co je aktuálně uloženo, místo aby se přidávalo, takže potom zůstane odpověď za jeden měsíc, ne několik nahromaděných. Trvá to minutu nebo dvě.{0}"
+  },
+  "p.about-kept.a66b45f5": {
+   "source": "about {0} kept",
+   "text": "drží se zhruba {0}"
   },
   "p.about-left.3bdf2e03": {
    "source": "About {0} left.",
@@ -34826,6 +35270,10 @@
    "source": "Back to the first page of this list.{0}",
    "text": "Zpět na první stránku tohoto seznamu.{0}"
   },
+  "p.back.f18efe73": {
+   "source": "{0} back",
+   "text": "{0} zpět"
+  },
   "p.backups-at.efc2ad31": {
    "source": "Backups at {0}",
    "text": "Zálohy v {0}"
@@ -34882,6 +35330,10 @@
    "source": "Between the peer’s networks and anywhere, the last 24 h: {0} line(s), {1}.",
    "text": "Mezi sítěmi protistrany a kamkoli, posledních 24 h: {0} {0:řádek|řádky|řádků}, {1}."
   },
+  "p.big-sender-s-kept-days.1f38fc48": {
+   "source": "{0} big sender(s) kept {1} days",
+   "text": "{0} velkých odesílatelů drženo {1} dní"
+  },
   "p.blocked-limit-1-parts-bans-counting.3fed2073": {
    "source": "blocked&limit=1&parts=bans&counting={0}",
    "text": "blocked&limit=1&parts=bans&counting={0}"
@@ -34926,6 +35378,10 @@
    "source": ", {0} carried",
    "text": ", {0} přeneseno"
   },
+  "p.cat-eof.fde6c453": {
+   "source": "cat > {0} <<'EOF'",
+   "text": "cat > {0} <<'EOF'"
+  },
   "p.certificates-targets.b6b5d6a9": {
    "source": "{0} certificates · {1} targets · {2}",
    "text": "{0} certifikátů · {1} cílů · {2}"
@@ -34953,6 +35409,10 @@
   "p.chgrp-chmod-2770.ebca226b": {
    "source": "chgrp {0} {1} && chmod 2770 {2}",
    "text": "chgrp {0} {1} && chmod 2770 {2}"
+  },
+  "p.chmod-644.e1195f46": {
+   "source": "chmod 644 {0}",
+   "text": "chmod 644 {0}"
   },
   "p.cisco-ise-vpn-banning-on-sign.ebada63e": {
    "source": "Cisco ISE VPN banning on {0}. Sign in to go on.",
@@ -35054,6 +35514,10 @@
    "source": "CPU {0} · {1}",
    "text": "CPU {0} · {1}"
   },
+  "p.create.8c4c751d": {
+   "source": "create {0}",
+   "text": "create {0}"
+  },
   "p.curl-fss-u-password.6b89dd51": {
    "source": "curl -fsS -u '{0}:PASSWORD'",
    "text": "curl -fsS -u '{0}:PASSWORD'"
@@ -35102,9 +35566,21 @@
    "source": "{0} days",
    "text": "{0} {0:den|dny|dní}"
   },
+  "p.days.b291297d": {
+   "source": "× {0} days",
+   "text": "× {0} dní"
+  },
   "p.db-ms.db6d5710": {
    "source": "· DB {0} ms",
    "text": "· DB {0} ms"
+  },
+  "p.dead-rows-in.ea13ec51": {
+   "source": "Dead rows in {0}",
+   "text": "Mrtvé řádky v {0}"
+  },
+  "p.dead.e09cfed4": {
+   "source": "{0} % dead",
+   "text": "{0} % mrtvých"
   },
   "p.delete-this.62446462": {
    "source": "Delete this {0}?",
@@ -35386,9 +35862,21 @@
    "source": "fetched {0}",
    "text": "staženo {0}"
   },
+  "p.fewer-copies-where-they-are-not.51b90f88": {
+   "source": "Fewer copies, where they are not wanted: `rotate` lower in {0} - each one is a day where it says daily.",
+   "text": "Méně kopií, kde nejsou potřeba: nižší `rotate` v {0} – každá je jeden den, kde je daily."
+  },
   "p.field-s.fcb6d13f": {
    "source": "{0} field(s)",
    "text": "{0} {0:pole|pole|polí}"
+  },
+  "p.file-s-there-are-taken-by.09f22f35": {
+   "source": "{0} file(s) there are taken by {1}. logrotate refuses the WHOLE run over that (\"duplicate log entry\"): nothing at all is rotated until one of them lets go.",
+   "text": "{0} soubor(ů) tam berou {1}. logrotate kvůli tomu odmítne CELÝ běh („duplicate log entry“): nerotuje se vůbec nic, dokud jeden z nich nepustí."
+  },
+  "p.file-s.50b331de": {
+   "source": "{0} file(s)",
+   "text": "{0} soubor(ů)"
   },
   "p.files.9c31d439": {
    "source": "· {0} files",
@@ -35401,6 +35889,14 @@
   "p.filling-on-the-router.cf0d201e": {
    "source": "Filling {0} on the router",
    "text": "Plní se {0} na routeru"
+  },
+  "p.fills-a-day-at-the-rate.204033ac": {
+   "source": "fills {0} a day at the rate measured",
+   "text": "přibývá {0} denně podle naměřené rychlosti"
+  },
+  "p.find-type-f-regextype-posix-extended.62c57bdc": {
+   "source": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +",
+   "text": "find {0} -type f -regextype posix-extended -regex '.*(\\.[0-9]+|-[0-9](8))$' -mtime +3 -exec gzip -6 () +"
   },
   "p.fine-to-look-at.a6d06684": {
    "source": "{0} fine · {1} to look at",
@@ -35421,6 +35917,10 @@
   "p.folded.f183f6ed": {
    "source": "folded ×{0}",
    "text": "sloučeno ×{0}"
+  },
+  "p.folder-s-of-logs-that-nothing.4da8f949": {
+   "source": "{0} folder(s) of logs that nothing rotates",
+   "text": "{0} složek logů, které nic nerotuje"
   },
   "p.for-each-sort-so-that-the.3743e42d": {
    "source": "for each sort, so that the pages’ summaries are not sorted on disk - kept small enough for {0} connections at once",
@@ -35450,6 +35950,10 @@
    "source": "{0} — found by {1} and written down then; nothing is being checked while it stands. The page is asking the events themselves, so nothing it shows is wrong, only slower.",
    "text": "{0} — zjištěno {1} a tehdy zaznamenáno; dokud to platí, nic se nekontroluje. Stránka se ptá přímo událostí, takže nic z toho, co ukazuje, není špatně, jen je to pomalejší."
   },
+  "p.free-a-day-going-on-to.4feba5e6": {
+   "source": "{0} free, {1} a day going on to it{2}. The most of what is ours on it is {3} ({4}).",
+   "text": "{0} volných, přibývá {1} denně{2}. Z našeho na něm nejvíc zabírá {3} ({4})."
+  },
   "p.free-of-on.d544faa8": {
    "source": "free of {0} on",
    "text": "volno {0} na"
@@ -35477,6 +35981,14 @@
   "p.from.dc2a3882": {
    "source": ", from {0}",
    "text": ", z {0}"
+  },
+  "p.full.7398440f": {
+   "source": "full {0}",
+   "text": "plný {0}"
+  },
+  "p.full.f1962731": {
+   "source": "- full {0}",
+   "text": "– plný {0}"
   },
   "p.fw-vpn-list-1-q-climit.14bbdaae": {
    "source": "fw-vpn&list=1{0}&q={1}&climit={2}&coffset={3}&tlimit={4}&toffset={5}",
@@ -35642,6 +36154,14 @@
    "source": "in a log is asked of this directory. It answers for: {0}. That list is what the directory itself says, so nothing has to be typed here — and where it says nothing, the domains under it may be named by hand in the setting beside it.",
    "text": "v logu se dotazuje tohoto adresáře. Odpovídá za: {0}. Tento seznam uvádí adresář sám, takže zde není třeba nic vypisovat — a kde neuvádí nic, lze domény pod ním zadat ručně v nastavení vedle."
   },
+  "p.in-about-day-s.9e6a19cb": {
+   "source": "in about {0} day(s)",
+   "text": "zhruba za {0} dní"
+  },
+  "p.in-about-days.2e36d555": {
+   "source": "in about {0} days",
+   "text": "zhruba za {0} dní"
+  },
   "p.in-all.2340de74": {
    "source": "{0} in all",
    "text": "{0} celkem"
@@ -35650,9 +36170,17 @@
    "source": "{0}{1} in all",
    "text": "{0}{1} celkem"
   },
+  "p.in-copies-older-than-three-days.1c3d0eb9": {
+   "source": "{0} in copies older than three days that were never compressed ({1}). Syslog text packs ten to twenty times over.",
+   "text": "{0} v kopiích starších než tři dny, které nikdy nebyly zabaleny ({1}). Text syslogu se zabalí deseti- až dvacetinásobně."
+  },
   "p.in-days.0e70e686": {
    "source": "in {0} days",
    "text": "za {0} dní"
+  },
+  "p.in-no-logrotate-file-takes-these.52724574": {
+   "source": "{0} in {1}: no logrotate file takes these files, so they only ever grow. A site whose logrotate files list their folders one by one has this the day a new sender is added.",
+   "text": "{0} ve složkách {1}: žádný soubor logrotate tyto soubory nebere, takže jen rostou. Kde soubory logrotate vyjmenovávají složky po jedné, stane se to v den, kdy přibude nový odesílatel."
   },
   "p.in-of-the-newest-2-000.dc586fdc": {
    "source": "in {0} of the newest 2,000",
@@ -35693,6 +36221,10 @@
   "p.in-what-gets-erased-ticking-it.ba0da6d6": {
    "source": "in what gets erased — {0} Ticking it does nothing on its own: nothing goes until the button at the bottom of this card is pressed, and it says what it is about to erase first.",
    "text": "do toho, co se vymaže — {0} Zaškrtnutí samo nic neudělá: nic se nesmaže, dokud nestisknete tlačítko dole na této kartě, a to nejdřív řekne, co se chystá vymazat."
+  },
+  "p.index-es-over-a-gigabyte-the.781dbfc1": {
+   "source": "{0} index(es) over a gigabyte the server has never been asked through since its counters were last reset. They are there for searches somebody may make (a source address, a port); nothing needs doing unless room is short.",
+   "text": "{0} index(ů) přes gigabajt, přes které se server od posledního vynulování počítadel nikdy nehledal. Jsou tu pro hledání, které někdo může udělat (zdrojová adresa, port); dokud nechybí místo, není potřeba nic dělat."
   },
   "p.inside-as.f514cadb": {
    "source": ", inside as {0}",
@@ -35745,6 +36277,10 @@
   "p.ipv4-range-s-ipv6.da793d96": {
    "source": "{0} IPv4 range(s), {1} IPv6",
    "text": "{0} rozsahů IPv4, {1} IPv6"
+  },
+  "p.is-and-the-newest-copy-is.4cd99648": {
+   "source": "{0} is {1} and the newest copy is {2}. logrotate may not be running, or may be stopping on an error elsewhere.",
+   "text": "{0} má {1} a nejnovější kopie je {2}. logrotate možná neběží, nebo se zastavuje na chybě jinde."
   },
   "p.is-banned.64ffdb11": {
    "source": "{0} is banned {1}",
@@ -35962,6 +36498,10 @@
    "source": "kept {0} day(s) for what was let through and {1} day(s) for the rest",
    "text": "uchováváno {0} {0:den|dny|dní} pro propuštěné a {1} {1:den|dny|dní} pro ostatní"
   },
+  "p.kept-day-s-they-stay-counted.fcbdc076": {
+   "source": "{0}, kept {1} day(s). They stay counted on the Traffic cards and chart however long the rows are kept; only the rows themselves go sooner.",
+   "text": "{0}, drží se {1} den/dní. Na kartách a grafu Traffic zůstávají sečtená, ať se řádky drží jakkoli dlouho; dřív odcházejí jen samotné řádky."
+  },
   "p.kept-out.0d107b01": {
    "source": "{0} kept out",
    "text": "{0} zablokováno"
@@ -36134,6 +36674,14 @@
    "source": "list-{0}",
    "text": "list-{0}"
   },
+  "p.live-copies-packed.560870e5": {
+   "source": "live {0} · copies {1} · packed {2}",
+   "text": "živé {0} · kopie {1} · zabalené {2}"
+  },
+  "p.live-copies.60b12a57": {
+   "source": "{0} live · {1} copies",
+   "text": "{0} živých · {1} kopií"
+  },
   "p.load.4951c424": {
    "source": "· load {0}",
    "text": "· load {0}"
@@ -36158,9 +36706,17 @@
    "source": "logon type {0}",
    "text": "typ přihlášení {0}"
   },
+  "p.logs-over-syslog-in-folder-s.3d8ba3d0": {
+   "source": "logs over syslog {0} in {1} folder(s)",
+   "text": "logy přes syslog {0} v {1} složkách"
+  },
   "p.look-up-the-names-behind-address.24829cd3": {
    "source": "Look up the names behind {0} address(es)?",
    "text": "Vyhledat jména za {0} adresami?"
+  },
+  "p.looked-at.b224db85": {
+   "source": "{0} looked at",
+   "text": "prohlédnuto {0}"
   },
   "p.looked-back-to-in-the-time.378cbc82": {
    "source": "· looked back to {0} in the time a search is given — a shorter window, or a field (an address, a port, a kind), looks further",
@@ -36169,6 +36725,10 @@
   "p.looked-up.51c1045d": {
    "source": "{0} looked up",
    "text": "{0} vyhledáno"
+  },
+  "p.looked.4a850310": {
+   "source": "looked {0}{1}",
+   "text": "prohlédnuto {0}{1}"
   },
   "p.looked.bff935ee": {
    "source": "Looked {0}: {1}",
@@ -36209,6 +36769,10 @@
   "p.matching.4c24fab9": {
    "source": "{0} matching",
    "text": "{0} odpovídá"
+  },
+  "p.maxsize.dd53687e": {
+   "source": "maxsize {0}",
+   "text": "maxsize {0}"
   },
   "p.may-come-back.715ae92b": {
    "source": "{0} may come back",
@@ -36546,6 +37110,22 @@
    "source": "{0}% — {1} of {2} day(s) counted.",
    "text": "{0} % — spočítáno {1} z {2} dní."
   },
+  "p.of-dumps-on-a-disk-with.c9686f16": {
+   "source": "{0} of dumps on a disk with {1} free.",
+   "text": "{0} dumpů na disku, kde je volných {1}."
+  },
+  "p.of-indexes-not-used-yet.8cf24bcb": {
+   "source": "{0} of indexes not used yet",
+   "text": "{0} indexů zatím nepoužitých"
+  },
+  "p.of-it.41942cb7": {
+   "source": "{0} % of it",
+   "text": "{0} % z toho"
+  },
+  "p.of-its-rows-are-dead-room.8c665e7c": {
+   "source": "{0} of its {1} rows are dead - room the server can reuse but has not given back. Autovacuum may be behind.",
+   "text": "{0} z jejích {1} řádků je mrtvých – místo, které server může znovu použít, ale nevrátil ho. Autovacuum možná nestíhá."
+  },
   "p.of-logs-cannot-be-read.a9159451": {
    "source": "{0} of {1} logs cannot be read",
    "text": "{0} z {1} logů nelze přečíst"
@@ -36609,6 +37189,10 @@
   "p.of-these-refusal-s-are-in.0c831b45": {
    "source": "{0} of these {1} refusal(s) are in {2}’s own log, at the same moment and under the same name: {3} asked the domain about them.",
    "text": "{0} z těchto {1} odmítnutí je ve vlastním logu {2}, ve stejném okamžiku a pod stejným jménem: {3} se na ně ptal domény."
+  },
+  "p.of-used-free.6cea0618": {
+   "source": "{0} of {1} used · {2} free",
+   "text": "{0} z {1} obsazeno · {2} volných"
   },
   "p.of-web-filter-line-s.28a1e29b": {
    "source": "of {0} web filter line(s)",
@@ -36842,6 +37426,10 @@
    "source": "{0}port",
    "text": "{0}port"
   },
+  "p.postgresql-keeps-of-wal.e3e10df3": {
+   "source": "PostgreSQL keeps {0} of WAL",
+   "text": "PostgreSQL drží {0} WAL"
+  },
   "p.ppm.6e6ed187": {
    "source": "{0} ppm",
    "text": "{0} ppm"
@@ -36925,6 +37513,10 @@
   "p.range-s.15dbb7b0": {
    "source": "{0} range(s)",
    "text": "{0} {0:rozsah|rozsahy|rozsahů}"
+  },
+  "p.read-by.802ef7b9": {
+   "source": "read by {0}",
+   "text": "čte {0}"
   },
   "p.read-file-s-more-can-be.bf389582": {
    "source": "Read: {0} file(s). More can be added.",
@@ -37038,6 +37630,10 @@
    "source": "({0}). Root, or an account allowed to run",
    "text": "({0}). Root, nebo účet, který smí spouštět"
   },
+  "p.rotate.0979bdf7": {
+   "source": "rotate {0}",
+   "text": "rotate {0}"
+  },
   "p.router.4276eea5": {
    "source": "router-{0}",
    "text": "router-{0}"
@@ -37061,6 +37657,14 @@
   "p.row-s.1a4ac2d9": {
    "source": "{0} row(s)",
    "text": "{0} {0:řádek|řádky|řádků}"
+  },
+  "p.rows-indexes-the-rest.834ea75a": {
+   "source": "rows {0} · indexes {1} · the rest {2}",
+   "text": "řádky {0} · indexy {1} · ostatní {2}"
+  },
+  "p.rows.1b97d070": {
+   "source": "{0} rows",
+   "text": "{0} řádků"
   },
   "p.rsyslog.81d686b1": {
    "source": "rsyslog {0}{1}",
@@ -37614,6 +38218,10 @@
    "source": "the database would not answer: {0}",
    "text": "databáze neodpověděla: {0}"
   },
+  "p.the-database.1d6b90db": {
+   "source": "the database {0}",
+   "text": "databáze {0}"
+  },
   "p.the-device.17a13524": {
    "source": "the device {0}",
    "text": "zařízení {0}"
@@ -37633,6 +38241,18 @@
   "p.the-directory-says-this-password-was.2b35e979": {
    "source": "The directory says this password was due to be changed on {0}.",
    "text": "Podle adresáře mělo být toto heslo změněno {0}."
+  },
+  "p.the-disk-full-free.d3c3de92": {
+   "source": "the disk {0} {1} % full, {2} free{3}",
+   "text": "disk {0} plný na {1} %, volných {2}{3}"
+  },
+  "p.the-disk-is-full.5db6c87a": {
+   "source": "The disk {0} is {1}% full",
+   "text": "Disk {0} je plný na {1} %"
+  },
+  "p.the-disk-will-be-full.7c7b6634": {
+   "source": "The disk {0} will be full {1}",
+   "text": "Disk {0} bude plný {1}"
   },
   "p.the-domain-page-is-drawn-from.bb14dd54": {
    "source": "The Domain page is drawn from {0} counted row(s) for {1} event(s){2}. It has agreed with the events {3} time(s) since it was proved, and it is read back against them every hour{4}.",
@@ -37758,6 +38378,10 @@
    "source": "the log could not be read: {0}",
    "text": "log nelze přečíst: {0}"
   },
+  "p.the-logs-of-are-taken-by.b145b7e1": {
+   "source": "The logs of {0} are taken by logrotate but not being rotated",
+   "text": "Logy {0} bere logrotate, ale nerotují se"
+  },
   "p.the-machine-has-free-now-too.83e3683c": {
    "source": "the machine has {0} free now, too little for shared_buffers of {1} - restarted now, PostgreSQL might not start. Free some memory, or put back as it was",
    "text": "stroj má teď volných {0}, na shared_buffers {1} to nestačí – po restartu by se PostgreSQL nemusel spustit. Uvolněte paměť, nebo vraťte původní nastavení"
@@ -37853,6 +38477,10 @@
   "p.the-server-said.119a39ef": {
    "source": "the server said {0}",
    "text": "server odpověděl {0}"
+  },
+  "p.the-sessions-the-firewall-let-through.ee2f1918": {
+   "source": "The sessions the firewall let through are {0}% of the database",
+   "text": "Spojení, která firewall pustil, tvoří {0} % databáze"
   },
   "p.the-settings-that-say-which-database.70b1cc78": {
    "source": "the settings that say which database to use live in {0}, and this daemon could not write it ({1}). On the machine, as root: chgrp {2} {3} && chmod 2770 {4} mkdir -p /etc/systemd/system/isemon.service.d printf '[Service]\\nReadWritePaths={5}\\n' > /etc/systemd/system/isemon.service.d/config-write.conf systemctl daemon-reload && systemctl restart isemon Or change it from the command line instead, which writes the file as root: isemon --set db_engine=... --set db_host=...",
@@ -37965,6 +38593,14 @@
   "p.they-are-files-on-this-machine.02b17687": {
    "source": "They are files on this machine, under {0}. Copy them off it if they are to survive the machine.",
    "text": "Jsou to soubory na tomto serveru, v {0}. Pokud mají přežít případnou ztrátu serveru, zkopírujte je jinam."
+  },
+  "p.thing-s-to-put-right.e5aab9d0": {
+   "source": "{0} thing(s) to put right",
+   "text": "{0} věcí k nápravě"
+  },
+  "p.thing-s-worth-a-look.f5677ab0": {
+   "source": "{0} thing(s) worth a look",
+   "text": "{0} věcí stojí za pohled"
   },
   "p.thing-s.868a657d": {
    "source": "{0} thing(s)",
@@ -38098,6 +38734,10 @@
    "source": "({0} times in a row)",
    "text": "({0}krát po sobě)"
   },
+  "p.times.72f0ed16": {
+   "source": "{0} times",
+   "text": "{0}×"
+  },
   "p.tls-by.0e5b3c73": {
    "source": ", TLS by {0}",
    "text": ", TLS přes {0}"
@@ -38138,6 +38778,10 @@
    "source": "· took {0} ms",
    "text": "· trvalo {0} ms"
   },
+  "p.took-s.aaf9d752": {
+   "source": "· took {0} s",
+   "text": "· trvalo {0} s"
+  },
   "p.traffic.d66528e6": {
    "source": "Traffic → {0}",
    "text": "Provoz → {0}"
@@ -38161,6 +38805,10 @@
   "p.turned-away.d1dda571": {
    "source": "turned away {0}×",
    "text": "odmítnuto {0}×"
+  },
+  "p.two-logrotate-files-take-the-logs.e6981012": {
+   "source": "Two logrotate files take the logs of {0}",
+   "text": "Logy {0} berou dva soubory logrotate"
   },
   "p.txt.dfe6ccf9": {
    "source": "{0}.txt",
@@ -38462,6 +39110,10 @@
    "source": "Working out the overview of {0}{1}…",
    "text": "Počítá se přehled za {0}{1}…"
   },
+  "p.write-this-as-etc-logrotate-d.2668a80e": {
+   "source": "Write this as /etc/logrotate.d/{0} (as root):",
+   "text": "Zapište tohle jako /etc/logrotate.d/{0} (jako root):"
+  },
   "p.written.acd887d3": {
    "source": "· written {0}",
    "text": "· zapsáno {0}"
@@ -38695,6 +39347,10 @@
   "r.being-in-this-group-means-being.9e361128": {
    "source": "Being in this group means being able to change everything: ban, unban, the router, settings, accounts. Press <b>Find the groups</b> to pick it from the directory rather than typing it. More than one, separated by semicolons.",
    "text": "Členství v této skupině znamená možnost měnit vše: blokovat, odblokovat, router, nastavení, účty. Klikněte na <b>Najít skupiny</b> a vyberte ji z adresáře místo psaní. Více skupin oddělte středníkem."
+  },
+  "r.cat-eof-chmod-644.71a882f5": {
+   "source": "cat > {0} <<'EOF'<br>{1}EOF<br>chmod 644 {2}",
+   "text": "cat > {0} <<'EOF'<br>{1}EOF<br>chmod 644 {2}"
   },
   "r.cat-etc-my-cnf-d-zz.55d31489": {
    "source": "cat > /etc/my.cnf.d/zz-isemon-tuning.cnf <<'EOF'<br>{0}EOF<br>systemctl restart mariadb",

@@ -493,6 +493,8 @@ if (isset($_GET['api'])) {
         'acmelog-checks' => '/api/acmelog/checks',
         /* The performance meter of the header (1.10.297). */
         'load'           => '/api/load',
+        /* Settings → Disk and logs (1.10.309). */
+        'storage'        => '/api/storage',
         /* Face ID as the second step (1.10.303): an account's passkeys. */
         'passkeys'       => '/api/auth/passkeys',
         /* Automatic certificates (1.10.251). */
@@ -2284,6 +2286,136 @@ function srcText(el) {
     background:var(--panel2);border:1px solid var(--line);color:var(--tx-dim)}
   .me-chip.on{border-color:rgba(163,113,247,.5);color:var(--violet)}
   .me-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  /* Settings → Disk and logs (1.10.309) */
+  #pane-storage .card{margin-bottom:14px}
+  .st-wait{color:var(--tx-dim);text-align:center;padding:28px}
+  .st-hero{display:flex;align-items:center;gap:18px;padding:20px 22px;position:relative;overflow:hidden}
+  .st-hero::before{content:'';position:absolute;inset:0;opacity:.55;pointer-events:none;
+    background:radial-gradient(120% 140% at 0% 0%,var(--hero-bg) 0%,transparent 55%)}
+  .st-hero.lvl-ok{--hero:var(--ok);--hero-bg:var(--ok-bg)}
+  .st-hero.lvl-warn{--hero:var(--warn);--hero-bg:var(--warn-bg)}
+  .st-hero.lvl-crit{--hero:var(--crit);--hero-bg:var(--crit-bg);border-color:rgba(248,81,73,.45)}
+  .st-badge{position:relative;flex:none;width:58px;height:58px;border-radius:50%;display:flex;
+    align-items:center;justify-content:center;color:var(--hero);background:var(--hero-bg);
+    box-shadow:0 0 0 1px var(--hero) inset,0 0 26px -6px var(--hero)}
+  .st-hero-w{position:relative;flex:1;min-width:0}
+  .st-hero-t{font-size:19px;font-weight:700;color:var(--tx)}
+  .st-hero-s{color:var(--tx-dim);font-size:13.5px;margin-top:3px}
+  .st-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .st-hero-side{position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .st-when{font-size:12px;color:var(--tx-mut)}
+  .st-prob{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:10px;
+    padding:13px 15px;margin-top:10px;background:var(--panel2)}
+  .st-prob.lvl-crit{border-left-color:var(--crit);background:linear-gradient(90deg,var(--crit-bg),var(--panel2) 40%)}
+  .st-prob.lvl-warn{border-left-color:var(--warn);background:linear-gradient(90deg,var(--warn-bg),var(--panel2) 40%)}
+  .st-prob-top{display:flex;align-items:center;gap:9px}
+  .st-prob-ic{display:flex;color:var(--info)}
+  .st-prob.lvl-crit .st-prob-ic{color:var(--crit)}
+  .st-prob.lvl-warn .st-prob-ic{color:var(--warn)}
+  .st-prob-t{font-weight:650;flex:1;color:var(--tx)}
+  .st-prob-s{color:var(--tx-dim);font-size:13.5px;margin:6px 0 0 27px;line-height:1.55}
+  .st-steps{margin:10px 0 0 27px;padding-left:18px;display:flex;flex-direction:column;gap:10px}
+  .st-steps li{font-size:13px;color:var(--tx-dim)}
+  .st-steps li::marker{color:var(--tx-mut);font-weight:700}
+  .st-step-say{margin-bottom:5px}
+  .st-step-or{margin:7px 0 5px;font-size:12px;color:var(--tx-mut)}
+  .st-code{position:relative;background:#0a0e14;border:1px solid var(--line);border-radius:8px}
+  .st-code pre{margin:0;padding:10px 92px 10px 12px;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#c9d1d9;white-space:pre;overflow:auto;max-height:340px}
+  .st-code .btn{position:absolute;top:7px;right:7px}
+  .st-disk h2 .mono{font-size:15px}
+  .st-bar{position:relative;display:flex;height:26px;border-radius:8px;overflow:hidden;
+    background:repeating-linear-gradient(135deg,var(--panel2) 0 7px,#191f28 7px 14px);
+    border:1px solid var(--line);margin:6px 0 12px}
+  .st-seg{height:100%;transition:width .5s ease;box-shadow:-1px 0 0 rgba(0,0,0,.35) inset}
+  .st-seg:hover{filter:brightness(1.18)}
+  .st-mark{position:absolute;top:-3px;bottom:-3px;width:0;border-left:2px dashed rgba(210,153,34,.75)}
+  .st-legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:7px 22px}
+  .st-pick{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 6px}
+  .st-pick button{appearance:none;border:0;background:transparent;color:var(--tx-dim);font:inherit;font-size:12px;
+    padding:4px 11px;cursor:pointer}
+  .st-pick button+button{border-left:1px solid var(--line)}
+  .st-pick button.on{background:var(--info-bg);color:var(--info)}
+  .st-leg{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx-dim);min-width:0}
+  .st-leg-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-leg b{color:var(--tx);font-weight:600}
+  .st-leg-p{color:var(--tx-mut);font-size:12px;width:46px;text-align:right}
+  .st-dot{width:10px;height:10px;border-radius:3px;flex:none}
+  .st-dot.free{background:repeating-linear-gradient(135deg,var(--panel2) 0 3px,#2a3240 3px 6px);border:1px solid var(--line)}
+  .st-foot{margin:10px 0 0}
+  .st-logs td{vertical-align:middle}
+  .st-logs tr.st-row{cursor:pointer}
+  .st-logs tr.st-row:hover td{background:rgba(255,255,255,.02)}
+  .st-logs tr.st-row td:first-child{border-left:3px solid transparent}
+  .st-logs tr.st-row.lvl-crit td:first-child{border-left-color:var(--crit)}
+  .st-logs tr.st-row.lvl-warn td:first-child{border-left-color:var(--warn)}
+  .st-logs tr.st-row.lvl-ok td:first-child{border-left-color:rgba(63,185,80,.5)}
+  .st-logs tr.st-row.open td{background:rgba(88,166,255,.05)}
+  .st-sub{font-size:11.5px;color:var(--tx-mut)}
+  .st-sub.bad,.note.bad{color:var(--crit)}
+  .st-file{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  td.st-sz,th.st-sz{min-width:190px}
+  .st-mini{display:inline-flex;vertical-align:middle;width:120px;height:8px;border-radius:4px;
+    background:var(--panel2);overflow:hidden;margin-right:9px}
+  .st-mini span{height:100%}
+  .st-mini .live,.st-k.live{background:var(--load)}
+  .st-mini .raw,.st-k.raw{background:#b37a3c}
+  .st-mini .pk,.st-k.pk{background:#5a4a3a}
+  .st-mini .ix{background:var(--violet)}
+  .st-szn{font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums}
+  .st-key{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--tx-mut)}
+  .st-key span{display:inline-flex;align-items:center;gap:6px}
+  .st-k{display:inline-block;width:12px;height:8px;border-radius:2px}
+  .st-k.tdata{background:var(--info)}
+  .st-k.tidx{background:var(--violet)}
+  .st-k.toth{background:#6e7681}
+  .st-more td{background:#12171e;padding:0 !important}
+  .st-more-in{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:22px;padding:14px 18px}
+  .st-more-in h4,.st-h4{margin:4px 0 8px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--tx-mut)}
+  .st-h4{margin-top:18px}
+  .st-files td{padding:4px 8px !important;font-size:12.5px}
+  .st-unc{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;
+    border-bottom:1px dashed var(--line);color:var(--crit)}
+  .st-opts{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 8px}
+  .st-lr{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+  .st-lr-f{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel2)}
+  .st-lr-n{font-weight:650;color:var(--tx);margin-bottom:6px}
+  .st-pats{font-size:12px;color:var(--tx-dim);max-height:180px;overflow:auto}
+  .st-facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin:4px 0 6px}
+  .st-fact{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel2)}
+  .st-fact-k{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--tx-mut)}
+  .st-fact-v{font-size:19px;font-weight:700;color:var(--tx);margin-top:2px}
+  .st-tabs{display:flex;flex-direction:column;gap:7px}
+  .st-tab{display:grid;grid-template-columns:minmax(150px,260px) minmax(0,1fr) 150px;gap:14px;align-items:center}
+  .st-tab-n{font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-tab-l .st-sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-tbar{display:flex;height:14px;border-radius:5px;background:var(--panel2);overflow:hidden}
+  .st-tbar span{height:100%}
+  .st-tbar .data{background:var(--info)}
+  .st-tbar .idx{background:var(--violet)}
+  .st-tbar .oth{background:#6e7681}
+  .st-tab-r{text-align:right}
+  .st-tab-r b{color:var(--tx);font-variant-numeric:tabular-nums}
+  .st-spans{display:flex;flex-direction:column;gap:6px}
+  .st-span{display:grid;grid-template-columns:150px minmax(0,1fr) 110px;gap:14px;align-items:center}
+  .st-span-n{font-size:12.5px;color:var(--tx-dim)}
+  .st-span-bar{position:relative;height:8px;border-radius:4px;background:var(--panel2)}
+  .st-span-bar span{position:absolute;top:0;bottom:0;border-radius:4px;
+    background:linear-gradient(90deg,rgba(88,166,255,.35),var(--info))}
+  @media (max-width:760px){
+    .st-hero{flex-wrap:wrap;gap:14px;padding:16px}
+    .st-badge{width:46px;height:46px}
+    .st-hero-w{flex:1 1 calc(100% - 64px)}
+    .st-hero-t{font-size:17px}
+    .st-hero-side{flex:1 1 100%;flex-direction:row;align-items:center;justify-content:space-between}
+    .st-legend{grid-template-columns:minmax(0,1fr)}
+    .st-tab{grid-template-columns:minmax(0,1fr) 110px}
+    .st-tab .st-tbar{grid-column:1 / -1;order:3}
+    .st-span{grid-template-columns:110px minmax(0,1fr)}
+    .st-span .st-sub{display:none}
+    .st-more-in{grid-template-columns:minmax(0,1fr)}
+    .st-prob-s,.st-steps{margin-left:0}
+  }
   /* The passkeys in Your account (1.10.307) */
   .me-sec .pk-keys{width:100%;margin:2px 0 4px;table-layout:fixed}
   .me-sec .pk-keys th:nth-child(1){width:30%}
@@ -5946,6 +6078,7 @@ function srcText(el) {
     <button type="button" class="admin-only" data-pane="sshkeys" data-icon="key" title="The keys that may sign in to this server as root over SSH: made here, added or taken away.">SSH keys of root</button>
     <div class="ctl-group">Data</div>
     <button type="button" data-pane="db"      data-icon="db"     title="Which database everything lives in - a file on this machine, MariaDB or PostgreSQL - how big it is, copies of it, and forgetting old records.">The database</button>
+    <button type="button" class="admin-only" data-pane="storage" data-icon="chart" title="What fills the disks: each disk and what is on it, the logs that arrive over syslog folder by folder and whether logrotate takes every one, and inside the database each table and index - what looks wrong said at the top, with the steps that put it right.">Disk and logs</button>
     <button type="button" data-pane="backup" data-icon="archive" title="Backups of everything to another machine - FTP, FTPS, SFTP, SCP, SMB or a folder - locked with a password, on a schedule, and putting one back.">Backups</button>
     <button type="button" data-pane="carry"   data-icon="download" title="Everything that makes this installation what it is, as one file to carry to another machine.">Export and import</button>
     <div class="ctl-group">Monitoring and updates</div>
@@ -7255,6 +7388,18 @@ isemon --upgrade-status                    # an upgrade started on these pages</
         how many addresses have a name at all.</p>
       <div id="ptr-state"></div>
     </div>
+  </div>
+
+  <!-- ---------- what fills the disks (1.10.309) ---------- -->
+  <div class="ctl-pane wr" id="pane-storage" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">Disk and logs</h2>
+      <p class="ctl-lede">What fills the disks of this server, measured rather than guessed: each disk
+        and what is on it, the logs that arrive over syslog folder by folder - and whether a
+        logrotate file takes every one of them - and inside the database each table and index.
+        What looks wrong is said first, with the steps that put it right.</p>
+    </div>
+    <div id="st-host"></div>
   </div>
 
   <div class="ctl-pane" id="pane-db" hidden>
@@ -30373,6 +30518,7 @@ function showPane(name, quietly) {
   if (name === 'people') loadUsers();
   if (name === 'dir' || name === 'dir2') loadDirectory();
   if (name === 'db') loadDb();
+  if (name === 'storage') loadStorage(false);
   if (name === 'fw') loadFw();
   if (name === 'tls') loadTls();
   if (name === 'proxy' && typeof drawProxy === 'function') drawProxy();
@@ -34792,6 +34938,532 @@ function hloadPickers(lsec) {
     }).catch(oops);
   }));
   lsec.appendChild(g3);
+}
+
+/* ==========================================================================
+   Settings → Disk and logs (1.10.309)
+   --------------------------------------------------------------------------
+   What fills the disks, said with numbers: each disk and what of ours is on
+   it, the logs that arrive over syslog folder by folder - and whether a
+   logrotate file takes every one of them - and inside the database each
+   table and index. What looks wrong is said at the top, worst first, each
+   with the steps that put it right, ready to copy.
+   ========================================================================== */
+var ST = {d: null, open: {}, busy: false};
+var ST_COLOURS = {db: 'var(--violet)', wal: '#c297ff', logs: 'var(--load)', dumps: 'var(--info)',
+  backups: '#39c5cf', other: '#6e7681'};
+var ST_KEY_WORDS = {db: 'the database', wal: 'its write-ahead log', logs: 'logs that arrive over syslog',
+  dumps: 'dumps of the database', backups: 'copies of the database', other: 'everything else on the disk'};
+var ST_TABLES = {win_events: 'events from the domain controllers',
+  win_rollup: 'those events, counted ahead of time',
+  fw_events: 'the firewall’s own log', fw_roll: 'the firewall’s lines, counted ahead of time',
+  fw_ready: 'the firewall’s days made ready',
+  seen_values: 'names and values for the search box', failed: 'failed attempts',
+  passed: 'successful logins', otp_asked: 'records from the token logs',
+  eduroam_seen: 'machines seen on eduroam', geo_ranges: 'country ranges',
+  feed_ranges: 'ranges from public lists', ptr: 'names behind addresses',
+  mac_vendors: 'MAC vendor registers', blocked: 'banned right now',
+  blocked_log: 'bans there have ever been', block_events: 'the story of every ban',
+  events: 'events', users: 'accounts', sessions: 'sign-ins', meta: 'what the program notes down',
+  acme_events: 'acme’s log', acme_jobs: 'acme’s jobs', load_samples: 'the performance meter',
+  fold_versions: 'foldings kept', settings: 'settings'};
+var ST_KINDS = {fw_events: {0: 'refused, and what the firewall says of itself', 1: 'sessions it let through'},
+  win_events: {0: 'everything else', 1: 'logons and the like', 2: 'reads of files'},
+  fw_roll: {3600: 'by the hour', 86400: 'by the day'}};
+function loadStorage(fresh) {
+  if (ST.busy) return;
+  ST.busy = true;
+  var host = $('st-host');
+  if (host && !ST.d) { clear(host); host.appendChild(el('div', 'card full st-wait', 'Looking at the disks, the logs and the database…')); }
+  var b = $('st-again');
+  if (b) b.disabled = true;
+  api('storage' + (fresh ? '&fresh=1' : '')).then(function (d) {
+    ST.d = d;
+    drawStorage();
+  }).catch(oops).then(function () { ST.busy = false; var b2 = $('st-again'); if (b2) b2.disabled = false; });
+}
+function stPct(a, b) { return b ? Math.max(0, Math.min(100, 100 * a / b)) : 0; }
+function stLevelWord(l) { return l === 'crit' ? 'trouble' : (l === 'warn' ? 'needs a look' : 'worth knowing'); }
+function stIcon(l) { return l === 'crit' ? 'close' : (l === 'warn' ? 'info' : (l === 'ok' ? 'check' : 'info')); }
+function stCode(text, said) {
+  var box = el('div', 'st-code');
+  var pre = noI18n(el('pre', ''));
+  pre.textContent = text;
+  box.appendChild(pre);
+  var c = cmdButton('Copy', 'copy', 'small');
+  c.onclick = function () { copyText(text, said || 'copied'); };
+  box.appendChild(c);
+  return box;
+}
+function stDays(n) {
+  if (n === null || n === undefined) return '';
+  if (n < 1) return 'less than a day';
+  if (n === 1) return '1 day';
+  if (n > 3650) return 'years';
+  return n + (n === 1 ? ' day' : ' days');
+}
+function stWhen(n) {
+  if (n === null || n === undefined) return '';
+  if (n < 1) return 'in less than a day';
+  if (n > 3650) return 'in years';
+  return n === 1 ? 'in about a day' : 'in about ' + n + ' days';
+}
+function drawStorage() {
+  var d = ST.d, host = $('st-host');
+  if (!d || !host) return;
+  clear(host);
+  var probs = d.problems || [];
+  var n = {crit: 0, warn: 0, info: 0};
+  probs.forEach(function (p) { n[p.level] = (n[p.level] || 0) + 1; });
+  var level = n.crit ? 'crit' : (n.warn ? 'warn' : 'ok');
+
+  /* The verdict, first: is anything wrong, and what. */
+  var hero = el('div', 'card full st-hero lvl-' + level);
+  var badge = el('div', 'st-badge');
+  badge.innerHTML = iconMarkup(stIcon(level), 30);
+  hero.appendChild(badge);
+  var words = el('div', 'st-hero-w');
+  var worst = (d.disks || [])[0];
+  words.appendChild(el('div', 'st-hero-t', level === 'ok'
+    ? 'Nothing is filling up that should not be'
+    : (n.crit ? n.crit + ' thing(s) to put right' : n.warn + ' thing(s) worth a look')));
+  var sub = [];
+  if (worst) sub.push('the disk ' + worst.mount + ' ' + worst.share + ' % full, ' + bytes(worst.free) + ' free'
+    + (worst.days_left !== null && worst.days_left !== undefined ? ' - full ' + stWhen(worst.days_left) : ''));
+  if (d.db && d.db.bytes) sub.push('the database ' + bytes(d.db.bytes));
+  var logsTotal = (d.logs || []).reduce(function (a, f) { return a + (f.bytes || 0); }, 0);
+  if ((d.logs || []).length) sub.push('logs over syslog ' + bytes(logsTotal) + ' in ' + d.logs.length + ' folder(s)');
+  words.appendChild(el('div', 'st-hero-s', sub.map(function (x) { return (x); }).join(' · ')));
+  var chips = el('div', 'st-chips');
+  ['crit', 'warn', 'info'].forEach(function (k) {
+    if (n[k]) chips.appendChild(el('span', 'tag ' + (k === 'crit' ? 'crit' : (k === 'warn' ? 'warn' : 'info')),
+      n[k] + ' ' + stLevelWord(k)));
+  });
+  if (!probs.length) chips.appendChild(el('span', 'tag ok', 'all well'));
+  words.appendChild(chips);
+  hero.appendChild(words);
+  var side = el('div', 'st-hero-side');
+  var again = cmdButton('Look again', 'refresh', 'small');
+  again.id = 'st-again';
+  again.onclick = function () { loadStorage(true); };
+  side.appendChild(again);
+  side.appendChild(el('div', 'st-when', 'looked ' + ago(d.at) + (d.took ? ' · took ' + d.took + ' s' : '')));
+  hero.appendChild(side);
+  host.appendChild(hero);
+
+  /* Each disk, and what is on it. */
+  (d.disks || []).forEach(function (dk) {
+    var c = el('div', 'card full st-disk');
+    var h = el('h2', '');
+    h.appendChild(noI18n(el('span', 'mono', dk.mount)));
+    h.appendChild(document.createTextNode(' '));
+    h.appendChild(el('span', 'right', (bytes(dk.used) + ' of ' + bytes(dk.total) + ' used · ' + bytes(dk.free) + ' free')));
+    c.appendChild(h);
+    var bar = el('div', 'st-bar');
+    var segs = dk.parts.filter(function (p) { return p.bytes > 0; }).map(function (p) { return {key: p.key, label: p.label, bytes: p.bytes}; });
+    segs.push({key: 'other', label: ST_KEY_WORDS.other, bytes: dk.other});
+    segs.forEach(function (s) {
+      var w = stPct(s.bytes, dk.total);
+      if (w < 0.15) return;
+      var seg = el('span', 'st-seg');
+      seg.style.width = w + '%';
+      seg.style.background = ST_COLOURS[s.key] || '#6e7681';
+      seg.title = (s.label) + ': ' + bytes(s.bytes) + ' (' + w.toFixed(1) + ' %)';
+      bar.appendChild(seg);
+    });
+    var mark = el('span', 'st-mark');
+    mark.style.left = '85%';
+    bar.appendChild(mark);
+    c.appendChild(bar);
+    var leg = el('div', 'st-legend');
+    segs.concat([{key: 'free', label: 'free', bytes: dk.free}]).forEach(function (s) {
+      var it = el('div', 'st-leg');
+      var dot = el('span', 'st-dot' + (s.key === 'free' ? ' free' : ''));
+      if (s.key !== 'free') dot.style.background = ST_COLOURS[s.key] || '#6e7681';
+      it.appendChild(dot);
+      it.appendChild(el('span', 'st-leg-l', s.label));
+      it.appendChild(noI18n(el('b', '', bytes(s.bytes))));
+      it.appendChild(noI18n(el('span', 'st-leg-p', stPct(s.bytes, dk.total).toFixed(1) + ' %')));
+      leg.appendChild(it);
+    });
+    c.appendChild(leg);
+    var foot = [];
+    if (dk.a_day) foot.push('fills ' + bytes(dk.a_day) + ' a day at the rate measured');
+    if (dk.days_left !== null && dk.days_left !== undefined) foot.push('full ' + stWhen(dk.days_left));
+    if (foot.length) c.appendChild(el('p', 'note st-foot', foot.map(function (x) { return (x); }).join(' · ')));
+    host.appendChild(c);
+  });
+
+  /* What needs doing, worst first, each with its steps. */
+  if (probs.length) {
+    var pc = el('div', 'card full');
+    pc.appendChild(el('h2', '', 'What to put right'));
+    probs.forEach(function (p) {
+      var box = el('div', 'st-prob lvl-' + p.level);
+      var top = el('div', 'st-prob-top');
+      var ic = el('span', 'st-prob-ic');
+      ic.innerHTML = iconMarkup(stIcon(p.level), 18);
+      top.appendChild(ic);
+      top.appendChild(el('div', 'st-prob-t', (p.title)));
+      top.appendChild(el('span', 'tag ' + (p.level === 'crit' ? 'crit' : (p.level === 'warn' ? 'warn' : 'info')), stLevelWord(p.level)));
+      box.appendChild(top);
+      box.appendChild(el('div', 'st-prob-s', (p.says)));
+      var fix = p.fix || [];
+      if (fix.length) {
+        var steps = el('ol', 'st-steps');
+        fix.forEach(function (f) {
+          var li = el('li', '');
+          li.appendChild(el('div', 'st-step-say', (f.say)));
+          if (f.text && f.file) {
+            /* The file as it is, or one command that writes it - the same
+               text either way, picked rather than shown twice. */
+            var pick = el('div', 'st-pick');
+            var asFile = el('button', 'on', 'the file');
+            var asCmd = el('button', '', 'one command that writes it');
+            asFile.type = asCmd.type = 'button';
+            pick.appendChild(asFile); pick.appendChild(asCmd);
+            li.appendChild(pick);
+            var one = stCode(f.text, 'the file was copied');
+            var two = stCode("cat > " + f.file + " <<'EOF'\n" + f.text + "EOF\nchmod 644 " + f.file, 'the command was copied');
+            two.hidden = true;
+            asFile.onclick = function () { asFile.classList.add('on'); asCmd.classList.remove('on'); one.hidden = false; two.hidden = true; };
+            asCmd.onclick = function () { asCmd.classList.add('on'); asFile.classList.remove('on'); one.hidden = true; two.hidden = false; };
+            li.appendChild(one);
+            li.appendChild(two);
+          } else if (f.text) {
+            li.appendChild(stCode(f.text, 'the command was copied'));
+          }
+          if (f.pane) {
+            var go = cmdButton('Open it', 'gear', 'small');
+            go.onclick = function () { showPane(f.pane); };
+            li.appendChild(go);
+          }
+          steps.appendChild(li);
+        });
+        box.appendChild(steps);
+      }
+      pc.appendChild(box);
+    });
+    host.appendChild(pc);
+  }
+
+  drawStorageLogs(host, d);
+  drawStorageRotate(host, d);
+  drawStorageDb(host, d);
+}
+function stStatus(f) {
+  if (f.uncovered_n) return ['crit', 'nothing rotates it'];
+  if (f.dupes) return ['crit', 'two files take it'];
+  if (f.biggest_live && f.biggest_live.bytes > 2 * 1073741824 && (!f.newest_copy || Date.now() / 1000 - f.newest_copy > 3 * 86400)) return ['warn', 'not being rotated'];
+  if (f.old_raw_bytes > 1073741824) return ['warn', 'copies not packed'];
+  return ['ok', 'rotated'];
+}
+function drawStorageLogs(host, d) {
+  var logs = d.logs || [];
+  var c = el('div', 'card full');
+  var h = el('h2', '', 'Logs that arrive over syslog');
+  h.appendChild(noI18n(el('span', 'right mono', (d.roots || []).join(', '))));
+  c.appendChild(h);
+  c.appendChild(el('p', 'note', 'One folder per sender, as rsyslog files them. The live files are being written now; '
+    + 'the copies are what logrotate has turned them into. A folder nothing rotates only ever grows.'));
+  if (!logs.length) { c.appendChild(el('p', 'muted', 'There is no folder there, or it cannot be read.')); host.appendChild(c); return; }
+  var top = Math.max.apply(null, logs.map(function (f) { return f.bytes || 0; }).concat([1]));
+  var t = el('table', 'plain st-logs');
+  var hr = el('tr');
+  ['Folder', 'Size', 'Files', 'Biggest live file', 'Grows a day', 'Copies kept', 'Rotated by', ''].forEach(function (x, i) {
+    hr.appendChild(el('th', i === 1 ? 'st-sz' : '', x));
+  });
+  var th = el('thead'); th.appendChild(hr); t.appendChild(th);
+  var tb = el('tbody');
+  logs.forEach(function (f) {
+    var stt = stStatus(f);
+    var row = el('tr', 'st-row lvl-' + stt[0]);
+    var nm = el('td', 'st-nm');
+    nm.appendChild(noI18n(el('b', 'mono', f.name)));
+    if ((f.read_by || []).length) nm.appendChild(el('div', 'st-sub', ('read by') + ' ' + f.read_by.join(', ')));
+    else nm.appendChild(el('div', 'st-sub', 'not read by isemon'));
+    row.appendChild(nm);
+    var sz = el('td', 'st-sz');
+    var b = el('div', 'st-mini');
+    var live = el('span', 'live'); live.style.width = stPct(f.live_bytes, top) + '%';
+    var raw = el('span', 'raw'); raw.style.width = stPct(f.raw_copies_bytes, top) + '%';
+    var pk = el('span', 'pk'); pk.style.width = stPct(f.packed_bytes, top) + '%';
+    b.appendChild(live); b.appendChild(raw); b.appendChild(pk);
+    b.title = ('live') + ' ' + bytes(f.live_bytes) + ' · ' + ('copies') + ' ' + bytes(f.raw_copies_bytes)
+      + ' · ' + ('packed') + ' ' + bytes(f.packed_bytes);
+    sz.appendChild(b);
+    sz.appendChild(noI18n(el('span', 'st-szn', bytes(f.bytes))));
+    row.appendChild(sz);
+    row.appendChild(el('td', 'num', (num(f.live) + ' live · ' + num(f.copies) + ' copies')));
+    var bl = el('td', '');
+    if (f.biggest_live) {
+      bl.appendChild(noI18n(el('div', 'mono st-file', f.biggest_live.name)));
+      bl.appendChild(noI18n(el('div', 'st-sub', bytes(f.biggest_live.bytes))));
+    } else bl.textContent = '–';
+    row.appendChild(bl);
+    row.appendChild(noI18n(el('td', 'num', f.a_day ? bytes(f.a_day) : '–')));
+    row.appendChild(el('td', 'num', f.keep_days ? (stDays(Math.round(f.keep_days))) : '–'));
+    var by = el('td', '');
+    if ((f.covered_by || []).length) f.covered_by.forEach(function (cv) {
+      by.appendChild(noI18n(el('span', 'tag dim mono', cv.file.split('/').pop())));
+    });
+    else by.appendChild(el('span', 'tag crit', 'none'));
+    row.appendChild(by);
+    var st = el('td', '');
+    st.appendChild(el('span', 'tag ' + (stt[0] === 'ok' ? 'ok' : stt[0]), stt[1]));
+    row.appendChild(st);
+    tb.appendChild(row);
+    /* Opened: its biggest files, and what is not rotated. */
+    var more = el('tr', 'st-more');
+    more.hidden = !ST.open[f.path];
+    var md = el('td', '');
+    md.colSpan = 8;
+    var cols = el('div', 'st-more-in');
+    var a = el('div', '');
+    a.appendChild(el('h4', '', 'The biggest files'));
+    var big = el('table', 'plain st-files');
+    (f.biggest || []).forEach(function (x) {
+      var r = el('tr', '');
+      r.appendChild(noI18n(el('td', 'mono', x.name)));
+      r.appendChild(el('td', '', x.copy ? 'copy' : 'live'));
+      r.appendChild(noI18n(el('td', 'num', bytes(x.bytes))));
+      r.appendChild(noI18n(el('td', 'num dim', stamp(x.at))));
+      big.appendChild(r);
+    });
+    a.appendChild(big);
+    cols.appendChild(a);
+    var bside = el('div', '');
+    if (f.uncovered_n) {
+      bside.appendChild(el('h4', '', 'Taken by no logrotate file'));
+      (f.uncovered || []).forEach(function (u) {
+        var r = el('div', 'st-unc');
+        r.appendChild(noI18n(el('span', 'mono', u.name)));
+        r.appendChild(noI18n(el('b', '', bytes(u.bytes))));
+        bside.appendChild(r);
+      });
+      if (f.uncovered_n > (f.uncovered || []).length) bside.appendChild(el('div', 'st-sub', ('and ' + (f.uncovered_n - f.uncovered.length) + ' more')));
+    }
+    (f.covered_by || []).forEach(function (cv) {
+      bside.appendChild(noI18n(el('h4', '', cv.file)));
+      var o = cv.opts || {};
+      var line = el('div', 'st-opts');
+      [o.every || 'weekly', o.rotate ? 'rotate ' + o.rotate : '', o.compress ? 'compress' : 'not compressed',
+       o.delaycompress ? 'delaycompress' : '', o.maxsize ? 'maxsize ' + o.maxsize : '', o.create ? 'create ' + o.create : '']
+        .filter(Boolean).forEach(function (x) { line.appendChild(noI18n(el('span', 'tag dim mono', x))); });
+      bside.appendChild(line);
+    });
+    if (f.a_day_how) bside.appendChild(el('div', 'st-sub', f.a_day_how === 'measured'
+      ? 'How much a day: measured between two looks at it.' : 'How much a day: the size of yesterday’s copy.'));
+    cols.appendChild(bside);
+    md.appendChild(cols);
+    more.appendChild(md);
+    tb.appendChild(more);
+    row.onclick = function () { ST.open[f.path] = !ST.open[f.path]; more.hidden = !ST.open[f.path]; row.classList.toggle('open', !more.hidden); };
+    row.classList.toggle('open', !more.hidden);
+  });
+  t.appendChild(tb);
+  var sc = el('div', 'scroll');
+  sc.appendChild(t);
+  c.appendChild(sc);
+  var key = el('div', 'st-key');
+  [['live', 'live files'], ['raw', 'copies'], ['pk', 'packed copies']].forEach(function (k) {
+    var it = el('span', '');
+    it.appendChild(el('i', 'st-k ' + k[0]));
+    it.appendChild(el('span', '', k[1]));
+    key.appendChild(it);
+  });
+  c.appendChild(key);
+  host.appendChild(c);
+}
+function drawStorageRotate(host, d) {
+  var files = d.logrotate || [];
+  var c = el('div', 'card full');
+  c.appendChild(el('h2', '', 'Which logrotate files take them'));
+  c.appendChild(el('p', 'note', 'The files under /etc/logrotate.d that name these folders. logrotate refuses two '
+    + 'files that take the same log - and refuses the whole run over it, not just the one file.'));
+  if (!files.length) { c.appendChild(el('p', 'muted', 'None of them names a folder of these.')); host.appendChild(c); return; }
+  var grid = el('div', 'st-lr');
+  files.forEach(function (f) {
+    var box = el('div', 'st-lr-f');
+    box.appendChild(noI18n(el('div', 'st-lr-n mono', f.file)));
+    if (f.error) box.appendChild(noI18n(el('div', 'st-sub bad', f.error)));
+    (f.stanzas || []).forEach(function (s) {
+      var o = s.opts || {};
+      var opts = el('div', 'st-opts');
+      [o.every || (d.logrotate_defaults || {}).every || 'weekly', 'rotate ' + (o.rotate || (d.logrotate_defaults || {}).rotate || '1'),
+       o.compress ? 'compress' : 'not compressed', o.maxsize ? 'maxsize ' + o.maxsize : '']
+        .filter(Boolean).forEach(function (x) { opts.appendChild(noI18n(el('span', 'tag dim mono', x))); });
+      if (s.keep_days) opts.appendChild(el('span', 'tag info', ('about ' + stDays(Math.round(s.keep_days)) + ' kept')));
+      box.appendChild(opts);
+      var pats = el('div', 'st-pats');
+      (s.patterns || []).forEach(function (p) { pats.appendChild(noI18n(el('div', 'mono', p))); });
+      if (s.more) pats.appendChild(el('div', 'st-sub', ('and ' + s.more + ' more')));
+      box.appendChild(pats);
+    });
+    grid.appendChild(box);
+  });
+  c.appendChild(grid);
+  host.appendChild(c);
+}
+function stTableName(t) {
+  var k = ST_KINDS[t.name] && t.kind !== null && t.kind !== undefined ? ST_KINDS[t.name][t.kind] : '';
+  return {name: t.name + (t.kind !== null && t.kind !== undefined ? ' · ' + t.kind : ''),
+    words: (ST_TABLES[t.name] || '') + (k ? ' - ' + k : '')};
+}
+function drawStorageDb(host, d) {
+  var db = d.db || {};
+  var c = el('div', 'card full');
+  var h = el('h2', '', 'Inside the database');
+  h.appendChild(noI18n(el('span', 'right', (({sqlite: 'SQLite', postgres: 'PostgreSQL', mariadb: 'MariaDB'})[db.engine] || db.engine || '') + ' · ' + bytes(db.bytes))));
+  c.appendChild(h);
+  var facts = el('div', 'st-facts');
+  var fact = function (k, v, sub) {
+    var f = el('div', 'st-fact');
+    f.appendChild(el('div', 'st-fact-k', k));
+    f.appendChild(noI18n(el('div', 'st-fact-v', v)));
+    if (sub) f.appendChild(el('div', 'st-sub', (sub)));
+    facts.appendChild(f);
+  };
+  var tables = db.tables || [];
+  var dat = tables.reduce(function (a, t) { return a + (t.data || 0); }, 0);
+  var idx = tables.reduce(function (a, t) { return a + (t.index || 0); }, 0);
+  var dead = tables.reduce(function (a, t) { return a + (t.dead || 0); }, 0);
+  fact('Altogether', bytes(db.bytes));
+  fact('The rows themselves', bytes(dat), stPct(dat, db.bytes).toFixed(0) + ' % of it');
+  fact('Indexes', bytes(idx), stPct(idx, db.bytes).toFixed(0) + ' % of it');
+  if (db.engine === 'postgres') fact('Dead rows', num(dead), 'room autovacuum reuses');
+  if (db.wal) fact('Write-ahead log', bytes(db.wal.bytes), num(db.wal.files) + ' file(s)');
+  if (db.free_inside !== null && db.free_inside !== undefined) fact('Free inside the file', bytes(db.free_inside), 'given back by tidying');
+  c.appendChild(facts);
+  if (db.error) c.appendChild(noI18n(el('p', 'note bad', db.error)));
+  if (tables.length) {
+    c.appendChild(el('h4', 'st-h4', 'The tables, biggest first'));
+    var top = Math.max.apply(null, tables.map(function (t) { return t.total || 0; }).concat([1]));
+    var list = el('div', 'st-tabs');
+    tables.slice(0, 18).forEach(function (t) {
+      var nm = stTableName(t);
+      var r = el('div', 'st-tab');
+      var l = el('div', 'st-tab-l');
+      l.appendChild(noI18n(el('div', 'mono st-tab-n', nm.name)));
+      if (nm.words) l.appendChild(el('div', 'st-sub', (nm.words)));
+      r.appendChild(l);
+      var bar = el('div', 'st-tbar');
+      [['data', t.data], ['idx', t.index], ['oth', t.other]].forEach(function (p) {
+        if (!p[1]) return;
+        var s = el('span', p[0]);
+        s.style.width = stPct(p[1], top) + '%';
+        bar.appendChild(s);
+      });
+      bar.title = ('rows') + ' ' + bytes(t.data) + ' · ' + ('indexes') + ' ' + bytes(t.index) + ' · ' + ('the rest') + ' ' + bytes(t.other);
+      r.appendChild(bar);
+      var rt = el('div', 'st-tab-r');
+      rt.appendChild(noI18n(el('b', '', bytes(t.total))));
+      var bits = [];
+      if (t.live !== null && t.live !== undefined) bits.push(num(t.live) + ' rows');
+      if (t.parts > 1) bits.push(t.parts + ' days');
+      if (t.dead && t.live) bits.push(Math.round(100 * t.dead / (t.live + t.dead)) + ' % dead');
+      rt.appendChild(el('div', 'st-sub', bits.map(function (x) { return (x); }).join(' · ')));
+      r.appendChild(rt);
+      list.appendChild(r);
+    });
+    c.appendChild(list);
+    var key = el('div', 'st-key');
+    [['data', 'rows'], ['idx', 'indexes'], ['oth', 'the rest (TOAST, maps)']].forEach(function (k) {
+      var it = el('span', '');
+      it.appendChild(el('i', 'st-k t' + k[0]));
+      it.appendChild(el('span', '', k[1]));
+      key.appendChild(it);
+    });
+    c.appendChild(key);
+  }
+  var spans = db.spans || [];
+  if (spans.length) {
+    c.appendChild(el('h4', 'st-h4', 'How far back the records go'));
+    var now = Date.now() / 1000, far = Math.max.apply(null, spans.map(function (s) { return now - s.from; }).concat([86400]));
+    var sp = el('div', 'st-spans');
+    spans.forEach(function (s) {
+      var r = el('div', 'st-span');
+      r.appendChild(noI18n(el('div', 'mono st-span-n', s.table)));
+      var line = el('div', 'st-span-bar');
+      var seg = el('span', '');
+      seg.style.left = (100 - stPct(now - s.from, far)) + '%';
+      seg.style.width = stPct(s.to - s.from, far) + '%';
+      line.appendChild(seg);
+      r.appendChild(line);
+      r.appendChild(el('div', 'st-sub', (stDays(Math.max(1, Math.round((now - s.from) / 86400))) + ' back')));
+      sp.appendChild(r);
+    });
+    c.appendChild(sp);
+  }
+  host.appendChild(c);
+
+  var ix = db.indexes || [];
+  if (ix.length) {
+    var ic = el('div', 'card full');
+    var ih = el('h2', '', 'The biggest indexes');
+    ih.appendChild(el('span', 'right', (num(ix.length) + ' looked at')));
+    ic.appendChild(ih);
+    ic.appendChild(el('p', 'note', 'An index is what makes a search quick; it costs room on every row. "Not used yet" '
+      + 'counts since the server’s counters were last reset - an index for a search nobody has made yet.'));
+    /* A table split by day has the same index once a day: said once, added up. */
+    var by = {};
+    ix.forEach(function (i) {
+      var base = i.name.replace(i.table, i.group);
+      var k = i.group + '|' + (i.kind === null || i.kind === undefined ? '' : i.kind) + '|' + base;
+      var g = by[k] || (by[k] = {name: base, group: i.group, kind: i.kind, bytes: 0, scans: 0, days: 0, counted: i.scans !== null && i.scans !== undefined});
+      g.bytes += i.bytes;
+      g.scans += i.scans || 0;
+      g.days++;
+    });
+    var gl = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.bytes - a.bytes; }).slice(0, 20);
+    var top2 = Math.max.apply(null, gl.map(function (g) { return g.bytes; }).concat([1]));
+    var t2 = el('table', 'plain st-ix');
+    var h2r = el('tr');
+    ['Index', 'Table', 'Size', 'Used'].forEach(function (x) { h2r.appendChild(el('th', '', x)); });
+    var th2 = el('thead'); th2.appendChild(h2r); t2.appendChild(th2);
+    var tb2 = el('tbody');
+    gl.forEach(function (g) {
+      var r = el('tr');
+      var n1 = el('td', '');
+      n1.appendChild(noI18n(el('span', 'mono', g.name)));
+      if (g.days > 1) n1.appendChild(el('span', 'st-sub', ' ' + ('× ' + g.days + ' days')));
+      r.appendChild(n1);
+      var tk = stTableName({name: g.group, kind: g.kind});
+      r.appendChild(noI18n(el('td', 'mono dim', tk.name)));
+      var sz = el('td', 'st-sz');
+      var mb = el('div', 'st-mini');
+      var s1 = el('span', 'ix'); s1.style.width = stPct(g.bytes, top2) + '%';
+      mb.appendChild(s1);
+      sz.appendChild(mb);
+      sz.appendChild(noI18n(el('span', 'st-szn', bytes(g.bytes))));
+      r.appendChild(sz);
+      var u = el('td', '');
+      if (!g.counted) u.appendChild(el('span', 'tag dim', 'not counted'));
+      else if (!g.scans) u.appendChild(el('span', 'tag warn', 'not used yet'));
+      else u.appendChild(el('span', 'num', (num(g.scans) + ' times')));
+      r.appendChild(u);
+      tb2.appendChild(r);
+    });
+    t2.appendChild(tb2);
+    var sc2 = el('div', 'scroll');
+    sc2.appendChild(t2);
+    ic.appendChild(sc2);
+    host.appendChild(ic);
+  }
+
+  /* The copies kept on this machine. */
+  var cc = el('div', 'card full');
+  cc.appendChild(el('h2', '', 'Copies kept on this machine'));
+  var cf = el('div', 'st-facts');
+  [['Dumps', d.dumps], ['Backups', d.backups]].forEach(function (x) {
+    var f = el('div', 'st-fact');
+    f.appendChild(el('div', 'st-fact-k', x[0]));
+    f.appendChild(noI18n(el('div', 'st-fact-v', bytes((x[1] || {}).bytes || 0))));
+    f.appendChild(noI18n(el('div', 'st-sub mono', ((x[1] || {}).files || 0) + ' · ' + ((x[1] || {}).path || ''))));
+    cf.appendChild(f);
+  });
+  cc.appendChild(cf);
+  host.appendChild(cc);
 }
 
 /* ---- Face ID in Your account (1.10.303) ----------------------------------- */

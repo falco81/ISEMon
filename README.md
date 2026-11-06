@@ -372,6 +372,24 @@ working.
 
 ## Version
 
+1.10.309
+
+- **Disk and logs**, a new pane under Settings → Data, for a full admin: what
+  fills the disks of this server, measured. Each disk as one bar of what is
+  on it (the logs that arrive over syslog, the database and its write-ahead
+  log, the dumps, the backups, the rest, what is free) and when it is full
+  at the rate measured; every folder under `/var/log/remote` with its live
+  files, copies and packed copies, its biggest file, how much a day it grows,
+  how long it is kept, which logrotate file takes it and whether isemon reads
+  it; the logrotate files that name those folders; inside the database every
+  table (a table split by day as one, by its kind of day) with its rows,
+  indexes, dead rows and how far back it goes, and the biggest indexes with
+  how often they are used. What looks wrong is said first, worst first, with
+  numbered steps ready to copy - for a folder that no logrotate file takes,
+  the logrotate file that takes it written out. `deploy/logrotate-split-dc/`
+  has a third file, `remote-fw`, for the firewalls. See
+  [docs/disk-and-logs.md](docs/disk-and-logs.md).
+
 1.10.308
 
 - The performance meter asked in step with the daemon: the page asks just

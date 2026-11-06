@@ -1,0 +1,33 @@
+# /etc/logrotate.d/remote-fw
+#
+# The firewalls' syslog, apart from everything else (1.10.309). A firewall
+# that logs the sessions it lets through writes tens of GB a day - one site's
+# four FTDs wrote 45 GB a day, and with no line for them in remote-logs or
+# remote-dc they were never rotated: 370 GB, found when the disk had 38 GB
+# left. isemon keeps what it needs of them in the database (Settings - The
+# firewall log), so the raw files are kept only briefly: today's live file,
+# yesterday's copy and one packed.
+#
+# The folders named here must NOT be in remote-logs or remote-dc as well:
+# logrotate refuses two stanzas that take the same file, and refuses the
+# WHOLE run over it, not only the one file. Adding another firewall means
+# adding a line here. Settings - Disk and logs says when a folder under
+# /var/log/remote is taken by no file at all, and writes this file out for it.
+
+/var/log/remote/fw1/*.log
+/var/log/remote/fw2/*.log
+{
+    daily
+    dateext
+    rotate 2
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root isemon
+
+    sharedscripts
+    postrotate
+        /usr/bin/systemctl reload rsyslog
+    endscript
+}

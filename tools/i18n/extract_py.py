@@ -105,7 +105,8 @@ def template(node):
 
 TABLES = {'NAMES', 'SAYS', 'WHERE_FROM', 'CHOICE_WORDS', 'FEEDS', 'BAN_MODE_WORDS',
           'OTP_SAYS', 'OTP_MODES', 'CODE_UNUSED_WORDS'}
-KEYS = {'says', 'message', 'words', 'said_words', 'source_says', 'why', 'fix_says'}
+# `say`: a step of what Settings → Disk and logs says to do (1.10.309).
+KEYS = {'says', 'message', 'words', 'said_words', 'source_says', 'why', 'fix_says', 'say'}
 
 for node in ast.walk(tree):
     # The tables of words: every string value in them, however deep.
@@ -173,7 +174,8 @@ for node in ast.walk(tree):
 WORDING = {'blocking_words', 'trigger_words', 'block_steps', 'fwlog_words', 'watch_words',
            'refusal_words_on', 'directory_words', 'burst_words', 'beat_words', 'ago_words',
            'radius_words', 'dump_words_for', 'roll_said', 'what_directory_says',
-           'country_says', 'base_words', 'trouble_words', 'proxy_try', 'proxy_words'}
+           'country_says', 'base_words', 'trouble_words', 'proxy_try', 'proxy_words',
+           'store_problems'}
 
 
 def worded(v):
