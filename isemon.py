@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.317'
+__version__ = '1.10.318'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73279,6 +73279,12 @@ def todo_api(daemon, body, by):
     when it is so (1.10.314)."""
     do = str((body or {}).get('do') or '')
     key = str((body or {}).get('key') or '')
+    if do == 'clear':
+        items = (body or {}).get('items')
+        gone = todo_done_clear(daemon.store, items if isinstance(items, list) else None, by)
+        out = todo_view(daemon.store)
+        out.update(ok=True, gone=gone, message='done lately cleared (%d)' % gone)
+        return out
     if do not in ('look', 'done'):
         raise ValueError('look or done')
     if key != 'root-parts':
@@ -73308,6 +73314,34 @@ def todo_api(daemon, body, by):
                                               'root installs are as this version ships them'
                                    % by, 'info', who=by)
     return {'ok': True, 'still': bool(still), 'parts': still}
+
+
+def todo_done_clear(store, items=None, who=''):
+    """"Done lately" emptied (1.10.318): the rows the pane shows - [title, at]
+    each - or all of it when none are named. What is still to be done by hand
+    is not touched, nor a row come meanwhile. How many went."""
+    want = None
+    if items is not None:
+        want = set()
+        for one in list(items)[:200]:
+            if isinstance(one, (list, tuple)) and len(one) == 2:
+                try:
+                    want.add((str(one[0])[:200], int(float(one[1]))))
+                except (TypeError, ValueError):
+                    continue
+    with TODO_LOCK:
+        try:
+            done = json.loads(store.get_meta('todo_done') or '[]')
+        except (ValueError, TypeError):
+            done = []
+        done = [d for d in done if isinstance(d, dict)]
+        keep = [] if want is None else [
+            d for d in done if (str(d.get('title') or '')[:200], int(float(d.get('at') or 0))) not in want]
+        gone = len(done) - len(keep)
+        store.set_meta('todo_done', json.dumps(keep))
+    store.add_event('control', '"done lately" cleared by %s (%d)' % (who or 'the command line', gone),
+                    'info', who=who or '')
+    return gone
 
 
 def todo_view(store):

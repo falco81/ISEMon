@@ -199,7 +199,7 @@ ok('...the one about upgrading there, with a number on the Settings tab and on U
     'id="tabn-settings" hidden' in page, "u.id = 'up-alert-n';" in page), (True, True, True, True))
 ok('the card always there for a full admin, saying so when there is nothing; Done lately under it',
    ('id="todo-none" hidden>Nothing is to be done by hand.' in page, "card.hidden = !mine;" in page,
-    "host.appendChild(el('h4', 'todo-h', 'Done lately'));" in page), (True, True, True))
+    "head.appendChild(el('h4', 'todo-h', 'Done lately'));" in page), (True, True, True))
 ok('a number on the Upgrades icon itself, seen with the menu shut', '.ctl-nav button[data-pane] .n.badge{position:absolute' in page)
 ok('...the rest across the top of every page as before, each put away for a day by Not now',
    ('<div id="alerts-top" class="alerts" hidden></div>' in page, "if (a.place) return false;" in page,

@@ -2305,6 +2305,8 @@ function srcText(el) {
     color:var(--ok);background:var(--ok-bg);border:1px solid rgba(63,185,80,.25)}
   .todo-card .alertband{padding:16px 18px}
   .alert-when{font-size:12px;color:var(--tx-mut);margin-top:10px}
+  .todo-done-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:20px 0 6px}
+  .todo-done-head .todo-h{margin:0}
   .todo-h{margin:20px 0 6px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--tx-mut)}
   .todo-grid{grid-template-columns:minmax(220px,2fr) 140px minmax(120px,1fr) 190px}
   .tabs .count.warm{background:var(--warn-bg);color:var(--warn)}
@@ -35824,10 +35826,25 @@ function loadTodoDone() {
     clear(host);
     var done = d.done || [];
     if (!done.length) return;
-    host.appendChild(el('h4', 'todo-h', 'Done lately'));
+    /* Its heading with Clear at its right (1.10.318): the rows shown here
+       emptied - what is still to be done stays, and so does a row come
+       meanwhile. */
+    var shown = done.slice(0, 12);
+    var head = el('div', 'todo-done-head');
+    head.appendChild(el('h4', 'todo-h', 'Done lately'));
+    var wipe = cmdButton('Clear', 'trash', 'small todo-done-clear');
+    wipe.title = 'Empty this list - what is still to be done stays';
+    wipe.onclick = function () {
+      wipe.disabled = true;
+      api('todo', {do: 'clear', items: shown.map(function (x) { return [x.title || '', Math.floor(x.at || 0)]; })})
+        .then(function (r) { toast(r.message || 'done lately cleared', 'good'); })
+        .catch(oops).then(function () { wipe.disabled = false; loadTodoDone(); });
+    };
+    head.appendChild(wipe);
+    host.appendChild(head);
     var g = el('div', 'st-grid todo-grid');
     stHead(g, [['What'], ['How'], ['Who'], ['When', 'n']]);
-    done.slice(0, 12).forEach(function (x) {
+    shown.forEach(function (x) {
       var row = el('div', 'st-r');
       stCell(row, '', el('span', 'st-strong', x.title || ''));
       stCell(row, '', el('span', 'tag ' + (x.how === 'done' ? 'ok' : 'dim'), TODO_HOW[x.how] || x.how || ''));

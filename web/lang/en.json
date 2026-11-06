@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.317",
+  "version": "1.10.318",
   "made": "2026-11-06",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -6860,6 +6860,10 @@
    "source": "Done by",
    "text": "Done by"
   },
+  "s.done-lately-cleared.f512ad81": {
+   "source": "done lately cleared",
+   "text": "done lately cleared"
+  },
   "s.done-lately.696f8bbe": {
    "source": "Done lately",
    "text": "Done lately"
@@ -7491,6 +7495,10 @@
   "s.empty-the-window-for-every-page.0a874da2": {
    "source": "Empty the window - for every page, and after a reload too; what comes after is shown.",
    "text": "Empty the window - for every page, and after a reload too; what comes after is shown."
+  },
+  "s.empty-this-list-what-is-still.77615307": {
+   "source": "Empty this list - what is still to be done stays",
+   "text": "Empty this list - what is still to be done stays"
   },
   "s.empty.ad87109b": {
    "source": "empty",

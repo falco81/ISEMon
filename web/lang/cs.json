@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.317",
+  "version": "1.10.318",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -6860,6 +6860,10 @@
    "source": "Done by",
    "text": "Provedl"
   },
+  "s.done-lately-cleared.f512ad81": {
+   "source": "done lately cleared",
+   "text": "seznam Nedávno hotové vyprázdněn"
+  },
   "s.done-lately.696f8bbe": {
    "source": "Done lately",
    "text": "Hotovo nedávno"
@@ -7491,6 +7495,10 @@
   "s.empty-the-window-for-every-page.0a874da2": {
    "source": "Empty the window - for every page, and after a reload too; what comes after is shown.",
    "text": "Vyprázdní okno - pro všechny stránky i po znovunačtení; zobrazí se to, co přijde potom."
+  },
+  "s.empty-this-list-what-is-still.77615307": {
+   "source": "Empty this list - what is still to be done stays",
+   "text": "Vyprázdní tento seznam – co je ještě potřeba udělat, zůstane"
   },
   "s.empty.ad87109b": {
    "source": "empty",

@@ -372,6 +372,14 @@ working.
 
 ## Version
 
+1.10.318
+
+- **Clear** beside "Done lately" in *To be done by hand* (Settings →
+  Upgrades): it empties exactly the rows the pane shows - a row come
+  meanwhile stays - and never touches what is still to be done. Written to
+  Events as who cleared how many. Like the list itself, it is there only when
+  the list has rows.
+
 1.10.317
 
 - Disk and logs finds **isemon's own rotation no longer wanted**: a folder in

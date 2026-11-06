@@ -48,6 +48,17 @@ as a service (no `/etc/systemd/system/isemon.service`) nothing is said.
 fails while it does not match `deploy/`, so a change to one of those files
 cannot be released without it.
 
+### Done lately, and Clear (1.10.318)
+
+Below the bands, *Done lately* lists what went: **done** (somebody pressed
+Done, named under Who) or **gone by itself** (the check found it right). The
+last 30 are kept in `meta` (`todo_done`). **Clear**, at the right of its
+heading, empties the rows the pane shows - `POST /api/todo {"do": "clear",
+"items": [[title, at], ...]}`; without `items`, all of it - and is written to
+Events as `"done lately" cleared by <who> (<how many>)`. It never touches what
+is still to be done, nor a row that came while the pane was open. The list,
+and Clear with it, is drawn only when it has rows.
+
 ## Trouble on the disks and in the logs
 
 What Settings → Disk and logs counts as trouble - a disk 95 % full or full
