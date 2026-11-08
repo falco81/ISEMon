@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.318",
+  "version": "1.10.319",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -379,6 +379,10 @@
   "s.a-certificate-and-its-key-you.d41bedff": {
    "source": "A certificate and its key you have: PEM (both, in any order) or a PFX / PKCS#12 file with its password.",
    "text": "Certifikát a jeho klíč, které máte: PEM (obojí, v libovolném pořadí) nebo soubor PFX / PKCS#12 s heslem."
+  },
+  "s.a-certificate-authority-of-your-own.89a3180e": {
+   "source": "A certificate authority of your own - a root, or an intermediate - as PEM (",
+   "text": "Vlastní certifikační autorita - kořenová nebo zprostředkující - jako PEM ("
   },
   "s.a-certificate-expired-or-expiring.28610413": {
    "source": "a certificate expired or expiring",
@@ -851,6 +855,10 @@
   "s.a-line.5ede2f28": {
    "source": "a line",
    "text": "řádek"
+  },
+  "s.a-link.72256dd5": {
+   "source": "- a link",
+   "text": "- odkaz"
   },
   "s.a-list-switched-on-or-off.9cddd7e5": {
    "source": "A list switched on or off here is saved with",
@@ -1355,6 +1363,14 @@
   "s.a-role-is-fulladmin-banadmin-or.c5b7ee05": {
    "source": "a role is fulladmin, banadmin or readonly",
    "text": "role je fulladmin, banadmin nebo readonly"
+  },
+  "s.a-root-or-an-intermediate-certificate.c23bd2a1": {
+   "source": "A root or an intermediate certificate authority of your own - pasted as PEM, or a .pem, .crt or .cer file; a file with a chain adds each authority in it.",
+   "text": "Vlastní kořenová nebo zprostředkující certifikační autorita - vložená jako PEM, nebo soubor .pem, .crt či .cer; soubor s řetězcem přidá každou autoritu v něm."
+  },
+  "s.a-root-or-intermediate-certificate-authority.53c0779d": {
+   "source": "a root or intermediate certificate authority (PEM, or one in DER) added to the system's trust. Asks first unless --yes",
+   "text": "kořenová nebo zprostředkující certifikační autorita (PEM, nebo jedna v DER) přidaná do důvěry systému. Napřed se zeptá, není-li --yes"
   },
   "s.a-route-put-in.af671fc7": {
    "source": "a route put in",
@@ -2176,6 +2192,10 @@
    "source": "Add a step",
    "text": "Přidat krok"
   },
+  "s.add-an-authority.da7ffa55": {
+   "source": "Add an authority",
+   "text": "Přidat autoritu"
+  },
   "s.add-an-empty-column-to-the.049fadd9": {
    "source": "Add an empty column to the right",
    "text": "Přidat prázdný sloupec vpravo"
@@ -2200,9 +2220,17 @@
    "source": "Add the feed",
    "text": "Přidejte feed"
   },
+  "s.add-them.254c14a3": {
+   "source": "Add them",
+   "text": "Přidat je"
+  },
   "s.add-to-block-list.aa0f64ef": {
    "source": "Add to Block List",
    "text": "Add to Block List"
+  },
+  "s.add-to-the-system-s-trust.41e1fbfd": {
+   "source": "Add to the system's trust",
+   "text": "Přidat do důvěry systému"
   },
   "s.add.58d1bbce": {
    "source": "add",
@@ -2215,6 +2243,10 @@
   "s.add.df756c7b": {
    "source": "→ Add",
    "text": "→ Add"
+  },
+  "s.added-by-somebody-else-isemon-leaves.d670a45e": {
+   "source": "Added by somebody else - isemon leaves them as they are:",
+   "text": "Přidal někdo jiný - isemon je nechává, jak jsou:"
   },
   "s.added.172415f0": {
    "source": "added",
@@ -3388,6 +3420,10 @@
    "source": "application control",
    "text": "řízení aplikací"
   },
+  "s.application-gzip.fb9f8d8a": {
+   "source": "application/gzip",
+   "text": "application/gzip"
+  },
   "s.application-json.ca9fd0b2": {
    "source": "application/json",
    "text": "application/json"
@@ -3568,6 +3604,10 @@
    "source": "As typed below.",
    "text": "Podle hodnot zadaných níže."
   },
+  "s.as-wanted.42879d0f": {
+   "source": "as wanted",
+   "text": "jak má být"
+  },
   "s.as-written-down-at-your-last.2ccbbbf3": {
    "source": "As written down at your last sign-in.",
    "text": "Jak bylo zapsáno při vašem posledním přihlášení."
@@ -3587,6 +3627,10 @@
   "s.ascending.f393cc99": {
    "source": "ascending",
    "text": "vzestupně"
+  },
+  "s.ascii.51c066b3": {
+   "source": "ascii",
+   "text": "ascii"
   },
   "s.ask-a-second-directory.b5662942": {
    "source": "Ask a second directory",
@@ -3708,6 +3752,10 @@
    "source": "asked: it is done within seconds",
    "text": "požádáno: hotovo během několika sekund"
   },
+  "s.asked-root-reads-the-system-s.ab9d8b63": {
+   "source": "asked: root reads the system's trusted roots again within seconds",
+   "text": "požádáno: root během několika sekund znovu přečte důvěryhodné kořeny systému"
+  },
   "s.asked-since-this-started.1d9bd2e1": {
    "source": "Asked since this started",
    "text": "Dotazů od spuštění"
@@ -3715,6 +3763,10 @@
   "s.asked-the-server-changes-its-network.d156f59b": {
    "source": "asked: the server changes its network and restarts",
    "text": "požádáno: server změní síť a restartuje se"
+  },
+  "s.asked.9421a0b3": {
+   "source": "asked…",
+   "text": "požádáno…"
   },
   "s.asked.c91c9287": {
    "source": "asked",
@@ -3868,6 +3920,10 @@
    "source": "Attempts",
    "text": "Pokusy"
   },
+  "s.auditd-does-not-run-what-selinux.6f264cd4": {
+   "source": "auditd does not run - what SELinux refuses is not written down (systemctl enable --now auditd)",
+   "text": "auditd neběží - co SELinux odmítne, se nikam nezapisuje (systemctl enable --now auditd)"
+  },
   "s.auditid.aa9a9567": {
    "source": "auditid",
    "text": "auditid"
@@ -3952,6 +4008,10 @@
    "source": "authority",
    "text": "autorita"
   },
+  "s.authority.97a9869c": {
+   "source": "Authority",
+   "text": "Autorita"
+  },
   "s.authorization-profile.cca0780f": {
    "source": "Authorization profile",
    "text": "Autorizační profil"
@@ -4031,6 +4091,14 @@
   "s.back-to-a-version-published-at.516e0220": {
    "source": "Back to a version published at the address above - only as far back as can still run on this database as it is. Nothing is copied or put back: the database is left exactly as it is, whatever its size, and the settings of later versions wait in it for the next upgrade. Root checks the package and the limit again before it puts it in.",
    "text": "Návrat k verzi zveřejněné na adrese výše – jen tak daleko, aby ještě uměla běžet nad touto databází tak, jak je. Nic se nekopíruje ani neobnovuje: databáze zůstane přesně taková, jaká je, ať je jakkoli velká, a nastavení pozdějších verzí v ní počkají na další upgrade. Root balíček i hranici před nainstalováním zkontroluje znovu."
+  },
+  "s.back-to-permissive.6c8afbd1": {
+   "source": "Back to permissive?",
+   "text": "Zpět na permissive?"
+  },
+  "s.back-to-permissive.d916d5f5": {
+   "source": "Back to permissive",
+   "text": "Zpět na permissive"
   },
   "s.back-to-the-one-before.a14ad78d": {
    "source": "Back to the one before…",
@@ -5032,6 +5100,10 @@
    "source": "Certificate and chain, text (.pem) - nginx, Apache, Linux.",
    "text": "Certifikát a řetězec, text (.pem) - nginx, Apache, Linux."
   },
+  "s.certificate-authorities-of-your-own-your.7197aa5c": {
+   "source": "Certificate authorities of your own - your company's root, an intermediate - trusted by the operating system of this server as a whole: curl, dnf, LDAPS to a domain controller, mail, isemon's own connections - every program that uses the system's trust. The distribution's own list stays as it is and keeps coming with the system's updates; these are added beside it, the way the system itself takes local additions (update-ca-trust on RHEL, AlmaLinux and Rocky, update-ca-certificates on Debian and Ubuntu), and stay there through those updates.",
+   "text": "Vlastní certifikační autority - kořenová autorita vaší firmy, zprostředkující - kterým věří operační systém tohoto serveru jako celek: curl, dnf, LDAPS na řadič domény, pošta, vlastní spojení isemonu - každý program, který používá důvěru systému. Vlastní seznam distribuce zůstává, jak je, a dál přichází s aktualizacemi systému; tyto se přidávají vedle něj, tak jak systém sám přijímá místní doplňky (update-ca-trust na RHEL, AlmaLinuxu a Rocky, update-ca-certificates na Debianu a Ubuntu), a zůstávají tam i po těchto aktualizacích."
+  },
   "s.certificate-chain-and-key-in-one.889bca32": {
    "source": "Certificate, chain and key in one text file (.pem).",
    "text": "Certifikát, řetězec a klíč v jednom textovém souboru (.pem)."
@@ -5527,6 +5599,10 @@
   "s.click-to-copy-the-url-to.fd7d9355": {
    "source": "Click to copy the URL to the clipboard, ready to paste into the firewall.",
    "text": "Klikněte pro zkopírování URL do schránky, připravené k vložení do firewallu."
+  },
+  "s.click-to-copy-the-whole-sha.fad98530": {
+   "source": "Click to copy the whole SHA-256 fingerprint",
+   "text": "Klepnutím zkopírujete celý otisk SHA-256"
   },
   "s.click-to-copy.39635a39": {
    "source": "Click to copy.",
@@ -6672,6 +6748,10 @@
    "source": "directory2",
    "text": "directory2"
   },
+  "s.disabled-isemon-runs-as-always-made.0d52bd8d": {
+   "source": "Disabled - isemon runs as always. Made ready, it comes up permissive at the next restart of the machine: nothing is refused yet, only written down, and isemon's own needs are put in. Enforcing comes after, once nothing was refused.",
+   "text": "Vypnutý - isemon běží jako vždy. Po přípravě se při příštím restartu stroje spustí jako permissive: zatím se nic neodmítá, jen zapisuje, a vloží se to, co potřebuje isemon. Enforcing přijde potom, až nebude nic odmítnuto."
+  },
   "s.disabled.07596f18": {
    "source": "disabled",
    "text": "vypnuto"
@@ -6924,6 +7004,10 @@
    "source": "Download isemon-ca.crt",
    "text": "Stáhnout isemon-ca.crt"
   },
+  "s.download-it-pem.0cc35f6e": {
+   "source": "Download it (PEM)",
+   "text": "Stáhnout (PEM)"
+  },
   "s.download-it-with-the-passwords-and.190d7fe5": {
    "source": "Download it with the passwords and keys?",
    "text": "Stáhnout i s hesly a klíči?"
@@ -6968,6 +7052,10 @@
    "source": "Download the private key",
    "text": "Stáhnout soukromý klíč"
   },
+  "s.download-the-report.ba9f9280": {
+   "source": "Download the report",
+   "text": "Stáhnout zprávu"
+  },
   "s.download-the-second-firewall-s-private.7b76feb9": {
    "source": "Download the second firewall’s private key as a file, for keeping somewhere safe or using the same key elsewhere. That it was downloaded, and by whom, is written into Events.",
    "text": "Stáhnout soukromý klíč druhého firewallu jako soubor, k bezpečnému uložení nebo k použití stejného klíče jinde. Že byl stažen a kým, se zapíše do Událostí."
@@ -6987,6 +7075,10 @@
   "s.downloadable-acls-commands-run-on-a.5cfecd24": {
    "source": "Downloadable ACLs, commands run on a switch and ISE’s notes about its own packet handling are nobody knocking, so they are not drawn. They are counted under",
    "text": "Downloadable ACL, příkazy spuštěné na switchi a poznámky ISE o vlastním zpracování paketů nejsou nikdo, kdo by klepal, a proto se nevykreslují. Počítají se pod"
+  },
+  "s.downloaded-look-through-avc-txt-in.fbec9e66": {
+   "source": "Downloaded. Look through avc*.txt in it before sending it on: the audit log holds the command lines of the programs SELinux refused something to.",
+   "text": "Staženo. Než ji pošlete dál, projděte v ní avc*.txt: auditní log obsahuje příkazové řádky programů, kterým SELinux něco odmítl."
   },
   "s.dport.eea18b46": {
    "source": "dport",
@@ -7580,6 +7672,22 @@
    "source": "endpoint",
    "text": "endpoint"
   },
+  "s.enforce.09babdc9": {
+   "source": "enforce",
+   "text": "enforce"
+  },
+  "s.enforcing-and-everything-isemon-needs-is.5145b40d": {
+   "source": "Enforcing - and everything isemon needs is there",
+   "text": "Enforcing - a vše, co isemon potřebuje, je na místě"
+  },
+  "s.enforcing-but-something-is-not-as.fc699751": {
+   "source": "Enforcing - but something is not as isemon needs it",
+   "text": "Enforcing - ale něco není tak, jak isemon potřebuje"
+  },
+  "s.enforcing.a67395ec": {
+   "source": "enforcing",
+   "text": "enforcing"
+  },
   "s.english.649df08a": {
    "source": "English",
    "text": "English"
@@ -8056,6 +8164,10 @@
    "source": ") - every file is followed. A firewall line says only that a rule logged the packet, never what became of it: that is read off the rule's",
    "text": ") – sleduje se každý soubor. Řádek firewallu říká jen, že pravidlo paket zalogovalo, nikdy co se s ním stalo: to se čte z pravidla –"
   },
+  "s.every-file-is-labelled-at-the.624d34bb": {
+   "source": "Every file is labelled at the next start - it takes a few minutes before the machine answers.",
+   "text": "Při příštím startu se označí každý soubor - trvá několik minut, než stroj odpoví."
+  },
   "s.every-file-this-daemon-is-following.6d6ea871": {
    "source": "Every file this daemon is following: both ISE nodes always, because only one of them is authenticating at any moment and which one changes without warning, and the token servers as well when those are switched on. Where each file has been read up to is kept in the database, so a restart carries on rather than reading everything again. Press a line for what that file holds and how far behind it is.",
    "text": "Všechny soubory, které tento démon sleduje: vždy oba uzly ISE, protože ověřuje vždy jen jeden z nich a který to je, se mění bez varování, a také tokenové servery, pokud jsou zapnuté. Kam až byl každý soubor přečten, se uchovává v databázi, takže po restartu se pokračuje a nečte se vše znovu. Klikněte na řádek pro to, co soubor obsahuje a o kolik je pozadu."
@@ -8327,6 +8439,10 @@
   "s.every-profile.aa92ae9e": {
    "source": "every profile",
    "text": "všechny profily"
+  },
+  "s.every-program-of-this-server-trusts.0e25d45b": {
+   "source": "Every program of this server trusts what they sign from then on.",
+   "text": "Každý program tohoto serveru pak věří tomu, co podepíší."
   },
   "s.every-question-put-to-active-directory.612cf043": {
    "source": "Every question put to Active Directory and what it answered: the filter as it went on to the wire, where it was asked, how long it took, and the entries that came back. This is what to turn on when a name will not resolve, a group is not being seen, or a sign-in is refused and the directory is the suspect. It reads and never writes, and a password is never written down here — the sign-in line names the account and nothing else.",
@@ -8667,6 +8783,10 @@
   "s.everything-ise-let-through-that-is.45dce597": {
    "source": "Everything ISE let through that is none of the above — mostly what ISE says to a switch rather than what somebody says to ISE: a change of authorisation, sent when an endpoint has just been profiled or its group has changed, which tells the switch to ask that endpoint again. There is nobody in one of those. Click a row for the whole record.",
    "text": "Vše, co ISE propustilo a nepatří do žádné z výše uvedených kategorií — většinou to, co ISE říká switchi, a ne to, co někdo říká ISE: změna autorizace (CoA), odeslaná, když bylo koncové zařízení právě profilováno nebo se změnila jeho skupina, která switchi říká, aby se zařízení zeptal znovu. Žádná osoba v nich není. Kliknutím na řádek zobrazíte celý záznam."
+  },
+  "s.everything-isemon-knows-it-needs-is.5f79ff32": {
+   "source": "Everything isemon knows it needs is in place - what was refused is something its module does not cover yet. \"Put in what isemon needs\" changes nothing for it: download the report (top right) and send it, so that the module learns it.",
+   "text": "Vše, o čem isemon ví, že potřebuje, je na místě - odmítnuté je něco, co jeho modul zatím nepokrývá. „Vložit, co isemon potřebuje“ na tom nic nezmění: stáhněte zprávu (vpravo nahoře) a pošlete ji, aby se to modul naučil."
   },
   "s.everything-it-has-failed-at.10c94aa0": {
    "source": "Everything it has failed at",
@@ -9303,6 +9423,10 @@
   "s.fiji.bbb7ef7f": {
    "source": "Fiji",
    "text": "Fidži"
+  },
+  "s.file-a-chain-adds-every-authority.ab9a5037": {
+   "source": "file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key.",
+   "text": ". Řetězec přidá každou autoritu v něm. Berou se jen autority (CA:TRUE), nikdy soukromý klíč."
   },
   "s.file-policy-ftd.38e6d2eb": {
    "source": "file policy (FTD)",
@@ -10016,6 +10140,10 @@
    "source": "), from FortiOS 6 on.",
    "text": "), od FortiOS 6."
   },
+  "s.from-now-on-selinux-refuses-what.aeb376c4": {
+   "source": "From now on SELinux refuses what its policy does not allow - and stays enforcing after a restart. Nothing isemon needs is missing and nothing was refused. If something stops working, \"Back to permissive\" here (or setenforce 0 on the machine) undoes it at once.",
+   "text": "Od teď SELinux odmítá, co jeho politika nedovoluje - a zůstane enforcing i po restartu. Nic, co isemon potřebuje, nechybí a nic nebylo odmítnuto. Když něco přestane fungovat, „Zpět na permissive“ zde (nebo setenforce 0 na stroji) to hned vrátí."
+  },
   "s.from-outside.4702689c": {
    "source": "from outside",
    "text": "zvenčí"
@@ -10179,6 +10307,10 @@
   "s.gateway.5a0e1818": {
    "source": "Gateway",
    "text": "Brána"
+  },
+  "s.gathering-what-selinux-says-here-a.fd5d8228": {
+   "source": "gathering what SELinux says here - a minute or two…",
+   "text": "sbírá se, co tu říká SELinux - minutu nebo dvě…"
   },
   "s.gb.505a44fa": {
    "source": "GB",
@@ -10863,6 +10995,10 @@
   "s.how-it-is-getting-on.40552cb3": {
    "source": "How it is getting on",
    "text": "Jak to pokračuje"
+  },
+  "s.how-it-is-here.236a9ead": {
+   "source": "How it is here",
+   "text": "Jak to tu je"
   },
   "s.how-it-is-reached.9a972068": {
    "source": "How it is reached",
@@ -12528,6 +12664,10 @@
    "source": "isemon does not hold this certificate's private key (nginx's own, never uploaded or made here)",
    "text": "isemon nemá privátní klíč tohoto certifikátu (je nginxu, nikdy sem nebyl nahrán ani tu nevznikl)"
   },
+  "s.isemon-does-not-know-this-one.e27c5afe": {
+   "source": "isemon does not know this one yet",
+   "text": "Tohle isemon ještě nezná"
+  },
   "s.isemon-erase-firewall.4e4d4d1c": {
    "source": "isemon --erase firewall",
    "text": "isemon --erase firewall"
@@ -12547,6 +12687,10 @@
   "s.isemon-failed.dd46cc72": {
    "source": "isemon --failed",
    "text": "isemon --failed"
+  },
+  "s.isemon-has-added-none-this-server.008e0802": {
+   "source": "isemon has added none - this server trusts its system's own list alone.",
+   "text": "isemon nepřidal žádnou - tento server věří jen vlastnímu seznamu systému."
   },
   "s.isemon-help.9307d6a4": {
    "source": "isemon --help",
@@ -12624,6 +12768,10 @@
    "source": "isemon running for",
    "text": "isemon běží"
   },
+  "s.isemon-s-additions-there.14057689": {
+   "source": "isemon's additions there",
+   "text": "Doplňky isemonu tam"
+  },
   "s.isemon-s-authority-is-on-the.02758b57": {
    "source": "isemon's authority is on the clipboard",
    "text": "autorita isemonu je ve schránce"
@@ -12667,6 +12815,22 @@
   "s.isemon-s-firewall-lets-it-in.81ccaa7f": {
    "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
    "text": "firewall isemonu ho pouští jen z uzlů otp (Nastavení → Firewall a přístup)"
+  },
+  "s.isemon-s-module-isemon-server-installed.46ae58df": {
+   "source": "isemon's module (isemon_server) installed",
+   "text": "Modul isemonu (isemon_server) je nainstalovaný"
+  },
+  "s.isemon-s-module-isemon-server-is.4167a568": {
+   "source": "isemon's module (isemon_server) is not installed",
+   "text": "Modul isemonu (isemon_server) není nainstalovaný"
+  },
+  "s.isemon-s-module-the-labels-of.4b086507": {
+   "source": "isemon's module, the labels of its files, the boolean and the ports it needs are put in. Still permissive: nothing is refused.",
+   "text": "Vloží se modul isemonu, štítky jeho souborů, přepínač a porty, které potřebuje. Pořád permissive: nic se neodmítá."
+  },
+  "s.isemon-s-own-connections-the-directory.d116c911": {
+   "source": "isemon's own connections (the directory, mail, the upgrades, the public lists) use the system's list too - what is added here reaches them at their next connection.",
+   "text": "Vlastní spojení isemonu (adresář, pošta, upgrady, veřejné seznamy) také používají seznam systému - co se tu přidá, dostanou při příštím spojení."
   },
   "s.isemon-s-own-rotation-no-longer.6c9f5e52": {
    "source": "isemon’s own rotation, no longer wanted",
@@ -13159,6 +13323,10 @@
   "s.its-own-lines-by-what-they.bf0963d4": {
    "source": "Its own lines by what they are: sign-ins, tunnels, its health, its settings changed, its connectors and its automation.",
    "text": "Jeho vlastní řádky podle toho, co jsou: přihlášení, tunely, jeho stav, změny jeho nastavení, jeho konektory a jeho automatizace."
+  },
+  "s.its-package.6a641d24": {
+   "source": "Its package",
+   "text": "Jeho balíček"
   },
   "s.its-passphrase-if-it-has-one.d061e4d5": {
    "source": "Its passphrase, if it has one",
@@ -14016,6 +14184,10 @@
    "source": "Let it back in",
    "text": "Odblokovat"
   },
+  "s.let-it-run-a-day-or.7e4469bc": {
+   "source": "Let it run a day or two as it is used - the pages, the logs arriving, a rotation of the logs, an upgrade - then look again.",
+   "text": "Nechte to den nebo dva běžet při běžném používání - stránky, přicházející logy, rotace logů, upgrade - a pak se podívejte znovu."
+  },
   "s.let-it-sign-in-again.c20ad394": {
    "source": "let it sign in again",
    "text": "znovu mu povolit přihlášení"
@@ -14351,6 +14523,10 @@
   "s.local-account.5a153805": {
    "source": "local account",
    "text": "lokální účet"
+  },
+  "s.local-additions-in.c7458e91": {
+   "source": "Local additions in",
+   "text": "Místní doplňky v"
   },
   "s.local-in-policy.426ac143": {
    "source": "local-in policy",
@@ -14896,9 +15072,17 @@
    "source": "Made if it is not there. Without / at the start: under the account’s home.",
    "text": "Vytvoří se, pokud tam není. Bez / na začátku: v domovské složce účtu."
   },
+  "s.made-last.ba7fa69f": {
+   "source": "Made last",
+   "text": "Naposledy sestaven"
+  },
   "s.made-on-the-first-run.be24152c": {
    "source": "made on the first run",
    "text": "vytvořeno při prvním spuštění"
+  },
+  "s.made-ready-waiting-for-a-restart.00864c23": {
+   "source": "Made ready - waiting for a restart of the machine",
+   "text": "Připraveno - čeká na restart stroje"
   },
   "s.made.785c2d91": {
    "source": "Made",
@@ -15004,6 +15188,14 @@
    "source": "Make it and put it in",
    "text": "Vytvořit a nasadit"
   },
+  "s.make-it-ready-permissive.00bef8f5": {
+   "source": "Make it ready (permissive)",
+   "text": "Připravit (permissive)"
+  },
+  "s.make-it-ready.a1d3d50c": {
+   "source": "Make it ready",
+   "text": "Připravit"
+  },
   "s.make-it.da5fa11d": {
    "source": "Make it",
    "text": "Vytvořit"
@@ -15019,6 +15211,10 @@
   "s.make-one.a30f6811": {
    "source": "Make one",
    "text": "Vytvořit"
+  },
+  "s.make-selinux-ready.196d6eb5": {
+   "source": "Make SELinux ready?",
+   "text": "Připravit SELinux?"
   },
   "s.make-the-alias.44390438": {
    "source": "Make the alias",
@@ -15051,6 +15247,10 @@
   "s.makes-you-read-only.bdbe0e3d": {
    "source": "makes you read only",
    "text": "z vás udělá uživatele jen pro čtení"
+  },
+  "s.making-the-report.5a829c74": {
+   "source": "making the report…",
+   "text": "dělá se zpráva…"
   },
   "s.malawi.0ce65b26": {
    "source": "Malawi",
@@ -15111,6 +15311,10 @@
   "s.mariadb-keeps-what-was-put-in.7435cab7": {
    "source": "MariaDB keeps what was put in until it is next started. This file keeps it over a restart: on the server, as root (on Debian and Ubuntu the folder is /etc/mysql/mariadb.conf.d):",
    "text": "MariaDB si nastavené hodnoty drží do příštího startu. Tento soubor je zachová i po restartu: na serveru jako root (na Debianu a Ubuntu je složka /etc/mysql/mariadb.conf.d):"
+  },
+  "s.mariadb-of-this-machine-listens-on.969f7d5b": {
+   "source": "MariaDB of this machine listens on it",
+   "text": "Na něm naslouchá MariaDB tohoto stroje"
   },
   "s.mariadb.378e3bca": {
    "source": "mariadb",
@@ -16116,6 +16320,10 @@
    "source": "no certificate of isemon's",
    "text": "žádný certifikát isemonu"
   },
+  "s.no-certificate-read.7693f6d2": {
+   "source": "- no certificate read",
+   "text": "- žádný certifikát nepřečten"
+  },
   "s.no-certificate-yet-make-one-or.6251e374": {
    "source": "No certificate yet — make one, or let it pin the router’s own at the first connection.",
    "text": "Zatím žádný certifikát — vytvořte ho, nebo nechte při prvním připojení připnout vlastní certifikát routeru."
@@ -16732,6 +16940,10 @@
    "source": "not an attempt",
    "text": "nejde o pokus"
   },
+  "s.not-an-authority.518f2b5b": {
+   "source": "not an authority",
+   "text": "není autorita"
+  },
   "s.not-anything-of-ours.e27e6742": {
    "source": "not anything of ours",
    "text": "nic našeho"
@@ -16956,6 +17168,14 @@
    "source": "Not now",
    "text": "Teď ne"
   },
+  "s.not-on-this-machine.a1947e9e": {
+   "source": "not on this machine",
+   "text": "na tomto stroji není"
+  },
+  "s.not-on-this-machine.da3ffa22": {
+   "source": "(not on this machine)",
+   "text": "(na tomto stroji není)"
+  },
   "s.not-ours-any-more.f83d369b": {
    "source": "not ours any more",
    "text": "už není náš"
@@ -16992,6 +17212,10 @@
    "source": "Not read.",
    "text": "Nenačteno."
   },
+  "s.not-ready-for-enforcing-yet.f3a0f2aa": {
+   "source": "Not ready for enforcing yet",
+   "text": "Na enforcing ještě není připraven"
+  },
   "s.not-ready.970258df": {
    "source": "not ready",
    "text": "není připraveno"
@@ -17007,6 +17231,14 @@
   "s.not-said-in-the-lines-kept.5432e9ff": {
    "source": "not said in the lines kept",
    "text": "v uchovaných řádcích neuvedeno"
+  },
+  "s.not-said-yet-root-looks-within.42a59315": {
+   "source": "Not said yet - root looks within a minute.",
+   "text": "Zatím neřečeno - root se podívá do minuty."
+  },
+  "s.not-said-yet.4cd1ea6a": {
+   "source": "not said yet",
+   "text": "zatím neřečeno"
   },
   "s.not-said.56ac01df": {
    "source": "not said",
@@ -17039,6 +17271,10 @@
   "s.not-synchronised.ca686a05": {
    "source": "not synchronised",
    "text": "nesynchronizováno"
+  },
+  "s.not-taken.b8222e41": {
+   "source": "not taken",
+   "text": "nepřijato"
   },
   "s.not-the-name-it-has-now.dcfba416": {
    "source": ", not the name it has now.",
@@ -17123,6 +17359,10 @@
   "s.notes-not-rows.eec4fef8": {
    "source": "notes, not rows",
    "text": "poznámky, ne řádky"
+  },
+  "s.nothing-added-by-isemon.e52d7b58": {
+   "source": "nothing added by isemon",
+   "text": "isemon nic nepřidal"
   },
   "s.nothing-after-it-the-list-comes.3045485a": {
    "source": "— nothing after it; the list comes in the format saved on the settings page",
@@ -17459,6 +17699,14 @@
   "s.nothing-read-twice-is-ever-stored.1b0c71e2": {
    "source": "Nothing read twice is ever stored twice: every record is kept under the session id ISE gave it, so “Go back over every log” can read every file from the beginning and only what was missing is added.",
    "text": "Nic přečteného dvakrát se nikdy neukládá dvakrát: každý záznam se uchovává pod ID relace, které mu přidělilo ISE, takže „Projít znovu všechny logy“ může přečíst každý soubor od začátku a přidá se jen to, co chybělo."
+  },
+  "s.nothing-refused-since-isemon-s-needs.37d99ae2": {
+   "source": "Nothing refused since isemon's needs were put in",
+   "text": "Od vložení toho, co isemon potřebuje, nic odmítnuto"
+  },
+  "s.nothing-refused-since-the-machine-started.a0442e2d": {
+   "source": "Nothing refused since the machine started",
+   "text": "Od startu stroje nic odmítnuto"
   },
   "s.nothing-refused.bb29c191": {
    "source": "nothing refused",
@@ -18276,6 +18524,10 @@
    "source": "once, by hand, in your DNS",
    "text": "jednou, ručně, ve vašem DNS"
   },
+  "s.once-nothing-is-missing-and-nothing.45ed4b5d": {
+   "source": "Once nothing is missing and nothing was refused",
+   "text": "Až nic nebude chybět a nic nebude odmítnuto"
+  },
   "s.once-the-encrypted-receiving-below-is.7190855f": {
    "source": "once the encrypted receiving below is set up), and",
    "text": "jakmile bude níže nastaven šifrovaný příjem), a"
@@ -18539,6 +18791,10 @@
   "s.one-server.120fb13b": {
    "source": "one server",
    "text": "jeden server"
+  },
+  "s.one-taken-out-again-by-its.9e3cfd42": {
+   "source": "one taken out again, by its SHA-256 (12 characters of it at least). Asks first unless --yes",
+   "text": "jednu zase odebrat, podle jejího SHA-256 (aspoň 12 znaků). Napřed se zeptá, není-li --yes"
   },
   "s.one-this-machine-holds.a2437d31": {
    "source": "one this machine holds",
@@ -19163,6 +19419,10 @@
   "s.or-a.3927572c": {
    "source": "or a",
    "text": "nebo"
+  },
+  "s.or-a.45243f48": {
+   "source": "), or a",
+   "text": "), nebo soubor"
   },
   "s.or-an-organisational-unit-inside-it.ad4edc64": {
    "source": ", or an organisational unit inside it if that is quicker to search.",
@@ -19864,6 +20124,10 @@
    "source": "permissions on an object were changed",
    "text": "byla změněna oprávnění objektu"
   },
+  "s.permissive.348850bf": {
+   "source": "permissive",
+   "text": "permissive"
+  },
   "s.permit-ip-any-any.15334e43": {
    "source": "permit ip any any",
    "text": "permit ip any any"
@@ -20216,6 +20480,10 @@
    "source": "postgres",
    "text": "postgres"
   },
+  "s.postgresql-of-this-machine-listens-on.ad482d5f": {
+   "source": "PostgreSQL of this machine listens on it",
+   "text": "Na něm naslouchá PostgreSQL tohoto stroje"
+  },
   "s.postgresql-restarted.aa348fa5": {
    "source": "PostgreSQL, restarted",
    "text": "PostgreSQL restartován"
@@ -20259,6 +20527,10 @@
   "s.preferred.8a7b8bf6": {
    "source": "preferred",
    "text": "preferovaný"
+  },
+  "s.prepare.4197eb0c": {
+   "source": "prepare",
+   "text": "prepare"
   },
   "s.press-a-bar-to-open-that.09deab32": {
    "source": "Press a bar to open that hour, or a door below to see that door’s own shape.",
@@ -20576,6 +20848,14 @@
    "source": "put in: waits for the server’s next start",
    "text": "nastaveno: čeká na příští start serveru"
   },
+  "s.put-in-what-isemon-needs.1a8f3527": {
+   "source": "Put in what isemon needs?",
+   "text": "Vložit, co isemon potřebuje?"
+  },
+  "s.put-in-what-isemon-needs.6e8c9afe": {
+   "source": "Put in what isemon needs",
+   "text": "Vložit, co isemon potřebuje"
+  },
   "s.put-in.a9229e72": {
    "source": "put in:",
    "text": "nastaveno:"
@@ -20703,6 +20983,10 @@
   "s.putting-it-back.6e67ac3e": {
    "source": "Putting it back",
    "text": "Obnovování"
+  },
+  "s.putting-it-in.e423e899": {
+   "source": "putting it in…",
+   "text": "vkládá se…"
   },
   "s.putting-the-backup-back.0ccb3ef7": {
    "source": "Putting the backup back",
@@ -21176,6 +21460,10 @@
    "source": "reads them again with it.",
    "text": "je s ním přečte znovu."
   },
+  "s.ready-for-enforcing.62afb9fe": {
+   "source": "Ready for enforcing",
+   "text": "Připraven na enforcing"
+  },
   "s.ready.75c05337": {
    "source": "ready",
    "text": "připraveno"
@@ -21528,6 +21816,10 @@
    "source": "replaces everything",
    "text": "nahradí vše"
   },
+  "s.report.a27297bd": {
+   "source": "report",
+   "text": "report"
+  },
   "s.reports-are-different.f0106407": {
    "source": "reports are different.",
    "text": "hlásí rozdílné hodnoty."
@@ -21607,6 +21899,10 @@
   "s.restart-it-when-it-suits-on.0628b0ba": {
    "source": "Restart it when it suits, on the server, as root:",
    "text": "Restartujte ho, až se to hodí, na serveru jako root:"
+  },
+  "s.restart-it-when-it-suits-settings.54609dc4": {
+   "source": "Restart it when it suits (Settings → Restart and power off). It comes up permissive; then look here again.",
+   "text": "Restartujte ho, až se to hodí (Nastavení → Restart a vypnutí). Naběhne jako permissive; pak se sem podívejte znovu."
   },
   "s.restart-needed.444efe88": {
    "source": "restart needed",
@@ -21868,6 +22164,10 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.228 package (or later) once.",
    "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.228 (nebo novějšího)."
   },
+  "s.root-s-half-of-this-is.4fbe2b71": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once. Until then SELinux is neither read nor changed here.",
+   "text": "Rootova polovina tohoto ještě není na stroji nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.319 (nebo novějšího). Do té doby se tu SELinux nečte ani nemění."
+  },
   "s.root-s-half-of-this-is.54666464": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here.",
    "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.239 (nebo novějšího). Do té doby se klíče zde nečtou ani nemění."
@@ -21875,6 +22175,10 @@
   "s.root-s-half-of-this-is.b571e4cc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path, as 1.10.287 puts it in): run ./install.sh --upgrade from the 1.10.287 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
    "text": "Rootova polovina tohoto zatím není na tomto stroji nainstalovaná (isemon-web.path, jak ji instaluje 1.10.287): jednou spusťte ./install.sh --upgrade z balíčku 1.10.287 (nebo novějšího). Do té doby se šifrovaný příjem zde ani nečte, ani nemění."
+  },
+  "s.root-s-half-of-this-is.c2a5068a": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once.",
+   "text": "Rootova polovina tohoto ještě není na stroji nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.319 (nebo novějšího)."
   },
   "s.root-s-half-of-this-is.d288dacc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there.",
@@ -22568,6 +22872,26 @@
    "source": "selfsigned",
    "text": "selfsigned"
   },
+  "s.selinux-no-longer-refuses-anything-it.d85f0d1b": {
+   "source": "SELinux no longer refuses anything - it only writes down what it would refuse - now and after a restart.",
+   "text": "SELinux už nic neodmítá - jen zapisuje, co by odmítl - teď i po restartu."
+  },
+  "s.selinux-on-this-machine-what-isemon.dd29e82a": {
+   "source": "SELinux on this machine: what isemon needs of it and what it refused (check), or a step - prepare (disabled: permissive at the next start; permissive: what isemon needs put in), enforce, permissive. Asks first unless --yes; exit 1 when something is missing",
+   "text": "SELinux na tomto stroji: co od něj isemon potřebuje a co odmítl (check), nebo krok - prepare (vypnutý: permissive při příštím startu; permissive: vloží, co isemon potřebuje), enforce, permissive. Napřed se zeptá, není-li --yes; návratový kód 1, když něco chybí"
+  },
+  "s.selinux-on-this-server-what-it.863fff33": {
+   "source": "SELinux on this server: what it refuses to the web server, rsyslog and the rest when it is enforcing, what isemon needs of it - and the steps on the way to enforcing, each only when asked.",
+   "text": "SELinux na tomto serveru: co odmítá webovému serveru, rsyslogu a ostatním, když je enforcing, co od něj isemon potřebuje - a kroky na cestě k enforcing, každý jen na požádání."
+  },
+  "s.selinux.dd5c47ec": {
+   "source": "selinux",
+   "text": "selinux"
+  },
+  "s.selinux.f11441e8": {
+   "source": "SELinux",
+   "text": "SELinux"
+  },
   "s.send-the-chosen-countries-ranges-to.4d8d29f4": {
    "source": "Send the chosen countries' ranges to the router now. Everything of ours already on that list comes off first, so it holds this month's ranges and not last month's as well; anything on it without our mark is left alone.",
    "text": "Odeslat nyní rozsahy vybraných zemí na router. Vše naše, co už na tom seznamu je, se nejprve odebere, takže obsahuje rozsahy z tohoto měsíce a ne zároveň i z minulého; položek bez naší značky se to nedotkne."
@@ -22920,6 +23244,10 @@
    "source": "sftp",
    "text": "sftp"
   },
+  "s.sha-256.35bde87b": {
+   "source": "(SHA-256",
+   "text": "(SHA-256"
+  },
   "s.sha-256.45792d6b": {
    "source": "SHA-256",
    "text": "SHA-256"
@@ -23219,6 +23547,10 @@
   "s.signing-in.c66b2adc": {
    "source": "Signing in…",
    "text": "Přihlašování…"
+  },
+  "s.signs-is-no-longer-trusted-by.93017a20": {
+   "source": ") signs is no longer trusted by this server - unless the system's own list has it. Connections that rely on it (LDAPS, mail…) fail from their next start.",
+   "text": ") podepíše, už tento server nepovažuje za důvěryhodné - pokud to nemá vlastní seznam systému. Spojení, která na ní závisí (LDAPS, pošta…), selžou od svého příštího startu."
   },
   "s.since-its-records-were-read-is.7afe36b6": {
    "source": "since its records were read is left out, and the pass says so: read again it would file each line a second time at the new moment. Erase that module's records instead, which reads it again in the new zone. Logins at the firewall, to network devices, to the domain and the VPN through a FreeRADIUS are weighed over the same span as well, where they are switched on under Banning.",
@@ -24256,6 +24588,14 @@
    "source": "switch this server off; asks first unless --yes",
    "text": "vypne tento server; bez --yes se nejdřív zeptá"
   },
+  "s.switch-to-enforcing.b995b15d": {
+   "source": "Switch to enforcing",
+   "text": "Přepnout na enforcing"
+  },
+  "s.switch-to-enforcing.c9e15295": {
+   "source": "Switch to enforcing?",
+   "text": "Přepnout na enforcing?"
+  },
   "s.switch.01ba7992": {
    "source": "switch",
    "text": "switch"
@@ -24343,6 +24683,14 @@
   "s.switching-off.817395f2": {
    "source": "switching off",
    "text": "vypíná se"
+  },
+  "s.switching-to-enforcing.c19c6030": {
+   "source": "switching to enforcing…",
+   "text": "přepíná se na enforcing…"
+  },
+  "s.switching-to-permissive.aee54ecd": {
+   "source": "switching to permissive…",
+   "text": "přepíná se na permissive…"
   },
   "s.switzerland.77dcd849": {
    "source": "Switzerland",
@@ -24580,6 +24928,10 @@
    "source": "Take it off",
    "text": "Odebrat"
   },
+  "s.take-it-out-of-the-system.0e66e0cf": {
+   "source": "Take it out of the system's trust",
+   "text": "Odebrat z důvěry systému"
+  },
   "s.take-it-out.56748aa4": {
    "source": "Take it out",
    "text": "Odebrat"
@@ -24695,6 +25047,10 @@
   "s.take-this-step-away.199f8dce": {
    "source": "Take this step away",
    "text": "Odebrat tento krok"
+  },
+  "s.taken-away-root-takes-it-out.e555fa5f": {
+   "source": "taken away - root takes it out of the system's trust within seconds",
+   "text": "odebráno - root ji během několika sekund vyjme z důvěry systému"
   },
   "s.taken-away.9ba86e20": {
    "source": "taken away",
@@ -24943,6 +25299,10 @@
   "s.that-file-is-far-bigger-than.6c5d0539": {
    "source": "that file is far bigger than a key",
    "text": "ten soubor je mnohem větší než klíč"
+  },
+  "s.that-file-is-far-bigger-than.7823adaf": {
+   "source": "that file is far bigger than certificates are",
+   "text": "ten soubor je mnohem větší, než certifikáty bývají"
   },
   "s.that-file-is-far-bigger-than.ae8cf70c": {
    "source": "that file is far bigger than a certificate",
@@ -25748,6 +26108,10 @@
    "source": "The certificate as a file (not its key), for the server’s administrator.",
    "text": "Certifikát jako soubor (bez klíče) pro správce serveru."
   },
+  "s.the-certificate-authorities-isemon-added-to.bacca7bb": {
+   "source": "the certificate authorities isemon added to the system's trust, and how the system is",
+   "text": "certifikační autority, které isemon přidal do důvěry systému, a jak na tom systém je"
+  },
   "s.the-certificate-authority.4bb9e582": {
    "source": "The certificate authority",
    "text": "Certifikační autorita"
@@ -25955,6 +26319,10 @@
   "s.the-configuration-saved.cb4eb8f6": {
    "source": "the configuration saved",
    "text": "konfigurace uložena"
+  },
+  "s.the-configuration-says-permissive-and-every.6a4b202d": {
+   "source": "The configuration says permissive and every file is labelled at the next start of the machine; isemon's module goes in. Nothing is refused while permissive - SELinux only writes down what it would refuse. The machine is not restarted now: restart it when it suits (Settings → Restart and power off).",
+   "text": "Konfigurace řekne permissive a při příštím startu stroje se označí každý soubor; vloží se modul isemonu. V permissive se nic neodmítá - SELinux jen zapisuje, co by odmítl. Stroj se teď nerestartuje: restartujte ho, až se to hodí (Nastavení → Restart a vypnutí)."
   },
   "s.the-connection-mark-mikrotik.3b9beec3": {
    "source": "the connection mark (MikroTik)",
@@ -27271,6 +27639,10 @@
   "s.the-jobs.1ad00000": {
    "source": "The jobs",
    "text": "Úlohy"
+  },
+  "s.the-kernel-s-command-line-has.dd5541ef": {
+   "source": "The kernel's command line has selinux=0 - it stays off whatever the configuration says.",
+   "text": "Příkazová řádka jádra má selinux=0 - zůstane vypnutý, ať říká konfigurace cokoli."
   },
   "s.the-key-a-pem-private-key.b28c0bb2": {
    "source": "the key: a PEM private key without a passphrase",
@@ -28744,6 +29116,10 @@
    "source": "The remote-access VPN itself is not covered by this.",
    "text": "Samotné VPN pro vzdálený přístup se to netýká."
   },
+  "s.the-report-did-not-come-in.d2306b47": {
+   "source": "the report did not come in five minutes",
+   "text": "zpráva nepřišla do pěti minut"
+  },
   "s.the-request-arrived-with-no-password.f6c9b8db": {
    "source": "The request arrived with no password in it at all. This is what the eduroam monitoring asks, on purpose, to see whether the server answers.",
    "text": "Požadavek přišel úplně bez hesla. Přesně takový dotaz záměrně posílá monitoring eduroam, aby zjistil, zda server odpovídá."
@@ -29148,6 +29524,10 @@
    "source": "The several hundred thousand ranges that say which country an address is in. Nothing is judged by it; it is only shown. It is fetched again on the next update, and it is most of the size of this database.",
    "text": "Několik set tisíc rozsahů určujících, do které země adresa patří. Nic se podle nich nevyhodnocuje; slouží jen k zobrazení. Stáhnou se znovu při příští aktualizaci a tvoří většinu velikosti této databáze."
   },
+  "s.the-sha-256-fingerprint-is-copied.61096cc2": {
+   "source": "the SHA-256 fingerprint is copied",
+   "text": "otisk SHA-256 je zkopírovaný"
+  },
   "s.the-shape-of-the-last-day.cdea9e89": {
    "source": "The shape of the last day: how much is failing, who is trying hardest, which names they are trying and where they are coming from.",
    "text": "Obrázek posledního dne: kolik toho selhává, kdo se snaží nejvíc, jaká jména zkoušejí a odkud přicházejí."
@@ -29275,6 +29655,10 @@
   "s.the-switches-controllers-and-access-points.840b184a": {
    "source": "The switches, controllers and access points, by how many refusals of machines that never got on. The ordinary MAB-then-802.1X refusals are left out here too, so a busy switch is a busy switch rather than a switch in trouble.",
    "text": "Switche, controllery a access pointy podle počtu odmítnutí strojů, které se do sítě nikdy nedostaly. Běžná odmítnutí typu MAB-pak-802.1X jsou i zde vynechána, takže vytížený switch je prostě vytížený switch, ne switch v potížích."
+  },
+  "s.the-system-s-own-list.fe4345e7": {
+   "source": "The system's own list",
+   "text": "Vlastní seznam systému"
   },
   "s.the-system-time-was-changed.52b19c79": {
    "source": "the system time was changed",
@@ -29984,6 +30368,10 @@
    "source": ", then",
    "text": ", pak"
   },
+  "s.there-already.add59b94": {
+   "source": "there already",
+   "text": "už tam je"
+  },
   "s.there-and-give-it-the-user.9645fb27": {
    "source": "there and give it the user name and the password saved on the settings page. An older release that shows no such fields cannot: choose",
    "text": "a zadejte uživatelské jméno a heslo uložené na stránce nastavení. Starší vydání, které tato pole nemá, to neumí: zvolte pro něj"
@@ -30023,6 +30411,10 @@
   "s.there-is-no-key-to-download.9be82b72": {
    "source": "there is no key to download",
    "text": "není žádný klíč ke stažení"
+  },
+  "s.there-is-no-selinux-on-this.be939908": {
+   "source": "There is no SELinux on this machine - nothing to do.",
+   "text": "Na tomto stroji SELinux není - není co dělat."
   },
   "s.there-is-no-such-account-on.7d3cd732": {
    "source": "There is no such account on this server, and the name carried no institution to send the question on to. A controller testing its RADIUS server looks exactly like this, every few seconds, for ever — which is what the list of accounts to leave out under Settings → The eduroam logs is for.",
@@ -31236,6 +31628,10 @@
    "source": "Trusted. Click to copy.",
    "text": "Důvěryhodný. Kliknutím zkopírujete."
   },
+  "s.trusted-roots-of-the-system.7639fe1f": {
+   "source": "Trusted roots of the system",
+   "text": "Důvěryhodné kořeny systému"
+  },
   "s.trusted.ac946ad5": {
    "source": "trusted",
    "text": "důvěryhodný"
@@ -31959,6 +32355,10 @@
   "s.valid-until.e75d8233": {
    "source": "- valid until",
    "text": "- platí do"
+  },
+  "s.valid.a4aefa35": {
+   "source": "Valid",
+   "text": "Platnost"
   },
   "s.valid.bec26280": {
    "source": "valid",
@@ -32807,6 +33207,18 @@
   "s.what-root-said.ef1e7b10": {
    "source": "What root said:",
    "text": "Co řekl root:"
+  },
+  "s.what-selinux-refused-cannot-be-read.c539617a": {
+   "source": "What SELinux refused cannot be read: ausearch is not on this machine (dnf install audit)",
+   "text": "Co SELinux odmítl, nelze přečíst: ausearch na tomto stroji není (dnf install audit)"
+  },
+  "s.what-selinux-refuses-to-the-web.9cd18e0f": {
+   "source": "What SELinux refuses to the web server, rsyslog, logrotate and the database when it is enforcing - and what isemon needs of it here. Nothing changes unless asked: disabled stays disabled. On the server: isemon --selinux.",
+   "text": "Co SELinux odmítá webovému serveru, rsyslogu, logrotate a databázi, když je enforcing - a co od něj isemon tady potřebuje. Nic se nemění, dokud se nepožádá: vypnutý zůstává vypnutý. Na serveru: isemon --selinux."
+  },
+  "s.what-selinux-says-here-gathered-into.6e00737f": {
+   "source": "what SELinux says here, gathered into one file for whoever writes isemon's module - nothing is changed to make it",
+   "text": "co tu říká SELinux, sebrané do jednoho souboru pro toho, kdo píše modul isemonu - nic se kvůli tomu nemění"
   },
   "s.what-set-it-off.cf5a84d5": {
    "source": "what set it off",
@@ -35378,6 +35790,10 @@
    "source": "Add an {0}",
    "text": "Přidat {0}"
   },
+  "p.added-root-puts-into-the-system.80e1be6f": {
+   "source": "added {0} - root puts {1} into the system's trust within seconds",
+   "text": "přidáno {0} - root {1} během několika sekund vloží do důvěry systému"
+  },
   "p.address-es-are-banned-by-more.6054c12b": {
    "source": "{0} address(es) are banned by more than one source - by the VPN and by hand, say - and are counted under each, so the column adds up to more than the {1} ban(s) there are.",
    "text": "{0} adres(y) je zabanováno více než jedním zdrojem – třeba VPN a ručně – a počítá se u každého z nich, takže sloupec dává víc než {1} banů, které existují."
@@ -35445,6 +35861,10 @@
   "p.after-it-happened-at-much-more.8d0df169": {
    "source": "after it happened, at {0}. Much more than a couple of minutes and the script on the token server is worth a look.",
    "text": "poté, co se to stalo, v {0}. Je-li to mnohem víc než pár minut, stojí za to podívat se na skript na tokenovém serveru."
+  },
+  "p.after-the-next-restart-of-the.573b2fd7": {
+   "source": "After the next restart of the machine: {0}",
+   "text": "Po příštím restartu stroje: {0}"
   },
   "p.ago.aa37c151": {
    "source": "{0} ago",
@@ -35594,6 +36014,10 @@
    "source": "{0}_auth",
    "text": "{0}_auth"
   },
+  "p.authorities.cfe36efd": {
+   "source": "{0} authorities",
+   "text": "{0} autorit"
+  },
   "p.back-to-add-a-column-field.c95e663d": {
    "source": ", back to {0} — add a column field (an address, a port, a kind) to look further back",
    "text": ", zpět do {0} — chcete-li hledat dál do minulosti, přidejte sloupcové pole (adresu, port, druh)"
@@ -35645,6 +36069,10 @@
   "p.banning-is-switched-off-nothing-is.61107513": {
    "source": "Banning is switched off. Nothing is being enforced and nothing of ours is left on the router. The {0} address(es) below are kept as they are, and switching it back on in Settings fills the router again from them.",
    "text": "Blokování je vypnuto. Nic se neuplatňuje a na routeru nezůstalo nic našeho. {0} {0:adresa|adresy|adres} níže zůstává, jak jsou, a opětovné zapnutí v Nastavení z nich router znovu naplní."
+  },
+  "p.begin-certificate-end-certificate.c72706ab": {
+   "source": "-----BEGIN CERTIFICATE----- {0} -----END CERTIFICATE-----",
+   "text": "-----BEGIN CERTIFICATE----- {0} -----END CERTIFICATE-----"
   },
   "p.behind-nps-the-address-is-in.7af87a45": {
    "source": "Behind NPS the address is in the accounting the device sends once the machine has one — if the {0} sends no RADIUS accounting to NPS, there is none to show. docs/nps-logs.md says how to switch it on.",
@@ -36750,6 +37178,10 @@
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
   },
+  "p.isemon-s-own-connections-do-not.803deb40": {
+   "source": "isemon's own connections do not use the system's list here ({0}) - what is added here does not reach them.",
+   "text": "Vlastní spojení isemonu tu nepoužívají seznam systému ({0}) - co se tu přidá, se k nim nedostane."
+  },
   "p.isemon-s-own-rotation-for-folder.b1c366a3": {
    "source": "isemon's own rotation for {0} folder(s) no longer wanted",
    "text": "Vlastní rotace isemonu pro {0} složek už není potřeba"
@@ -37073,6 +37505,10 @@
   "p.look-up-the-names-behind-address.24829cd3": {
    "source": "Look up the names behind {0} address(es)?",
    "text": "Vyhledat jména za {0} adresami?"
+  },
+  "p.looked-at.9d22cb9f": {
+   "source": "Looked at {0}",
+   "text": "Podíváno {0}"
   },
   "p.looked-at.b224db85": {
    "source": "{0} looked at",
@@ -37758,6 +38194,10 @@
    "source": "PEM files - the certificate, its key, the chain, the root, in any order or all in one - or one PFX / PKCS#12 file. {0}",
    "text": "Soubory PEM – certifikát, jeho klíč, řetězec, kořen, v libovolném pořadí nebo vše v jednom – nebo jeden soubor PFX / PKCS#12. {0}"
   },
+  "p.pem.775a6fa6": {
+   "source": "{0}.pem",
+   "text": "{0}.pem"
+  },
   "p.perhaps-gone.7771ea6e": {
    "source": "{0} — perhaps gone",
    "text": "{0} — možná zmizelo"
@@ -37970,6 +38410,10 @@
    "source": "{0}{1} record(s) · {2}{3}{4}",
    "text": "{0}{1} záznamů · {2}{3}{4}"
   },
+  "p.refused-before-allowed-now-by-a.3ff85689": {
+   "source": "{0} refused before, allowed now - by a newer isemon_server or a boolean put in since; not counted",
+   "text": "{0} dřív odmítnuto, teď povoleno - novějším isemon_server nebo přepínačem vloženým od té doby; nepočítá se"
+  },
   "p.refused-signed-in.10b97285": {
    "source": "{0} refused · {1} signed in",
    "text": "{0} odmítnuto · {1} přihlášeno"
@@ -38138,6 +38582,14 @@
    "source": "Security Rating{0}: score {1} — {2} critical, {3} high, {4} medium, {5} low, {6} passed.",
    "text": "Security Rating{0}: skóre {1} — {2} kritických, {3} vysokých, {4} středních, {5} nízkých, {6} vyhovujících."
   },
+  "p.selinux-refused-thing-s-since-isemon.c484f804": {
+   "source": "SELinux refused {0} thing(s) since isemon's needs were put in",
+   "text": "SELinux od vložení toho, co isemon potřebuje, odmítl {0}×"
+  },
+  "p.selinux-refused-thing-s-since-the.9da7425b": {
+   "source": "SELinux refused {0} thing(s) since the machine started",
+   "text": "SELinux od startu stroje odmítl {0}×"
+  },
   "p.sending.f857e3e8": {
    "source": "sending {0}…",
    "text": "posílám {0}…"
@@ -38201,6 +38653,10 @@
   "p.sha-256.85cf4be1": {
    "source": "{0} · SHA-256 {1}",
    "text": "{0} · SHA-256 {1}"
+  },
+  "p.sha-256.975866fd": {
+   "source": "SHA-256 {0}",
+   "text": "SHA-256 {0}"
   },
   "p.show-only-the-rows-with-this.fca1f2b5": {
    "source": "Show only the rows with this {0}.",
@@ -38598,6 +39054,10 @@
    "source": "the configuration is back ({0}); the logs here were left as they are{1}",
    "text": "konfigurace je obnovena ({0}); logy zde zůstaly, jak byly{1}"
   },
+  "p.the-configuration-says-but-the-kernel.709b287a": {
+   "source": "The configuration says {0}, but the kernel does not start SELinux - it is not switched on for it (the kernel's command line, or the distribution's own step such as selinux-activate).",
+   "text": "Konfigurace říká {0}, ale jádro SELinux nespouští - není pro něj zapnutý (příkazová řádka jádra, nebo vlastní krok distribuce, jako selinux-activate)."
+  },
   "p.the-controllers-are-not-marked-anywhere.40d989fa": {
    "source": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}",
    "text": "Řadiče domény nejsou na této stránce nikde označeny. Tento program označuje za řadič to, co za něj považuje DOMÉNA — účet počítače, jehož primární skupinou je Domain Controllers — a Active Directory zde není zapnuto, takže se nikdo nikoho nezeptal.{0}"
@@ -38861,6 +39321,10 @@
   "p.the-page-before-this-one.83cb525b": {
    "source": "The page before this one.{0}",
    "text": "Předchozí stránka.{0}"
+  },
+  "p.the-pages-ask-the-daemon-on.052133d1": {
+   "source": "the pages ask the daemon on 127.0.0.1:{0}",
+   "text": "stránky se ptají démona na 127.0.0.1:{0}"
   },
   "p.the-password-for-lives-in-the.58cb7188": {
    "source": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\".",
@@ -39314,6 +39778,10 @@
    "source": "usually about {0} min",
    "text": "obvykle asi {0} min"
   },
+  "p.valid.d3ba92ce": {
+   "source": "valid {0} – {1} · {2}",
+   "text": "platnost {0} – {1} · {2}"
+  },
   "p.versions-newer-than-this-one-are.75219294": {
    "source": "{0} versions newer than this one are there - put in:",
    "text": "Novějších verzí je tam {0} – nainstalovat:"
@@ -39441,6 +39909,10 @@
   "p.what-this-site-calls-that-vlan.5b301bac": {
    "source": "What this site calls that VLAN. {0} carries the name as well as the number and not every record carries both.",
    "text": "Jak tato lokalita nazývá danou VLAN. {0} nese název i číslo a ne každý záznam nese obojí."
+  },
+  "p.what-was-refused.03d1f915": {
+   "source": "What was refused ({0})",
+   "text": "Co bylo odmítnuto ({0})"
   },
   "p.when-this-last-wrote-the-address.1ad59484": {
    "source": "When this last wrote the address lists to {0}. On a pair the two are written in the same pass, so these should be seconds apart; minutes apart means one of them has been refusing.",
@@ -39575,6 +40047,10 @@
   "r.401-no-user-name-and-password.f60acaf5": {
    "source": "· <b>401</b> no user name and password, or wrong ones",
    "text": "· <b>401</b> chybí uživatelské jméno a heslo, nebo jsou chybné"
+  },
+  "r.a-certificate-authority-of-your-own.f4f9c3dc": {
+   "source": "A certificate authority of your own - a root, or an intermediate - as PEM (<code>-----BEGIN CERTIFICATE-----</code>), or a <code>.pem</code>, <code>.crt</code> or <code>.cer</code> file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key.",
+   "text": "Vlastní certifikační autorita - kořenová nebo zprostředkující - jako PEM (<code>-----BEGIN CERTIFICATE-----</code>), nebo soubor <code>.pem</code>, <code>.crt</code> či <code>.cer</code>. Řetězec přidá každou autoritu v něm. Berou se jen autority (CA:TRUE), nikdy soukromý klíč."
   },
   "r.a-change-that-could-cut-this.1b20a420": {
    "source": "A change that could cut this server off - the firewall, or who may reach which page - is put in on trial: unless somebody presses <i>Keep it</i> on the banner in time, it goes back to what it was by itself.",
@@ -39759,6 +40235,10 @@
   "r.begin-certificate-begin-private-key.24075efc": {
    "source": "-----BEGIN CERTIFICATE-----<br>…<br>-----BEGIN PRIVATE KEY-----",
    "text": "-----BEGIN CERTIFICATE-----<br>…<br>-----BEGIN PRIVATE KEY-----"
+  },
+  "r.begin-certificate-end-certificate.5519a768": {
+   "source": "-----BEGIN CERTIFICATE-----<br>{0}<br>-----END CERTIFICATE-----<br>",
+   "text": "-----BEGIN CERTIFICATE-----<br>{0}<br>-----END CERTIFICATE-----<br>"
   },
   "r.begin-certificate-end-certificate.ccaf30d3": {
    "source": "-----BEGIN CERTIFICATE-----<br>…<br>-----END CERTIFICATE-----",
@@ -40987,6 +41467,10 @@
   "r.what-may-do-worked-out-from.8939d922": {
    "source": "What <b>{0}</b> may do, worked out from their groups in the directory when they last signed in — not set here. Move them between the two groups named under Settings, Active Directory and this follows: at their next sign-in, and while they are already signed in, at the interval set there.",
    "text": "Co smí <b>{0}</b> dělat, odvozeno z jeho skupin v adresáři při posledním přihlášení — nenastavuje se zde. Přesuňte ho mezi dvěma skupinami uvedenými v Nastavení, Active Directory, a toto se přizpůsobí: při příštím přihlášení, a pokud už je přihlášen, v intervalu, který je tam nastaven."
+  },
+  "r.what-sha-256-signs-is-no.3d565cce": {
+   "source": "What <b>{0}</b> (SHA-256 <code>{1}…</code>) signs is no longer trusted by this server - unless the system's own list has it. Connections that rely on it (LDAPS, mail…) fail from their next start.",
+   "text": "Co <b>{0}</b> (SHA-256 <code>{1}…</code>) podepíše, už tento server nepovažuje za důvěryhodné - pokud to nemá vlastní seznam systému. Spojení, která na ní závisí (LDAPS, pošta…), selžou od svého příštího startu."
   },
   "r.what-that-machine-is-called-the.1bc2deb1": {
    "source": "What that machine is called. The name is shown beside the address wherever it appears, so a page of sign-ins says <b>LogHost</b> rather than an address somebody has to recognise. It may be left empty.",

@@ -48,7 +48,8 @@ into osup.json (see osup_part). dnf and apt through Settings → Proxy
 environment and taken away - never on a command line.
 
   isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask, logfix.ask,
-                           osup.ask and otptls.ask (as root, from systemd)
+                           osup.ask, otptls.ask, acmetls.ask, selinux.ask and osroots.ask
+                           (as root, from systemd)
 The otp logs over TLS (1.10.245): asked in otptls.ask, answered in
 otptls.json - rsyslog's encrypted input for otp's nodes, its certificate and
 key in /etc/pki/rsyslog/otp/ and /etc/rsyslog.d/10-otp-tls.conf, beside the
@@ -4322,6 +4323,1141 @@ def status_read():
     return got
 
 
+
+# ---- SELinux (1.10.319) -----------------------------------------------------------
+# Settings → SELinux: how SELinux is on this machine, what isemon needs of it
+# (its module, the labels of its files, a boolean, the ports of the programs
+# around it) and what it refused - and, asked, the steps on the way to
+# enforcing: made ready (permissive at the next start), what isemon needs put
+# in, enforcing, permissive again. Nothing changes unless somebody asks: a
+# machine with SELinux disabled stays so. isemon's own programs run
+# unconfined (unconfined_service_t); what matters are the confined ones around
+# it - nginx and php-fpm (httpd_t) reading the API token and asking the daemon,
+# rsyslog (syslogd_t) on its ports, logrotate, the database server.
+# Nothing of the request is trusted: booleans and port types from the lists
+# below only, every port a number, and a port is only ever added to a type
+# (semanage port -a) - never taken from the service it belongs to (-m).
+SELINUX_ASK, SELINUX_FILE = 'selinux.ask', 'selinux.json'
+ROOT_STATE_DIR = os.environ.get('ISEMON_ROOT_STATE', '/var/lib/isemon-root')
+SE_CONFIG = os.environ.get('ISEMON_SELINUX_CONFIG', '/etc/selinux/config')
+SE_RELABEL = os.environ.get('ISEMON_SELINUX_RELABEL', '/.autorelabel')
+SE_CMDLINE = os.environ.get('ISEMON_SELINUX_CMDLINE', '/proc/cmdline')
+SE_MODULE = 'isemon_server'
+SE_CIL = os.environ.get('ISEMON_SELINUX_CIL', '/usr/local/lib/isemon/isemon_server.cil')
+# What isemon's files should be labelled; the label is the third field of the context.
+SE_LABELS = (('/run/isemon', 'httpd_var_run_t', 'the folder of the API token'),
+             ('/run/isemon/api-token', 'httpd_var_run_t', 'the API token the pages read'),
+             ('/var/www/isemon', 'httpd_sys_content_t', 'the pages'))
+# A newer policy calls the web server's run files httpd_runtime_t: the same.
+SE_SAME = {'httpd_var_run_t': ('httpd_runtime_t',)}
+SE_BOOLEANS = ('httpd_can_network_connect',)
+SE_PORT_TYPES = ('postgresql_port_t', 'mysqld_port_t', 'syslogd_port_t', 'syslog_tls_port_t',
+                 'http_port_t')
+# The programs whose refusals are isemon's business.
+SE_DOMAINS = ('httpd_t', 'syslogd_t', 'logrotate_t', 'postgresql_t', 'mysqld_t',
+              'unconfined_service_t', 'init_t', 'chronyd_t', 'system_cronjob_t')
+# The ports rsyslog may listen on as the policy ships it - nothing asked for them.
+SE_SYSLOG_OWN = {('udp', 514), ('tcp', 514), ('udp', 601), ('tcp', 601), ('udp', 20514),
+                 ('tcp', 20514), ('udp', 6514), ('tcp', 6514), ('udp', 10514), ('tcp', 10514)}
+SE_APPLIED = 'selinux-applied'      # when isemon's needs were last put in
+
+
+def _se_run(cmd, timeout=120, light=False, data=None):
+    if not shutil.which(cmd[0]):
+        return None
+    if light:
+        # The heavy ones (semanage loads the whole policy, ausearch reads the
+        # audit log since the start) at the lowest priority, behind the daemon.
+        if shutil.which('ionice'):
+            cmd = ['ionice', '-c', '3'] + cmd
+        if shutil.which('nice'):
+            cmd = ['nice', '-n', '19'] + cmd
+    try:
+        return subprocess.run(cmd, input=data, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _read_or(path, most=1048576):
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            return f.read(most)
+    except OSError:
+        return None
+
+
+def root_state_write(name, text):
+    """A note of root's own, in root's own folder - never the isemon account's,
+    which could write a time ahead there and hide every refusal."""
+    os.makedirs(ROOT_STATE_DIR, mode=0o700, exist_ok=True)
+    os.chmod(ROOT_STATE_DIR, 0o700)
+    path = os.path.join(ROOT_STATE_DIR, name)
+    fd, tmp = tempfile.mkstemp(prefix='.isemon-', dir=ROOT_STATE_DIR)
+    try:
+        with os.fdopen(fd, 'w') as f:
+            f.write(text)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def se_applied_at():
+    try:
+        fd = os.open(os.path.join(ROOT_STATE_DIR, SE_APPLIED), os.O_RDONLY | os.O_NOFOLLOW |
+                     os.O_NONBLOCK)
+        with os.fdopen(fd) as f:
+            return float((json.loads(f.read(4096)) or {}).get('at') or 0)
+    except (OSError, TypeError, ValueError, AttributeError):
+        return 0.0
+
+
+def se_auditd():
+    """Whether what SELinux refuses is written down at all: auditd running."""
+    fake = os.environ.get('ISEMON_SELINUX_AUDITD')          # tests
+    if fake:
+        return fake == 'active'
+    got = _se_run(['systemctl', 'is-active', 'auditd'], 20)
+    return got is None or (got.stdout or '').strip() == 'active'
+
+
+def se_mode():
+    got = _se_run(['getenforce'], 20)
+    if got is None:
+        return 'absent'                 # no SELinux on this machine at all (Debian, Ubuntu)
+    return (got.stdout or '').strip() or 'Disabled'
+
+
+def se_config():
+    text = _read_or(SE_CONFIG) or ''
+    out = {}
+    for line in text.splitlines():
+        m = re.match(r'^\s*(SELINUX|SELINUXTYPE)\s*=\s*([A-Za-z0-9_-]+)\s*$', line)
+        if m:
+            out[m.group(1)] = m.group(2)
+    return {'mode': out.get('SELINUX', ''), 'type': out.get('SELINUXTYPE', ''),
+            'there': bool(text)}
+
+
+def se_config_set(mode):
+    """SELINUX= in /etc/selinux/config, the rest of the file as it is."""
+    if mode not in ('permissive', 'enforcing'):
+        raise Refused('permissive or enforcing')
+    text = _read_or(SE_CONFIG)
+    if text is None:
+        raise Refused('%s is not there - is the SELinux policy installed? '
+                      '(dnf install selinux-policy-targeted)' % SE_CONFIG)
+    if re.search(r'(?m)^\s*SELINUX\s*=', text):
+        new = re.sub(r'(?m)^(\s*)SELINUX\s*=.*$', r'\g<1>SELINUX=%s' % mode, text)
+    else:
+        new = text.rstrip('\n') + '\nSELINUX=%s\n' % mode
+    if new != text:
+        st = os.stat(SE_CONFIG)
+        write_root(SE_CONFIG, new, stat.S_IMODE(st.st_mode))
+        return True
+    return False
+
+
+def se_cmdline_off():
+    """selinux=0 on the kernel's command line: the config alone does not switch it on."""
+    return bool(re.search(r'(?:^|\s)selinux=0(?:\s|$)', _read_or(SE_CMDLINE) or ''))
+
+
+def se_label(path):
+    fake = os.environ.get('ISEMON_SELINUX_LABELS')         # tests: {path: label}
+    if fake:
+        try:
+            with open(fake) as f:
+                return (json.load(f) or {}).get(path)
+        except (OSError, ValueError):
+            return None
+    try:
+        raw = os.getxattr(path, 'security.selinux', follow_symlinks=False)
+    except (OSError, AttributeError):
+        return None
+    parts = raw.decode('utf-8', 'replace').rstrip('\0').split(':')
+    return parts[2] if len(parts) >= 3 else None
+
+
+def se_module_in():
+    got = _se_run(['semodule', '-l'], 120, light=True)
+    if got is None or got.returncode != 0:
+        return None
+    return any(line.split()[:1] == [SE_MODULE] for line in got.stdout.splitlines())
+
+
+def se_bool(name):
+    got = _se_run(['getsebool', name], 20)
+    if got is None or got.returncode != 0:
+        return None
+    return bool(re.search(r'-->\s*on\s*$', got.stdout.strip()))
+
+
+def se_ports():
+    """semanage port -l: {(type, proto): [(lo, hi), ...]}; None without semanage."""
+    got = _se_run(['semanage', 'port', '-l'], 120, light=True)
+    if got is None or got.returncode != 0:
+        return None
+    out = {}
+    for line in got.stdout.splitlines():
+        m = re.match(r'^(\S+_port_t)\s+(tcp|udp|sctp|dccp)\s+(.+)$', line.strip())
+        if not m:
+            continue
+        spans = []
+        for p in m.group(3).split(','):
+            a, _, b = p.strip().partition('-')
+            try:
+                spans.append((int(a), int(b or a)))
+            except ValueError:
+                continue
+        out.setdefault((m.group(1), m.group(2)), []).extend(spans)
+    return out
+
+
+def se_port_has(ports, kind, proto, port):
+    return any(lo <= port <= hi for lo, hi in (ports or {}).get((kind, proto), []))
+
+
+def se_rsyslog_needs():
+    """The ports rsyslog listens on here that its policy does not give it -
+    read by root off rsyslog's own files, nothing the daemon said. An input in
+    a TLS file (isemon's otp and acme ones) is syslog_tls_port_t, the rest
+    syslogd_port_t."""
+    out = []
+    try:
+        ports = rsyslog_ports()
+    except Exception:                                   # noqa: BLE001
+        return out
+    for p in ports:
+        try:
+            n = int(p['port'])
+        except (TypeError, ValueError, KeyError):
+            continue
+        if (p['proto'], n) in SE_SYSLOG_OWN:
+            continue
+        tls = 'tls' in str(p.get('file') or '').lower()
+        out.append({'port': n, 'proto': 'tcp' if tls else p['proto'],
+                    'type': 'syslog_tls_port_t' if tls else 'syslogd_port_t',
+                    'why': 'rsyslog receives %s on it (%s)' % (
+                        'logs over TLS' if tls else 'logs', str(p.get('file') or '')[:60]),
+                    'own': True})
+    return out
+
+
+def se_denials(since=0.0):
+    """What SELinux refused since the machine started - or since isemon's needs
+    were last put in (what was refused before that is what they put right) -
+    for the programs isemon works with."""
+    got = _se_run(['ausearch', '-m', 'AVC,USER_AVC', '-ts', 'boot'], 120, light=True)
+    if got is None:
+        return {'tool': False, 'total': 0, 'groups': [], 'since': since}
+    groups, lines, total = {}, {}, 0
+    for line in (got.stdout or '').splitlines():
+        if 'avc:' not in line or 'denied' not in line:
+            continue
+        when = re.search(r'msg=audit\((\d+)(?:\.\d+)?:', line)
+        if since and when and int(when.group(1)) < since:
+            continue
+        perms = re.search(r'denied\s+\{([^}]*)\}', line)
+        sc = re.search(r'scontext=(\S+)', line)
+        tc = re.search(r'tcontext=(\S+)', line)
+        cl = re.search(r'tclass=(\S+)', line)
+        comm = re.search(r'comm=(\S+)', line)
+        name = re.search(r'\bname=(\S+)', line)
+        if not (perms and sc and tc and cl):
+            continue
+        st = (sc.group(1).split(':') + ['', '', ''])[2]
+        tt = (tc.group(1).split(':') + ['', '', ''])[2]
+        what = ' '.join(x for x in (comm.group(1) if comm else '', name.group(1) if name else '')
+                        if x)
+        if st not in SE_DOMAINS and 'isemon' not in line:
+            continue
+        total += 1
+        key = (st, tt, cl.group(1), perms.group(1).strip())
+        lines[key] = line
+        g = groups.setdefault(key, {'source': st, 'target': tt, 'class': cl.group(1),
+                                    'perms': perms.group(1).strip(), 'count': 0, 'what': ''})
+        g['count'] += 1
+        g['what'] = what.replace('"', '')[:120] or g['what']
+    # Refused once, allowed now: a module or a boolean that came after it
+    # settles it - not counted.
+    settled = 0
+    for key in se_allowed_now(lines):
+        settled += groups[key]['count']
+        total -= groups.pop(key)['count']
+    out = sorted(groups.values(), key=lambda g: -g['count'])[:30]
+    return {'tool': True, 'total': total, 'groups': out, 'since': since, 'settled': settled}
+
+
+def se_allowed_now(lines):
+    """Which of the refusals (one line of each kind) the policy loaded now
+    allows, as audit2why tells: "would be allowed by active policy"."""
+    if not lines:
+        return []
+    by_id = {}
+    for key, line in lines.items():
+        m = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+        if m:
+            by_id[m.group(1)] = key
+    if not by_id:
+        return []
+    got = _se_run(['audit2why'], 300, light=True,
+                  data=''.join(lines[k] + '\n' for k in by_id.values()))
+    if got is None or got.returncode != 0:
+        return []
+    now, cur = set(), None
+    for line in (got.stdout or '').splitlines():
+        m = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+        if m and 'avc:' in line:
+            cur = by_id.get(m.group(1))
+            continue
+        if cur is not None and 'would be allowed by active policy' in line:
+            now.add(cur)
+    return sorted(now)
+
+
+def se_want_checked(r, left_out=None):
+    """What the daemon says isemon needs: booleans and ports, checked against
+    what may be. A port of a type this helper does not set is said and left
+    out, never the whole request refused over it."""
+    bools = []
+    for b in (r.get('booleans') or [])[:8]:
+        if not isinstance(b, dict) or b.get('name') not in SE_BOOLEANS:
+            raise Refused('a boolean isemon does not set')
+        bools.append({'name': b['name'], 'why': str(b.get('why') or '')[:120]})
+    ports = []
+    for p in (r.get('ports') or [])[:16]:
+        if left_out is not None and isinstance(p, dict) and p.get('proto') in ('tcp', 'udp') and \
+                p.get('type') not in SE_PORT_TYPES and \
+                re.match(r'^[a-z][a-z0-9_]{0,40}_port_t\Z', str(p.get('type') or '')):
+            left_out.append('port %s/%s (%s) left out: this helper does not set %s - '
+                            './install.sh --upgrade puts in one that does'
+                            % (str(p.get('port'))[:6], p['proto'], str(p.get('why') or '')[:80],
+                               p['type']))
+            continue
+        if not isinstance(p, dict) or p.get('type') not in SE_PORT_TYPES or \
+                p.get('proto') not in ('tcp', 'udp'):
+            raise Refused('a port type isemon does not set')
+        try:
+            n = int(p.get('port'))
+        except (TypeError, ValueError):
+            raise Refused('a port is a number')
+        if not 1 <= n <= 65535:
+            raise Refused('a port is 1 to 65535')
+        ports.append({'port': n, 'proto': p['proto'], 'type': p['type'],
+                      'why': str(p.get('why') or '')[:120]})
+    seen = {(p['port'], p['proto']) for p in ports}
+    for p in se_rsyslog_needs():
+        if (p['port'], p['proto']) not in seen:
+            seen.add((p['port'], p['proto']))
+            ports.append(p)
+    return bools, ports
+
+
+def se_label_ok(got, want):
+    return got == want or got in SE_SAME.get(want, ())
+
+
+def se_check(r):
+    left = []
+    bools, ports = se_want_checked(r, left)
+    mode = se_mode()
+    conf = se_config()
+    out = {'mode': mode, 'config': conf['mode'], 'policy': conf['type'],
+           'relabel_pending': os.path.exists(SE_RELABEL), 'cmdline_off': se_cmdline_off(),
+           'tools': {'semanage': bool(shutil.which('semanage')),
+                     'ausearch': bool(shutil.which('ausearch')),
+                     'semodule': bool(shutil.which('semodule'))},
+           'module': None, 'labels': [], 'booleans': [], 'ports': [],
+           'denials': {'tool': False, 'total': 0, 'groups': []}, 'problems': [],
+           'left_out': left}
+    if mode == 'absent':
+        out['ready'] = False
+        return out
+    on = mode in ('Enforcing', 'Permissive')
+    out['module'] = se_module_in()
+    for path, want, why in SE_LABELS:
+        if not os.path.exists(path):
+            continue
+        got = se_label(path) if on else None
+        out['labels'].append({'path': path, 'label': got, 'want': want, 'why': why,
+                              'ok': se_label_ok(got, want) if on else None})
+    for b in bools:
+        out['booleans'].append(dict(b, on=se_bool(b['name']) if on else None))
+    known = se_ports() if on else None
+    for p in ports:
+        out['ports'].append(dict(p, labelled=(se_port_has(known, p['type'], p['proto'], p['port'])
+                                             if known is not None else None)))
+    if on:
+        out['denials'] = se_denials(se_applied_at())
+        out['auditd'] = se_auditd()
+    probs = out['problems']
+    if on:
+        if out['module'] is False:
+            probs.append('isemon\'s module (%s) is not installed' % SE_MODULE)
+        probs.extend('%s is labelled %s, not %s (%s)' % (x['path'], x['label'] or '?', x['want'],
+                                                         x['why'])
+                     for x in out['labels'] if x['ok'] is False)
+        probs.extend('the boolean %s is off (%s)' % (x['name'], x['why'])
+                     for x in out['booleans'] if x['on'] is False)
+        probs.extend('port %d/%s is not labelled %s (%s)' % (x['port'], x['proto'], x['type'],
+                                                             x['why'])
+                     for x in out['ports'] if x['labelled'] is False)
+        if known is None and ports:
+            probs.append('semanage is not on this machine - the ports cannot be checked '
+                         '(dnf install policycoreutils-python-utils)')
+        if out['denials']['total']:
+            probs.append(('SELinux refused %d thing(s) since isemon\'s needs were put in'
+                          if out['denials'].get('since') else
+                          'SELinux refused %d thing(s) since the machine started')
+                         % out['denials']['total'])
+        if not out.get('auditd', True):
+            probs.append('auditd does not run - what SELinux refuses is not written down '
+                         '(systemctl enable --now auditd)')
+        if not out['denials']['tool']:
+            probs.append('ausearch is not on this machine - what SELinux refused cannot be '
+                         'read (dnf install audit)')
+    out['ready'] = (mode == 'Permissive' and not probs)
+    return out
+
+
+def se_apply(bools, ports, said, mark=True):
+    """isemon's module, labels, booleans and ports - on a machine where SELinux
+    is on. `mark`: when anything was changed, what SELinux refused before no
+    longer counts."""
+    changed = False
+    inpol = _read_or(SE_CIL + '.in-policy')
+    if os.path.exists(SE_CIL) and shutil.which('semodule') and (
+            se_module_in() is not True or inpol != _read_or(SE_CIL)):
+        got = _se_run(['semodule', '-i', SE_CIL], 300)
+        if got is None or got.returncode != 0:
+            raise Refused('semodule -i %s: %s' % (SE_CIL, ((got.stderr or got.stdout)
+                                                           if got else '').strip()[-200:]))
+        said.append('isemon\'s module installed')
+        changed = True
+        try:
+            shutil.copyfile(SE_CIL, SE_CIL + '.in-policy')
+        except OSError:
+            pass
+    for b in bools:
+        if se_bool(b['name']) is False:
+            got = _se_run(['setsebool', '-P', b['name'], 'on'], 300)
+            if got is None or got.returncode != 0:
+                raise Refused('setsebool -P %s on: %s' % (b['name'], ((got.stderr or '') if got
+                                                                      else '').strip()[-200:]))
+            said.append('%s on' % b['name'])
+            changed = True
+    known = se_ports()
+    for p in ports:
+        if known is None:
+            raise Refused('semanage is not on this machine (dnf install '
+                          'policycoreutils-python-utils)')
+        if se_port_has(known, p['type'], p['proto'], p['port']):
+            continue
+        got = _se_run(['semanage', 'port', '-a', '-t', p['type'], '-p', p['proto'],
+                       str(p['port'])], 300)
+        if got is not None and got.returncode != 0 and 'already defined' in (got.stderr or ''):
+            # Never taken from the service it belongs to: -m labelled it for
+            # isemon, and that service could not bind it at its next start.
+            raise Refused('port %d/%s is another service\'s in the SELinux policy - choose '
+                          'another port for it (%s)' % (p['port'], p['proto'], p['why']))
+        if got is None or got.returncode != 0:
+            raise Refused('semanage port %d/%s: %s' % (p['port'], p['proto'], ((got.stderr or '')
+                                                       if got else '').strip()[-200:]))
+        said.append('port %d/%s labelled %s' % (p['port'], p['proto'], p['type']))
+        changed = True
+    if shutil.which('restorecon') and not NO_SERVICES:
+        got = _se_run(['restorecon', '-R', '-v'] + [x for x in ('/run/isemon', '/var/www/isemon')
+                                                  if os.path.exists(x)], 300)
+        if got is not None and 'elabel' in (got.stdout or '') + (got.stderr or ''):
+            said.append('isemon\'s files labelled again')
+            changed = True
+    # From now on what is refused counts again: what was refused before is
+    # what this put right. Only when something changed, and never on the way
+    # to enforcing.
+    if mark and changed:
+        root_state_write(SE_APPLIED, json.dumps({'at': time.time()}))
+
+
+def se_do(r):
+    do = r.get('do')
+    left = []
+    bools, ports = se_want_checked(r, left)
+    said = list(left)
+    if do == 'check':
+        return se_check(r)
+    if do == 'report':
+        data = se_report_bytes(r, 'isemon-selinux-report')
+        write_here_bytes(SE_REPORT_FILE, data)
+        return {'report': SE_REPORT_FILE, 'bytes': len(data), 'at': time.time()}
+    mode = se_mode()
+    if mode == 'absent':
+        raise Refused('there is no SELinux on this machine')
+    if do == 'prepare':
+        if mode == 'Enforcing':
+            raise Refused('SELinux is enforcing already')
+        if se_config_set('permissive'):
+            said.append('%s: SELINUX=permissive' % SE_CONFIG)
+        if mode == 'Disabled':
+            # Every file labelled at the next start, before anything runs
+            # (minutes); the boolean and the ports are put in once it is
+            # permissive ("Put in what isemon needs").
+            with open(SE_RELABEL, 'a'):
+                pass
+            said.append('the files are labelled at the next start of the machine')
+            if se_cmdline_off() and shutil.which('grubby'):
+                got = _se_run(['grubby', '--update-kernel', 'ALL', '--remove-args', 'selinux'], 120)
+                if got is None or got.returncode != 0:
+                    raise Refused('grubby: %s' % ((got.stderr or '') if got else '')[-200:])
+                said.append('selinux=0 taken off the kernel\'s command line')
+            elif se_cmdline_off():
+                said.append('the kernel\'s command line has selinux=0: take it away '
+                            '(grubby --update-kernel ALL --remove-args selinux)')
+            if os.path.exists(SE_CIL) and shutil.which('semodule'):
+                got = _se_run(['semodule', '-i', SE_CIL], 300)    # may not work while disabled
+                if got is not None and got.returncode == 0:
+                    said.append('isemon\'s module installed')
+            said.append('restart the machine - it comes up permissive: nothing is refused yet, '
+                        'what would be is written down')
+        else:
+            se_apply(bools, ports, said)
+    elif do == 'enforce':
+        if mode != 'Permissive':
+            raise Refused('SELinux is %s - it goes to enforcing from permissive only'
+                          % mode.lower())
+        se_apply(bools, ports, said, mark=False)
+        c = se_check(r)
+        if c['problems']:
+            raise Refused('not yet: ' + '; '.join(c['problems'][:4]))
+        got = _se_run(['setenforce', '1'], 60)
+        if got is None or got.returncode != 0:
+            raise Refused('setenforce 1: %s' % ((got.stderr or '') if got else '')[-200:])
+        se_config_set('enforcing')
+        said.append('SELinux is enforcing, and stays so after a restart')
+    elif do == 'permissive':
+        if mode == 'Disabled':
+            raise Refused('SELinux is disabled - "prepare" makes it permissive')
+        if mode == 'Enforcing':
+            got = _se_run(['setenforce', '0'], 60)
+            if got is None or got.returncode != 0:
+                raise Refused('setenforce 0: %s' % ((got.stderr or '') if got else '')[-200:])
+        se_config_set('permissive')
+        said.append('SELinux is permissive, and stays so after a restart')
+    else:
+        raise Refused('check, prepare, enforce, permissive or report')
+    out = se_check(r)
+    out['said'] = said
+    return out
+
+
+# ---- what SELinux says here, gathered for whoever writes isemon's module -------
+SE_REPORT_FILE = 'selinux-report.tar.gz'
+SE_REPORT_MOST = 2 * 1024 * 1024        # each part at most, before it is packed
+SE_REPORT_PATHS = ('/run/isemon', '/run/isemon/api-token', '/var/lib/isemon', '/var/lib/isemon/web',
+                   '/etc/isemon', '/etc/isemon/config.json', '/var/www/isemon', '/usr/local/lib/isemon',
+                   '/var/log/isemon', '/var/log/remote', '/etc/nginx/certs', '/etc/nginx/conf.d',
+                   '/etc/rsyslog.d', '/etc/pki/rsyslog', '/run/php-fpm', '/var/lib/pgsql',
+                   '/var/lib/mysql', '/etc/logrotate.d', '/etc/cron.daily')
+SE_REPORT_COMMS = ('python', 'isemon', 'nginx', 'php-fpm', 'rsyslogd', 'postgres', 'postmaster',
+                   'mariadbd', 'mysqld', 'auditd', 'logrotate', 'chronyd')
+SE_REPORT_PORT_TYPES = ('http_port_t', 'http_cache_port_t', 'postgresql_port_t', 'mysqld_port_t',
+                        'syslogd_port_t', 'syslog_tls_port_t', 'rsh_port_t', 'unreserved_port_t')
+
+
+def _se_cut(text):
+    b = text.encode('utf-8', 'replace')
+    if len(b) <= SE_REPORT_MOST:
+        return text
+    # The newest lines kept: the end of the audit log is what came last.
+    return '(the first %d bytes left out - too long)\n' % (len(b) - SE_REPORT_MOST) + \
+        b[-SE_REPORT_MOST:].decode('utf-8', 'replace')
+
+
+def _se_out(cmd, timeout=120, data=None, light=True):
+    """A command's words for the report - what it said, or why it said nothing."""
+    if not shutil.which(cmd[0]):
+        return '(%s is not on this machine)\n' % cmd[0]
+    if light:
+        if shutil.which('ionice'):
+            cmd = ['ionice', '-c', '3'] + cmd
+        if shutil.which('nice'):
+            cmd = ['nice', '-n', '19'] + cmd
+    try:
+        got = subprocess.run(cmd, input=data, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError) as e:
+        return '(%s: %s)\n' % (' '.join(cmd), e)
+    return _se_cut((got.stdout or '') + (('\n--- stderr ---\n' + got.stderr)
+                                         if (got.stderr or '').strip() else ''))
+
+
+def se_report_parts(r):
+    """Every part of the report: {name: text}. Read only - nothing is changed."""
+    parts = {}
+    parts['check.json'] = json.dumps(se_check(r), indent=1, sort_keys=True)
+    parts['isemon.json'] = json.dumps({'facts': r.get('facts') if isinstance(r.get('facts'), dict)
+                                       else {},
+                                       'want': {'booleans': r.get('booleans') or [],
+                                                'ports': r.get('ports') or []}},
+                                      indent=1, sort_keys=True)[:65536]
+    kinds = 'AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR'
+    raw = _se_out(['ausearch', '-m', kinds, '-ts', 'boot'], 300)
+    parts['avc-raw.txt'] = raw
+    parts['avc.txt'] = _se_out(['ausearch', '-m', kinds, '-ts', 'boot', '-i'], 300)
+    if raw.startswith('('):
+        parts['audit2why.txt'] = parts['audit2allow.te'] = raw
+    else:
+        parts['audit2why.txt'] = _se_out(['audit2why'], 300, data=raw)
+        parts['audit2allow.te'] = _se_out(['audit2allow', '-m', 'isemon_local'], 300, data=raw)
+    sysw = []
+    for name, cmd in (('os-release', ['cat', '/etc/os-release']), ('kernel', ['uname', '-a']),
+                      ('started', ['uptime', '-s']), ('getenforce', ['getenforce']),
+                      ('sestatus', ['sestatus', '-v']),
+                      ('packages', ['rpm', '-q', 'selinux-policy', 'selinux-policy-targeted',
+                                    'policycoreutils', 'policycoreutils-python-utils',
+                                    'libselinux-utils', 'audit', 'nginx', 'php-fpm', 'rsyslog',
+                                    'postgresql-server', 'mariadb-server', 'logrotate']),
+                      ('kernel command line', ['cat', SE_CMDLINE]),
+                      ('selinux config', ['cat', SE_CONFIG]),
+                      ('auditd', ['systemctl', 'is-active', 'auditd'])):
+        sysw.append('==== %s\n%s' % (name, _se_out(cmd, 60, light=False)))
+    parts['system.txt'] = '\n'.join(sysw)
+    lab = []
+    for p in SE_REPORT_PATHS:
+        if os.path.lexists(p):
+            lab.append(_se_out(['ls', '-Zd', p], 20, light=False).rstrip())
+            if os.path.isdir(p) and not os.path.islink(p) and p not in ('/var/log/remote',):
+                lab.append(_se_out(['ls', '-Za', p], 20, light=False).rstrip())
+            lab.append('  policy says: ' + _se_out(['matchpathcon', p], 20, light=False).strip())
+    parts['labels.txt'] = '\n'.join(lab) + '\n'
+    ps = _se_out(['ps', '-eZo', 'label,user,pid,comm,args'], 60, light=False)
+    keep = [x for x in ps.splitlines() if x.startswith('LABEL') or
+            any(c in x for c in SE_REPORT_COMMS)]
+    # Arguments cut to 200: what runs, not every word it was given.
+    parts['processes.txt'] = '\n'.join(x[:200] for x in keep) + '\n'
+    ports = _se_out(['semanage', 'port', '-l'], 300)
+    parts['ports.txt'] = '==== labelled\n' + '\n'.join(
+        x for x in ports.splitlines() if x.split()[:1] and x.split()[0] in SE_REPORT_PORT_TYPES) + \
+        '\n\n==== listening\n' + _se_out(['ss', '-lntupZ'], 60, light=False)
+    bools = _se_out(['getsebool', '-a'], 60, light=False)
+    parts['booleans.txt'] = '\n'.join(x for x in bools.splitlines() if re.match(
+        r'^(httpd_|logging_|nis_enabled|daemons_|domain_can|postgresql_|mysql_|logrotate_)',
+        x)) + '\n'
+    mods = _se_out(['semodule', '-l'], 300)
+    parts['modules.txt'] = '==== isemon\n' + '\n'.join(
+        x for x in mods.splitlines() if 'isemon' in x.lower()) + \
+        '\n\n==== %s\n%s\n==== in the policy\n%s\n' % (
+            SE_CIL, _read_or(SE_CIL) or '(not there)',
+            _read_or(SE_CIL + '.in-policy') or '(none put in yet)')
+    parts['README.txt'] = (
+        'isemon - what SELinux says on this machine, for whoever writes isemon\'s module\n'
+        '(isemon_server). Made %s. Nothing was changed to make it.\n\n'
+        'check.json      the card: mode, module, labels, booleans, ports, refusals\n'
+        'avc*.txt        what SELinux refused since the machine started (raw and readable)\n'
+        'audit2why.txt   why; audit2allow.te: what would allow it - a hint, not to be loaded\n'
+        'labels.txt      the labels of isemon\'s files and what the policy says they should be\n'
+        'processes.txt   the domains the programs run in; ports.txt, booleans.txt, modules.txt\n'
+        'system.txt      the system, the policy and the packages; isemon.json: what isemon uses\n\n'
+        'No password, key or token of isemon is in it. The audit log holds the command lines of\n'
+        'the programs refused something: isemon never puts a secret on one - other programs on\n'
+        'this machine may. Look through avc*.txt before sending it on.\n'
+        % time.strftime('%Y-%m-%d %H:%M:%S'))
+    return parts
+
+
+def se_report_bytes(r, top):
+    import io
+    import tarfile
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode='w:gz') as tf:
+        for name, text in se_report_parts(r).items():
+            data = text.encode('utf-8', 'replace')
+            info = tarfile.TarInfo('%s/%s' % (top, name))
+            info.size = len(data)
+            info.mtime = int(time.time())
+            info.mode = 0o600
+            tf.addfile(info, io.BytesIO(data))
+    return buf.getvalue()
+
+
+def write_here_bytes(name, data):
+    """write_here for bytes: in the folder opened at the start, never by its
+    path - the isemon account owns the folder above it."""
+    d = web_fd()
+    tmp = '.%s.%d' % (name, os.getpid())
+    try:
+        os.unlink(tmp, dir_fd=d)
+    except OSError:
+        pass
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o640, dir_fd=d)
+    with os.fdopen(fd, 'wb') as f:
+        f.write(data)
+        try:
+            import grp
+            os.fchown(f.fileno(), 0, grp.getgrnam(SERVICE_GROUP).gr_gid)
+        except (KeyError, OSError):
+            pass
+    os.replace(tmp, name, src_dir_fd=d, dst_dir_fd=d)
+
+
+def selinux_part():
+    try:
+        raw = read_req(SELINUX_ASK, 16384)
+    except FileNotFoundError:
+        return
+    except (Refused, OSError):
+        drop_entry(SELINUX_ASK)             # a link or a folder in its place: never followed
+        return
+    drop_entry(SELINUX_ASK)
+    out = {'at': time.time(), 'ok': False, 'id': ''}
+    try:
+        try:
+            r = json.loads(raw.decode('utf-8'))
+        except ValueError:
+            raise Refused('the request does not read')
+        if not isinstance(r, dict):
+            raise Refused('the request is not an object')
+        out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
+        if r.get('do') not in ('check', 'report'):
+            # A step changes the machine: one asked long ago is not done.
+            try:
+                at = float(r.get('at') or 0)
+            except (TypeError, ValueError):
+                at = 0.0
+            if not math.isfinite(at) or abs(time.time() - at) > 600:
+                raise Refused('that was asked too long ago - ask again on the page')
+        out['data'] = se_do(r)
+        out['ok'] = True
+    except Refused as e:
+        out['said'] = str(e)[:400]
+    except Exception as e:                              # noqa: BLE001 - said, never lost
+        out['said'] = 'it went wrong: %s' % str(e)[:300]
+    write_here(SELINUX_FILE, json.dumps(out))
+
+
+# ---- the system's trusted roots (1.10.319) ----------------------------------------
+# Certificate authorities of one's own put into the trust of the whole system -
+# curl, dnf, LDAPS to a domain controller, mail, isemon's own connections:
+# every program that uses the system's trust. Only by the system's own way of
+# adding to it, never by touching the distribution's bundle: a file in the
+# folder of local additions, then its own tool -
+#   RHEL / AlmaLinux / Rocky: /etc/pki/ca-trust/source/anchors/*.pem, update-ca-trust extract
+#   Debian / Ubuntu:          /usr/local/share/ca-certificates/*.crt, update-ca-certificates
+# Both merge that folder with the distribution's list every time they run -
+# also when an update of the ca-certificates package runs them - so the
+# distribution's list keeps coming with the system's updates and these stay
+# beside it. isemon's files are named isemon-<sha256 16>.pem (.crt): isemon
+# lists, writes and removes only those; anything else in the folder was put
+# there by somebody else and is only shown. What is asked is always the whole
+# set wanted (`sync`). Every certificate is read by openssl here again.
+OSROOTS_ASK = 'osroots.ask'
+OSROOTS_FILE = 'osroots.json'
+OSROOTS_MAX = 50                    # isemon's certificates at most
+OSROOTS_PEM_MAX = 16384             # one certificate, as PEM
+OSROOTS_NAME_RE = re.compile(r'^isemon-[0-9a-f]{16}\.(pem|crt)\Z')
+OSROOTS_BLOCK_RE = re.compile(r'-----BEGIN CERTIFICATE-----([A-Za-z0-9+/=\s]*?)-----END CERTIFICATE-----')
+OSROOTS_FLAVOURS = {
+    'rhel': {'dir': '/etc/pki/ca-trust/source/anchors', 'ext': '.pem',
+             'tool': ['update-ca-trust', 'extract'],
+             'bundle': '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem',
+             'pkg': ['rpm', '-q', 'ca-certificates']},
+    'debian': {'dir': '/usr/local/share/ca-certificates', 'ext': '.crt',
+               'tool': ['update-ca-certificates'],
+               'bundle': '/etc/ssl/certs/ca-certificates.crt',
+               'pkg': ['dpkg-query', '-W', '-f=ca-certificates-${Version}', 'ca-certificates']}}
+
+
+def osroots_where():
+    """Which way this system adds to its trust - each part overridable for the
+    tests, by the environment of the unit (root's alone)."""
+    fl = os.environ.get('ISEMON_OSROOTS_FLAVOUR', '')
+    if fl not in OSROOTS_FLAVOURS:
+        fl = ''
+        if os.path.isdir('/etc/pki/ca-trust/source') or shutil.which('update-ca-trust'):
+            fl = 'rhel'
+        elif os.path.isdir('/usr/local/share/ca-certificates') or \
+                shutil.which('update-ca-certificates'):
+            fl = 'debian'
+    if not fl:
+        return None
+    w = dict(OSROOTS_FLAVOURS[fl], flavour=fl)
+    w['dir'] = os.environ.get('ISEMON_OSROOTS_DIR') or w['dir']
+    w['bundle'] = os.environ.get('ISEMON_OSROOTS_BUNDLE') or w['bundle']
+    if os.environ.get('ISEMON_OSROOTS_EXTRACT'):
+        w['tool'] = os.environ['ISEMON_OSROOTS_EXTRACT'].split()
+    if 'ISEMON_OSROOTS_PKG' in os.environ:
+        w['pkg'] = os.environ['ISEMON_OSROOTS_PKG'].split()
+    return w
+
+
+def osroots_blocks(text):
+    """Each certificate of a text as (pem, der) - nothing but certificates: a
+    private key, or a text with no certificate in it, refused whole."""
+    import base64
+    text = str(text or '')
+    if re.search(r'PRIVATE KEY|BEGIN ENCRYPTED|BEGIN PKCS7|BEGIN TRUSTED CERTIFICATE', text):
+        raise Refused('no private key and nothing but certificates (-----BEGIN CERTIFICATE-----)')
+    out = []
+    for body in OSROOTS_BLOCK_RE.findall(text):
+        try:
+            der = base64.b64decode(re.sub(r'\s+', '', body), validate=True)
+        except ValueError:
+            raise Refused('a certificate that is not base64')
+        if not der or len(der) > OSROOTS_PEM_MAX * 3 // 4:
+            raise Refused('a certificate of %d bytes - one is a few kB at most' % len(der))
+        enc = base64.b64encode(der).decode('ascii')
+        out.append(('-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----\n' % '\n'.join(
+            enc[i:i + 64] for i in range(0, len(enc), 64)), der))
+    if not out:
+        raise Refused('no certificate in it (-----BEGIN CERTIFICATE-----)')
+    return out
+
+
+def _osroots_time(s):
+    import calendar
+    try:
+        return calendar.timegm(time.strptime(re.sub(r'\s+', ' ', s.strip()), '%b %d %H:%M:%S %Y %Z'))
+    except ValueError:
+        return 0
+
+
+def osroots_facts(pem, der):
+    """What one certificate is, as openssl reads it - and what stands against
+    it (`refused`) or is to be known (`warn`). The same words as the daemon's
+    osr_facts."""
+    import hashlib
+    txt = openssl(['x509', '-noout', '-text', '-nameopt', 'RFC2253'],
+                  'not a certificate openssl reads', data=pem)
+
+    def one(rx):
+        m = re.search(rx, txt, re.M)
+        return m.group(1).strip() if m else ''
+    f = {'fp': hashlib.sha256(der).hexdigest(), 'subject': one(r'^\s*Subject: ?(.*)$')[:400],
+         'issuer': one(r'^\s*Issuer: ?(.*)$')[:400],
+         'not_before': _osroots_time(one(r'Not Before\s*: (.*)$')),
+         'not_after': _osroots_time(one(r'Not After\s*: (.*)$')),
+         'sig': one(r'Signature Algorithm: (\S+)')[:60]}
+    cn = re.search(r'(?:^|,)CN=((?:\\.|[^,])*)', f['subject'])
+    f['cn'] = (cn.group(1) if cn else f['subject'])[:200]
+    alg = one(r'Public Key Algorithm: (\S+)')
+    bits = one(r'Public-Key: \((\d+) bit\)')
+    curve = one(r'NIST CURVE: (\S+)') or one(r'ASN1 OID: (\S+)')
+    f['key'] = ('RSA %s' % bits) if alg == 'rsaEncryption' else \
+        ('EC %s' % (curve or bits)) if alg == 'id-ecPublicKey' else \
+        (alg.replace('ED25519', 'Ed25519').replace('ED448', 'Ed448')[:40] if alg else '?')
+    f['bits'] = int(bits) if bits.isdigit() else 0
+    bc = re.search(r'X509v3 Basic Constraints:.*\n\s*(CA:(TRUE|FALSE))', txt)
+    f['ca'] = bool(bc and bc.group(2) == 'TRUE')
+    ku = re.search(r'X509v3 Key Usage:.*\n\s*(.*)', txt)
+    f['ku_sign'] = None if not ku else ('Certificate Sign' in ku.group(1))
+    f['root'] = f['subject'] == f['issuer']
+    f['kind'] = 'root' if f['root'] else 'intermediate'
+    refused, warn = [], []
+    now = time.time()
+    if not bc:
+        refused.append('it says nothing of being an authority (no basicConstraints CA:TRUE) - '
+                       'only a certificate authority goes here')
+    elif not f['ca']:
+        refused.append('it is not a certificate authority (CA:FALSE) - a server\'s own certificate '
+                       'does not go here')
+    if f['ku_sign'] is False:
+        refused.append('its key usage does not let it sign certificates (no keyCertSign)')
+    if f['not_after'] and f['not_after'] < now:
+        warn.append('it ran out on %s - nothing it signed is trusted' % time.strftime(
+            '%Y-%m-%d', time.gmtime(f['not_after'])))
+    if f['not_before'] and f['not_before'] > now + 300:
+        warn.append('it is valid only from %s' % time.strftime('%Y-%m-%d', time.gmtime(f['not_before'])))
+    if not f['root'] and re.match(r'(?i)(sha1|md5|md2)', f['sig']):
+        warn.append('it is signed with %s - the system\'s crypto policy (DEFAULT) refuses it, and '
+                    'every chain through it' % f['sig'])
+    if f['key'].startswith('RSA') and 0 < f['bits'] < 2048:
+        warn.append('its key has %d bits - the system\'s crypto policy (DEFAULT) refuses fewer '
+                    'than 2048' % f['bits'])
+    f['refused'], f['warn'] = refused, warn
+    return f
+
+
+def osroots_dir_ok(d, make=False):
+    """The folder of local additions: a folder of root's, never a link."""
+    try:
+        st = os.lstat(d)
+    except FileNotFoundError:
+        if not make:
+            return False
+        os.makedirs(d, 0o755, exist_ok=True)
+        st = os.lstat(d)
+    if not stat.S_ISDIR(st.st_mode):
+        raise Refused('%s is not a folder (a link?) - nothing is written there' % d)
+    if (st.st_uid != 0 and not NO_SERVICES) or st.st_mode & 0o022:
+        raise Refused('%s is not root\'s alone (owner %d, mode %o) - nothing is written there'
+                      % (d, st.st_uid, stat.S_IMODE(st.st_mode)))
+    return True
+
+
+def _osroots_read(path, most=1048576):
+    """A plain file's bytes - None for a link (never followed), a folder, a pipe."""
+    import errno
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError as e:
+        if e.errno in (errno.ELOOP, errno.EISDIR, errno.ENXIO):
+            return None
+        raise
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return None
+        data = os.read(fd, most + 1)
+    finally:
+        os.close(fd)
+    return data[:most]
+
+
+def osroots_files(d):
+    """[(relative name, path)] of the folder - one level of subfolders too (Debian reads them)."""
+    out = []
+    try:
+        top = sorted(os.listdir(d))
+    except OSError:
+        return out
+    for n in top[:500]:
+        p = os.path.join(d, n)
+        if os.path.isdir(p) and not os.path.islink(p):
+            try:
+                out += [(n + '/' + m, os.path.join(p, m)) for m in sorted(os.listdir(p))[:200]]
+            except OSError:
+                pass
+        else:
+            out.append((n, p))
+    return out
+
+
+def osroots_cert_of_file(path):
+    """The certificates of a file somebody else put there - PEM or DER - with their facts."""
+    raw = _osroots_read(path)
+    if raw is None:
+        return None
+    text = raw.decode('ascii', 'replace')
+    if '-----BEGIN CERTIFICATE-----' not in text:
+        try:
+            got = subprocess.run(['openssl', 'x509', '-inform', 'DER'], input=raw,
+                                 capture_output=True, timeout=30)
+            if got.returncode != 0:
+                return []
+            text = got.stdout.decode('ascii', 'replace')
+        except (OSError, subprocess.SubprocessError):
+            return []
+    out = []
+    try:
+        blocks = osroots_blocks('\n'.join(m.group(0) for m in OSROOTS_BLOCK_RE.finditer(text)))
+    except Refused:
+        return []
+    for pem, der in blocks[:20]:
+        try:
+            f = osroots_facts(pem, der)
+            out.append({k: f[k] for k in ('fp', 'cn', 'subject', 'issuer', 'not_before',
+                                          'not_after', 'key', 'kind', 'ca')})
+        except Refused:
+            continue
+    return out
+
+
+def osroots_bundle(w):
+    """The system's own list as its tool made it last: how many, how large,
+    when - and the package that brings it, so it is seen that the system's
+    updates keep it coming."""
+    out = {'path': w['bundle'], 'count': 0, 'bytes': 0, 'at': 0}
+    try:
+        st = os.stat(w['bundle'])
+        out.update(bytes=st.st_size, at=st.st_mtime)
+        with open(w['bundle'], 'rb') as f:
+            out['count'] = f.read(64 * 1048576).count(b'-----BEGIN CERTIFICATE-----')
+    except OSError:
+        out['missing'] = True
+    pkg = ''
+    if w.get('pkg') and shutil.which(w['pkg'][0]):
+        try:
+            got = subprocess.run(w['pkg'], capture_output=True, text=True, timeout=30)
+            if got.returncode == 0 and got.stdout.strip():
+                pkg = got.stdout.strip().splitlines()[0][:120]
+        except (OSError, subprocess.SubprocessError):
+            pkg = ''
+    out['package'] = pkg
+    return out
+
+
+def _osroots_in_bundle(w, ders):
+    """Which of these the tool put into the system's list: their base64 found in it."""
+    import base64
+    import hashlib
+    try:
+        with open(w['bundle'], 'rb') as f:
+            flat = re.sub(rb'\s+', b'', f.read(64 * 1048576))
+    except OSError:
+        return {}
+    return {hashlib.sha256(d).hexdigest(): base64.b64encode(d) in flat for d in ders}
+
+
+def osroots_read(w):
+    """isemon's own, the others', the system's list."""
+    ours, others = [], []
+    if w and os.path.isdir(w['dir']):
+        for rel, p in osroots_files(w['dir']):
+            if OSROOTS_NAME_RE.match(rel):
+                raw = _osroots_read(p, 65536)
+                if raw is None:
+                    others.append({'file': rel, 'certs': [], 'link': os.path.islink(p)})
+                    continue
+                try:
+                    (pem, der), = osroots_blocks(raw.decode('ascii', 'replace'))
+                    f = osroots_facts(pem, der)
+                    f.pop('refused', None)
+                    f.update(file=rel, der=der)
+                    ours.append(f)
+                except (Refused, ValueError):
+                    ours.append({'file': rel, 'broken': True})
+            else:
+                if os.path.islink(p):
+                    try:
+                        to = os.readlink(p)[:300]
+                    except OSError:
+                        to = '?'
+                    others.append({'file': rel, 'link': to, 'certs': []})
+                    continue
+                # Up to 60 files of others' read (each openssl run takes its time); the rest named.
+                read_others = sum(1 for o in others if o.get('certs'))
+                others.append({'file': rel, 'certs': (osroots_cert_of_file(p) or [])
+                               if read_others < 60 else []})
+    inb = _osroots_in_bundle(w, [f['der'] for f in ours if f.get('der')]) if w else {}
+    for f in ours:
+        f.pop('der', None)
+        if f.get('fp'):
+            f['in_bundle'] = inb.get(f['fp'])
+    return {'ours': ours, 'others': others[:200], 'system': osroots_bundle(w) if w else {},
+            'flavour': (w or {}).get('flavour', ''), 'dir': (w or {}).get('dir', ''),
+            'tool': ' '.join((w or {}).get('tool') or []),
+            'tool_there': bool(w and shutil.which(w['tool'][0]))}
+
+
+def _osroots_put(d, name, pem):
+    """Written beside it under a name of its own and renamed into place: root's, 0644."""
+    fd, tmp = tempfile.mkstemp(prefix='.isemon-', dir=d)
+    try:
+        os.fchmod(fd, 0o644)
+        try:
+            os.fchown(fd, 0, 0)
+        except OSError:
+            pass
+        with os.fdopen(fd, 'w') as f:
+            fd = None
+            f.write(pem)
+        os.replace(tmp, os.path.join(d, name))
+    except BaseException:
+        if fd is not None:
+            os.close(fd)
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def osroots_sync(w, certs, force=False):
+    """The folder made to hold exactly the certificates wanted of isemon's - the
+    others' left as they are - and the system's tool run when anything
+    changed. (said, refused [{fp, cn, why}])."""
+    if not w:
+        raise Refused('this system has neither update-ca-trust (RHEL, AlmaLinux, Rocky) nor '
+                      'update-ca-certificates (Debian, Ubuntu)')
+    if not isinstance(certs, list) or len(certs) > OSROOTS_MAX:
+        raise Refused('the certificates wanted: a list of %d at most' % OSROOTS_MAX)
+    want, refused = {}, []
+    for c in certs:
+        if not isinstance(c, str) or len(c) > OSROOTS_PEM_MAX:
+            raise Refused('each certificate as PEM text of %d bytes at most' % OSROOTS_PEM_MAX)
+        blocks = osroots_blocks(c)
+        if len(blocks) != 1:
+            raise Refused('one certificate in each')
+        pem, der = blocks[0]
+        f = osroots_facts(pem, der)
+        if f['refused']:
+            refused.append({'fp': f['fp'], 'cn': f['cn'], 'why': '; '.join(f['refused'])})
+            continue
+        want['isemon-%s%s' % (f['fp'][:16], w['ext'])] = pem
+    osroots_dir_ok(w['dir'], make=bool(want))
+    said, changed = [], False
+    have = {rel: p for rel, p in osroots_files(w['dir']) if OSROOTS_NAME_RE.match(rel)} \
+        if os.path.isdir(w['dir']) else {}
+    for name, pem in sorted(want.items()):
+        p = have.get(name)
+        if p is not None:
+            raw = _osroots_read(p, 65536)
+            if raw is not None and raw.decode('ascii', 'replace') == pem and not os.path.islink(p):
+                continue
+            os.unlink(p)            # changed by somebody, or a link: put back as it is wanted
+        _osroots_put(w['dir'], name, pem)
+        said.append('added %s' % name)
+        changed = True
+        if shutil.which('restorecon') and os.path.isdir('/sys/fs/selinux') and not NO_SERVICES:
+            subprocess.run(['restorecon', '-F', os.path.join(w['dir'], name)], capture_output=True)
+    for name, p in sorted(have.items()):
+        if name not in want:
+            os.unlink(p)
+            said.append('removed %s' % name)
+            changed = True
+    if changed or force:
+        if not shutil.which(w['tool'][0]):
+            raise Refused('%s is not on this machine - the files are in %s, the system\'s list is '
+                          'not made again until it runs' % (w['tool'][0], w['dir']))
+        got = subprocess.run(w['tool'], capture_output=True, text=True, timeout=300)
+        if got.returncode != 0:
+            raise Refused('%s ended with %d: %s' % (' '.join(w['tool']), got.returncode,
+                                                    ((got.stderr or got.stdout).strip() or '-')[-300:]))
+        said.append('%s run' % ' '.join(w['tool']))
+    return said, refused
+
+
+def osroots_do(r):
+    w = osroots_where()
+    do = r.get('do')
+    if do == 'list':
+        return dict(osroots_read(w), said=[], refused=[])
+    if do == 'sync':
+        said, refused = osroots_sync(w, r.get('certs'), bool(r.get('force')))
+        return dict(osroots_read(w), said=said, refused=refused)
+    raise Refused('list or sync')
+
+
+def osroots_part():
+    try:
+        raw = read_req(OSROOTS_ASK, OSROOTS_MAX * OSROOTS_PEM_MAX * 2 + 65536)
+    except FileNotFoundError:
+        return
+    except (Refused, OSError):
+        drop_entry(OSROOTS_ASK)
+        return
+    drop_entry(OSROOTS_ASK)
+    out = {'at': time.time(), 'ok': False, 'id': ''}
+    try:
+        try:
+            r = json.loads(raw.decode('utf-8'))
+        except ValueError:
+            raise Refused('the request does not read')
+        if not isinstance(r, dict):
+            raise Refused('the request is not an object')
+        out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
+        out['data'] = osroots_do(r)
+        out['ok'] = True
+    except Refused as e:
+        out['said'] = str(e)[:400]
+    except Exception as e:                              # noqa: BLE001 - said, never lost
+        out['said'] = 'it went wrong: %s' % str(e)[:300]
+    write_here(OSROOTS_FILE, json.dumps(out))
+
+
+
 def serve():
     d = web_fd()
     try:
@@ -4356,6 +5492,14 @@ def serve():
         acmetls_part()
     except Exception as e:                              # noqa: BLE001
         print('isemon_web.py: the acme logs over TLS: %s' % e, file=sys.stderr)
+    try:
+        selinux_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: SELinux: %s' % e, file=sys.stderr)
+    try:
+        osroots_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: the system\'s trusted roots: %s' % e, file=sys.stderr)
     # One left by a run that was stopped half way (1.10.238) - a reboot, a
     # timeout during DH: taken away and said, or the daemon would wait on it
     # for ever and never ask again.

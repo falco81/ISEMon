@@ -8,6 +8,9 @@
 [Unit]
 Description=isemon - nginx and the firewall, as asked on the pages
 After=network-online.target
+# Several asks within a few seconds are what the pages do (1.10.319): systemd's
+# own limit left the path unit failed for good after a burst of them.
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot

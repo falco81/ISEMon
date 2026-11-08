@@ -497,6 +497,9 @@ if (isset($_GET['api'])) {
         'storage'        => '/api/storage',
         /* What is to be done by hand, under Upgrades (1.10.314). */
         'todo'           => '/api/todo',
+        /* SELinux and the system's trusted roots (1.10.319). */
+        'selinux'        => '/api/selinux',
+        'osroots'        => '/api/osroots',
         /* Face ID as the second step (1.10.303): an account's passkeys. */
         'passkeys'       => '/api/auth/passkeys',
         /* Automatic certificates (1.10.251). */
@@ -592,6 +595,8 @@ if (isset($_GET['api'])) {
         'sshkeys'      => '/api/sshkeys',
         'storage'      => '/api/storage',
         'todo'         => '/api/todo',
+        'selinux'      => '/api/selinux',
+        'osroots'      => '/api/osroots',
         'otptls'       => '/api/otptls',
         'acmetls'      => '/api/acmetls',
         'acme'         => '/api/acme',
@@ -4398,6 +4403,41 @@ function srcText(el) {
   .net-job.failed{border-color:rgba(248,81,73,.5)}
   .net-job.done{border-color:rgba(63,185,80,.45)}
   .pw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:16px}
+  /* SELinux (1.10.319) */
+  .se-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;margin-top:12px}
+  .se-node{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0;max-width:980px}
+  .se-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .se-name{display:flex;align-items:center;gap:8px;font-size:15px;min-width:0}
+  .se-mode{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--tx-dim)}
+  .se-enforcing .se-mode{color:var(--ok);border-color:rgba(63,185,80,.5);background:var(--ok-bg)}
+  .se-permissive .se-mode{color:var(--warn);border-color:rgba(210,153,34,.5);background:var(--warn-bg)}
+  .se-next{margin:0;font-size:12.5px;color:var(--warn)}
+  .se-wait{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--info)}
+  .se-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+  .se-row{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px}
+  .se-row:last-child{border-bottom:0}
+  .se-dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:0 0 auto;background:var(--warn)}
+  .se-dot.ok{background:var(--ok)} .se-dot.bad{background:var(--crit)}
+  .se-row-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .se-what{color:var(--tx-dim);overflow-wrap:anywhere}
+  .se-avc summary{cursor:pointer;font-size:13px}
+  .se-avc-t{width:100%;border-collapse:collapse;margin-top:6px}
+  .se-avc-t td{padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+  .se-avc-t td.num{white-space:nowrap;text-align:right;color:var(--crit)}
+  .se-verdict{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-size:13px}
+  .se-verdict.good{border-color:rgba(63,185,80,.5);background:var(--ok-bg)}
+  .se-verdict.ready{border-color:rgba(88,166,255,.5);background:var(--info-bg)}
+  .se-verdict.bad{border-color:rgba(210,153,34,.5);background:var(--warn-bg)}
+  .se-btns{margin-top:auto;padding-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+  .se-said{margin:0;list-style:none;padding:8px 12px;display:flex;flex-direction:column;gap:2px;border-radius:10px;background:var(--ok-bg);color:var(--ok)}
+  .se-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin:0 0 4px}
+  /* The system's trusted roots (1.10.319) */
+  .osr-tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .osr-node{max-width:640px;margin-top:16px}
+  .osr-node .pw-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .osr-seen .note{margin:8px 0 0}
+  .osr-fp{cursor:copy}
+  .osr-warn{color:var(--warn);font-size:12.5px} .osr-bad{color:var(--crit);font-size:12.5px}
   .pw-grid > .card{margin:0}
   .pw-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:15px}
   .pw-node .btnrow{margin-top:14px}
@@ -6166,6 +6206,7 @@ function srcText(el) {
     <button type="button" data-pane="power" data-icon="power" title="Restart or switch off this server.">Restart and power off</button>
     <button type="button" data-pane="osup" data-icon="download" title="The operating system's packages updated by dnf (or apt), with what it says as it goes; a restart offered when one is needed.">System updates</button>
     <button type="button" class="admin-only" data-pane="sshkeys" data-icon="key" title="The keys that may sign in to this server as root over SSH: made here, added or taken away.">SSH keys of root</button>
+    <button type="button" class="admin-only" data-pane="selinux" data-icon="shield" title="SELinux on this server: what it refuses to the web server, rsyslog and the rest when it is enforcing, what isemon needs of it - and the steps on the way to enforcing, each only when asked.">SELinux</button>
     <div class="ctl-group">Data</div>
     <button type="button" data-pane="db"      data-icon="db"     title="Which database everything lives in - a file on this machine, MariaDB or PostgreSQL - how big it is, copies of it, and forgetting old records.">The database</button>
     <button type="button" class="admin-only" data-pane="storage" data-icon="chart" title="What fills the disks: each disk and what is on it, the logs that arrive over syslog folder by folder and whether logrotate takes every one, and inside the database each table and index - what looks wrong said at the top, with the steps that put it right.">Disk and logs</button>
@@ -7090,6 +7131,19 @@ function srcText(el) {
         on; acme's address must be among those that may reach these pages.</p>
       <div id="tls-push"></div>
     </div>
+    <!-- The system's trusted roots (1.10.319): certificate authorities of one's own put into
+         the trust of the operating system, beside the distribution's list. -->
+    <div class="card full" id="osr-card">
+      <h2>Trusted roots of the system</h2>
+      <p class="note">Certificate authorities of your own - your company's root, an intermediate -
+        trusted by the operating system of this server as a whole: curl, dnf, LDAPS to a domain
+        controller, mail, isemon's own connections - every program that uses the system's trust.
+        The distribution's own list stays as it is and keeps coming with the system's updates;
+        these are added beside it, the way the system itself takes local additions
+        (update-ca-trust on RHEL, AlmaLinux and Rocky, update-ca-certificates on Debian and
+        Ubuntu), and stay there through those updates.</p>
+      <div id="osr-host"></div>
+    </div>
   </div>
 
   <!-- ---------- certificates by ACME (1.10.251; after otp 1.0.169) ---------- -->
@@ -7178,6 +7232,17 @@ function srcText(el) {
         written into Events.</p>
     </div>
     <div id="sk-host"></div>
+  </div>
+
+  <!-- ---------- SELinux (1.10.319; after otp 1.0.265) ---------- -->
+  <div class="ctl-pane wr" id="pane-selinux" hidden>
+    <div class="ctl-head">
+      <h2 class="ctl-title">SELinux</h2>
+      <p class="ctl-lede">What SELinux refuses to the web server, rsyslog, logrotate and the database
+        when it is enforcing - and what isemon needs of it here. Nothing changes unless asked:
+        disabled stays disabled. On the server: isemon --selinux.</p>
+    </div>
+    <div id="se-host"></div>
   </div>
 
   <!-- ---------- backups to another machine (1.10.228) ---------- -->
@@ -30634,6 +30699,8 @@ function showPane(name, quietly) {
   if (name === 'time' && typeof loadNtp === 'function') loadNtp();
   if (name === 'power' && typeof loadPower === 'function') loadPower();
   if (name === 'sshkeys' && typeof loadSshKeys === 'function') loadSshKeys();
+  if (name === 'selinux' && typeof loadSelinux === 'function') loadSelinux();
+  if (name === 'tls' && typeof osrLoad === 'function') osrLoad();
   if (name === 'otp' && typeof loadOtpTls === 'function') loadOtpTls();
   if (name === 'acmelog' && typeof loadAcmeTls === 'function') loadAcmeTls();
   if (name === 'osup' && typeof loadOsup === 'function') loadOsup();
@@ -45398,6 +45465,507 @@ function skDrop(k) {
 /* Opened straight at this pane, it was switched to before this block was
    read: drawn now. */
 setTimeout(function () { if (paneLive('sshkeys')) loadSshKeys(); }, 0);
+</script>
+<script nonce="<?= h($nonce) ?>">
+/* ==========================================================================
+   Settings → SELinux (1.10.319; after otp 1.0.233-1.0.265)
+   --------------------------------------------------------------------------
+   How SELinux is on this server, as root's helper reads it (selinux.ask):
+   the mode now and after a restart, what isemon needs of it (its module, the
+   labels of its files, a boolean, the ports of the programs around it) and
+   what SELinux refused. The steps - made ready and permissive, what isemon
+   needs put in, enforcing, permissive again - are done by root only when
+   asked; nothing happens by itself.
+   ========================================================================== */
+var SE = {d: null, poll: null, rep: null};
+function seAdmin() { return !!(ME && ME.role === 'fulladmin'); }
+function loadSelinux() {
+  if (!$('se-host')) return;
+  api('selinux').then(function (d) { SE.d = d; drawSelinux(); sePoll(seBusy(d)); }).catch(function (e) {
+    var host = $('se-host');
+    if (host) { clear(host); host.appendChild(el('p', 'note bad', String((e && e.message) || e))); }
+  });
+}
+function seBusy(d) {
+  return ((d && d.nodes) || []).some(function (n) { return !!n.pending || (d.helper && !(n.state && n.state.mode) && !n.error); });
+}
+function sePoll(on) {
+  if (on && !SE.poll) SE.poll = setInterval(function () {
+    if (!paneLive('selinux')) { sePoll(false); return; }
+    if (SE.asking) return;
+    SE.asking = true;
+    api('selinux', undefined, {quiet: true}).then(function (d) { SE.d = d; drawSelinux(); if (!seBusy(d)) sePoll(false); })
+      .catch(function () {}).then(function () { SE.asking = false; });
+  }, 2000);
+  if (!on && SE.poll) { clearInterval(SE.poll); SE.poll = null; }
+}
+function seAsk(action) {
+  return api('selinux', {action: action}).then(function (r) {
+    toast(r.message, 'good');
+    setTimeout(loadSelinux, 600);
+  }).catch(oops);
+}
+function seReport(btn) {
+  var before = Number(((SE.d && SE.d.report) || {}).at) || 0, end = Date.now() + 300000;
+  busy(btn, true);
+  SE.rep = {words: 'gathering what SELinux says here - a minute or two…'};
+  drawSelinux();
+  api('selinux', {action: 'report'}).then(function () {
+    return new Promise(function (done, fail) {
+      (function tick() {
+        api('selinux', undefined, {quiet: true}).then(function (d) {
+          SE.d = d;
+          var r = d.report || {};
+          if (Number(r.at) > before) return r.error ? fail(new Error(r.error)) : done();
+          if (Date.now() > end) return fail(new Error('the report did not come in five minutes'));
+          setTimeout(tick, 3000);
+        }).catch(function () { setTimeout(tick, 3000); });
+      })();
+    });
+  }).then(function () {
+    return api('selinux', {action: 'download'});
+  }).then(function (x) {
+    var bin = atob(x.file), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var a = el('a');
+    a.href = URL.createObjectURL(new Blob([bytes], {type: x.mime || 'application/gzip'}));
+    a.download = x.name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    SE.rep = {words: 'Downloaded. Look through avc*.txt in it before sending it on: the audit log holds the command lines of the programs SELinux refused something to.'};
+    drawSelinux();
+  }).catch(function (e) { SE.rep = {words: String((e && e.message) || e), bad: true}; drawSelinux(); })
+    .then(function () { busy(btn, false); });
+}
+function seModeWords(m) {
+  return {Enforcing: 'enforcing', Permissive: 'permissive', Disabled: 'disabled', absent: 'not on this machine'}[m] || 'not said yet';
+}
+function seRow(list, good, words, more) {
+  var r = el('div', 'se-row');
+  r.appendChild(el('span', 'se-dot' + (good === true ? ' ok' : good === false ? ' bad' : '')));
+  var t = el('div', 'se-row-t');
+  t.appendChild(el('span', '', words));
+  if (more) t.appendChild(more);
+  r.appendChild(t);
+  list.appendChild(r);
+}
+function drawSelinux() {
+  var host = $('se-host');
+  if (!host || !SE.d) return;
+  clear(host);
+  var d = SE.d;
+  if (!d.helper) {
+    host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet '
+      + '(isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once. '
+      + 'Until then SELinux is neither read nor changed here.'));
+    return;
+  }
+  var c = el('div', 'card full se-card');
+  var h = el('h2', '', 'How it is here');
+  var tl = el('span', 'right se-top');
+  var look = cmdButton('Look again', 'refresh', 'small');
+  look.onclick = function () {
+    busy(look, true);
+    api('selinux', {action: 'check'}).then(function () { setTimeout(loadSelinux, 600); }).catch(oops)
+      .then(function () { busy(look, false); });
+  };
+  tl.appendChild(look);
+  /* What whoever writes isemon's module needs - nothing is changed to make it. */
+  var rep = cmdButton('Download the report', 'download', 'small');
+  rep.onclick = function () { seReport(rep); };
+  tl.appendChild(rep);
+  h.appendChild(tl);
+  c.appendChild(h);
+  if (SE.rep) c.appendChild(el('p', 'note small' + (SE.rep.bad ? ' bad' : ''), SE.rep.words));
+  var grid = el('div', 'se-grid');
+  (d.nodes || []).forEach(function (n) { grid.appendChild(seNode(n)); });
+  c.appendChild(grid);
+  host.appendChild(c);
+}
+function seNode(n) {
+  var s = n.state || {};
+  var m = s.mode || '';
+  var box = el('div', 'se-node se-' + (m || 'unknown').toLowerCase());
+  var head = el('div', 'se-head');
+  var nm = el('div', 'se-name');
+  nm.appendChild(noI18n(el('b', '', n.name)));
+  nm.appendChild(el('span', 'tag info', 'this server'));
+  head.appendChild(nm);
+  head.appendChild(el('span', 'se-mode', seModeWords(m)));
+  box.appendChild(head);
+  if (s.config && m !== 'absent' && s.config.toLowerCase() !== (m || '').toLowerCase() && (m !== 'Disabled' || s.relabel_pending))
+    box.appendChild(el('p', 'se-next', 'After the next restart of the machine: ' + seModeWords(s.config.charAt(0).toUpperCase() + s.config.slice(1))));
+  if (s.relabel_pending) box.appendChild(el('p', 'se-next', 'Every file is labelled at the next start - it takes a few minutes before the machine answers.'));
+  if (s.cmdline_off) box.appendChild(el('p', 'note bad small', 'The kernel\'s command line has selinux=0 - it stays off whatever the configuration says.'));
+  if (n.pending) {
+    var w = el('div', 'se-wait');
+    w.appendChild(el('span', 'spin'));
+    w.appendChild(el('span', '', {check: 'looking…', prepare: 'putting it in…', enforce: 'switching to enforcing…', permissive: 'switching to permissive…', report: 'making the report…'}[n.pending] || 'asked…'));
+    box.appendChild(w);
+  }
+  if (!m) {
+    box.appendChild(el('p', 'muted small', n.error ? '' : 'Not said yet - root looks within a minute.'));
+    if (n.error) box.appendChild(el('p', 'note bad', n.error));
+    return box;
+  }
+  if (m === 'absent') {
+    box.appendChild(el('p', 'note', 'There is no SELinux on this machine - nothing to do.'));
+    if (n.at) box.appendChild(el('p', 'muted small', 'Looked at ' + ago(n.at)));
+    return box;
+  }
+  var made = m === 'Disabled' && /^(permissive|enforcing)$/i.test(s.config || '') && !!s.relabel_pending;
+  if (made) {
+    var v = el('div', 'se-verdict ready');
+    v.appendChild(el('b', '', 'Made ready - waiting for a restart of the machine'));
+    v.appendChild(el('span', 'small', 'Restart it when it suits (Settings → Restart and power off). It comes up permissive; then look here again.'));
+    box.appendChild(v);
+  } else if (m === 'Disabled') {
+    if (/^(permissive|enforcing)$/i.test(s.config || '') && !s.cmdline_off)
+      box.appendChild(el('p', 'note small', 'The configuration says ' + s.config.toLowerCase() + ', but the kernel does not start SELinux - it is not switched on for it (the kernel\'s command line, or the distribution\'s own step such as selinux-activate).'));
+    box.appendChild(el('p', 'note', 'Disabled - isemon runs as always. Made ready, it comes up permissive at the next restart of the machine: nothing is refused yet, only written down, and isemon\'s own needs are put in. Enforcing comes after, once nothing was refused.'));
+  } else {
+    var list = el('div', 'se-list');
+    seRow(list, s.module === true ? true : s.module === false ? false : null,
+          s.module === false ? 'isemon\'s module (isemon_server) is not installed' : 'isemon\'s module (isemon_server) installed');
+    (s.labels || []).forEach(function (x) {
+      seRow(list, x.ok, x.why, noI18n(el('span', 'mono small se-what', x.path + '  ' + (x.label || '?') + (x.ok ? '' : '  →  ' + x.want))));
+    });
+    (s.booleans || []).forEach(function (x) {
+      seRow(list, x.on, x.why, noI18n(el('span', 'mono small se-what', x.name + ' = ' + (x.on ? 'on' : 'off'))));
+    });
+    (s.ports || []).forEach(function (x) {
+      seRow(list, x.labelled, x.why, noI18n(el('span', 'mono small se-what', x.port + '/' + x.proto + '  ' + x.type)));
+    });
+    var dn = s.denials || {};
+    seRow(list, dn.tool ? !dn.total : null, !dn.tool ? 'What SELinux refused cannot be read: ausearch is not on this machine (dnf install audit)'
+      : dn.since ? (dn.total ? 'SELinux refused ' + num(dn.total) + ' thing(s) since isemon\'s needs were put in' : 'Nothing refused since isemon\'s needs were put in')
+      : dn.total ? 'SELinux refused ' + num(dn.total) + ' thing(s) since the machine started' : 'Nothing refused since the machine started');
+    /* Refused once, allowed by the policy loaded now - a newer module, a boolean: not counted. */
+    if (dn.tool && dn.settled) seRow(list, true, num(dn.settled) + ' refused before, allowed now - by a newer isemon_server or a boolean put in since; not counted');
+    if (s.auditd === false) seRow(list, false, 'auditd does not run - what SELinux refuses is not written down (systemctl enable --now auditd)');
+    (s.left_out || []).forEach(function (x) { seRow(list, null, x); });
+    box.appendChild(list);
+    if ((dn.groups || []).length) {
+      var det = el('details', 'se-avc');
+      det.appendChild(el('summary', '', 'What was refused (' + num(dn.groups.length) + ')'));
+      var t = el('table', 'se-avc-t');
+      dn.groups.forEach(function (g) {
+        var tr = el('tr', '');
+        tr.appendChild(el('td', 'num', num(g.count) + '×'));
+        tr.appendChild(noI18n(el('td', 'mono small', g.source + ' → ' + g.target + ' ' + g['class'] + ' { ' + g.perms + ' }')));
+        tr.appendChild(noI18n(el('td', 'mono small muted', g.what || '')));
+        t.appendChild(tr);
+      });
+      det.appendChild(t);
+      box.appendChild(det);
+    }
+    var probs = s.problems || [];
+    /* Refused, and nothing isemon knows to put in: "Put in what isemon needs"
+       changes nothing then - the report is what tells how. */
+    var known = s.module !== false && !(s.labels || []).some(function (x) { return x.ok === false; }) &&
+      !(s.booleans || []).some(function (x) { return x.on === false; }) &&
+      !(s.ports || []).some(function (x) { return x.labelled === false; });
+    if (dn.total && known) {
+      var hint = el('div', 'se-verdict bad');
+      hint.appendChild(el('b', '', 'isemon does not know this one yet'));
+      hint.appendChild(el('span', 'small', 'Everything isemon knows it needs is in place - what was refused is something its module does not cover yet. "Put in what isemon needs" changes nothing for it: download the report (top right) and send it, so that the module learns it.'));
+      box.appendChild(hint);
+    }
+    var verdict = el('div', 'se-verdict ' + (m === 'Enforcing' && !probs.length ? 'good' : s.ready ? 'ready' : probs.length ? 'bad' : ''));
+    verdict.appendChild(el('b', '', m === 'Enforcing' ? (probs.length ? 'Enforcing - but something is not as isemon needs it' : 'Enforcing - and everything isemon needs is there')
+      : s.ready ? 'Ready for enforcing' : 'Not ready for enforcing yet'));
+    if (m === 'Permissive' && !s.ready) verdict.appendChild(el('span', 'small', 'Let it run a day or two as it is used - the pages, the logs arriving, a rotation of the logs, an upgrade - then look again.'));
+    box.appendChild(verdict);
+  }
+  if (n.error) box.appendChild(el('p', 'note bad', n.error));
+  else if ((n.said || []).length && n.action !== 'check' && n.action !== 'report') {
+    var sd = el('ul', 'small se-said');
+    n.said.forEach(function (x) { sd.appendChild(el('li', '', x)); });
+    box.appendChild(sd);
+  }
+  if (n.at) box.appendChild(el('p', 'muted small', 'Looked at ' + ago(n.at)));
+  if (!seAdmin()) return box;
+  var row = el('div', 'se-btns');
+  if ((m === 'Disabled' && !made) || m === 'Permissive') {
+    var prep = cmdButton(m === 'Disabled' ? 'Make it ready (permissive)' : 'Put in what isemon needs', 'shield', m === 'Disabled' ? 'primary' : '');
+    prep.disabled = !!n.pending;
+    prep.onclick = function () {
+      confirmThen(m === 'Disabled' ? 'Make SELinux ready?' : 'Put in what isemon needs?',
+        htmlText(m === 'Disabled'
+          ? 'The configuration says permissive and every file is labelled at the next start of the machine; isemon\'s module goes in. Nothing is refused while permissive - SELinux only writes down what it would refuse. The machine is not restarted now: restart it when it suits (Settings → Restart and power off).'
+          : 'isemon\'s module, the labels of its files, the boolean and the ports it needs are put in. Still permissive: nothing is refused.'),
+        m === 'Disabled' ? 'Make it ready' : 'Put it in', function () { seAsk('prepare'); });
+    };
+    row.appendChild(prep);
+  }
+  if (m === 'Permissive') {
+    var enf = cmdButton('Switch to enforcing', 'lock', s.ready ? 'primary' : '');
+    enf.disabled = !!n.pending || !s.ready;
+    if (!s.ready) enf.title = 'Once nothing is missing and nothing was refused';
+    enf.onclick = function () {
+      confirmThen('Switch to enforcing?', htmlText('From now on SELinux refuses what its policy does not allow - and stays enforcing after a restart. Nothing isemon needs is missing and nothing was refused. If something stops working, "Back to permissive" here (or setenforce 0 on the machine) undoes it at once.'),
+        'Switch to enforcing', function () { seAsk('enforce'); }, true);
+    };
+    row.appendChild(enf);
+  }
+  if (m === 'Enforcing') {
+    var back = cmdButton('Back to permissive', 'undo', '');
+    back.disabled = !!n.pending;
+    back.onclick = function () {
+      confirmThen('Back to permissive?', htmlText('SELinux no longer refuses anything - it only writes down what it would refuse - now and after a restart.'),
+        'Back to permissive', function () { seAsk('permissive'); });
+    };
+    row.appendChild(back);
+  }
+  if (row.childNodes.length) box.appendChild(row);
+  return box;
+}
+setTimeout(function () { if (paneLive('selinux')) loadSelinux(); }, 0);
+
+/* ==========================================================================
+   Settings → Certificates and TLS → Trusted roots of the system (1.10.319)
+   --------------------------------------------------------------------------
+   Certificate authorities of one's own put into the trust of the operating
+   system - by the system's own way of adding to it (update-ca-trust,
+   update-ca-certificates), the distribution's list left as it is and kept
+   coming with its updates. One row an authority isemon added; under them,
+   whether the machine has what is wanted, its system's own list and package,
+   and what somebody else added there.
+   ========================================================================== */
+var OSR = {d: null, poll: null, until: 0};
+function osrLoad() {
+  if (!$('osr-host')) return;
+  api('osroots', undefined, {quiet: true}).then(function (d) {
+    OSR.d = d; drawOsRoots(); osrPoll(true);
+  }).catch(function (e) {
+    var host = $('osr-host');
+    if (host) { clear(host); host.appendChild(el('p', 'note bad', String((e && e.message) || e))); }
+  });
+}
+/* Every 3 s while root is at it or for 90 s after a change, else every 30 s. */
+function osrPoll(on) {
+  if (on && !OSR.poll) {
+    OSR.n = 0;
+    OSR.poll = setInterval(function () {
+      if (!paneLive('tls')) { osrPoll(false); return; }
+      OSR.n += 1;
+      var waiting = OSR.d && (OSR.d.nodes || []).some(function (n) { return n.status === 'waiting'; });
+      if (!(waiting || Date.now() < OSR.until || OSR.n % 10 === 0) || OSR.asking) return;
+      OSR.asking = true;
+      api('osroots', undefined, {quiet: true}).then(function (d) { OSR.d = d; drawOsRoots(); })
+        .catch(function () {}).then(function () { OSR.asking = false; });
+    }, 3000);
+  }
+  if (!on && OSR.poll) { clearInterval(OSR.poll); OSR.poll = null; }
+}
+function osrStatusTag(n) {
+  var w = {applied: ['ok', 'as wanted'], waiting: ['warn', 'waiting'], failed: ['crit', 'failed'],
+           none: ['dim', 'nothing added by isemon']}[n.status] || ['dim', n.status || '?'];
+  return el('span', 'tag ' + w[0], w[1]);
+}
+function osrDay(ts) { return ts ? new Date(ts * 1000).toLocaleDateString(numLang()) : '?'; }
+function drawOsRoots() {
+  var host = $('osr-host');
+  if (!host || !OSR.d) return;
+  clear(host);
+  var d = OSR.d, nodes = d.nodes || [], certs = d.certs || [], admin = seAdmin();
+  if (!d.helper) host.appendChild(el('p', 'note warn', 'Root’s half of this is not installed on this machine yet '
+      + '(isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once.'));
+  if (admin) {
+    var tools = el('div', 'osr-tools');
+    var add = cmdButton('Add an authority', 'upload', 'primary small');
+    explain(add, 'A root or an intermediate certificate authority of your own - pasted as PEM, or a .pem, .crt or .cer file; a file with a chain adds each authority in it.');
+    add.onclick = osrAdd;
+    add.disabled = certs.length >= (d.max || 50);
+    tools.appendChild(add);
+    var again = cmdButton('Read it again', 'refresh', 'small');
+    again.onclick = function () {
+      busy(again, true);
+      api('osroots', {action: 'refresh'}).then(function (x) { toast(x.message, 'good'); OSR.until = Date.now() + 90000; })
+        .catch(oops).then(function () { busy(again, false); });
+    };
+    tools.appendChild(again);
+    host.appendChild(tools);
+  }
+  if (!certs.length) {
+    host.appendChild(el('p', 'note', 'isemon has added none - this server trusts its system\'s own list alone.'));
+  } else {
+    /* Each row as [record]: the table draws what is here and no columns
+       of its own beside them. */
+    host.appendChild(listTable(['Authority', 'Issued by', 'Valid', 'Key', 'SHA-256', ''], certs.map(function (c) { return [c]; }), function (r) {
+      var c = r[0], tr = el('tr');
+      var t = el('td');
+      t.appendChild(noI18n(el('b', '', c.cn || '?')));
+      t.appendChild(document.createTextNode(' '));
+      t.appendChild(el('span', 'tag ' + (c.kind === 'root' ? 'info' : 'dim'), c.kind === 'root' ? 'root' : 'intermediate'));
+      var days = daysLeft(c.not_after);
+      if (days !== null && days < 0) { t.appendChild(document.createTextNode(' ')); t.appendChild(el('span', 'tag crit', 'ran out')); }
+      else if (days !== null && days < 60) { t.appendChild(document.createTextNode(' ')); t.appendChild(el('span', 'tag warn', days + ' days left')); }
+      (c.warn || []).forEach(function (w) { t.appendChild(el('div', 'osr-warn', w)); });
+      tr.appendChild(t);
+      tr.appendChild(noI18n(el('td', 'small', c.kind === 'root' ? '' : String(c.issuer || '').replace(/^.*?CN=/, '').split(',')[0])));
+      tr.appendChild(el('td', 'small', osrDay(c.not_before) + ' – ' + osrDay(c.not_after)));
+      tr.appendChild(noI18n(el('td', 'small', c.key || '?')));
+      var fp = noI18n(el('td', 'mono small osr-fp', String(c.fp || '').slice(0, 16) + '…'));
+      fp.title = 'Click to copy the whole SHA-256 fingerprint';
+      fp.onclick = function () { copyText(c.fp, 'the SHA-256 fingerprint is copied'); };
+      tr.appendChild(fp);
+      var act = el('td', 'right');
+      var dl = iconButton('download', 'Download it (PEM)');
+      dl.onclick = function () { skSave(c.pem, String(c.cn || 'ca').replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 60) + '.pem'); };
+      act.appendChild(dl);
+      if (admin) {
+        var rm = iconButton('trash', 'Take it out of the system\'s trust');
+        rm.onclick = function () { osrRemove(c); };
+        act.appendChild(rm);
+      }
+      tr.appendChild(act);
+      return tr;
+    }, 'plain'));
+  }
+  var py = (nodes[0] || {}).python || d.python || {};
+  if (py.cafile || py.capath) {
+    host.appendChild(el('p', 'muted small', py.system
+      ? 'isemon\'s own connections (the directory, mail, the upgrades, the public lists) use the system\'s list too - what is added here reaches them at their next connection.'
+      : 'isemon\'s own connections do not use the system\'s list here (' + (py.cafile || py.capath) + ') - what is added here does not reach them.'));
+  }
+  nodes.forEach(function (n) {
+    var c = el('div', 'card osr-node');
+    var hd = el('div', 'pw-head');
+    hd.appendChild(noI18n(el('b', '', n.name)));
+    hd.appendChild(el('span', 'tag info', 'this server'));
+    hd.appendChild(osrStatusTag(n));
+    c.appendChild(hd);
+    if (n.why) c.appendChild(el('p', 'note ' + (n.status === 'failed' ? 'bad' : 'warn'), n.why));
+    var s = n.system || {};
+    c.appendChild(netFacts([
+      ['The system\'s own list', s.count ? num(s.count) + ' authorities' : (s.missing ? 'not there' : '?')],
+      ['Its package', s.package || '–', true],
+      ['Made last', s.at ? ago(s.at) : '–'],
+      ['Local additions in', n.dir || '–', true],
+      ['Made by', n.tool ? n.tool + (n.tool_there === false ? ' (not on this machine)' : '') : '–', true],
+      ['isemon\'s additions there', String((n.ours || []).length)],
+      ['Read', n.at ? ago(n.at) : 'not yet']
+    ]));
+    var others = n.others || [];
+    if (others.length) {
+      c.appendChild(el('div', 'small muted', 'Added by somebody else - isemon leaves them as they are:'));
+      var ul = el('ul', 'small');
+      ul.style.margin = '4px 0 0 18px';
+      others.slice(0, 40).forEach(function (o) {
+        var li = el('li');
+        li.appendChild(noI18n(el('span', 'mono', o.file || '?')));
+        var cs = o.certs || [];
+        if (cs.length) {
+          li.appendChild(noI18n(el('span', '', ' - ' + cs.map(function (x) { return (x.cn || '?'); }).join(', '))));
+          cs.forEach(function (x) {
+            li.appendChild(document.createTextNode(' '));
+            li.appendChild(el('span', 'tag dim', x.kind === 'root' ? 'root' : (x.ca ? 'intermediate' : 'not an authority')));
+          });
+        } else if (o.link) {
+          li.appendChild(el('span', 'muted', ' - a link'));
+        } else {
+          li.appendChild(el('span', 'muted', ' - no certificate read'));
+        }
+        ul.appendChild(li);
+      });
+      c.appendChild(ul);
+    }
+    host.appendChild(c);
+  });
+}
+/* A file as it comes: PEM as it is; DER (.cer) made PEM here, its bytes base64'd. */
+function osrFileText(buf) {
+  var bytes = new Uint8Array(buf);
+  var head = '';
+  for (var i = 0; i < Math.min(bytes.length, 4096); i++) head += String.fromCharCode(bytes[i]);
+  if (head.indexOf('-----BEGIN') >= 0) return new TextDecoder('ascii').decode(bytes);
+  var bin = '';
+  for (var j = 0; j < bytes.length; j++) bin += String.fromCharCode(bytes[j]);
+  var b64 = btoa(bin).replace(/(.{64})/g, '$1\n').replace(/\n$/, '');
+  return '-----BEGIN CERTIFICATE-----\n' + b64 + '\n-----END CERTIFICATE-----\n';
+}
+function osrAdd() {
+  var area, seen, timer = null, checked = '';
+  var look = function () {
+    var text = area.value.trim();
+    if (text === checked) return;
+    checked = text;
+    clear(seen);
+    if (!text) return;
+    api('osroots', {action: 'check', text: text}).then(function (x) {
+      if (area.value.trim() !== text) return;
+      clear(seen);
+      (x.certs || []).forEach(function (c) {
+        var box = el('div', 'note');
+        box.appendChild(noI18n(el('b', '', c.cn || '?')));
+        box.appendChild(document.createTextNode(' '));
+        box.appendChild(el('span', 'tag ' + (c.refused.length ? 'crit' : (c.already ? 'dim' : (c.kind === 'root' ? 'info' : 'dim'))),
+          c.refused.length ? 'not taken' : (c.already ? 'there already' : (c.kind === 'root' ? 'root' : 'intermediate'))));
+        box.appendChild(noI18n(el('div', 'muted small', 'SHA-256 ' + c.fp)));
+        box.appendChild(el('div', 'small', 'valid ' + osrDay(c.not_before) + ' – ' + osrDay(c.not_after) + ' · ' + (c.key || '?')));
+        c.refused.forEach(function (w) { box.appendChild(el('div', 'osr-bad', w)); });
+        c.warn.forEach(function (w) { box.appendChild(el('div', 'osr-warn', w)); });
+        seen.appendChild(box);
+      });
+    }).catch(function (e) {
+      if (area.value.trim() !== text) return;
+      clear(seen);
+      seen.appendChild(el('p', 'note bad', (e && e.message) || String(e)));
+    });
+  };
+  modal('Add to the system\'s trust', function (body) {
+    var p = el('p', 'note');
+    p.innerHTML = 'A certificate authority of your own - a root, or an intermediate - as PEM (<code>-----BEGIN CERTIFICATE-----</code>), or a <code>.pem</code>, <code>.crt</code> or <code>.cer</code> file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key.';
+    body.appendChild(p);
+    body.appendChild(el('p', 'note', 'Every program of this server trusts what they sign from then on.'));
+    area = noI18n(el('textarea', 'mono'));
+    area.rows = 8; area.spellcheck = false; area.placeholder = '-----BEGIN CERTIFICATE-----';
+    area.style.width = '100%';
+    body.appendChild(area);
+    var fr = el('div', 'osr-tools');
+    fr.style.margin = '8px 0 4px';
+    var pickB = cmdButton('Read a file…', 'upload', 'small');
+    var input = el('input'); input.type = 'file'; input.hidden = true;
+    input.accept = '.pem,.crt,.cer,.der,.cert,.ca-bundle';
+    pickB.onclick = function () { input.click(); };
+    input.onchange = function () {
+      var f = input.files && input.files[0];
+      if (!f) return;
+      if (f.size > 1048576) { toast('that file is far bigger than certificates are', 'warn'); return; }
+      var r = new FileReader();
+      r.onload = function () { area.value = osrFileText(r.result); look(); };
+      r.readAsArrayBuffer(f);
+    };
+    fr.appendChild(pickB); fr.appendChild(input);
+    body.appendChild(fr);
+    seen = el('div', 'osr-seen');
+    body.appendChild(seen);
+    area.oninput = function () { clearTimeout(timer); timer = setTimeout(look, 400); };
+    setTimeout(function () { area.focus(); }, 60);
+  }, [{words: 'Cancel', close: true}, {words: 'Add them', cls: 'primary', icon: 'add', go: function (b) {
+    busy(b, true);
+    api('osroots', {action: 'add', text: area.value.trim()}).then(function (x) {
+      closeModal();
+      toast(x.message, 'good');
+      OSR.until = Date.now() + 90000;
+      osrLoad();
+    }).catch(function (e) { busy(b, false); oops(e); });
+  }}]);
+}
+function osrRemove(c) {
+  confirmThen('Take it out of the system\'s trust',
+    'What <b>' + htmlText(c.cn || '?') + '</b> (SHA-256 <code>' + htmlText(String(c.fp).slice(0, 16)) + '…</code>) signs is no longer trusted by this server - unless the system\'s own list has it. Connections that rely on it (LDAPS, mail…) fail from their next start.',
+    'Take it away', function () {
+      api('osroots', {action: 'remove', fp: c.fp}).then(function (x) {
+        toast(x.message, 'good');
+        OSR.until = Date.now() + 90000;
+        osrLoad();
+      }).catch(oops);
+    }, true);
+}
+setTimeout(function () { if (paneLive('tls')) osrLoad(); }, 0);
 </script>
 <script nonce="<?= h($nonce) ?>">
 /* ==========================================================================

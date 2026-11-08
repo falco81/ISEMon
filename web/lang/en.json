@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.318",
-  "made": "2026-11-06",
+  "version": "1.10.319",
+  "made": "2026-11-08",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -379,6 +379,10 @@
   "s.a-certificate-and-its-key-you.d41bedff": {
    "source": "A certificate and its key you have: PEM (both, in any order) or a PFX / PKCS#12 file with its password.",
    "text": "A certificate and its key you have: PEM (both, in any order) or a PFX / PKCS#12 file with its password."
+  },
+  "s.a-certificate-authority-of-your-own.89a3180e": {
+   "source": "A certificate authority of your own - a root, or an intermediate - as PEM (",
+   "text": "A certificate authority of your own - a root, or an intermediate - as PEM ("
   },
   "s.a-certificate-expired-or-expiring.28610413": {
    "source": "a certificate expired or expiring",
@@ -851,6 +855,10 @@
   "s.a-line.5ede2f28": {
    "source": "a line",
    "text": "a line"
+  },
+  "s.a-link.72256dd5": {
+   "source": "- a link",
+   "text": "- a link"
   },
   "s.a-list-switched-on-or-off.9cddd7e5": {
    "source": "A list switched on or off here is saved with",
@@ -1355,6 +1363,14 @@
   "s.a-role-is-fulladmin-banadmin-or.c5b7ee05": {
    "source": "a role is fulladmin, banadmin or readonly",
    "text": "a role is fulladmin, banadmin or readonly"
+  },
+  "s.a-root-or-an-intermediate-certificate.c23bd2a1": {
+   "source": "A root or an intermediate certificate authority of your own - pasted as PEM, or a .pem, .crt or .cer file; a file with a chain adds each authority in it.",
+   "text": "A root or an intermediate certificate authority of your own - pasted as PEM, or a .pem, .crt or .cer file; a file with a chain adds each authority in it."
+  },
+  "s.a-root-or-intermediate-certificate-authority.53c0779d": {
+   "source": "a root or intermediate certificate authority (PEM, or one in DER) added to the system's trust. Asks first unless --yes",
+   "text": "a root or intermediate certificate authority (PEM, or one in DER) added to the system's trust. Asks first unless --yes"
   },
   "s.a-route-put-in.af671fc7": {
    "source": "a route put in",
@@ -2176,6 +2192,10 @@
    "source": "Add a step",
    "text": "Add a step"
   },
+  "s.add-an-authority.da7ffa55": {
+   "source": "Add an authority",
+   "text": "Add an authority"
+  },
   "s.add-an-empty-column-to-the.049fadd9": {
    "source": "Add an empty column to the right",
    "text": "Add an empty column to the right"
@@ -2200,9 +2220,17 @@
    "source": "Add the feed",
    "text": "Add the feed"
   },
+  "s.add-them.254c14a3": {
+   "source": "Add them",
+   "text": "Add them"
+  },
   "s.add-to-block-list.aa0f64ef": {
    "source": "Add to Block List",
    "text": "Add to Block List"
+  },
+  "s.add-to-the-system-s-trust.41e1fbfd": {
+   "source": "Add to the system's trust",
+   "text": "Add to the system's trust"
   },
   "s.add.58d1bbce": {
    "source": "add",
@@ -2215,6 +2243,10 @@
   "s.add.df756c7b": {
    "source": "→ Add",
    "text": "→ Add"
+  },
+  "s.added-by-somebody-else-isemon-leaves.d670a45e": {
+   "source": "Added by somebody else - isemon leaves them as they are:",
+   "text": "Added by somebody else - isemon leaves them as they are:"
   },
   "s.added.172415f0": {
    "source": "added",
@@ -3388,6 +3420,10 @@
    "source": "application control",
    "text": "application control"
   },
+  "s.application-gzip.fb9f8d8a": {
+   "source": "application/gzip",
+   "text": "application/gzip"
+  },
   "s.application-json.ca9fd0b2": {
    "source": "application/json",
    "text": "application/json"
@@ -3568,6 +3604,10 @@
    "source": "As typed below.",
    "text": "As typed below."
   },
+  "s.as-wanted.42879d0f": {
+   "source": "as wanted",
+   "text": "as wanted"
+  },
   "s.as-written-down-at-your-last.2ccbbbf3": {
    "source": "As written down at your last sign-in.",
    "text": "As written down at your last sign-in."
@@ -3587,6 +3627,10 @@
   "s.ascending.f393cc99": {
    "source": "ascending",
    "text": "ascending"
+  },
+  "s.ascii.51c066b3": {
+   "source": "ascii",
+   "text": "ascii"
   },
   "s.ask-a-second-directory.b5662942": {
    "source": "Ask a second directory",
@@ -3708,6 +3752,10 @@
    "source": "asked: it is done within seconds",
    "text": "asked: it is done within seconds"
   },
+  "s.asked-root-reads-the-system-s.ab9d8b63": {
+   "source": "asked: root reads the system's trusted roots again within seconds",
+   "text": "asked: root reads the system's trusted roots again within seconds"
+  },
   "s.asked-since-this-started.1d9bd2e1": {
    "source": "Asked since this started",
    "text": "Asked since this started"
@@ -3715,6 +3763,10 @@
   "s.asked-the-server-changes-its-network.d156f59b": {
    "source": "asked: the server changes its network and restarts",
    "text": "asked: the server changes its network and restarts"
+  },
+  "s.asked.9421a0b3": {
+   "source": "asked…",
+   "text": "asked…"
   },
   "s.asked.c91c9287": {
    "source": "asked",
@@ -3868,6 +3920,10 @@
    "source": "Attempts",
    "text": "Attempts"
   },
+  "s.auditd-does-not-run-what-selinux.6f264cd4": {
+   "source": "auditd does not run - what SELinux refuses is not written down (systemctl enable --now auditd)",
+   "text": "auditd does not run - what SELinux refuses is not written down (systemctl enable --now auditd)"
+  },
   "s.auditid.aa9a9567": {
    "source": "auditid",
    "text": "auditid"
@@ -3952,6 +4008,10 @@
    "source": "authority",
    "text": "authority"
   },
+  "s.authority.97a9869c": {
+   "source": "Authority",
+   "text": "Authority"
+  },
   "s.authorization-profile.cca0780f": {
    "source": "Authorization profile",
    "text": "Authorization profile"
@@ -4031,6 +4091,14 @@
   "s.back-to-a-version-published-at.516e0220": {
    "source": "Back to a version published at the address above - only as far back as can still run on this database as it is. Nothing is copied or put back: the database is left exactly as it is, whatever its size, and the settings of later versions wait in it for the next upgrade. Root checks the package and the limit again before it puts it in.",
    "text": "Back to a version published at the address above - only as far back as can still run on this database as it is. Nothing is copied or put back: the database is left exactly as it is, whatever its size, and the settings of later versions wait in it for the next upgrade. Root checks the package and the limit again before it puts it in."
+  },
+  "s.back-to-permissive.6c8afbd1": {
+   "source": "Back to permissive?",
+   "text": "Back to permissive?"
+  },
+  "s.back-to-permissive.d916d5f5": {
+   "source": "Back to permissive",
+   "text": "Back to permissive"
   },
   "s.back-to-the-one-before.a14ad78d": {
    "source": "Back to the one before…",
@@ -5032,6 +5100,10 @@
    "source": "Certificate and chain, text (.pem) - nginx, Apache, Linux.",
    "text": "Certificate and chain, text (.pem) - nginx, Apache, Linux."
   },
+  "s.certificate-authorities-of-your-own-your.7197aa5c": {
+   "source": "Certificate authorities of your own - your company's root, an intermediate - trusted by the operating system of this server as a whole: curl, dnf, LDAPS to a domain controller, mail, isemon's own connections - every program that uses the system's trust. The distribution's own list stays as it is and keeps coming with the system's updates; these are added beside it, the way the system itself takes local additions (update-ca-trust on RHEL, AlmaLinux and Rocky, update-ca-certificates on Debian and Ubuntu), and stay there through those updates.",
+   "text": "Certificate authorities of your own - your company's root, an intermediate - trusted by the operating system of this server as a whole: curl, dnf, LDAPS to a domain controller, mail, isemon's own connections - every program that uses the system's trust. The distribution's own list stays as it is and keeps coming with the system's updates; these are added beside it, the way the system itself takes local additions (update-ca-trust on RHEL, AlmaLinux and Rocky, update-ca-certificates on Debian and Ubuntu), and stay there through those updates."
+  },
   "s.certificate-chain-and-key-in-one.889bca32": {
    "source": "Certificate, chain and key in one text file (.pem).",
    "text": "Certificate, chain and key in one text file (.pem)."
@@ -5527,6 +5599,10 @@
   "s.click-to-copy-the-url-to.fd7d9355": {
    "source": "Click to copy the URL to the clipboard, ready to paste into the firewall.",
    "text": "Click to copy the URL to the clipboard, ready to paste into the firewall."
+  },
+  "s.click-to-copy-the-whole-sha.fad98530": {
+   "source": "Click to copy the whole SHA-256 fingerprint",
+   "text": "Click to copy the whole SHA-256 fingerprint"
   },
   "s.click-to-copy.39635a39": {
    "source": "Click to copy.",
@@ -6672,6 +6748,10 @@
    "source": "directory2",
    "text": "directory2"
   },
+  "s.disabled-isemon-runs-as-always-made.0d52bd8d": {
+   "source": "Disabled - isemon runs as always. Made ready, it comes up permissive at the next restart of the machine: nothing is refused yet, only written down, and isemon's own needs are put in. Enforcing comes after, once nothing was refused.",
+   "text": "Disabled - isemon runs as always. Made ready, it comes up permissive at the next restart of the machine: nothing is refused yet, only written down, and isemon's own needs are put in. Enforcing comes after, once nothing was refused."
+  },
   "s.disabled.07596f18": {
    "source": "disabled",
    "text": "disabled"
@@ -6924,6 +7004,10 @@
    "source": "Download isemon-ca.crt",
    "text": "Download isemon-ca.crt"
   },
+  "s.download-it-pem.0cc35f6e": {
+   "source": "Download it (PEM)",
+   "text": "Download it (PEM)"
+  },
   "s.download-it-with-the-passwords-and.190d7fe5": {
    "source": "Download it with the passwords and keys?",
    "text": "Download it with the passwords and keys?"
@@ -6968,6 +7052,10 @@
    "source": "Download the private key",
    "text": "Download the private key"
   },
+  "s.download-the-report.ba9f9280": {
+   "source": "Download the report",
+   "text": "Download the report"
+  },
   "s.download-the-second-firewall-s-private.7b76feb9": {
    "source": "Download the second firewall’s private key as a file, for keeping somewhere safe or using the same key elsewhere. That it was downloaded, and by whom, is written into Events.",
    "text": "Download the second firewall’s private key as a file, for keeping somewhere safe or using the same key elsewhere. That it was downloaded, and by whom, is written into Events."
@@ -6987,6 +7075,10 @@
   "s.downloadable-acls-commands-run-on-a.5cfecd24": {
    "source": "Downloadable ACLs, commands run on a switch and ISE’s notes about its own packet handling are nobody knocking, so they are not drawn. They are counted under",
    "text": "Downloadable ACLs, commands run on a switch and ISE’s notes about its own packet handling are nobody knocking, so they are not drawn. They are counted under"
+  },
+  "s.downloaded-look-through-avc-txt-in.fbec9e66": {
+   "source": "Downloaded. Look through avc*.txt in it before sending it on: the audit log holds the command lines of the programs SELinux refused something to.",
+   "text": "Downloaded. Look through avc*.txt in it before sending it on: the audit log holds the command lines of the programs SELinux refused something to."
   },
   "s.dport.eea18b46": {
    "source": "dport",
@@ -7580,6 +7672,22 @@
    "source": "endpoint",
    "text": "endpoint"
   },
+  "s.enforce.09babdc9": {
+   "source": "enforce",
+   "text": "enforce"
+  },
+  "s.enforcing-and-everything-isemon-needs-is.5145b40d": {
+   "source": "Enforcing - and everything isemon needs is there",
+   "text": "Enforcing - and everything isemon needs is there"
+  },
+  "s.enforcing-but-something-is-not-as.fc699751": {
+   "source": "Enforcing - but something is not as isemon needs it",
+   "text": "Enforcing - but something is not as isemon needs it"
+  },
+  "s.enforcing.a67395ec": {
+   "source": "enforcing",
+   "text": "enforcing"
+  },
   "s.english.649df08a": {
    "source": "English",
    "text": "English"
@@ -8056,6 +8164,10 @@
    "source": ") - every file is followed. A firewall line says only that a rule logged the packet, never what became of it: that is read off the rule's",
    "text": ") - every file is followed. A firewall line says only that a rule logged the packet, never what became of it: that is read off the rule's"
   },
+  "s.every-file-is-labelled-at-the.624d34bb": {
+   "source": "Every file is labelled at the next start - it takes a few minutes before the machine answers.",
+   "text": "Every file is labelled at the next start - it takes a few minutes before the machine answers."
+  },
   "s.every-file-this-daemon-is-following.6d6ea871": {
    "source": "Every file this daemon is following: both ISE nodes always, because only one of them is authenticating at any moment and which one changes without warning, and the token servers as well when those are switched on. Where each file has been read up to is kept in the database, so a restart carries on rather than reading everything again. Press a line for what that file holds and how far behind it is.",
    "text": "Every file this daemon is following: both ISE nodes always, because only one of them is authenticating at any moment and which one changes without warning, and the token servers as well when those are switched on. Where each file has been read up to is kept in the database, so a restart carries on rather than reading everything again. Press a line for what that file holds and how far behind it is."
@@ -8327,6 +8439,10 @@
   "s.every-profile.aa92ae9e": {
    "source": "every profile",
    "text": "every profile"
+  },
+  "s.every-program-of-this-server-trusts.0e25d45b": {
+   "source": "Every program of this server trusts what they sign from then on.",
+   "text": "Every program of this server trusts what they sign from then on."
   },
   "s.every-question-put-to-active-directory.612cf043": {
    "source": "Every question put to Active Directory and what it answered: the filter as it went on to the wire, where it was asked, how long it took, and the entries that came back. This is what to turn on when a name will not resolve, a group is not being seen, or a sign-in is refused and the directory is the suspect. It reads and never writes, and a password is never written down here — the sign-in line names the account and nothing else.",
@@ -8667,6 +8783,10 @@
   "s.everything-ise-let-through-that-is.45dce597": {
    "source": "Everything ISE let through that is none of the above — mostly what ISE says to a switch rather than what somebody says to ISE: a change of authorisation, sent when an endpoint has just been profiled or its group has changed, which tells the switch to ask that endpoint again. There is nobody in one of those. Click a row for the whole record.",
    "text": "Everything ISE let through that is none of the above — mostly what ISE says to a switch rather than what somebody says to ISE: a change of authorisation, sent when an endpoint has just been profiled or its group has changed, which tells the switch to ask that endpoint again. There is nobody in one of those. Click a row for the whole record."
+  },
+  "s.everything-isemon-knows-it-needs-is.5f79ff32": {
+   "source": "Everything isemon knows it needs is in place - what was refused is something its module does not cover yet. \"Put in what isemon needs\" changes nothing for it: download the report (top right) and send it, so that the module learns it.",
+   "text": "Everything isemon knows it needs is in place - what was refused is something its module does not cover yet. \"Put in what isemon needs\" changes nothing for it: download the report (top right) and send it, so that the module learns it."
   },
   "s.everything-it-has-failed-at.10c94aa0": {
    "source": "Everything it has failed at",
@@ -9303,6 +9423,10 @@
   "s.fiji.bbb7ef7f": {
    "source": "Fiji",
    "text": "Fiji"
+  },
+  "s.file-a-chain-adds-every-authority.ab9a5037": {
+   "source": "file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key.",
+   "text": "file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key."
   },
   "s.file-policy-ftd.38e6d2eb": {
    "source": "file policy (FTD)",
@@ -10016,6 +10140,10 @@
    "source": "), from FortiOS 6 on.",
    "text": "), from FortiOS 6 on."
   },
+  "s.from-now-on-selinux-refuses-what.aeb376c4": {
+   "source": "From now on SELinux refuses what its policy does not allow - and stays enforcing after a restart. Nothing isemon needs is missing and nothing was refused. If something stops working, \"Back to permissive\" here (or setenforce 0 on the machine) undoes it at once.",
+   "text": "From now on SELinux refuses what its policy does not allow - and stays enforcing after a restart. Nothing isemon needs is missing and nothing was refused. If something stops working, \"Back to permissive\" here (or setenforce 0 on the machine) undoes it at once."
+  },
   "s.from-outside.4702689c": {
    "source": "from outside",
    "text": "from outside"
@@ -10179,6 +10307,10 @@
   "s.gateway.5a0e1818": {
    "source": "Gateway",
    "text": "Gateway"
+  },
+  "s.gathering-what-selinux-says-here-a.fd5d8228": {
+   "source": "gathering what SELinux says here - a minute or two…",
+   "text": "gathering what SELinux says here - a minute or two…"
   },
   "s.gb.505a44fa": {
    "source": "GB",
@@ -10863,6 +10995,10 @@
   "s.how-it-is-getting-on.40552cb3": {
    "source": "How it is getting on",
    "text": "How it is getting on"
+  },
+  "s.how-it-is-here.236a9ead": {
+   "source": "How it is here",
+   "text": "How it is here"
   },
   "s.how-it-is-reached.9a972068": {
    "source": "How it is reached",
@@ -12528,6 +12664,10 @@
    "source": "isemon does not hold this certificate's private key (nginx's own, never uploaded or made here)",
    "text": "isemon does not hold this certificate's private key (nginx's own, never uploaded or made here)"
   },
+  "s.isemon-does-not-know-this-one.e27c5afe": {
+   "source": "isemon does not know this one yet",
+   "text": "isemon does not know this one yet"
+  },
   "s.isemon-erase-firewall.4e4d4d1c": {
    "source": "isemon --erase firewall",
    "text": "isemon --erase firewall"
@@ -12547,6 +12687,10 @@
   "s.isemon-failed.dd46cc72": {
    "source": "isemon --failed",
    "text": "isemon --failed"
+  },
+  "s.isemon-has-added-none-this-server.008e0802": {
+   "source": "isemon has added none - this server trusts its system's own list alone.",
+   "text": "isemon has added none - this server trusts its system's own list alone."
   },
   "s.isemon-help.9307d6a4": {
    "source": "isemon --help",
@@ -12624,6 +12768,10 @@
    "source": "isemon running for",
    "text": "isemon running for"
   },
+  "s.isemon-s-additions-there.14057689": {
+   "source": "isemon's additions there",
+   "text": "isemon's additions there"
+  },
   "s.isemon-s-authority-is-on-the.02758b57": {
    "source": "isemon's authority is on the clipboard",
    "text": "isemon's authority is on the clipboard"
@@ -12667,6 +12815,22 @@
   "s.isemon-s-firewall-lets-it-in.81ccaa7f": {
    "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
    "text": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)"
+  },
+  "s.isemon-s-module-isemon-server-installed.46ae58df": {
+   "source": "isemon's module (isemon_server) installed",
+   "text": "isemon's module (isemon_server) installed"
+  },
+  "s.isemon-s-module-isemon-server-is.4167a568": {
+   "source": "isemon's module (isemon_server) is not installed",
+   "text": "isemon's module (isemon_server) is not installed"
+  },
+  "s.isemon-s-module-the-labels-of.4b086507": {
+   "source": "isemon's module, the labels of its files, the boolean and the ports it needs are put in. Still permissive: nothing is refused.",
+   "text": "isemon's module, the labels of its files, the boolean and the ports it needs are put in. Still permissive: nothing is refused."
+  },
+  "s.isemon-s-own-connections-the-directory.d116c911": {
+   "source": "isemon's own connections (the directory, mail, the upgrades, the public lists) use the system's list too - what is added here reaches them at their next connection.",
+   "text": "isemon's own connections (the directory, mail, the upgrades, the public lists) use the system's list too - what is added here reaches them at their next connection."
   },
   "s.isemon-s-own-rotation-no-longer.6c9f5e52": {
    "source": "isemon’s own rotation, no longer wanted",
@@ -13159,6 +13323,10 @@
   "s.its-own-lines-by-what-they.bf0963d4": {
    "source": "Its own lines by what they are: sign-ins, tunnels, its health, its settings changed, its connectors and its automation.",
    "text": "Its own lines by what they are: sign-ins, tunnels, its health, its settings changed, its connectors and its automation."
+  },
+  "s.its-package.6a641d24": {
+   "source": "Its package",
+   "text": "Its package"
   },
   "s.its-passphrase-if-it-has-one.d061e4d5": {
    "source": "Its passphrase, if it has one",
@@ -14016,6 +14184,10 @@
    "source": "Let it back in",
    "text": "Let it back in"
   },
+  "s.let-it-run-a-day-or.7e4469bc": {
+   "source": "Let it run a day or two as it is used - the pages, the logs arriving, a rotation of the logs, an upgrade - then look again.",
+   "text": "Let it run a day or two as it is used - the pages, the logs arriving, a rotation of the logs, an upgrade - then look again."
+  },
   "s.let-it-sign-in-again.c20ad394": {
    "source": "let it sign in again",
    "text": "let it sign in again"
@@ -14351,6 +14523,10 @@
   "s.local-account.5a153805": {
    "source": "local account",
    "text": "local account"
+  },
+  "s.local-additions-in.c7458e91": {
+   "source": "Local additions in",
+   "text": "Local additions in"
   },
   "s.local-in-policy.426ac143": {
    "source": "local-in policy",
@@ -14896,9 +15072,17 @@
    "source": "Made if it is not there. Without / at the start: under the account’s home.",
    "text": "Made if it is not there. Without / at the start: under the account’s home."
   },
+  "s.made-last.ba7fa69f": {
+   "source": "Made last",
+   "text": "Made last"
+  },
   "s.made-on-the-first-run.be24152c": {
    "source": "made on the first run",
    "text": "made on the first run"
+  },
+  "s.made-ready-waiting-for-a-restart.00864c23": {
+   "source": "Made ready - waiting for a restart of the machine",
+   "text": "Made ready - waiting for a restart of the machine"
   },
   "s.made.785c2d91": {
    "source": "Made",
@@ -15004,6 +15188,14 @@
    "source": "Make it and put it in",
    "text": "Make it and put it in"
   },
+  "s.make-it-ready-permissive.00bef8f5": {
+   "source": "Make it ready (permissive)",
+   "text": "Make it ready (permissive)"
+  },
+  "s.make-it-ready.a1d3d50c": {
+   "source": "Make it ready",
+   "text": "Make it ready"
+  },
   "s.make-it.da5fa11d": {
    "source": "Make it",
    "text": "Make it"
@@ -15019,6 +15211,10 @@
   "s.make-one.a30f6811": {
    "source": "Make one",
    "text": "Make one"
+  },
+  "s.make-selinux-ready.196d6eb5": {
+   "source": "Make SELinux ready?",
+   "text": "Make SELinux ready?"
   },
   "s.make-the-alias.44390438": {
    "source": "Make the alias",
@@ -15051,6 +15247,10 @@
   "s.makes-you-read-only.bdbe0e3d": {
    "source": "makes you read only",
    "text": "makes you read only"
+  },
+  "s.making-the-report.5a829c74": {
+   "source": "making the report…",
+   "text": "making the report…"
   },
   "s.malawi.0ce65b26": {
    "source": "Malawi",
@@ -15111,6 +15311,10 @@
   "s.mariadb-keeps-what-was-put-in.7435cab7": {
    "source": "MariaDB keeps what was put in until it is next started. This file keeps it over a restart: on the server, as root (on Debian and Ubuntu the folder is /etc/mysql/mariadb.conf.d):",
    "text": "MariaDB keeps what was put in until it is next started. This file keeps it over a restart: on the server, as root (on Debian and Ubuntu the folder is /etc/mysql/mariadb.conf.d):"
+  },
+  "s.mariadb-of-this-machine-listens-on.969f7d5b": {
+   "source": "MariaDB of this machine listens on it",
+   "text": "MariaDB of this machine listens on it"
   },
   "s.mariadb.378e3bca": {
    "source": "mariadb",
@@ -16116,6 +16320,10 @@
    "source": "no certificate of isemon's",
    "text": "no certificate of isemon's"
   },
+  "s.no-certificate-read.7693f6d2": {
+   "source": "- no certificate read",
+   "text": "- no certificate read"
+  },
   "s.no-certificate-yet-make-one-or.6251e374": {
    "source": "No certificate yet — make one, or let it pin the router’s own at the first connection.",
    "text": "No certificate yet — make one, or let it pin the router’s own at the first connection."
@@ -16732,6 +16940,10 @@
    "source": "not an attempt",
    "text": "not an attempt"
   },
+  "s.not-an-authority.518f2b5b": {
+   "source": "not an authority",
+   "text": "not an authority"
+  },
   "s.not-anything-of-ours.e27e6742": {
    "source": "not anything of ours",
    "text": "not anything of ours"
@@ -16956,6 +17168,14 @@
    "source": "Not now",
    "text": "Not now"
   },
+  "s.not-on-this-machine.a1947e9e": {
+   "source": "not on this machine",
+   "text": "not on this machine"
+  },
+  "s.not-on-this-machine.da3ffa22": {
+   "source": "(not on this machine)",
+   "text": "(not on this machine)"
+  },
   "s.not-ours-any-more.f83d369b": {
    "source": "not ours any more",
    "text": "not ours any more"
@@ -16992,6 +17212,10 @@
    "source": "Not read.",
    "text": "Not read."
   },
+  "s.not-ready-for-enforcing-yet.f3a0f2aa": {
+   "source": "Not ready for enforcing yet",
+   "text": "Not ready for enforcing yet"
+  },
   "s.not-ready.970258df": {
    "source": "not ready",
    "text": "not ready"
@@ -17007,6 +17231,14 @@
   "s.not-said-in-the-lines-kept.5432e9ff": {
    "source": "not said in the lines kept",
    "text": "not said in the lines kept"
+  },
+  "s.not-said-yet-root-looks-within.42a59315": {
+   "source": "Not said yet - root looks within a minute.",
+   "text": "Not said yet - root looks within a minute."
+  },
+  "s.not-said-yet.4cd1ea6a": {
+   "source": "not said yet",
+   "text": "not said yet"
   },
   "s.not-said.56ac01df": {
    "source": "not said",
@@ -17039,6 +17271,10 @@
   "s.not-synchronised.ca686a05": {
    "source": "not synchronised",
    "text": "not synchronised"
+  },
+  "s.not-taken.b8222e41": {
+   "source": "not taken",
+   "text": "not taken"
   },
   "s.not-the-name-it-has-now.dcfba416": {
    "source": ", not the name it has now.",
@@ -17123,6 +17359,10 @@
   "s.notes-not-rows.eec4fef8": {
    "source": "notes, not rows",
    "text": "notes, not rows"
+  },
+  "s.nothing-added-by-isemon.e52d7b58": {
+   "source": "nothing added by isemon",
+   "text": "nothing added by isemon"
   },
   "s.nothing-after-it-the-list-comes.3045485a": {
    "source": "— nothing after it; the list comes in the format saved on the settings page",
@@ -17459,6 +17699,14 @@
   "s.nothing-read-twice-is-ever-stored.1b0c71e2": {
    "source": "Nothing read twice is ever stored twice: every record is kept under the session id ISE gave it, so “Go back over every log” can read every file from the beginning and only what was missing is added.",
    "text": "Nothing read twice is ever stored twice: every record is kept under the session id ISE gave it, so “Go back over every log” can read every file from the beginning and only what was missing is added."
+  },
+  "s.nothing-refused-since-isemon-s-needs.37d99ae2": {
+   "source": "Nothing refused since isemon's needs were put in",
+   "text": "Nothing refused since isemon's needs were put in"
+  },
+  "s.nothing-refused-since-the-machine-started.a0442e2d": {
+   "source": "Nothing refused since the machine started",
+   "text": "Nothing refused since the machine started"
   },
   "s.nothing-refused.bb29c191": {
    "source": "nothing refused",
@@ -18276,6 +18524,10 @@
    "source": "once, by hand, in your DNS",
    "text": "once, by hand, in your DNS"
   },
+  "s.once-nothing-is-missing-and-nothing.45ed4b5d": {
+   "source": "Once nothing is missing and nothing was refused",
+   "text": "Once nothing is missing and nothing was refused"
+  },
   "s.once-the-encrypted-receiving-below-is.7190855f": {
    "source": "once the encrypted receiving below is set up), and",
    "text": "once the encrypted receiving below is set up), and"
@@ -18539,6 +18791,10 @@
   "s.one-server.120fb13b": {
    "source": "one server",
    "text": "one server"
+  },
+  "s.one-taken-out-again-by-its.9e3cfd42": {
+   "source": "one taken out again, by its SHA-256 (12 characters of it at least). Asks first unless --yes",
+   "text": "one taken out again, by its SHA-256 (12 characters of it at least). Asks first unless --yes"
   },
   "s.one-this-machine-holds.a2437d31": {
    "source": "one this machine holds",
@@ -19163,6 +19419,10 @@
   "s.or-a.3927572c": {
    "source": "or a",
    "text": "or a"
+  },
+  "s.or-a.45243f48": {
+   "source": "), or a",
+   "text": "), or a"
   },
   "s.or-an-organisational-unit-inside-it.ad4edc64": {
    "source": ", or an organisational unit inside it if that is quicker to search.",
@@ -19864,6 +20124,10 @@
    "source": "permissions on an object were changed",
    "text": "permissions on an object were changed"
   },
+  "s.permissive.348850bf": {
+   "source": "permissive",
+   "text": "permissive"
+  },
   "s.permit-ip-any-any.15334e43": {
    "source": "permit ip any any",
    "text": "permit ip any any"
@@ -20216,6 +20480,10 @@
    "source": "postgres",
    "text": "postgres"
   },
+  "s.postgresql-of-this-machine-listens-on.ad482d5f": {
+   "source": "PostgreSQL of this machine listens on it",
+   "text": "PostgreSQL of this machine listens on it"
+  },
   "s.postgresql-restarted.aa348fa5": {
    "source": "PostgreSQL, restarted",
    "text": "PostgreSQL, restarted"
@@ -20259,6 +20527,10 @@
   "s.preferred.8a7b8bf6": {
    "source": "preferred",
    "text": "preferred"
+  },
+  "s.prepare.4197eb0c": {
+   "source": "prepare",
+   "text": "prepare"
   },
   "s.press-a-bar-to-open-that.09deab32": {
    "source": "Press a bar to open that hour, or a door below to see that door’s own shape.",
@@ -20576,6 +20848,14 @@
    "source": "put in: waits for the server’s next start",
    "text": "put in: waits for the server’s next start"
   },
+  "s.put-in-what-isemon-needs.1a8f3527": {
+   "source": "Put in what isemon needs?",
+   "text": "Put in what isemon needs?"
+  },
+  "s.put-in-what-isemon-needs.6e8c9afe": {
+   "source": "Put in what isemon needs",
+   "text": "Put in what isemon needs"
+  },
   "s.put-in.a9229e72": {
    "source": "put in:",
    "text": "put in:"
@@ -20703,6 +20983,10 @@
   "s.putting-it-back.6e67ac3e": {
    "source": "Putting it back",
    "text": "Putting it back"
+  },
+  "s.putting-it-in.e423e899": {
+   "source": "putting it in…",
+   "text": "putting it in…"
   },
   "s.putting-the-backup-back.0ccb3ef7": {
    "source": "Putting the backup back",
@@ -21176,6 +21460,10 @@
    "source": "reads them again with it.",
    "text": "reads them again with it."
   },
+  "s.ready-for-enforcing.62afb9fe": {
+   "source": "Ready for enforcing",
+   "text": "Ready for enforcing"
+  },
   "s.ready.75c05337": {
    "source": "ready",
    "text": "ready"
@@ -21528,6 +21816,10 @@
    "source": "replaces everything",
    "text": "replaces everything"
   },
+  "s.report.a27297bd": {
+   "source": "report",
+   "text": "report"
+  },
   "s.reports-are-different.f0106407": {
    "source": "reports are different.",
    "text": "reports are different."
@@ -21607,6 +21899,10 @@
   "s.restart-it-when-it-suits-on.0628b0ba": {
    "source": "Restart it when it suits, on the server, as root:",
    "text": "Restart it when it suits, on the server, as root:"
+  },
+  "s.restart-it-when-it-suits-settings.54609dc4": {
+   "source": "Restart it when it suits (Settings → Restart and power off). It comes up permissive; then look here again.",
+   "text": "Restart it when it suits (Settings → Restart and power off). It comes up permissive; then look here again."
   },
   "s.restart-needed.444efe88": {
    "source": "restart needed",
@@ -21868,6 +22164,10 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.228 package (or later) once.",
    "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.228 package (or later) once."
   },
+  "s.root-s-half-of-this-is.4fbe2b71": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once. Until then SELinux is neither read nor changed here.",
+   "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once. Until then SELinux is neither read nor changed here."
+  },
   "s.root-s-half-of-this-is.54666464": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here.",
    "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here."
@@ -21875,6 +22175,10 @@
   "s.root-s-half-of-this-is.b571e4cc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path, as 1.10.287 puts it in): run ./install.sh --upgrade from the 1.10.287 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
    "text": "Root’s half of this is not installed on this machine yet (isemon-web.path, as 1.10.287 puts it in): run ./install.sh --upgrade from the 1.10.287 package (or later) once. Until then the encrypted receiving is neither read nor changed here."
+  },
+  "s.root-s-half-of-this-is.c2a5068a": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once.",
+   "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once."
   },
   "s.root-s-half-of-this-is.d288dacc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there.",
@@ -22568,6 +22872,26 @@
    "source": "selfsigned",
    "text": "selfsigned"
   },
+  "s.selinux-no-longer-refuses-anything-it.d85f0d1b": {
+   "source": "SELinux no longer refuses anything - it only writes down what it would refuse - now and after a restart.",
+   "text": "SELinux no longer refuses anything - it only writes down what it would refuse - now and after a restart."
+  },
+  "s.selinux-on-this-machine-what-isemon.dd29e82a": {
+   "source": "SELinux on this machine: what isemon needs of it and what it refused (check), or a step - prepare (disabled: permissive at the next start; permissive: what isemon needs put in), enforce, permissive. Asks first unless --yes; exit 1 when something is missing",
+   "text": "SELinux on this machine: what isemon needs of it and what it refused (check), or a step - prepare (disabled: permissive at the next start; permissive: what isemon needs put in), enforce, permissive. Asks first unless --yes; exit 1 when something is missing"
+  },
+  "s.selinux-on-this-server-what-it.863fff33": {
+   "source": "SELinux on this server: what it refuses to the web server, rsyslog and the rest when it is enforcing, what isemon needs of it - and the steps on the way to enforcing, each only when asked.",
+   "text": "SELinux on this server: what it refuses to the web server, rsyslog and the rest when it is enforcing, what isemon needs of it - and the steps on the way to enforcing, each only when asked."
+  },
+  "s.selinux.dd5c47ec": {
+   "source": "selinux",
+   "text": "selinux"
+  },
+  "s.selinux.f11441e8": {
+   "source": "SELinux",
+   "text": "SELinux"
+  },
   "s.send-the-chosen-countries-ranges-to.4d8d29f4": {
    "source": "Send the chosen countries' ranges to the router now. Everything of ours already on that list comes off first, so it holds this month's ranges and not last month's as well; anything on it without our mark is left alone.",
    "text": "Send the chosen countries' ranges to the router now. Everything of ours already on that list comes off first, so it holds this month's ranges and not last month's as well; anything on it without our mark is left alone."
@@ -22920,6 +23244,10 @@
    "source": "sftp",
    "text": "sftp"
   },
+  "s.sha-256.35bde87b": {
+   "source": "(SHA-256",
+   "text": "(SHA-256"
+  },
   "s.sha-256.45792d6b": {
    "source": "SHA-256",
    "text": "SHA-256"
@@ -23219,6 +23547,10 @@
   "s.signing-in.c66b2adc": {
    "source": "Signing in…",
    "text": "Signing in…"
+  },
+  "s.signs-is-no-longer-trusted-by.93017a20": {
+   "source": ") signs is no longer trusted by this server - unless the system's own list has it. Connections that rely on it (LDAPS, mail…) fail from their next start.",
+   "text": ") signs is no longer trusted by this server - unless the system's own list has it. Connections that rely on it (LDAPS, mail…) fail from their next start."
   },
   "s.since-its-records-were-read-is.7afe36b6": {
    "source": "since its records were read is left out, and the pass says so: read again it would file each line a second time at the new moment. Erase that module's records instead, which reads it again in the new zone. Logins at the firewall, to network devices, to the domain and the VPN through a FreeRADIUS are weighed over the same span as well, where they are switched on under Banning.",
@@ -24256,6 +24588,14 @@
    "source": "switch this server off; asks first unless --yes",
    "text": "switch this server off; asks first unless --yes"
   },
+  "s.switch-to-enforcing.b995b15d": {
+   "source": "Switch to enforcing",
+   "text": "Switch to enforcing"
+  },
+  "s.switch-to-enforcing.c9e15295": {
+   "source": "Switch to enforcing?",
+   "text": "Switch to enforcing?"
+  },
   "s.switch.01ba7992": {
    "source": "switch",
    "text": "switch"
@@ -24343,6 +24683,14 @@
   "s.switching-off.817395f2": {
    "source": "switching off",
    "text": "switching off"
+  },
+  "s.switching-to-enforcing.c19c6030": {
+   "source": "switching to enforcing…",
+   "text": "switching to enforcing…"
+  },
+  "s.switching-to-permissive.aee54ecd": {
+   "source": "switching to permissive…",
+   "text": "switching to permissive…"
   },
   "s.switzerland.77dcd849": {
    "source": "Switzerland",
@@ -24580,6 +24928,10 @@
    "source": "Take it off",
    "text": "Take it off"
   },
+  "s.take-it-out-of-the-system.0e66e0cf": {
+   "source": "Take it out of the system's trust",
+   "text": "Take it out of the system's trust"
+  },
   "s.take-it-out.56748aa4": {
    "source": "Take it out",
    "text": "Take it out"
@@ -24695,6 +25047,10 @@
   "s.take-this-step-away.199f8dce": {
    "source": "Take this step away",
    "text": "Take this step away"
+  },
+  "s.taken-away-root-takes-it-out.e555fa5f": {
+   "source": "taken away - root takes it out of the system's trust within seconds",
+   "text": "taken away - root takes it out of the system's trust within seconds"
   },
   "s.taken-away.9ba86e20": {
    "source": "taken away",
@@ -24943,6 +25299,10 @@
   "s.that-file-is-far-bigger-than.6c5d0539": {
    "source": "that file is far bigger than a key",
    "text": "that file is far bigger than a key"
+  },
+  "s.that-file-is-far-bigger-than.7823adaf": {
+   "source": "that file is far bigger than certificates are",
+   "text": "that file is far bigger than certificates are"
   },
   "s.that-file-is-far-bigger-than.ae8cf70c": {
    "source": "that file is far bigger than a certificate",
@@ -25748,6 +26108,10 @@
    "source": "The certificate as a file (not its key), for the server’s administrator.",
    "text": "The certificate as a file (not its key), for the server’s administrator."
   },
+  "s.the-certificate-authorities-isemon-added-to.bacca7bb": {
+   "source": "the certificate authorities isemon added to the system's trust, and how the system is",
+   "text": "the certificate authorities isemon added to the system's trust, and how the system is"
+  },
   "s.the-certificate-authority.4bb9e582": {
    "source": "The certificate authority",
    "text": "The certificate authority"
@@ -25955,6 +26319,10 @@
   "s.the-configuration-saved.cb4eb8f6": {
    "source": "the configuration saved",
    "text": "the configuration saved"
+  },
+  "s.the-configuration-says-permissive-and-every.6a4b202d": {
+   "source": "The configuration says permissive and every file is labelled at the next start of the machine; isemon's module goes in. Nothing is refused while permissive - SELinux only writes down what it would refuse. The machine is not restarted now: restart it when it suits (Settings → Restart and power off).",
+   "text": "The configuration says permissive and every file is labelled at the next start of the machine; isemon's module goes in. Nothing is refused while permissive - SELinux only writes down what it would refuse. The machine is not restarted now: restart it when it suits (Settings → Restart and power off)."
   },
   "s.the-connection-mark-mikrotik.3b9beec3": {
    "source": "the connection mark (MikroTik)",
@@ -27271,6 +27639,10 @@
   "s.the-jobs.1ad00000": {
    "source": "The jobs",
    "text": "The jobs"
+  },
+  "s.the-kernel-s-command-line-has.dd5541ef": {
+   "source": "The kernel's command line has selinux=0 - it stays off whatever the configuration says.",
+   "text": "The kernel's command line has selinux=0 - it stays off whatever the configuration says."
   },
   "s.the-key-a-pem-private-key.b28c0bb2": {
    "source": "the key: a PEM private key without a passphrase",
@@ -28744,6 +29116,10 @@
    "source": "The remote-access VPN itself is not covered by this.",
    "text": "The remote-access VPN itself is not covered by this."
   },
+  "s.the-report-did-not-come-in.d2306b47": {
+   "source": "the report did not come in five minutes",
+   "text": "the report did not come in five minutes"
+  },
   "s.the-request-arrived-with-no-password.f6c9b8db": {
    "source": "The request arrived with no password in it at all. This is what the eduroam monitoring asks, on purpose, to see whether the server answers.",
    "text": "The request arrived with no password in it at all. This is what the eduroam monitoring asks, on purpose, to see whether the server answers."
@@ -29148,6 +29524,10 @@
    "source": "The several hundred thousand ranges that say which country an address is in. Nothing is judged by it; it is only shown. It is fetched again on the next update, and it is most of the size of this database.",
    "text": "The several hundred thousand ranges that say which country an address is in. Nothing is judged by it; it is only shown. It is fetched again on the next update, and it is most of the size of this database."
   },
+  "s.the-sha-256-fingerprint-is-copied.61096cc2": {
+   "source": "the SHA-256 fingerprint is copied",
+   "text": "the SHA-256 fingerprint is copied"
+  },
   "s.the-shape-of-the-last-day.cdea9e89": {
    "source": "The shape of the last day: how much is failing, who is trying hardest, which names they are trying and where they are coming from.",
    "text": "The shape of the last day: how much is failing, who is trying hardest, which names they are trying and where they are coming from."
@@ -29275,6 +29655,10 @@
   "s.the-switches-controllers-and-access-points.840b184a": {
    "source": "The switches, controllers and access points, by how many refusals of machines that never got on. The ordinary MAB-then-802.1X refusals are left out here too, so a busy switch is a busy switch rather than a switch in trouble.",
    "text": "The switches, controllers and access points, by how many refusals of machines that never got on. The ordinary MAB-then-802.1X refusals are left out here too, so a busy switch is a busy switch rather than a switch in trouble."
+  },
+  "s.the-system-s-own-list.fe4345e7": {
+   "source": "The system's own list",
+   "text": "The system's own list"
   },
   "s.the-system-time-was-changed.52b19c79": {
    "source": "the system time was changed",
@@ -29984,6 +30368,10 @@
    "source": ", then",
    "text": ", then"
   },
+  "s.there-already.add59b94": {
+   "source": "there already",
+   "text": "there already"
+  },
   "s.there-and-give-it-the-user.9645fb27": {
    "source": "there and give it the user name and the password saved on the settings page. An older release that shows no such fields cannot: choose",
    "text": "there and give it the user name and the password saved on the settings page. An older release that shows no such fields cannot: choose"
@@ -30023,6 +30411,10 @@
   "s.there-is-no-key-to-download.9be82b72": {
    "source": "there is no key to download",
    "text": "there is no key to download"
+  },
+  "s.there-is-no-selinux-on-this.be939908": {
+   "source": "There is no SELinux on this machine - nothing to do.",
+   "text": "There is no SELinux on this machine - nothing to do."
   },
   "s.there-is-no-such-account-on.7d3cd732": {
    "source": "There is no such account on this server, and the name carried no institution to send the question on to. A controller testing its RADIUS server looks exactly like this, every few seconds, for ever — which is what the list of accounts to leave out under Settings → The eduroam logs is for.",
@@ -31236,6 +31628,10 @@
    "source": "Trusted. Click to copy.",
    "text": "Trusted. Click to copy."
   },
+  "s.trusted-roots-of-the-system.7639fe1f": {
+   "source": "Trusted roots of the system",
+   "text": "Trusted roots of the system"
+  },
   "s.trusted.ac946ad5": {
    "source": "trusted",
    "text": "trusted"
@@ -31959,6 +32355,10 @@
   "s.valid-until.e75d8233": {
    "source": "- valid until",
    "text": "- valid until"
+  },
+  "s.valid.a4aefa35": {
+   "source": "Valid",
+   "text": "Valid"
   },
   "s.valid.bec26280": {
    "source": "valid",
@@ -32807,6 +33207,18 @@
   "s.what-root-said.ef1e7b10": {
    "source": "What root said:",
    "text": "What root said:"
+  },
+  "s.what-selinux-refused-cannot-be-read.c539617a": {
+   "source": "What SELinux refused cannot be read: ausearch is not on this machine (dnf install audit)",
+   "text": "What SELinux refused cannot be read: ausearch is not on this machine (dnf install audit)"
+  },
+  "s.what-selinux-refuses-to-the-web.9cd18e0f": {
+   "source": "What SELinux refuses to the web server, rsyslog, logrotate and the database when it is enforcing - and what isemon needs of it here. Nothing changes unless asked: disabled stays disabled. On the server: isemon --selinux.",
+   "text": "What SELinux refuses to the web server, rsyslog, logrotate and the database when it is enforcing - and what isemon needs of it here. Nothing changes unless asked: disabled stays disabled. On the server: isemon --selinux."
+  },
+  "s.what-selinux-says-here-gathered-into.6e00737f": {
+   "source": "what SELinux says here, gathered into one file for whoever writes isemon's module - nothing is changed to make it",
+   "text": "what SELinux says here, gathered into one file for whoever writes isemon's module - nothing is changed to make it"
   },
   "s.what-set-it-off.cf5a84d5": {
    "source": "what set it off",
@@ -35378,6 +35790,10 @@
    "source": "Add an {0}",
    "text": "Add an {0}"
   },
+  "p.added-root-puts-into-the-system.80e1be6f": {
+   "source": "added {0} - root puts {1} into the system's trust within seconds",
+   "text": "added {0} - root puts {1} into the system's trust within seconds"
+  },
   "p.address-es-are-banned-by-more.6054c12b": {
    "source": "{0} address(es) are banned by more than one source - by the VPN and by hand, say - and are counted under each, so the column adds up to more than the {1} ban(s) there are.",
    "text": "{0} address(es) are banned by more than one source - by the VPN and by hand, say - and are counted under each, so the column adds up to more than the {1} ban(s) there are."
@@ -35445,6 +35861,10 @@
   "p.after-it-happened-at-much-more.8d0df169": {
    "source": "after it happened, at {0}. Much more than a couple of minutes and the script on the token server is worth a look.",
    "text": "after it happened, at {0}. Much more than a couple of minutes and the script on the token server is worth a look."
+  },
+  "p.after-the-next-restart-of-the.573b2fd7": {
+   "source": "After the next restart of the machine: {0}",
+   "text": "After the next restart of the machine: {0}"
   },
   "p.ago.aa37c151": {
    "source": "{0} ago",
@@ -35594,6 +36014,10 @@
    "source": "{0}_auth",
    "text": "{0}_auth"
   },
+  "p.authorities.cfe36efd": {
+   "source": "{0} authorities",
+   "text": "{0} authorities"
+  },
   "p.back-to-add-a-column-field.c95e663d": {
    "source": ", back to {0} — add a column field (an address, a port, a kind) to look further back",
    "text": ", back to {0} — add a column field (an address, a port, a kind) to look further back"
@@ -35645,6 +36069,10 @@
   "p.banning-is-switched-off-nothing-is.61107513": {
    "source": "Banning is switched off. Nothing is being enforced and nothing of ours is left on the router. The {0} address(es) below are kept as they are, and switching it back on in Settings fills the router again from them.",
    "text": "Banning is switched off. Nothing is being enforced and nothing of ours is left on the router. The {0} address(es) below are kept as they are, and switching it back on in Settings fills the router again from them."
+  },
+  "p.begin-certificate-end-certificate.c72706ab": {
+   "source": "-----BEGIN CERTIFICATE----- {0} -----END CERTIFICATE-----",
+   "text": "-----BEGIN CERTIFICATE----- {0} -----END CERTIFICATE-----"
   },
   "p.behind-nps-the-address-is-in.7af87a45": {
    "source": "Behind NPS the address is in the accounting the device sends once the machine has one — if the {0} sends no RADIUS accounting to NPS, there is none to show. docs/nps-logs.md says how to switch it on.",
@@ -36750,6 +37178,10 @@
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
   },
+  "p.isemon-s-own-connections-do-not.803deb40": {
+   "source": "isemon's own connections do not use the system's list here ({0}) - what is added here does not reach them.",
+   "text": "isemon's own connections do not use the system's list here ({0}) - what is added here does not reach them."
+  },
   "p.isemon-s-own-rotation-for-folder.b1c366a3": {
    "source": "isemon's own rotation for {0} folder(s) no longer wanted",
    "text": "isemon's own rotation for {0} folder(s) no longer wanted"
@@ -37073,6 +37505,10 @@
   "p.look-up-the-names-behind-address.24829cd3": {
    "source": "Look up the names behind {0} address(es)?",
    "text": "Look up the names behind {0} address(es)?"
+  },
+  "p.looked-at.9d22cb9f": {
+   "source": "Looked at {0}",
+   "text": "Looked at {0}"
   },
   "p.looked-at.b224db85": {
    "source": "{0} looked at",
@@ -37758,6 +38194,10 @@
    "source": "PEM files - the certificate, its key, the chain, the root, in any order or all in one - or one PFX / PKCS#12 file. {0}",
    "text": "PEM files - the certificate, its key, the chain, the root, in any order or all in one - or one PFX / PKCS#12 file. {0}"
   },
+  "p.pem.775a6fa6": {
+   "source": "{0}.pem",
+   "text": "{0}.pem"
+  },
   "p.perhaps-gone.7771ea6e": {
    "source": "{0} — perhaps gone",
    "text": "{0} — perhaps gone"
@@ -37970,6 +38410,10 @@
    "source": "{0}{1} record(s) · {2}{3}{4}",
    "text": "{0}{1} record(s) · {2}{3}{4}"
   },
+  "p.refused-before-allowed-now-by-a.3ff85689": {
+   "source": "{0} refused before, allowed now - by a newer isemon_server or a boolean put in since; not counted",
+   "text": "{0} refused before, allowed now - by a newer isemon_server or a boolean put in since; not counted"
+  },
   "p.refused-signed-in.10b97285": {
    "source": "{0} refused · {1} signed in",
    "text": "{0} refused · {1} signed in"
@@ -38138,6 +38582,14 @@
    "source": "Security Rating{0}: score {1} — {2} critical, {3} high, {4} medium, {5} low, {6} passed.",
    "text": "Security Rating{0}: score {1} — {2} critical, {3} high, {4} medium, {5} low, {6} passed."
   },
+  "p.selinux-refused-thing-s-since-isemon.c484f804": {
+   "source": "SELinux refused {0} thing(s) since isemon's needs were put in",
+   "text": "SELinux refused {0} thing(s) since isemon's needs were put in"
+  },
+  "p.selinux-refused-thing-s-since-the.9da7425b": {
+   "source": "SELinux refused {0} thing(s) since the machine started",
+   "text": "SELinux refused {0} thing(s) since the machine started"
+  },
   "p.sending.f857e3e8": {
    "source": "sending {0}…",
    "text": "sending {0}…"
@@ -38201,6 +38653,10 @@
   "p.sha-256.85cf4be1": {
    "source": "{0} · SHA-256 {1}",
    "text": "{0} · SHA-256 {1}"
+  },
+  "p.sha-256.975866fd": {
+   "source": "SHA-256 {0}",
+   "text": "SHA-256 {0}"
   },
   "p.show-only-the-rows-with-this.fca1f2b5": {
    "source": "Show only the rows with this {0}.",
@@ -38598,6 +39054,10 @@
    "source": "the configuration is back ({0}); the logs here were left as they are{1}",
    "text": "the configuration is back ({0}); the logs here were left as they are{1}"
   },
+  "p.the-configuration-says-but-the-kernel.709b287a": {
+   "source": "The configuration says {0}, but the kernel does not start SELinux - it is not switched on for it (the kernel's command line, or the distribution's own step such as selinux-activate).",
+   "text": "The configuration says {0}, but the kernel does not start SELinux - it is not switched on for it (the kernel's command line, or the distribution's own step such as selinux-activate)."
+  },
   "p.the-controllers-are-not-marked-anywhere.40d989fa": {
    "source": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}",
    "text": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}"
@@ -38861,6 +39321,10 @@
   "p.the-page-before-this-one.83cb525b": {
    "source": "The page before this one.{0}",
    "text": "The page before this one.{0}"
+  },
+  "p.the-pages-ask-the-daemon-on.052133d1": {
+   "source": "the pages ask the daemon on 127.0.0.1:{0}",
+   "text": "the pages ask the daemon on 127.0.0.1:{0}"
   },
   "p.the-password-for-lives-in-the.58cb7188": {
    "source": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\".",
@@ -39314,6 +39778,10 @@
    "source": "usually about {0} min",
    "text": "usually about {0} min"
   },
+  "p.valid.d3ba92ce": {
+   "source": "valid {0} – {1} · {2}",
+   "text": "valid {0} – {1} · {2}"
+  },
   "p.versions-newer-than-this-one-are.75219294": {
    "source": "{0} versions newer than this one are there - put in:",
    "text": "{0} versions newer than this one are there - put in:"
@@ -39441,6 +39909,10 @@
   "p.what-this-site-calls-that-vlan.5b301bac": {
    "source": "What this site calls that VLAN. {0} carries the name as well as the number and not every record carries both.",
    "text": "What this site calls that VLAN. {0} carries the name as well as the number and not every record carries both."
+  },
+  "p.what-was-refused.03d1f915": {
+   "source": "What was refused ({0})",
+   "text": "What was refused ({0})"
   },
   "p.when-this-last-wrote-the-address.1ad59484": {
    "source": "When this last wrote the address lists to {0}. On a pair the two are written in the same pass, so these should be seconds apart; minutes apart means one of them has been refusing.",
@@ -39575,6 +40047,10 @@
   "r.401-no-user-name-and-password.f60acaf5": {
    "source": "· <b>401</b> no user name and password, or wrong ones",
    "text": "· <b>401</b> no user name and password, or wrong ones"
+  },
+  "r.a-certificate-authority-of-your-own.f4f9c3dc": {
+   "source": "A certificate authority of your own - a root, or an intermediate - as PEM (<code>-----BEGIN CERTIFICATE-----</code>), or a <code>.pem</code>, <code>.crt</code> or <code>.cer</code> file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key.",
+   "text": "A certificate authority of your own - a root, or an intermediate - as PEM (<code>-----BEGIN CERTIFICATE-----</code>), or a <code>.pem</code>, <code>.crt</code> or <code>.cer</code> file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key."
   },
   "r.a-change-that-could-cut-this.1b20a420": {
    "source": "A change that could cut this server off - the firewall, or who may reach which page - is put in on trial: unless somebody presses <i>Keep it</i> on the banner in time, it goes back to what it was by itself.",
@@ -39759,6 +40235,10 @@
   "r.begin-certificate-begin-private-key.24075efc": {
    "source": "-----BEGIN CERTIFICATE-----<br>…<br>-----BEGIN PRIVATE KEY-----",
    "text": "-----BEGIN CERTIFICATE-----<br>…<br>-----BEGIN PRIVATE KEY-----"
+  },
+  "r.begin-certificate-end-certificate.5519a768": {
+   "source": "-----BEGIN CERTIFICATE-----<br>{0}<br>-----END CERTIFICATE-----<br>",
+   "text": "-----BEGIN CERTIFICATE-----<br>{0}<br>-----END CERTIFICATE-----<br>"
   },
   "r.begin-certificate-end-certificate.ccaf30d3": {
    "source": "-----BEGIN CERTIFICATE-----<br>…<br>-----END CERTIFICATE-----",
@@ -40987,6 +41467,10 @@
   "r.what-may-do-worked-out-from.8939d922": {
    "source": "What <b>{0}</b> may do, worked out from their groups in the directory when they last signed in — not set here. Move them between the two groups named under Settings, Active Directory and this follows: at their next sign-in, and while they are already signed in, at the interval set there.",
    "text": "What <b>{0}</b> may do, worked out from their groups in the directory when they last signed in — not set here. Move them between the two groups named under Settings, Active Directory and this follows: at their next sign-in, and while they are already signed in, at the interval set there."
+  },
+  "r.what-sha-256-signs-is-no.3d565cce": {
+   "source": "What <b>{0}</b> (SHA-256 <code>{1}…</code>) signs is no longer trusted by this server - unless the system's own list has it. Connections that rely on it (LDAPS, mail…) fail from their next start.",
+   "text": "What <b>{0}</b> (SHA-256 <code>{1}…</code>) signs is no longer trusted by this server - unless the system's own list has it. Connections that rely on it (LDAPS, mail…) fail from their next start."
   },
   "r.what-that-machine-is-called-the.1bc2deb1": {
    "source": "What that machine is called. The name is shown beside the address wherever it appears, so a page of sign-ins says <b>LogHost</b> rather than an address somebody has to recognise. It may be left empty.",

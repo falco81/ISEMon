@@ -372,6 +372,34 @@ working.
 
 ## Version
 
+1.10.319
+
+- **SELinux** (Settings → Server → SELinux, `isemon --selinux`): how SELinux
+  is here and what isemon needs of it.
+  - What isemon needs: its module `isemon_server`, the labels of
+    `/run/isemon` and the API token, `httpd_can_network_connect`, and the
+    ports of a local database and of rsyslog.
+  - What SELinux refused, counted since those needs were put in.
+  - Each step on the way to enforcing happens only when asked: make it ready
+    (permissive at the next start), put in what isemon needs, switch to
+    enforcing, back to permissive.
+  - Disabled stays disabled. The installer puts the module in only where
+    SELinux is on and never changes the mode. A port is never taken from
+    another service.
+  - *Download the report* (`isemon --selinux-report`) is for whoever extends
+    the module.
+- **Trusted roots of the system** (Settings → Certificates and TLS,
+  `isemon --os-roots`): your own root or intermediate authorities, added to the
+  whole system's trust.
+  - They go through the system's own local additions (`update-ca-trust`,
+    `update-ca-certificates`), so they reach curl, dnf, LDAPS and isemon's own
+    connections.
+  - The distribution's list is never touched and keeps coming with the
+    system's updates. Only `isemon-<sha256>` files are written; anything
+    else in that folder is shown and left alone.
+- Root's helper takes `selinux.ask` and `osroots.ask`: `./install.sh --upgrade`
+  once. See `docs/selinux-and-trusted-roots.md`.
+
 1.10.318
 
 - **Clear** beside "Done lately" in *To be done by hand* (Settings →

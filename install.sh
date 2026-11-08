@@ -234,6 +234,70 @@ tool_add() {        # tool_add <program> <rpm> <deb> "what it is for"
     fi
 }
 
+# SELinux (1.10.319): on every install and every upgrade, what Settings -
+# SELinux and its steps need - and nothing more. The mode is never touched
+# here: a machine with SELinux disabled stays disabled, and isemon runs as it
+# always did. Its tools are put in where SELinux is there at all (dnf only),
+# auditd started where it is on, isemon's module put into the policy where it
+# is on and only when it changed - compared with the copy last put in
+# (isemon_server.cil.in-policy), never with the one beside the program: one
+# semodule that failed would have left the copy new and the policy old for good.
+selinux_tools() {
+    [[ "${PKG:-}" == "dnf" ]] || return 0
+    [[ -d /etc/selinux || -x /usr/sbin/getenforce ]] || return 0
+    local want=() p
+    for p in policycoreutils libselinux-utils policycoreutils-python-utils audit selinux-policy-targeted; do
+        rpm -q "$p" >/dev/null 2>&1 || want+=("$p")
+    done
+    if (( ${#want[@]} )); then
+        if [[ -n "$PKG_UNTIL" ]] && (( SECONDS > PKG_UNTIL )); then
+            warn "SELinux: ${want[*]} not put in now (the upgrade's time is up) - dnf install -y ${want[*]}"
+        elif run timeout 300 dnf install -y "${want[@]}" >/dev/null 2>&1; then
+            good "SELinux: put in ${want[*]}"
+        else
+            warn "SELinux: ${want[*]} could not be put in (no repository reached?) - dnf install -y ${want[*]}"
+        fi
+    fi
+    if command -v getenforce >/dev/null 2>&1 && [[ "$(getenforce 2>/dev/null)" != "Disabled" ]] &&
+            command -v auditd >/dev/null 2>&1 && ! systemctl is-active --quiet auditd 2>/dev/null; then
+        # auditd refuses to be started by systemctl on some releases: service(8) then.
+        { run systemctl enable --now auditd >/dev/null 2>&1 || run service auditd start >/dev/null 2>&1; } &&
+            good "SELinux: auditd started - what SELinux refuses is written down" ||
+            warn "SELinux: auditd could not be started - systemctl enable --now auditd"
+    fi
+    return 0
+}
+
+selinux_module() {
+    selinux_tools
+    [[ -f "$SOURCE_DIR/deploy/isemon_server.cil" ]] || return 0
+    local had="" want=""
+    cmp -s "$SOURCE_DIR/deploy/isemon_server.cil" "$LIB_DIR/isemon_server.cil.in-policy" 2>/dev/null && had=1
+    run install -D -m 0644 "$SOURCE_DIR/deploy/isemon_server.cil" "$LIB_DIR/isemon_server.cil"
+    command -v getenforce >/dev/null 2>&1 || return 0
+    command -v semodule >/dev/null 2>&1 || return 0
+    [[ "$(getenforce 2>/dev/null)" == "Disabled" ]] && return 0
+    if [[ -z "$had" ]] || ! semodule -l 2>/dev/null | awk '$1=="isemon_server"{f=1} END{exit !f}'; then
+        if run semodule -i "$LIB_DIR/isemon_server.cil" 2>/dev/null; then
+            run install -m 0644 "$LIB_DIR/isemon_server.cil" "$LIB_DIR/isemon_server.cil.in-policy"
+            good "SELinux: isemon's module (isemon_server) is in the policy"
+        else
+            warn "SELinux: isemon's module could not be put in: semodule -i $LIB_DIR/isemon_server.cil"
+        fi
+    fi
+    [[ -d /run/isemon ]] && command -v restorecon >/dev/null 2>&1 && run restorecon -R /run/isemon 2>/dev/null || true
+    # Said when the policy does not label it: the pages could not read the
+    # API token under enforcing - Settings - SELinux says what else is missing.
+    if command -v matchpathcon >/dev/null 2>&1 && [[ -z "$DRY_RUN" ]]; then
+        want="$(matchpathcon /run/isemon 2>/dev/null || true)"
+        case "$want" in
+            *httpd_var_run_t*|*httpd_runtime_t*) ;;
+            *) warn "SELinux: the policy does not label /run/isemon for the pages (${want:-nothing}) - see Settings - SELinux";;
+        esac
+    fi
+    return 0
+}
+
 # What isemon uses beside Python, put in whenever it is missing. The
 # database's driver and client too, for the engine config.json names.
 ensure_packages() {     # ensure_packages fresh|upgrade
@@ -1080,6 +1144,12 @@ if [[ -n "$DO_UNINSTALL" ]]; then
                "$CONSOLE_PROFILE" "$CONSOLE_FLAG" "$CONSOLE_SYSCTL"; do
         [[ -e "$one" ]] && run rm -f "$one"
     done
+    # isemon's module out of the SELinux policy (1.10.319); the mode, the
+    # booleans and the ports are the machine's and stay.
+    if command -v semodule >/dev/null 2>&1 && semodule -l 2>/dev/null | awk '$1=="isemon_server"{f=1} END{exit !f}'; then
+        run semodule -r isemon_server >/dev/null 2>&1 && good "isemon's SELinux module taken out" ||
+            warn "isemon's SELinux module could not be taken out: semodule -r isemon_server"
+    fi
     [[ -d "$LIB_DIR" ]] && run rm -rf "$LIB_DIR"
     [[ -d "$WEB_DIR" ]] && run rm -rf "$WEB_DIR"
     run systemctl daemon-reload
@@ -1838,6 +1908,7 @@ if [[ -n "$DO_UPGRADE" ]]; then
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.service" "$UNIT_FILE"
     run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.logrotate" "$LOGROTATE_FILE"
     root_helpers
+    selinux_module
     chrony_check upgrade
     install_console upgrade
     reload_units
@@ -2174,6 +2245,7 @@ step "The service"
 run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.service" "$UNIT_FILE"
 run install -D -m 0644 "$SOURCE_DIR/deploy/isemon.logrotate" "$LOGROTATE_FILE"
 root_helpers
+selinux_module
 chrony_check fresh
 install_console fresh
 reload_units
