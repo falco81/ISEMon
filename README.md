@@ -372,6 +372,22 @@ working.
 
 ## Version
 
+1.10.320
+
+- SELinux: the one refusal isemon's module did not know yet, from the first
+  report off a real server, is now covered. The daemon runs with
+  `NoNewPrivileges` and starts `chronyc` (its version on the About pane);
+  the policy moves `chronyc` into `chronyc_t`, which NNP refuses
+  (`unconfined_service_t → chronyc_t process2 { nnp_transition }`). Under
+  enforcing, `chronyc` would not start at all.
+  - `isemon_server` lets that one move through, in a block of its own.
+  - The upgrade puts the new module in by itself, and so does *Put in what
+    isemon needs*. The old refusal is then counted as settled, so the server
+    becomes ready for enforcing.
+- "What was refused" now names the program each refusal came from (`exe=`
+  from the event's SYSCALL line). A thread's name written in hex
+  (`5468726561642D...`) is decoded.
+
 1.10.319
 
 - **SELinux** (Settings → Server → SELinux, `isemon --selinux`): how SELinux

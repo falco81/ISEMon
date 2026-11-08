@@ -23,3 +23,12 @@
 (optional isemon_server_systemd_runtime
     (allow init_t httpd_var_run_t (dir (getattr setattr search open read)))
     (allow init_t httpd_var_run_t (file (getattr setattr))))
+
+; The daemon runs with NoNewPrivileges (isemon.service), and a program it starts that the
+; policy moves into a domain of its own needs that move let through (1.10.320): chronyc,
+; asked for its version on the About pane - "unconfined_service_t -> chronyc_t process2
+; { nnp_transition }", and under enforcing it would not start at all. Into a confined
+; domain from an unconfined one: less, never more. Each in a block of its own, so that a
+; policy without the type still takes the rest.
+(optional isemon_server_nnp_chronyc
+    (allow unconfined_service_t chronyc_t (process2 (nnp_transition))))

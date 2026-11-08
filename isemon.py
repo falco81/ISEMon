@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.319'
+__version__ = '1.10.320'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -73904,7 +73904,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '6165acc86045d4d5d845978a2bb73011e18cc52973b2aa62f837a4e3c0bc2c29'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '608286487ba03208eff249e4af89923466ea5e0e908c3cec0bb36f6708d445fa'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),

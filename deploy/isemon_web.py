@@ -4556,6 +4556,16 @@ def se_denials(since=0.0):
     if got is None:
         return {'tool': False, 'total': 0, 'groups': [], 'since': since}
     groups, lines, total = {}, {}, 0
+    # The program each refusal came from (1.10.320): the event's SYSCALL line
+    # says it (exe=), the AVC line only the thread's name - which Python
+    # gives as "Thread-351 (...)", hex-encoded for its space.
+    exes = {}
+    for line in (got.stdout or '').splitlines():
+        if line.startswith('type=SYSCALL'):
+            mid = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+            exe = re.search(r'\bexe=(\S+)', line)
+            if mid and exe:
+                exes[mid.group(1)] = se_audit_word(exe.group(1))
     for line in (got.stdout or '').splitlines():
         if 'avc:' not in line or 'denied' not in line:
             continue
@@ -4572,8 +4582,10 @@ def se_denials(since=0.0):
             continue
         st = (sc.group(1).split(':') + ['', '', ''])[2]
         tt = (tc.group(1).split(':') + ['', '', ''])[2]
-        what = ' '.join(x for x in (comm.group(1) if comm else '', name.group(1) if name else '')
-                        if x)
+        mid = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+        exe = exes.get(mid.group(1)) if mid else ''
+        what = ' '.join(x for x in (se_audit_word(comm.group(1)) if comm else '',
+                                    se_audit_word(name.group(1)) if name else '', exe or '') if x)
         if st not in SE_DOMAINS and 'isemon' not in line:
             continue
         total += 1
@@ -4591,6 +4603,20 @@ def se_denials(since=0.0):
         total -= groups.pop(key)['count']
     out = sorted(groups.values(), key=lambda g: -g['count'])[:30]
     return {'tool': True, 'total': total, 'groups': out, 'since': since, 'settled': settled}
+
+
+def se_audit_word(v):
+    """A value of an audit line as it reads: "quoted" as it is, else hex
+    (the kernel writes a value with a space or a quote in it so) decoded."""
+    v = str(v or '')
+    if len(v) >= 2 and v[0] == v[-1] == '"':
+        return v[1:-1]
+    if len(v) % 2 == 0 and re.match(r'^[0-9A-F]+\Z', v):
+        try:
+            return bytes.fromhex(v).decode('utf-8', 'replace').replace('\0', ' ').strip()
+        except ValueError:
+            return v
+    return v
 
 
 def se_allowed_now(lines):

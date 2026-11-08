@@ -25,6 +25,7 @@ is not installed.
   | `/run/isemon` and `/run/isemon/api-token` labelled `httpd_var_run_t` (`httpd_runtime_t` on newer policies) | php-fpm (`httpd_t`) reads the daemon's API token. systemd makes `/run/isemon` as `var_run_t`, which `httpd_t` may not read | `filecon` in isemon's module, for both `/run/isemon` and `/var/run/isemon` |
   | systemd may chown and chmod in `/run/isemon` | `systemctl reload isemon` (logrotate) hands the folder back to the account: `init_t → httpd_var_run_t { setattr }` | a narrow `allow` in an `optional` block |
   | `/var/www/isemon` labelled `httpd_sys_content_t` | the pages | the distribution's own label, `restorecon` |
+  | the daemon may start `chronyc` into `chronyc_t` (1.10.320) | the daemon runs with `NoNewPrivileges`, and the policy moves `chronyc` (its version on the About pane) into a domain of its own: `unconfined_service_t → chronyc_t process2 { nnp_transition }`. Under enforcing it would not start at all | a narrow `allow` in an `optional` block. From an unconfined domain into a confined one is less, never more |
   | `httpd_can_network_connect` on | the pages ask the daemon on `127.0.0.1:9851` | boolean |
   | a local PostgreSQL on a port other than 5432 labelled `postgresql_port_t` | the server itself is confined | `semanage port -a` |
   | a local MariaDB on a port other than 3306 labelled `mysqld_port_t` | the same | `semanage port -a` |
@@ -34,7 +35,9 @@ is not installed.
   isemon works with: `httpd_t`, `syslogd_t`, `logrotate_t`, `postgresql_t`,
   `mysqld_t`, `chronyd_t`, `system_cronjob_t`, `init_t`, `unconfined_service_t`,
   and any line that names isemon. Refusals are grouped by source, target,
-  class and permissions.
+  class and permissions, each with the program it came from. That program
+  is read off the event's SYSCALL line (`exe=`), and a name the kernel wrote
+  in hex is decoded.
   - A refusal that `audit2why` says "would be allowed by active policy" (a
     newer module, a boolean put in since) is counted as settled.
   - Refusals are counted from the moment isemon's needs were last put in, kept
