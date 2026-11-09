@@ -372,6 +372,24 @@ working.
 
 ## Version
 
+1.10.328
+
+- **Domain → Overview → Worth looking at** now also says what the logs of
+  Before Windows Server 2025 found. Each line has the count, the machine and
+  account doing the most, and the fix. The kinds are:
+  - a password sent to LDAP in the clear;
+  - NTLMv1;
+  - DES;
+  - SMB1 to a domain controller;
+  - LDAP binds without signing;
+  - LDAP channel binding failing;
+  - accounts with no AES keys.
+- Pressed, a line opens Before Windows Server 2025 at that kind, by machine
+  or by account.
+- The front page's Domain card shows the same lines.
+- Nothing changes without those logs: the lines appear only while that page
+  is switched on and has found something in the window.
+
 1.10.327
 
 - A new guide, `docs/active-directory-logging.md`, sets up the domain

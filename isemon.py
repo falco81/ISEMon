@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.327'
+__version__ = '1.10.328'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -9159,6 +9159,16 @@ AD25_ISSUES = (
     ('ldap-daily', 'info', 'The controller\'s own daily count of LDAP binds'),
 )
 AD25_LEVEL = {k: lvl for k, lvl, _w in AD25_ISSUES}
+# What puts each right, in a line - the overview says it on the alarm itself.
+AD25_SAY_FIX = (
+    ('ldap-clear', 'LDAPS on 636, or StartTLS before the bind.'),
+    ('ldap-unsigned', 'ask the LDAP library for signing (or use LDAPS).'),
+    ('ldap-cbt', 'a library that sends the channel binding token, or a simple bind over LDAPS.'),
+    ('ntlmv1', 'LmCompatibilityLevel 5 (NTLMv2 only) on that machine, or a newer device.'),
+    ('des', 'take "Use Kerberos DES encryption types" off the account.'),
+    ('smb1', 'SMB 2/3 on that machine, or a newer scanner, NAS or device.'),
+    ('noaes', 'reset the account\'s password once (and make its keytab again).'),
+)
 AD25_IDS = frozenset((4624, 4768, 4769, 4776, 2887, 2889, 3039, 3040, 3041, 3000, 8004,
                       14, 16, 26, 27, 201, 202, 203, 204, 205, 206, 207, 208, 209))
 # Which log each event number arrives from, for "what the logs can see".
@@ -31355,6 +31365,50 @@ class Storage(object):
                 db.execute("DELETE FROM ad25_seen WHERE issue = 'ntlm' AND day < ?", (today - 31,))
         except sqlite3.Error as e:
             log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
+
+    def ad25_worth(self, since):
+        """Each kind of trouble Before Windows Server 2025 counts, since a
+        moment: how many, from how many machines and accounts, the newest,
+        and the machine and account doing the most of it."""
+        keys = [k for k, _l, _w in AD25_ISSUES if k not in ('ntlm', 'ldap-daily')]
+        try:
+            rows = self.db.execute(
+                'SELECT issue, ckey, MAX(client) AS client, MAX(ip) AS ip, '
+                'MAX(account) AS account, SUM(n) AS n, MAX(t_last) AS t_last '
+                'FROM ad25_seen WHERE day >= ? AND t_last >= ? AND issue IN (%s) '
+                'GROUP BY issue, ckey LIMIT 200000' % ','.join('?' * len(keys)),
+                [int(since // 86400), float(since)] + keys).fetchall()
+        except sqlite3.Error as e:
+            log('Before Windows Server 2025: counting for the overview: %s' % str(e)[:160],
+                'debug')
+            return {}
+        names = {}
+        for r in rows:
+            if r['client'] and r['ip']:
+                names.setdefault(r['ip'], r['client'])
+        out = {}
+        for r in rows:
+            one = out.setdefault(r['issue'], {'n': 0, 'last': 0.0, 'clients': set(),
+                                              'accounts': set(), 'by': {}})
+            n = int(r['n'] or 0)
+            client = r['client'] or names.get(r['ip'] or '', '')
+            one['n'] += n
+            one['last'] = max(one['last'], float(r['t_last'] or 0))
+            if client or r['ip']:
+                one['clients'].add((client or r['ip']).lower())
+            if r['account']:
+                one['accounts'].add(r['account'].lower())
+            k = ((client or r['ip'] or '').lower(), (r['account'] or '').lower())
+            b = one['by'].setdefault(k, {'client': client or '', 'ip': r['ip'] or '',
+                                         'account': r['account'] or '', 'n': 0})
+            b['n'] += n
+        for one in out.values():
+            by = one.pop('by')
+            one['top'] = max(by.values(), key=lambda b: b['n']) if by else \
+                {'client': '', 'ip': '', 'account': '', 'n': 0}
+            one['clients'] = len(one['clients'])
+            one['accounts'] = len(one['accounts'])
+        return out
 
     def ad25_view(self, hours=168):
         """Domain → Before Windows Server 2025: each kind of trouble with the
@@ -63069,7 +63123,47 @@ class Daemon(object):
         ('big-right', 'info', 'Rights that take a machine apart were taken',
          'Debug, take-ownership, load-driver and their neighbours. Backup '
          'software and installers do it; so does everything else.'),
+        # Out of the logs Before Windows Server 2025 reads (1.10.328) - only
+        # there when that page is switched on and those logs say something,
+        # so a site without them sees exactly what it saw before.
+        ('ad25-ldap-clear', 'warn', 'A password sent to LDAP in the clear',
+         'A simple LDAP bind on port 389 with no TLS: the account\u2019s password '
+         'crossed the network readable by anybody on the way. Directory Service '
+         '2889, binding type 1. A Windows Server 2025 controller refuses it.'),
+        ('ad25-ntlmv1', 'warn', 'Sign-ins with NTLMv1',
+         'NTLMv1 answers can be turned back into the password hash in hours, and '
+         'the hash is as good as the password. Windows Server 2025 does not take '
+         'NTLMv1 at all.'),
+        ('ad25-des', 'warn', 'Kerberos tickets in DES',
+         'DES is broken and Windows Server 2025 has none: an account still asking '
+         'for it has "Use Kerberos DES encryption types" on.'),
+        ('ad25-smb1', 'warn', 'SMB1 to a domain controller',
+         'Something connected to a controller over SMB1 - the protocol behind '
+         'EternalBlue and WannaCry. Windows Server 2025 has no SMB1 at all. '
+         'SMBServer/Audit 3000.'),
+        ('ad25-ldap-unsigned', 'info', 'LDAP binds without signing',
+         'An NTLM or Kerberos bind on 389 without signing: what it sends can be '
+         'changed on the way, and an NTLM one relayed. Windows Server 2025 '
+         'refuses it once signing is required. Directory Service 2889, binding '
+         'type 0.'),
+        ('ad25-ldap-cbt', 'info', 'LDAP channel binding failed',
+         'A bind over LDAPS without a channel binding token - the protection '
+         'against relaying it. Refused once channel binding is required. '
+         'Directory Service 3039.'),
+        ('ad25-noaes', 'info', 'Accounts with no AES keys',
+         'Their passwords are older than AES in the domain, so they can only '
+         'get tickets in RC4 - which is what can be cracked offline, and what '
+         'Windows Server 2025 no longer hands out.'),
     )
+    # Which kinds of Before Windows Server 2025 are said on the overview,
+    # and what each one counts.
+    AD25_WORTH = (('ldap-clear', 'bind(s) in the clear'),
+                  ('ntlmv1', 'NTLMv1 sign-in(s)'),
+                  ('des', 'DES ticket(s)'),
+                  ('smb1', 'SMB1 connection(s)'),
+                  ('ldap-unsigned', 'unsigned bind(s)'),
+                  ('ldap-cbt', 'bind(s) without channel binding'),
+                  ('noaes', 'ticket(s) for accounts with no AES keys'))
 
     # How long a beat is, in words. `span()` says "5 minutes" perfectly well
     # for these, so this is only the handful that read better named.
@@ -64226,9 +64320,48 @@ class Daemon(object):
         for one in out:
             if one['kind'] in ('brute', 'lockstorm', 'disabled'):
                 self.ask_the_directory(one, facts, store, since, '')
+        self.ad25_incidents(add, out, since)
         order = {'crit': 0, 'warn': 1, 'info': 2}
         out.sort(key=lambda one: (order.get(one['level'], 3), -one['n']))
         return out
+
+    def ad25_incidents(self, add, out, since):
+        """What the logs of Before Windows Server 2025 say, as things worth
+        looking at - only where that page is switched on and they say
+        something, so without them the overview is what it always was."""
+        if not ad25_on():
+            return
+        try:
+            seen = self.held('ad25-worth/%d' % int(since // 60), 60,
+                             lambda: self.store.ad25_worth(since))
+        except Exception as e:
+            log('Before Windows Server 2025 on the overview: %s' % str(e)[:120], 'debug')
+            return
+        say = {k: v for k, v in AD25_SAY_FIX}
+        for key, noun in self.AD25_WORTH:
+            got = (seen or {}).get(key)
+            if not got or not got['n']:
+                continue
+            top = got['top']
+            where = top['client'] or top['ip']
+            said = '%s %s' % (num_words(got['n']), noun)
+            if got['clients']:
+                said += ', from %s machine(s)' % num_words(got['clients'])
+            if got['accounts']:
+                said += '%s %s account(s)' % (' and' if got['clients'] else ', by',
+                                              num_words(got['accounts']))
+            if where:
+                said += '; the most from %s' % where
+                if top['ip'] and top['client'] and top['ip'] != top['client']:
+                    said += ' (%s)' % top['ip']
+                if top['account']:
+                    said += ' as %s' % top['account']
+            add('ad25-' + key, got['n'], top['account'] or where, got['last'], said,
+                {'ad25': key, 'page': 'accounts' if key == 'noaes' else 'machines'})
+            if out and out[-1]['kind'] == 'ad25-' + key:
+                out[-1]['reads'] = ['What fixes it: ' + say.get(key, '')] if say.get(key) else []
+                out[-1]['next'] = ['Domain \u2192 Before Windows Server 2025 has every '
+                                   'machine and account behind it.']
 
     def ask_the_directory(self, one, facts, store, since, mark, machines=None):
         """What the directory says about the accounts behind one alarm.

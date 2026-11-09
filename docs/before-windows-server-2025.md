@@ -156,6 +156,35 @@ nothing came from it, NXLog is not sending that log.
 }
 ```
 
+## On the Domain overview
+
+With this page switched on, *Domain → Overview → Worth looking at* also says
+what these logs found, each as one line. The front page's Domain card shows
+the same lines. The kinds are:
+
+- **A password sent to LDAP in the clear** (warn);
+- **Sign-ins with NTLMv1** (warn);
+- **Kerberos tickets in DES** (warn);
+- **SMB1 to a domain controller** (warn);
+- **LDAP binds without signing** (info);
+- **LDAP channel binding failed** (info);
+- **Accounts with no AES keys** (info).
+
+Each line says:
+
+- how many there were, from how many machines and accounts;
+- which machine and account did the most;
+- what fixes it.
+
+Pressed, it opens this page at that kind, by machine or by account.
+
+RC4 and NTLM are not repeated there. The overview already has its own line
+for RC4 tickets, and NTLM as a whole is ordinary.
+
+The lines appear only while this page is switched on and its logs have
+found something in the overview's window. Without them, the overview is
+exactly what it was before.
+
 ## How it is counted
 
 The rules are matched when each line is read, and only for the event numbers

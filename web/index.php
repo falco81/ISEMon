@@ -22002,6 +22002,15 @@ function winIncidentLine(one) {
 /** What one pattern is made of: the events themselves. */
 function winPeekIncident(one) {
   var where = one.where || {};
+  /* Out of the logs Before Windows Server 2025 reads (1.10.328): those are
+     not events of their own but counted rows, so the page that holds them
+     is opened at that kind of trouble, by machine or by account. */
+  if (where.ad25 && typeof a25Go === 'function') {
+    if (TAB !== 'windows') showTab('windows');
+    winShowPage('ad25');
+    a25Go(where.page === 'accounts' ? 'accounts' : 'machines', String(where.ad25));
+    return;
+  }
   var ask = {};
   /* EVERY filter the daemon counted with, not a list of the ones this
      function happens to know about.
