@@ -3174,7 +3174,7 @@ ok('the domain events are on the list of what can be erased',
    "'name': 'the events the domain controllers wrote'" in DAEMON, True)
 ok('...along with the notes that say how they were read',
    "'meta': ['win_sorted', 'win_reading', 'win_words_done', 'win_bits_done',\n"
-   "                     'win_roll', 'win_roll_seen']" in DAEMON, True)
+   "                     'win_roll', 'win_roll_seen', 'ad25_sources']" in DAEMON, True)
 ok('...and a group that is notes rather than rows can still be ticked',
    'g.rows || g.rereads || g.notes' in PAGE, True)
 ok('...and what is in the database says so too',

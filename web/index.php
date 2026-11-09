@@ -512,6 +512,8 @@ if (isset($_GET['api'])) {
         /* ...and what the domain controllers saw, which is a system of its
            own and never an authentication here. */
         'windows'   => '/api/windows',
+        /* Domain → Before Windows Server 2025 (1.10.321). */
+        'ad25'      => '/api/ad25',
         'fw'        => '/api/fw',
         'fw-rows'   => '/api/fw/rows',
         'fw-row'    => '/api/fw/row',
@@ -4403,6 +4405,63 @@ function srcText(el) {
   .net-job.failed{border-color:rgba(248,81,73,.5)}
   .net-job.done{border-color:rgba(63,185,80,.45)}
   .pw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:16px}
+  /* Domain → Before Windows Server 2025 (1.10.321) */
+  .a25-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+    padding:18px 22px;border-radius:14px;border:1px solid var(--line);margin:4px 0 16px;
+    background:linear-gradient(135deg,var(--panel2),var(--panel))}
+  .a25-hero.crit{border-color:rgba(248,81,73,.45);background:linear-gradient(135deg,rgba(248,81,73,.14),var(--panel) 70%)}
+  .a25-hero.warn{border-color:rgba(210,153,34,.45);background:linear-gradient(135deg,rgba(210,153,34,.13),var(--panel) 70%)}
+  .a25-hero.ok{border-color:rgba(63,185,80,.45);background:linear-gradient(135deg,rgba(63,185,80,.12),var(--panel) 70%)}
+  .a25-hero-big{display:flex;align-items:baseline;gap:12px;min-width:0}
+  .a25-hero-n{font-size:44px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
+  .a25-hero.crit .a25-hero-n{color:var(--crit)} .a25-hero.warn .a25-hero-n{color:var(--warn)} .a25-hero.ok .a25-hero-n{color:var(--ok)}
+  .a25-hero-w{font-size:15px;color:var(--tx-dim);max-width:340px}
+  .a25-hero-facts{display:flex;gap:26px;flex-wrap:wrap}
+  .a25-fact{display:flex;flex-direction:column;align-items:flex-start}
+  .a25-fact b{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .a25-fact span{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--tx-mut)}
+  .a25-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:18px}
+  .a25-tile{appearance:none;text-align:left;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;
+    padding:13px 15px;border-radius:12px;border:1px solid var(--line);border-left:4px solid var(--tx-mut);background:var(--panel2);
+    transition:transform .12s,border-color .12s}
+  .a25-tile:hover{transform:translateY(-1px);border-color:var(--tx-mut)}
+  .a25-tile.crit{border-left-color:var(--crit)} .a25-tile.warn{border-left-color:var(--warn)} .a25-tile.info{border-left-color:var(--info)}
+  .a25-tile.none{opacity:.62;border-left-color:var(--ok)}
+  .a25-tile.on{outline:2px solid var(--accent);outline-offset:1px}
+  .a25-tile-top{display:flex;align-items:center;gap:8px;font-weight:650;font-size:13.5px}
+  .a25-tile.crit .a25-tile-top svg{color:var(--crit)} .a25-tile.warn .a25-tile-top svg{color:var(--warn)} .a25-tile.info .a25-tile-top svg{color:var(--info)}
+  .a25-tile.none .a25-tile-top svg{color:var(--ok)}
+  .a25-tile-n{display:flex;align-items:baseline;gap:8px}
+  .a25-tile-n b{font-size:26px;font-weight:720;font-variant-numeric:tabular-nums}
+  .a25-tile-n span{font-size:12px;color:var(--tx-dim)}
+  .a25-tile-b{font-size:12.5px;color:var(--tx-dim);line-height:1.45}
+  .a25-tile-f{font-size:12.5px;line-height:1.45}
+  .a25-tile-l{font-size:11.5px}
+  .a25-who{margin-top:4px}
+  .a25-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .a25-bar input{flex:1 1 220px;min-width:180px;max-width:420px}
+  .a25-seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .a25-seg button{appearance:none;border:0;background:var(--panel2);color:var(--tx-dim);font:inherit;font-size:13px;
+    font-weight:600;padding:7px 14px;cursor:pointer;border-right:1px solid var(--line)}
+  .a25-seg button:last-child{border-right:0}
+  .a25-seg button.on{background:var(--info-bg);color:var(--info)}
+  .a25-chip{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px 3px 4px;cursor:pointer;color:inherit;font:inherit}
+  .a25-x{color:var(--tx-dim)}
+  .a25-tags{display:flex;gap:5px;flex-wrap:wrap}
+  .a25-tag{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;
+    background:var(--panel2);color:var(--tx-dim)}
+  .a25-tag.crit{background:var(--crit-bg);color:var(--crit)} .a25-tag.warn{background:var(--warn-bg);color:var(--warn)}
+  .a25-tag.info{background:var(--info-bg);color:var(--info)}
+  .a25-t .a25-row{cursor:pointer}
+  .a25-srcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:12px}
+  .a25-src{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel2);display:flex;flex-direction:column;gap:4px}
+  .a25-src.ok{border-color:rgba(63,185,80,.4)} .a25-src.no{border-style:dashed}
+  .a25-src-h{display:flex;align-items:center;gap:8px}
+  .a25-src-h .se-dot{margin-top:0}
+  .a25-how summary{cursor:pointer;font-weight:600;font-size:13.5px;margin:4px 0}
+  .a25-how h4{margin:14px 0 4px;font-size:13px}
+  .a25-how pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font-size:12px;margin:0 0 8px;max-height:420px}
+  .a25-copy{display:flex;justify-content:flex-end;margin:0 0 4px}
   /* SELinux (1.10.319) */
   .se-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;margin-top:12px}
   .se-node{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0;max-width:980px}
@@ -5964,6 +6023,8 @@ function srcText(el) {
       <span>Overview</span></button>
     <button type="button" role="tab" data-page="events" aria-selected="false">
       <span>The events themselves</span><span class="n" id="w-pages-n"></span></button>
+    <button type="button" role="tab" data-page="ad25" aria-selected="false" hidden>
+      <span>Before Windows Server 2025</span></button>
   </div>
   <div id="w-page-over">
   <!-- No row of tiles. Four big numbers across the top push the cards that
@@ -6035,6 +6096,115 @@ function srcText(el) {
   </div>
 
   <div id="w-views"></div>
+  </div>
+
+  <!-- Before Windows Server 2025 (1.10.321): what a 2025 controller refuses
+       that a 2016 one lets through, and who here still does it. There only
+       while Settings → The domain controllers says to look for it. -->
+  <div id="w-page-ad25" hidden>
+  <div class="card full">
+    <h2>Before Windows Server 2025
+      <span class="right">
+        <select id="a25-window" title="How far back it is counted. A window on what is shown; what is kept is the last 90 days.">
+          <option value="24">last 24 hours</option>
+          <option value="168" selected>last week</option>
+          <option value="720">last month</option>
+          <option value="2160">last 90 days</option>
+        </select>
+        <button type="button" class="btn cmd small" id="a25-again">Look again</button>
+      </span></h2>
+    <p class="note">What a domain controller of Windows Server 2025 refuses that one of 2016 lets through -
+      and which machines and accounts here still do it. Counted from the controllers' own logs as they
+      arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below;
+      a row opens the events behind it.</p>
+    <div id="a25-host"></div>
+  </div>
+  <div class="card full" style="margin-top:14px">
+    <h2>What the logs can see</h2>
+    <p class="note">Each kind of trouble is written in one log of the controllers. The Security log is
+      sent already; the rest only once NXLog sends them and the controllers write them.</p>
+    <div id="a25-src"></div>
+    <details class="a25-how" id="a25-how">
+      <summary>How to send the rest - NXLog and the controllers</summary>
+      <h4>1. On every domain controller, what it writes</h4>
+      <p class="note">LDAP: who binds in the clear or unsigned (2889) and channel binding (3039).
+        Takes effect at once; at 2 every such bind is an event - on a busy controller leave it
+        on for the weeks before the change.</p>
+      <pre data-no-i18n>reg add "HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Diagnostics" /v "16 LDAP Interface Events" /t REG_DWORD /d 2 /f</pre>
+      <p class="note">SMB1 to the controller (SMBServer/Audit, 3000):</p>
+      <pre data-no-i18n>Set-SmbServerConfiguration -AuditSmb1Access $true -Force</pre>
+      <p class="note">NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain
+        Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings →
+        Local Policies → Security Options → <b>Network security: Restrict NTLM: Audit NTLM
+        authentication in this domain</b> = <b>Enable all</b>. Kerberos and NTLMv1 come in the
+        Security log once these are audited (Success and Failure):</p>
+      <pre data-no-i18n>auditpol /set /subcategory:"Kerberos Authentication Service" /success:enable /failure:enable
+auditpol /set /subcategory:"Kerberos Service Ticket Operations" /success:enable /failure:enable
+auditpol /set /subcategory:"Credential Validation" /success:enable /failure:enable
+auditpol /set /subcategory:"Logon" /success:enable /failure:enable</pre>
+      <h4>2. In nxlog.conf, beside the Security input</h4>
+      <p class="note">One input a log, so that a log a controller does not have does not stop the
+        others; the same output, so everything lands in the same file isemon reads. Then restart
+        NXLog (<code>Restart-Service nxlog</code>).</p>
+      <pre data-no-i18n>&lt;Input eventlog_ds&gt;
+    Module          im_msvistalog
+    SavePos         TRUE
+    ReadFromLast    TRUE
+    &lt;QueryXML&gt;
+        &lt;QueryList&gt;
+            &lt;Query Id="0"&gt;
+                &lt;Select Path="Directory Service"&gt;*[System[(EventID=2886 or EventID=2887 or EventID=2888 or EventID=2889 or EventID=3039 or EventID=3040 or EventID=3041)]]&lt;/Select&gt;
+            &lt;/Query&gt;
+        &lt;/QueryList&gt;
+    &lt;/QueryXML&gt;
+&lt;/Input&gt;
+
+&lt;Input eventlog_kdc&gt;
+    Module          im_msvistalog
+    SavePos         TRUE
+    ReadFromLast    TRUE
+    &lt;QueryXML&gt;
+        &lt;QueryList&gt;
+            &lt;Query Id="0"&gt;
+                &lt;Select Path="System"&gt;*[System[Provider[@Name='Microsoft-Windows-Kerberos-Key-Distribution-Center'] and (EventID=14 or EventID=16 or EventID=26 or EventID=27 or (EventID &amp;gt;= 201 and EventID &amp;lt;= 209))]]&lt;/Select&gt;
+            &lt;/Query&gt;
+        &lt;/QueryList&gt;
+    &lt;/QueryXML&gt;
+&lt;/Input&gt;
+
+&lt;Input eventlog_smb1&gt;
+    Module          im_msvistalog
+    SavePos         TRUE
+    ReadFromLast    TRUE
+    &lt;QueryXML&gt;
+        &lt;QueryList&gt;
+            &lt;Query Id="0"&gt;
+                &lt;Select Path="Microsoft-Windows-SMBServer/Audit"&gt;*[System[(EventID=3000)]]&lt;/Select&gt;
+            &lt;/Query&gt;
+        &lt;/QueryList&gt;
+    &lt;/QueryXML&gt;
+&lt;/Input&gt;
+
+&lt;Input eventlog_ntlm&gt;
+    Module          im_msvistalog
+    SavePos         TRUE
+    ReadFromLast    TRUE
+    &lt;QueryXML&gt;
+        &lt;QueryList&gt;
+            &lt;Query Id="0"&gt;
+                &lt;Select Path="Microsoft-Windows-NTLM/Operational"&gt;*[System[(EventID=8004)]]&lt;/Select&gt;
+            &lt;/Query&gt;
+        &lt;/QueryList&gt;
+    &lt;/QueryXML&gt;
+&lt;/Input&gt;
+
+&lt;Route security_to_syslog&gt;
+    Path        eventlog_security, eventlog_ds, eventlog_kdc, eventlog_smb1, eventlog_ntlm =&gt; out_syslog
+&lt;/Route&gt;</pre>
+      <p class="note">2889 and 4769 are often longer than 1500 bytes: over UDP a lost fragment is a
+        lost event. The TCP output already in your file (port 514) is the safer road.</p>
+    </details>
+  </div>
   </div>
 
   <div id="w-page-events" hidden>
@@ -10835,6 +11005,9 @@ function hashSub(tab) {
   if (tab === 'windows' && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'events') {
     return 'events';
   }
+  if (tab === 'windows' && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25') {
+    return 'ad2025';
+  }
   if (tab === 'failed' && typeof FKIND !== 'undefined' && FKIND && FKIND !== 'vpn') return FKIND;
   if (tab === 'logins' && typeof PKIND !== 'undefined' && PKIND && PKIND !== 'vpn') return PKIND;
   return '';
@@ -10853,6 +11026,7 @@ function openHashSub(tab, sub) {
     if (b && (!b.hidden || T_PAGES[sub] || sub === 'vpn' || sub === 'router')) tShowPage(sub);
   } else if (tab === 'windows') {
     if (sub === 'events') winShowPage('events');
+    if (sub === 'ad2025' && STATUS && STATUS.ad2025_on) winShowPage('ad25');
   } else if (tab === 'failed') {
     if (DOOR_SAYS[sub]) showFailedKind(sub);
   } else if (tab === 'logins') {
@@ -11537,6 +11711,9 @@ function paintHeader(s, quiet) {
     domainTab.hidden = !s.winsec_on;
     if (!s.winsec_on && TAB === 'windows') showTab('overview');
   }
+  /* ...and its page about Windows Server 2025, only while it is looked for
+     (1.10.321). */
+  if (typeof ad25Show === 'function') ad25Show(!!s.ad2025_on);
   /* ...and acme's, there only while its logs are read (1.10.287) - with how
      many of its certificates want looking at. */
   var acmeTab = document.querySelector('.tabs button[data-tab="acmelog"]');
@@ -20713,9 +20890,11 @@ var WLIST = 0;
 var WPAGE_SHOWN = 'over';
 
 function winShowPage(which) {
-  WPAGE_SHOWN = which === 'events' ? 'events' : 'over';
+  WPAGE_SHOWN = which === 'events' ? 'events' : (which === 'ad25' ? 'ad25' : 'over');
   $('w-page-over').hidden = WPAGE_SHOWN !== 'over';
   $('w-page-events').hidden = WPAGE_SHOWN !== 'events';
+  $('w-page-ad25').hidden = WPAGE_SHOWN !== 'ad25';
+  if (WPAGE_SHOWN === 'ad25' && typeof loadAd25 === 'function') loadAd25();
   Array.prototype.forEach.call($('w-pages').children, function (b) {
     var mine = b.dataset.page === WPAGE_SHOWN;
     b.classList.toggle('on', mine);
@@ -27461,7 +27640,7 @@ var PANES = {
   fwlog:   ['fwlog', 'fwlog_sources', 'fwlog_ros_plain', 'fwlog_keep_days',
             'fwlog_keep_allowed', 'fwlog_allowed_days', 'fwlog_ready'],
   winsec:  ['winsec', 'winsec_paths', 'winsec_name', 'winsec_zone',
-            'winsec_rollup',
+            'winsec_rollup', 'winsec_ad2025',
             'winsec_keep_days', 'winsec_keep_logons', 'winsec_logons_days',
             'winsec_keep_reads', 'winsec_reads_days',
             'winsec_ignore', 'winsec_machines',
@@ -28401,6 +28580,7 @@ var ONLY_WHEN = {
   winsec_name: ['winsec', '1'],
   winsec_zone: ['winsec', '1'],
   winsec_rollup: ['winsec', '1'],
+  winsec_ad2025: ['winsec', '1'],
   winsec_keep_days: ['winsec', '1'],
   winsec_keep_logons: ['winsec', '1'],
   winsec_logons_days: ['winsec', '1'],
@@ -45465,6 +45645,326 @@ function skDrop(k) {
 /* Opened straight at this pane, it was switched to before this block was
    read: drawn now. */
 setTimeout(function () { if (paneLive('sshkeys')) loadSshKeys(); }, 0);
+</script>
+<script nonce="<?= h($nonce) ?>">
+/* ==========================================================================
+   Domain → Before Windows Server 2025 (1.10.321)
+   --------------------------------------------------------------------------
+   What a domain controller of Windows Server 2025 refuses that one of 2016
+   lets through, and who here still does it - out of `ad25_seen`, counted as
+   the controllers' lines are read (Settings → The domain controllers →
+   Look for what Windows Server 2025 will refuse). Three ways in: each kind of
+   trouble as a tile, the machines behind them, the accounts behind them; and
+   what the logs that arrive can see at all, with how to send the rest.
+   ========================================================================== */
+var A25 = {d: null, view: 'machines', issue: '', q: '', asking: false};
+var A25_SAY = {
+  'ldap-clear': {icon: 'lock', breaks: 'A 2025 controller refuses a simple bind on 389 without TLS (strongerAuthRequired, result 8).',
+                 fix: 'LDAPS on 636, or StartTLS before the bind; the controller by its name, trusting the company’s root CA.'},
+  'ldap-unsigned': {icon: 'lock', breaks: 'An NTLM or Kerberos (SASL) bind on 389 without signing is refused.',
+                    fix: 'Ask the library for signing and sealing (session security, GSSAPI with integrity), or LDAPS.'},
+  'ldap-cbt': {icon: 'lock', breaks: 'An NTLM or Kerberos bind over LDAPS without a channel binding token is refused once binding is required.',
+               fix: 'A library that sends the token (ldap3 2.9.1 and later), or a simple bind over LDAPS.'},
+  'ntlmv1': {icon: 'ban', breaks: 'NTLMv1 is gone from Windows Server 2025.',
+             fix: 'LmCompatibilityLevel 5 (NTLMv2 only) on that machine, or a newer device.'},
+  'des': {icon: 'ban', breaks: 'DES is not there at all.', fix: 'Take "Use Kerberos DES encryption types" off the account; AES.'},
+  'rc4': {icon: 'key', breaks: 'From the Kerberos updates of July 2026 even a 2016 controller hands out no RC4 to an account that does not ask for it; a 2025 one never does.',
+          fix: 'msDS-SupportedEncryptionTypes 24 (AES) on the account, its password reset once, keytabs made with AES.'},
+  'noaes': {icon: 'key', breaks: 'The account has no AES keys - its password is older than AES in the domain - so its tickets fail without RC4.',
+            fix: 'Reset its password (a keytab made again after it).'},
+  'smb1': {icon: 'ban', breaks: 'SMB1 is not on Windows Server 2025, and signing is required.', fix: 'SMB 2/3 on that machine, or a newer scanner, NAS or device.'},
+  'cleartext': {icon: 'eye', breaks: 'A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which).',
+                fix: 'Nothing, where it is over LDAPS; otherwise as above.'},
+  'ntlm': {icon: 'person', breaks: 'NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all.',
+           fix: 'Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place.'},
+  'ldap-daily': {icon: 'chart', breaks: 'The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.',
+                 fix: 'The detailed logging (below) says who they are.'}
+};
+var A25_SOURCES = [
+  ['security', 'Security log', 'Kerberos (RC4, DES, accounts without AES), NTLMv1, NTLM, passwords handed over as they are'],
+  ['ds', 'Directory Service log', 'LDAP binds in the clear or unsigned, channel binding'],
+  ['kdc', 'System log - the KDC', 'the KDC’s own warnings about RC4 and missing keys'],
+  ['smb', 'SMBServer/Audit', 'SMB1 to the controllers'],
+  ['ntlm', 'NTLM/Operational', 'NTLM by the server it was used for']
+];
+function loadAd25(quiet) {
+  if (!$('a25-host') || A25.asking) return;
+  A25.asking = true;
+  api('ad25&hours=' + encodeURIComponent($('a25-window').value || 168), undefined, {quiet: !!quiet})
+    .then(function (d) { A25.d = d; drawAd25(); })
+    .catch(function (e) { if (!quiet) oops(e); })
+    .then(function () { A25.asking = false; });
+}
+function a25Level(k) {
+  var x = (A25.d && A25.d.issues || []).filter(function (i) { return i.key === k; })[0];
+  return x ? x.level : 'info';
+}
+function a25Words(k) {
+  var x = (A25.d && A25.d.issues || []).filter(function (i) { return i.key === k; })[0];
+  return x ? x.words : k;
+}
+function a25Tag(k, n) {
+  var t = el('span', 'a25-tag ' + a25Level(k), a25Words(k));
+  if (n) t.appendChild(el('b', '', ' ' + num(n)));
+  return t;
+}
+function drawAd25() {
+  var d = A25.d, host = $('a25-host');
+  if (!host || !d) return;
+  clear(host);
+  if (d.error) { host.appendChild(el('p', 'note bad', d.error)); return; }
+  var issues = (d.issues || []).filter(function (i) { return i.key !== 'ldap-daily'; });
+  var bad = issues.filter(function (i) { return i.level === 'crit' && i.n; });
+  var warn = issues.filter(function (i) { return i.level === 'warn' && i.n; });
+  var hero = el('div', 'a25-hero ' + (bad.length ? 'crit' : warn.length ? 'warn' : 'ok'));
+  var big = el('div', 'a25-hero-big');
+  big.appendChild(el('span', 'a25-hero-n', num(bad.length + warn.length)));
+  big.appendChild(el('span', 'a25-hero-w', bad.length ? 'kinds of trouble a 2025 controller would refuse'
+    : warn.length ? 'kinds of trouble to put right before July 2026' : 'nothing here a 2025 controller would refuse'));
+  hero.appendChild(big);
+  var ms = (d.machines || []).filter(function (m) { return Object.keys(m.issues).some(function (k) { return a25Level(k) !== 'info'; }); });
+  var as = (d.accounts || []).filter(function (a) { return Object.keys(a.issues).some(function (k) { return a25Level(k) !== 'info'; }); });
+  var facts = el('div', 'a25-hero-facts');
+  [[num(ms.length), 'machines'], [num(as.filter(function (a) { return !a.computer; }).length), 'accounts'],
+   [num(as.filter(function (a) { return a.computer; }).length), 'computer accounts'],
+   [num((d.controllers || []).length), 'controllers']].forEach(function (f) {
+    var one = el('div', 'a25-fact');
+    one.appendChild(el('b', '', f[0]));
+    one.appendChild(el('span', '', f[1]));
+    facts.appendChild(one);
+  });
+  hero.appendChild(facts);
+  host.appendChild(hero);
+  /* Each kind of trouble as a tile: pressed, the list below is of it alone. */
+  var grid = el('div', 'a25-tiles');
+  (d.issues || []).forEach(function (i) {
+    var say = A25_SAY[i.key] || {};
+    var t = el('button', 'a25-tile ' + i.level + (i.n ? '' : ' none') + (A25.issue === i.key ? ' on' : ''));
+    t.type = 'button';
+    var top = el('div', 'a25-tile-top');
+    top.innerHTML = iconMarkup(say.icon || 'info', 16);
+    top.appendChild(el('span', 'a25-tile-t', i.words));
+    t.appendChild(top);
+    var nums = el('div', 'a25-tile-n');
+    if (i.key === 'ldap-daily') {
+      nums.appendChild(el('b', '', i.rows.length ? num(i.rows.length) : '–'));
+      nums.appendChild(el('span', '', i.rows.length ? 'controller days' : 'not said'));
+    } else {
+      nums.appendChild(el('b', '', i.n ? num(i.clients || i.accounts) : '0'));
+      nums.appendChild(el('span', '', i.n ? ((i.clients ? 'machines' : 'accounts') + ' · ' + num(i.n) + '×') : 'none seen'));
+    }
+    t.appendChild(nums);
+    t.appendChild(el('div', 'a25-tile-b', say.breaks || ''));
+    if (i.n) {
+      var fx = el('div', 'a25-tile-f');
+      fx.appendChild(el('b', '', 'Fix: '));
+      fx.appendChild(document.createTextNode(say.fix || ''));
+      t.appendChild(fx);
+      t.appendChild(el('div', 'a25-tile-l muted', 'last ' + ago(i.last)));
+    }
+    t.onclick = function () {
+      A25.issue = A25.issue === i.key ? '' : i.key;
+      if (A25.issue) A25.view = 'issue';
+      else if (A25.view === 'issue') A25.view = 'machines';
+      drawAd25();
+    };
+    grid.appendChild(t);
+  });
+  host.appendChild(grid);
+  host.appendChild(a25Who(d));
+}
+function a25Who(d) {
+  var box = el('div', 'a25-who');
+  var bar = el('div', 'a25-bar');
+  var seg = el('div', 'a25-seg');
+  [['machines', 'By machine'], ['accounts', 'By account'], ['issue', 'Every row']].forEach(function (v) {
+    var b = el('button', A25.view === v[0] ? 'on' : '', v[1]);
+    b.type = 'button';
+    b.onclick = function () { A25.view = v[0]; drawAd25(); };
+    seg.appendChild(b);
+  });
+  bar.appendChild(seg);
+  var q = el('input');
+  q.type = 'search';
+  q.placeholder = 'a machine, an address, an account…';
+  q.value = A25.q;
+  q.oninput = function () {
+    A25.q = q.value;
+    clearTimeout(A25.qt);
+    A25.qt = setTimeout(function () { drawAd25(); var n = document.querySelector('.a25-bar input'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250);
+  };
+  bar.appendChild(q);
+  if (A25.issue) {
+    var chip = el('button', 'a25-chip', '');
+    chip.type = 'button';
+    chip.appendChild(a25Tag(A25.issue));
+    chip.appendChild(el('span', 'a25-x', ' ×'));
+    chip.title = 'Every kind again';
+    chip.onclick = function () { A25.issue = ''; if (A25.view === 'issue') A25.view = 'machines'; drawAd25(); };
+    bar.appendChild(chip);
+  }
+  box.appendChild(bar);
+  var want = String(A25.q || '').toLowerCase().trim();
+  function hit() {
+    if (!want) return true;
+    for (var i = 0; i < arguments.length; i++) if (String(arguments[i] || '').toLowerCase().indexOf(want) >= 0) return true;
+    return false;
+  }
+  function only(issues) { return !A25.issue || issues[A25.issue]; }
+  var t = el('table', 'rows a25-t'), head = el('tr'), body = el('tbody');
+  var thead = el('thead');
+  var n = 0;
+  if (A25.view === 'machines') {
+    ['Machine', 'What it does', 'Accounts from it', 'Controllers', 'Times', 'Last'].forEach(function (w, i) { head.appendChild(el('th', i === 4 ? 'num' : '', w)); });
+    (d.machines || []).forEach(function (m) {
+      if (!only(m.issues) || !hit(m.name, m.ip, (m.accounts || []).join(' '))) return;
+      if (++n > 400) return;
+      var tr = el('tr', 'a25-row');
+      var c = el('td');
+      c.appendChild(noI18n(el('b', '', m.name || m.ip)));
+      if (m.name && m.ip) c.appendChild(noI18n(el('div', 'muted small mono', m.ip)));
+      tr.appendChild(c);
+      var w = el('td', 'a25-tags');
+      Object.keys(m.issues).sort(function (a, b) { return a25Rank(a) - a25Rank(b); }).forEach(function (k) { w.appendChild(a25Tag(k, m.issues[k])); });
+      tr.appendChild(w);
+      var ac = el('td', 'small');
+      ac.appendChild(noI18n(el('span', '', (m.accounts || []).slice(0, 4).join(', '))));
+      if (m.accounts_n > 4) ac.appendChild(el('span', 'muted', ' +' + num(m.accounts_n - 4)));
+      ac.title = (m.accounts || []).join('\n');
+      tr.appendChild(ac);
+      tr.appendChild(noI18n(el('td', 'small', (m.servers || []).join(', '))));
+      tr.appendChild(el('td', 'num', num(m.n)));
+      tr.appendChild(stampCell(m.last));
+      tr.onclick = function () { a25Events(m.name || m.ip); };
+      tr.title = 'Press for the events of ' + (m.name || m.ip);
+      body.appendChild(tr);
+    });
+  } else if (A25.view === 'accounts') {
+    ['Account', 'What it does', 'From', 'Times', 'Last'].forEach(function (w, i) { head.appendChild(el('th', i === 3 ? 'num' : '', w)); });
+    (d.accounts || []).forEach(function (a) {
+      if (!only(a.issues) || !hit(a.name, (a.clients || []).join(' '))) return;
+      if (++n > 400) return;
+      var tr = el('tr', 'a25-row');
+      var c = el('td');
+      c.appendChild(noI18n(el('b', '', a.name)));
+      c.appendChild(document.createTextNode(' '));
+      c.appendChild(el('span', 'tag ' + (a.computer ? 'dim' : 'info'), a.computer ? 'computer' : 'account'));
+      tr.appendChild(c);
+      var w = el('td', 'a25-tags');
+      Object.keys(a.issues).sort(function (x, y) { return a25Rank(x) - a25Rank(y); }).forEach(function (k) { w.appendChild(a25Tag(k, a.issues[k])); });
+      tr.appendChild(w);
+      var fr = el('td', 'small');
+      fr.appendChild(noI18n(el('span', '', (a.clients || []).slice(0, 4).join(', '))));
+      if (a.clients_n > 4) fr.appendChild(el('span', 'muted', ' +' + num(a.clients_n - 4)));
+      fr.title = (a.clients || []).join('\n');
+      tr.appendChild(fr);
+      tr.appendChild(el('td', 'num', num(a.n)));
+      tr.appendChild(stampCell(a.last));
+      tr.onclick = function () { a25Events(a.name); };
+      tr.title = 'Press for the events of ' + a.name;
+      body.appendChild(tr);
+    });
+  } else {
+    ['What', 'Machine', 'Account', 'What it was', 'Controller', 'Times', 'First', 'Last'].forEach(function (w, i) { head.appendChild(el('th', i === 5 ? 'num' : '', w)); });
+    var all = [];
+    (d.issues || []).forEach(function (i) { if (!A25.issue || A25.issue === i.key) all = all.concat(i.rows); });
+    all.sort(function (x, y) { return a25Rank(x.issue) - a25Rank(y.issue) || y.n - x.n; });
+    all.forEach(function (r) {
+      if (!hit(r.client, r.ip, r.account, r.detail, r.server)) return;
+      if (++n > 600) return;
+      var tr = el('tr', 'a25-row');
+      var w = el('td');
+      w.appendChild(a25Tag(r.issue));
+      tr.appendChild(w);
+      var c = el('td');
+      c.appendChild(noI18n(el('span', '', r.client || r.ip || '–')));
+      if (r.client && r.ip) c.appendChild(noI18n(el('div', 'muted small mono', r.ip)));
+      tr.appendChild(c);
+      tr.appendChild(noI18n(el('td', '', r.account || '–')));
+      tr.appendChild(noI18n(el('td', 'small', r.detail || '')));
+      tr.appendChild(noI18n(el('td', 'small', r.server || '')));
+      tr.appendChild(el('td', 'num', num(r.n)));
+      tr.appendChild(stampCell(r.first));
+      tr.appendChild(stampCell(r.last));
+      tr.onclick = function () { a25Events(r.account || r.client || r.ip); };
+      body.appendChild(tr);
+    });
+  }
+  thead.appendChild(head);
+  t.appendChild(thead);
+  t.appendChild(body);
+  var wrap = el('div', 'scroll');
+  wrap.appendChild(t);
+  box.appendChild(wrap);
+  if (!n) box.appendChild(el('div', 'center muted', want || A25.issue ? 'Nothing matches.' : 'Nothing seen in this window.'));
+  else if (n > 400) box.appendChild(el('p', 'muted small', 'The first ' + num(A25.view === 'issue' ? 600 : 400) + ' of ' + num(n) + ' - the search box finds the rest.'));
+  return box;
+}
+function a25Rank(k) { return {crit: 0, warn: 1, info: 2}[a25Level(k)] || 3; }
+/* The events behind a row, on the page of the events themselves. */
+function a25Events(what) {
+  if (!what) return;
+  winShowPage('events');
+  $('w-q').value = what;
+  $('w-hours').value = '168';
+  WPAGE = 0;
+  loadWinEvents();
+}
+function drawAd25Sources() {
+  var host = $('a25-src');
+  if (!host || !A25.d) return;
+  clear(host);
+  var src = A25.d.sources || {};
+  var grid = el('div', 'a25-srcs');
+  A25_SOURCES.forEach(function (s) {
+    var seen = src[s[0]] || {};
+    var newest = Math.max.apply(null, [0].concat(Object.keys(seen).map(function (k) { return Number(seen[k]) || 0; })));
+    var fresh = newest && Date.now() / 1000 - newest < 3 * 86400;
+    var b = el('div', 'a25-src ' + (fresh ? 'ok' : newest ? 'old' : 'no'));
+    var h = el('div', 'a25-src-h');
+    h.appendChild(el('span', 'se-dot' + (fresh ? ' ok' : newest ? '' : ' bad')));
+    h.appendChild(el('b', '', s[1]));
+    b.appendChild(h);
+    b.appendChild(el('div', 'small muted', s[2]));
+    b.appendChild(el('div', 'small', fresh ? 'arriving from ' + Object.keys(seen).length + ' controller(s), last ' + ago(newest)
+      : newest ? 'last seen ' + ago(newest) : 'not arriving - see below how to send it'));
+    if (s[0] === 'ds') {
+      var diag = Number(src._diag) || 0;
+      b.appendChild(el('div', 'small ' + (diag ? '' : 'warn'), diag ? 'who did it (2889): last ' + ago(diag)
+        : 'who did it (2889): not yet - the detailed LDAP logging is off'));
+    }
+    grid.appendChild(b);
+  });
+  host.appendChild(grid);
+}
+function a25Copy(pre) {
+  var b = cmdButton('Copy', 'copy', 'small');
+  b.onclick = function () { copyText(pre.textContent, 'copied'); };
+  return b;
+}
+function drawAd25How() {
+  var host = $('a25-how');
+  if (!host || host.dataset.drawn) return;
+  host.dataset.drawn = '1';
+  Array.prototype.forEach.call(host.querySelectorAll('pre'), function (pre) {
+    var bar = el('div', 'a25-copy');
+    bar.appendChild(a25Copy(pre));
+    pre.parentNode.insertBefore(bar, pre);
+  });
+}
+function ad25Show(on) {
+  var b = document.querySelector('#w-pages button[data-page="ad25"]');
+  if (b) b.hidden = !on;
+  if (!on && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25') winShowPage('over');
+}
+$('a25-window').onchange = function () { loadAd25(); };
+$('a25-again').onclick = function () { loadAd25(); };
+/* Asked again every minute while the page is the one being read. */
+setInterval(function () {
+  if (TAB === 'windows' && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25' && !document.hidden) loadAd25(true);
+}, 60000);
+var _a25Draw = drawAd25;
+drawAd25 = function () { _a25Draw(); drawAd25Sources(); drawAd25How(); };
 </script>
 <script nonce="<?= h($nonce) ?>">
 /* ==========================================================================

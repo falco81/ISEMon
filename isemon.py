@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.320'
+__version__ = '1.10.321'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -349,6 +349,10 @@ DEFAULTS = {
     # rows per card. Off is the old way, and is what a site gets if this
     # ever turns out to be wrong.
     'winsec_rollup': 1,
+    # Domain → Before Windows Server 2025 (1.10.321): what a controller of
+    # 2025 refuses that one of 2016 lets through, and who still does it.
+    # Off unless switched on: nothing is counted and the page is not there.
+    'winsec_ad2025': 0,
     # The accounts nobody wants to see. A domain controller talks to itself
     # and to every machine in the domain all day; left alone that is most of
     # this page. Machine accounts - the ones ending in `$` - are the usual
@@ -9055,7 +9059,14 @@ def win_parse_lines(lines, hold=None, now=None):
     # Is anything switched off at all? Where nothing is, this costs one
     # lookup for the whole pass and every line is read exactly as before.
     sieve = any(not int(CONFIG.get(key) or 0) for key, _k, _d in WIN_BULK)
+    # Before Windows Server 2025 (1.10.321): looked at before anything is
+    # dropped, a few words of the few numbers that can say anything.
+    ad25 = ad25_on()
     for line in lines:
+        if ad25:
+            said = WIN_EVENT_ID.search(line)
+            if said:
+                ad25_see(line, int(said.group(1)), zone)
         if sieve:
             # The number, off the front of the line, before anything else is
             # read. A line whose whole group this site does not keep and
@@ -9092,6 +9103,260 @@ def win_parse_lines(lines, hold=None, now=None):
     # A controller quiet for a day is forgotten.
     slot['newest_of'] = {k: v for k, v in newest_of.items() if v >= newest - 86400}
     return out
+
+
+# ---------------------------------------------------------------------------
+# Before Windows Server 2025 (1.10.321)
+# ---------------------------------------------------------------------------
+# Domain → Before Windows Server 2025, switched on under Settings → The domain
+# controllers (`winsec_ad2025`, off unless switched on). What a domain
+# controller of Windows Server 2025 refuses that one of 2016 lets through -
+# and who here still does it: LDAP binds in the clear or unsigned, LDAP
+# channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no
+# AES keys, SMB1 - and NTLM as a whole, which still works but is on its way
+# out. Read off the lines as they arrive, before anything a site has switched
+# off is dropped, by a look at a handful of event numbers and a few words of
+# each - never a whole reading of every line. Counted a day at a time in
+# `ad25_seen`: a client, an account and a controller to a row, how many times
+# and when first and last. The Security log alone gives the Kerberos,
+# NTLMv1 and NTLM halves; the LDAP half is in the Directory Service log
+# (2887, 2889, 3039-3041), the SMB1 half in the SMBServer/Audit log (3000),
+# the KDC's own words in the System log (14, 16, 26, 27, 201-209) and the
+# NTLM half by server in NTLM/Operational (8004) - each one counted once the
+# controllers send it (docs/before-windows-server-2025.md says how).
+AD25_ISSUES = (
+    # key, how bad, what it is
+    ('ldap-clear', 'crit', 'LDAP simple bind in the clear'),
+    ('ldap-unsigned', 'crit', 'LDAP bind without signing'),
+    ('ldap-cbt', 'crit', 'LDAP channel binding failed'),
+    ('ntlmv1', 'crit', 'NTLMv1'),
+    ('des', 'crit', 'Kerberos with DES'),
+    ('rc4', 'warn', 'Kerberos with RC4'),
+    ('noaes', 'warn', 'An account with no AES keys'),
+    ('smb1', 'crit', 'SMB1 to a domain controller'),
+    ('cleartext', 'info', 'A password handed over as it is (logon type 8)'),
+    ('ntlm', 'info', 'NTLM'),
+    ('ldap-daily', 'info', 'The controller\'s own daily count of LDAP binds'),
+)
+AD25_LEVEL = {k: lvl for k, lvl, _w in AD25_ISSUES}
+AD25_IDS = frozenset((4624, 4768, 4769, 4776, 2887, 2889, 3039, 3040, 3041, 3000, 8004,
+                      14, 16, 26, 27, 201, 202, 203, 204, 205, 206, 207, 208, 209))
+# Which log each event number arrives from, for "what the logs can see".
+AD25_SOURCE_OF = {4624: 'security', 4768: 'security', 4769: 'security', 4776: 'security',
+                  2887: 'ds', 2889: 'ds', 3039: 'ds', 3040: 'ds', 3041: 'ds',
+                  3000: 'smb', 8004: 'ntlm', 14: 'kdc', 16: 'kdc', 26: 'kdc', 27: 'kdc'}
+AD25_SOURCE_OF.update({n: 'kdc' for n in range(201, 210)})
+AD25_KEEP_DAYS = 90
+AD25_QUEUE_MOST = 200000
+AD25 = {'queue': [], 'sources': {}, 'diag': 0.0, 'dropped': 0}
+AD25_LOCK = threading.Lock()
+_AD25_ETYPE = re.compile(r'Ticket Encryption Type:\s*(0x[0-9A-Fa-f]+)')
+_AD25_RESULT = re.compile(r'(?:Result Code|Failure Code|Status):\s*(0x[0-9A-Fa-f]+)')
+_AD25_KEYS = re.compile(r'Available Keys:\s*([A-Za-z0-9-]+(?:,\s*[A-Za-z0-9-]+)*)')
+_AD25_SECTION = re.compile(r'(Account Information|Service Information|'
+                           r'Domain Controller Information|Additional Information):')
+_AD25_OFFERED = re.compile(r'Advertized Etypes:\s*((?:[A-Za-z0-9-]+(?:,\s*)?)+)')
+_AD25_CLIENT = re.compile(r'Client Address:\s*(?:::ffff:)?([0-9A-Fa-f:.\[\]]+)')
+_AD25_ADDR = re.compile(r'(?:Client IP address|Client Address|Client IP Address|'
+                        r'IP Address):\s*\[?([0-9A-Fa-f:.]+?)\]?(?::(\d+))?(?=\s|$)')
+
+
+def ad25_on():
+    return bool(int(CONFIG.get('winsec') or 0)) and bool(int(CONFIG.get('winsec_ad2025') or 0))
+
+
+def _ad25_word(rx, text, default=''):
+    m = re.search(rx, text)
+    return m.group(1).strip() if m else default
+
+
+def _ad25_addr(text):
+    """The client's address out of the words of an event: 10.0.0.5:51234
+    and [fe80::1]:51234 as the address alone."""
+    m = _AD25_ADDR.search(text)
+    if not m:
+        return ''
+    a = m.group(1)
+    if a.count(':') == 1 and '.' in a:          # 10.0.0.5:51234 the other way
+        a = a.split(':')[0]
+    if a.lower().startswith('::ffff:'):
+        a = a[7:]
+    return a[:64]
+
+
+def _ad25_etypes(text):
+    """0x17 / 0x18 / 0x1 / 0x3 / 0x11 / 0x12 as the names people know."""
+    names = {'0x1': 'DES-CBC-CRC', '0x3': 'DES-CBC-MD5', '0x11': 'AES128', '0x12': 'AES256',
+             '0x17': 'RC4', '0x18': 'RC4-EXP'}
+    return names.get(str(text or '').lower(), str(text or ''))
+
+
+def ad25_findings(event, line, whole=''):
+    """What one line says of a 2025 domain controller, as findings:
+    [(issue, client, ip, account, detail)]. Cheap: a few words of the line,
+    read only for the event numbers that can say anything."""
+    out = []
+    rest = line
+    if event == 4776:
+        acct = _ad25_word(r'Logon Account:\s*(\S+)', rest)
+        ws = _ad25_word(r'Source Workstation:\s*(\S*)', rest)
+        code = _ad25_word(r'Error Code:\s*(0x[0-9A-Fa-f]+)', rest, '0x0')
+        if ws in ('-', ''):
+            ws = ''
+        out.append(('ntlm', ws.upper()[:120], '', '', 'checked for %s%s'
+                    % (acct[:80], '' if code.lower() == '0x0' else ', refused (%s)' % code)))
+        return out
+    if event == 4624:
+        if 'NTLM V1' not in rest and not re.search(r'Logon Type:\s*8(?!\d)', rest):
+            return out
+        got = win_record_from(whole or line)
+        if got is None:
+            return out
+        f = got.facts
+        client, ip = str(f.get('machine') or '').upper()[:120], str(f.get('ip') or '')
+        acct = str(f.get('account') or '')[:180]
+        if 'NTLM V1' in rest:
+            out.append(('ntlmv1', client, ip, acct, 'signed in with NTLM V1'))
+        if str(f.get('logon_type') or '') == '8':
+            out.append(('cleartext', client, ip, acct,
+                        'by %s' % (str(f.get('process') or '-').split('\\')[-1] or '-')))
+        return out
+    if event in (4768, 4769):
+        code = _ad25_word(_AD25_RESULT, rest, '0x0').lower()
+        worked = code in ('0x0', '0')
+        ip = ''
+        m = _AD25_CLIENT.search(rest)
+        if m:
+            ip = m.group(1).strip('[]')
+            if ip in ('::1', '127.0.0.1', '-'):
+                ip = ''
+        acct = _ad25_word(r'Account Name:\s*(\S+)', rest)[:180]
+        service = _ad25_word(r'Service Name:\s*(\S+)', rest)[:180]
+        etype = _ad25_word(_AD25_ETYPE, rest).lower()
+        if worked and etype in ('0x17', '0x18'):
+            out.append(('rc4', '', ip, acct, 'a ticket for %s in %s' % (service or '?',
+                                                                         _ad25_etypes(etype))))
+        if worked and etype in ('0x1', '0x3'):
+            out.append(('des', '', ip, acct, 'a ticket for %s in %s' % (service or '?',
+                                                                         _ad25_etypes(etype))))
+        if 'Available Keys:' in rest:
+            marks = list(_AD25_SECTION.finditer(rest))
+            for i, sec in enumerate(marks):
+                part = rest[sec.end():marks[i + 1].start() if i + 1 < len(marks) else len(rest)]
+                keys = _ad25_word(_AD25_KEYS, part)
+                if not keys or 'AES' in keys.upper():
+                    continue
+                if sec.group(1) == 'Account Information':
+                    who = _ad25_word(r'Account Name:\s*(\S+)', part) or acct
+                elif sec.group(1) == 'Service Information':
+                    who = _ad25_word(r'Service Name:\s*(\S+)', part) or service
+                else:
+                    continue
+                if who and who != '-':
+                    out.append(('noaes', '', '', who[:180], 'its keys: %s' % keys[:80]))
+        offered = _ad25_word(_AD25_OFFERED, rest)
+        if offered and 'AES' not in offered.upper() and ip:
+            out.append(('rc4', '', ip, acct, 'the client offers no AES (%s)' % offered[:60]))
+        return out
+    if event in (2889, 3039):
+        ip = _ad25_addr(rest)
+        acct = _ad25_word(r'authenticate as:\s*(\S+)', rest)[:180]
+        kind = _ad25_word(r'Binding Type:\s*(\d+)', rest)
+        if event == 3039:
+            out.append(('ldap-cbt', '', ip, acct, 'LDAPS without a valid channel binding token'))
+        elif kind == '1':
+            out.append(('ldap-clear', '', ip, acct, 'simple bind on 389 without TLS'))
+        else:
+            out.append(('ldap-unsigned', '', ip, acct,
+                        'SASL (NTLM/Kerberos) bind without signing'))
+        return out
+    if event == 2887:
+        simple = _ad25_word(r'simple binds performed without SSL/TLS:\s*(\d+)', rest, '0')
+        unsigned = _ad25_word(r'binds performed without signing:\s*(\d+)', rest, '0')
+        out.append(('ldap-daily', '', '', '', '%s simple in the clear, %s unsigned, in a day'
+                    % (simple, unsigned)))
+        return out
+    if event in (3040, 3041):
+        many = _ad25_word(r'(\d+)', rest, '')
+        out.append(('ldap-daily', '', '', '', 'channel binding: %s'
+                    % ('%s bind(s) without a valid token, in a day' % many if event == 3040
+                       else 'the controller does not ask for it yet')))
+        return out
+    if event == 3000:
+        ip = _ad25_addr(rest)
+        if ip or 'SMB1' in rest:
+            out.append(('smb1', '', ip, '', 'SMB1 to this controller'))
+        return out
+    if event == 8004:
+        ws = _ad25_word(r'Workstation name:\s*(\S+)', rest)
+        user = _ad25_word(r'User name:\s*(\S+)', rest)
+        dom = _ad25_word(r'Domain name:\s*(\S+)', rest)
+        to = _ad25_word(r'Secure Channel name:\s*(\S+)', rest)
+        out.append(('ntlm', ws.upper()[:120], '', '', 'checked for %s%s' % (
+            ('%s\\%s' % (dom, user) if dom else user)[:80], (' at %s' % to) if to else '')))
+        return out
+    if event in (14, 16, 26, 27):
+        if 'suitable key' not in rest and 'etype' not in rest.lower():
+            return out
+        acct = _ad25_word(r'the account (\S+?)[ .,]', rest)[:180]
+        want = _ad25_word(r'requested etypes(?: were|\s*:)\s*([\d ]+)', rest)
+        have = _ad25_word(r'available etypes(?: were|\s*:)\s*([\d ]*)', rest)
+        out.append(('noaes', '', '', acct, 'asked %s, has %s' % (want or '?', have or 'none')))
+        return out
+    if 201 <= event <= 209:
+        if 'RC4' not in rest and 'Kerberos' not in rest and 'etype' not in rest.lower():
+            return out
+        acct = _ad25_word(r'(?:Account Name|Account|Service Name):\s*(\S+)', rest)[:180]
+        out.append(('rc4', '', _ad25_addr(rest), acct, 'the KDC warned (event %d)' % event))
+        return out
+    return out
+
+
+def ad25_see(line, event, zone=None):
+    """One line read off a controller's log: noted when it says anything about
+    a 2025 domain controller. Called for every line while the switch is on,
+    before anything is dropped."""
+    if event not in AD25_IDS:
+        return
+    m = WIN_LINE.match((line or '').rstrip('\r\n'))
+    if not m:
+        return
+    ts = otp_when(m.group('mon'), m.group('day'), m.group('clock'), None, zone)
+    if ts is None:
+        return
+    server = m.group('host')[:120]
+    src = AD25_SOURCE_OF.get(event, 'security')
+    try:
+        found = ad25_findings(event, m.group('rest'), line)
+    except Exception as e:                              # noqa: BLE001
+        log('Before Windows Server 2025: event %d not read: %s' % (event, str(e)[:120]), 'debug')
+        found = []
+    with AD25_LOCK:
+        seen = AD25['sources'].setdefault(src, {})
+        if ts > float(seen.get(server, 0) or 0):
+            seen[server] = ts
+        if event == 2889:
+            AD25['diag'] = max(AD25['diag'], ts)
+        q = AD25['queue']
+        for issue, client, ip, account, detail in found:
+            if len(q) >= AD25_QUEUE_MOST:
+                AD25['dropped'] += 1
+                continue
+            q.append((ts, server, issue, client, ip, account, detail))
+
+
+def ad25_ckey(server, client, ip, account):
+    return hashlib.sha1(('%s|%s|%s|%s' % (server, client, ip, account)).lower()
+                        .encode('utf-8', 'replace')).hexdigest()[:24]
+
+
+def ad25_take():
+    """What was noted since the last write, taken out."""
+    with AD25_LOCK:
+        q, AD25['queue'] = AD25['queue'], []
+        src = {k: dict(v) for k, v in AD25['sources'].items()}
+        diag = AD25['diag']
+    return q, src, diag
 
 
 
@@ -19813,6 +20078,25 @@ CREATE TABLE IF NOT EXISTS win_rollup (
 );
 -- The one shape every question here has: one dimension, over a span of time.
 CREATE INDEX IF NOT EXISTS win_rollup_dim ON win_rollup (span, dim, at);
+
+-- Before Windows Server 2025 (1.10.321): what a controller of 2025 refuses
+-- that one of 2016 lets through, and who still does it - a row a day, a kind
+-- of trouble and one client, account and controller (`ckey`, made of the
+-- three). Counted as the lines are read, while `winsec_ad2025` is on.
+CREATE TABLE IF NOT EXISTS ad25_seen (
+    day     INTEGER NOT NULL,   -- days since 1970, UTC
+    issue   TEXT NOT NULL,      -- see AD25_ISSUES
+    ckey    TEXT NOT NULL,
+    server  TEXT,               -- the controller that wrote it
+    client  TEXT,               -- the machine, by name, where the event names one
+    ip      TEXT,               -- ...and by address
+    account TEXT,
+    detail  TEXT,               -- the newest of what it was: a bind, a ticket's type
+    n       INTEGER NOT NULL,
+    t_first REAL NOT NULL,
+    t_last  REAL NOT NULL,
+    PRIMARY KEY (day, issue, ckey)
+);
 
 -- What crossed the firewall, out of its own log. Never judged: the Traffic
 -- page and nothing else. One row a line of the log, except the sessions it
@@ -30954,7 +31238,199 @@ class Storage(object):
                     log('%d Windows event(s) were let go: the database refused them %s'
                         % (gone, 'for half an hour' if away else 'five times'), 'warn')
         self._writes_win = getattr(self, '_writes_win', 0) + done    # see `_writes_fw`
+        if AD25['queue']:
+            self.ad25_flush()
         return done
+
+    # ---- Before Windows Server 2025 (1.10.321) --------------------------------
+    AD25_UPSERT = (
+        'INSERT INTO ad25_seen (day, issue, ckey, server, client, ip, account, detail, n, '
+        't_first, t_last) VALUES (?,?,?,?,?,?,?,?,?,?,?) '
+        'ON CONFLICT(day, issue, ckey) DO UPDATE SET '
+        'n = ad25_seen.n + excluded.n, '
+        't_first = CASE WHEN excluded.t_first < ad25_seen.t_first THEN excluded.t_first '
+        'ELSE ad25_seen.t_first END, '
+        'detail = CASE WHEN excluded.t_last >= ad25_seen.t_last THEN excluded.detail '
+        'ELSE ad25_seen.detail END, '
+        't_last = CASE WHEN excluded.t_last > ad25_seen.t_last THEN excluded.t_last '
+        'ELSE ad25_seen.t_last END')
+
+    def ad25_flush(self):
+        """What the reader noted written down: a row a day, a kind of trouble,
+        a client, an account and a controller. A line read again - a rotation,
+        the pass back over every log, two files with the same lines - is not
+        counted again: one controller's lines arrive in order, so anything no
+        newer than the row's newest moment has been counted already."""
+        q, src, diag = ad25_take()
+        if src:
+            try:
+                was = json.loads(self.get_meta('ad25_sources') or '{}')
+            except (ValueError, TypeError):
+                was = {}
+            for k, per in src.items():
+                mine = was.setdefault(k, {})
+                for server, ts in per.items():
+                    if ts > float(mine.get(server) or 0):
+                        mine[server] = ts
+            if diag:
+                was['_diag'] = max(float(was.get('_diag') or 0), diag)
+            self.set_meta('ad25_sources', json.dumps(was))
+        if not q:
+            return 0
+        groups = {}
+        for ts, server, issue, client, ip, account, detail in q:
+            key = (int(ts // 86400), issue, ad25_ckey(server, client, ip, account))
+            g = groups.get(key)
+            if g is None:
+                g = groups[key] = {'server': server, 'client': client, 'ip': ip,
+                                   'account': account, 'times': [], 'detail': detail,
+                                   'last': ts}
+            g['times'].append(ts)
+            if ts >= g['last']:
+                g['last'], g['detail'] = ts, detail
+        # What each row already holds, by its newest moment.
+        known = {}
+        by = {}
+        for day, issue, ckey in groups:
+            by.setdefault((day, issue), []).append(ckey)
+        for (day, issue), keys in by.items():
+            for at in range(0, len(keys), 300):
+                lot = keys[at:at + 300]
+                try:
+                    rows = self.db.execute(
+                        'SELECT ckey, t_last FROM ad25_seen WHERE day = ? AND issue = ? AND '
+                        'ckey IN (%s)' % ','.join('?' * len(lot)), [day, issue] + lot).fetchall()
+                except sqlite3.Error as e:
+                    log('Before Windows Server 2025: %s' % str(e)[:160], 'warn')
+                    return 0
+                for r in rows:
+                    known[(day, issue, str(r['ckey']))] = float(r['t_last'] or 0)
+        rows = []
+        for key, g in groups.items():
+            had = known.get(key)
+            times = [t for t in g['times'] if had is None or t > had]
+            if not times:
+                continue
+            rows.append((key[0], key[1], key[2], g['server'][:120], g['client'][:120],
+                         g['ip'][:64], g['account'][:180], str(g['detail'])[:200], len(times),
+                         min(times), max(times)))
+        if not rows:
+            return 0
+        try:
+            with self.db_write() as db:
+                for at in range(0, len(rows), 500):
+                    db.executemany(self.AD25_UPSERT, rows[at:at + 500])
+        except sqlite3.Error as e:
+            log('Before Windows Server 2025: %d row(s) not written: %s'
+                % (len(rows), str(e)[:160]), 'warn')
+            return 0
+        return len(rows)
+
+    def ad25_tidy(self):
+        """Older than the days kept, let go of; NTLM, the loudest, after a month."""
+        today = int(time.time() // 86400)
+        try:
+            with self.db_write() as db:
+                db.execute('DELETE FROM ad25_seen WHERE day < ?', (today - AD25_KEEP_DAYS,))
+                db.execute("DELETE FROM ad25_seen WHERE issue = 'ntlm' AND day < ?", (today - 31,))
+        except sqlite3.Error as e:
+            log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
+
+    def ad25_view(self, hours=168):
+        """Domain → Before Windows Server 2025: each kind of trouble with the
+        clients and accounts behind it, by machine and by account, and what
+        the logs that are arriving can see at all."""
+        hours = max(1, min(int(hours or 168), AD25_KEEP_DAYS * 24))
+        since = time.time() - hours * 3600
+        first_day = int(since // 86400)
+        issues = []
+        rows_all = []
+        for key, level, words in AD25_ISSUES:
+            try:
+                rows = self.db.execute(
+                    'SELECT server, client, ip, account, detail, n, t_first, t_last, ckey '
+                    'FROM ad25_seen WHERE issue = ? AND day >= ? AND t_last >= ? '
+                    'ORDER BY t_last DESC LIMIT 20000', (key, first_day, since)).fetchall()
+            except sqlite3.Error as e:
+                return {'error': str(e)[:200], 'issues': [], 'on': ad25_on()}
+            merged = {}
+            for r in rows:
+                g = merged.get(r['ckey'])
+                if g is None:
+                    g = merged[r['ckey']] = {
+                        'issue': key, 'server': r['server'] or '', 'client': r['client'] or '',
+                        'ip': r['ip'] or '', 'account': r['account'] or '',
+                        'detail': r['detail'] or '', 'n': 0, 'first': float(r['t_first'] or 0),
+                        'last': float(r['t_last'] or 0)}
+                g['n'] += int(r['n'] or 0)
+                g['first'] = min(g['first'], float(r['t_first'] or 0))
+            got = sorted(merged.values(), key=lambda x: (-x['n'], -x['last']))
+            rows_all.extend(got)
+            issues.append({'key': key, 'level': level, 'words': words, 'rows': got[:500],
+                           'more': max(0, len(got) - 500), 'n': sum(x['n'] for x in got),
+                           'clients': len({(x['client'] or x['ip']) for x in got
+                                           if x['client'] or x['ip']}),
+                           'accounts': len({x['account'].lower() for x in got if x['account']}),
+                           'last': max([x['last'] for x in got] or [0])})
+        # A name for an address another event gave it: 4776 and 4624 name
+        # the machine, 2889 and SMB only give its address.
+        names = {}
+        for x in rows_all:
+            if x['client'] and x['ip']:
+                names.setdefault(x['ip'], x['client'])
+        for x in rows_all:
+            if not x['client'] and x['ip'] in names:
+                x['client'] = names[x['ip']]
+        machines, accounts = {}, {}
+        for x in rows_all:
+            if x['issue'] == 'ldap-daily':
+                continue
+            who = x['client'] or x['ip']
+            if who:
+                m = machines.setdefault(who.lower(), {'name': x['client'], 'ip': x['ip'],
+                                                      'issues': {}, 'accounts': set(),
+                                                      'servers': set(), 'n': 0, 'last': 0})
+                m['name'] = m['name'] or x['client']
+                m['ip'] = m['ip'] or x['ip']
+                m['issues'][x['issue']] = m['issues'].get(x['issue'], 0) + x['n']
+                if x['account']:
+                    m['accounts'].add(x['account'])
+                m['servers'].add(x['server'])
+                m['n'] += x['n']
+                m['last'] = max(m['last'], x['last'])
+            if x['account']:
+                a = accounts.setdefault(x['account'].lower(), {
+                    'name': x['account'], 'issues': {}, 'clients': set(), 'n': 0, 'last': 0,
+                    'computer': win_fold_account(x['account']).endswith('$')})
+                a['issues'][x['issue']] = a['issues'].get(x['issue'], 0) + x['n']
+                if who:
+                    a['clients'].add(who)
+                a['n'] += x['n']
+                a['last'] = max(a['last'], x['last'])
+        rank = {'crit': 0, 'warn': 1, 'info': 2}
+
+        def worst(issues_of):
+            return min([rank[AD25_LEVEL.get(k, 'info')] for k in issues_of] or [3])
+
+        def listing(d, more):
+            out = []
+            for v in d.values():
+                one = dict(v)
+                for k in more:
+                    one[k] = sorted(one[k])[:40]
+                    one[k + '_n'] = len(v[k])
+                out.append(one)
+            out.sort(key=lambda v: (worst(v['issues']), -v['n']))
+            return out[:1000]
+        try:
+            sources = json.loads(self.get_meta('ad25_sources') or '{}')
+        except (ValueError, TypeError):
+            sources = {}
+        return {'on': ad25_on(), 'hours': hours, 'issues': issues,
+                'machines': listing(machines, ('accounts', 'servers')),
+                'accounts': listing(accounts, ('clients',)),
+                'sources': sources, 'keep_days': AD25_KEEP_DAYS,
+                'controllers': sorted({x['server'] for x in rows_all if x['server']})}
 
     # What the reading of a Windows event currently makes of it. Raised
     # whenever that changes, which is how the rows already in the database are
@@ -43465,7 +43941,7 @@ class Storage(object):
         out = {}
         for table in ('failed', 'passed', 'win_events', 'win_rollup', 'seen_values',
                       'otp_asked', 'acme_events', 'acme_jobs', 'load_samples', 'eduroam_seen', 'fw_events',
-                      'fw_roll', 'fw_ready',
+                      'fw_roll', 'fw_ready', 'ad25_seen',
                       'blocked', 'blocked_log', 'block_events',
                       'events', 'feed_ranges', 'geo_ranges', 'ptr', 'mac_vendors',
                       'users', 'sessions', 'fold_versions'):
@@ -43691,13 +44167,13 @@ class Storage(object):
             # The counted answers go with the events they count. A bucket
             # that outlives its rows is this table's one way of lying, so
             # everywhere rows go, buckets go in the same breath.
-            'tables': ['win_events', 'win_rollup'],
+            'tables': ['win_events', 'win_rollup', 'ad25_seen'],
             # ...and the notes about HOW those rows were read. Left behind,
             # the next start believes a table that is now empty has already
             # been read by this version - and `win_roll` would have the
             # counting believing itself proved against a table that is gone.
             'meta': ['win_sorted', 'win_reading', 'win_words_done', 'win_bits_done',
-                     'win_roll', 'win_roll_seen'],
+                     'win_roll', 'win_roll_seen', 'ad25_sources'],
         },
         'firewall': {
             'name': 'the firewall\u2019s own log',
@@ -58702,7 +59178,7 @@ class Daemon(object):
         'radius_zone': 'str',
         'winsec': (0, 1), 'winsec_paths': 'list', 'winsec_name': 'str',
         'winsec_zone': 'str', 'winsec_keep_days': (0, 3650),
-        'winsec_rollup': (0, 1),
+        'winsec_rollup': (0, 1), 'winsec_ad2025': (0, 1),
         'winsec_logons_days': (0, 3650), 'winsec_reads_days': (0, 3650),
         'winsec_ignore': 'str', 'winsec_machines': (0, 1),
         'winsec_keep_logons': (0, 1), 'winsec_keep_reads': (0, 1),
@@ -58939,6 +59415,7 @@ class Daemon(object):
         'winsec_name': 'The name of the log file in each',
         'winsec_zone': 'The zone those lines are written in',
         'winsec_rollup': 'Count the page\u2019s answers as the events arrive',
+        'winsec_ad2025': 'Look for what Windows Server 2025 will refuse',
         'winsec_keep_days': 'Keep the events for (days)',
         'winsec_logons_days': '\u2026but the sign-ins and sign-outs only for (days)',
         'winsec_reads_days': '\u2026and the directory reads only for (days)',
@@ -59655,6 +60132,19 @@ class Daemon(object):
                             'wants a year of the domain in here to answer \u201cwhen did this '
                             'start\u201d \u2014 the database then grows for as long as the logs '
                             'keep arriving, and The database page says how big it has got.',
+        'winsec_ad2025':
+            'A page of its own on the Domain tab, <b>Before Windows Server 2025</b>: what a '
+            'domain controller of Windows Server 2025 refuses that one of 2016 lets through, '
+            'and which machines, programs and accounts here still do it - LDAP binds in the '
+            'clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or '
+            'DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines '
+            'as they arrive, before anything switched off above is dropped, and counted a '
+            'day at a time for %d days; nothing is judged and nobody is banned for it.'
+            '<br><br>The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half '
+            'is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC\u2019s '
+            'own warnings in the System log: the page says which of them are arriving, and '
+            'what to add to NXLog and switch on on the controllers for the rest. Off unless '
+            'switched on.' % AD25_KEEP_DAYS,
         'winsec_rollup':
             'Whether the Domain page\u2019s answers are counted as the events arrive '
             'rather than worked out afresh every time somebody looks. '
@@ -62061,6 +62551,8 @@ class Daemon(object):
             # page of this dashboard is about a system an installation may
             # have nothing to do with.
             'winsec_on': self.winsec_on(),
+            # ...and its page about Windows Server 2025 (1.10.321).
+            'ad2025_on': bool(self.winsec_on() and int(CONFIG.get('winsec_ad2025') or 0)),
             # ...and whether a firewall's own log is, which is what puts the
             # Traffic tab on the page at all.
             'fwlog_on': self.fwlog_on(),
@@ -64336,6 +64828,19 @@ class Daemon(object):
             self.stopping.wait(3)
 
     def _web_pass(self):
+        # What was noted for Before Windows Server 2025 written down even when
+        # no event was kept this minute (1.10.321); tidied once a day.
+        if AD25['queue'] or AD25['sources']:
+            try:
+                self.store.ad25_flush()
+            except Exception as e:
+                log('Before Windows Server 2025: %s' % str(e)[:160], 'warn')
+        if time.time() - float(getattr(self, '_ad25_tidied', 0) or 0) > 86400:
+            self._ad25_tidied = time.time()
+            try:
+                self.store.ad25_tidy()
+            except Exception as e:
+                log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
         try:
             self.webroot.due()
         except Exception as e:
@@ -82639,6 +83144,12 @@ class ApiHandler(BaseHTTPRequestHandler):
             if got is None:
                 return self.fail('no such line', 404)
             return self.send_json({'ok': True, 'row': got})
+
+        # Domain → Before Windows Server 2025 (1.10.321).
+        if path == '/api/ad25':
+            if not self.need_login():
+                return None
+            return self.send_json(dict(store.ad25_view(number('hours', 168, 1, 2160)), ok=True))
 
         if path == '/api/windows':
             if not self.need_login():

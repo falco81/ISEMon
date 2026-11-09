@@ -372,6 +372,29 @@ working.
 
 ## Version
 
+1.10.321
+
+- **Domain → Before Windows Server 2025** lists what a domain controller of
+  Windows Server 2025 refuses that a 2016 one still lets through, and which
+  machines and accounts here still do it. It covers:
+  - LDAP binds in the clear or unsigned, and LDAP channel binding failing;
+  - NTLMv1;
+  - Kerberos with RC4 or DES, and accounts with no AES keys;
+  - SMB1 to a controller;
+  - NTLM as a whole, and passwords handed over as they are.
+- The page has:
+  - a summary at the top and a tile for each kind, with what breaks and how
+    to fix it;
+  - the trouble listed by machine, by account, or row by row, each row opening
+    the events behind it;
+  - which of the controllers' logs are arriving, with the NXLog inputs and
+    commands that send the rest.
+- It is counted as the lines are read, before anything switched off is
+  dropped. One row per day, client, account and controller is kept for 90
+  days, and a line read again is not counted again.
+- It is off unless switched on, under Settings → The domain controllers.
+  See `docs/before-windows-server-2025.md`.
+
 1.10.320
 
 - SELinux: the one refusal isemon's module did not know yet, from the first

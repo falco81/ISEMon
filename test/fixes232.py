@@ -54,8 +54,10 @@ PORT = 19400 + random.randint(0, 90)
 # readings), which an older version never reads.
 # 1.10.303 gave sessions a column (second, the Face ID a sign-in still
 # owes): an older version writes its sessions without it and never reads it.
+# 1.10.321 added a table of its own (ad25_seen, Before Windows Server 2025),
+# which an older version never reads.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '31129ac5b8f93914b8c34c98bcc585559e048cf9b7196866ef7428b981b61d30'}
+               'sha256': '7e12f4d7dd0be689c440fcc7cbbaac8df21d5da7c6e20db38939471a2959203d'}
 
 
 def ok(what, got, want=True):

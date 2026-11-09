@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.320",
-  "made": "2026-11-08",
+  "version": "1.10.321",
+  "made": "2026-11-09",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -23,6 +23,10 @@
   "s.1-hour.f030c3d6": {
    "source": "1 hour",
    "text": "1 hour"
+  },
+  "s.1-on-every-domain-controller-what.d6002c76": {
+   "source": "1. On every domain controller, what it writes",
+   "text": "1. On every domain controller, what it writes"
   },
   "s.1-the-certificate-of-this-name.edb8c852": {
    "source": "1. the certificate of this name (the server’s own)",
@@ -104,6 +108,10 @@
    "source": "1st",
    "text": "1st"
   },
+  "s.2-in-nxlog-conf-beside-the.38dfa868": {
+   "source": "2. In nxlog.conf, beside the Security input",
+   "text": "2. In nxlog.conf, beside the Security input"
+  },
   "s.2-the-intermediate-certificate-s-if.c4f9996d": {
    "source": "2. the intermediate certificate(s), if there are any - one block each",
    "text": "2. the intermediate certificate(s), if there are any - one block each"
@@ -119,6 +127,10 @@
   "s.27-months.4de4a68c": {
    "source": "27 months",
    "text": "27 months"
+  },
+  "s.2889-and-4769-are-often-longer.a95553eb": {
+   "source": "2889 and 4769 are often longer than 1500 bytes: over UDP a lost fragment is a lost event. The TCP output already in your file (port 514) is the safer road.",
+   "text": "2889 and 4769 are often longer than 1500 bytes: over UDP a lost fragment is a lost event. The TCP output already in your file (port 514) is the safer road."
   },
   "s.2nd.008413d5": {
    "source": "2nd",
@@ -303,6 +315,10 @@
   "s.9th.e62af88d": {
    "source": "9th",
    "text": "9th"
+  },
+  "s.a-2025-controller-refuses-a-simple.288f4ff5": {
+   "source": "A 2025 controller refuses a simple bind on 389 without TLS (strongerAuthRequired, result 8).",
+   "text": "A 2025 controller refuses a simple bind on 389 without TLS (strongerAuthRequired, result 8)."
   },
   "s.a-backup-fetched-to-download.39eff622": {
    "source": "A backup fetched to download",
@@ -848,6 +864,10 @@
    "source": "A lease moves, so this is what it was called then and not necessarily what it is called now. Open the address for every name it has had.",
    "text": "A lease moves, so this is what it was called then and not necessarily what it is called now. Open the address for every name it has had."
   },
+  "s.a-library-that-sends-the-token.9a9e066d": {
+   "source": "A library that sends the token (ldap3 2.9.1 and later), or a simple bind over LDAPS.",
+   "text": "A library that sends the token (ldap3 2.9.1 and later), or a simple bind over LDAPS."
+  },
   "s.a-line-of-acme-s.35af81f6": {
    "source": "A line of acme’s",
    "text": "A line of acme’s"
@@ -895,6 +915,10 @@
   "s.a-machine-account.435c4b68": {
    "source": "A machine account",
    "text": "A machine account"
+  },
+  "s.a-machine-an-address-an-account.2d44d6dc": {
+   "source": "a machine, an address, an account…",
+   "text": "a machine, an address, an account…"
   },
   "s.a-machine-on-a-socket-authenticating.16367b7f": {
    "source": "A machine on a socket, authenticating itself with 802.1X — a certificate or a domain account, over the wire.",
@@ -1160,6 +1184,10 @@
    "source": "a packet of a session the firewall no longer has",
    "text": "a packet of a session the firewall no longer has"
   },
+  "s.a-page-of-its-own-on.f46858bc": {
+   "source": "A page of its own on the Domain tab,",
+   "text": "A page of its own on the Domain tab,"
+  },
   "s.a-page-or-a-setting.a37e2745": {
    "source": "a page or a setting",
    "text": "a page or a setting"
@@ -1171,6 +1199,10 @@
   "s.a-password-for-each-account-settings.37ee7f80": {
    "source": "a password for each account — Settings, who may open this",
    "text": "a password for each account — Settings, who may open this"
+  },
+  "s.a-password-handed-to-the-controller.6c0fd027": {
+   "source": "A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which).",
+   "text": "A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which)."
   },
   "s.a-password-is-at-least-eight.5bf2fa84": {
    "source": "a password is at least eight characters",
@@ -1888,6 +1920,10 @@
    "source": "Accounts asked for a token",
    "text": "Accounts asked for a token"
   },
+  "s.accounts-from-it.08aa3fdc": {
+   "source": "Accounts from it",
+   "text": "Accounts from it"
+  },
   "s.accounts-locked.96a3dadc": {
    "source": "accounts locked",
    "text": "accounts locked"
@@ -2147,6 +2183,14 @@
   "s.ad-user-resolved-identities.98f63ba0": {
    "source": "AD-User-Resolved-Identities",
    "text": "AD-User-Resolved-Identities"
+  },
+  "s.ad2025.ff4530a5": {
+   "source": "ad2025",
+   "text": "ad2025"
+  },
+  "s.ad25.f84dcdd1": {
+   "source": "ad25",
+   "text": "ad25"
   },
   "s.add-a-destination.e4c6fd9f": {
    "source": "Add a destination",
@@ -2988,6 +3032,14 @@
    "source": "an ISE node",
    "text": "an ISE node"
   },
+  "s.an-ntlm-or-kerberos-bind-over.82d5fd57": {
+   "source": "An NTLM or Kerberos bind over LDAPS without a channel binding token is refused once binding is required.",
+   "text": "An NTLM or Kerberos bind over LDAPS without a channel binding token is refused once binding is required."
+  },
+  "s.an-ntlm-or-kerberos-sasl-bind.7c2a5fcd": {
+   "source": "An NTLM or Kerberos (SASL) bind on 389 without signing is refused.",
+   "text": "An NTLM or Kerberos (SASL) bind on 389 without signing is refused."
+  },
   "s.an-object-was-accessed.1fd6b198": {
    "source": "an object was accessed",
    "text": "an object was accessed"
@@ -3700,6 +3752,10 @@
    "source": "Ask the directory who this is: whether the account is locked out or switched off, when its password expires, and which groups it is in. It only reads — nothing in the directory is ever changed from here.",
    "text": "Ask the directory who this is: whether the account is locked out or switched off, when its password expires, and which groups it is in. It only reads — nothing in the directory is ever changed from here."
   },
+  "s.ask-the-library-for-signing-and.9b84be4c": {
+   "source": "Ask the library for signing and sealing (session security, GSSAPI with integrity), or LDAPS.",
+   "text": "Ask the library for signing and sealing (session security, GSSAPI with integrity), or LDAPS."
+  },
   "s.ask-the-router-what-is-on.1ba49e18": {
    "source": "Ask the router what is on its address list right now and show it beside what is known here. It only reads.",
    "text": "Ask the router what is on its address list right now and show it beside what is known here. It only reads."
@@ -3927,6 +3983,10 @@
   "s.auditid.aa9a9567": {
    "source": "auditid",
    "text": "auditid"
+  },
+  "s.auditpol-set-subcategory-kerberos-authentication-service.894fdd6f": {
+   "source": "auditpol /set /subcategory:\"Kerberos Authentication Service\" /success:enable /failure:enable auditpol /set /subcategory:\"Kerberos Service Ticket Operations\" /success:enable /failure:enable auditpol /set /subcategory:\"Credential Validation\" /success:enable /failure:enable auditpol /set /subcategory:\"Logon\" /success:enable /failure:enable",
+   "text": "auditpol /set /subcategory:\"Kerberos Authentication Service\" /success:enable /failure:enable auditpol /set /subcategory:\"Kerberos Service Ticket Operations\" /success:enable /failure:enable auditpol /set /subcategory:\"Credential Validation\" /success:enable /failure:enable auditpol /set /subcategory:\"Logon\" /success:enable /failure:enable"
   },
   "s.auditreporttype.b558f08d": {
    "source": "auditreporttype",
@@ -4408,6 +4468,10 @@
    "source": "BC-FC-E7",
    "text": "BC-FC-E7"
   },
+  "s.before-windows-server-2025.ec4b6a34": {
+   "source": "Before Windows Server 2025",
+   "text": "Before Windows Server 2025"
+  },
   "s.began-failing.71f23e28": {
    "source": "began failing",
    "text": "began failing"
@@ -4804,6 +4868,10 @@
    "source": "button",
    "text": "button"
   },
+  "s.by-account.c3c3a9d5": {
+   "source": "By account",
+   "text": "By account"
+  },
   "s.by-dhcp.8bff9884": {
    "source": "by DHCP",
    "text": "by DHCP"
@@ -4847,6 +4915,10 @@
   "s.by-kind-of-job.4dcb4b03": {
    "source": "By kind of job",
    "text": "By kind of job"
+  },
+  "s.by-machine.6626fbe2": {
+   "source": "By machine",
+   "text": "By machine"
   },
   "s.by-mail.fd54a0e9": {
    "source": "by mail",
@@ -5308,6 +5380,10 @@
    "source": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log.",
    "text": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log."
   },
+  "s.chart.b82b40b8": {
+   "source": "chart",
+   "text": "chart"
+  },
   "s.check-again.e185048c": {
    "source": "Check again",
    "text": "Check again"
@@ -5764,9 +5840,17 @@
    "source": "compress",
    "text": "compress"
   },
+  "s.computer-accounts.06de2923": {
+   "source": "computer accounts",
+   "text": "computer accounts"
+  },
   "s.computer-name.fcb0f3c9": {
    "source": "Computer-Name",
    "text": "Computer-Name"
+  },
+  "s.computer.c60266a8": {
+   "source": "computer",
+   "text": "computer"
   },
   "s.conf.1f3c4a17": {
    "source": "conf*",
@@ -5928,6 +6012,10 @@
    "source": "Content:",
    "text": "Content:"
   },
+  "s.controller-days.7b1ea632": {
+   "source": "controller days",
+   "text": "controller days"
+  },
   "s.controller.a36a5ffa": {
    "source": "Controller",
    "text": "Controller"
@@ -5935,6 +6023,14 @@
   "s.controller.f79a2222": {
    "source": "controller",
    "text": "controller"
+  },
+  "s.controllers.49ca30df": {
+   "source": "controllers",
+   "text": "controllers"
+  },
+  "s.controllers.fd281615": {
+   "source": "Controllers",
+   "text": "Controllers"
   },
   "s.cook-islands.4bacfe25": {
    "source": "Cook Islands",
@@ -6560,6 +6656,10 @@
    "source": "(DER)",
    "text": "(DER)"
   },
+  "s.des-is-not-there-at-all.0a137e3a": {
+   "source": "DES is not there at all.",
+   "text": "DES is not there at all."
+  },
   "s.desc.deb80331": {
    "source": "desc",
    "text": "desc"
@@ -6739,6 +6839,10 @@
   "s.directory-is-reached-over-tls-and.4f088361": {
    "source": "directory is reached over TLS and its certificate was signed by your own authority. It is kept apart from the first directory’s: two domains are two domains, and one of them being replaced should not take the other’s trust with it.",
    "text": "directory is reached over TLS and its certificate was signed by your own authority. It is kept apart from the first directory’s: two domains are two domains, and one of them being replaced should not take the other’s trust with it."
+  },
+  "s.directory-service-log.208fb5c9": {
+   "source": "Directory Service log",
+   "text": "Directory Service log"
   },
   "s.directory.8d392f56": {
    "source": "directory",
@@ -7164,6 +7268,10 @@
    "source": "Drops",
    "text": "Drops"
   },
+  "s.ds.ba4868b3": {
+   "source": "ds",
+   "text": "ds"
+  },
   "s.dst.a7f719bf": {
    "source": "dst",
    "text": "dst"
@@ -7299,6 +7407,10 @@
   "s.each-disk.a748d3dd": {
    "source": "Each disk",
    "text": "Each disk"
+  },
+  "s.each-kind-of-trouble-is-written.8bbaaec6": {
+   "source": "Each kind of trouble is written in one log of the controllers. The Security log is sent already; the rest only once NXLog sends them and the controllers write them.",
+   "text": "Each kind of trouble is written in one log of the controllers. The Security log is sent already; the rest only once NXLog sends them and the controllers write them."
   },
   "s.each-name-a-ca-had-proved.1753ec71": {
    "source": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof.",
@@ -7603,6 +7715,10 @@
   "s.en.094b0fe0": {
    "source": "en",
    "text": "en"
+  },
+  "s.enable-all.1734db95": {
+   "source": "Enable all",
+   "text": "Enable all"
   },
   "s.enable-post-data-reading-is-on.74ebace4": {
    "source": "enable_post_data_reading is on",
@@ -8216,6 +8332,10 @@
    "source": "every job",
    "text": "every job"
   },
+  "s.every-kind-again.1e6854a2": {
+   "source": "Every kind again",
+   "text": "Every kind again"
+  },
   "s.every-kind-of-line.dd01a896": {
    "source": "every kind of line",
    "text": "every kind of line"
@@ -8483,6 +8603,10 @@
   "s.every-row-in-each-table.d37eb78b": {
    "source": "every row in each table",
    "text": "every row in each table"
+  },
+  "s.every-row.ad197f9c": {
+   "source": "Every row",
+   "text": "Every row"
   },
   "s.every-rule-of-its-filter-nat.64ad2641": {
    "source": "Every rule of its filter, NAT, raw and mangle tables, IPv4 and IPv6, in order, and what each has counted since the router started or the counters were reset.",
@@ -9684,6 +9808,10 @@
    "source": "five minutes",
    "text": "five minutes"
   },
+  "s.fix.c341e94c": {
+   "source": "Fix:",
+   "text": "Fix:"
+  },
   "s.flag.112f3a99": {
    "source": "flag",
    "text": "flag"
@@ -10183,6 +10311,10 @@
   "s.from-the-find-box.005a3dd5": {
    "source": "from the find box",
    "text": "from the find box"
+  },
+  "s.from-the-kerberos-updates-of-july.d896ee2a": {
+   "source": "From the Kerberos updates of July 2026 even a 2016 controller hands out no RC4 to an account that does not ask for it; a 2025 one never does.",
+   "text": "From the Kerberos updates of July 2026 even a 2016 controller hands out no RC4 to an account that does not ask for it; a 2025 one never does."
   },
   "s.from-the-machine-or-the-address.4def1ea9": {
    "source": "From — the machine, or the address where there is none",
@@ -10936,6 +11068,10 @@
    "source": "How close",
    "text": "How close"
   },
+  "s.how-far-back-it-is-counted.aad4f7d3": {
+   "source": "How far back it is counted. A window on what is shown; what is kept is the last 90 days.",
+   "text": "How far back it is counted. A window on what is shown; what is kept is the last 90 days."
+  },
   "s.how-far-back-the-cards-the.a8744b34": {
    "source": "How far back the cards, the chart and the lists look. This changes what is shown, never what is kept: Settings → The firewall log says how long that is.",
    "text": "How far back the cards, the chart and the lists look. This changes what is shown, never what is kept: Settings → The firewall log says how long that is."
@@ -11595,6 +11731,10 @@
   "s.how-to-search.5c9d45d5": {
    "source": "How to search",
    "text": "How to search"
+  },
+  "s.how-to-send-the-rest-nxlog.a8dbf337": {
+   "source": "How to send the rest - NXLog and the controllers",
+   "text": "How to send the rest - NXLog and the controllers"
   },
   "s.how-to-set-it-up-on.20b6db17": {
    "source": "How to set it up on the firewall…",
@@ -12888,6 +13028,10 @@
    "source": "Israel",
    "text": "Israel"
   },
+  "s.issue.00819c0e": {
+   "source": "issue",
+   "text": "issue"
+  },
   "s.issued-and-renewed.f55389b6": {
    "source": "Issued and renewed",
    "text": "Issued and renewed"
@@ -13536,6 +13680,10 @@
    "source": "Kazakhstan",
    "text": "Kazakhstan"
   },
+  "s.kdc.c00b1b0c": {
+   "source": "kdc",
+   "text": "kdc"
+  },
   "s.keep-a-change-on-trial-the.1cbb8972": {
    "source": "keep a change on trial: the new network (net), or the change of the firewall and of who may reach which page (fw)",
    "text": "keep a change on trial: the new network (net), or the change of the firewall and of who may reach which page (fw)"
@@ -13736,6 +13884,10 @@
    "source": "Kerberos policy was changed",
    "text": "Kerberos policy was changed"
   },
+  "s.kerberos-rc4-des-accounts-without-aes.f409a4dc": {
+   "source": "Kerberos (RC4, DES, accounts without AES), NTLMv1, NTLM, passwords handed over as they are",
+   "text": "Kerberos (RC4, DES, accounts without AES), NTLMv1, NTLM, passwords handed over as they are"
+  },
   "s.kerberos-refused-a-password.534f0065": {
    "source": "Kerberos refused a password",
    "text": "Kerberos refused a password"
@@ -13743,6 +13895,10 @@
   "s.kerberos-refused-it.33a1a453": {
    "source": "Kerberos refused it",
    "text": "Kerberos refused it"
+  },
+  "s.kerberos-where-it-can-be-names.a900f594": {
+   "source": "Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place.",
+   "text": "Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place."
   },
   "s.kerberos.53c35fb7": {
    "source": "Kerberos",
@@ -13811,6 +13967,14 @@
   "s.kind.e00ac23f": {
    "source": "Kind",
    "text": "Kind"
+  },
+  "s.kinds-of-trouble-a-2025-controller.3c939025": {
+   "source": "kinds of trouble a 2025 controller would refuse",
+   "text": "kinds of trouble a 2025 controller would refuse"
+  },
+  "s.kinds-of-trouble-to-put-right.d5c14b13": {
+   "source": "kinds of trouble to put right before July 2026",
+   "text": "kinds of trouble to put right before July 2026"
   },
   "s.kiribati.3f57adf2": {
    "source": "Kiribati",
@@ -13907,6 +14071,10 @@
   "s.last-7-days.7252f9e8": {
    "source": "last 7 days",
    "text": "last 7 days"
+  },
+  "s.last-90-days.b8a5aeb4": {
+   "source": "last 90 days",
+   "text": "last 90 days"
   },
   "s.last-attempt.82aee111": {
    "source": "Last attempt",
@@ -14068,9 +14236,21 @@
    "source": "lazy",
    "text": "lazy"
   },
+  "s.ldap-binds-in-the-clear-or.b85bbba2": {
+   "source": "LDAP binds in the clear or unsigned, channel binding",
+   "text": "LDAP binds in the clear or unsigned, channel binding"
+  },
+  "s.ldap-who-binds-in-the-clear.3ab0b534": {
+   "source": "LDAP: who binds in the clear or unsigned (2889) and channel binding (3039). Takes effect at once; at 2 every such bind is an event - on a busy controller leave it on for the weeks before the change.",
+   "text": "LDAP: who binds in the clear or unsigned (2889) and channel binding (3039). Takes effect at once; at 2 every such bind is an event - on a busy controller leave it on for the weeks before the change."
+  },
   "s.ldap.d8343c68": {
    "source": "LDAP",
    "text": "LDAP"
+  },
+  "s.ldaps-on-636-or-starttls-before.b50c7ad1": {
+   "source": "LDAPS on 636, or StartTLS before the bind; the controller by its name, trusting the company’s root CA.",
+   "text": "LDAPS on 636, or StartTLS before the bind; the controller by its name, trusting the company’s root CA."
   },
   "s.ldaps-wraps-the-whole-connection-which.ddd3b3b7": {
    "source": "ldaps wraps the whole connection, which is what most sites use. starttls starts plain on port 389 and turns secure. none sends the password across the network in the clear and should only ever be a test.",
@@ -14492,6 +14672,10 @@
    "source": "live",
    "text": "live"
   },
+  "s.lmcompatibilitylevel-5-ntlmv2-only-on-that.3530937b": {
+   "source": "LmCompatibilityLevel 5 (NTLMv2 only) on that machine, or a newer device.",
+   "text": "LmCompatibilityLevel 5 (NTLMv2 only) on that machine, or a newer device."
+  },
   "s.load-a-configuration.9e08464b": {
    "source": "Load a configuration",
    "text": "Load a configuration"
@@ -14752,6 +14936,10 @@
    "source": "Look for updates",
    "text": "Look for updates"
   },
+  "s.look-for-what-windows-server-2025.c0dfa906": {
+   "source": "Look for what Windows Server 2025 will refuse",
+   "text": "Look for what Windows Server 2025 will refuse"
+  },
   "s.look-it-up.828f2d61": {
    "source": "Look it up",
    "text": "Look it up"
@@ -15011,6 +15199,10 @@
   "s.machines-the-emerging-threats-project-has.210a868d": {
    "source": "Machines the Emerging Threats project has seen being used by somebody who is not their owner - a hacked server, a router with the password still on the sticker. Six hundred or so, rebuilt daily.",
    "text": "Machines the Emerging Threats project has seen being used by somebody who is not their owner - a hacked server, a router with the password still on the sticker. Six hundred or so, rebuilt daily."
+  },
+  "s.machines.6516c232": {
+   "source": "machines",
+   "text": "machines"
   },
   "s.macs-is-a-list-of-mac.195c17d9": {
    "source": "macs is a list of MAC addresses",
@@ -15612,6 +15804,14 @@
    "source": "modern",
    "text": "modern"
   },
+  "s.module-im-msvistalog-savepos-true-readfromlast.1da466c3": {
+   "source": "Module im_msvistalog SavePos TRUE ReadFromLast TRUE",
+   "text": "Module im_msvistalog SavePos TRUE ReadFromLast TRUE"
+  },
+  "s.module-im-msvistalog-savepos-true-readfromlast.c49100ea": {
+   "source": "<Input eventlog_ds> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"Directory Service\">*[System[(EventID=2886 or EventID=2887 or EventID=2888 or EventID=2889 or EventID=3039 or EventID=3040 or EventID=3041)]]</Select> </Query> </QueryList> </QueryXML> </Input> <Input eventlog_kdc> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"System\">*[System[Provider[@Name='Microsoft-Windows-Kerberos-Key-Distribution-Center'] and (EventID=14 or EventID=16 or EventID=26 or EventID=27 or (EventID &gt;= 201 and EventID &lt;= 209))]]</Select> </Query> </QueryList> </QueryXML> </Input> <Input eventlog_smb1> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"Microsoft-Windows-SMBServer/Audit\">*[System[(EventID=3000)]]</Select> </Query> </QueryList> </QueryXML> </Input> <Input eventlog_ntlm> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"Microsoft-Windows-NTLM/Operational\">*[System[(EventID=8004)]]</Select> </Query> </QueryList> </QueryXML> </Input> <Route security_to_syslog> Path eventlog_security, eventlog_ds, eventlog_kdc, eventlog_smb1, eventlog_ntlm => out_syslog </Route>",
+   "text": "<Input eventlog_ds> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"Directory Service\">*[System[(EventID=2886 or EventID=2887 or EventID=2888 or EventID=2889 or EventID=3039 or EventID=3040 or EventID=3041)]]</Select> </Query> </QueryList> </QueryXML> </Input> <Input eventlog_kdc> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"System\">*[System[Provider[@Name='Microsoft-Windows-Kerberos-Key-Distribution-Center'] and (EventID=14 or EventID=16 or EventID=26 or EventID=27 or (EventID &gt;= 201 and EventID &lt;= 209))]]</Select> </Query> </QueryList> </QueryXML> </Input> <Input eventlog_smb1> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"Microsoft-Windows-SMBServer/Audit\">*[System[(EventID=3000)]]</Select> </Query> </QueryList> </QueryXML> </Input> <Input eventlog_ntlm> Module im_msvistalog SavePos TRUE ReadFromLast TRUE <QueryXML> <QueryList> <Query Id=\"0\"> <Select Path=\"Microsoft-Windows-NTLM/Operational\">*[System[(EventID=8004)]]</Select> </Query> </QueryList> </QueryXML> </Input> <Route security_to_syslog> Path eventlog_security, eventlog_ds, eventlog_kdc, eventlog_smb1, eventlog_ntlm => out_syslog </Route>"
+  },
   "s.module.b8ff0289": {
    "source": "Module",
    "text": "Module"
@@ -15747,6 +15947,10 @@
   "s.mozilla-modern.c0407560": {
    "source": "Mozilla modern",
    "text": "Mozilla modern"
+  },
+  "s.msds-supportedencryptiontypes-24-aes-on-the.4dc87a2d": {
+   "source": "msDS-SupportedEncryptionTypes 24 (AES) on the account, its password reset once, keytabs made with AES.",
+   "text": "msDS-SupportedEncryptionTypes 24 (AES) on the account, its password reset once, keytabs made with AES."
   },
   "s.msg-login.a27f5b53": {
    "source": "msg~\"login\"",
@@ -16095,6 +16299,10 @@
   "s.network-s.368da014": {
    "source": "Network(s),",
    "text": "Network(s),"
+  },
+  "s.network-security-restrict-ntlm-audit-ntlm.5a3ef6d3": {
+   "source": "Network security: Restrict NTLM: Audit NTLM authentication in this domain",
+   "text": "Network security: Restrict NTLM: Audit NTLM authentication in this domain"
   },
   "s.network-time-security-the-server-proves.73ac8e1b": {
    "source": "Network Time Security: the server proves who it is (time.cloudflare.com, ptbtime1.ptb.de, nts.netnod.se…). Needs TCP 4460 out.",
@@ -16860,6 +17068,10 @@
    "source": "None seen yet.",
    "text": "None seen yet."
   },
+  "s.none-seen.668bd8b2": {
+   "source": "none seen",
+   "text": "none seen"
+  },
   "s.none-set.b0784217": {
    "source": "none set",
    "text": "none set"
@@ -16947,6 +17159,10 @@
   "s.not-anything-of-ours.e27e6742": {
    "source": "not anything of ours",
    "text": "not anything of ours"
+  },
+  "s.not-arriving-see-below-how-to.595665c9": {
+   "source": "not arriving - see below how to send it",
+   "text": "not arriving - see below how to send it"
   },
   "s.not-banned.1009b692": {
    "source": "not banned",
@@ -17488,6 +17704,10 @@
    "source": "Nothing has happened yet. Press",
    "text": "Nothing has happened yet. Press"
   },
+  "s.nothing-here-a-2025-controller-would.4a1285a2": {
+   "source": "nothing here a 2025 controller would refuse",
+   "text": "nothing here a 2025 controller would refuse"
+  },
   "s.nothing-here-changes-anything-there.90aefb4f": {
    "source": "Nothing here changes anything there",
    "text": "Nothing here changes anything there"
@@ -17648,6 +17868,10 @@
    "source": "Nothing matches",
    "text": "Nothing matches"
   },
+  "s.nothing-matches.9f857673": {
+   "source": "Nothing matches.",
+   "text": "Nothing matches."
+  },
   "s.nothing-may-ever-ban-it-a.8624941d": {
    "source": "Nothing may ever ban it; a ban it has now is lifted.",
    "text": "Nothing may ever ban it; a ban it has now is lifted."
@@ -17723,6 +17947,10 @@
   "s.nothing-rotates-it.26af4220": {
    "source": "nothing rotates it",
    "text": "nothing rotates it"
+  },
+  "s.nothing-seen-in-this-window.f49edc4f": {
+   "source": "Nothing seen in this window.",
+   "text": "Nothing seen in this window."
   },
   "s.nothing-sent-here-yet.a16d441b": {
    "source": "nothing sent here yet",
@@ -17815,6 +18043,10 @@
   "s.nothing-was-run.0994d85e": {
    "source": "nothing was run",
    "text": "nothing was run"
+  },
+  "s.nothing-where-it-is-over-ldaps.9a2f74f9": {
+   "source": "Nothing, where it is over LDAPS; otherwise as above.",
+   "text": "Nothing, where it is over LDAPS; otherwise as above."
   },
   "s.nothing-yet.76eb7251": {
    "source": "Nothing yet",
@@ -17951,6 +18183,30 @@
   "s.ns1-example-cz.d5ad69c8": {
    "source": "ns1.example.cz",
    "text": "ns1.example.cz"
+  },
+  "s.ntlm-by-server-ntlm-operational-8004.4a84eb07": {
+   "source": "NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options →",
+   "text": "NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options →"
+  },
+  "s.ntlm-by-the-server-it-was.d6e01d45": {
+   "source": "NTLM by the server it was used for",
+   "text": "NTLM by the server it was used for"
+  },
+  "s.ntlm-operational.50aeed04": {
+   "source": "NTLM/Operational",
+   "text": "NTLM/Operational"
+  },
+  "s.ntlm.4a9157a7": {
+   "source": "ntlm",
+   "text": "ntlm"
+  },
+  "s.ntlmv1-is-gone-from-windows-server.c3588694": {
+   "source": "NTLMv1 is gone from Windows Server 2025.",
+   "text": "NTLMv1 is gone from Windows Server 2025."
+  },
+  "s.ntlmv2-still-works-on-2025-but.372516ce": {
+   "source": "NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all.",
+   "text": "NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all."
   },
   "s.ntp-example-cz.11fcb552": {
    "source": "ntp.example.cz",
@@ -18663,6 +18919,10 @@
   "s.one-hour-the-shortest-it-takes.d7924378": {
    "source": "one hour, the shortest it takes",
    "text": "one hour, the shortest it takes"
+  },
+  "s.one-input-a-log-so-that.e802d155": {
+   "source": "One input a log, so that a log a controller does not have does not stop the others; the same output, so everything lands in the same file isemon reads. Then restart NXLog (",
+   "text": "One input a log, so that a log a controller does not have does not stop the others; the same output, so everything lands in the same file isemon reads. Then restart NXLog ("
   },
   "s.one-is-safe-to-mail-and.198d672c": {
    "source": "one is safe to mail and to paste into a ticket: it has no passwords, no ssh key and no certificate in it, and a machine built from it comes up unable to reach the firewall or ask the domain anything until those are typed in.",
@@ -20047,6 +20307,10 @@
   "s.paste.43bce7a8": {
    "source": "paste",
    "text": "paste"
+  },
+  "s.path-eventlog-security-eventlog-ds-eventlog.9dd99e46": {
+   "source": "Path eventlog_security, eventlog_ds, eventlog_kdc, eventlog_smb1, eventlog_ntlm => out_syslog",
+   "text": "Path eventlog_security, eventlog_ds, eventlog_kdc, eventlog_smb1, eventlog_ntlm => out_syslog"
   },
   "s.path.3150ecd5": {
    "source": "path",
@@ -21668,6 +21932,10 @@
    "source": "refused",
    "text": "refused"
   },
+  "s.reg-add-hklm-system-currentcontrolset-services.ff1537ed": {
+   "source": "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\NTDS\\Diagnostics\" /v \"16 LDAP Interface Events\" /t REG_DWORD /d 2 /f",
+   "text": "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\NTDS\\Diagnostics\" /v \"16 LDAP Interface Events\" /t REG_DWORD /d 2 /f"
+  },
   "s.regex-0-9-0-9-8.59991cff": {
    "source": "-regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\",
    "text": "-regex '.*(\\.[0-9]+|-[0-9](8)([-_.]?[0-9](1,12))?)$' \\"
@@ -21856,6 +22124,10 @@
    "source": "Reserved",
    "text": "Reserved"
   },
+  "s.reset-its-password-a-keytab-made.64fce5cc": {
+   "source": "Reset its password (a keytab made again after it).",
+   "text": "Reset its password (a keytab made again after it)."
+  },
   "s.reset.91ef0c16": {
    "source": "reset",
    "text": "reset"
@@ -21923,6 +22195,10 @@
   "s.restart-postgresql.c4bc528b": {
    "source": "Restart PostgreSQL",
    "text": "Restart PostgreSQL"
+  },
+  "s.restart-service-nxlog.2eb8aa56": {
+   "source": "Restart-Service nxlog",
+   "text": "Restart-Service nxlog"
   },
   "s.restart-the-server.ae8bc755": {
    "source": "Restart the server…",
@@ -22828,6 +23104,10 @@
    "source": "Security Intelligence",
    "text": "Security Intelligence"
   },
+  "s.security-log.91a69925": {
+   "source": "Security log",
+   "text": "Security log"
+  },
   "s.security-rating.3bfe23e6": {
    "source": "Security Rating",
    "text": "Security Rating"
@@ -23115,6 +23395,10 @@
   "s.set-service-all.05ccdc1d": {
    "source": "set service \"ALL\"",
    "text": "set service \"ALL\""
+  },
+  "s.set-smbserverconfiguration-auditsmb1access-true-force.f8e57c70": {
+   "source": "Set-SmbServerConfiguration -AuditSmb1Access $true -Force",
+   "text": "Set-SmbServerConfiguration -AuditSmb1Access $true -Force"
   },
   "s.set-source-address-isemon-bans.a40d8d43": {
    "source": "set source-address \"isemon-bans\"",
@@ -23660,9 +23944,29 @@
    "source": "smartcard",
    "text": "smartcard"
   },
+  "s.smb-2-3-on-that-machine.8bbeaf59": {
+   "source": "SMB 2/3 on that machine, or a newer scanner, NAS or device.",
+   "text": "SMB 2/3 on that machine, or a newer scanner, NAS or device."
+  },
   "s.smb.515d2f88": {
    "source": "SMB",
    "text": "SMB"
+  },
+  "s.smb.d0f1cf07": {
+   "source": "smb",
+   "text": "smb"
+  },
+  "s.smb1-is-not-on-windows-server.e044d796": {
+   "source": "SMB1 is not on Windows Server 2025, and signing is required.",
+   "text": "SMB1 is not on Windows Server 2025, and signing is required."
+  },
+  "s.smb1-to-the-controller-smbserver-audit.46a50c5b": {
+   "source": "SMB1 to the controller (SMBServer/Audit, 3000):",
+   "text": "SMB1 to the controller (SMBServer/Audit, 3000):"
+  },
+  "s.smb1-to-the-controllers.f76c95ad": {
+   "source": "SMB1 to the controllers",
+   "text": "SMB1 to the controllers"
   },
   "s.smb3-encrypted.4b755c0b": {
    "source": "SMB3 encrypted",
@@ -23683,6 +23987,10 @@
   "s.smbclient.c1af05e6": {
    "source": "smbclient",
    "text": "smbclient"
+  },
+  "s.smbserver-audit.c67c757f": {
+   "source": "SMBServer/Audit",
+   "text": "SMBServer/Audit"
   },
   "s.smooth.254f7697": {
    "source": "smooth",
@@ -24740,6 +25048,26 @@
    "source": "System → Advanced → Admin Access → Secure Shell",
    "text": "System → Advanced → Admin Access → Secure Shell"
   },
+  "s.system-eventid-2886-or-eventid-2887.492006d5": {
+   "source": "*[System[(EventID=2886 or EventID=2887 or EventID=2888 or EventID=2889 or EventID=3039 or EventID=3040 or EventID=3041)]]",
+   "text": "*[System[(EventID=2886 or EventID=2887 or EventID=2888 or EventID=2889 or EventID=3039 or EventID=3040 or EventID=3041)]]"
+  },
+  "s.system-eventid-3000.9dfd2c5c": {
+   "source": "*[System[(EventID=3000)]]",
+   "text": "*[System[(EventID=3000)]]"
+  },
+  "s.system-eventid-8004.e0b408b3": {
+   "source": "*[System[(EventID=8004)]]",
+   "text": "*[System[(EventID=8004)]]"
+  },
+  "s.system-log-the-kdc.f577f483": {
+   "source": "System log - the KDC",
+   "text": "System log - the KDC"
+  },
+  "s.system-provider-name-microsoft-windows-kerberos.0970199b": {
+   "source": "*[System[Provider[@Name='Microsoft-Windows-Kerberos-Key-Distribution-Center'] and (EventID=14 or EventID=16 or EventID=26 or EventID=27 or (EventID &gt;= 201 and EventID &lt;= 209))]]",
+   "text": "*[System[Provider[@Name='Microsoft-Windows-Kerberos-Key-Distribution-Center'] and (EventID=14 or EventID=16 or EventID=26 or EventID=27 or (EventID &gt;= 201 and EventID &lt;= 209))]]"
+  },
   "s.system-rest-api-settings.50bedafe": {
    "source": "System → REST API → Settings",
    "text": "System → REST API → Settings"
@@ -25047,6 +25375,10 @@
   "s.take-this-step-away.199f8dce": {
    "source": "Take this step away",
    "text": "Take this step away"
+  },
+  "s.take-use-kerberos-des-encryption-types.56c3b2dd": {
+   "source": "Take \"Use Kerberos DES encryption types\" off the account; AES.",
+   "text": "Take \"Use Kerberos DES encryption types\" off the account; AES."
   },
   "s.taken-away-root-takes-it-out.e555fa5f": {
    "source": "taken away - root takes it out of the system's trust within seconds",
@@ -25479,6 +25811,10 @@
   "s.the-account-has-expired.5817e758": {
    "source": "the account has expired",
    "text": "the account has expired"
+  },
+  "s.the-account-has-no-aes-keys.7ed4fa47": {
+   "source": "The account has no AES keys - its password is older than AES in the domain - so its tickets fail without RC4.",
+   "text": "The account has no AES keys - its password is older than AES in the domain - so its tickets fail without RC4."
   },
   "s.the-account-is-deleted-and-every.56010f45": {
    "source": "The account is deleted and every sign-in of it ends at once. Nothing it did is removed — the events it left keep its name.",
@@ -26336,6 +26672,10 @@
    "source": "The console",
    "text": "The console"
   },
+  "s.the-controller-s-own-count-of.d6ec07e6": {
+   "source": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.",
+   "text": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging."
+  },
   "s.the-controllers-the-domain-names.0321e7d3": {
    "source": "The controllers the domain names",
    "text": "The controllers the domain names"
@@ -26655,6 +26995,10 @@
   "s.the-desec-api-token.0b2f55f3": {
    "source": "The deSEC API token",
    "text": "The deSEC API token"
+  },
+  "s.the-detailed-logging-below-says-who.5cb39316": {
+   "source": "The detailed logging (below) says who they are.",
+   "text": "The detailed logging (below) says who they are."
   },
   "s.the-device-that-asked.9c33361a": {
    "source": "the device that asked",
@@ -27639,6 +27983,10 @@
   "s.the-jobs.1ad00000": {
    "source": "The jobs",
    "text": "The jobs"
+  },
+  "s.the-kdc-s-own-warnings-about.0c2c6bf1": {
+   "source": "the KDC’s own warnings about RC4 and missing keys",
+   "text": "the KDC’s own warnings about RC4 and missing keys"
   },
   "s.the-kernel-s-command-line-has.dd5541ef": {
    "source": "The kernel's command line has selinux=0 - it stays off whatever the configuration says.",
@@ -29375,6 +29723,10 @@
   "s.the-security-intelligence-category.421b3524": {
    "source": "the Security Intelligence category",
    "text": "the Security Intelligence category"
+  },
+  "s.the-security-log-alone-gives-kerberos.82c68f5e": {
+   "source": "The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC’s own warnings in the System log: the page says which of them are arriving, and what to add to NXLog and switch on on the controllers for the rest. Off unless switched on.",
+   "text": "The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC’s own warnings in the System log: the page says which of them are arriving, and what to add to NXLog and switch on on the controllers for the rest. Off unless switched on."
   },
   "s.the-security-parameter-index.5ca7e689": {
    "source": "the security parameter index",
@@ -32768,6 +33120,10 @@
    "source": "what a disk that spins writes in a second in the background",
    "text": "what a disk that spins writes in a second in the background"
   },
+  "s.what-a-domain-controller-of-windows.8d0b21f6": {
+   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below; a row opens the events behind it.",
+   "text": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below; a row opens the events behind it."
+  },
   "s.what-a-domain-controller-saw.1a05643f": {
    "source": "what a domain controller saw",
    "text": "what a domain controller saw"
@@ -33031,6 +33387,10 @@
   "s.what-it-did.ad97ed17": {
    "source": "What it did",
    "text": "What it did"
+  },
+  "s.what-it-does.ca032b58": {
+   "source": "What it does",
+   "text": "What it does"
   },
   "s.what-it-has-been-called.868535a0": {
    "source": "What it has been called",
@@ -33443,6 +33803,10 @@
   "s.what-the-log-of-who-was.97a93cec": {
    "source": "What the log of who was let in and who refused is called in each folder. radius.log unless it was changed.",
    "text": "What the log of who was let in and who refused is called in each folder. radius.log unless it was changed."
+  },
+  "s.what-the-logs-can-see.9ff8b7fa": {
+   "source": "What the logs can see",
+   "text": "What the logs can see"
   },
   "s.what-the-machine-called-itself-when.3931038e": {
    "source": "What the machine called itself when it dialled in — AnyConnect tells the head end and ISE writes it down. It is the machine’s own word for itself: nothing checks it, nothing is judged on it, and two machines may well say the same.",
@@ -34804,6 +35168,10 @@
    "source": "Who began them, and the wait",
    "text": "Who began them, and the wait"
   },
+  "s.who-did-it-2889-not-yet.a79d811d": {
+   "source": "who did it (2889): not yet - the detailed LDAP logging is off",
+   "text": "who did it (2889): not yet - the detailed LDAP logging is off"
+  },
   "s.who-did-it-acme-itself-or.00c7bc66": {
    "source": "who did it - acme itself or an account",
    "text": "who did it - acme itself or an account"
@@ -35706,6 +36074,10 @@
    "source": "a new key was made — put the public half on {0}",
    "text": "a new key was made — put the public half on {0}"
   },
+  "p.a-page-of-its-own-on.eae43dd0": {
+   "source": "A page of its own on the Domain tab, Before Windows Server 2025 : what a domain controller of Windows Server 2025 refuses that one of 2016 lets through, and which machines, programs and accounts here still do it - LDAP binds in the clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines as they arrive, before anything switched off above is dropped, and counted a day at a time for {0} days; nothing is judged and nobody is banned for it. The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC’s own warnings in the System log: the page says which of them are arriving, and what to add to NXLog and switch on on the controllers for the rest. Off unless switched on.",
+   "text": "A page of its own on the Domain tab, Before Windows Server 2025 : what a domain controller of Windows Server 2025 refuses that one of 2016 lets through, and which machines, programs and accounts here still do it - LDAP binds in the clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines as they arrive, before anything switched off above is dropped, and counted a day at a time for {0} days; nothing is judged and nobody is banned for it. The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC’s own warnings in the System log: the page says which of them are arriving, and what to add to NXLog and switch on on the controllers for the rest. Off unless switched on."
+  },
   "p.a-page.0f93df8d": {
    "source": "{0} a page",
    "text": "{0} a page"
@@ -35941,6 +36313,10 @@
   "p.area.c26420d8": {
    "source": "&area={0}",
    "text": "&area={0}"
+  },
+  "p.arriving-from-controller-s-last.f7874c95": {
+   "source": "arriving from {0} controller(s), last {1}",
+   "text": "arriving from {0} controller(s), last {1}"
   },
   "p.as-it-stood.ace1c574": {
    "source": "As it stood {0}.",
@@ -38278,6 +38654,10 @@
    "source": "{0}. Press for its networks, its SAs and what crossed it.",
    "text": "{0}. Press for its networks, its SAs and what crossed it."
   },
+  "p.press-for-the-events-of.39d84f7d": {
+   "source": "Press for the events of {0}",
+   "text": "Press for the events of {0}"
+  },
   "p.press-for-the-lines-of.f347b6c5": {
    "source": "Press for the lines of {0}.",
    "text": "Press for the lines of {0}."
@@ -39162,6 +39542,10 @@
    "source": "The firewall’s lines naming {0} in the last {1} h that it {2}. Press for them on the Traffic page.",
    "text": "The firewall’s lines naming {0} in the last {1} h that it {2}. Press for them on the Traffic page."
   },
+  "p.the-first-of-the-search-box.508aed4a": {
+   "source": "The first {0} of {1} - the search box finds the rest.",
+   "text": "The first {0} of {1} - the search box finds the rest."
+  },
   "p.the-first-of-them-are-shown.a945f143": {
    "source": "The first {0} of them are shown.",
    "text": "The first {0} of them are shown."
@@ -39830,6 +40214,10 @@
    "source": "{0} went back to nought",
    "text": "{0} went back to nought"
   },
+  "p.what-a-domain-controller-of-windows.59ededa5": {
+   "source": ": what a domain controller of Windows Server 2025 refuses that one of 2016 lets through, and which machines, programs and accounts here still do it - LDAP binds in the clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines as they arrive, before anything switched off above is dropped, and counted a day at a time for {0} days; nothing is judged and nobody is banned for it.",
+   "text": ": what a domain controller of Windows Server 2025 refuses that one of 2016 lets through, and which machines, programs and accounts here still do it - LDAP binds in the clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines as they arrive, before anything switched off above is dropped, and counted a day at a time for {0} days; nothing is judged and nobody is banned for it."
+  },
   "p.what-acme-did-over-the-last.cc066c22": {
    "source": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen.",
    "text": "What acme did over the last {0}: the activity, the failures, the counts. The certificates are as they stand now, whatever is chosen."
@@ -39949,6 +40337,10 @@
   "p.which.1fa6712d": {
    "source": "&which={0}",
    "text": "&which={0}"
+  },
+  "p.who-did-it-2889-last.8f89646e": {
+   "source": "who did it (2889): last {0}",
+   "text": "who did it (2889): last {0}"
   },
   "p.who-is-in.dd0cb95f": {
    "source": "Who is in {0}",
@@ -40107,6 +40499,10 @@
   "r.a-list-this-size-is-a.7edf8aa3": {
    "source": "<br><br>A list this size is a minute or two of ssh. You can close the window it opens and it carries on.",
    "text": "<br><br>A list this size is a minute or two of ssh. You can close the window it opens and it carries on."
+  },
+  "r.a-page-of-its-own-on.a637084a": {
+   "source": "A page of its own on the Domain tab, <b>Before Windows Server 2025</b>: what a domain controller of Windows Server 2025 refuses that one of 2016 lets through, and which machines, programs and accounts here still do it - LDAP binds in the clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines as they arrive, before anything switched off above is dropped, and counted a day at a time for {0} days; nothing is judged and nobody is banned for it.<br><br>The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC’s own warnings in the System log: the page says which of them are arriving, and what to add to NXLog and switch on on the controllers for the rest. Off unless switched on.",
+   "text": "A page of its own on the Domain tab, <b>Before Windows Server 2025</b>: what a domain controller of Windows Server 2025 refuses that one of 2016 lets through, and which machines, programs and accounts here still do it - LDAP binds in the clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines as they arrive, before anything switched off above is dropped, and counted a day at a time for {0} days; nothing is judged and nobody is banned for it.<br><br>The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC’s own warnings in the System log: the page says which of them are arriving, and what to add to NXLog and switch on on the controllers for the rest. Off unless switched on."
   },
   "r.a-password-is-never-kept-freeradius.24685469": {
    "source": "A password is never kept. FreeRADIUS writes what was offered on a refusal — <code>[somebody/hunter2]</code> — and the half after the slash is dropped where the line is read, so it is in no row, no record and no log this program writes.",
@@ -40716,6 +41112,10 @@
    "source": "<b>Nothing waits for any of it.</b> The asking happens on threads of its own: a page is drawn from the names already known, whatever is missing is asked for behind it and appears on the next draw, and a name server that has gone away leaves a name blank and changes nothing else. Not one lookup happens while a log is being read.",
    "text": "<b>Nothing waits for any of it.</b> The asking happens on threads of its own: a page is drawn from the names already known, whatever is missing is asked for behind it and appears on the next draw, and a name server that has gone away leaves a name blank and changes nothing else. Not one lookup happens while a log is being read."
   },
+  "r.ntlm-by-server-ntlm-operational-8004.aa70a1d8": {
+   "source": "NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options → <b>Network security: Restrict NTLM: Audit NTLM authentication in this domain</b> = <b>Enable all</b>. Kerberos and NTLMv1 come in the Security log once these are audited (Success and Failure):",
+   "text": "NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options → <b>Network security: Restrict NTLM: Audit NTLM authentication in this domain</b> = <b>Enable all</b>. Kerberos and NTLMv1 come in the Security log once these are audited (Success and Failure):"
+  },
   "r.of-them-offering-a-name-that.d07f78b9": {
    "source": "<b>{0}</b> of them offering a name that does not exist,",
    "text": "<b>{0}</b> of them offering a name that does not exist,"
@@ -40747,6 +41147,10 @@
   "r.one-folder-per-firewall-comma-separated.0e0fd713": {
    "source": "One folder per firewall, comma separated, as the syslog server files it - <code>/var/log/remote/fortigate</code>. A path to one file works as well.",
    "text": "One folder per firewall, comma separated, as the syslog server files it - <code>/var/log/remote/fortigate</code>. A path to one file works as well."
+  },
+  "r.one-input-a-log-so-that.4cf347a9": {
+   "source": "One input a log, so that a log a controller does not have does not stop the others; the same output, so everything lands in the same file isemon reads. Then restart NXLog (<code>Restart-Service nxlog</code>).",
+   "text": "One input a log, so that a log a controller does not have does not stop the others; the same output, so everything lands in the same file isemon reads. Then restart NXLog (<code>Restart-Service nxlog</code>)."
   },
   "r.one-line-of-a-pub-file.5502bb80": {
    "source": "One line of a <code>.pub</code> file: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA or RSA of 3072 bits and more; options before the key are not taken here. A private key is taken too: its public half is worked out here and the private half is not kept.",
