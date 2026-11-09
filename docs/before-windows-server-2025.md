@@ -114,11 +114,14 @@ nothing came from it, NXLog is not sending that log.
         @{N='Directory Service 2887 (daily)'; Log='Directory Service'; Id=2887; Need=$false}
         @{N='Directory Service 2889 (who)';  Log='Directory Service'; Id=2889; Need=$false}
         @{N='Directory Service 3039-3041';   Log='Directory Service'; Id=3039,3040,3041; Need=$false}
-        @{N='System KDC 14/16/26/27';        Log='System'; Id=14,16,26,27; Need=$false}
-        @{N='System KDC 201-209 (RC4)';      Log='System'; Id=201,202,203,204,205,206,207,208,209; Need=$false}
+        @{N='System KDC 14/16/26/27';        Log='System'; P='Microsoft-Windows-Kerberos-Key-Distribution-Center'; Id=14,16,26,27; Need=$false}
+        @{N='System KDC 201-209 (RC4)';      Log='System'; P='Microsoft-Windows-Kerberos-Key-Distribution-Center'; Id=201,202,203,204,205,206,207,208,209; Need=$false}
         @{N='SMBServer/Audit 3000 (SMB1)';   Log='Microsoft-Windows-SMBServer/Audit'; Id=3000; Need=$false}
         @{N='NTLM/Operational 8004';         Log='Microsoft-Windows-NTLM/Operational'; Id=8004; Need=$false})) {
-        $got = (Get-WinEvent -FilterHashtable @{LogName=$q.Log; Id=$q.Id; StartTime=$since} -ErrorAction SilentlyContinue | Measure-Object).Count
+        # The KDC's own events only: other programs write 14 and 16 into the System log too.
+        $f = @{LogName=$q.Log; Id=$q.Id; StartTime=$since}
+        if ($q.P) { $f.ProviderName = $q.P }
+        $got = (Get-WinEvent -FilterHashtable $f -ErrorAction SilentlyContinue | Measure-Object).Count
         if ($got -gt 0) { Say OK $q.N "$got" } elseif ($q.Need) { Say FAIL $q.N '0 - the audit above that writes it is off' } else { Say INFO $q.N '0 - nothing happened, or its switch above is off' }
     }
     $e = Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4769} -MaxEvents 1 -ErrorAction SilentlyContinue

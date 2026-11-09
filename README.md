@@ -372,6 +372,17 @@ working.
 
 ## Version
 
+1.10.325
+
+- The check for a controller (Before Windows Server 2025 → The logs and how to
+  send them, step 3) now counts only events from the KDC itself
+  (`Microsoft-Windows-Kerberos-Key-Distribution-Center`) for events 14, 16, 26,
+  27 and 201–209 in the System log.
+  - Before, it counted every event with those numbers, whoever wrote it.
+    Kernel-General writes 16 too, and so on.
+  - That gave dozens where the KDC had written none, while the card rightly
+    said nothing had come.
+
 1.10.324
 
 - Before Windows Server 2025 now has a single scroll bar:
