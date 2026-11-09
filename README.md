@@ -372,6 +372,17 @@ working.
 
 ## Version
 
+1.10.324
+
+- Before Windows Server 2025 now has a single scroll bar:
+  - **one scroll bar** on the lists: the table is sized so the page itself
+    does not scroll, only the rows do, with the pager in sight;
+  - **the strip of its buttons stays put**: the five pages, the window and
+    Look again are pinned under the domain's own strip on every page, the
+    overview and the logs too;
+  - **no scroll bar of their own** on the commands and NXLog inputs on the
+    logs page.
+
 1.10.323
 
 - **Domain → Before Windows Server 2025** is split into pages, chosen by

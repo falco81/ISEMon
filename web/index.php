@@ -4450,9 +4450,13 @@ function srcText(el) {
   .a25-src-h .se-dot{margin-top:0}
   .a25-how summary{cursor:pointer;font-weight:600;font-size:13.5px;margin:4px 0}
   .a25-how h4{margin:14px 0 4px;font-size:13px}
-  .a25-how pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font-size:12px;margin:0 0 8px;max-height:420px}
+  .a25-how pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;font-size:12px;margin:0 0 8px}
   .a25-copy{display:flex;justify-content:flex-end;margin:0 0 4px}
-  .a25-pages{margin:6px 0 16px;scroll-margin-top:72px}
+  .a25-strip{position:sticky;z-index:39;top:58px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    justify-content:space-between;margin:-6px 0 12px;padding:8px 0 10px;background:var(--bg);border-bottom:1px solid var(--line)}
+  .a25-strip .a25-pages{margin:0;padding:0;border:0;background:none;position:static}
+  .a25-strip-right{display:flex;gap:8px;align-items:center}
+  .a25-card > #a25-host > .note:first-child{margin-top:0}
   .a25-fact{appearance:none;border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:4px 6px;border-radius:8px}
   .a25-fact:hover{background:rgba(255,255,255,.05)}
   .a25-tile:disabled{cursor:default;transform:none}
@@ -6110,25 +6114,24 @@ function srcText(el) {
        that a 2016 one lets through, and who here still does it. There only
        while Settings → The domain controllers says to look for it. -->
   <div id="w-page-ad25" hidden>
-  <div class="card full">
-    <h2>Before Windows Server 2025
-      <span class="right">
-        <select id="a25-window" title="How far back it is counted. A window on what is shown; what is kept is the last 90 days.">
-          <option value="24">last 24 hours</option>
-          <option value="168" selected>last week</option>
-          <option value="720">last month</option>
-          <option value="2160">last 90 days</option>
-        </select>
-        <button type="button" class="btn cmd small" id="a25-again">Look again</button>
-      </span></h2>
-    <p class="note">What a domain controller of Windows Server 2025 refuses that one of 2016 lets through -
-      and which machines and accounts here still do it. Counted from the controllers' own logs as they
-      arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that
-      do it; a row opens the events behind it.</p>
+  <!-- The page's own strip: its five pages, the window and Look again -
+       pinned under the domain's strip, so it stays while anything scrolls. -->
+  <div class="a25-strip" id="a25-strip">
     <div class="subtabs a25-pages" id="a25-pages" role="tablist"></div>
+    <span class="a25-strip-right">
+      <select id="a25-window" title="How far back it is counted. A window on what is shown; what is kept is the last 90 days.">
+        <option value="24">last 24 hours</option>
+        <option value="168" selected>last week</option>
+        <option value="720">last month</option>
+        <option value="2160">last 90 days</option>
+      </select>
+      <button type="button" class="btn cmd small" id="a25-again">Look again</button>
+    </span>
+  </div>
+  <div class="card full a25-card">
     <div id="a25-host"></div>
   </div>
-  <div class="card full" id="a25-logs-card" style="margin-top:14px" hidden>
+  <div class="card full" id="a25-logs-card" hidden>
     <h2>What the logs can see</h2>
     <p class="note">Each kind of trouble is written in one log of the controllers. The Security log is
       sent already; the rest only once NXLog sends them and the controllers write them.</p>
@@ -45864,10 +45867,9 @@ function a25Go(page, issue) {
   if (issue !== undefined) A25.issue = issue;
   (A25.st[page] = A25.st[page] || {sort: null, pg: 0}).pg = 0;
   drawAd25();
-  /* The strip of buttons to the top, so that the list and its pager fill
-     the window under it. */
-  var top = page === 'sum' || page === 'logs' ? $('w-page-ad25') : $('a25-pages');
-  if (top) top.scrollIntoView({block: 'start', behavior: 'auto'});
+  /* Back to the top of the page: the strip is pinned, the list fills the rest. */
+  var sc = a25Scroller($('w-page-ad25'));
+  if (sc) sc.scrollTop = 0;
 }
 function drawAd25() {
   var d = A25.d, host = $('a25-host');
@@ -45875,6 +45877,8 @@ function drawAd25() {
   a25Pages();
   $('a25-logs-card').hidden = A25.page !== 'logs';
   host.hidden = A25.page === 'logs';
+  host.parentNode.hidden = A25.page === 'logs';
+  a25Pin();
   /* A list that is already up keeps its row of filters - the search box
      its focus - and only its rows are drawn again (the minute's refresh). */
   if (A25.built === A25.page && $('a25-box') && A25.page !== 'sum' && A25.page !== 'logs' && !d.error) {
@@ -45889,6 +45893,7 @@ function drawAd25() {
   else a25List(host, d);
 }
 function a25Overview(host, d) {
+  host.appendChild(el('p', 'note', 'What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers\' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it.'));
   var issues = (d.issues || []).filter(function (i) { return i.key !== 'ldap-daily'; });
   var bad = issues.filter(function (i) { return i.level === 'crit' && i.n; });
   var warn = issues.filter(function (i) { return i.level === 'warn' && i.n; });
@@ -46215,7 +46220,29 @@ function a25Rows() {
    stays in sight. On a phone the page scrolls as a whole instead. */
 function a25Fit(box) {
   if (!box || window.innerWidth < 700) { if (box) box.style.maxHeight = ''; return; }
-  box.style.maxHeight = Math.max(260, window.innerHeight - box.getBoundingClientRect().top - 72) + 'px';
+  /* First as tall as the window under it, then shorter by whatever still
+     makes the page itself scroll: one scroll bar, the table's. */
+  var sc = a25Scroller(box);
+  if (sc) sc.scrollTop = 0;
+  box.style.maxHeight = Math.max(240, window.innerHeight - box.getBoundingClientRect().top - 60) + 'px';
+  if (sc) {
+    var over = sc.scrollHeight - sc.clientHeight;
+    if (over > 0) box.style.maxHeight = Math.max(240, box.clientHeight - over - 2) + 'px';
+  }
+}
+/* Whatever scrolls the page this sits in: the shell's own column, or the
+   document. */
+function a25Scroller(node) {
+  for (var n = node && node.parentElement; n && n !== document.body; n = n.parentElement) {
+    var oy = getComputedStyle(n).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight) return n;
+  }
+  return document.scrollingElement || document.documentElement;
+}
+/* The page's strip pinned right under the domain's own. */
+function a25Pin() {
+  var strip = $('a25-strip'), top = $('w-pages');
+  if (strip && top) strip.style.top = top.offsetHeight + 'px';
 }
 window.addEventListener('resize', function () { a25Fit($('a25-box')); });
 /* The events behind a row, on the page of the events themselves. */
