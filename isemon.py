@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.328'
+__version__ = '1.10.329'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -9177,15 +9177,24 @@ AD25_SOURCE_OF = {4624: 'security', 4768: 'security', 4769: 'security', 4776: 's
                   3000: 'smb', 8004: 'ntlm', 14: 'kdc', 16: 'kdc', 26: 'kdc', 27: 'kdc'}
 AD25_SOURCE_OF.update({n: 'kdc' for n in range(201, 210)})
 AD25_KEEP_DAYS = 90
+# How much of it the page is handed: the machines and accounts with the most
+# first, and of each kind its rows with the most first. The page says when
+# there were more (1.10.329 - it was a silent 1,000 and 500).
+AD25_SHOW_LIST = 10000
+AD25_SHOW_ROWS = 3000
 AD25_QUEUE_MOST = 200000
 AD25 = {'queue': [], 'sources': {}, 'diag': 0.0, 'dropped': 0}
 AD25_LOCK = threading.Lock()
 _AD25_ETYPE = re.compile(r'Ticket Encryption Type:\s*(0x[0-9A-Fa-f]+)')
 _AD25_RESULT = re.compile(r'(?:Result Code|Failure Code|Status):\s*(0x[0-9A-Fa-f]+)')
-_AD25_KEYS = re.compile(r'Available Keys:\s*([A-Za-z0-9-]+(?:,\s*[A-Za-z0-9-]+)*)')
+# The whole value, up to the next field: "AES-SHA1, RC4", "RC4", but also "N/A"
+# and "-" where the KDC did not look the account's keys up at all (4769 says
+# that of the client in Account Information) - which is not "no AES".
+_AD25_KEYS = re.compile(r'Available Keys:\s*(.*?)(?=\s{2,}|\t|$)')
 _AD25_SECTION = re.compile(r'(Account Information|Service Information|'
                            r'Domain Controller Information|Additional Information):')
-_AD25_OFFERED = re.compile(r'Advertized Etypes:\s*((?:[A-Za-z0-9-]+(?:,\s*)?)+)')
+# Every etype offered, comma or space between them - not the first alone.
+_AD25_OFFERED = re.compile(r'Advertized Etypes:\s*(.*?)(?=\s{2,}|\t|$)')
 _AD25_CLIENT = re.compile(r'Client Address:\s*(?:::ffff:)?([0-9A-Fa-f:.\[\]]+)')
 _AD25_ADDR = re.compile(r'(?:Client IP address|Client Address|Client IP Address|'
                         r'IP Address):\s*\[?([0-9A-Fa-f:.]+?)\]?(?::(\d+))?(?=\s|$)')
@@ -9274,7 +9283,11 @@ def ad25_findings(event, line, whole=''):
             for i, sec in enumerate(marks):
                 part = rest[sec.end():marks[i + 1].start() if i + 1 < len(marks) else len(rest)]
                 keys = _ad25_word(_AD25_KEYS, part)
-                if not keys or 'AES' in keys.upper():
+                named = re.findall(r'AES|RC4|DES', keys.upper())
+                # Only keys that are named and none of them AES: "N/A" and "-"
+                # say the KDC never looked (1.10.329 - every computer of a
+                # domain was counted as having no AES keys off those).
+                if not named or 'AES' in named:
                     continue
                 if sec.group(1) == 'Account Information':
                     who = _ad25_word(r'Account Name:\s*(\S+)', part) or acct
@@ -31363,6 +31376,11 @@ class Storage(object):
             with self.db_write() as db:
                 db.execute('DELETE FROM ad25_seen WHERE day < ?', (today - AD25_KEEP_DAYS,))
                 db.execute("DELETE FROM ad25_seen WHERE issue = 'ntlm' AND day < ?", (today - 31,))
+                # Counted before 1.10.329 off "Available Keys: N/A" - the KDC not
+                # having looked, not an account without AES keys.
+                db.execute("DELETE FROM ad25_seen WHERE issue = 'noaes' AND detail LIKE ? "
+                           "AND detail NOT LIKE ? AND detail NOT LIKE ?",
+                           ('its keys: %', '%RC4%', '%DES%'))
         except sqlite3.Error as e:
             log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
 
@@ -31424,7 +31442,7 @@ class Storage(object):
                 rows = self.db.execute(
                     'SELECT server, client, ip, account, detail, n, t_first, t_last, ckey '
                     'FROM ad25_seen WHERE issue = ? AND day >= ? AND t_last >= ? '
-                    'ORDER BY t_last DESC LIMIT 20000', (key, first_day, since)).fetchall()
+                    'ORDER BY t_last DESC LIMIT 200000', (key, first_day, since)).fetchall()
             except sqlite3.Error as e:
                 return {'error': str(e)[:200], 'issues': [], 'on': ad25_on()}
             merged = {}
@@ -31440,8 +31458,8 @@ class Storage(object):
                 g['first'] = min(g['first'], float(r['t_first'] or 0))
             got = sorted(merged.values(), key=lambda x: (-x['n'], -x['last']))
             rows_all.extend(got)
-            issues.append({'key': key, 'level': level, 'words': words, 'rows': got[:500],
-                           'more': max(0, len(got) - 500), 'n': sum(x['n'] for x in got),
+            issues.append({'key': key, 'level': level, 'words': words, 'rows': got[:AD25_SHOW_ROWS],
+                           'more': max(0, len(got) - AD25_SHOW_ROWS), 'n': sum(x['n'] for x in got),
                            'clients': len({(x['client'] or x['ip']) for x in got
                                            if x['client'] or x['ip']}),
                            'accounts': len({x['account'].lower() for x in got if x['account']}),
@@ -31491,11 +31509,11 @@ class Storage(object):
             for v in d.values():
                 one = dict(v)
                 for k in more:
-                    one[k] = sorted(one[k])[:40]
+                    one[k] = sorted(one[k])[:20]
                     one[k + '_n'] = len(v[k])
                 out.append(one)
             out.sort(key=lambda v: (worst(v['issues']), -v['n']))
-            return out[:1000]
+            return out[:AD25_SHOW_LIST]
         try:
             sources = json.loads(self.get_meta('ad25_sources') or '{}')
         except (ValueError, TypeError):
@@ -31504,6 +31522,8 @@ class Storage(object):
                 'version': __version__, 'site': str(CONFIG.get('site_name') or ''),
                 'machines': listing(machines, ('accounts', 'servers')),
                 'accounts': listing(accounts, ('clients',)),
+                'machines_n': len(machines), 'accounts_n': len(accounts),
+                'show_rows': AD25_SHOW_ROWS, 'show_list': AD25_SHOW_LIST,
                 'sources': sources, 'keep_days': AD25_KEEP_DAYS,
                 'controllers': sorted({x['server'] for x in rows_all if x['server']})}
 

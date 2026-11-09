@@ -45863,8 +45863,8 @@ function a25Pages() {
   var d = A25.d || {}, bar = $('a25-pages');
   if (!bar) return;
   clear(bar);
-  var counts = {machines: (d.machines || []).length, accounts: (d.accounts || []).length,
-                rows: (d.issues || []).reduce(function (n, i) { return n + i.rows.length; }, 0)};
+  var counts = {machines: a25Total(d, 'machines'), accounts: a25Total(d, 'accounts'),
+                rows: a25Total(d, 'rows')};
   A25_PAGES.forEach(function (p) {
     var b = el('button', A25.page === p[0] ? 'on' : '');
     b.type = 'button';
@@ -46048,6 +46048,14 @@ function a25Value(page, r, f) {
   return {what: a25Issue(r.issue).words || r.issue, machine: r.client || '', ip: r.ip || '',
           account: r.account || '', detail: r.detail || '', controller: r.server || '', times: r.n}[f];
 }
+/* How many there are in all, not only how many the page was handed: the
+   daemon hands the machines and accounts with the most first, up to
+   show_list, and of each kind its rows with the most first, up to show_rows. */
+function a25Total(d, page) {
+  if (page === 'machines') return d.machines_n || (d.machines || []).length;
+  if (page === 'accounts') return d.accounts_n || (d.accounts || []).length;
+  return (d.issues || []).reduce(function (n, i) { return n + i.rows.length + (i.more || 0); }, 0);
+}
 function a25All(d, page) {
   if (page === 'machines') return d.machines || [];
   if (page === 'accounts') return d.accounts || [];
@@ -46190,6 +46198,13 @@ function a25Rows() {
   var shown = rows.slice(st.pg * A25.per, (st.pg + 1) * A25.per);
   var found = document.querySelector('.a25-found');
   if (found) found.textContent = rows.length === all ? num(all) + ' row(s)' : num(rows.length) + ' of ' + num(all) + ' row(s)';
+  /* ...and where the daemon handed only those with the most, says so. */
+  var whole = a25Total(d, page);
+  if (found && whole > all) {
+    found.textContent += ' \u00b7 the ' + num(all) + ' with the most of ' + num(whole);
+    found.title = 'Only the ' + num(all) + ' with the most are on this page; a shorter window '
+      + '(the list above) shows fewer, so all of them.';
+  } else if (found) found.title = '';
   clear(box);
   var t = el('table', 'rows a25-t');
   t.dataset.noSort = '1';

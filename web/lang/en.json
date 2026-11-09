@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.328",
+  "version": "1.10.329",
   "made": "2026-11-09",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -38674,6 +38674,10 @@
    "source": "only the country list ({0})",
    "text": "only the country list ({0})"
   },
+  "p.only-the-with-the-most-are.38fa74ad": {
+   "source": "Only the {0} with the most are on this page; a shorter window (the list above) shows fewer, so all of them.",
+   "text": "Only the {0} with the most are on this page; a shorter window (the list above) shows fewer, so all of them."
+  },
   "p.only-to-replace-the-authority-there.69d0b00c": {
    "source": "Only to replace the authority there now{0}. otp → High availability → the cluster's authority, or ca.pem from the file otp made.",
    "text": "Only to replace the authority there now{0}. otp → High availability → the cluster's authority, or ca.pem from the file otp made."
@@ -40037,6 +40041,10 @@
   "p.the-wireless-network-it-joined-as.6e73a87b": {
    "source": "The wireless network it joined, as the controller reported it.{0}",
    "text": "The wireless network it joined, as the controller reported it.{0}"
+  },
+  "p.the-with-the-most-of.66f61370": {
+   "source": "· the {0} with the most of {1}",
+   "text": "· the {0} with the most of {1}"
   },
   "p.the-worked-out-from-the-log.583c3135": {
    "source": "The {0} worked out from the log folders and the servers that have written lately are marked; nothing else is.",

@@ -156,6 +156,17 @@ nothing came from it, NXLog is not sending that log.
 }
 ```
 
+## How much the page shows
+
+The page is handed the 10,000 machines and the 10,000 accounts with the most
+first, and the 3,000 rows of each kind with the most first. The buttons
+count all of them. Where there are more, the list says "the N with the most
+of M". A shorter window shows fewer, so all of them.
+
+An account counts as having **no AES keys** only when the event names its
+keys and none of them is AES. Event 4769 says `Available Keys: N/A` for the
+client: the KDC did not look the keys up, and that is not counted.
+
 ## On the Domain overview
 
 With this page switched on, *Domain → Overview → Worth looking at* also says

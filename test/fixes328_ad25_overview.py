@@ -104,12 +104,45 @@ try:
        w['ldap-clear']['clients'], w['ldap-clear']['accounts']), (1, 1, 1))
     ok('...older than the window: not counted', st.ad25_worth(isemon.time.time() + 60), {})
 
+    print('\nAvailable Keys: N/A (1.10.329)')
+    real = ns['line'](4769, 'A Kerberos service ticket was requested.  Account Information:  '
+        'Account Name: 9809138PCW11$@KR-OLOMOUCKY.INT  Account Domain: KR-OLOMOUCKY.INT  '
+        'Logon GUID: {A81A8543-780F-750F-3842-8D9F6002D1FB}  MSDS-SupportedEncryptionTypes: N/A  '
+        'Available Keys: N/A  Service Information:  Service Name: 9809138PCW11$  '
+        'Service ID: S-1-5-21-1345087706-903693047-1615293757-53352  '
+        'MSDS-SupportedEncryptionTypes: 0x1C (RC4, AES128-SHA96, AES256-SHA96)  '
+        'Available Keys: AES-SHA1, RC4  Domain Controller Information:  '
+        'MSDS-SupportedEncryptionTypes: 0x1F (DES, RC4, AES128-SHA96, AES256-SHA96)  '
+        'Available Keys: AES-SHA1, RC4  Network Information:  Client Address: ::ffff:172.29.185.104  '
+        'Client Port: 60752  Advertized Etypes: AES256-CTS-HMAC-SHA1-96 AES128-CTS-HMAC-SHA1-96 '
+        'RC4-HMAC-NT  Additional Information:  Ticket Options: 0x40810000  '
+        'Ticket Encryption Type: 0x12  Session Encryption Type: 0x12  Failure Code: 0x0  '
+        'Transited Services: -')
+    ok('a computer\'s own 4769, its keys N/A: not an account with no AES keys, nothing at all',
+       isemon.ad25_findings(4769, real.split('| ', 1)[1]), [])
+    ok('...an account that really has RC4 only still is',
+       [x[0] for x in isemon.ad25_findings(4769, real.split('| ', 1)[1].replace(
+           'Available Keys: AES-SHA1, RC4  Domain', 'Available Keys: RC4  Domain'))], ['noaes'])
+    st.db.execute("INSERT INTO ad25_seen (day, issue, ckey, server, client, ip, account, detail, n, "
+                  "t_first, t_last) VALUES (?, 'noaes', 'x', 'dc', '', '', 'pc$', 'its keys: N', 5, ?, ?)",
+                  (int(isemon.time.time() // 86400), isemon.time.time(), isemon.time.time()))
+    st.db.commit() if hasattr(st.db, 'commit') else None
+    st.ad25_tidy()
+    left = [r['account'] for r in st.db.execute("SELECT account FROM ad25_seen WHERE issue = 'noaes'")]
+    ok('...what was counted off N/A before is let go of; the real ones kept',
+       ('pc$' in left, 'svc-sql' in left), (False, True))
+    v = st.ad25_view(24)
+    ok('the page is told how many there are in all', (v['machines_n'], v['accounts_n']),
+       (len(v['machines']), len(v['accounts'])))
+
     print('\nThe page')
     page = (ROOT / 'web' / 'index.php').read_text()
     ok('a card out of these opens Before Windows Server 2025 at its kind',
        ("if (where.ad25 && typeof a25Go === 'function') {" in page,
         "a25Go(where.page === 'accounts' ? 'accounts' : 'machines', String(where.ad25));" in page),
        (True, True))
+    ok('...and says when it was handed only those with the most',
+       "found.textContent += ' \\u00b7 the ' + num(all) + ' with the most of ' + num(whole);" in page)
     src = (ROOT / 'isemon.py').read_text()
     ok('the daemon adds them only with the page on', 'if not ad25_on():\n            return' in src)
 finally:

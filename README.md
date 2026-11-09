@@ -372,6 +372,23 @@ working.
 
 ## Version
 
+1.10.329
+
+- **Before Windows Server 2025** no longer counts every computer as "an
+  account with no AES keys".
+  - Event 4769 says `Available Keys: N/A` for the client in Account
+    Information: the KDC did not look its keys up.
+  - That N/A was read as "no AES". Now only an account whose keys are named,
+    and none of them AES, is counted.
+  - What was counted off N/A before is removed when the daemon starts.
+  - The etypes a client offers are read whole, not only the first one.
+- The page was handed at most 1,000 machines, 1,000 accounts and 500 rows of
+  each kind, and did not say so.
+  - It is now 10,000 machines and accounts, and 3,000 rows of each kind, the
+    ones with the most first.
+  - The buttons count all of them.
+  - Where there are more, the list says "the N with the most of M".
+
 1.10.328
 
 - **Domain → Overview → Worth looking at** now also says what the logs of
