@@ -372,6 +372,22 @@ working.
 
 ## Version
 
+1.10.326
+
+- **Export for analysis** on Before Windows Server 2025 saves one Markdown
+  file to analyse before the change. It holds:
+  - the logs arriving;
+  - each kind of trouble, with what breaks and how to fix it;
+  - each kind's rows, most first;
+  - the worst machines and the worst accounts.
+- 50, 100 or 250 rows of each kind are kept, so the file is tens of kB, not
+  the whole database.
+- Account names, and machine names and addresses, can each be put by
+  stand-ins (account-001, machine-001…), the same name always becoming the
+  same stand-in.
+- The file is made in the browser out of what the page has already loaded,
+  so the daemon is asked for nothing.
+
 1.10.325
 
 - The check for a controller (Before Windows Server 2025 → The logs and how to

@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.325",
+  "version": "1.10.326",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -1892,6 +1892,10 @@
    "source": "account(s),",
    "text": "účtů,"
   },
+  "s.account.7e02135b": {
+   "source": "account-",
+   "text": "account-"
+  },
   "s.account.85dfa32c": {
    "source": "Account",
    "text": "Účet"
@@ -3663,6 +3667,10 @@
   "s.as-the-source-of-a.6b5c8901": {
    "source": "as the source of a",
    "text": "jako zdroj"
+  },
+  "s.as-they-are.e6022560": {
+   "source": "as they are",
+   "text": "as they are"
   },
   "s.as-they-should.80835f68": {
    "source": "as they should",
@@ -5859,6 +5867,10 @@
   "s.computer.c60266a8": {
    "source": "computer",
    "text": "počítač"
+  },
+  "s.computer.c73f61cf": {
+   "source": "computer-",
+   "text": "computer-"
   },
   "s.conf.1f3c4a17": {
    "source": "conf*",
@@ -9128,6 +9140,10 @@
    "source": "Export and import",
    "text": "Export a import"
   },
+  "s.export-for-analysis.e5657602": {
+   "source": "Export for analysis",
+   "text": "Export pro analýzu"
+  },
   "s.export-my-settings.9da82e8a": {
    "source": "Export my settings",
    "text": "Exportovat moje nastavení"
@@ -10276,6 +10292,10 @@
    "source": "), from FortiOS 6 on.",
    "text": "), od FortiOS 6."
   },
+  "s.from-july-2026.4a15ea35": {
+   "source": "from July 2026",
+   "text": "from July 2026"
+  },
   "s.from-now-on-selinux-refuses-what.aeb376c4": {
    "source": "From now on SELinux refuses what its policy does not allow - and stays enforcing after a restart. Nothing isemon needs is missing and nothing was refused. If something stops working, \"Back to permissive\" here (or setenforce 0 on the machine) undoes it at once.",
    "text": "Od teď SELinux odmítá, co jeho politika nedovoluje - a zůstane enforcing i po restartu. Nic, co isemon potřebuje, nechybí a nic nebylo odmítnuto. Když něco přestane fungovat, „Zpět na permissive“ zde (nebo setenforce 0 na stroji) to hned vrátí."
@@ -11051,6 +11071,10 @@
   "s.how-bad-the-firewall-rated-it.a21e4b6a": {
    "source": "how bad the firewall rated it",
    "text": "jak závažně to firewall ohodnotil"
+  },
+  "s.how-bad.764b4aa3": {
+   "source": "How bad",
+   "text": "How bad"
   },
   "s.how-big-this-part-is-right.c2f2957e": {
    "source": "How big this part is right now.",
@@ -13992,6 +14016,10 @@
    "source": "kinds of trouble to put right before July 2026",
    "text": "druhů potíží k opravě do července 2026"
   },
+  "s.kinds-refused-by-2025-stops-working.68f59227": {
+   "source": "Kinds: \"refused by 2025\" stops working on a Windows Server 2025 controller; \"from July 2026\" stops with the Kerberos changes of KB5073381 on every controller; \"to know\" keeps working. Times are UTC.",
+   "text": "Kinds: \"refused by 2025\" stops working on a Windows Server 2025 controller; \"from July 2026\" stops with the Kerberos changes of KB5073381 on every controller; \"to know\" keeps working. Times are UTC."
+  },
   "s.kiribati.3f57adf2": {
    "source": "Kiribati",
    "text": "Kiribati"
@@ -15179,6 +15207,10 @@
   "s.machines-a-windows-nps-server-let.5dc73db6": {
    "source": "Machines a Windows NPS server let on to a socket or a radio, by 802.1X or by MAB.",
    "text": "Zařízení, která Windows NPS server pustil na zásuvku nebo rádio, přes 802.1X nebo MAB."
+  },
+  "s.machines-and-addresses.8122dccc": {
+   "source": "machines and addresses",
+   "text": "machines and addresses"
   },
   "s.machines-by-mac.59a354ea": {
    "source": "Machines, by MAC",
@@ -16460,6 +16492,10 @@
    "source": "Newest record",
    "text": "Nejnovější záznam"
   },
+  "s.newest.d0442824": {
+   "source": "Newest",
+   "text": "Nejnovější"
+  },
   "s.next-by-itself.4cb06533": {
    "source": "Next, by itself",
    "text": "Další, automaticky"
@@ -17111,6 +17147,10 @@
   "s.none-that-were-read.34c514ef": {
    "source": "none that were read",
    "text": "žádné z přečtených"
+  },
+  "s.none-the-detailed-ldap-logging-is.3ebe7620": {
+   "source": "none - the detailed LDAP logging is off",
+   "text": "none - the detailed LDAP logging is off"
   },
   "s.none-yet-isemon-s-own-rules.9d84291f": {
    "source": "None yet - isemon’s own rules below are enough for what it does.",
@@ -18975,6 +19015,14 @@
   "s.one-line-of-the-firewall-s.d763ccfa": {
    "source": "One line of the firewall’s log",
    "text": "Jeden řádek logu firewallu"
+  },
+  "s.one-markdown-file-with-what-this.0f8398e8": {
+   "source": "One Markdown file with what this page shows: each kind of trouble with what breaks and how to put it right, its rows most first, the worst machines and accounts, and which logs are arriving. Made here, out of what is loaded - the window chosen above, a few rows of each and no more.",
+   "text": "Jeden soubor Markdown s tím, co ukazuje tato stránka: každý druh potíží s tím, co se rozbije a jak to opravit, jeho řádky od nejčastějších, nejhorší stroje a účty a které logy přicházejí. Vytvoří se tady, z toho, co je načtené - okno zvolené nahoře, jen pár řádků od každého."
+  },
+  "s.one-markdown-file-with-what-this.3bdaa9a6": {
+   "source": "One Markdown file with what this page shows, for whoever looks at it before the change - a few rows of each kind, names by stand-ins if wanted",
+   "text": "Jeden soubor Markdown s tím, co ukazuje tato stránka, pro analýzu před výměnou - pár řádků od každého druhu, jména případně nahrazená"
   },
   "s.one-more-place-people-may-sign.fc64b7cf": {
    "source": "One more place people may sign in from — an address, a subnet or a run of them. A sign-in from any of them is ordinary; one from anywhere else is marked.",
@@ -21084,6 +21132,10 @@
    "source": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)",
    "text": "vložit klíč do authorized_keys roota: řádek veřejného klíče, soubor .pub, nebo soubor soukromého klíče, z něhož jde dovnitř jen veřejná polovina (jeho heslo: --passphrase-file, ISEMON_KEY_PASSPHRASE, jinak se zeptá)"
   },
+  "s.put-account-names-by-stand-ins.2da46984": {
+   "source": "Put account names by stand-ins (account-001…)",
+   "text": "Nahradit jména účtů zástupnými (account-001…)"
+  },
   "s.put-aside.21f6f651": {
    "source": "Put aside.",
    "text": "Odloženo."
@@ -21183,6 +21235,10 @@
   "s.put-it-right.007c55dd": {
    "source": "Put it right",
    "text": "Napravit"
+  },
+  "s.put-machine-names-and-addresses-by.216e6d77": {
+   "source": "Put machine names and addresses by stand-ins (machine-001…)",
+   "text": "Nahradit jména strojů a adresy zástupnými (machine-001…)"
   },
   "s.put-my-columns-back-as-they.0ac5b767": {
    "source": "Put my columns back as they come",
@@ -21920,6 +21976,10 @@
    "source": "refused before a code was looked at",
    "text": "odmítnuto dřív, než se kontroloval kód"
   },
+  "s.refused-by-2025.808adde6": {
+   "source": "refused by 2025",
+   "text": "refused by 2025"
+  },
   "s.refused-by-a-person-s-downloadable.18706ff6": {
    "source": "Refused by a person’s downloadable ACL",
    "text": "Odmítnuto stahovatelným ACL dané osoby"
@@ -22603,6 +22663,10 @@
   "s.rows-indexes-the-rest.fc683a63": {
    "source": "Rows · indexes · the rest",
    "text": "Řádky · indexy · ostatní"
+  },
+  "s.rows-of-each-kind.0f7d96ca": {
+   "source": "Rows of each kind",
+   "text": "Řádků od každého druhu"
   },
   "s.rows-written-meanwhile-elsewhere.f117b8dc": {
    "source": "rows written meanwhile elsewhere",
@@ -31852,6 +31916,10 @@
    "source": "To keep them for good",
    "text": "Aby platila natrvalo"
   },
+  "s.to-know.3e384013": {
+   "source": "to know",
+   "text": "to know"
+  },
   "s.to-look-at.6bd377a5": {
    "source": "to look at",
    "text": "k prohlédnutí"
@@ -36378,6 +36446,10 @@
    "source": "and in {0}",
    "text": "a v {0}"
   },
+  "p.and-more-fewer-times-each.ca19d425": {
+   "source": "…and {0} more, fewer times each.",
+   "text": "…and {0} more, fewer times each."
+  },
   "p.and-more-range-s.d14fbd7e": {
    "source": "and {0} more range(s)",
    "text": "a {0} dalších rozsahů"
@@ -36710,6 +36782,10 @@
    "source": "· {0} connection(s) in its table",
    "text": "· {0} spojení v jeho tabulce"
   },
+  "p.controllers-seen.21e1ab39": {
+   "source": "- Controllers seen: {0}",
+   "text": "- Controllers seen: {0}"
+  },
   "p.copied.38659fa9": {
    "source": "copied: {0}",
    "text": "zkopírováno: {0}"
@@ -36853,6 +36929,10 @@
   "p.directories-they-are-two-accounts-and.39111fa6": {
    "source": "directories. They are two accounts and they can say different things: different groups, and one of them locked out while the other is not. The one shown first is {0} What the other one holds is underneath.",
    "text": "adresářích. Jsou to dva účty a mohou se lišit: různé skupiny, a jeden může být uzamčen, zatímco druhý ne. Jako první je zobrazen {0} Co obsahuje ten druhý, je pod ním."
+  },
+  "p.directory-service-2889-who-binds-in.084f5ad1": {
+   "source": "Directory Service 2889 (who binds in the clear or unsigned): {0}",
+   "text": "Directory Service 2889 (who binds in the clear or unsigned): {0}"
   },
   "p.disabled-no-address.1c739c61": {
    "source": "disabled=no address={0}",
@@ -37161,6 +37241,10 @@
   "p.first-record.c122041a": {
    "source": "first record: {0}",
    "text": "první záznam: {0}"
+  },
+  "p.fix.480540d5": {
+   "source": "- Fix: {0}",
+   "text": "- Fix: {0}"
   },
   "p.flags-svg.0817db2b": {
    "source": "flags/{0}.svg",
@@ -37646,6 +37730,10 @@
    "source": "isemon-backup-{0}",
    "text": "isemon-backup-{0}"
   },
+  "p.isemon-before-2025-md.4f5075ec": {
+   "source": "isemon-before-2025-{0}.md",
+   "text": "isemon-before-2025-{0}.md"
+  },
   "p.isemon-is-running-but-the-parts.0c74eabc": {
    "source": "isemon {0} is running, but the parts root installs are from before it",
    "text": "Běží isemon {0}, ale části, které instaluje root, jsou starší"
@@ -38022,6 +38110,10 @@
    "source": "{0} machine(s)",
    "text": "{0} zařízení"
   },
+  "p.machine.4c9837df": {
+   "source": "machine-{0}",
+   "text": "machine-{0}"
+  },
   "p.machines.8f209a19": {
    "source": "{0} machines",
    "text": "{0} zařízení"
@@ -38037,6 +38129,10 @@
   "p.made-on-a-night-when-the.d83c3a5e": {
    "source": "Made on a night when the program that dumps this engine was not on the machine, so a portable copy was made instead. It is a whole copy and goes back into any of the three, and it was taken off {0}.",
    "text": "Vytvořeno v noci, kdy na počítači nebyl program pro dump tohoto enginu, takže místo toho vznikla přenositelná kopie. Je to úplná kopie, lze ji obnovit do kteréhokoli ze tří enginů a byla pořízena z {0}."
+  },
+  "p.made-utc-isemon.da6dce19": {
+   "source": "- Made: {0} UTC, isemon {1}{2}",
+   "text": "- Made: {0} UTC, isemon {1}{2}"
   },
   "p.make-a-certificate-for.82a5c963": {
    "source": "Make a certificate for {0}",
@@ -38157,6 +38253,10 @@
   "p.named-whole-by.6d9a902c": {
    "source": "· named whole by {0}",
    "text": "· celé pojmenováno podle {0}"
+  },
+  "p.names.1b551256": {
+   "source": "- Names: {0}",
+   "text": "- Names: {0}"
   },
   "p.needed-after-the-update.2b173de5": {
    "source": "needed after the update - {0}",
@@ -38798,6 +38898,10 @@
    "source": "{0}.pub",
    "text": "{0}.pub"
   },
+  "p.put-by-stand-ins.20db7320": {
+   "source": "put by stand-ins ({0})",
+   "text": "put by stand-ins ({0})"
+  },
   "p.put-on-in-s.84078b62": {
    "source": "{0} put on in {1} s{2}",
    "text": "{0} vloženo za {1} s{2}"
@@ -39057,6 +39161,10 @@
   "p.said.5d5a6885": {
    "source": "said{0}",
    "text": "said{0}"
+  },
+  "p.saved-kb.497fd000": {
+   "source": "saved - {0} kB",
+   "text": "uloženo - {0} kB"
   },
   "p.saved.cdf8bf34": {
    "source": ", saved {0}",
@@ -40346,6 +40454,10 @@
    "source": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory.",
    "text": "Co o tomto účtu právě teď říká Active Directory: kdo to je, ve kterých skupinách je, zda je účet vypnutý, uzamčený nebo vypršelý a kdy bylo naposledy nastaveno heslo. Dotaz jde na adresář, který obsahuje {0}; nic zde nikdy do adresáře nezapisuje."
   },
+  "p.what-breaks.53c6e5c0": {
+   "source": "- What breaks: {0}",
+   "text": "- What breaks: {0}"
+  },
   "p.what-came-back-when-reaching-whole.205879e0": {
    "source": "What came back when reaching {0}, whole:",
    "text": "Co se vrátilo při připojování k {0}, celé:"
@@ -40481,6 +40593,10 @@
   "p.win-events-kind-logon-kerberos-ntlm.c4ec8ba9": {
    "source": "win-events&kind=logon,kerberos,ntlm,explicit&choices=0&limit={0}&offset={1}{2}{3}{4}",
    "text": "win-events&kind=logon,kerberos,ntlm,explicit&choices=0&limit={0}&offset={1}{2}{3}{4}"
+  },
+  "p.window-the-last-hour-s-counted.59d5f30a": {
+   "source": "- Window: the last {0} hour(s); counted from the controllers' own logs as they are read",
+   "text": "- Window: the last {0} hour(s); counted from the controllers' own logs as they are read"
   },
   "p.with-a-one-time-password-at.a9ea78ad": {
    "source": "With a one-time password, at the token server: {0} refusal(s), from {1}.",
@@ -40711,6 +40827,10 @@
   "r.an-openssh-private-key-whole-including.5cdbf72c": {
    "source": "An OpenSSH private key, whole, including its <code>BEGIN</code> and <code>END</code> lines. It is kept in this machine’s database, sealed, and never shown back. Its public half is worked out here, so you do not have to hand that over as well.",
    "text": "Soukromý klíč OpenSSH, celý, včetně řádků <code>BEGIN</code> a <code>END</code>. Uloží se zapečetěný do databáze tohoto stroje a už se nikdy neukáže. Veřejná polovina se dopočítá tady, takže ji nemusíte dávat zvlášť."
+  },
+  "r.and-more-fewer-times-each.41264097": {
+   "source": "<br>…and {0} more, fewer times each.",
+   "text": "<br>…and {0} more, fewer times each."
   },
   "r.and-of-them-offering-a-name.c805d7d9": {
    "source": ", and <b>{0}</b> of them offering a name that does not exist ({1}) goes out for good at once",
@@ -43325,10 +43445,6 @@
   "s.newer.1d47386a": {
    "source": "newer",
    "text": "novější"
-  },
-  "s.newest.d0442824": {
-   "source": "Newest",
-   "text": "Nejnovější"
   },
   "s.next-tries-it-exactly-as-isemon.d39a6b9a": {
    "source": "Next tries it, exactly as isemon would - nothing is written.",

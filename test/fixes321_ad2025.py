@@ -163,6 +163,9 @@ try:
         "ad25Show(!!s.ad2025_on)" in page), (True, True, True))
     ok('...and the NXLog inputs for the Directory Service log on it',
        '&lt;Select Path="Directory Service"&gt;' in page)
+    ok('the export for analysis (1.10.326): a few rows of each kind, names by stand-ins if wanted',
+       ("function a25Markdown(d, per, hideAcc, hideMach)" in page, "var rows = i.rows.slice(0, per);" in page,
+        "[50, 100, 250].forEach" in page), (True, True, True))
     src = (ROOT / 'isemon.py').read_text()
     ok('the status says so only with the controllers\' logs on',
        "'ad2025_on': bool(self.winsec_on() and int(CONFIG.get('winsec_ad2025') or 0))," in src)

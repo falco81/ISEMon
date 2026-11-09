@@ -4455,7 +4455,9 @@ function srcText(el) {
   .a25-strip{position:sticky;z-index:39;top:58px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
     justify-content:space-between;margin:-6px 0 12px;padding:8px 0 10px;background:var(--bg);border-bottom:1px solid var(--line)}
   .a25-strip .a25-pages{margin:0;padding:0;border:0;background:none;position:static}
-  .a25-strip-right{display:flex;gap:8px;align-items:center}
+  .a25-strip-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .a25-exp{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
+  .a25-exp-tick{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:13.5px;cursor:pointer}
   .a25-card > #a25-host > .note:first-child{margin-top:0}
   .a25-fact{appearance:none;border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:4px 6px;border-radius:8px}
   .a25-fact:hover{background:rgba(255,255,255,.05)}
@@ -6126,6 +6128,7 @@ function srcText(el) {
         <option value="2160">last 90 days</option>
       </select>
       <button type="button" class="btn cmd small" id="a25-again">Look again</button>
+      <button type="button" class="btn cmd small" id="a25-export" title="One Markdown file with what this page shows, for whoever looks at it before the change - a few rows of each kind, names by stand-ins if wanted">Export for analysis</button>
     </span>
   </div>
   <div class="card full a25-card">
@@ -46248,6 +46251,127 @@ function a25Pin() {
   if (strip && top) strip.style.top = top.offsetHeight + 'px';
 }
 window.addEventListener('resize', function () { a25Fit($('a25-box')); });
+/* One file for whoever looks at all this before the change (1.10.326):
+   what each kind of trouble is, its worst rows, the worst machines and
+   accounts, and what the logs can see - as Markdown, made here in the page
+   out of what is already loaded, a few rows of each and no more. Names can
+   be put by stand-ins first. */
+function a25Export() {
+  var d = A25.d;
+  if (!d) return;
+  var per, hideAcc, hideMach;
+  modal('Export for analysis', function (body) {
+    body.appendChild(el('p', 'note', 'One Markdown file with what this page shows: each kind of trouble with what breaks and how to put it right, its rows most first, the worst machines and accounts, and which logs are arriving. Made here, out of what is loaded - the window chosen above, a few rows of each and no more.'));
+    var row = el('div', 'a25-exp');
+    row.appendChild(el('label', '', 'Rows of each kind'));
+    per = el('select');
+    [50, 100, 250].forEach(function (n) { var o = el('option', '', String(n)); o.value = String(n); per.appendChild(o); });
+    per.value = '100';
+    row.appendChild(per);
+    body.appendChild(row);
+    function tick(words, on) {
+      var l = el('label', 'a25-exp-tick');
+      var c = el('input'); c.type = 'checkbox'; c.checked = !!on;
+      l.appendChild(c);
+      l.appendChild(document.createTextNode(' ' + words));
+      body.appendChild(l);
+      return c;
+    }
+    hideAcc = tick('Put account names by stand-ins (account-001…)', false);
+    hideMach = tick('Put machine names and addresses by stand-ins (machine-001…)', false);
+  }, [{words: 'Cancel', close: true}, {words: 'Download', cls: 'primary', icon: 'download', go: function () {
+    var text = a25Markdown(d, Number(per.value) || 100, hideAcc.checked, hideMach.checked);
+    var stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+    saveText('isemon-before-2025-' + stamp + '.md', text);
+    closeModal();
+    toast('saved - ' + Math.max(1, Math.round(text.length / 1024)) + ' kB', 'good');
+  }}]);
+}
+function a25Markdown(d, per, hideAcc, hideMach) {
+  var acc = {}, mach = {}, nA = 0, nM = 0;
+  function pad(n) { return ('00' + n).slice(-3); }
+  function A(name) {
+    if (!name || !hideAcc) return name || '';
+    var k = String(name).toLowerCase();
+    if (!acc[k]) acc[k] = (/\$$|\$@/.test(name) ? 'computer-' : 'account-') + pad(++nA);
+    return acc[k];
+  }
+  function M(name) {
+    if (!name || !hideMach) return name || '';
+    var k = String(name).toLowerCase();
+    if (!mach[k]) mach[k] = 'machine-' + pad(++nM);
+    return mach[k];
+  }
+  function cell(v) { return String(v === undefined || v === null ? '' : v).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim() || '-'; }
+  function when(ts) { return ts ? new Date(ts * 1000).toISOString().slice(0, 16).replace('T', ' ') : '-'; }
+  function table(head, rows) {
+    var out = ['| ' + head.join(' | ') + ' |', '|' + head.map(function () { return '---'; }).join('|') + '|'];
+    rows.forEach(function (r) { out.push('| ' + r.map(cell).join(' | ') + ' |'); });
+    return out.join('\n');
+  }
+  var L = [];
+  var src = d.sources || {};
+  L.push('# isemon - before Windows Server 2025');
+  L.push('');
+  L.push('- Made: ' + when(Date.now() / 1000) + ' UTC, isemon ' + (d.version || '?') + (d.site ? ', ' + d.site : ''));
+  L.push('- Window: the last ' + d.hours + ' hour(s); counted from the controllers\' own logs as they are read');
+  L.push('- Controllers seen: ' + ((d.controllers || []).join(', ') || '-'));
+  L.push('- Names: ' + (hideAcc || hideMach ? 'put by stand-ins (' + [hideAcc ? 'accounts' : '', hideMach ? 'machines and addresses' : ''].filter(Boolean).join(', ') + ')' : 'as they are'));
+  L.push('');
+  L.push('## The logs arriving');
+  L.push('');
+  L.push(table(['Log', 'Newest', 'Controllers'], A25_SOURCES.map(function (s) {
+    var seen = src[s[0]] || {}, ks = Object.keys(seen);
+    var newest = Math.max.apply(null, [0].concat(ks.map(function (k) { return Number(seen[k]) || 0; })));
+    return [s[1], newest ? when(newest) : 'nothing', ks.length];
+  })));
+  L.push('');
+  L.push('Directory Service 2889 (who binds in the clear or unsigned): ' + (src._diag ? 'last ' + when(src._diag) : 'none - the detailed LDAP logging is off'));
+  L.push('');
+  L.push('## Each kind of trouble');
+  L.push('');
+  L.push(table(['Kind', 'How bad', 'Machines', 'Accounts', 'Times', 'Last'], (d.issues || []).map(function (i) {
+    return [i.words, {crit: 'refused by 2025', warn: 'from July 2026', info: 'to know'}[i.level] || i.level,
+            i.clients, i.accounts, i.n, i.n ? when(i.last) : '-'];
+  })));
+  (d.issues || []).forEach(function (i) {
+    if (!i.n && !i.rows.length) return;
+    var say = A25_SAY[i.key] || {};
+    L.push('');
+    L.push('### ' + i.words + ' (' + i.rows.length + (i.more ? '+' + i.more : '') + ' row(s))');
+    L.push('');
+    if (say.breaks) L.push('- What breaks: ' + say.breaks);
+    if (say.fix) L.push('- Fix: ' + say.fix);
+    L.push('');
+    var rows = i.rows.slice(0, per);
+    L.push(table(['Machine', 'Address', 'Account', 'What it was', 'Controller', 'Times', 'First', 'Last'], rows.map(function (r) {
+      return [M(r.client), M(r.ip), A(r.account), r.detail, r.server, r.n, when(r.first), when(r.last)];
+    })));
+    if (i.rows.length + (i.more || 0) > rows.length) L.push('\n…and ' + (i.rows.length + (i.more || 0) - rows.length) + ' more, fewer times each.');
+  });
+  var ms = (d.machines || []).filter(function (m) { return a25Worst(m.issues) < 2; }).slice(0, per);
+  L.push('');
+  L.push('## The machines, worst first (' + ms.length + ' of ' + (d.machines || []).length + '; NTLM alone left out)');
+  L.push('');
+  L.push(table(['Machine', 'Address', 'What it does', 'Accounts from it', 'Controllers', 'Times', 'Last'], ms.map(function (m) {
+    return [M(m.name), M(m.ip), Object.keys(m.issues).map(function (k) { return (a25Issue(k).words || k) + ' ' + m.issues[k]; }).join('; '),
+            (m.accounts || []).slice(0, 5).map(A).join(', ') + (m.accounts_n > 5 ? ' +' + (m.accounts_n - 5) : ''),
+            (m.servers || []).join(', '), m.n, when(m.last)];
+  })));
+  var as = (d.accounts || []).filter(function (a) { return a25Worst(a.issues) < 2; }).slice(0, per);
+  L.push('');
+  L.push('## The accounts, worst first (' + as.length + ' of ' + (d.accounts || []).length + '; NTLM alone left out)');
+  L.push('');
+  L.push(table(['Account', 'Kind', 'What it does', 'From', 'Times', 'Last'], as.map(function (a) {
+    return [A(a.name), a.computer ? 'computer' : 'account',
+            Object.keys(a.issues).map(function (k) { return (a25Issue(k).words || k) + ' ' + a.issues[k]; }).join('; '),
+            (a.clients || []).slice(0, 5).map(M).join(', ') + (a.clients_n > 5 ? ' +' + (a.clients_n - 5) : ''), a.n, when(a.last)];
+  })));
+  L.push('');
+  L.push('---');
+  L.push('Kinds: "refused by 2025" stops working on a Windows Server 2025 controller; "from July 2026" stops with the Kerberos changes of KB5073381 on every controller; "to know" keeps working. Times are UTC.');
+  return L.join('\n') + '\n';
+}
 /* The events behind a row, on the page of the events themselves. */
 function a25Events(what) {
   if (!what) return;
@@ -46315,6 +46439,8 @@ function ad25Show(on) {
 }
 $('a25-window').onchange = function () { A25.built = ''; loadAd25(); };
 $('a25-again').onclick = function () { loadAd25(); };
+setButtonIcon($('a25-export'), 'download', 'Export for analysis');
+$('a25-export').onclick = function () { if (A25.d) a25Export(); };
 /* Asked again every minute while the page is the one being read - not while
    somebody is typing in its search. */
 setInterval(function () {

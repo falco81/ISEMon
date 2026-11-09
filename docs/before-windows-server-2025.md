@@ -186,6 +186,17 @@ The page is split into five pages, chosen by the buttons at its top:
 - **Every row**: every finding, searchable the same way.
 - **The logs and how to send them**.
 
+**Export for analysis** (in the page's strip) saves one Markdown file. It
+holds:
+
+- the logs arriving;
+- each kind of trouble, with what breaks and how to fix it;
+- its rows, most first: 50, 100 or 250 of each kind;
+- the worst machines and the worst accounts.
+
+Account names, and machine names and addresses, can be put by stand-ins. The
+file is made in the browser out of what is loaded, and is tens of kB.
+
 Each list has a heading that stays put while its rows scroll, sorts by any
 column over all of its rows, and uses the same pager as the other lists.
 Pressing a row opens the events behind it.
