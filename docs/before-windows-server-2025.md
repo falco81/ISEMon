@@ -15,13 +15,14 @@ off, nothing is counted and the page is not there.
 | LDAP simple bind in the clear | refused | Directory Service | 2889 (binding type 1) | simple bind on 389 without TLS: `strongerAuthRequired`, result 8 | LDAPS on 636 or StartTLS; the controller by FQDN; trust the root CA |
 | LDAP bind without signing | refused | Directory Service | 2889 (binding type 0) | SASL (NTLM/Kerberos) bind on 389 without signing | signing/sealing in the library, or LDAPS |
 | LDAP channel binding failed | refused | Directory Service | 3039 | NTLM/Kerberos over LDAPS without a channel binding token, once required | a library that sends the token, or a simple bind over LDAPS |
-| NTLMv1 | refused | Security | 4624 `Package Name (NTLM only): NTLM V1` | NTLMv1 is gone | LmCompatibilityLevel 5, or a newer device |
+| NTLMv1 | refused | Security | 4624 `Package Name (NTLM only): NTLM V1` or `LM`; not ANONYMOUS LOGON, which Windows writes as NTLM V1 whatever the client can do | NTLMv1 is gone | LmCompatibilityLevel 5, or a newer device |
 | Kerberos with DES | refused | Security | 4768/4769, ticket type 0x1/0x3 | DES is not there | take DES off the account |
 | Kerberos with RC4 | from July 2026 | Security, System (KDC) | 4768/4769 type 0x17/0x18; a client offering no AES; KDC 201–209 | no RC4 for accounts that do not ask for it (KB5073381) | `msDS-SupportedEncryptionTypes` 24, password reset, AES keytabs |
-| An account with no AES keys | from July 2026 | Security, System (KDC) | 4768/4769 `Available Keys` without AES; KDC 14/16/26/27 | its tickets fail without RC4 | reset its password |
+| An account with no AES keys | from July 2026 | Security, System (KDC) | 4768/4769 `Available Keys` naming keys, none AES (`N/A` is not counted); KDC 14/16/26/27 where the account has no AES (17/18) - where it has, the client asked only RC4 and it counts as RC4 | its tickets fail without RC4 | reset its password |
 | SMB1 to a controller | refused | SMBServer/Audit | 3000 | SMB1 is not on 2025 | SMB 2/3 |
 | A password handed over as it is | info | Security | 4624 logon type 8 | in the clear it is refused (2889 says which) | LDAPS |
-| NTLM | info | Security, NTLM/Operational | 4776, 8004 | still works (NTLMv2), on its way out; Protected Users cannot use it | Kerberos: names, SPNs |
+| NTLM | info | Security | 4776 | still works (NTLMv2), on its way out; Protected Users cannot use it | Kerberos: names, SPNs |
+| NTLM, by the server it was for | info | NTLM/Operational | 8004 | the same NTLM as 4776, kept apart so it is not counted twice | the servers named most first |
 | The controller's daily count | info | Directory Service | 2887, 3040, 3041 | — | the detailed logging names the clients |
 
 ### 3. Whether everything on a controller is as it should be
@@ -240,6 +241,15 @@ file is made in the browser out of what is loaded, and is tens of kB.
 Each list has a heading that stays put while its rows scroll, sorts by any
 column over all of its rows, and uses the same pager as the other lists.
 Pressing a row opens the events behind it.
+
+## What to fix, tile by tile
+
+`docs/before-windows-server-2025-fixes.md` takes every tile in turn:
+- what it means;
+- whether it blocks the move;
+- how to find who does it;
+- the fix, with commands;
+- how to check that the fix worked.
 
 ## What the controllers have to send
 

@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.329",
+  "version": "1.10.330",
   "made": "2026-11-09",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -6031,10 +6031,6 @@
   "s.content.2459603b": {
    "source": "Content:",
    "text": "Content:"
-  },
-  "s.controller-days.7b1ea632": {
-   "source": "controller days",
-   "text": "controller days"
   },
   "s.controller.a36a5ffa": {
    "source": "Controller",
@@ -17512,6 +17508,10 @@
    "source": "not said in the lines kept",
    "text": "not said in the lines kept"
   },
+  "s.not-said-yet-once-a-day.38f7e403": {
+   "source": "not said yet - once a day",
+   "text": "not said yet - once a day"
+  },
   "s.not-said-yet-root-looks-within.42a59315": {
    "source": "Not said yet - root looks within a minute.",
    "text": "Not said yet - root looks within a minute."
@@ -24596,6 +24596,10 @@
    "source": "Start the move",
    "text": "Start the move"
   },
+  "s.start-with-the-servers-named-most.5e10fecb": {
+   "source": "Start with the servers named most: a name in place of an address, the service name (SPN) in place.",
+   "text": "Start with the servers named most: a name in place of an address, the service name (SPN) in place."
+  },
   "s.start.2b020927": {
    "source": "start",
    "text": "start"
@@ -29796,6 +29800,10 @@
    "source": "The same in 3DES / SHA-1 - Windows Server 2016 and older, Java 8.",
    "text": "The same in 3DES / SHA-1 - Windows Server 2016 and older, Java 8."
   },
+  "s.the-same-ntlm-as-above-said.a6ccd7e8": {
+   "source": "The same NTLM as above, said by the NTLM audit (NTLM/Operational 8004) with the server it was for - nothing extra breaks.",
+   "text": "The same NTLM as above, said by the NTLM audit (NTLM/Operational 8004) with the server it was for - nothing extra breaks."
+  },
   "s.the-same-session-in-other-lines.33df4372": {
    "source": "The same session, in other lines",
    "text": "The same session, in other lines"
@@ -33280,9 +33288,9 @@
    "source": "what a disk that spins writes in a second in the background",
    "text": "what a disk that spins writes in a second in the background"
   },
-  "s.what-a-domain-controller-of-windows.d3626c12": {
-   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it.",
-   "text": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it."
+  "s.what-a-domain-controller-of-windows.48a1f3a5": {
+   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it. Counted by the day: a window takes in whole days, so its first day may start a little before it.",
+   "text": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it. Counted by the day: a window takes in whole days, so its first day may start a little before it."
   },
   "s.what-a-domain-controller-saw.1a05643f": {
    "source": "what a domain controller saw",
@@ -36650,6 +36658,10 @@
    "source": "{0} big sender(s) kept {1} days",
    "text": "{0} big sender(s) kept {1} days"
   },
+  "p.bind-s-a-day-in-the.e68b1005": {
+   "source": "bind(s) a day · {0} in the clear, {1} unsigned · {2} controller(s)",
+   "text": "bind(s) a day · {0} in the clear, {1} unsigned · {2} controller(s)"
+  },
   "p.blocked-limit-1-parts-bans-counting.3fed2073": {
    "source": "blocked&limit=1&parts=bans&counting={0}",
    "text": "blocked&limit=1&parts=bans&counting={0}"
@@ -39677,6 +39689,10 @@
   "p.the-controllers-are-not-marked-anywhere.40d989fa": {
    "source": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}",
    "text": "The controllers are not marked anywhere on this page. This program marks one out of what the DOMAIN says is one — a computer account whose primary group is Domain Controllers — and Active Directory is not switched on here, so nobody has been asked.{0}"
+  },
+  "p.the-controllers-counted-ldap-bind-s.c306d63e": {
+   "source": "The controllers counted {0} LDAP bind(s) in the clear and {1} unsigned in their last day, but not who: switch on the detailed LDAP logging (The logs and how to send them, step 1).",
+   "text": "The controllers counted {0} LDAP bind(s) in the clear and {1} unsigned in their last day, but not who: switch on the detailed LDAP logging (The logs and how to send them, step 1)."
   },
   "p.the-copies-of-logs-in-older.bf08a9cf": {
    "source": "the copies of logs in {0} older than",

@@ -4413,6 +4413,7 @@ function srcText(el) {
   .a25-hero.warn{border-color:rgba(210,153,34,.45);background:linear-gradient(135deg,rgba(210,153,34,.13),var(--panel) 70%)}
   .a25-hero.ok{border-color:rgba(63,185,80,.45);background:linear-gradient(135deg,rgba(63,185,80,.12),var(--panel) 70%)}
   .a25-hero-big{display:flex;align-items:baseline;gap:12px;min-width:0}
+  .a25-hero-note{flex-basis:100%;font-size:12.5px;color:var(--tx-dim);line-height:1.45}
   .a25-hero-n{font-size:44px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
   .a25-hero.crit .a25-hero-n{color:var(--crit)} .a25-hero.warn .a25-hero-n{color:var(--warn)} .a25-hero.ok .a25-hero-n{color:var(--ok)}
   .a25-hero-w{font-size:15px;color:var(--tx-dim);max-width:340px}
@@ -11286,6 +11287,9 @@ function onTab(name) {
   if (name === 'logins') { loadPassed(); if (PKIND === 'vpn') loadAcls(); }
   if (name === 'router') { if (!$('router-out').firstChild) readRouter(); }
   if (name === 'windows') loadWindows();
+  /* Back on Before Windows Server 2025 from another tab: its list fitted
+     again to the window as it is now - one scroll bar, not two (1.10.330). */
+  if (name === 'windows' && typeof a25FitSoon === 'function') a25FitSoon();
   if (name === 'traffic') { loadTraffic(); if (typeof tFitSoon === 'function') tFitSoon(); }
   if (name === 'events') loadEvents();
   if (name === 'acmelog' && typeof loadAcmeLog === 'function') loadAcmeLog();
@@ -21025,6 +21029,7 @@ function winShowPage(which) {
   $('w-page-events').hidden = WPAGE_SHOWN !== 'events';
   $('w-page-ad25').hidden = WPAGE_SHOWN !== 'ad25';
   if (WPAGE_SHOWN === 'ad25' && typeof loadAd25 === 'function') loadAd25();
+  if (WPAGE_SHOWN === 'ad25' && typeof a25FitSoon === 'function') a25FitSoon();
   Array.prototype.forEach.call($('w-pages').children, function (b) {
     var mine = b.dataset.page === WPAGE_SHOWN;
     b.classList.toggle('on', mine);
@@ -45819,6 +45824,8 @@ var A25_SAY = {
                 fix: 'Nothing, where it is over LDAPS; otherwise as above.'},
   'ntlm': {icon: 'person', breaks: 'NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all.',
            fix: 'Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place.'},
+  'ntlm-srv': {icon: 'person', breaks: 'The same NTLM as above, said by the NTLM audit (NTLM/Operational 8004) with the server it was for - nothing extra breaks.',
+               fix: 'Start with the servers named most: a name in place of an address, the service name (SPN) in place.'},
   'ldap-daily': {icon: 'chart', breaks: 'The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.',
                  fix: 'The detailed logging (below) says who they are.'}
 };
@@ -45908,16 +45915,27 @@ function drawAd25() {
   else a25List(host, d);
 }
 function a25Overview(host, d) {
-  host.appendChild(el('p', 'note', 'What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers\' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it.'));
+  host.appendChild(el('p', 'note', 'What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers\' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it. Counted by the day: a window takes in whole days, so its first day may start a little before it.'));
   var issues = (d.issues || []).filter(function (i) { return i.key !== 'ldap-daily'; });
   var bad = issues.filter(function (i) { return i.level === 'crit' && i.n; });
   var warn = issues.filter(function (i) { return i.level === 'warn' && i.n; });
-  var hero = el('div', 'a25-hero ' + (bad.length ? 'crit' : warn.length ? 'warn' : 'ok'));
+  /* The controllers' own daily count (2887) knows of LDAP binds 2025
+     refuses even with the detailed logging (2889) off - so "nothing here"
+     is not said while it counts any that no tile shows (1.10.330). */
+  var daily = d.daily || {};
+  var ldapSeen = issues.some(function (i) { return (i.key === 'ldap-clear' || i.key === 'ldap-unsigned') && i.n; });
+  var unseen = !ldapSeen && ((daily.simple || 0) + (daily.unsigned || 0)) > 0;
+  var hero = el('div', 'a25-hero ' + (bad.length || unseen ? 'crit' : warn.length ? 'warn' : 'ok'));
   var big = el('div', 'a25-hero-big');
-  big.appendChild(el('span', 'a25-hero-n', num(bad.length + warn.length)));
-  big.appendChild(el('span', 'a25-hero-w', bad.length ? 'kinds of trouble a 2025 controller would refuse'
+  big.appendChild(el('span', 'a25-hero-n', num(bad.length + warn.length + (unseen ? 1 : 0))));
+  big.appendChild(el('span', 'a25-hero-w', bad.length || unseen ? 'kinds of trouble a 2025 controller would refuse'
     : warn.length ? 'kinds of trouble to put right before July 2026' : 'nothing here a 2025 controller would refuse'));
   hero.appendChild(big);
+  if (unseen) {
+    hero.appendChild(el('div', 'a25-hero-note', 'The controllers counted ' + num(daily.simple || 0)
+      + ' LDAP bind(s) in the clear and ' + num(daily.unsigned || 0) + ' unsigned in their last day, '
+      + 'but not who: switch on the detailed LDAP logging (The logs and how to send them, step 1).'));
+  }
   var ms = (d.machines || []).filter(function (m) { return a25Worst(m.issues) < 2; });
   var as = (d.accounts || []).filter(function (a) { return a25Worst(a.issues) < 2; });
   var facts = el('div', 'a25-hero-facts');
@@ -45946,8 +45964,12 @@ function a25Overview(host, d) {
     t.appendChild(top);
     var nums = el('div', 'a25-tile-n');
     if (i.key === 'ldap-daily') {
-      nums.appendChild(el('b', '', i.rows.length ? num(i.rows.length) : '–'));
-      nums.appendChild(el('span', '', i.rows.length ? 'controller days' : 'not said'));
+      var dl = (daily.simple || 0) + (daily.unsigned || 0);
+      nums.appendChild(el('b', '', daily.controllers ? num(dl) : '–'));
+      nums.appendChild(el('span', '', daily.controllers
+        ? ('bind(s) a day · ' + num(daily.simple || 0) + ' in the clear, ' + num(daily.unsigned || 0)
+           + ' unsigned · ' + num(daily.controllers) + ' controller(s)')
+        : 'not said yet - once a day'));
     } else {
       nums.appendChild(el('b', '', i.n ? num(i.clients || i.accounts) : '0'));
       nums.appendChild(el('span', '', i.n ? ((i.clients ? 'machines' : 'accounts') + ' · ' + num(i.n) + '×') : 'none seen'));
@@ -46250,11 +46272,19 @@ function a25Rows() {
    stays in sight. On a phone the page scrolls as a whole instead. */
 function a25Fit(box) {
   if (!box || window.innerWidth < 700) { if (box) box.style.maxHeight = ''; return; }
+  /* Not while the page is hidden (another tab, another page): measured
+     there, everything is at the top and nought high, and the list came back
+     taller than the window - the page's own scroll bar beside its own. */
+  if (!box.offsetParent || !box.getClientRects().length) return;
   /* First as tall as the window under it, then shorter by whatever still
      makes the page itself scroll: one scroll bar, the table's. */
   var sc = a25Scroller(box);
   if (sc) sc.scrollTop = 0;
   box.style.maxHeight = Math.max(240, window.innerHeight - box.getBoundingClientRect().top - 60) + 'px';
+  /* Asked again now that the list is its new height: asked before, with
+     nothing overflowing yet, it was the document - and what overflowed then
+     was the tab's own column, never measured (1.10.330). */
+  sc = a25Scroller(box);
   if (sc) {
     var over = sc.scrollHeight - sc.clientHeight;
     if (over > 0) box.style.maxHeight = Math.max(240, box.clientHeight - over - 2) + 'px';
@@ -46275,6 +46305,14 @@ function a25Pin() {
   if (strip && top) strip.style.top = top.offsetHeight + 'px';
 }
 window.addEventListener('resize', function () { a25Fit($('a25-box')); });
+/* Fitted once the page is laid out again: after the tab or the page has
+   been shown, and once more when whatever came with it has settled. */
+function a25FitSoon() {
+  if (typeof WPAGE_SHOWN === 'undefined' || WPAGE_SHOWN !== 'ad25') return;
+  var go = function () { if (TAB === 'windows' && WPAGE_SHOWN === 'ad25') { a25Pin(); a25Fit($('a25-box')); } };
+  requestAnimationFrame(function () { requestAnimationFrame(go); });
+  setTimeout(go, 400);
+}
 /* One file for whoever looks at all this before the change (1.10.326):
    what each kind of trouble is, its worst rows, the worst machines and
    accounts, and what the logs can see - as Markdown, made here in the page
@@ -46326,6 +46364,27 @@ function a25Markdown(d, per, hideAcc, hideMach) {
     if (!mach[k]) mach[k] = 'machine-' + pad(++nM);
     return mach[k];
   }
+  /* What a row says in words names people and machines too ("checked for
+     KRAJ\\jnovak", "for FILESRV01", "a ticket for svc-sql") - put by the same
+     stand-ins, or the stand-ins hide nothing (1.10.330). */
+  function D(r) {
+    var t = String(r.detail || '');
+    if (hideAcc) {
+      t = t.replace(/(checked for |ticket for |the account |asked by )([^\s,()]+)/g,
+                    function (m, p, x) { return p + A(x); });
+    }
+    if (hideMach && r.issue === 'ntlm-srv') {
+      t = t.replace(/^for ([^\s,()]+)/, function (m, x) { return 'for ' + M(x); });
+    }
+    [[acc, hideAcc], [mach, hideMach]].forEach(function (pair) {
+      if (!pair[1]) return;
+      Object.keys(pair[0]).sort(function (a, b) { return b.length - a.length; }).forEach(function (k) {
+        if (k.length < 3) return;
+        t = t.split(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')).join(pair[0][k]);
+      });
+    });
+    return t;
+  }
   function cell(v) { return String(v === undefined || v === null ? '' : v).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim() || '-'; }
   function when(ts) { return ts ? new Date(ts * 1000).toISOString().slice(0, 16).replace('T', ' ') : '-'; }
   function table(head, rows) {
@@ -46369,13 +46428,13 @@ function a25Markdown(d, per, hideAcc, hideMach) {
     L.push('');
     var rows = i.rows.slice(0, per);
     L.push(table(['Machine', 'Address', 'Account', 'What it was', 'Controller', 'Times', 'First', 'Last'], rows.map(function (r) {
-      return [M(r.client), M(r.ip), A(r.account), r.detail, r.server, r.n, when(r.first), when(r.last)];
+      return [M(r.client), M(r.ip), A(r.account), D(r), r.server, r.n, when(r.first), when(r.last)];
     })));
     if (i.rows.length + (i.more || 0) > rows.length) L.push('\n…and ' + (i.rows.length + (i.more || 0) - rows.length) + ' more, fewer times each.');
   });
   var ms = (d.machines || []).filter(function (m) { return a25Worst(m.issues) < 2; }).slice(0, per);
   L.push('');
-  L.push('## The machines, worst first (' + ms.length + ' of ' + (d.machines || []).length + '; NTLM alone left out)');
+  L.push('## The machines, worst first (' + ms.length + ' of ' + (d.machines || []).length + '; only-to-know kinds left out)');
   L.push('');
   L.push(table(['Machine', 'Address', 'What it does', 'Accounts from it', 'Controllers', 'Times', 'Last'], ms.map(function (m) {
     return [M(m.name), M(m.ip), Object.keys(m.issues).map(function (k) { return (a25Issue(k).words || k) + ' ' + m.issues[k]; }).join('; '),
@@ -46384,7 +46443,7 @@ function a25Markdown(d, per, hideAcc, hideMach) {
   })));
   var as = (d.accounts || []).filter(function (a) { return a25Worst(a.issues) < 2; }).slice(0, per);
   L.push('');
-  L.push('## The accounts, worst first (' + as.length + ' of ' + (d.accounts || []).length + '; NTLM alone left out)');
+  L.push('## The accounts, worst first (' + as.length + ' of ' + (d.accounts || []).length + '; only-to-know kinds left out)');
   L.push('');
   L.push(table(['Account', 'Kind', 'What it does', 'From', 'Times', 'Last'], as.map(function (a) {
     return [A(a.name), a.computer ? 'computer' : 'account',

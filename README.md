@@ -372,6 +372,40 @@ working.
 
 ## Version
 
+1.10.330
+
+- **Before Windows Server 2025**, gone over line by line. The page counted
+  some things wrongly, and these are fixed:
+  - A null session (ANONYMOUS LOGON), which Windows writes as "NTLM V1"
+    whatever the client can do, is no longer an NTLMv1 client. LM is now
+    counted with NTLMv1.
+  - A KDC event (14/16/26/27) about an account that HAS AES keys counts as
+    the client's RC4, not as an account without AES.
+  - "The client offers no AES" read only the first etype offered, and took
+    "-" or nothing for "no AES". All of them are read now.
+  - An empty field no longer takes the next field's label as its value. That
+    had made machines called "ERROR" (4776) and "SECURE" (8004), and an
+    account called "Binding" (2889).
+  - An identity written as a DN with spaces is read whole.
+  - 2887, 3040 and 3041 each have their own row. They had shared one, and
+    3040's count was always "24".
+  - NTLM/Operational 8004 is a separate tile, "NTLM, by the server it was
+    for". It is no longer a second count of the same NTLM.
+  - The KDC's own events no longer share a row with the Security log's. A
+    late one was taken for a line already counted.
+  - An address takes the newest name it had, not the first.
+  - What earlier versions counted wrongly is removed when the daemon starts.
+- The top card no longer says "nothing here" while the controllers' daily
+  count (2887) knows of LDAP binds no tile shows. It says how many, and that
+  the detailed logging names who.
+- The daily-count tile shows the binds a day, not "controller days".
+- **Export for analysis:** with stand-ins on, the names inside "What it was"
+  are replaced too.
+- **One scroll bar:** coming back from another tab, or from the Domain
+  overview, no longer gives the page a second scroll bar.
+- New `docs/before-windows-server-2025-fixes.md`: what to fix, tile by tile,
+  with commands and checks.
+
 1.10.329
 
 - **Before Windows Server 2025** no longer counts every computer as "an

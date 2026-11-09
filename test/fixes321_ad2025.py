@@ -109,14 +109,15 @@ try:
         ('ldap-unsigned', '172.29.5.10', 'KRAJ\\jnovak') in got), (True, True))
     ok('the controller\'s daily count (2887)', any(x[0] == 'ldap-daily' for x in got))
     ok('SMB1 (3000) by address', ('smb1', '172.29.9.9', '') in got)
-    ok('NTLM by server (8004)', any(x[2] == 'ntlm' for x in isemon.AD25['queue']
-                                    if 'FILESRV01' in x[6]))
+    ok('NTLM by server (8004) - its own kind, not a second NTLM (1.10.330)',
+       any(x[2] == 'ntlm-srv' and x[5] == 'KRAJ\\jnovak' and 'FILESRV01' in x[6]
+           for x in isemon.AD25['queue']))
     ok('the KDC\'s missing key (16)', ('noaes', '', 'old-svc') in got)
     ok('an event of no concern adds nothing; a client offering AES is not RC4\'s', len(isemon.AD25['queue']), 10)
 
     print('\nWritten down')
     n = st.ad25_flush()
-    ok('a row each - the two NTLM of one workstation on one controller one row', n, 9)
+    ok('a row each', n, 10)
     v = st.ad25_view(24)
     by = {i['key']: i for i in v['issues']}
     ok('the view: each kind with its count', (by['ldap-clear']['n'], by['smb1']['n'], by['ntlmv1']['n']),
@@ -140,7 +141,7 @@ try:
     v = st.ad25_view(24)
     by = {i['key']: i for i in v['issues']}
     ok('the same lines read again (a rotation, the pass back): not counted again',
-       (by['ldap-clear']['n'], by['ntlm']['n']), (1, 2))
+       (by['ldap-clear']['n'], by['ntlm']['n']), (1, 1))
     later = time.strftime('%b %e %H:%M:%S', time.localtime(time.time() - 30))
     isemon.win_parse_lines([line(2889, LINES[3].split('| ', 1)[1], when=later)], {})
     st.ad25_flush()

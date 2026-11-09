@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.329'
+__version__ = '1.10.330'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -9156,6 +9156,9 @@ AD25_ISSUES = (
     ('smb1', 'crit', 'SMB1 to a domain controller'),
     ('cleartext', 'info', 'A password handed over as it is (logon type 8)'),
     ('ntlm', 'info', 'NTLM'),
+    # NTLM/Operational 8004: the same NTLM as 4776, by the server it was for -
+    # its own kind so that one sign-in is not counted twice (1.10.330).
+    ('ntlm-srv', 'info', 'NTLM, by the server it was for'),
     ('ldap-daily', 'info', 'The controller\'s own daily count of LDAP binds'),
 )
 AD25_LEVEL = {k: lvl for k, lvl, _w in AD25_ISSUES}
@@ -9194,7 +9197,11 @@ _AD25_KEYS = re.compile(r'Available Keys:\s*(.*?)(?=\s{2,}|\t|$)')
 _AD25_SECTION = re.compile(r'(Account Information|Service Information|'
                            r'Domain Controller Information|Additional Information):')
 # Every etype offered, comma or space between them - not the first alone.
-_AD25_OFFERED = re.compile(r'Advertized Etypes:\s*(.*?)(?=\s{2,}|\t|$)')
+# Every etype offered: one to a line in the event, so after NXLog they are
+# separated by runs of spaces - read up to the next section, not the next
+# run of spaces (1.10.330: only the first was read).
+_AD25_OFFERED = re.compile(r'Advertized Etypes:\s*(.*?)(?=\s*(?:Additional Information|'
+                           r'[A-Z][A-Za-z ]+ Information):|$)')
 _AD25_CLIENT = re.compile(r'Client Address:\s*(?:::ffff:)?([0-9A-Fa-f:.\[\]]+)')
 _AD25_ADDR = re.compile(r'(?:Client IP address|Client Address|Client IP Address|'
                         r'IP Address):\s*\[?([0-9A-Fa-f:.]+?)\]?(?::(\d+))?(?=\s|$)')
@@ -9202,6 +9209,24 @@ _AD25_ADDR = re.compile(r'(?:Client IP address|Client Address|Client IP Address|
 
 def ad25_on():
     return bool(int(CONFIG.get('winsec') or 0)) and bool(int(CONFIG.get('winsec_ad2025') or 0))
+
+
+# A field of a Windows message once NXLog has made one line of it: the value
+# runs to the next run of two spaces or more (where a line or a tab was). A
+# field left empty is followed straight by the next one's label, and that
+# label is not its value (1.10.330: an empty Source Workstation made a
+# machine called "ERROR", an empty Workstation name one called "SECURE").
+_AD25_LABEL = re.compile(r'^[A-Z][A-Za-z ()/\-]*:(\s|$)')
+
+
+def _ad25_val(label, text):
+    m = re.search(re.escape(label) + r':[ \t]*(.*?)(?=\s{2,}|\t|$)', text)
+    if not m:
+        return ''
+    v = m.group(1).strip()
+    if not v or v in ('-', 'N/A') or _AD25_LABEL.match(v):
+        return ''
+    return v
 
 
 def _ad25_word(rx, text, default=''):
@@ -9237,16 +9262,15 @@ def ad25_findings(event, line, whole=''):
     out = []
     rest = line
     if event == 4776:
-        acct = _ad25_word(r'Logon Account:\s*(\S+)', rest)
-        ws = _ad25_word(r'Source Workstation:\s*(\S*)', rest)
+        acct = _ad25_val('Logon Account', rest)
+        ws = _ad25_val('Source Workstation', rest)
         code = _ad25_word(r'Error Code:\s*(0x[0-9A-Fa-f]+)', rest, '0x0')
-        if ws in ('-', ''):
-            ws = ''
         out.append(('ntlm', ws.upper()[:120], '', '', 'checked for %s%s'
                     % (acct[:80], '' if code.lower() == '0x0' else ', refused (%s)' % code)))
         return out
     if event == 4624:
-        if 'NTLM V1' not in rest and not re.search(r'Logon Type:\s*8(?!\d)', rest):
+        old = re.search(r'Package Name \(NTLM only\):\s*(NTLM V1|LM)(?=\s|$)', rest)
+        if not old and not re.search(r'Logon Type:\s*8(?!\d)', rest):
             return out
         got = win_record_from(whole or line)
         if got is None:
@@ -9254,8 +9278,15 @@ def ad25_findings(event, line, whole=''):
         f = got.facts
         client, ip = str(f.get('machine') or '').upper()[:120], str(f.get('ip') or '')
         acct = str(f.get('account') or '')[:180]
-        if 'NTLM V1' in rest:
-            out.append(('ntlmv1', client, ip, acct, 'signed in with NTLM V1'))
+        # A null session - ANONYMOUS LOGON, S-1-5-7 - is written down as
+        # "NTLM V1" by Windows whatever the machine can do: no password and
+        # no NTLMv1 answer crossed the wire, so it is not a client to put
+        # right (1.10.330).
+        anon = (acct.upper() in ('ANONYMOUS LOGON', 'ANONYMOUS')
+                or re.search(r'Security ID:\s*(?:NT AUTHORITY\\ANONYMOUS LOGON|S-1-5-7)(?=\s|$)',
+                             rest.split('New Logon:', 1)[-1]) is not None)
+        if old and not anon:
+            out.append(('ntlmv1', client, ip, acct, 'signed in with %s' % old.group(1)))
         if str(f.get('logon_type') or '') == '8':
             out.append(('cleartext', client, ip, acct,
                         'by %s' % (str(f.get('process') or '-').split('\\')[-1] or '-')))
@@ -9269,8 +9300,8 @@ def ad25_findings(event, line, whole=''):
             ip = m.group(1).strip('[]')
             if ip in ('::1', '127.0.0.1', '-'):
                 ip = ''
-        acct = _ad25_word(r'Account Name:\s*(\S+)', rest)[:180]
-        service = _ad25_word(r'Service Name:\s*(\S+)', rest)[:180]
+        acct = _ad25_val('Account Name', rest)[:180]
+        service = _ad25_val('Service Name', rest)[:180]
         etype = _ad25_word(_AD25_ETYPE, rest).lower()
         if worked and etype in ('0x17', '0x18'):
             out.append(('rc4', '', ip, acct, 'a ticket for %s in %s' % (service or '?',
@@ -9290,20 +9321,21 @@ def ad25_findings(event, line, whole=''):
                 if not named or 'AES' in named:
                     continue
                 if sec.group(1) == 'Account Information':
-                    who = _ad25_word(r'Account Name:\s*(\S+)', part) or acct
+                    who = _ad25_val('Account Name', part) or acct
                 elif sec.group(1) == 'Service Information':
-                    who = _ad25_word(r'Service Name:\s*(\S+)', part) or service
+                    who = _ad25_val('Service Name', part) or service
                 else:
                     continue
                 if who and who != '-':
                     out.append(('noaes', '', '', who[:180], 'its keys: %s' % keys[:80]))
-        offered = _ad25_word(_AD25_OFFERED, rest)
-        if offered and 'AES' not in offered.upper() and ip:
-            out.append(('rc4', '', ip, acct, 'the client offers no AES (%s)' % offered[:60]))
+        offered = ' '.join(_ad25_word(_AD25_OFFERED, rest).split())
+        names = re.findall(r'AES|RC4|DES', offered.upper())
+        if names and 'AES' not in names and ip:
+            out.append(('rc4', '', ip, acct, 'the client offers only %s' % offered[:60]))
         return out
     if event in (2889, 3039):
         ip = _ad25_addr(rest)
-        acct = _ad25_word(r'authenticate as:\s*(\S+)', rest)[:180]
+        acct = _ad25_val('authenticate as', rest)[:180]
         kind = _ad25_word(r'Binding Type:\s*(\d+)', rest)
         if event == 3039:
             out.append(('ldap-cbt', '', ip, acct, 'LDAPS without a valid channel binding token'))
@@ -9316,12 +9348,15 @@ def ad25_findings(event, line, whole=''):
     if event == 2887:
         simple = _ad25_word(r'simple binds performed without SSL/TLS:\s*(\d+)', rest, '0')
         unsigned = _ad25_word(r'binds performed without signing:\s*(\d+)', rest, '0')
-        out.append(('ldap-daily', '', '', '', '%s simple in the clear, %s unsigned, in a day'
+        # Each of the daily events its own row (1.10.330: they shared one and
+        # the newest said over the others).
+        out.append(('ldap-daily', '', '', 'event 2887', '%s simple in the clear, %s unsigned, in a day'
                     % (simple, unsigned)))
         return out
     if event in (3040, 3041):
-        many = _ad25_word(r'(\d+)', rest, '')
-        out.append(('ldap-daily', '', '', '', 'channel binding: %s'
+        # The count, not the "24" of "the previous 24 hour period".
+        many = _ad25_word(r'(\d+)', re.sub(r'previous\s+24\s+hour', '', rest, flags=re.I), '')
+        out.append(('ldap-daily', '', '', 'event %d' % event, 'channel binding: %s'
                     % ('%s bind(s) without a valid token, in a day' % many if event == 3040
                        else 'the controller does not ask for it yet')))
         return out
@@ -9331,26 +9366,45 @@ def ad25_findings(event, line, whole=''):
             out.append(('smb1', '', ip, '', 'SMB1 to this controller'))
         return out
     if event == 8004:
-        ws = _ad25_word(r'Workstation name:\s*(\S+)', rest)
-        user = _ad25_word(r'User name:\s*(\S+)', rest)
-        dom = _ad25_word(r'Domain name:\s*(\S+)', rest)
-        to = _ad25_word(r'Secure Channel name:\s*(\S+)', rest)
-        out.append(('ntlm', ws.upper()[:120], '', '', 'checked for %s%s' % (
-            ('%s\\%s' % (dom, user) if dom else user)[:80], (' at %s' % to) if to else '')))
+        ws = _ad25_val('Workstation name', rest)
+        user = _ad25_val('User name', rest)
+        dom = _ad25_val('Domain name', rest)
+        to = _ad25_val('Secure Channel name', rest)
+        out.append(('ntlm-srv', ws.upper()[:120], '', ('%s\\%s' % (dom, user) if dom else user)[:180],
+                    'for %s' % (to.upper()[:120] or 'a server not named')))
         return out
     if event in (14, 16, 26, 27):
         if 'suitable key' not in rest and 'etype' not in rest.lower():
             return out
         acct = _ad25_word(r'the account (\S+?)[ .,]', rest)[:180]
-        want = _ad25_word(r'requested etypes(?: were|\s*:)\s*([\d ]+)', rest)
-        have = _ad25_word(r'available etypes(?: were|\s*:)\s*([\d ]*)', rest)
-        out.append(('noaes', '', '', acct, 'asked %s, has %s' % (want or '?', have or 'none')))
+        want = ' '.join(_ad25_word(r'requested etypes(?: were|\s*:)\s*([-\d ]+)', rest).split())
+        have = ' '.join(_ad25_word(r'available etypes(?: were|\s*:)\s*([-\d ]*)', rest).split())
+        # An account that HAS AES keys (17, 18) is not one without them: the
+        # client asked only for what it does not have - RC4 or DES - and that
+        # is the client's trouble (1.10.330).
+        if set(have.split()) & {'17', '18', '19', '20'}:
+            asked = set(want.split())
+            kind = 'des' if asked and asked <= {'1', '3'} else 'rc4'
+            out.append((kind, '', '', acct, 'a client asked only %s, the account has %s'
+                        % (want or '?', have)))
+        else:
+            out.append(('noaes', '', '', acct, 'asked %s, has %s' % (want or '?', have or 'none')))
         return out
     if 201 <= event <= 209:
         if 'RC4' not in rest and 'Kerberos' not in rest and 'etype' not in rest.lower():
             return out
-        acct = _ad25_word(r'(?:Account Name|Account|Service Name):\s*(\S+)', rest)[:180]
-        out.append(('rc4', '', _ad25_addr(rest), acct, 'the KDC warned (event %d)' % event))
+        # A service with no AES keys of its own is what these say of a
+        # SERVICE; the others name the client asking for RC4 (KB5073381).
+        svc = _ad25_val('Service Name', rest) or _ad25_val('Service', rest)
+        client = _ad25_val('Account Name', rest) or _ad25_val('Account', rest)
+        ip = _ad25_addr(rest)
+        if svc and re.search(r'(?:no|not have|without|missing)\s+(?:any\s+)?AES', rest, re.I):
+            out.append(('noaes', '', '', svc[:180], 'the KDC warned (event %d)' % event))
+        elif client or ip:
+            out.append(('rc4', '', ip, client[:180], 'the KDC warned (event %d)' % event))
+        else:
+            out.append(('rc4', '', '', '(the domain\'s setting)',
+                        'the KDC warned (event %d): the domain allows RC4' % event))
         return out
     return out
 
@@ -9385,7 +9439,7 @@ def ad25_see(line, event, zone=None):
             if len(q) >= AD25_QUEUE_MOST:
                 AD25['dropped'] += 1
                 continue
-            q.append((ts, server, issue, client, ip, account, detail))
+            q.append((ts, server, issue, client, ip, account, detail, src))
 
 
 def ad25_ckey(server, client, ip, account):
@@ -31321,8 +31375,14 @@ class Storage(object):
         if not q:
             return 0
         groups = {}
-        for ts, server, issue, client, ip, account, detail in q:
-            key = (int(ts // 86400), issue, ad25_ckey(server, client, ip, account))
+        for one in q:
+            ts, server, issue, client, ip, account, detail = one[:7]
+            src = one[7] if len(one) > 7 else 'security'
+            # The KDC's own events a row of their own: they arrive by another
+            # log, maybe late, and a row's newest moment off the Security log
+            # would have them taken for lines already counted (1.10.330).
+            key = (int(ts // 86400), issue,
+                   ad25_ckey(server, client, ip, ('kdc|' + account) if src == 'kdc' else account))
             g = groups.get(key)
             if g is None:
                 g = groups[key] = {'server': server, 'client': client, 'ip': ip,
@@ -31381,6 +31441,24 @@ class Storage(object):
                 db.execute("DELETE FROM ad25_seen WHERE issue = 'noaes' AND detail LIKE ? "
                            "AND detail NOT LIKE ? AND detail NOT LIKE ?",
                            ('its keys: %', '%RC4%', '%DES%'))
+                # ...and what earlier versions counted wrongly (1.10.330): a null
+                # session as NTLMv1; an account WITH AES keys (17, 18 in the
+                # KDC's event) as one without; "offers no AES" off the first
+                # etype alone; the daily counts sharing one row; NTLM/Operational
+                # counted as a second NTLM; an empty field's next label taken
+                # for a machine or an account.
+                for sql, args in (
+                        ("issue = 'ntlmv1' AND UPPER(account) IN (?, ?)",
+                         ('ANONYMOUS LOGON', 'ANONYMOUS')),
+                        ("issue = 'noaes' AND detail LIKE ? AND (detail LIKE ? OR detail LIKE ?)",
+                         ('asked %', '%, has %17%', '%, has %18%')),
+                        ("issue = 'rc4' AND detail LIKE ?", ('the client offers no AES (%',)),
+                        ("issue = 'ldap-daily' AND account = ?", ('',)),
+                        ("issue = 'ntlm' AND detail LIKE ?", ('checked for % at %',)),
+                        ("issue IN ('ntlm', 'ntlm-srv') AND UPPER(client) IN (?, ?, ?)",
+                         ('ERROR', 'SECURE', 'USER')),
+                        ("account IN (?, ?, ?)", ('Binding', 'Account', 'Service'))):
+                    db.execute('DELETE FROM ad25_seen WHERE ' + sql, args)
         except sqlite3.Error as e:
             log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
 
@@ -31388,7 +31466,7 @@ class Storage(object):
         """Each kind of trouble Before Windows Server 2025 counts, since a
         moment: how many, from how many machines and accounts, the newest,
         and the machine and account doing the most of it."""
-        keys = [k for k, _l, _w in AD25_ISSUES if k not in ('ntlm', 'ldap-daily')]
+        keys = [k for k, _l, _w in AD25_ISSUES if k not in ('ntlm', 'ntlm-srv', 'ldap-daily')]
         try:
             rows = self.db.execute(
                 'SELECT issue, ckey, MAX(client) AS client, MAX(ip) AS ip, '
@@ -31466,13 +31544,31 @@ class Storage(object):
                            'last': max([x['last'] for x in got] or [0])})
         # A name for an address another event gave it: 4776 and 4624 name
         # the machine, 2889 and SMB only give its address.
+        # The newest name an address had: with DHCP an address can be two
+        # machines within the days kept, and the one now is the one to find.
         names = {}
         for x in rows_all:
-            if x['client'] and x['ip']:
-                names.setdefault(x['ip'], x['client'])
+            if x['client'] and x['ip'] and (x['ip'] not in names
+                                            or x['last'] > names[x['ip']][1]):
+                names[x['ip']] = (x['client'], x['last'])
         for x in rows_all:
             if not x['client'] and x['ip'] in names:
-                x['client'] = names[x['ip']]
+                x['client'] = names[x['ip']][0]
+        # What each controller's own daily count (2887) said last: binds a
+        # 2025 controller would refuse, whoever they are - known even with
+        # the detailed logging (2889) off.
+        daily = {'simple': 0, 'unsigned': 0, 'controllers': 0}
+        newest = {}
+        for x in rows_all:
+            if x['issue'] == 'ldap-daily' and x['account'] == 'event 2887':
+                if x['server'] not in newest or x['last'] > newest[x['server']]['last']:
+                    newest[x['server']] = x
+        for x in newest.values():
+            m = re.match(r'(\d+) simple in the clear, (\d+) unsigned', x['detail'] or '')
+            if m:
+                daily['simple'] += int(m.group(1))
+                daily['unsigned'] += int(m.group(2))
+                daily['controllers'] += 1
         machines, accounts = {}, {}
         for x in rows_all:
             if x['issue'] == 'ldap-daily':
@@ -31522,7 +31618,7 @@ class Storage(object):
                 'version': __version__, 'site': str(CONFIG.get('site_name') or ''),
                 'machines': listing(machines, ('accounts', 'servers')),
                 'accounts': listing(accounts, ('clients',)),
-                'machines_n': len(machines), 'accounts_n': len(accounts),
+                'machines_n': len(machines), 'accounts_n': len(accounts), 'daily': daily,
                 'show_rows': AD25_SHOW_ROWS, 'show_list': AD25_SHOW_LIST,
                 'sources': sources, 'keep_days': AD25_KEEP_DAYS,
                 'controllers': sorted({x['server'] for x in rows_all if x['server']})}
