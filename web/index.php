@@ -4427,7 +4427,6 @@ function srcText(el) {
   .a25-tile:hover{transform:translateY(-1px);border-color:var(--tx-mut)}
   .a25-tile.crit{border-left-color:var(--crit)} .a25-tile.warn{border-left-color:var(--warn)} .a25-tile.info{border-left-color:var(--info)}
   .a25-tile.none{opacity:.62;border-left-color:var(--ok)}
-  .a25-tile.on{outline:2px solid var(--accent);outline-offset:1px}
   .a25-tile-top{display:flex;align-items:center;gap:8px;font-weight:650;font-size:13.5px}
   .a25-tile.crit .a25-tile-top svg{color:var(--crit)} .a25-tile.warn .a25-tile-top svg{color:var(--warn)} .a25-tile.info .a25-tile-top svg{color:var(--info)}
   .a25-tile.none .a25-tile-top svg{color:var(--ok)}
@@ -4437,16 +4436,6 @@ function srcText(el) {
   .a25-tile-b{font-size:12.5px;color:var(--tx-dim);line-height:1.45}
   .a25-tile-f{font-size:12.5px;line-height:1.45}
   .a25-tile-l{font-size:11.5px}
-  .a25-who{margin-top:4px}
-  .a25-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-  .a25-bar input{flex:1 1 220px;min-width:180px;max-width:420px}
-  .a25-seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .a25-seg button{appearance:none;border:0;background:var(--panel2);color:var(--tx-dim);font:inherit;font-size:13px;
-    font-weight:600;padding:7px 14px;cursor:pointer;border-right:1px solid var(--line)}
-  .a25-seg button:last-child{border-right:0}
-  .a25-seg button.on{background:var(--info-bg);color:var(--info)}
-  .a25-chip{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px 3px 4px;cursor:pointer;color:inherit;font:inherit}
-  .a25-x{color:var(--tx-dim)}
   .a25-tags{display:flex;gap:5px;flex-wrap:wrap}
   .a25-tag{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;
     background:var(--panel2);color:var(--tx-dim)}
@@ -4456,12 +4445,31 @@ function srcText(el) {
   .a25-srcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:12px}
   .a25-src{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel2);display:flex;flex-direction:column;gap:4px}
   .a25-src.ok{border-color:rgba(63,185,80,.4)} .a25-src.no{border-style:dashed}
+  .se-dot.quiet{background:var(--tx-mut)}
   .a25-src-h{display:flex;align-items:center;gap:8px}
   .a25-src-h .se-dot{margin-top:0}
   .a25-how summary{cursor:pointer;font-weight:600;font-size:13.5px;margin:4px 0}
   .a25-how h4{margin:14px 0 4px;font-size:13px}
   .a25-how pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font-size:12px;margin:0 0 8px;max-height:420px}
   .a25-copy{display:flex;justify-content:flex-end;margin:0 0 4px}
+  .a25-pages{margin:6px 0 16px;scroll-margin-top:72px}
+  .a25-fact{appearance:none;border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:4px 6px;border-radius:8px}
+  .a25-fact:hover{background:rgba(255,255,255,.05)}
+  .a25-tile:disabled{cursor:default;transform:none}
+  .a25-filters select{max-width:260px}
+  .a25-said{font-size:13px;padding:8px 12px;border-radius:9px;margin:0 0 10px;border-left:3px solid var(--info);background:var(--info-bg)}
+  .a25-said.crit{border-left-color:var(--crit);background:var(--crit-bg)} .a25-said.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+  .a25-scroll{max-height:calc(100vh - 290px);min-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .a25-scroll table.a25-t{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;margin:0}
+  .a25-scroll thead th{position:sticky;top:0;z-index:2;background:var(--panel2);box-shadow:inset 0 -1px 0 var(--line);
+    cursor:pointer;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .a25-scroll td{overflow-wrap:anywhere;vertical-align:top}
+  .a25-scroll td[data-ts]{overflow-wrap:normal;white-space:nowrap}
+  .a25-scroll .a25-tag{white-space:normal;max-width:100%}
+  .a25-arrow{color:var(--tx-mut);font-size:11px} .a25-arrow.on{color:var(--info)}
+  .a25-none{padding:28px 0}
+  .a25-filters .a25-found{margin-left:auto}
+  @media (max-width:700px){.a25-scroll{max-height:none}.a25-scroll table.a25-t{table-layout:auto;min-width:720px}}
   /* SELinux (1.10.319) */
   .se-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;margin-top:12px}
   .se-node{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0;max-width:980px}
@@ -6115,16 +6123,17 @@ function srcText(el) {
       </span></h2>
     <p class="note">What a domain controller of Windows Server 2025 refuses that one of 2016 lets through -
       and which machines and accounts here still do it. Counted from the controllers' own logs as they
-      arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below;
-      a row opens the events behind it.</p>
+      arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that
+      do it; a row opens the events behind it.</p>
+    <div class="subtabs a25-pages" id="a25-pages" role="tablist"></div>
     <div id="a25-host"></div>
   </div>
-  <div class="card full" style="margin-top:14px">
+  <div class="card full" id="a25-logs-card" style="margin-top:14px" hidden>
     <h2>What the logs can see</h2>
     <p class="note">Each kind of trouble is written in one log of the controllers. The Security log is
       sent already; the rest only once NXLog sends them and the controllers write them.</p>
     <div id="a25-src"></div>
-    <details class="a25-how" id="a25-how">
+    <details class="a25-how" id="a25-how" open>
       <summary>How to send the rest - NXLog and the controllers</summary>
       <h4>1. On every domain controller, what it writes</h4>
       <p class="note">LDAP: who binds in the clear or unsigned (2889) and channel binding (3039).
@@ -6203,6 +6212,116 @@ auditpol /set /subcategory:"Logon" /success:enable /failure:enable</pre>
 &lt;/Route&gt;</pre>
       <p class="note">2889 and 4769 are often longer than 1500 bytes: over UDP a lost fragment is a
         lost event. The TCP output already in your file (port 514) is the safer road.</p>
+      <h4>3. Whether everything on a controller is as it should be</h4>
+      <p class="note">Run as administrator on each controller - pasted whole into a PowerShell window, or saved as a .ps1; it changes nothing. It checks the audit
+        policy, the LDAP logging, the SMB1 and NTLM audit, the sizes of the logs, what each log wrote in
+        the last seven days, and NXLog - its service, its configuration and its errors. Every line says
+        OK, WARN or FAIL. A log with events of its own that the card above still says nothing came from
+        is a log NXLog does not send.</p>
+      <pre data-no-i18n># isemon - Before Windows Server 2025: is this domain controller set up to tell it all?
+# Run as administrator on each controller. Changes nothing; every line says OK, WARN or FAIL.
+# Pasted whole into a PowerShell window, or saved as a .ps1 and run.
+&amp; {
+    $n = @{ok = 0; bad = 0}
+    function Say($state, $what, $more) {
+        $colour = @{OK='Green'; WARN='Yellow'; FAIL='Red'; INFO='Gray'}[$state]
+        Write-Host ('{0,-5} {1}' -f $state, $what) -ForegroundColor $colour -NoNewline
+        if ($more) { Write-Host "  - $more" -ForegroundColor DarkGray } else { Write-Host '' }
+        if ($state -eq 'OK') { $n.ok++ } elseif ($state -ne 'INFO') { $n.bad++ }
+    }
+
+    Write-Host "`n== Audit policy (Security log) ==" -ForegroundColor Cyan
+    $want = [ordered]@{
+        'Credential Validation'              = 'Success and Failure'
+        'Kerberos Authentication Service'    = 'Success and Failure'
+        'Kerberos Service Ticket Operations' = 'Success and Failure'
+        'Logon'                              = 'Success and Failure'
+        'Account Lockout'                    = 'Failure'
+    }
+    foreach ($sub in $want.Keys) {
+        $line = (auditpol /get /subcategory:"$sub" /r | ConvertFrom-Csv | Select-Object -First 1)
+        $has = $line.'Inclusion Setting'
+        $need = $want[$sub]
+        $good = ($has -eq 'Success and Failure') -or ($need -eq 'Failure' -and $has -match 'Failure')
+        if ($good) { Say OK "$sub" $has } else { Say FAIL "$sub" "is '$has', wants '$need'" }
+    }
+    $force = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -ErrorAction SilentlyContinue).SCENoApplyLegacyAuditPolicy
+    if ($force -eq 1) { Say OK 'Advanced audit policy overrides the basic one' } else { Say WARN 'Advanced audit policy may be overridden by the basic one' 'GPO: Audit: Force audit policy subcategory settings = Enabled' }
+
+    Write-Host "`n== LDAP (Directory Service log) ==" -ForegroundColor Cyan
+    $ldap = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\NTDS\Diagnostics' -ErrorAction SilentlyContinue).'16 LDAP Interface Events'
+    if ($ldap -ge 2) { Say OK '16 LDAP Interface Events' "= $ldap (2889 names who binds in the clear or unsigned)" } else { Say FAIL '16 LDAP Interface Events' "= $ldap, wants 2" }
+    $sign = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\NTDS\Parameters' -ErrorAction SilentlyContinue).LDAPServerIntegrity
+    $cbt  = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\NTDS\Parameters' -ErrorAction SilentlyContinue).LdapEnforceChannelBinding
+    Say INFO 'LDAP signing required (LDAPServerIntegrity)' "$(if ($sign -eq 2) {'2 - required'} elseif ($null -eq $sign) {'not set - not required'} else {"$sign - not required"})"
+    Say INFO 'LDAP channel binding (LdapEnforceChannelBinding)' "$(if ($null -eq $cbt) {'not set - never'} else {$cbt}) (0 never, 1 when supported, 2 always)"
+
+    Write-Host "`n== SMB1 and NTLM audit ==" -ForegroundColor Cyan
+    $smb = Get-SmbServerConfiguration
+    if ($smb.AuditSmb1Access) { Say OK 'SMB1 access audited (SMBServer/Audit 3000)' } else { Say FAIL 'SMB1 access not audited' 'Set-SmbServerConfiguration -AuditSmb1Access $true -Force' }
+    if ($smb.EnableSMB1Protocol) { Say WARN 'SMB1 server is ON on this controller' 'Windows Server 2025 has none: what uses it shows on the SMB1 tile' } else { Say OK 'SMB1 server is off' }
+    $ntlm = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters' -ErrorAction SilentlyContinue).AuditNTLMInDomain
+    if ($ntlm -eq 7) { Say OK 'Audit NTLM authentication in this domain' 'Enable all (NTLM/Operational 8004)' } else { Say FAIL 'Audit NTLM authentication in this domain' "is '$ntlm', wants 7 (GPO: Network security: Restrict NTLM: Audit NTLM authentication in this domain = Enable all)" }
+    $inc = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0' -ErrorAction SilentlyContinue).AuditReceivingNTLMTraffic
+    if ($inc -eq 2) { Say OK 'Audit Incoming NTLM Traffic' 'for all accounts' } else { Say WARN 'Audit Incoming NTLM Traffic' "is '$inc', wants 2 (optional)" }
+    $block = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters' -ErrorAction SilentlyContinue).RestrictNTLMInDomain
+    if ($block -and $block -ne 0) { Say WARN 'NTLM is RESTRICTED in this domain (RestrictNTLMInDomain)' "= $block - that blocks, not audits" }
+
+    Write-Host "`n== Log sizes ==" -ForegroundColor Cyan
+    foreach ($l in @(@('Security', 1024), @('Directory Service', 256), @('System', 20),
+                     @('Microsoft-Windows-SMBServer/Audit', 8), @('Microsoft-Windows-NTLM/Operational', 64))) {
+        $log = Get-WinEvent -ListLog $l[0] -ErrorAction SilentlyContinue
+        if (-not $log) { Say FAIL $l[0] 'this log is not on this controller'; continue }
+        $mb = [int]($log.MaximumSizeInBytes / 1MB)
+        if (-not $log.IsEnabled) { Say FAIL $l[0] 'switched off' } elseif ($mb -ge $l[1]) { Say OK $l[0] "$mb MB" } else { Say WARN $l[0] "$mb MB, wants $($l[1]) MB or more: wevtutil sl `"$($l[0])`" /ms:$($l[1] * 1MB)" }
+    }
+
+    Write-Host "`n== What each log wrote in the last 7 days ==" -ForegroundColor Cyan
+    $since = (Get-Date).AddDays(-7)
+    foreach ($q in @(
+        @{N='Security 4768 (TGT)';           Log='Security'; Id=4768; Need=$true}
+        @{N='Security 4769 (service ticket)'; Log='Security'; Id=4769; Need=$true}
+        @{N='Security 4776 (NTLM)';          Log='Security'; Id=4776; Need=$true}
+        @{N='Directory Service 2887 (daily)'; Log='Directory Service'; Id=2887; Need=$false}
+        @{N='Directory Service 2889 (who)';  Log='Directory Service'; Id=2889; Need=$false}
+        @{N='Directory Service 3039-3041';   Log='Directory Service'; Id=3039,3040,3041; Need=$false}
+        @{N='System KDC 14/16/26/27';        Log='System'; Id=14,16,26,27; Need=$false}
+        @{N='System KDC 201-209 (RC4)';      Log='System'; Id=201,202,203,204,205,206,207,208,209; Need=$false}
+        @{N='SMBServer/Audit 3000 (SMB1)';   Log='Microsoft-Windows-SMBServer/Audit'; Id=3000; Need=$false}
+        @{N='NTLM/Operational 8004';         Log='Microsoft-Windows-NTLM/Operational'; Id=8004; Need=$false})) {
+        $got = (Get-WinEvent -FilterHashtable @{LogName=$q.Log; Id=$q.Id; StartTime=$since} -ErrorAction SilentlyContinue | Measure-Object).Count
+        if ($got -gt 0) { Say OK $q.N "$got" } elseif ($q.Need) { Say FAIL $q.N '0 - the audit above that writes it is off' } else { Say INFO $q.N '0 - nothing happened, or its switch above is off' }
+    }
+    $e = Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4769} -MaxEvents 1 -ErrorAction SilentlyContinue
+    if ($e) {
+        if ($e.Message -match 'Available Keys') { Say OK '4769 names the keys an account has' 'accounts with no AES keys can be seen' } else { Say WARN '4769 does not name the keys an account has' 'the January 2025 updates (or later) add it' }
+    }
+
+    Write-Host "`n== NXLog ==" -ForegroundColor Cyan
+    $svc = Get-Service nxlog -ErrorAction SilentlyContinue
+    if ($svc -and $svc.Status -eq 'Running') { Say OK 'nxlog service running' } else { Say FAIL 'nxlog service' "$(if ($svc) {$svc.Status} else {'not installed'})" }
+    $conf = 'C:\Program Files\nxlog\conf\nxlog.conf'
+    if (Test-Path $conf) {
+        $text = Get-Content $conf -Raw
+        foreach ($i in 'eventlog_security','eventlog_ds','eventlog_kdc','eventlog_smb1','eventlog_ntlm') {
+            $in = $text -match "(?m)^\s*&lt;Input $i&gt;"
+            $routed = $text -match "(?m)^\s*Path\s+.*\b$i\b"
+            if ($in -and $routed) { Say OK "nxlog.conf: $i" 'an input, and in the Route' } elseif ($in) { Say FAIL "nxlog.conf: $i" 'an input, but not in the Route Path' } else { Say FAIL "nxlog.conf: $i" 'missing' }
+        }
+        $host_ = ([regex]::Match($text, '(?m)^\s*define\s+SYSLOGHOST\s+(\S+)')).Groups[1].Value
+        if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' "$host_ - this controller's name" } else { Say WARN 'SYSLOGHOST' "'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder" }
+    } else { Say FAIL 'nxlog.conf' "not at $conf" }
+    $nlog = 'C:\Program Files\nxlog\data\nxlog.log'
+    if (Test-Path $nlog) {
+        $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5
+        if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host "      $($_.Line)" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' }
+    }
+    $dest = 'ISEMON_HOST'
+    $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue
+    Say INFO "TCP 514 to isemon ($dest)" "$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})"
+
+    Write-Host ("`n{0} OK, {1} to look at" -f $n.ok, $n.bad) -ForegroundColor $(if ($n.bad) {'Yellow'} else {'Green'})
+}</pre>
     </details>
   </div>
   </div>
@@ -11026,7 +11145,9 @@ function openHashSub(tab, sub) {
     if (b && (!b.hidden || T_PAGES[sub] || sub === 'vpn' || sub === 'router')) tShowPage(sub);
   } else if (tab === 'windows') {
     if (sub === 'events') winShowPage('events');
-    if (sub === 'ad2025' && STATUS && STATUS.ad2025_on) winShowPage('ad25');
+    /* Before the status has come, on its word (a reload): the page goes
+       back to the overview by itself if the status then says it is off. */
+    if (sub === 'ad2025' && (!STATUS || STATUS.ad2025_on)) winShowPage('ad25');
   } else if (tab === 'failed') {
     if (DOOR_SAYS[sub]) showFailedKind(sub);
   } else if (tab === 'logins') {
@@ -45648,16 +45769,19 @@ setTimeout(function () { if (paneLive('sshkeys')) loadSshKeys(); }, 0);
 </script>
 <script nonce="<?= h($nonce) ?>">
 /* ==========================================================================
-   Domain → Before Windows Server 2025 (1.10.321)
+   Domain → Before Windows Server 2025 (1.10.321; pages of its own 1.10.323)
    --------------------------------------------------------------------------
    What a domain controller of Windows Server 2025 refuses that one of 2016
    lets through, and who here still does it - out of `ad25_seen`, counted as
    the controllers' lines are read (Settings → The domain controllers →
-   Look for what Windows Server 2025 will refuse). Three ways in: each kind of
-   trouble as a tile, the machines behind them, the accounts behind them; and
-   what the logs that arrive can see at all, with how to send the rest.
+   Look for what Windows Server 2025 will refuse). Five pages under one strip
+   of buttons: the overview (a tile each kind of trouble), the machines, the
+   accounts, every row, and what the logs can see with how to send the rest.
+   Each list is a table whose heading stays while its rows scroll, a page of
+   them at a time, sorted and searched over the whole of it, not the page.
    ========================================================================== */
-var A25 = {d: null, view: 'machines', issue: '', q: '', asking: false};
+var A25 = {d: null, page: 'sum', issue: '', q: '', asking: false, st: {}, per: 50};
+try { A25.per = Number(localStorage.getItem('a25-per')) || 50; } catch (e) { /* none */ }
 var A25_SAY = {
   'ldap-clear': {icon: 'lock', breaks: 'A 2025 controller refuses a simple bind on 389 without TLS (strongerAuthRequired, result 8).',
                  fix: 'LDAPS on 636, or StartTLS before the bind; the controller by its name, trusting the company’s root CA.'},
@@ -45680,13 +45804,21 @@ var A25_SAY = {
   'ldap-daily': {icon: 'chart', breaks: 'The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.',
                  fix: 'The detailed logging (below) says who they are.'}
 };
+/* [key, name, what it gives, when it writes anything at all]: the last
+   three write only when something happens, so nothing from them is not
+   a log that is not sent - it may be one with nothing to say. */
 var A25_SOURCES = [
-  ['security', 'Security log', 'Kerberos (RC4, DES, accounts without AES), NTLMv1, NTLM, passwords handed over as they are'],
-  ['ds', 'Directory Service log', 'LDAP binds in the clear or unsigned, channel binding'],
-  ['kdc', 'System log - the KDC', 'the KDC’s own warnings about RC4 and missing keys'],
-  ['smb', 'SMBServer/Audit', 'SMB1 to the controllers'],
-  ['ntlm', 'NTLM/Operational', 'NTLM by the server it was used for']
+  ['security', 'Security log', 'Kerberos (RC4, DES, accounts without AES), NTLMv1, NTLM, passwords handed over as they are', ''],
+  ['ds', 'Directory Service log', 'LDAP binds in the clear or unsigned, channel binding', ''],
+  ['kdc', 'System log - the KDC', 'the KDC’s own warnings about RC4 and missing keys',
+   'The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used.'],
+  ['smb', 'SMBServer/Audit', 'SMB1 to the controllers',
+   'Written only when something connects over SMB1 - and only with AuditSmb1Access on.'],
+  ['ntlm', 'NTLM/Operational', 'NTLM by the server it was used for',
+   'Written only with the group policy "Audit NTLM authentication in this domain" on the controllers.']
 ];
+var A25_PAGES = [['sum', 'Overview'], ['machines', 'Machines'], ['accounts', 'Accounts'],
+                 ['rows', 'Every row'], ['logs', 'The logs and how to send them']];
 function loadAd25(quiet) {
   if (!$('a25-host') || A25.asking) return;
   A25.asking = true;
@@ -45695,24 +45827,68 @@ function loadAd25(quiet) {
     .catch(function (e) { if (!quiet) oops(e); })
     .then(function () { A25.asking = false; });
 }
-function a25Level(k) {
-  var x = (A25.d && A25.d.issues || []).filter(function (i) { return i.key === k; })[0];
-  return x ? x.level : 'info';
+function a25Issue(k) {
+  return ((A25.d && A25.d.issues) || []).filter(function (i) { return i.key === k; })[0] || {};
 }
-function a25Words(k) {
-  var x = (A25.d && A25.d.issues || []).filter(function (i) { return i.key === k; })[0];
-  return x ? x.words : k;
-}
+function a25Level(k) { return a25Issue(k).level || 'info'; }
+function a25Rank(k) { return {crit: 0, warn: 1, info: 2}[a25Level(k)]; }
 function a25Tag(k, n) {
-  var t = el('span', 'a25-tag ' + a25Level(k), a25Words(k));
+  var t = el('span', 'a25-tag ' + a25Level(k), a25Issue(k).words || k);
   if (n) t.appendChild(el('b', '', ' ' + num(n)));
   return t;
+}
+function a25Worst(issues) {
+  return Math.min.apply(null, [3].concat(Object.keys(issues || {}).map(a25Rank)));
+}
+/* The strip of the page's own buttons, each with how many it holds. */
+function a25Pages() {
+  var d = A25.d || {}, bar = $('a25-pages');
+  if (!bar) return;
+  clear(bar);
+  var counts = {machines: (d.machines || []).length, accounts: (d.accounts || []).length,
+                rows: (d.issues || []).reduce(function (n, i) { return n + i.rows.length; }, 0)};
+  A25_PAGES.forEach(function (p) {
+    var b = el('button', A25.page === p[0] ? 'on' : '');
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(A25.page === p[0]));
+    b.appendChild(el('span', '', p[1]));
+    if (counts[p[0]]) b.appendChild(el('span', 'n', num(counts[p[0]])));
+    b.onclick = function () { a25Go(p[0]); };
+    bar.appendChild(b);
+  });
+}
+function a25Go(page, issue) {
+  A25.page = page;
+  A25.built = '';
+  if (issue !== undefined) A25.issue = issue;
+  (A25.st[page] = A25.st[page] || {sort: null, pg: 0}).pg = 0;
+  drawAd25();
+  /* The strip of buttons to the top, so that the list and its pager fill
+     the window under it. */
+  var top = page === 'sum' || page === 'logs' ? $('w-page-ad25') : $('a25-pages');
+  if (top) top.scrollIntoView({block: 'start', behavior: 'auto'});
 }
 function drawAd25() {
   var d = A25.d, host = $('a25-host');
   if (!host || !d) return;
+  a25Pages();
+  $('a25-logs-card').hidden = A25.page !== 'logs';
+  host.hidden = A25.page === 'logs';
+  /* A list that is already up keeps its row of filters - the search box
+     its focus - and only its rows are drawn again (the minute's refresh). */
+  if (A25.built === A25.page && $('a25-box') && A25.page !== 'sum' && A25.page !== 'logs' && !d.error) {
+    a25Rows();
+    return;
+  }
+  A25.built = A25.page;
   clear(host);
   if (d.error) { host.appendChild(el('p', 'note bad', d.error)); return; }
+  if (A25.page === 'sum') a25Overview(host, d);
+  else if (A25.page === 'logs') { drawAd25Sources(); drawAd25How(); }
+  else a25List(host, d);
+}
+function a25Overview(host, d) {
   var issues = (d.issues || []).filter(function (i) { return i.key !== 'ldap-daily'; });
   var bad = issues.filter(function (i) { return i.level === 'crit' && i.n; });
   var warn = issues.filter(function (i) { return i.level === 'warn' && i.n; });
@@ -45722,24 +45898,27 @@ function drawAd25() {
   big.appendChild(el('span', 'a25-hero-w', bad.length ? 'kinds of trouble a 2025 controller would refuse'
     : warn.length ? 'kinds of trouble to put right before July 2026' : 'nothing here a 2025 controller would refuse'));
   hero.appendChild(big);
-  var ms = (d.machines || []).filter(function (m) { return Object.keys(m.issues).some(function (k) { return a25Level(k) !== 'info'; }); });
-  var as = (d.accounts || []).filter(function (a) { return Object.keys(a.issues).some(function (k) { return a25Level(k) !== 'info'; }); });
+  var ms = (d.machines || []).filter(function (m) { return a25Worst(m.issues) < 2; });
+  var as = (d.accounts || []).filter(function (a) { return a25Worst(a.issues) < 2; });
   var facts = el('div', 'a25-hero-facts');
-  [[num(ms.length), 'machines'], [num(as.filter(function (a) { return !a.computer; }).length), 'accounts'],
-   [num(as.filter(function (a) { return a.computer; }).length), 'computer accounts'],
-   [num((d.controllers || []).length), 'controllers']].forEach(function (f) {
-    var one = el('div', 'a25-fact');
-    one.appendChild(el('b', '', f[0]));
+  [[ms.length, 'machines', 'machines'], [as.filter(function (a) { return !a.computer; }).length, 'accounts', 'accounts'],
+   [as.filter(function (a) { return a.computer; }).length, 'computer accounts', 'accounts'],
+   [(d.controllers || []).length, 'controllers', 'logs']].forEach(function (f) {
+    var one = el('button', 'a25-fact');
+    one.type = 'button';
+    one.appendChild(el('b', '', num(f[0])));
     one.appendChild(el('span', '', f[1]));
+    one.onclick = function () { a25Go(f[2], ''); };
     facts.appendChild(one);
   });
   hero.appendChild(facts);
   host.appendChild(hero);
-  /* Each kind of trouble as a tile: pressed, the list below is of it alone. */
+  /* Each kind of trouble as a tile: pressed, the machines (or the accounts,
+     where the kind names no machine) that do it. */
   var grid = el('div', 'a25-tiles');
   (d.issues || []).forEach(function (i) {
     var say = A25_SAY[i.key] || {};
-    var t = el('button', 'a25-tile ' + i.level + (i.n ? '' : ' none') + (A25.issue === i.key ? ' on' : ''));
+    var t = el('button', 'a25-tile ' + i.level + (i.n ? '' : ' none'));
     t.type = 'button';
     var top = el('div', 'a25-tile-top');
     top.innerHTML = iconMarkup(say.icon || 'info', 16);
@@ -45762,145 +45941,283 @@ function drawAd25() {
       t.appendChild(fx);
       t.appendChild(el('div', 'a25-tile-l muted', 'last ' + ago(i.last)));
     }
+    t.disabled = !i.n;
     t.onclick = function () {
-      A25.issue = A25.issue === i.key ? '' : i.key;
-      if (A25.issue) A25.view = 'issue';
-      else if (A25.view === 'issue') A25.view = 'machines';
-      drawAd25();
+      a25Go(i.key === 'ldap-daily' ? 'rows' : i.clients ? 'machines' : 'accounts', i.key);
     };
     grid.appendChild(t);
   });
   host.appendChild(grid);
-  host.appendChild(a25Who(d));
 }
-function a25Who(d) {
-  var box = el('div', 'a25-who');
-  var bar = el('div', 'a25-bar');
-  var seg = el('div', 'a25-seg');
-  [['machines', 'By machine'], ['accounts', 'By account'], ['issue', 'Every row']].forEach(function (v) {
-    var b = el('button', A25.view === v[0] ? 'on' : '', v[1]);
-    b.type = 'button';
-    b.onclick = function () { A25.view = v[0]; drawAd25(); };
-    seg.appendChild(b);
-  });
-  bar.appendChild(seg);
-  var q = el('input');
-  q.type = 'search';
-  q.placeholder = 'a machine, an address, an account…';
-  q.value = A25.q;
-  q.oninput = function () {
-    A25.q = q.value;
-    clearTimeout(A25.qt);
-    A25.qt = setTimeout(function () { drawAd25(); var n = document.querySelector('.a25-bar input'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250);
-  };
-  bar.appendChild(q);
-  if (A25.issue) {
-    var chip = el('button', 'a25-chip', '');
-    chip.type = 'button';
-    chip.appendChild(a25Tag(A25.issue));
-    chip.appendChild(el('span', 'a25-x', ' ×'));
-    chip.title = 'Every kind again';
-    chip.onclick = function () { A25.issue = ''; if (A25.view === 'issue') A25.view = 'machines'; drawAd25(); };
-    bar.appendChild(chip);
+/* The three lists: what each column is, how it sorts and how it is drawn. */
+function a25Cols(page) {
+  function names(list, n, td) {
+    td.appendChild(noI18n(el('span', '', (list || []).slice(0, 4).join(', '))));
+    if (n > 4) td.appendChild(el('span', 'muted', ' +' + num(n - 4)));
+    td.title = (list || []).join('\n');
+    return td;
   }
-  box.appendChild(bar);
-  var want = String(A25.q || '').toLowerCase().trim();
-  function hit() {
-    if (!want) return true;
-    for (var i = 0; i < arguments.length; i++) if (String(arguments[i] || '').toLowerCase().indexOf(want) >= 0) return true;
-    return false;
+  function tags(issues) {
+    var w = el('td');
+    var box = el('div', 'a25-tags');
+    Object.keys(issues).sort(function (a, b) { return a25Rank(a) - a25Rank(b) || issues[b] - issues[a]; })
+      .forEach(function (k) { box.appendChild(a25Tag(k, issues[k])); });
+    w.appendChild(box);
+    return w;
   }
-  function only(issues) { return !A25.issue || issues[A25.issue]; }
-  var t = el('table', 'rows a25-t'), head = el('tr'), body = el('tbody');
-  var thead = el('thead');
-  var n = 0;
-  if (A25.view === 'machines') {
-    ['Machine', 'What it does', 'Accounts from it', 'Controllers', 'Times', 'Last'].forEach(function (w, i) { head.appendChild(el('th', i === 4 ? 'num' : '', w)); });
-    (d.machines || []).forEach(function (m) {
-      if (!only(m.issues) || !hit(m.name, m.ip, (m.accounts || []).join(' '))) return;
-      if (++n > 400) return;
-      var tr = el('tr', 'a25-row');
-      var c = el('td');
-      c.appendChild(noI18n(el('b', '', m.name || m.ip)));
-      if (m.name && m.ip) c.appendChild(noI18n(el('div', 'muted small mono', m.ip)));
-      tr.appendChild(c);
-      var w = el('td', 'a25-tags');
-      Object.keys(m.issues).sort(function (a, b) { return a25Rank(a) - a25Rank(b); }).forEach(function (k) { w.appendChild(a25Tag(k, m.issues[k])); });
-      tr.appendChild(w);
-      var ac = el('td', 'small');
-      ac.appendChild(noI18n(el('span', '', (m.accounts || []).slice(0, 4).join(', '))));
-      if (m.accounts_n > 4) ac.appendChild(el('span', 'muted', ' +' + num(m.accounts_n - 4)));
-      ac.title = (m.accounts || []).join('\n');
-      tr.appendChild(ac);
-      tr.appendChild(noI18n(el('td', 'small', (m.servers || []).join(', '))));
-      tr.appendChild(el('td', 'num', num(m.n)));
-      tr.appendChild(stampCell(m.last));
-      tr.onclick = function () { a25Events(m.name || m.ip); };
-      tr.title = 'Press for the events of ' + (m.name || m.ip);
-      body.appendChild(tr);
-    });
-  } else if (A25.view === 'accounts') {
-    ['Account', 'What it does', 'From', 'Times', 'Last'].forEach(function (w, i) { head.appendChild(el('th', i === 3 ? 'num' : '', w)); });
-    (d.accounts || []).forEach(function (a) {
-      if (!only(a.issues) || !hit(a.name, (a.clients || []).join(' '))) return;
-      if (++n > 400) return;
-      var tr = el('tr', 'a25-row');
+  function who(name, ip) {
+    var c = el('td');
+    c.appendChild(noI18n(el('b', '', name || ip || '–')));
+    if (name && ip && name !== ip) c.appendChild(noI18n(el('div', 'muted small mono', ip)));
+    return c;
+  }
+  if (page === 'machines') return [
+    {h: 'Machine', w: '17%', sort: function (m) { return String(m.name || m.ip).toLowerCase(); }, cell: function (m) { return who(m.name, m.ip); }},
+    {h: 'What it does', w: '25%', sort: function (m) { return a25Worst(m.issues) * 1e9 - m.n; }, cell: function (m) { return tags(m.issues); }},
+    {h: 'Accounts from it', w: '22%', sort: function (m) { return -m.accounts_n; }, cell: function (m) { return names(m.accounts, m.accounts_n, el('td', 'small')); }},
+    {h: 'Controllers', w: '14%', sort: function (m) { return (m.servers || []).join(','); }, cell: function (m) { return noI18n(el('td', 'small', (m.servers || []).join(', '))); }},
+    {h: 'Times', w: '7%', cls: 'num', sort: function (m) { return -m.n; }, cell: function (m) { return el('td', 'num', num(m.n)); }},
+    {h: 'Last', w: '15%', sort: function (m) { return -m.last; }, cell: function (m) { return stampCell(m.last); }}];
+  if (page === 'accounts') return [
+    {h: 'Account', w: '22%', sort: function (a) { return String(a.name).toLowerCase(); }, cell: function (a) {
       var c = el('td');
       c.appendChild(noI18n(el('b', '', a.name)));
       c.appendChild(document.createTextNode(' '));
       c.appendChild(el('span', 'tag ' + (a.computer ? 'dim' : 'info'), a.computer ? 'computer' : 'account'));
-      tr.appendChild(c);
-      var w = el('td', 'a25-tags');
-      Object.keys(a.issues).sort(function (x, y) { return a25Rank(x) - a25Rank(y); }).forEach(function (k) { w.appendChild(a25Tag(k, a.issues[k])); });
-      tr.appendChild(w);
-      var fr = el('td', 'small');
-      fr.appendChild(noI18n(el('span', '', (a.clients || []).slice(0, 4).join(', '))));
-      if (a.clients_n > 4) fr.appendChild(el('span', 'muted', ' +' + num(a.clients_n - 4)));
-      fr.title = (a.clients || []).join('\n');
-      tr.appendChild(fr);
-      tr.appendChild(el('td', 'num', num(a.n)));
-      tr.appendChild(stampCell(a.last));
-      tr.onclick = function () { a25Events(a.name); };
-      tr.title = 'Press for the events of ' + a.name;
-      body.appendChild(tr);
-    });
-  } else {
-    ['What', 'Machine', 'Account', 'What it was', 'Controller', 'Times', 'First', 'Last'].forEach(function (w, i) { head.appendChild(el('th', i === 5 ? 'num' : '', w)); });
-    var all = [];
-    (d.issues || []).forEach(function (i) { if (!A25.issue || A25.issue === i.key) all = all.concat(i.rows); });
-    all.sort(function (x, y) { return a25Rank(x.issue) - a25Rank(y.issue) || y.n - x.n; });
-    all.forEach(function (r) {
-      if (!hit(r.client, r.ip, r.account, r.detail, r.server)) return;
-      if (++n > 600) return;
-      var tr = el('tr', 'a25-row');
-      var w = el('td');
-      w.appendChild(a25Tag(r.issue));
-      tr.appendChild(w);
-      var c = el('td');
-      c.appendChild(noI18n(el('span', '', r.client || r.ip || '–')));
-      if (r.client && r.ip) c.appendChild(noI18n(el('div', 'muted small mono', r.ip)));
-      tr.appendChild(c);
-      tr.appendChild(noI18n(el('td', '', r.account || '–')));
-      tr.appendChild(noI18n(el('td', 'small', r.detail || '')));
-      tr.appendChild(noI18n(el('td', 'small', r.server || '')));
-      tr.appendChild(el('td', 'num', num(r.n)));
-      tr.appendChild(stampCell(r.first));
-      tr.appendChild(stampCell(r.last));
-      tr.onclick = function () { a25Events(r.account || r.client || r.ip); };
-      body.appendChild(tr);
-    });
-  }
-  thead.appendChild(head);
-  t.appendChild(thead);
-  t.appendChild(body);
-  var wrap = el('div', 'scroll');
-  wrap.appendChild(t);
-  box.appendChild(wrap);
-  if (!n) box.appendChild(el('div', 'center muted', want || A25.issue ? 'Nothing matches.' : 'Nothing seen in this window.'));
-  else if (n > 400) box.appendChild(el('p', 'muted small', 'The first ' + num(A25.view === 'issue' ? 600 : 400) + ' of ' + num(n) + ' - the search box finds the rest.'));
-  return box;
+      return c; }},
+    {h: 'What it does', w: '25%', sort: function (a) { return a25Worst(a.issues) * 1e9 - a.n; }, cell: function (a) { return tags(a.issues); }},
+    {h: 'From', w: '31%', sort: function (a) { return -a.clients_n; }, cell: function (a) { return names(a.clients, a.clients_n, el('td', 'small')); }},
+    {h: 'Times', w: '7%', cls: 'num', sort: function (a) { return -a.n; }, cell: function (a) { return el('td', 'num', num(a.n)); }},
+    {h: 'Last', w: '15%', sort: function (a) { return -a.last; }, cell: function (a) { return stampCell(a.last); }}];
+  return [
+    {h: 'What', w: '16%', sort: function (r) { return a25Rank(r.issue) * 1e9 - r.n; }, cell: function (r) { var td = el('td'); td.appendChild(a25Tag(r.issue)); return td; }},
+    {h: 'Machine', w: '12%', sort: function (r) { return String(r.client || r.ip).toLowerCase(); }, cell: function (r) { return who(r.client, r.ip); }},
+    {h: 'Account', w: '14%', sort: function (r) { return String(r.account).toLowerCase(); }, cell: function (r) { return noI18n(el('td', '', r.account || '–')); }},
+    {h: 'What it was', w: '17%', sort: function (r) { return String(r.detail).toLowerCase(); }, cell: function (r) { return noI18n(el('td', 'small', r.detail || '')); }},
+    {h: 'Controller', w: '9%', sort: function (r) { return String(r.server).toLowerCase(); }, cell: function (r) { return noI18n(el('td', 'small', r.server || '')); }},
+    {h: 'Times', w: '6%', cls: 'num', sort: function (r) { return -r.n; }, cell: function (r) { return el('td', 'num', num(r.n)); }},
+    {h: 'First', w: '12.5%', sort: function (r) { return -r.first; }, cell: function (r) { return stampCell(r.first); }},
+    {h: 'Last', w: '12.5%', sort: function (r) { return -r.last; }, cell: function (r) { return stampCell(r.last); }}];
 }
-function a25Rank(k) { return {crit: 0, warn: 1, info: 2}[a25Level(k)] || 3; }
+/* What each list's search box knows by name, as every other box on these
+   pages: `machine:PC*`, `what:NTLM`, `-controller:pvtcdcx01`, `(a OR b)`. */
+var A25_QF = {
+  machines: [['machine', 'the machine, by name', 'PC0*'], ['ip', 'its address, or a range', '172.29.153.0/24'],
+             ['what', 'what it does', '*LDAP*'], ['account', 'an account from it', 'svc-*'],
+             ['controller', 'the controller that saw it', 'pftcdcx02'], ['times', 'how many times', '>10']],
+  accounts: [['account', 'the account', 'svc-*'], ['kind', 'account or computer', 'computer'],
+             ['what', 'what it does', '*RC4*'], ['from', 'a machine it comes from', 'PC0*'],
+             ['times', 'how many times', '>10']],
+  rows: [['what', 'the kind of trouble', '*LDAP*'], ['machine', 'the machine, by name', 'PC0*'],
+         ['ip', 'its address, or a range', '172.29.153.0/24'], ['account', 'the account', 'svc-*'],
+         ['detail', 'what it was', '*389*'], ['controller', 'the controller that saw it', 'pftcdcx02'],
+         ['times', 'how many times', '>10']]
+};
+function a25Words(issues) {
+  return Object.keys(issues || {}).map(function (k) { return a25Issue(k).words || k; });
+}
+function a25Value(page, r, f) {
+  if (page === 'machines') {
+    return {machine: r.name || '', ip: r.ip || '', what: a25Words(r.issues), account: r.accounts || [],
+            controller: r.servers || [], times: r.n}[f];
+  }
+  if (page === 'accounts') {
+    return {account: r.name || '', kind: r.computer ? 'computer' : 'account', what: a25Words(r.issues),
+            from: r.clients || [], times: r.n}[f];
+  }
+  return {what: a25Issue(r.issue).words || r.issue, machine: r.client || '', ip: r.ip || '',
+          account: r.account || '', detail: r.detail || '', controller: r.server || '', times: r.n}[f];
+}
+function a25All(d, page) {
+  if (page === 'machines') return d.machines || [];
+  if (page === 'accounts') return d.accounts || [];
+  var all = [];
+  (d.issues || []).forEach(function (i) { all = all.concat(i.rows); });
+  return all;
+}
+function a25Data(d, page) {
+  var parsed = qLocalParse(A25.q, A25_QKNOWN[page]);
+  var words = String(A25.q || '').toLowerCase().split(/\s+/).filter(Boolean);
+  return a25All(d, page).filter(function (r) {
+    if (A25.issue) {
+      if (page === 'rows' ? r.issue !== A25.issue : !(r.issues || {})[A25.issue]) return false;
+    }
+    if (A25.dc) {
+      var dcs = page === 'rows' ? [r.server] : page === 'machines' ? (r.servers || []) : null;
+      if (dcs && dcs.indexOf(A25.dc) < 0) return false;
+    }
+    if (!r._hay) {
+      r._hay = A25_QF[page].map(function (f) {
+        var v = a25Value(page, r, f[0]);
+        return Array.isArray(v) ? v.join(' ') : String(v === undefined ? '' : v);
+      }).join(' ').toLowerCase();
+    }
+    if (parsed) return qLocalTest(parsed, function (f) { return a25Value(page, r, f); }, function () { return r._hay; });
+    return words.every(function (w) { return r._hay.indexOf(w) >= 0; });
+  });
+}
+var A25_QKNOWN = {};
+Object.keys(A25_QF).forEach(function (p) {
+  A25_QKNOWN[p] = {};
+  A25_QF[p].forEach(function (f) { A25_QKNOWN[p][f[0]] = true; });
+});
+/* The row of filters, built once for the page it is on - the search box
+   keeps its focus and its offers while what is under it is drawn again. */
+function a25List(host, d) {
+  var page = A25.page;
+  var bar = el('div', 'filters a25-filters');
+  var q = el('input');
+  q.type = 'search';
+  q.id = 'a25-q';
+  q.placeholder = 'a machine, an address, an account…';
+  q.value = A25.q;
+  explain(q, 'Searches every row of this list, not the page in front of you - by any of its columns '
+    + '(machine:, account:, what:, controller: …) or by a word anywhere. Case does not matter.');
+  q.oninput = function () {
+    A25.q = q.value;
+    clearTimeout(A25.qt);
+    A25.qt = setTimeout(function () { A25.st[page].pg = 0; a25Rows(); }, 200);
+  };
+  bar.appendChild(q);
+  var kind = el('select');
+  kind.title = 'One kind of trouble, or every one';
+  var o0 = el('option', '', 'every kind of trouble');
+  o0.value = '';
+  kind.appendChild(o0);
+  (d.issues || []).forEach(function (i) {
+    if (!i.n && i.key !== A25.issue) return;
+    var o = el('option', '', i.words);
+    o.value = i.key;
+    kind.appendChild(o);
+  });
+  kind.value = A25.issue;
+  kind.onchange = function () { A25.issue = kind.value; A25.st[page].pg = 0; a25Fix(); a25Rows(); };
+  bar.appendChild(kind);
+  if (page !== 'accounts') {
+    var dc = el('select');
+    dc.title = 'One controller, or every one';
+    var d0 = el('option', '', 'every controller');
+    d0.value = '';
+    dc.appendChild(d0);
+    (d.controllers || []).forEach(function (n) { var o = noI18n(el('option', '', n)); o.value = n; dc.appendChild(o); });
+    dc.value = A25.dc || '';
+    dc.onchange = function () { A25.dc = dc.value; A25.st[page].pg = 0; a25Rows(); };
+    bar.appendChild(dc);
+  }
+  var per = el('select');
+  per.title = 'How many rows a page';
+  [25, 50, 100, 200].forEach(function (n) { var o = el('option', '', n + ' a page'); o.value = String(n); per.appendChild(o); });
+  per.value = String(A25.per);
+  per.onchange = function () {
+    A25.per = Number(per.value) || 50;
+    try { localStorage.setItem('a25-per', String(A25.per)); } catch (e) { /* none */ }
+    A25.st[page].pg = 0;
+    a25Rows();
+  };
+  bar.appendChild(per);
+  var wipe = cmdButton('Clear', 'close', 'small');
+  wipe.onclick = function () {
+    A25.q = ''; A25.issue = ''; A25.dc = '';
+    A25.st[page] = {sort: null, pg: 0};
+    drawAd25();
+  };
+  bar.appendChild(wipe);
+  bar.appendChild(el('span', 'right muted small a25-found', ''));
+  host.appendChild(bar);
+  host.appendChild(el('div', 'a25-fix'));
+  var box = el('div', 'a25-scroll');
+  box.id = 'a25-box';
+  host.appendChild(box);
+  var pg = el('div', 'pager');
+  pg.id = 'a25-pager';
+  host.appendChild(pg);
+  qSuggest(q, {fields: A25_QF[page], card: true, values: function (field, typed) {
+    return qLocalValues(a25All(A25.d || {}, page), function (r, f) { return a25Value(page, r, f); }, field, typed);
+  }});
+  a25Fix();
+  a25Rows();
+}
+/* How to put the one kind of trouble chosen right, over its rows. */
+function a25Fix() {
+  var host = document.querySelector('.a25-fix');
+  if (!host) return;
+  clear(host);
+  if (!A25.issue || !A25_SAY[A25.issue]) return;
+  var say = el('div', 'a25-said ' + a25Level(A25.issue));
+  say.appendChild(el('b', '', 'Fix: '));
+  say.appendChild(document.createTextNode(A25_SAY[A25.issue].fix));
+  host.appendChild(say);
+}
+/* The table and its pager, drawn again on their own: a search, a sort, a page. */
+function a25Rows() {
+  var d = A25.d, page = A25.page, box = $('a25-box');
+  if (!d || !box) return;
+  var st = A25.st[page] = A25.st[page] || {sort: null, pg: 0};
+  var cols = a25Cols(page);
+  var all = a25All(d, page).length;
+  var rows = a25Data(d, page);
+  if (st.sort) {
+    var c = cols[st.sort.col], dir = st.sort.desc ? -1 : 1;
+    rows = rows.slice().sort(function (x, y) {
+      var a = c.sort(x), b = c.sort(y);
+      return (a < b ? -1 : a > b ? 1 : 0) * dir;
+    });
+  } else if (page === 'rows') {
+    rows = rows.slice().sort(function (x, y) { return a25Rank(x.issue) - a25Rank(y.issue) || y.n - x.n; });
+  }
+  var pages = Math.max(1, Math.ceil(rows.length / A25.per));
+  if (st.pg >= pages) st.pg = pages - 1;
+  var shown = rows.slice(st.pg * A25.per, (st.pg + 1) * A25.per);
+  var found = document.querySelector('.a25-found');
+  if (found) found.textContent = rows.length === all ? num(all) + ' row(s)' : num(rows.length) + ' of ' + num(all) + ' row(s)';
+  clear(box);
+  var t = el('table', 'rows a25-t');
+  t.dataset.noSort = '1';
+  var cg = el('colgroup');
+  cols.forEach(function (c) { var col = el('col'); col.style.width = c.w; cg.appendChild(col); });
+  t.appendChild(cg);
+  var thead = el('thead'), hr = el('tr');
+  cols.forEach(function (c, i) {
+    var th = el('th', (c.cls || '') + ' a25-th');
+    th.appendChild(el('span', '', c.h));
+    var on = st.sort && st.sort.col === i;
+    th.appendChild(el('span', 'a25-arrow' + (on ? ' on' : ''), on ? (st.sort.desc ? ' ▼' : ' ▲') : ' ⇅'));
+    th.onclick = function () {
+      st.sort = on ? {col: i, desc: !st.sort.desc} : {col: i, desc: false};
+      st.pg = 0;
+      a25Rows();
+    };
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  t.appendChild(thead);
+  var body = el('tbody');
+  shown.forEach(function (r) {
+    var tr = el('tr', 'a25-row');
+    cols.forEach(function (c) { tr.appendChild(c.cell(r)); });
+    var what = page === 'accounts' ? r.name : page === 'machines' ? (r.name || r.ip) : (r.account || r.client || r.ip);
+    tr.title = 'Press for the events of ' + what;
+    tr.onclick = function (e) {
+      if (e.target && e.target.closest && e.target.closest('a,button')) return;
+      a25Events(what);
+    };
+    body.appendChild(tr);
+  });
+  t.appendChild(body);
+  box.appendChild(t);
+  if (!shown.length) box.appendChild(el('div', 'center muted a25-none', A25.q || A25.issue || A25.dc ? 'Nothing matches.' : 'Nothing seen in this window.'));
+  box.scrollTop = 0;
+  /* The same pager as every other list on these pages. */
+  pager('a25-pager', st.pg, A25.per, rows.length, function (n) { st.pg = n; a25Rows(); });
+  a25Fit(box);
+}
+/* The list as tall as the window allows: its rows scroll inside, its pager
+   stays in sight. On a phone the page scrolls as a whole instead. */
+function a25Fit(box) {
+  if (!box || window.innerWidth < 700) { if (box) box.style.maxHeight = ''; return; }
+  box.style.maxHeight = Math.max(260, window.innerHeight - box.getBoundingClientRect().top - 72) + 'px';
+}
+window.addEventListener('resize', function () { a25Fit($('a25-box')); });
 /* The events behind a row, on the page of the events themselves. */
 function a25Events(what) {
   if (!what) return;
@@ -45920,14 +46237,20 @@ function drawAd25Sources() {
     var seen = src[s[0]] || {};
     var newest = Math.max.apply(null, [0].concat(Object.keys(seen).map(function (k) { return Number(seen[k]) || 0; })));
     var fresh = newest && Date.now() / 1000 - newest < 3 * 86400;
-    var b = el('div', 'a25-src ' + (fresh ? 'ok' : newest ? 'old' : 'no'));
+    /* One that writes only when something happens and has said nothing is
+       grey, not red: quiet may be good news. */
+    var quiet = !fresh && !!s[3];
+    var b = el('div', 'a25-src ' + (fresh ? 'ok' : quiet ? 'quiet' : newest ? 'old' : 'no'));
     var h = el('div', 'a25-src-h');
-    h.appendChild(el('span', 'se-dot' + (fresh ? ' ok' : newest ? '' : ' bad')));
+    h.appendChild(el('span', 'se-dot' + (fresh ? ' ok' : quiet ? ' quiet' : newest ? '' : ' bad')));
     h.appendChild(el('b', '', s[1]));
     b.appendChild(h);
     b.appendChild(el('div', 'small muted', s[2]));
     b.appendChild(el('div', 'small', fresh ? 'arriving from ' + Object.keys(seen).length + ' controller(s), last ' + ago(newest)
+      : quiet ? (newest ? 'nothing lately - last ' + ago(newest) : 'nothing has come yet')
       : newest ? 'last seen ' + ago(newest) : 'not arriving - see below how to send it'));
+    if (quiet) b.appendChild(el('div', 'small muted', s[3] + ' The check below tells whether it is sent.'));
+    if (fresh) b.appendChild(noI18n(el('div', 'small muted', Object.keys(seen).sort().join(', '))));
     if (s[0] === 'ds') {
       var diag = Number(src._diag) || 0;
       b.appendChild(el('div', 'small ' + (diag ? '' : 'warn'), diag ? 'who did it (2889): last ' + ago(diag)
@@ -45937,18 +46260,18 @@ function drawAd25Sources() {
   });
   host.appendChild(grid);
 }
-function a25Copy(pre) {
-  var b = cmdButton('Copy', 'copy', 'small');
-  b.onclick = function () { copyText(pre.textContent, 'copied'); };
-  return b;
-}
 function drawAd25How() {
   var host = $('a25-how');
   if (!host || host.dataset.drawn) return;
   host.dataset.drawn = '1';
   Array.prototype.forEach.call(host.querySelectorAll('pre'), function (pre) {
+    /* This server, by the name the page was opened with. */
+    if (pre.textContent.indexOf('ISEMON_HOST') >= 0)
+      pre.textContent = pre.textContent.replace(/ISEMON_HOST/g, location.hostname);
     var bar = el('div', 'a25-copy');
-    bar.appendChild(a25Copy(pre));
+    var b = cmdButton('Copy', 'copy', 'small');
+    b.onclick = function () { copyText(pre.textContent, 'copied'); };
+    bar.appendChild(b);
     pre.parentNode.insertBefore(bar, pre);
   });
 }
@@ -45956,15 +46279,22 @@ function ad25Show(on) {
   var b = document.querySelector('#w-pages button[data-page="ad25"]');
   if (b) b.hidden = !on;
   if (!on && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25') winShowPage('over');
+  /* Opened straight at it - a reload, a link - the page was shown before
+     this was read: asked for once the status says it is there. */
+  if (on && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25' && !A25.d && TAB === 'windows') loadAd25();
 }
-$('a25-window').onchange = function () { loadAd25(); };
+$('a25-window').onchange = function () { A25.built = ''; loadAd25(); };
 $('a25-again').onclick = function () { loadAd25(); };
-/* Asked again every minute while the page is the one being read. */
+/* Asked again every minute while the page is the one being read - not while
+   somebody is typing in its search. */
 setInterval(function () {
-  if (TAB === 'windows' && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25' && !document.hidden) loadAd25(true);
+  if (TAB === 'windows' && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25' && !document.hidden
+      && document.activeElement !== $('a25-q')) loadAd25(true);
 }, 60000);
-var _a25Draw = drawAd25;
-drawAd25 = function () { _a25Draw(); drawAd25Sources(); drawAd25How(); };
+/* ...and drawn now if this block came after the page was opened. */
+setTimeout(function () {
+  if (typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25' && TAB === 'windows' && !A25.d) loadAd25();
+}, 0);
 </script>
 <script nonce="<?= h($nonce) ?>">
 /* ==========================================================================

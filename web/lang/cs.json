@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.322",
+  "version": "1.10.323",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -147,6 +147,10 @@
   "s.3-the-root-certificate-optional.9daa03af": {
    "source": "3. the root certificate (optional)",
    "text": "3. kořenový certifikát (nepovinný)"
+  },
+  "s.3-whether-everything-on-a-controller.96e575f2": {
+   "source": "3. Whether everything on a controller is as it should be",
+   "text": "3. Zda je na řadiči vše, jak má být"
   },
   "s.30-days.7d4278a8": {
    "source": "30 days",
@@ -919,6 +923,10 @@
   "s.a-machine-an-address-an-account.2d44d6dc": {
    "source": "a machine, an address, an account…",
    "text": "stroj, adresa, účet…"
+  },
+  "s.a-machine-it-comes-from.e970f26c": {
+   "source": "a machine it comes from",
+   "text": "stroj, ze kterého přichází"
   },
   "s.a-machine-on-a-socket-authenticating.16367b7f": {
    "source": "A machine on a socket, authenticating itself with 802.1X — a certificate or a domain account, over the wire.",
@@ -1872,6 +1880,10 @@
    "source": "account may look at every page and change nothing — no ban, no setting, not even a fetch.",
    "text": "účet může prohlížet všechny stránky a nic nemění — žádnou blokaci, žádné nastavení, ani stahování."
   },
+  "s.account-or-computer.52918d8a": {
+   "source": "account or computer",
+   "text": "účet nebo počítač"
+  },
   "s.account-s.76db4867": {
    "source": "account(s).",
    "text": "účtů."
@@ -2687,6 +2699,10 @@
   "s.an-account-failed-to-sign-in.1a7b048c": {
    "source": "an account failed to sign in",
    "text": "účet se nepřihlásil"
+  },
+  "s.an-account-from-it.cd46cad1": {
+   "source": "an account from it",
+   "text": "účet z něj"
   },
   "s.an-account-marked.daa8a61c": {
    "source": "An account marked",
@@ -4868,10 +4884,6 @@
    "source": "button",
    "text": "tlačítko"
   },
-  "s.by-account.c3c3a9d5": {
-   "source": "By account",
-   "text": "Podle účtu"
-  },
   "s.by-dhcp.8bff9884": {
    "source": "by DHCP",
    "text": "z DHCP"
@@ -4915,10 +4927,6 @@
   "s.by-kind-of-job.4dcb4b03": {
    "source": "By kind of job",
    "text": "Podle druhu úlohy"
-  },
-  "s.by-machine.6626fbe2": {
-   "source": "By machine",
-   "text": "Podle stroje"
   },
   "s.by-mail.fd54a0e9": {
    "source": "by mail",
@@ -8332,13 +8340,13 @@
    "source": "every job",
    "text": "každá úloha"
   },
-  "s.every-kind-again.1e6854a2": {
-   "source": "Every kind again",
-   "text": "Zase všechny druhy"
-  },
   "s.every-kind-of-line.dd01a896": {
    "source": "every kind of line",
    "text": "všechny druhy řádků"
+  },
+  "s.every-kind-of-trouble.02087225": {
+   "source": "every kind of trouble",
+   "text": "všechny druhy potíží"
   },
   "s.every-kind.51addc5f": {
    "source": "every kind",
@@ -11440,6 +11448,10 @@
    "source": "how many packets the rule counted",
    "text": "kolik paketů pravidlo započítalo"
   },
+  "s.how-many-rows-a-page.9df3d7c3": {
+   "source": "How many rows a page",
+   "text": "Kolik řádků na stránku"
+  },
   "s.how-many-rows-are-asked-for.0a4a8bac": {
    "source": "How many rows are asked for at a time.",
    "text": "Kolik řádků se načítá najednou."
@@ -11491,6 +11503,10 @@
   "s.how-many-times-the-router-dropped.4ff4b021": {
    "source": "How many times the router dropped a packet from this address while the ban was on — read off the router’s own counter for that entry. Nothing means the counter was zero or the router was not asked.",
    "text": "Kolikrát router zahodil paket z této adresy, zatímco blokace platila — přečteno z vlastního čítače routeru pro danou položku. Nic znamená, že čítač byl nulový nebo se router nedotazoval."
+  },
+  "s.how-many-times.32d06e08": {
+   "source": "how many times",
+   "text": "kolikrát"
   },
   "s.how-many-to-show-at-a.cb94ff41": {
    "source": "How many to show at a time.",
@@ -13028,10 +13044,6 @@
    "source": "Israel",
    "text": "Izrael"
   },
-  "s.issue.00819c0e": {
-   "source": "issue",
-   "text": "issue"
-  },
   "s.issued-and-renewed.f55389b6": {
    "source": "Issued and renewed",
    "text": "Vydáno a obnoveno"
@@ -13311,6 +13323,10 @@
   "s.its-acme-directory.3f45b7e1": {
    "source": "Its ACME directory",
    "text": "Jeho ACME directory"
+  },
+  "s.its-address-or-a-range.f3baf83c": {
+   "source": "its address, or a range",
+   "text": "jeho adresa, nebo rozsah"
   },
   "s.its-address.c54dbb70": {
    "source": "Its address",
@@ -14243,6 +14259,10 @@
   "s.ldap-who-binds-in-the-clear.3ab0b534": {
    "source": "LDAP: who binds in the clear or unsigned (2889) and channel binding (3039). Takes effect at once; at 2 every such bind is an event - on a busy controller leave it on for the weeks before the change.",
    "text": "LDAP: kdo se připojuje nešifrovaně nebo bez podpisu (2889) a channel binding (3039). Platí hned; na úrovni 2 je každý takový bind událostí - na vytíženém řadiči to nechte zapnuté jen na týdny před výměnou."
+  },
+  "s.ldap.31024ad9": {
+   "source": "*LDAP*",
+   "text": "*LDAP*"
   },
   "s.ldap.d8343c68": {
    "source": "LDAP",
@@ -15199,6 +15219,10 @@
   "s.machines-the-emerging-threats-project-has.210a868d": {
    "source": "Machines the Emerging Threats project has seen being used by somebody who is not their owner - a hacked server, a router with the password still on the sticker. Six hundred or so, rebuilt daily.",
    "text": "Stroje, které projekt Emerging Threats viděl používat někým, kdo není jejich vlastníkem – napadený server, router s heslem stále na nálepce. Asi šest set, přestavováno denně."
+  },
+  "s.machines.2940ff1e": {
+   "source": "Machines",
+   "text": "Stroje"
   },
   "s.machines.6516c232": {
    "source": "machines",
@@ -17696,6 +17720,10 @@
    "source": "Nothing has come through this door in the window above.",
    "text": "V okně výše tímto vstupem nic neprošlo."
   },
+  "s.nothing-has-come-yet.3f40766d": {
+   "source": "nothing has come yet",
+   "text": "zatím nic nepřišlo"
+  },
   "s.nothing-has-failed-from-this-address.c6956707": {
    "source": "Nothing has failed from this address",
    "text": "Z této adresy nic neselhalo"
@@ -18836,6 +18864,10 @@
    "source": "one command that writes it",
    "text": "jeden příkaz, který ho zapíše"
   },
+  "s.one-controller-or-every-one.cc591560": {
+   "source": "One controller, or every one",
+   "text": "Jeden řadič, nebo všechny"
+  },
   "s.one-database-holds-everything-the-authentications.0abede90": {
    "source": "One database holds everything: the authentications read, who is banned, the story of every ban, the public lists, the country ranges and the accounts. It is a file on this machine unless you say otherwise.",
    "text": "Jedna databáze obsahuje vše: přečtené autentizace, kdo je zablokován, historii každé blokace, veřejné seznamy, rozsahy zemí a účty. Je to soubor na tomto počítači, pokud neurčíte jinak."
@@ -18931,6 +18963,10 @@
   "s.one-kind-of-thing-this-daemon.7b36647d": {
    "source": "One kind of thing this daemon does.",
    "text": "Jeden druh činnosti, kterou tento démon vykonává."
+  },
+  "s.one-kind-of-trouble-or-every.f7231b01": {
+   "source": "One kind of trouble, or every one",
+   "text": "Jeden druh potíží, nebo všechny"
   },
   "s.one-line-of-a.104b3de8": {
    "source": "One line of a",
@@ -20336,6 +20372,10 @@
    "source": "PC-01, 10.1.*",
    "text": "PC-01, 10.1.*"
   },
+  "s.pc0.a8ff7c02": {
+   "source": "PC0*",
+   "text": "PC0*"
+  },
   "s.peer.2b974ba4": {
    "source": "peer",
    "text": "protistrana"
@@ -20447,6 +20487,10 @@
   "s.pfssh.3ce39578": {
    "source": "pfssh",
    "text": "pfssh"
+  },
+  "s.pftcdcx02.a3579e56": {
+   "source": "pftcdcx02",
+   "text": "pftcdcx02"
   },
   "s.pfx-for-older-systems.c5d8f8f2": {
    "source": "PFX for older systems",
@@ -21403,6 +21447,10 @@
   "s.rc4-only.4afcc41c": {
    "source": "RC4 only",
    "text": "Jen RC4"
+  },
+  "s.rc4.8ee292c1": {
+   "source": "*RC4*",
+   "text": "*RC4*"
   },
   "s.rcvd.87dec2fa": {
    "source": "rcvd",
@@ -22652,6 +22700,10 @@
    "source": "Rules",
    "text": "Pravidla"
   },
+  "s.run-as-administrator-on-each-controller.b2c1bb83": {
+   "source": "Run as administrator on each controller - pasted whole into a PowerShell window, or saved as a .ps1; it changes nothing. It checks the audit policy, the LDAP logging, the SMB1 and NTLM audit, the sizes of the logs, what each log wrote in the last seven days, and NXLog - its service, its configuration and its errors. Every line says OK, WARN or FAIL. A log with events of its own that the card above still says nothing came from is a log NXLog does not send.",
+   "text": "Spusťte jako správce na každém řadiči - vložte celý do okna PowerShellu, nebo uložte jako .ps1; nic nemění. Zkontroluje auditní politiku, logování LDAP, audit SMB1 a NTLM, velikosti logů, co který log za posledních sedm dní zapsal, a NXLog - jeho službu, konfiguraci a chyby. Každý řádek říká OK, WARN nebo FAIL. Log, který vlastní události má, ale karta výše o něm říká, že nic nepřišlo, NXLog neposílá."
+  },
   "s.run-out-or-within-7-days.09f2b30d": {
    "source": "run out, or within 7 days",
    "text": "vypršel, nebo do 7 dní"
@@ -23047,6 +23099,10 @@
   "s.searches-every-refused-attempt-on-the.e7786ded": {
    "source": "Searches every refused attempt on the server, not the page in front of you: the address, the user name offered, what ISE said, the tunnel group and the device. Case does not matter.",
    "text": "Prohledává všechny odmítnuté pokusy na serveru, ne jen zobrazenou stránku: adresu, zadané uživatelské jméno, co řekl ISE, tunnel group a zařízení. Na velikosti písmen nezáleží."
+  },
+  "s.searches-every-row-of-this-list.0ea7622e": {
+   "source": "Searches every row of this list, not the page in front of you - by any of its columns (machine:, account:, what:, controller: …) or by a word anywhere. Case does not matter.",
+   "text": "Hledá ve všech řádcích tohoto seznamu, ne jen na stránce před vámi - podle kteréhokoli sloupce (machine:, account:, what:, controller: …) nebo podle slova kdekoli. Na velikosti písmen nezáleží."
   },
   "s.searches-every-successful-login-on-the.695458d4": {
    "source": "Searches every successful login on the server: the name, the address it came from, the authorisation profile and the device. Case does not matter.",
@@ -24776,6 +24832,10 @@
    "source": "sudo",
    "text": "sudo"
   },
+  "s.sum.e9dff355": {
+   "source": "sum",
+   "text": "sum"
+  },
   "s.suriname.b17fc6f0": {
    "source": "Suriname",
    "text": "Surinam"
@@ -24783,6 +24843,10 @@
   "s.svalbard-and-jan-mayen.ac99404d": {
    "source": "Svalbard and Jan Mayen",
    "text": "Špicberky a Jan Mayen"
+  },
+  "s.svc.62b126c7": {
+   "source": "svc-*",
+   "text": "svc-*"
   },
   "s.svc.a0089182": {
    "source": "svc",
@@ -25896,6 +25960,10 @@
    "source": "The account you are signed in as. Press it for what it may do and where that comes from, its password where it is kept here, and the columns of the tables: switching on editing them, and putting them back as they come.",
    "text": "Účet, pod kterým jste přihlášeni. Klikněte na něj a uvidíte, co smí a odkud to pochází, jeho heslo, pokud je uloženo zde, a sloupce tabulek: zapnutí jejich úprav a vrácení do výchozího stavu."
   },
+  "s.the-account.bcf5ad42": {
+   "source": "the account",
+   "text": "účet"
+  },
   "s.the-accounting-file-the-wireless-controller.59901385": {
    "source": "The accounting file the wireless controller writes, which is where the access point, the network, the VLAN and the address the machine was given actually are. It makes no rows of its own — it is joined to the sign-ins by the machine’s MAC.",
    "text": "Účtovací soubor, který zapisuje bezdrátový kontrolér, a v něm je skutečně uvedeno, jaký access point, síť, VLAN a adresu počítač dostal. Vlastní řádky nevytváří — k přihlášením se připojuje podle MAC adresy počítače."
@@ -26675,6 +26743,10 @@
   "s.the-controller-s-own-count-of.d6ec07e6": {
    "source": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.",
    "text": "Vlastní počet LDAP bindů, které by 2025 odmítl, od řadiče - jednou denně i bez podrobného logování."
+  },
+  "s.the-controller-that-saw-it.f196f27c": {
+   "source": "the controller that saw it",
+   "text": "řadič, který to viděl"
   },
   "s.the-controllers-the-domain-names.0321e7d3": {
    "source": "The controllers the domain names",
@@ -27988,6 +28060,10 @@
    "source": "the KDC’s own warnings about RC4 and missing keys",
    "text": "vlastní varování KDC o RC4 a chybějících klíčích"
   },
+  "s.the-kdc-writes-here-only-when.2cb38cf6": {
+   "source": "The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used.",
+   "text": "KDC sem zapisuje jen tehdy, když účtu chybí požadované klíče, nebo (s aktualizacemi z roku 2026) když se použije RC4."
+  },
   "s.the-kernel-s-command-line-has.dd5541ef": {
    "source": "The kernel's command line has selinux=0 - it stays off whatever the configuration says.",
    "text": "Příkazová řádka jádra má selinux=0 - zůstane vypnutý, ať říká konfigurace cokoli."
@@ -28075,6 +28151,10 @@
   "s.the-kind-of-line.e75a5db2": {
    "source": "the kind of line",
    "text": "druh řádku"
+  },
+  "s.the-kind-of-trouble.49fe9395": {
+   "source": "the kind of trouble",
+   "text": "druh potíží"
   },
   "s.the-kind.a74aa40f": {
    "source": "The kind",
@@ -28256,6 +28336,10 @@
    "source": "the logon type",
    "text": "typ přihlášení"
   },
+  "s.the-logs-and-how-to-send.7f1577c6": {
+   "source": "The logs and how to send them",
+   "text": "Logy a jak je poslat"
+  },
   "s.the-logs-are-read-and-not.7be06689": {
    "source": "The logs are read, and not one line of acme’s has been found in them. In acme: Settings → isemon - isemon=1, this machine in isemon_targets - then Send a test line. The Logs tab says whether the files are there and readable.",
    "text": "Logy se čtou, ale nenašel se v nich ani jeden řádek od acme. V acme: Settings → isemon - isemon=1, tento stroj v isemon_targets - pak Send a test line. Záložka Logy řekne, zda soubory existují a jdou číst."
@@ -28347,6 +28431,10 @@
   "s.the-machine-accounts-are-counted-apart.a09b9de3": {
    "source": "· the machine accounts are counted apart",
    "text": "· účty počítačů se počítají zvlášť"
+  },
+  "s.the-machine-by-name.6aa8aa44": {
+   "source": "the machine, by name",
+   "text": "stroj podle jména"
   },
   "s.the-machine-it-came-from.727d8ea0": {
    "source": "the machine it came from",
@@ -31656,6 +31744,10 @@
    "source": "Times",
    "text": "Časy"
   },
+  "s.times.7196b587": {
+   "source": "times",
+   "text": "kolikrát"
+  },
   "s.timor-leste.2d79f6db": {
    "source": "Timor-Leste",
    "text": "Východní Timor"
@@ -33120,9 +33212,9 @@
    "source": "what a disk that spins writes in a second in the background",
    "text": "kolik rotační disk zapíše za sekundu na pozadí"
   },
-  "s.what-a-domain-controller-of-windows.8d0b21f6": {
-   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below; a row opens the events behind it.",
-   "text": "Co řadič domény s Windows Serverem 2025 odmítne, ale řadič 2016 pustí - a které stroje a účty to tu pořád dělají. Počítá se z vlastních logů řadičů, jak přicházejí; nic se nehodnotí a nikdo za to nedostane ban. Dlaždice ukáže níže jen svůj druh potíží; řádek otevře události za ním."
+  "s.what-a-domain-controller-of-windows.d3626c12": {
+   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it.",
+   "text": "Co řadič domény s Windows Serverem 2025 odmítne, ale řadič 2016 pustí - a které stroje a účty to tu pořád dělají. Počítá se z vlastních logů řadičů, jak přicházejí; nic se nehodnotí a nikdo za to nedostane ban. Dlaždice otevře stroje nebo účty, které to dělají; řádek otevře události za ním."
   },
   "s.what-a-domain-controller-saw.1a05643f": {
    "source": "what a domain controller saw",
@@ -33388,6 +33480,10 @@
    "source": "What it did",
    "text": "Co udělal"
   },
+  "s.what-it-does.235cc5e2": {
+   "source": "what it does",
+   "text": "co dělá"
+  },
   "s.what-it-does.ca032b58": {
    "source": "What it does",
    "text": "Co dělá"
@@ -33459,6 +33555,10 @@
   "s.what-it-was-about.59250880": {
    "source": "What it was about:",
    "text": "Čeho se to týkalo:"
+  },
+  "s.what-it-was.4f8ffe04": {
+   "source": "what it was",
+   "text": "co to bylo"
   },
   "s.what-it-was.d6dd1196": {
    "source": "What it was",
@@ -35856,6 +35956,14 @@
    "source": "Written down but not applied: this address is under \"never kept out\" in Settings, so nothing here bans it and nothing of it is ever sent to the router.",
    "text": "Zaznamenáno, ale neuplatněno: tato adresa je v Nastavení pod „nikdy neblokovat“, takže ji tu nic nezablokuje a nic z ní se nikdy neodešle na router."
   },
+  "s.written-only-when-something-connects-over.97125d6a": {
+   "source": "Written only when something connects over SMB1 - and only with AuditSmb1Access on.",
+   "text": "Zapisuje se jen tehdy, když se něco připojí přes SMB1 - a jen se zapnutým AuditSmb1Access."
+  },
+  "s.written-only-with-the-group-policy.d4e4a942": {
+   "source": "Written only with the group policy \"Audit NTLM authentication in this domain\" on the controllers.",
+   "text": "Zapisuje se jen se skupinovou politikou „Audit NTLM authentication in this domain“ na řadičích."
+  },
   "s.written-over.675b7f3d": {
    "source": "written over",
    "text": "přepsáno"
@@ -38238,6 +38346,10 @@
    "source": "Nothing in this group matches “{0}”",
    "text": "Nic v této skupině neodpovídá „{0}“"
   },
+  "p.nothing-lately-last.9eac0f3f": {
+   "source": "nothing lately - last {0}",
+   "text": "poslední dobou nic - naposledy {0}"
+  },
   "p.nothing-matches-this-door-holds-the.3518311f": {
    "source": "Nothing matches. This door holds {0} — the search or the filters beside it are keeping them out.",
    "text": "Nic neodpovídá. Tento vstup obsahuje {0} — vylučuje je hledání nebo filtry vedle něj."
@@ -38329,6 +38441,10 @@
   "p.of-ours-when-last-read.c168ce64": {
    "source": "{0} of ours, when last read",
    "text": "{0} našich při posledním čtení"
+  },
+  "p.of-row-s.94ae0304": {
+   "source": "{0} of {1} row(s)",
+   "text": "{0} z {1} řádků"
   },
   "p.of-rows-were-written-meanwhile-by.c777d6c8": {
    "source": "{0} of {1} rows were written meanwhile by another connection",
@@ -38853,6 +38969,10 @@
   "p.rotate.0979bdf7": {
    "source": "rotate {0}",
    "text": "rotate {0}"
+  },
+  "p.routed-text-match-m-s-path.b248609d": {
+   "source": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = 'ISEMON_HOST' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $n.ok, $n.bad) -ForegroundColor $(if ($n.bad) {'Yellow'} else {'Green'}) }",
+   "text": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = 'ISEMON_HOST' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $n.ok, $n.bad) -ForegroundColor $(if ($n.bad) {'Yellow'} else {'Green'}) }"
   },
   "p.router.4276eea5": {
    "source": "router-{0}",
@@ -39398,6 +39518,10 @@
    "source": "The {0} certificate(s) up to the root.",
    "text": "Certifikátů až ke kořeni: {0}."
   },
+  "p.the-check-below-tells-whether-it.d6c447b0": {
+   "source": "{0} The check below tells whether it is sent.",
+   "text": "{0} Zda se posílá, řekne kontrola níže."
+  },
   "p.the-choices-in-that-file.a71eba7b": {
    "source": "the choices in that file: {0}",
    "text": "volby v tom souboru: {0}"
@@ -39541,10 +39665,6 @@
   "p.the-firewall-s-lines-naming-in.3ad648cb": {
    "source": "The firewall’s lines naming {0} in the last {1} h that it {2}. Press for them on the Traffic page.",
    "text": "Řádky firewallu uvádějící {0} za posledních {1} h, které {2}. Klikněte pro jejich zobrazení na stránce Provoz."
-  },
-  "p.the-first-of-the-search-box.508aed4a": {
-   "source": "The first {0} of {1} - the search box finds the rest.",
-   "text": "Prvních {0} z {1} - zbytek najde vyhledávání."
   },
   "p.the-first-of-them-are-shown.a945f143": {
    "source": "The first {0} of them are shown.",
@@ -42298,6 +42418,14 @@
    "source": "rosapi-said small {0}",
    "text": "rosapi-said small {0}"
   },
+  "p.routed-text-match-m-s-path.26979d03": {
+   "source": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = '172.29.14.92' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $n.ok, $n.bad) -ForegroundColor $(if ($n.bad) {'Yellow'} else {'Green'}) }",
+   "text": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = '172.29.14.92' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $n.ok, $n.bad) -ForegroundColor $(if ($n.bad) {'Yellow'} else {'Green'}) }"
+  },
+  "p.routed-text-match-m-s-path.bf34471b": {
+   "source": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = '172.29.14.92' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $ok, $bad) -ForegroundColor $(if ($bad) {'Yellow'} else {'Green'})",
+   "text": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = '172.29.14.92' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $ok, $bad) -ForegroundColor $(if ($bad) {'Yellow'} else {'Green'})"
+  },
   "p.routeros.8a81790b": {
    "source": "(RouterOS {0}{1})",
    "text": "(RouterOS {0}{1})"
@@ -42353,6 +42481,10 @@
   "p.the-configuration-is-back-the-logs.d3ce30ad": {
    "source": "the configuration is back ({0}); the logs here were left as they are",
    "text": "konfigurace je obnovena ({0}); logy zde zůstaly, jak byly"
+  },
+  "p.the-first-of-the-search-box.508aed4a": {
+   "source": "The first {0} of {1} - the search box finds the rest.",
+   "text": "Prvních {0} z {1} - zbytek najde vyhledávání."
   },
   "p.the-last-push-from-until.cf174325": {
    "source": "The last push: {0} from {1} - {2}, until {3}.",
@@ -42758,9 +42890,17 @@
    "source": "· busy",
    "text": "· vytížené"
   },
+  "s.by-account.c3c3a9d5": {
+   "source": "By account",
+   "text": "Podle účtu"
+  },
   "s.by-hand-uploaded-a-request-self.8e921bc9": {
    "source": "by hand (uploaded, a request, self-signed)",
    "text": "ručně (nahraný, žádost, self-signed)"
+  },
+  "s.by-machine.6626fbe2": {
+   "source": "By machine",
+   "text": "Podle stroje"
   },
   "s.carry-everything-across.05a15b90": {
    "source": "carry everything across",
@@ -42865,6 +43005,10 @@
   "s.every-country.c0220928": {
    "source": "Every country",
    "text": "Všechny země"
+  },
+  "s.every-kind-again.1e6854a2": {
+   "source": "Every kind again",
+   "text": "Zase všechny druhy"
   },
   "s.every-log-that-is-switched-on.08e554cf": {
    "source": "Every log that is switched on is read from the beginning - its live file, every rotated copy and every day still in its folder - whichever kind of log it is. Untick one to leave it out. A log written without a zone in it (everything but ISE) that is read again after the zone it is read in was",
@@ -43065,6 +43209,10 @@
   "s.isemon-upgrade-path.b85365f5": {
    "source": "isemon-upgrade.path",
    "text": "isemon-upgrade.path"
+  },
+  "s.issue.00819c0e": {
+   "source": "issue",
+   "text": "issue"
   },
   "s.it-answers-but-this-account-may.b46adc95": {
    "source": "It answers, but this account may not make anything in it. Set it up, or give the account rights on that database.",
@@ -43434,6 +43582,10 @@
    "source": "rsa*",
    "text": "rsa*"
   },
+  "s.run-as-administrator-on-each-controller.0d065e59": {
+   "source": "Run as administrator on each controller; it changes nothing. It checks the audit policy, the LDAP logging, the SMB1 and NTLM audit, the sizes of the logs, what each log wrote in the last seven days, and NXLog - its service, its configuration and its errors. Every line says OK, WARN or FAIL. A log with events of its own that the card above still says nothing came from is a log NXLog does not send.",
+   "text": "Spusťte jako správce na každém řadiči; nic nemění. Zkontroluje auditní politiku, logování LDAP, audit SMB1 a NTLM, velikosti logů, co který log za posledních sedm dní zapsal, a NXLog - jeho službu, konfiguraci a chyby. Každý řádek říká OK, WARN nebo FAIL. Log, který vlastní události má, ale karta výše o něm říká, že nic nepřišlo, NXLog neposílá."
+  },
   "s.running-since.180dbfb4": {
    "source": "Running since",
    "text": "Běží od"
@@ -43626,6 +43778,10 @@
    "source": "(the day)",
    "text": "(den)"
   },
+  "s.the-first-page.a59f3978": {
+   "source": "The first page",
+   "text": "První stránka"
+  },
   "s.the-full-dns-name-its-certificate.3acf2c66": {
    "source": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01).",
    "text": "Plné DNS jméno, pro které je jeho certifikát – jde do certifikátu jako jeho jméno (CN) a do alternativních jmen (SAN). CA ho vydá jen pro jméno, které ukazuje na tento server (HTTP-01), nebo jehož záznam TXT lze vložit (DNS-01)."
@@ -43638,6 +43794,10 @@
    "source": "The ladder, as written: a list of minutes, and whether the last step is for good. \"10, 60, 1440, forever\" is ten minutes the first time, an hour the second, a day the third and for good after that. Empty means there is no ladder and the doubling below decides.",
    "text": "Stupně blokace tak, jak jsou zapsány: seznam minut a údaj, zda poslední stupeň platí natrvalo. „10, 60, 1440, forever“ znamená deset minut napoprvé, hodinu napodruhé, den napotřetí a poté natrvalo. Prázdné znamená, že žádné stupně blokace nejsou a rozhoduje zdvojování níže."
   },
+  "s.the-last-page.ec07ef3d": {
+   "source": "The last page",
+   "text": "Poslední stránka"
+  },
   "s.the-last-upgrade.08608510": {
    "source": "The last upgrade",
    "text": "Poslední aktualizace"
@@ -43645,6 +43805,10 @@
   "s.the-machines-it-has-heard-from.a6e1cd1c": {
    "source": "The machines it has heard from on its own networks: address, MAC and interface.",
    "text": "Stroje, které slyšel na svých sítích: adresa, MAC a rozhraní."
+  },
+  "s.the-next-page.4304e4aa": {
+   "source": "The next page",
+   "text": "Další stránka"
   },
   "s.the-package.bac6d617": {
    "source": "The package",
@@ -43657,6 +43821,10 @@
   "s.the-page-before-this-one-rows.bc8f3a69": {
    "source": "The page before this one. Rows are newest first, so that is the more recent ones. The filters above stay as they are.",
    "text": "Předchozí stránka. Řádky jsou seřazeny od nejnovějších, takže jde o novější záznamy. Filtry výše zůstanou beze změny."
+  },
+  "s.the-page-before.bf91e9a0": {
+   "source": "The page before",
+   "text": "Předchozí stránka"
   },
   "s.the-pairing-code-shown-this-once.a9b18e97": {
    "source": "The pairing code - shown this once",
@@ -43761,6 +43929,10 @@
   "s.waited-for-s.92444adf": {
    "source": "Waited for (s)",
    "text": "Čekat (s)"
+  },
+  "s.what-a-domain-controller-of-windows.8d0b21f6": {
+   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below; a row opens the events behind it.",
+   "text": "Co řadič domény s Windows Serverem 2025 odmítne, ale řadič 2016 pustí - a které stroje a účty to tu pořád dělají. Počítá se z vlastních logů řadičů, jak přicházejí; nic se nehodnotí a nikdo za to nedostane ban. Dlaždice ukáže níže jen svůj druh potíží; řádek otevře události za ním."
   },
   "s.what-a-refusal-row-already-says.41b9173f": {
    "source": "What a refusal row already says, so it is not written twice.",

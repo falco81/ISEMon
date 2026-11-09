@@ -372,6 +372,27 @@ working.
 
 ## Version
 
+1.10.323
+
+- **Domain → Before Windows Server 2025** is split into pages, chosen by
+  buttons at its top:
+  - **Overview** (the tiles, as before; the default);
+  - **Machines**;
+  - **Accounts**;
+  - **Every row**;
+  - **The logs and how to send them**.
+- The lists share the app's own search box: any column by name (`machine:`,
+  `what:`, `account:`, `controller:` …), with what each one holds offered as
+  you type. They also have filters for the kind of trouble and the controller,
+  and the same pager as every other list.
+- Each table's heading stays put while its rows scroll, sized so the pager
+  stays in the window. Sorting covers the whole list, not just the page.
+- Reloading the page (F5) on it now shows it. Before, it stayed empty.
+- The KDC, SMB1 and NTLM logs write only when something happens. When nothing
+  has come from them, they are shown in grey with a word on when they write,
+  not in red as if they were not sent. A PowerShell check for a controller
+  counts what each log wrote and shows NXLog's errors.
+
 1.10.322
 
 - Saving settings is refused only for a rule that the change itself breaks.

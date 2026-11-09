@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.322",
+  "version": "1.10.323",
   "made": "2026-11-09",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -147,6 +147,10 @@
   "s.3-the-root-certificate-optional.9daa03af": {
    "source": "3. the root certificate (optional)",
    "text": "3. the root certificate (optional)"
+  },
+  "s.3-whether-everything-on-a-controller.96e575f2": {
+   "source": "3. Whether everything on a controller is as it should be",
+   "text": "3. Whether everything on a controller is as it should be"
   },
   "s.30-days.7d4278a8": {
    "source": "30 days",
@@ -919,6 +923,10 @@
   "s.a-machine-an-address-an-account.2d44d6dc": {
    "source": "a machine, an address, an account…",
    "text": "a machine, an address, an account…"
+  },
+  "s.a-machine-it-comes-from.e970f26c": {
+   "source": "a machine it comes from",
+   "text": "a machine it comes from"
   },
   "s.a-machine-on-a-socket-authenticating.16367b7f": {
    "source": "A machine on a socket, authenticating itself with 802.1X — a certificate or a domain account, over the wire.",
@@ -1872,6 +1880,10 @@
    "source": "account may look at every page and change nothing — no ban, no setting, not even a fetch.",
    "text": "account may look at every page and change nothing — no ban, no setting, not even a fetch."
   },
+  "s.account-or-computer.52918d8a": {
+   "source": "account or computer",
+   "text": "account or computer"
+  },
   "s.account-s.76db4867": {
    "source": "account(s).",
    "text": "account(s)."
@@ -2687,6 +2699,10 @@
   "s.an-account-failed-to-sign-in.1a7b048c": {
    "source": "an account failed to sign in",
    "text": "an account failed to sign in"
+  },
+  "s.an-account-from-it.cd46cad1": {
+   "source": "an account from it",
+   "text": "an account from it"
   },
   "s.an-account-marked.daa8a61c": {
    "source": "An account marked",
@@ -4868,10 +4884,6 @@
    "source": "button",
    "text": "button"
   },
-  "s.by-account.c3c3a9d5": {
-   "source": "By account",
-   "text": "By account"
-  },
   "s.by-dhcp.8bff9884": {
    "source": "by DHCP",
    "text": "by DHCP"
@@ -4915,10 +4927,6 @@
   "s.by-kind-of-job.4dcb4b03": {
    "source": "By kind of job",
    "text": "By kind of job"
-  },
-  "s.by-machine.6626fbe2": {
-   "source": "By machine",
-   "text": "By machine"
   },
   "s.by-mail.fd54a0e9": {
    "source": "by mail",
@@ -8332,13 +8340,13 @@
    "source": "every job",
    "text": "every job"
   },
-  "s.every-kind-again.1e6854a2": {
-   "source": "Every kind again",
-   "text": "Every kind again"
-  },
   "s.every-kind-of-line.dd01a896": {
    "source": "every kind of line",
    "text": "every kind of line"
+  },
+  "s.every-kind-of-trouble.02087225": {
+   "source": "every kind of trouble",
+   "text": "every kind of trouble"
   },
   "s.every-kind.51addc5f": {
    "source": "every kind",
@@ -11440,6 +11448,10 @@
    "source": "how many packets the rule counted",
    "text": "how many packets the rule counted"
   },
+  "s.how-many-rows-a-page.9df3d7c3": {
+   "source": "How many rows a page",
+   "text": "How many rows a page"
+  },
   "s.how-many-rows-are-asked-for.0a4a8bac": {
    "source": "How many rows are asked for at a time.",
    "text": "How many rows are asked for at a time."
@@ -11491,6 +11503,10 @@
   "s.how-many-times-the-router-dropped.4ff4b021": {
    "source": "How many times the router dropped a packet from this address while the ban was on — read off the router’s own counter for that entry. Nothing means the counter was zero or the router was not asked.",
    "text": "How many times the router dropped a packet from this address while the ban was on — read off the router’s own counter for that entry. Nothing means the counter was zero or the router was not asked."
+  },
+  "s.how-many-times.32d06e08": {
+   "source": "how many times",
+   "text": "how many times"
   },
   "s.how-many-to-show-at-a.cb94ff41": {
    "source": "How many to show at a time.",
@@ -13028,10 +13044,6 @@
    "source": "Israel",
    "text": "Israel"
   },
-  "s.issue.00819c0e": {
-   "source": "issue",
-   "text": "issue"
-  },
   "s.issued-and-renewed.f55389b6": {
    "source": "Issued and renewed",
    "text": "Issued and renewed"
@@ -13311,6 +13323,10 @@
   "s.its-acme-directory.3f45b7e1": {
    "source": "Its ACME directory",
    "text": "Its ACME directory"
+  },
+  "s.its-address-or-a-range.f3baf83c": {
+   "source": "its address, or a range",
+   "text": "its address, or a range"
   },
   "s.its-address.c54dbb70": {
    "source": "Its address",
@@ -14243,6 +14259,10 @@
   "s.ldap-who-binds-in-the-clear.3ab0b534": {
    "source": "LDAP: who binds in the clear or unsigned (2889) and channel binding (3039). Takes effect at once; at 2 every such bind is an event - on a busy controller leave it on for the weeks before the change.",
    "text": "LDAP: who binds in the clear or unsigned (2889) and channel binding (3039). Takes effect at once; at 2 every such bind is an event - on a busy controller leave it on for the weeks before the change."
+  },
+  "s.ldap.31024ad9": {
+   "source": "*LDAP*",
+   "text": "*LDAP*"
   },
   "s.ldap.d8343c68": {
    "source": "LDAP",
@@ -15199,6 +15219,10 @@
   "s.machines-the-emerging-threats-project-has.210a868d": {
    "source": "Machines the Emerging Threats project has seen being used by somebody who is not their owner - a hacked server, a router with the password still on the sticker. Six hundred or so, rebuilt daily.",
    "text": "Machines the Emerging Threats project has seen being used by somebody who is not their owner - a hacked server, a router with the password still on the sticker. Six hundred or so, rebuilt daily."
+  },
+  "s.machines.2940ff1e": {
+   "source": "Machines",
+   "text": "Machines"
   },
   "s.machines.6516c232": {
    "source": "machines",
@@ -17696,6 +17720,10 @@
    "source": "Nothing has come through this door in the window above.",
    "text": "Nothing has come through this door in the window above."
   },
+  "s.nothing-has-come-yet.3f40766d": {
+   "source": "nothing has come yet",
+   "text": "nothing has come yet"
+  },
   "s.nothing-has-failed-from-this-address.c6956707": {
    "source": "Nothing has failed from this address",
    "text": "Nothing has failed from this address"
@@ -18836,6 +18864,10 @@
    "source": "one command that writes it",
    "text": "one command that writes it"
   },
+  "s.one-controller-or-every-one.cc591560": {
+   "source": "One controller, or every one",
+   "text": "One controller, or every one"
+  },
   "s.one-database-holds-everything-the-authentications.0abede90": {
    "source": "One database holds everything: the authentications read, who is banned, the story of every ban, the public lists, the country ranges and the accounts. It is a file on this machine unless you say otherwise.",
    "text": "One database holds everything: the authentications read, who is banned, the story of every ban, the public lists, the country ranges and the accounts. It is a file on this machine unless you say otherwise."
@@ -18931,6 +18963,10 @@
   "s.one-kind-of-thing-this-daemon.7b36647d": {
    "source": "One kind of thing this daemon does.",
    "text": "One kind of thing this daemon does."
+  },
+  "s.one-kind-of-trouble-or-every.f7231b01": {
+   "source": "One kind of trouble, or every one",
+   "text": "One kind of trouble, or every one"
   },
   "s.one-line-of-a.104b3de8": {
    "source": "One line of a",
@@ -20336,6 +20372,10 @@
    "source": "PC-01, 10.1.*",
    "text": "PC-01, 10.1.*"
   },
+  "s.pc0.a8ff7c02": {
+   "source": "PC0*",
+   "text": "PC0*"
+  },
   "s.peer.2b974ba4": {
    "source": "peer",
    "text": "peer"
@@ -20447,6 +20487,10 @@
   "s.pfssh.3ce39578": {
    "source": "pfssh",
    "text": "pfssh"
+  },
+  "s.pftcdcx02.a3579e56": {
+   "source": "pftcdcx02",
+   "text": "pftcdcx02"
   },
   "s.pfx-for-older-systems.c5d8f8f2": {
    "source": "PFX for older systems",
@@ -21403,6 +21447,10 @@
   "s.rc4-only.4afcc41c": {
    "source": "RC4 only",
    "text": "RC4 only"
+  },
+  "s.rc4.8ee292c1": {
+   "source": "*RC4*",
+   "text": "*RC4*"
   },
   "s.rcvd.87dec2fa": {
    "source": "rcvd",
@@ -22652,6 +22700,10 @@
    "source": "Rules",
    "text": "Rules"
   },
+  "s.run-as-administrator-on-each-controller.b2c1bb83": {
+   "source": "Run as administrator on each controller - pasted whole into a PowerShell window, or saved as a .ps1; it changes nothing. It checks the audit policy, the LDAP logging, the SMB1 and NTLM audit, the sizes of the logs, what each log wrote in the last seven days, and NXLog - its service, its configuration and its errors. Every line says OK, WARN or FAIL. A log with events of its own that the card above still says nothing came from is a log NXLog does not send.",
+   "text": "Run as administrator on each controller - pasted whole into a PowerShell window, or saved as a .ps1; it changes nothing. It checks the audit policy, the LDAP logging, the SMB1 and NTLM audit, the sizes of the logs, what each log wrote in the last seven days, and NXLog - its service, its configuration and its errors. Every line says OK, WARN or FAIL. A log with events of its own that the card above still says nothing came from is a log NXLog does not send."
+  },
   "s.run-out-or-within-7-days.09f2b30d": {
    "source": "run out, or within 7 days",
    "text": "run out, or within 7 days"
@@ -23047,6 +23099,10 @@
   "s.searches-every-refused-attempt-on-the.e7786ded": {
    "source": "Searches every refused attempt on the server, not the page in front of you: the address, the user name offered, what ISE said, the tunnel group and the device. Case does not matter.",
    "text": "Searches every refused attempt on the server, not the page in front of you: the address, the user name offered, what ISE said, the tunnel group and the device. Case does not matter."
+  },
+  "s.searches-every-row-of-this-list.0ea7622e": {
+   "source": "Searches every row of this list, not the page in front of you - by any of its columns (machine:, account:, what:, controller: …) or by a word anywhere. Case does not matter.",
+   "text": "Searches every row of this list, not the page in front of you - by any of its columns (machine:, account:, what:, controller: …) or by a word anywhere. Case does not matter."
   },
   "s.searches-every-successful-login-on-the.695458d4": {
    "source": "Searches every successful login on the server: the name, the address it came from, the authorisation profile and the device. Case does not matter.",
@@ -24776,6 +24832,10 @@
    "source": "sudo",
    "text": "sudo"
   },
+  "s.sum.e9dff355": {
+   "source": "sum",
+   "text": "sum"
+  },
   "s.suriname.b17fc6f0": {
    "source": "Suriname",
    "text": "Suriname"
@@ -24783,6 +24843,10 @@
   "s.svalbard-and-jan-mayen.ac99404d": {
    "source": "Svalbard and Jan Mayen",
    "text": "Svalbard and Jan Mayen"
+  },
+  "s.svc.62b126c7": {
+   "source": "svc-*",
+   "text": "svc-*"
   },
   "s.svc.a0089182": {
    "source": "svc",
@@ -25896,6 +25960,10 @@
    "source": "The account you are signed in as. Press it for what it may do and where that comes from, its password where it is kept here, and the columns of the tables: switching on editing them, and putting them back as they come.",
    "text": "The account you are signed in as. Press it for what it may do and where that comes from, its password where it is kept here, and the columns of the tables: switching on editing them, and putting them back as they come."
   },
+  "s.the-account.bcf5ad42": {
+   "source": "the account",
+   "text": "the account"
+  },
   "s.the-accounting-file-the-wireless-controller.59901385": {
    "source": "The accounting file the wireless controller writes, which is where the access point, the network, the VLAN and the address the machine was given actually are. It makes no rows of its own — it is joined to the sign-ins by the machine’s MAC.",
    "text": "The accounting file the wireless controller writes, which is where the access point, the network, the VLAN and the address the machine was given actually are. It makes no rows of its own — it is joined to the sign-ins by the machine’s MAC."
@@ -26675,6 +26743,10 @@
   "s.the-controller-s-own-count-of.d6ec07e6": {
    "source": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.",
    "text": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging."
+  },
+  "s.the-controller-that-saw-it.f196f27c": {
+   "source": "the controller that saw it",
+   "text": "the controller that saw it"
   },
   "s.the-controllers-the-domain-names.0321e7d3": {
    "source": "The controllers the domain names",
@@ -27988,6 +28060,10 @@
    "source": "the KDC’s own warnings about RC4 and missing keys",
    "text": "the KDC’s own warnings about RC4 and missing keys"
   },
+  "s.the-kdc-writes-here-only-when.2cb38cf6": {
+   "source": "The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used.",
+   "text": "The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used."
+  },
   "s.the-kernel-s-command-line-has.dd5541ef": {
    "source": "The kernel's command line has selinux=0 - it stays off whatever the configuration says.",
    "text": "The kernel's command line has selinux=0 - it stays off whatever the configuration says."
@@ -28075,6 +28151,10 @@
   "s.the-kind-of-line.e75a5db2": {
    "source": "the kind of line",
    "text": "the kind of line"
+  },
+  "s.the-kind-of-trouble.49fe9395": {
+   "source": "the kind of trouble",
+   "text": "the kind of trouble"
   },
   "s.the-kind.a74aa40f": {
    "source": "The kind",
@@ -28256,6 +28336,10 @@
    "source": "the logon type",
    "text": "the logon type"
   },
+  "s.the-logs-and-how-to-send.7f1577c6": {
+   "source": "The logs and how to send them",
+   "text": "The logs and how to send them"
+  },
   "s.the-logs-are-read-and-not.7be06689": {
    "source": "The logs are read, and not one line of acme’s has been found in them. In acme: Settings → isemon - isemon=1, this machine in isemon_targets - then Send a test line. The Logs tab says whether the files are there and readable.",
    "text": "The logs are read, and not one line of acme’s has been found in them. In acme: Settings → isemon - isemon=1, this machine in isemon_targets - then Send a test line. The Logs tab says whether the files are there and readable."
@@ -28347,6 +28431,10 @@
   "s.the-machine-accounts-are-counted-apart.a09b9de3": {
    "source": "· the machine accounts are counted apart",
    "text": "· the machine accounts are counted apart"
+  },
+  "s.the-machine-by-name.6aa8aa44": {
+   "source": "the machine, by name",
+   "text": "the machine, by name"
   },
   "s.the-machine-it-came-from.727d8ea0": {
    "source": "the machine it came from",
@@ -31656,6 +31744,10 @@
    "source": "Times",
    "text": "Times"
   },
+  "s.times.7196b587": {
+   "source": "times",
+   "text": "times"
+  },
   "s.timor-leste.2d79f6db": {
    "source": "Timor-Leste",
    "text": "Timor-Leste"
@@ -33120,9 +33212,9 @@
    "source": "what a disk that spins writes in a second in the background",
    "text": "what a disk that spins writes in a second in the background"
   },
-  "s.what-a-domain-controller-of-windows.8d0b21f6": {
-   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below; a row opens the events behind it.",
-   "text": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile shows only its kind of trouble below; a row opens the events behind it."
+  "s.what-a-domain-controller-of-windows.d3626c12": {
+   "source": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it.",
+   "text": "What a domain controller of Windows Server 2025 refuses that one of 2016 lets through - and which machines and accounts here still do it. Counted from the controllers' own logs as they arrive; nothing is judged and nobody is banned for it. A tile opens the machines or accounts that do it; a row opens the events behind it."
   },
   "s.what-a-domain-controller-saw.1a05643f": {
    "source": "what a domain controller saw",
@@ -33388,6 +33480,10 @@
    "source": "What it did",
    "text": "What it did"
   },
+  "s.what-it-does.235cc5e2": {
+   "source": "what it does",
+   "text": "what it does"
+  },
   "s.what-it-does.ca032b58": {
    "source": "What it does",
    "text": "What it does"
@@ -33459,6 +33555,10 @@
   "s.what-it-was-about.59250880": {
    "source": "What it was about:",
    "text": "What it was about:"
+  },
+  "s.what-it-was.4f8ffe04": {
+   "source": "what it was",
+   "text": "what it was"
   },
   "s.what-it-was.d6dd1196": {
    "source": "What it was",
@@ -35856,6 +35956,14 @@
    "source": "Written down but not applied: this address is under \"never kept out\" in Settings, so nothing here bans it and nothing of it is ever sent to the router.",
    "text": "Written down but not applied: this address is under \"never kept out\" in Settings, so nothing here bans it and nothing of it is ever sent to the router."
   },
+  "s.written-only-when-something-connects-over.97125d6a": {
+   "source": "Written only when something connects over SMB1 - and only with AuditSmb1Access on.",
+   "text": "Written only when something connects over SMB1 - and only with AuditSmb1Access on."
+  },
+  "s.written-only-with-the-group-policy.d4e4a942": {
+   "source": "Written only with the group policy \"Audit NTLM authentication in this domain\" on the controllers.",
+   "text": "Written only with the group policy \"Audit NTLM authentication in this domain\" on the controllers."
+  },
   "s.written-over.675b7f3d": {
    "source": "written over",
    "text": "written over"
@@ -38238,6 +38346,10 @@
    "source": "Nothing in this group matches “{0}”",
    "text": "Nothing in this group matches “{0}”"
   },
+  "p.nothing-lately-last.9eac0f3f": {
+   "source": "nothing lately - last {0}",
+   "text": "nothing lately - last {0}"
+  },
   "p.nothing-matches-this-door-holds-the.3518311f": {
    "source": "Nothing matches. This door holds {0} — the search or the filters beside it are keeping them out.",
    "text": "Nothing matches. This door holds {0} — the search or the filters beside it are keeping them out."
@@ -38329,6 +38441,10 @@
   "p.of-ours-when-last-read.c168ce64": {
    "source": "{0} of ours, when last read",
    "text": "{0} of ours, when last read"
+  },
+  "p.of-row-s.94ae0304": {
+   "source": "{0} of {1} row(s)",
+   "text": "{0} of {1} row(s)"
   },
   "p.of-rows-were-written-meanwhile-by.c777d6c8": {
    "source": "{0} of {1} rows were written meanwhile by another connection",
@@ -38853,6 +38969,10 @@
   "p.rotate.0979bdf7": {
    "source": "rotate {0}",
    "text": "rotate {0}"
+  },
+  "p.routed-text-match-m-s-path.b248609d": {
+   "source": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = 'ISEMON_HOST' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $n.ok, $n.bad) -ForegroundColor $(if ($n.bad) {'Yellow'} else {'Green'}) }",
+   "text": "\" $routed = $text -match \"(?m)^\\s*Path\\s+.*\\b$i\\b\" if ($in -and $routed) { Say OK \"nxlog.conf: $i\" 'an input, and in the Route' } elseif ($in) { Say FAIL \"nxlog.conf: $i\" 'an input, but not in the Route Path' } else { Say FAIL \"nxlog.conf: $i\" 'missing' } } $host_ = ([regex]::Match($text, '(?m)^\\s*define\\s+SYSLOGHOST\\s+(\\S+)')).Groups[1].Value if ($host_ -and $host_ -ieq $env:COMPUTERNAME) { Say OK 'SYSLOGHOST' \"$host_ - this controller's name\" } else { Say WARN 'SYSLOGHOST' \"'$host_' but this controller is $env:COMPUTERNAME - its logs land in that folder\" } } else { Say FAIL 'nxlog.conf' \"not at $conf\" } $nlog = 'C:\\Program Files\\nxlog\\data\\nxlog.log' if (Test-Path $nlog) { $errs = Select-String -Path $nlog -Pattern 'ERROR' | Select-Object -Last 5 if ($errs) { Say WARN 'nxlog.log has errors' 'the last ones:'; $errs | ForEach-Object { Write-Host \" $($_.Line)\" -ForegroundColor DarkYellow } } else { Say OK 'nxlog.log has no errors' } } $dest = 'ISEMON_HOST' $tcp = Test-NetConnection $dest -Port 514 -WarningAction SilentlyContinue Say INFO \"TCP 514 to isemon ($dest)\" \"$(if ($tcp.TcpTestSucceeded) {'open - the TCP output would work'} else {'closed - stay on UDP, or open it'})\" Write-Host (\"`n{0} OK, {1} to look at\" -f $n.ok, $n.bad) -ForegroundColor $(if ($n.bad) {'Yellow'} else {'Green'}) }"
   },
   "p.router.4276eea5": {
    "source": "router-{0}",
@@ -39398,6 +39518,10 @@
    "source": "The {0} certificate(s) up to the root.",
    "text": "The {0} certificate(s) up to the root."
   },
+  "p.the-check-below-tells-whether-it.d6c447b0": {
+   "source": "{0} The check below tells whether it is sent.",
+   "text": "{0} The check below tells whether it is sent."
+  },
   "p.the-choices-in-that-file.a71eba7b": {
    "source": "the choices in that file: {0}",
    "text": "the choices in that file: {0}"
@@ -39541,10 +39665,6 @@
   "p.the-firewall-s-lines-naming-in.3ad648cb": {
    "source": "The firewall’s lines naming {0} in the last {1} h that it {2}. Press for them on the Traffic page.",
    "text": "The firewall’s lines naming {0} in the last {1} h that it {2}. Press for them on the Traffic page."
-  },
-  "p.the-first-of-the-search-box.508aed4a": {
-   "source": "The first {0} of {1} - the search box finds the rest.",
-   "text": "The first {0} of {1} - the search box finds the rest."
   },
   "p.the-first-of-them-are-shown.a945f143": {
    "source": "The first {0} of them are shown.",
