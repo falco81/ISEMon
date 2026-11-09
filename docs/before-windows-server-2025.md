@@ -203,6 +203,11 @@ Pressing a row opens the events behind it.
 
 ## What the controllers have to send
 
+The whole set-up - the domain policy (GPO) with PowerShell and the clicks
+where PowerShell cannot do it, each controller, the complete `nxlog.conf`,
+the checks, the risks and how to take it back - is in
+`docs/active-directory-logging.md`. The short version follows.
+
 The Security log is sent already and covers Kerberos, NTLMv1 and NTLM. The rest
 need two steps.
 

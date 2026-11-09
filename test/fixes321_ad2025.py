@@ -166,6 +166,12 @@ try:
     ok('the export for analysis (1.10.326): a few rows of each kind, names by stand-ins if wanted',
        ("function a25Markdown(d, per, hideAcc, hideMach)" in page, "var rows = i.rows.slice(0, per);" in page,
         "[50, 100, 250].forEach" in page), (True, True, True))
+    guide = (ROOT / 'docs' / 'active-directory-logging.md').read_text()
+    ok('the guide to the controllers\' logs (1.10.327): GPO, each controller, nxlog.conf, the check, linked',
+       ('New-GPLink' in guide, 'SCENoApplyLegacyAuditPolicy' in guide, '<Input eventlog_ntlm>' in guide,
+        'eventlog_kdc, eventlog_smb1, eventlog_ntlm => out_syslog' in guide,
+        'active-directory-logging.md' in (ROOT / 'docs' / 'before-windows-server-2025.md').read_text()),
+       (True, True, True, True, True))
     src = (ROOT / 'isemon.py').read_text()
     ok('the status says so only with the controllers\' logs on',
        "'ad2025_on': bool(self.winsec_on() and int(CONFIG.get('winsec_ad2025') or 0))," in src)

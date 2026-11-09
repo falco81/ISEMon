@@ -372,6 +372,22 @@ working.
 
 ## Version
 
+1.10.327
+
+- A new guide, `docs/active-directory-logging.md`, sets up the domain
+  controllers so that isemon gets complete logs:
+  - one GPO for the Domain Controllers OU, created and linked by PowerShell;
+  - the advanced audit policy, step by step in GPMC, where PowerShell has no
+    supported way;
+  - Force audit policy, the NTLM audit and the Security log size, by
+    PowerShell or by clicks;
+  - LDAP diagnostics (2889) and the SMB1 audit, by GPO Preferences or on each
+    controller;
+  - the complete `nxlog.conf`, the controller check script, and a check of
+    every controller from one machine;
+  - what is only audit and what could hurt, and how to take it all back.
+- Before Windows Server 2025's own document points to it.
+
 1.10.326
 
 - **Export for analysis** on Before Windows Server 2025 saves one Markdown
@@ -462,7 +478,8 @@ working.
   dropped. One row per day, client, account and controller is kept for 90
   days, and a line read again is not counted again.
 - It is off unless switched on, under Settings → The domain controllers.
-  See `docs/before-windows-server-2025.md`.
+  See `docs/before-windows-server-2025.md`; setting up the controllers'
+  logs: `docs/active-directory-logging.md`.
 
 1.10.320
 
