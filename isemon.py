@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.321'
+__version__ = '1.10.322'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2338,6 +2338,26 @@ def check_settings_together(values):
             str(values.get('pf_geolist')).strip() == str(values.get('pf_list') or '').strip():
         raise ValueError('the country list and the blocked list must not share a name')
     return values
+
+
+def check_settings_saved(fresh, was):
+    """`check_settings_together` for a save (1.10.322): refused only for a
+    rule the save itself breaks. One already broken in what was saved before
+    - a pair of numbers from before the rule existed - is not a reason to
+    refuse a change somewhere else entirely: every save on every pane failed
+    on a site whose banning numbers predated the rule (1.10.306), with a word
+    about banning nobody had touched. Changing anything the rule is about
+    makes it the save's own, and then it is said as before."""
+    try:
+        check_settings_together(fresh)
+    except ValueError as e:
+        try:
+            check_settings_together(dict(was))
+        except ValueError as old:
+            if str(old) == str(e):
+                return fresh
+        raise
+    return fresh
 
 
 def db_config(config=None):
@@ -61113,7 +61133,7 @@ class Daemon(object):
             if fresh.get(key) != want:
                 changed.append(key)
             fresh[key] = want
-        check_settings_together(fresh)
+        check_settings_saved(fresh, CONFIG)
         if not changed:
             return {'changed': [], 'message': 'nothing was different'}
         was_on = self.blacklist_on()
@@ -87821,7 +87841,7 @@ def set_settings_directly(want, pal, store):
             if fresh.get(key) != value:
                 changed.append(key)
             fresh[key] = value
-        check_settings_together(fresh)
+        check_settings_saved(fresh, CONFIG)
     except ValueError as e:
         pal.bad(str(e))
         return 1

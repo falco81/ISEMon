@@ -372,6 +372,16 @@ working.
 
 ## Version
 
+1.10.322
+
+- Saving settings is refused only for a rule that the change itself breaks.
+  - Before, a pair of banning numbers saved before 1.10.306 was enough to
+    block every save on every pane, with a message about banning that nobody
+    had touched. The pair: a burst that goes out for good (`block_lots`) no
+    bigger than the failed logins that earn a ban (`block_tries`).
+  - A change that touches the pair and leaves it broken is still refused with
+    the same message. Once it is put right, the rule holds as before.
+
 1.10.321
 
 - **Domain → Before Windows Server 2025** lists what a domain controller of
