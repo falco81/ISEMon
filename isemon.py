@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.332'
+__version__ = '1.10.333'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -8546,6 +8546,10 @@ WIN_MARK_BITS = {
     'cleartext': 512,
     'anonymous': 1024,
     'elsewhere': 2048,
+    # A sign-in with NTLMv1 or LM, and one by Digest (1.10.333): so that the
+    # few of them among a million sign-ins can be opened, not searched for.
+    'ntlmv1': 4096,
+    'digest': 8192,
 }
 
 
@@ -8625,6 +8629,12 @@ def win_marks(event, fields, account, kind):
             out.append('big-right')
     if str(win_said(fields, 'Logon Type') or '') == '8':
         out.append('cleartext')
+    if event == 4624 and 'anonymous' not in out:
+        package = str(win_said(fields, 'Package Name') or '').strip().upper()   # (NTLM only)
+        if package in ('NTLM V1', 'LM'):
+            out.append('ntlmv1')
+        if str(win_said(fields, 'Authentication Package') or '').strip().lower() == 'wdigest':
+            out.append('digest')
     if event in (4798, 4799):
         out.append('listing')
     if WIN_VDI[0] and win_is_machinery(event, fields, account):
@@ -31609,6 +31619,23 @@ class Storage(object):
         except sqlite3.Error as e:
             log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
 
+    def ad25_accounts_of(self, issues):
+        """The accounts Before Windows Server 2025 has seen doing these
+        kinds, as the Security log names them (no domain, no realm). Never
+        raises."""
+        try:
+            rows = self.db.execute(
+                'SELECT DISTINCT account FROM ad25_seen WHERE issue IN (%s)'
+                % ','.join('?' * len(issues)), list(issues)).fetchall()
+        except Exception:                               # noqa: BLE001
+            return []
+        out = set()
+        for r in rows:
+            a = str(r['account'] or '').split('\\')[-1].split('@')[0].strip()
+            if a:
+                out.add(a)
+        return sorted(out)[:200]
+
     def ad25_worth(self, since):
         """Each kind of trouble Before Windows Server 2025 counts, since a
         moment: how many, from how many machines and accounts, the newest,
@@ -31801,7 +31828,8 @@ class Storage(object):
     #    for in RC4, are only marked where the domain actually handed one
     #    over.
     # 6: Get-Changes on its own is not replication (a DirSync reader).
-    WIN_SORT_VERSION = 6
+    # 7: NTLMv1 and Digest sign-ins carry a mark of their own.
+    WIN_SORT_VERSION = 7
 
     # ...and WHICH stored events each version changed the reading of.
     #
@@ -31821,6 +31849,10 @@ class Storage(object):
         # 4662: replication only with Get-Changes-All or In-Filtered-Set - and
         # only the rows that carry the mark need reading again (1.10.332).
         6: {'events': (4662,), 'marks': ('replication',)},
+        # 4624: NTLMv1 and Digest marked - only the sign-ins of the accounts
+        # Before Windows Server 2025 has seen doing either, which is a handful
+        # among a million; none at all where that page is off (1.10.333).
+        7: {'events': (4624,), 'ad25_accounts': ('ntlmv1', 'digest')},
     }
 
     # One walk of the table at a time, whoever asked for it. On the class
@@ -31988,7 +32020,12 @@ class Storage(object):
         had_version = int(was.get('version') or 0)
         if had_version != want_version:
             events = set()
-            marks, every_marked = set(), True
+            # How each step narrows its rows: by a mark they carry, or by the
+            # accounts Before Windows Server 2025 saw. Used only where every
+            # step narrows the same way - a step that changed all of an
+            # event's rows needs them all, and two narrowings of different
+            # kinds cannot be put into one question.
+            narrow, ways = set(), set()
             whole = False
             for step in range(min(had_version, want_version) + 1,
                               max(had_version, want_version) + 1):
@@ -31996,18 +32033,24 @@ class Storage(object):
                 if said is None:
                     whole = True
                     break
-                # A step may say it changed only the rows carrying some mark
-                # - then only those are read. Only when EVERY step says so: a
-                # step that changed all of an event's rows needs them all.
                 if isinstance(said, dict):
-                    marks |= set(said.get('marks') or ())
-                    every_marked = every_marked and bool(said.get('marks'))
+                    if said.get('marks'):
+                        ways.add('marks')
+                        narrow |= set(said['marks'])
+                    elif said.get('ad25_accounts'):
+                        who = self.ad25_accounts_of(said['ad25_accounts'])
+                        if not who:
+                            continue        # nobody did it: nothing to read again
+                        ways.add('accounts')
+                        narrow |= set(who)
+                    else:
+                        ways.add('all')
                     said = said.get('events') or ()
                 else:
-                    every_marked = False
+                    ways.add('all')
                 events |= set(int(one) for one in said)
-            if marks and every_marked and not whole:
-                plan['marks'] = sorted(marks)
+            if narrow and len(ways) == 1 and not whole:
+                plan[ways.pop()] = sorted(narrow)[:200]
             if whole:
                 return ({'all': True},
                         'the way events are read has changed in a way that touches all '
@@ -32028,7 +32071,7 @@ class Storage(object):
         had_names = set(str(one) for one in (was.get('names') or ()))
         moved = sorted(had_names.symmetric_difference(want_names))
         if moved:
-            plan['accounts'] = moved[:200]
+            plan['accounts'] = sorted(set(plan.get('accounts') or ()) | set(moved))[:200]
             why.append('%s %s named as the directory\u2019s own, or no longer'
                        % (and_list(moved[:6]),
                           'is' if len(moved) == 1 else 'are'))

@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.332",
+  "version": "1.10.333",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -5700,6 +5700,10 @@
    "source": "cleared",
    "text": "vymazáno"
   },
+  "s.cleartext.70d386ab": {
+   "source": "cleartext",
+   "text": "cleartext"
+  },
   "s.click-a-row-for-the-whole.b1045694": {
    "source": "Click a row for the whole record: on a VPN login the authorisation profile, the directory groups, the policy that matched, and the firewall the session was handed — the downloadable ACL, drawn as rules rather than as one long line. That ACL arrives as a record of its own in the same log; it is not a login, so it is not listed as one.",
    "text": "Klikněte na řádek pro celý záznam: u přihlášení do VPN autorizační profil, skupiny z adresáře, politiku, která se shodovala, a firewall, kterému byla relace předána – downloadable ACL, vykreslený jako pravidla místo jednoho dlouhého řádku. Tento ACL přichází jako samostatný záznam ve stejném logu; není to přihlášení, a proto se jako přihlášení nezobrazuje."
@@ -6855,6 +6859,10 @@
   "s.different-machines.0dc73df8": {
    "source": "Different machines",
    "text": "Různé stroje"
+  },
+  "s.digest.2923f6fa": {
+   "source": "digest",
+   "text": "digest"
   },
   "s.dim.4815cec8": {
    "source": "dim",
@@ -18311,6 +18319,10 @@
   "s.ntlmv1-is-gone-from-windows-server.c3588694": {
    "source": "NTLMv1 is gone from Windows Server 2025.",
    "text": "NTLMv1 ve Windows Serveru 2025 není."
+  },
+  "s.ntlmv1.5920a8fb": {
+   "source": "ntlmv1",
+   "text": "ntlmv1"
   },
   "s.ntlmv2-still-works-on-2025-but.372516ce": {
    "source": "NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all.",

@@ -372,6 +372,19 @@ working.
 
 ## Version
 
+1.10.333
+
+- **A row of Before Windows Server 2025 for NTLMv1, Digest or a password
+  handed over as it is now opens exactly those sign-ins.**
+  - It used to open every 4624 sign-in of that machine. For a controller
+    that meant every LDAP simple bind it checked: thousands of rows, none of
+    them NTLMv1.
+  - Sign-ins with NTLMv1 or LM, and those with Digest, now carry a mark of
+    their own.
+- **Older sign-ins get the mark too.** Only those of the accounts the page
+  saw doing it are read again: a handful among a million, and none at all
+  where the page is off.
+
 1.10.332
 
 - **"An account asked to replicate the directory" no longer fires for

@@ -46510,6 +46510,10 @@ function a25Ask(page, r) {
     (A25_EVENTS[k] || []).forEach(function (n) { if (ev.indexOf(n) < 0) ev.push(n); });
   });
   var q = ev.length ? ['event:' + ev.join(',')] : [];
+  /* A kind that is a few events among a million sign-ins is opened by its
+     mark (1.10.333: "NTLMv1" opened every sign-in of the machine). */
+  var A25_MARK = {ntlmv1: 'ntlmv1', digest: 'digest', cleartext: 'cleartext'};
+  if (kinds.length === 1 && A25_MARK[kinds[0]]) q.push('mark:' + A25_MARK[kinds[0]]);
   function bare(a) { return String(a || '').split('\\').pop().split('@')[0]; }
   function quoted(v) { return /[\s"]/.test(v) ? '"' + String(v).replace(/"/g, '') + '"' : v; }
   var from = [];
