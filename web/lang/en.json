@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.331",
+  "version": "1.10.332",
   "made": "2026-11-10",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -13940,6 +13940,10 @@
    "source": "Kept",
    "text": "Kept"
   },
+  "s.kerberos-or-at-least-ntlmv2-in.6c461dff": {
+   "source": "Kerberos (or at least NTLMv2) in that application - often a print server or an old web application - and then Digest switched off where it is offered.",
+   "text": "Kerberos (or at least NTLMv2) in that application - often a print server or an old web application - and then Digest switched off where it is offered."
+  },
   "s.kerberos-policy-was-changed.d1f83219": {
    "source": "Kerberos policy was changed",
    "text": "Kerberos policy was changed"
@@ -17475,6 +17479,10 @@
   "s.not-on-this-machine.da3ffa22": {
    "source": "(not on this machine)",
    "text": "(not on this machine)"
+  },
+  "s.not-one-of-the-things-windows.fc594a8e": {
+   "source": "Not one of the things Windows Server 2025 is known to refuse. But Digest is an old protocol, and the controllers keep a digest form of every password for it.",
+   "text": "Not one of the things Windows Server 2025 is known to refuse. But Digest is an old protocol, and the controllers keep a digest form of every password for it."
   },
   "s.not-ours-any-more.f83d369b": {
    "source": "not ours any more",

@@ -138,7 +138,7 @@ REPLICATE = (
     'Object Server:  DS  Object Type:  %{19195a5b-6da0-11d0-afd3-00c04fd930c9}  '
     'Object Name:  %{313dfcec-ae90}  Handle ID:  0x0  Operation:  '
     'Operation Type:  Object Access  Accesses:  Control Access    Access Mask:  0x100  '
-    'Properties:  ---  Control Access  {1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}  '
+    'Properties:  ---  Control Access  {1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}  '
     '{19195a5b-6da0-11d0-afd3-00c04fd930c9}')
 # ...and the same thing asked for by a member server, which is the shape of a
 # domain being taken whole rather than of a domain working.
@@ -222,7 +222,7 @@ ok('a directory change says what was changed and which attribute',
    'CN=Jan Novak,OU=Users,DC=corp-example,DC=int \u00b7 userAccountControl (value added)')
 ok('...and who changed it', said.facts['by'], 'PVVDI01CONN$')
 plain = isemon.win_record_from(line('bdcx02', 4662, REPLICATE.replace(
-    '{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}', '{aaaaaaaa-0000-0000-0000-000000000000}')))
+    '{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}', '{aaaaaaaa-0000-0000-0000-000000000000}')))
 ok('...and one that is no such thing carries no mark', plain.facts['mark'], '')
 ok('...and says what kind of object it was instead',
    plain.facts['object'], 'an operation on the domain itself')
@@ -465,7 +465,7 @@ title('A domain that rebuilds its desktops every day')
 # directions at once: a machine account doing it, to a computer. Either half
 # missing and it is drawn exactly as it always was.
 MACHINE_MADE = REPLICATE.replace('MSOL_329', 'PVVDI01CONN$').replace(
-    '{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}', '{aaaaaaaa-0000-0000-0000-000000000000}'
+    '{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}', '{aaaaaaaa-0000-0000-0000-000000000000}'
 ).replace('Object Type:  %{19195a5b-6da0-11d0-afd3-00c04fd930c9}',
           'Object Type:  %{bf967a86-0de6-11d0-a285-00aa003049e2}')
 PERSON_MADE = MACHINE_MADE.replace('Account Name:  PVVDI01CONN$', 'Account Name:  spravce')
@@ -608,13 +608,15 @@ ok('...and once it has been, it is not read again for nothing',
 was = store.meta_json('win_reading', None) or {}
 store.set_meta('win_reading', json.dumps(dict(was, version=3)))
 plan, why = store.win_marks_plan()
-ok('a version that changed two events asks for those two events',
-   plan, {'events': [4648, 4768, 4769]})
+ok('a version that changed two events asks for those two events '
+   '(and 4662 with them, 1.10.332: a step that is not narrowed by a mark widens the plan)',
+   plan, {'events': [4648, 4662, 4768, 4769]})
 ok('...and says so in one line', '4768' in why and '4648' in why, True)
-store.set_meta('win_reading', json.dumps(dict(was, version=4)))
+store.set_meta('win_reading', json.dumps(dict(was, version=5)))
 plan, why = store.win_marks_plan()
-ok('...one version behind: only what that version changed (1.10.200)',
-   plan, {'events': [4648]})
+ok('...one version behind: only what that version changed (1.10.200) - and, where it '
+   'changed only rows carrying a mark, only those (1.10.332)',
+   plan, {'events': [4662], 'marks': ['replication']})
 store.set_meta('win_reading', json.dumps(dict(was, version=1)))
 plan, _why = store.win_marks_plan()
 ok('...while a version nobody wrote down is the whole table',
@@ -1701,7 +1703,7 @@ WHEN19 = time.strftime('%b %d %H:%M:%S', time.localtime(time.time() - 60))
 REPL = ('An operation was performed on an object.  Subject:  Account Name:  %s  '
         'Object:  Object Type:  domainDNS  Object Name:  DC=corpnet,DC=loc  '
         'Operation:  Properties:  Control Access  '
-        '{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}  '
+        '{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}  '
         'Accesses:  Control Access')
 daemon19.read_records(
     ['%s dc1 WinSecurity: EventID=4662 | %s' % (WHEN19, REPL % 'DC-ONE$'),
@@ -1876,7 +1878,7 @@ LINES = [
     '%s dc1 WinSecurity: EventID=4662 | An operation was performed on an object.  '
     'Subject:  Account Name:  MEMBER$  Object:  Object Type:  domainDNS  '
     'Object Name:  DC=corpnet,DC=loc  Operation:  Properties:  Control Access  '
-    '{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2}' % WHENK,
+    '{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}' % WHENK,
 ]
 
 

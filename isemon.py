@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.331'
+__version__ = '1.10.332'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -8607,7 +8607,12 @@ def win_marks(event, fields, account, kind):
     if event == 4662:
         props = (str(win_said(fields, 'Properties') or '') + ' '
                  + str(win_said(fields, 'Accesses') or '')).lower()
-        if any(one in props for one in WIN_REPLICATION):
+        # Get-Changes on its own reads the directory but no secret in it -
+        # SharePoint's profile sync, MIM, a DirSync reader all ask for it and
+        # nothing more. A password comes only with Get-Changes-All or
+        # In-Filtered-Set, which every DCSync asks for (1.10.332: a SharePoint
+        # account was "asking to read every password" off Get-Changes alone).
+        if any(one in props for one in WIN_REPLICATION[1:]):
             out.append('replication')
     if event in (4728, 4729, 4732, 4733, 4756, 4757):
         group = str(win_said(fields, 'Group / Group Name', 'Group Name',
@@ -8757,6 +8762,24 @@ def win_ad25_fill(event, rest, facts, fields):
     them blank - and an event with no account, no address and no machine is
     one nobody can find or be shown (1.10.331). Read the way Before Windows
     Server 2025 reads them; never raises."""
+    # Every field it has, and the words it says - their messages are mostly
+    # prose, which the Security log's reading of fields made nothing of: the
+    # popup said "every field Windows wrote" over nothing at all (1.10.332).
+    try:
+        text = ' '.join(str(rest or '').split())
+        names = [n for n in _AD25_FIELDS.get(event, ()) if (n + ':') in text]
+        cut = min([text.find(n + ':') for n in names] or [len(text)])
+        said = {n: _ad25_val(n, rest) for n in names}
+        fields.clear()
+        if text[:cut].strip():
+            fields['Message'] = text[:cut].strip()[:1200]
+        for n in names:
+            if said[n]:
+                fields[n] = said[n][:400]
+        if event == 8004 and 'Audit NTLM authentication requests' in text:
+            fields['What it means'] = text[text.find('Audit NTLM authentication requests'):][:600]
+    except Exception:                                   # noqa: BLE001
+        pass
     try:
         found = ad25_findings(event, rest)
     except Exception:                                   # noqa: BLE001
@@ -8770,13 +8793,10 @@ def win_ad25_fill(event, rest, facts, fields):
         facts['is_machine'] = 1 if win_fold_account(facts['account']).endswith('$') else 0
         if dom and not facts.get('domain'):
             facts['domain'] = dom[:120]
-        fields.setdefault('Account', acct[:180])
     if ip and not facts.get('ip'):
         facts['ip'] = ip[:64]
-        fields.setdefault('Client Address', ip[:64])
     if client and not facts.get('machine'):
         facts['machine'] = client[:120]
-        fields.setdefault('Workstation', client[:120])
     if detail and not facts.get('said'):
         facts['said'] = detail[:160]
 
@@ -9214,6 +9234,10 @@ AD25_ISSUES = (
     ('des-allowed', 'info', 'DES still allowed on an account'),
     ('smb1', 'crit', 'SMB1 to a domain controller'),
     ('cleartext', 'info', 'A password handed over as it is (logon type 8)'),
+    # 4624 with Authentication Package WDigest (1.10.332): HTTP Digest - a
+    # print server, an old web application. Not refused by 2025, but it is
+    # what keeps a reversible form of every password useful to an attacker.
+    ('digest', 'info', 'Sign-ins with Digest (WDigest)'),
     ('ntlm', 'info', 'NTLM'),
     # NTLM/Operational 8004: the same NTLM as 4776, by the server it was for -
     # its own kind so that one sign-in is not counted twice (1.10.330).
@@ -9298,7 +9322,22 @@ _AD25_LABELS = (
     'Pre-Authentication Type', 'Account Information', 'Service Information',
     'Network Information', 'Additional Information', 'Domain Controller Information',
     'Certificate Information', 'Certificate Issuer Name', 'Restricted Admin Mode',
-    'Virtual Account', 'Elevated Token', 'Impersonation Level', 'New Logon', 'Subject')
+    'Virtual Account', 'Elevated Token', 'Impersonation Level', 'New Logon', 'Subject',
+    # ...and the other logs' (1.10.332): 2887, 3000, 8004.
+    'Number of simple binds performed without SSL/TLS',
+    'Number of Negotiate/Kerberos/NTLM/Digest binds performed without signing',
+    'Guidance', 'Client Name')
+# The fields each of the other logs' events has, in the order Windows writes
+# them: what "every field Windows wrote" shows for them (1.10.332).
+_AD25_FIELDS = {
+    2887: ('Number of simple binds performed without SSL/TLS',
+           'Number of Negotiate/Kerberos/NTLM/Digest binds performed without signing'),
+    2889: ('Client IP address', 'Identity the client attempted to authenticate as', 'Binding Type'),
+    3039: ('Client IP address', 'Identity the client attempted to authenticate as', 'Binding Type'),
+    3000: ('Client Address', 'Client Name', 'Guidance'),
+    8004: ('Secure Channel name', 'User name', 'Domain name', 'Workstation name',
+           'Secure Channel type'),
+}
 _AD25_LABEL_RX = '(?:%s):' % '|'.join(re.escape(x) for x in sorted(_AD25_LABELS, key=len, reverse=True))
 _AD25_LABEL_AT = re.compile(_AD25_LABEL_RX + r'(?=\s|$)')
 _AD25_VALUE_END = re.compile(r'\s{2,}|\t|\s(?=' + _AD25_LABEL_RX + r'(?:\s|$))')
@@ -9357,7 +9396,8 @@ def ad25_findings(event, line, whole=''):
         return out
     if event == 4624:
         old = re.search(r'Package Name \(NTLM only\):\s*(NTLM V1|LM)(?=\s|$)', rest)
-        if not old and not re.search(r'Logon Type:\s*8(?!\d)', rest):
+        digest = re.search(r'Authentication Package:\s*WDigest(?=\s|$)', rest) is not None
+        if not old and not digest and not re.search(r'Logon Type:\s*8(?!\d)', rest):
             return out
         got = win_record_from(whole or line)
         if got is None:
@@ -9374,6 +9414,8 @@ def ad25_findings(event, line, whole=''):
                              rest.split('New Logon:', 1)[-1]) is not None)
         if old and not anon:
             out.append(('ntlmv1', client, ip, acct, 'signed in with %s' % old.group(1)))
+        if digest:
+            out.append(('digest', client, ip, acct, 'signed in with Digest (WDigest)'))
         if str(f.get('logon_type') or '') == '8':
             out.append(('cleartext', client, ip, acct,
                         'by %s' % (str(f.get('process') or '-').split('\\')[-1] or '-')))
@@ -31572,7 +31614,7 @@ class Storage(object):
         moment: how many, from how many machines and accounts, the newest,
         and the machine and account doing the most of it."""
         keys = [k for k, _l, _w in AD25_ISSUES if k not in ('ntlm', 'ntlm-srv', 'ldap-daily',
-                                                              'des-allowed')]
+                                                              'des-allowed', 'digest')]
         try:
             rows = self.db.execute(
                 'SELECT issue, ckey, MAX(client) AS client, MAX(ip) AS ip, '
@@ -31758,7 +31800,8 @@ class Storage(object):
     # 4: a ticket asked for without pre-authentication, and a ticket asked
     #    for in RC4, are only marked where the domain actually handed one
     #    over.
-    WIN_SORT_VERSION = 5
+    # 6: Get-Changes on its own is not replication (a DirSync reader).
+    WIN_SORT_VERSION = 6
 
     # ...and WHICH stored events each version changed the reading of.
     #
@@ -31775,6 +31818,9 @@ class Storage(object):
         4: (4768, 4769),
         # 4648: the two accounts compared without cutting them at a dot.
         5: (4648,),
+        # 4662: replication only with Get-Changes-All or In-Filtered-Set - and
+        # only the rows that carry the mark need reading again (1.10.332).
+        6: {'events': (4662,), 'marks': ('replication',)},
     }
 
     # One walk of the table at a time, whoever asked for it. On the class
@@ -31942,6 +31988,7 @@ class Storage(object):
         had_version = int(was.get('version') or 0)
         if had_version != want_version:
             events = set()
+            marks, every_marked = set(), True
             whole = False
             for step in range(min(had_version, want_version) + 1,
                               max(had_version, want_version) + 1):
@@ -31949,7 +31996,18 @@ class Storage(object):
                 if said is None:
                     whole = True
                     break
+                # A step may say it changed only the rows carrying some mark
+                # - then only those are read. Only when EVERY step says so: a
+                # step that changed all of an event's rows needs them all.
+                if isinstance(said, dict):
+                    marks |= set(said.get('marks') or ())
+                    every_marked = every_marked and bool(said.get('marks'))
+                    said = said.get('events') or ()
+                else:
+                    every_marked = False
                 events |= set(int(one) for one in said)
+            if marks and every_marked and not whole:
+                plan['marks'] = sorted(marks)
             if whole:
                 return ({'all': True},
                         'the way events are read has changed in a way that touches all '
@@ -32041,6 +32099,10 @@ class Storage(object):
             if plan.get('events'):
                 where += ' AND event IN (%s)' % ','.join('?' * len(plan['events']))
                 args += [int(one) for one in plan['events']]
+            if plan.get('marks'):
+                where += ' AND (%s)' % ' OR '.join(
+                    "COALESCE(mark, '') LIKE ?" for _ in plan['marks'])
+                args += ['%%%s%%' % one for one in plan['marks']]
             if plan.get('accounts'):
                 # One machine is written five ways in a Security log -
                 # `DCX01`, `DCX01$`, `CORP-EXAMPLE\\DCX01$`,

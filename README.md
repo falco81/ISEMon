@@ -372,6 +372,25 @@ working.
 
 ## Version
 
+1.10.332
+
+- **"An account asked to replicate the directory" no longer fires for
+  Get-Changes alone.**
+  - Get-Changes on its own reads the directory but none of its secrets. A
+    SharePoint profile sync, MIM or a DirSync reader asks for it and nothing
+    more.
+  - A password comes only with Get-Changes-All or In-Filtered-Set, which
+    every DCSync asks for. Entra Connect (`MSOL_…`) asks for them too.
+  - The events already stored are read again. Only the rows carrying the mark
+    are walked, not every read of the directory.
+- **The other logs' events have every field and their message.**
+  - Covers 2887, 2889, 3039, 3000, 8004 and the KDC's events.
+  - The popup used to say "every field Windows wrote" over nothing.
+  - The list says what each one is, not "something else".
+- **New tile, Sign-ins with Digest (WDigest)** (info). It reads 4624 with
+  Authentication Package WDigest, typically a print server or an old web
+  application.
+
 1.10.331
 
 - **Before Windows Server 2025**, checked against a real controller's log

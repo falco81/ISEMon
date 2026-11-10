@@ -23152,7 +23152,10 @@ function loadWinEvents(quietly) {
       tr.dataset.ident = r.ident || '';
       tr.appendChild(stampCell(r.ts));
       var what = el('td');
-      what.appendChild(el('span', '', winKindWords(r.kind)));
+      /* The other logs' events are all "something else" as a group; the
+         row says what each one is (1.10.332). */
+      what.appendChild(el('span', '', r.kind === 'other' && WIN_EVENT_WORDS[String(r.event)]
+        ? WIN_EVENT_WORDS[String(r.event)] : winKindWords(r.kind)));
       what.appendChild(el('span', 'sub', 'event ' + r.event));
       tr.appendChild(what);
       var who = el('td');
@@ -45845,6 +45848,8 @@ var A25_SAY = {
   'smb1': {icon: 'ban', breaks: 'SMB1 is not on Windows Server 2025, and signing is required.', fix: 'SMB 2/3 on that machine, or a newer scanner, NAS or device.'},
   'cleartext': {icon: 'eye', breaks: 'A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which).',
                 fix: 'Nothing, where it is over LDAPS; otherwise as above.'},
+  'digest': {icon: 'eye', breaks: 'Not one of the things Windows Server 2025 is known to refuse. But Digest is an old protocol, and the controllers keep a digest form of every password for it.',
+             fix: 'Kerberos (or at least NTLMv2) in that application - often a print server or an old web application - and then Digest switched off where it is offered.'},
   'ntlm': {icon: 'person', breaks: 'NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all.',
            fix: 'Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place.'},
   'ntlm-srv': {icon: 'person', breaks: 'The same NTLM as above, said by the NTLM audit (NTLM/Operational 8004) with the server it was for - nothing extra breaks.',
@@ -46488,7 +46493,7 @@ var A25_EVENTS = {
   'ntlmv1': [4624], 'cleartext': [4624], 'des': [4768, 4769],
   'rc4': [4768, 4769, 201, 202, 203, 204, 205, 206, 207, 208, 209],
   'noaes': [4768, 4769, 14, 16, 26, 27, 201, 202, 203, 204, 205, 206, 207, 208, 209],
-  'des-allowed': [4768, 4769],
+  'des-allowed': [4768, 4769], 'digest': [4624],
   'smb1': [3000], 'ntlm': [4776], 'ntlm-srv': [8004], 'ldap-daily': [2887, 3040, 3041]
 };
 /* The search that opens a row's events, in the events page's own words:

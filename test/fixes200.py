@@ -110,7 +110,7 @@ ok('svc.adsync is not svc', isemon.win_account_name('svc.adsync') ==
    isemon.win_account_name('svc.helpdesk'), False)
 ok('...a machine is still cut', isemon.win_account_name('host/pc1.corp.int') ==
    isemon.win_account_name('PC1$'), True)
-ok('the sort is redone', isemon.Storage.WIN_SORT_VERSION if hasattr(isemon.Storage, 'WIN_SORT_VERSION') else isemon.Daemon.WIN_SORT_VERSION, 5)
+ok('the sort is redone', isemon.Storage.WIN_SORT_VERSION if hasattr(isemon.Storage, 'WIN_SORT_VERSION') else isemon.Daemon.WIN_SORT_VERSION, 6)
 
 print('\nErasing the bans')
 store.block('203.0.113.77', until=time.time() + 3600, why='test', auto=True)

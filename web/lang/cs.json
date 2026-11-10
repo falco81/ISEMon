@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.331",
+  "version": "1.10.332",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -13940,6 +13940,10 @@
    "source": "Kept",
    "text": "Uloženo"
   },
+  "s.kerberos-or-at-least-ntlmv2-in.6c461dff": {
+   "source": "Kerberos (or at least NTLMv2) in that application - often a print server or an old web application - and then Digest switched off where it is offered.",
+   "text": "V té aplikaci Kerberos (nebo aspoň NTLMv2) - často jde o tiskový server nebo starou webovou aplikaci - a pak Digest vypnout tam, kde se nabízí."
+  },
   "s.kerberos-policy-was-changed.d1f83219": {
    "source": "Kerberos policy was changed",
    "text": "Politika Kerberos byla změněna"
@@ -17475,6 +17479,10 @@
   "s.not-on-this-machine.da3ffa22": {
    "source": "(not on this machine)",
    "text": "(na tomto stroji není)"
+  },
+  "s.not-one-of-the-things-windows.fc594a8e": {
+   "source": "Not one of the things Windows Server 2025 is known to refuse. But Digest is an old protocol, and the controllers keep a digest form of every password for it.",
+   "text": "Nepatří k tomu, co Windows Server 2025 podle všeho odmítne. Digest je ale starý protokol a řadiče kvůli němu uchovávají digest podobu každého hesla."
   },
   "s.not-ours-any-more.f83d369b": {
    "source": "not ours any more",

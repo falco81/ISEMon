@@ -32,6 +32,7 @@ Work through the tiles in this order:
 | 7 | LDAP bind without signing | **yes** | an application doing NTLM/Kerberos LDAP without signing |
 | 8 | LDAP channel binding failed | once channel binding is required | an LDAPS client without channel binding support |
 | 9 | A password handed over as it is (logon type 8) | only where it is not over TLS | LDAP simple bind or basic authentication |
+| 9b | Sign-ins with Digest (WDigest) | no (information) | a print server or an old web application using HTTP Digest |
 | 10 | NTLM, and NTLM by the server it was for | **no** (information) | anything that uses an IP address or lacks an SPN |
 | 11 | The controller's own daily count | — | a daily summary (event 2887) |
 
@@ -400,6 +401,22 @@ least 10 hours apart (replication and ticket lifetime). Microsoft's
 **Fix.**
 - If the same machine is also in tile 1, fix it there.
 - Otherwise, check that the application uses LDAPS, or better, Kerberos.
+
+---
+
+## 9b. Sign-ins with Digest (WDigest)
+
+**What it is.**
+- Event 4624 with `Authentication Package: WDigest`: a sign-in by HTTP
+  Digest. It is typically a print server (MyQ, for example) or an old web
+  application.
+- It is not one of the things Windows Server 2025 is known to refuse.
+- But Digest is an old protocol, and the controllers keep a digest form of
+  every password for it.
+
+**Fix.**
+- In the application, switch to Kerberos (Negotiate) or at least NTLMv2.
+- Then switch Digest off where the application offers it.
 
 ---
 

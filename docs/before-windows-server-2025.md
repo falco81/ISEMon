@@ -22,6 +22,7 @@ off, nothing is counted and the page is not there.
 | DES still allowed on an account | info | Security | 4768/4769 `MSDS-SupportedEncryptionTypes` of the account or service with the DES bits (0x1, 0x2), e.g. 0x1F | nothing by itself; 2025 has no DES | untick DES in "Configure encryption types allowed for Kerberos"; 0x1C or 0x18 on the account |
 | SMB1 to a controller | refused | SMBServer/Audit | 3000 | SMB1 is not on 2025 | SMB 2/3 |
 | A password handed over as it is | info | Security | 4624 logon type 8 | in the clear it is refused (2889 says which) | LDAPS |
+| Sign-ins with Digest (WDigest) | info | Security | 4624 `Authentication Package: WDigest` | not known to be refused; an old protocol, and the controllers keep a digest form of every password for it | Kerberos or NTLMv2 in the application, then Digest off |
 | NTLM | info | Security | 4776 | still works (NTLMv2), on its way out; Protected Users cannot use it | Kerberos: names, SPNs |
 | NTLM, by the server it was for | info | NTLM/Operational | 8004 | the same NTLM as 4776, kept apart so it is not counted twice | the servers named most first |
 | The controller's daily count | info | Directory Service | 2887, 3040, 3041 | — | the detailed logging names the clients |
