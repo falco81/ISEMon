@@ -372,6 +372,36 @@ working.
 
 ## Version
 
+1.10.331
+
+- **Before Windows Server 2025**, checked against a real controller's log
+  (558,430 lines).
+- **Event fields fixed.** 4776 and NTLM/Operational 8004 write their fields
+  one space apart. 1.10.330 read each field to the next double space, so a
+  whole line became one machine's name and the NTLM tiles were wrong.
+  - Fields now end where the next known label begins.
+  - The wrong rows are removed when the daemon starts.
+- **The other logs' events can be found.** 2887, 2889, 3039–3041, 3000, 8004,
+  and the KDC's 14/16/26/27 and 201–209 were kept with no account, address or
+  machine. They now carry all three, their own words and why, so they can be
+  searched and opened.
+- **Pressing a row opens its own events.** It used to search the name as a
+  word over everything, and found nothing for the other logs. Now:
+  - it searches the event numbers that row's kind is counted from, with
+    `from:` the machine and its address, or the account;
+  - it uses the page's window;
+  - it clears any filter left over and shows computer accounts too.
+- **New tile, DES still allowed on an account** (info).
+  - It lists accounts whose own `msDS-SupportedEncryptionTypes` (written in
+    4768/4769 since January 2025) still has the DES bits. Typically that is
+    every controller and `krbtgt`, through the Kerberos encryption-types
+    policy.
+  - It is read from the Security log alone, so it needs no extra logging.
+- The RC4 machines shown before 1.10.330 were false. Clients that offer
+  `RC2-CBC-ENV` or `DES-CBC-MD5` first, with AES later in the list, were taken
+  for clients offering no AES. In the sample, every one of 72,282 tickets was
+  AES (0x12).
+
 1.10.330
 
 - **Before Windows Server 2025**, gone over line by line. The page counted

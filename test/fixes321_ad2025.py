@@ -113,11 +113,12 @@ try:
        any(x[2] == 'ntlm-srv' and x[5] == 'KRAJ\\jnovak' and 'FILESRV01' in x[6]
            for x in isemon.AD25['queue']))
     ok('the KDC\'s missing key (16)', ('noaes', '', 'old-svc') in got)
-    ok('an event of no concern adds nothing; a client offering AES is not RC4\'s', len(isemon.AD25['queue']), 10)
+    ok('an event of no concern adds nothing; a client offering AES is not RC4\'s; '
+       'the account allowing DES (0x27) said (1.10.331)', len(isemon.AD25['queue']), 11)
 
     print('\nWritten down')
     n = st.ad25_flush()
-    ok('a row each', n, 10)
+    ok('a row each', n, 11)
     v = st.ad25_view(24)
     by = {i['key']: i for i in v['issues']}
     ok('the view: each kind with its count', (by['ldap-clear']['n'], by['smb1']['n'], by['ntlmv1']['n']),

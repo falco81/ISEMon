@@ -23064,7 +23064,28 @@ var WIN_EVENT_WORDS = { '1100': 'the event log service was shut down',
   '5139': 'a directory object was moved',
   '5141': 'a directory object was deleted',
   '5376': 'credentials were saved to Credential Manager',
-  '5377': 'credentials were restored from Credential Manager'
+  '5377': 'credentials were restored from Credential Manager',
+  /* The other logs Before Windows Server 2025 reads (1.10.331). */
+  '14': 'the KDC found no suitable key for an account',
+  '16': 'the KDC found no suitable key for an account',
+  '26': 'the KDC found no suitable key for an account',
+  '27': 'the KDC found no suitable key for an account',
+  '201': 'the KDC warned about RC4 (KB5073381)',
+  '202': 'the KDC warned about RC4 (KB5073381)',
+  '203': 'the KDC warned about RC4 (KB5073381)',
+  '204': 'the KDC warned about RC4 (KB5073381)',
+  '205': 'the KDC warned about RC4 (KB5073381)',
+  '206': 'the KDC warned about RC4 (KB5073381)',
+  '207': 'the KDC warned about RC4 (KB5073381)',
+  '208': 'the KDC warned about RC4 (KB5073381)',
+  '209': 'the KDC warned about RC4 (KB5073381)',
+  '2887': 'a controller counted a day of LDAP binds without signing or TLS',
+  '2889': 'an LDAP bind without signing or TLS',
+  '3000': 'a client connected over SMB1',
+  '3039': 'an LDAPS bind without a channel binding token',
+  '3040': 'a controller counted a day of LDAPS binds without channel binding',
+  '3041': 'a controller does not ask for LDAP channel binding',
+  '8004': 'NTLM checked for a server (NTLM audit)'
 };
 function winKindWords(kind, event) {
   var exact = event ? WIN_EVENT_WORDS[String(event)] : '';
@@ -45819,6 +45840,8 @@ var A25_SAY = {
           fix: 'msDS-SupportedEncryptionTypes 24 (AES) on the account, its password reset once, keytabs made with AES.'},
   'noaes': {icon: 'key', breaks: 'The account has no AES keys - its password is older than AES in the domain - so its tickets fail without RC4.',
             fix: 'Reset its password (a keytab made again after it).'},
+  'des-allowed': {icon: 'key', breaks: 'Nothing breaks by itself: DES is never used while AES is there, and Windows Server 2025 simply has none. But an account or a controller that still allows it is set by hand or by a policy, and that setting is the one to tidy before the change.',
+                  fix: 'Untick DES in the policy "Network security: Configure encryption types allowed for Kerberos" (AES128, AES256 and, until RC4 is gone, RC4); on an account, msDS-SupportedEncryptionTypes without the DES bits (0x1C or 0x18).'},
   'smb1': {icon: 'ban', breaks: 'SMB1 is not on Windows Server 2025, and signing is required.', fix: 'SMB 2/3 on that machine, or a newer scanner, NAS or device.'},
   'cleartext': {icon: 'eye', breaks: 'A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which).',
                 fix: 'Nothing, where it is over LDAPS; otherwise as above.'},
@@ -46252,8 +46275,8 @@ function a25Rows() {
   shown.forEach(function (r) {
     var tr = el('tr', 'a25-row');
     cols.forEach(function (c) { tr.appendChild(c.cell(r)); });
-    var what = page === 'accounts' ? r.name : page === 'machines' ? (r.name || r.ip) : (r.account || r.client || r.ip);
-    tr.title = 'Press for the events of ' + what;
+    var what = a25Ask(page, r);
+    tr.title = 'Press for the events behind it: ' + what;
     tr.onclick = function (e) {
       if (e.target && e.target.closest && e.target.closest('a,button')) return;
       a25Events(what);
@@ -46456,11 +46479,64 @@ function a25Markdown(d, per, hideAcc, hideMach) {
   return L.join('\n') + '\n';
 }
 /* The events behind a row, on the page of the events themselves. */
+/* Which events each kind of trouble is counted from - so that a row opens
+   those events and no others (1.10.331: it searched the name or address as
+   words, over every event, and on the other logs - whose events had no
+   account, address or machine filled in - found nothing at all). */
+var A25_EVENTS = {
+  'ldap-clear': [2889], 'ldap-unsigned': [2889], 'ldap-cbt': [3039],
+  'ntlmv1': [4624], 'cleartext': [4624], 'des': [4768, 4769],
+  'rc4': [4768, 4769, 201, 202, 203, 204, 205, 206, 207, 208, 209],
+  'noaes': [4768, 4769, 14, 16, 26, 27, 201, 202, 203, 204, 205, 206, 207, 208, 209],
+  'des-allowed': [4768, 4769],
+  'smb1': [3000], 'ntlm': [4776], 'ntlm-srv': [8004], 'ldap-daily': [2887, 3040, 3041]
+};
+/* The search that opens a row's events, in the events page's own words:
+   `event:` the numbers its kinds are counted from, and `from:` the machine
+   and its address - or, for an account, its name with no domain, as a word
+   (an account is written "jnovak", "jnovak@KRAJ.INT" and "KRAJ\\jnovak"
+   by different events, and a service lacking keys is the service, not the
+   account asking). */
+function a25Ask(page, r) {
+  var kinds = page === 'rows' ? [r.issue]
+    : (A25.issue ? [A25.issue] : Object.keys(r.issues || {}));
+  var ev = [];
+  kinds.forEach(function (k) {
+    (A25_EVENTS[k] || []).forEach(function (n) { if (ev.indexOf(n) < 0) ev.push(n); });
+  });
+  var q = ev.length ? ['event:' + ev.join(',')] : [];
+  function bare(a) { return String(a || '').split('\\').pop().split('@')[0]; }
+  function quoted(v) { return /[\s"]/.test(v) ? '"' + String(v).replace(/"/g, '') + '"' : v; }
+  var from = [];
+  if (page === 'machines') from = [r.name, r.ip];
+  else if (page === 'rows') from = [r.client, r.ip];
+  from = from.filter(function (v, i, a) { return v && a.indexOf(v) === i && !/[\s,"]/.test(v); });
+  if (from.length) q.push('from:' + from.join(','));
+  var acc = page === 'accounts' ? r.name : (page === 'rows' ? r.account : '');
+  if (acc && bare(acc) && !/^event /.test(acc)) q.push(quoted(bare(acc)));
+  if (page === 'rows' && r.server) q.push('server:' + r.server);
+  return q.join(' ');
+}
 function a25Events(what) {
   if (!what) return;
   winShowPage('events');
   $('w-q').value = what;
-  $('w-hours').value = '168';
+  /* Nothing else left over from before narrowing it: another tab, one event
+     number, one controller - and the computer accounts shown, since half of
+     what this page counts is computers. */
+  WKIND = '';
+  $('w-event').value = '';
+  $('w-server').value = '';
+  $('w-machines').checked = true;
+  /* The page's own window, as near as the events page has one. */
+  var h = Number(($('a25-window') || {}).value) || 168;
+  var w = $('w-hours'), best = '168';
+  if (w) {
+    Array.prototype.forEach.call(w.options, function (o) {
+      if (Number(o.value) >= h && (best === '168' || Number(o.value) < Number(best))) best = o.value;
+    });
+    w.value = best;
+  }
   WPAGE = 0;
   loadWinEvents();
 }

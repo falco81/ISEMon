@@ -28,6 +28,7 @@ Work through the tiles in this order:
 | 4 | Kerberos with DES | **yes** | an account with *Use Kerberos DES encryption types* ticked |
 | 5 | Kerberos with RC4 | **yes, from the 2026 Kerberos updates** | a service account or keytab without AES, a client that offers only RC4 |
 | 6 | An account with no AES keys | **yes, together with 5** | a password older than AES in the domain |
+| 6b | DES still allowed on an account | no (tidy up) | the policy *Configure encryption types allowed for Kerberos* with DES ticked |
 | 7 | LDAP bind without signing | **yes** | an application doing NTLM/Kerberos LDAP without signing |
 | 8 | LDAP channel binding failed | once channel binding is required | an LDAPS client without channel binding support |
 | 9 | A password handed over as it is (logon type 8) | only where it is not over TLS | LDAP simple bind or basic authentication |
@@ -315,6 +316,33 @@ Get-ADUser <account> -Properties PasswordLastSet | Select-Object Name, PasswordL
 The *krbtgt* account: if it ever shows up here, reset it **twice**, at
 least 10 hours apart (replication and ticket lifetime). Microsoft's
 `New-KrbtgtKeys.ps1` script does this safely.
+
+---
+
+## 6b. DES still allowed on an account
+
+**What it is.**
+- Since the January 2025 updates, events 4768/4769 write each account's own
+  `msDS-SupportedEncryptionTypes`. This tile lists the accounts whose value
+  still has the DES bits (0x1, 0x2), for example `0x1F (DES, RC4,
+  AES128-SHA96, AES256-SHA96)`.
+- It typically shows every domain controller, `krbtgt` and trust accounts.
+  That is the domain policy **Network security: Configure encryption types
+  allowed for Kerberos** with DES ticked. Windows writes that policy into
+  each computer's own value.
+- **Nothing breaks by itself.** DES is never used while AES is there, and
+  Windows Server 2025 has no DES. It is a setting to tidy.
+
+**Fix.**
+- In the GPO that sets the policy (often *Default Domain Controllers
+  Policy*), tick only **AES128_HMAC_SHA1**, **AES256_HMAC_SHA1** and, until
+  the RC4 tile is clean, **RC4_HMAC_MD5**. The computers rewrite their own
+  value at the next `gpupdate`.
+- On a user or service account set by hand:
+
+  ```powershell
+  Set-ADUser <account> -Replace @{'msDS-SupportedEncryptionTypes' = 0x1C}   # RC4 + AES, no DES
+  ```
 
 ---
 

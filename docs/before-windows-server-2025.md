@@ -19,6 +19,7 @@ off, nothing is counted and the page is not there.
 | Kerberos with DES | refused | Security | 4768/4769, ticket type 0x1/0x3 | DES is not there | take DES off the account |
 | Kerberos with RC4 | from July 2026 | Security, System (KDC) | 4768/4769 type 0x17/0x18; a client offering no AES; KDC 201–209 | no RC4 for accounts that do not ask for it (KB5073381) | `msDS-SupportedEncryptionTypes` 24, password reset, AES keytabs |
 | An account with no AES keys | from July 2026 | Security, System (KDC) | 4768/4769 `Available Keys` naming keys, none AES (`N/A` is not counted); KDC 14/16/26/27 where the account has no AES (17/18) - where it has, the client asked only RC4 and it counts as RC4 | its tickets fail without RC4 | reset its password |
+| DES still allowed on an account | info | Security | 4768/4769 `MSDS-SupportedEncryptionTypes` of the account or service with the DES bits (0x1, 0x2), e.g. 0x1F | nothing by itself; 2025 has no DES | untick DES in "Configure encryption types allowed for Kerberos"; 0x1C or 0x18 on the account |
 | SMB1 to a controller | refused | SMBServer/Audit | 3000 | SMB1 is not on 2025 | SMB 2/3 |
 | A password handed over as it is | info | Security | 4624 logon type 8 | in the clear it is refused (2889 says which) | LDAPS |
 | NTLM | info | Security | 4776 | still works (NTLMv2), on its way out; Protected Users cannot use it | Kerberos: names, SPNs |

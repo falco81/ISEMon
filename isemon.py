@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.330'
+__version__ = '1.10.331'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -7918,6 +7918,28 @@ WIN_EVENTS = {
     5376: ('account', 'credentials were saved to Credential Manager'),
     5377: ('account', 'credentials were restored from Credential Manager'),
 }
+# The other logs Before Windows Server 2025 reads (1.10.331): kept as they
+# always were - kind `other`, in no tab but Everything - but now with words,
+# and with the account, the address and the machine filled in (see
+# `win_record_from`), so they can be found and opened like any other event.
+WIN_EVENTS.update({
+    2887: ('other', 'a controller counted a day of LDAP binds without signing or TLS'),
+    2889: ('other', 'an LDAP bind without signing or TLS'),
+    3039: ('other', 'an LDAPS bind without a channel binding token'),
+    3040: ('other', 'a controller counted a day of LDAPS binds without channel binding'),
+    3041: ('other', 'a controller does not ask for LDAP channel binding'),
+    3000: ('other', 'a client connected over SMB1'),
+    8004: ('other', 'NTLM checked for a server (NTLM audit)'),
+    14: ('other', 'the KDC found no suitable key for an account'),
+    16: ('other', 'the KDC found no suitable key for an account'),
+    26: ('other', 'the KDC found no suitable key for an account'),
+    27: ('other', 'the KDC found no suitable key for an account'),
+})
+WIN_EVENTS.update({n: ('other', 'the KDC warned about RC4 (KB5073381)') for n in range(201, 210)})
+# Which of them are read for who, where from and what, by the same reading
+# Before Windows Server 2025 uses.
+WIN_AD25_FILL = frozenset((2887, 2889, 3039, 3040, 3041, 3000, 8004, 14, 16, 26, 27)
+                          + tuple(range(201, 210)))
 # The groups, in the order a page draws them, and what each one is.
 WIN_KINDS = ('lockout', 'logon-failed', 'kerberos-failed', 'ntlm-failed', 'unlock',
              'account', 'group', 'privilege', 'explicit', 'logon', 'logoff',
@@ -8722,9 +8744,41 @@ def win_record_from(line, now=None, zone=None):
         # makes the same event read twice the same row. Never stored.
         'raw': m.group('rest'),
     }
+    if event in WIN_AD25_FILL:
+        win_ad25_fill(event, m.group('rest'), facts, fields)
     facts['mark'] = win_marks(event, fields, account, kind)
     facts['object'] = win_object(event, fields, facts['mark'])[:300]
     return WinEvent(ts, facts, m.group('host'))
+
+
+def win_ad25_fill(event, rest, facts, fields):
+    """Who, where from and what, for the events of the other logs: their
+    words are not the Security log's, so the reading of the Security log left
+    them blank - and an event with no account, no address and no machine is
+    one nobody can find or be shown (1.10.331). Read the way Before Windows
+    Server 2025 reads them; never raises."""
+    try:
+        found = ad25_findings(event, rest)
+    except Exception:                                   # noqa: BLE001
+        return
+    if not found:
+        return
+    _issue, client, ip, acct, detail = found[0]
+    if acct and not acct.startswith('event ') and not facts.get('account'):
+        dom, _s, who = acct.rpartition('\\')
+        facts['account'] = (who or acct)[:180]
+        facts['is_machine'] = 1 if win_fold_account(facts['account']).endswith('$') else 0
+        if dom and not facts.get('domain'):
+            facts['domain'] = dom[:120]
+        fields.setdefault('Account', acct[:180])
+    if ip and not facts.get('ip'):
+        facts['ip'] = ip[:64]
+        fields.setdefault('Client Address', ip[:64])
+    if client and not facts.get('machine'):
+        facts['machine'] = client[:120]
+        fields.setdefault('Workstation', client[:120])
+    if detail and not facts.get('said'):
+        facts['said'] = detail[:160]
 
 
 def win_ident(facts, again=0):
@@ -9153,6 +9207,11 @@ AD25_ISSUES = (
     ('des', 'crit', 'Kerberos with DES'),
     ('rc4', 'warn', 'Kerberos with RC4'),
     ('noaes', 'warn', 'An account with no AES keys'),
+    # What the account itself allows (msDS-SupportedEncryptionTypes, written
+    # in 4768/4769 since the January 2025 updates): DES still switched on -
+    # typically every controller, by the policy "Configure encryption types
+    # allowed for Kerberos" with DES ticked (1.10.331).
+    ('des-allowed', 'info', 'DES still allowed on an account'),
     ('smb1', 'crit', 'SMB1 to a domain controller'),
     ('cleartext', 'info', 'A password handed over as it is (logon type 8)'),
     ('ntlm', 'info', 'NTLM'),
@@ -9216,17 +9275,45 @@ def ad25_on():
 # field left empty is followed straight by the next one's label, and that
 # label is not its value (1.10.330: an empty Source Workstation made a
 # machine called "ERROR", an empty Workstation name one called "SECURE").
-_AD25_LABEL = re.compile(r'^[A-Z][A-Za-z ()/\-]*:(\s|$)')
+
+
+# ...and where a controller writes its fields one space apart - 4776 and
+# NTLM/Operational 8004 do: "Logon Account: svc Source Workstation: PC1 Error
+# Code: 0x0" - the value ends where the next label begins (1.10.331: read to
+# the next double space, a whole line was one machine's name). The labels
+# are the ones these events have; a value may itself be words with capitals
+# ("SPSInstallTest", "NT AUTHORITY\\ANONYMOUS LOGON"), so a label is known,
+# not guessed.
+_AD25_LABELS = (
+    'Account Name', 'Account Domain', 'Security ID', 'Logon ID', 'Logon Type', 'Logon GUID',
+    'Logon Account', 'Source Workstation', 'Error Code', 'Authentication Package',
+    'Secure Channel name', 'Secure Channel type', 'User name', 'Domain name', 'Workstation name',
+    'Workstation Name', 'Source Network Address', 'Source Port', 'Package Name (NTLM only)',
+    'Key Length', 'Logon Process', 'Transited Services', 'Linked Logon ID',
+    'Network Account Name', 'Network Account Domain', 'Process ID', 'Process Name',
+    'Client IP address', 'Identity the client attempted to authenticate as', 'Binding Type',
+    'Service Name', 'Service ID', 'Supplied Realm Name', 'User ID', 'MSDS-SupportedEncryptionTypes',
+    'Available Keys', 'Client Address', 'Client Port', 'Advertized Etypes', 'Ticket Options',
+    'Result Code', 'Failure Code', 'Ticket Encryption Type', 'Session Encryption Type',
+    'Pre-Authentication Type', 'Account Information', 'Service Information',
+    'Network Information', 'Additional Information', 'Domain Controller Information',
+    'Certificate Information', 'Certificate Issuer Name', 'Restricted Admin Mode',
+    'Virtual Account', 'Elevated Token', 'Impersonation Level', 'New Logon', 'Subject')
+_AD25_LABEL_RX = '(?:%s):' % '|'.join(re.escape(x) for x in sorted(_AD25_LABELS, key=len, reverse=True))
+_AD25_LABEL_AT = re.compile(_AD25_LABEL_RX + r'(?=\s|$)')
+_AD25_VALUE_END = re.compile(r'\s{2,}|\t|\s(?=' + _AD25_LABEL_RX + r'(?:\s|$))')
 
 
 def _ad25_val(label, text):
-    m = re.search(re.escape(label) + r':[ \t]*(.*?)(?=\s{2,}|\t|$)', text)
+    m = re.search(re.escape(label) + r':', text)
     if not m:
         return ''
-    v = m.group(1).strip()
-    if not v or v in ('-', 'N/A') or _AD25_LABEL.match(v):
-        return ''
-    return v
+    rest = text[m.end():].lstrip(' \t')
+    if not rest or _AD25_LABEL_AT.match(rest):
+        return ''                       # nothing written: the next label follows
+    end = _AD25_VALUE_END.search(rest)
+    v = (rest[:end.start()] if end else rest).strip()
+    return '' if v in ('-', 'N/A') else v
 
 
 def _ad25_word(rx, text, default=''):
@@ -9309,10 +9396,23 @@ def ad25_findings(event, line, whole=''):
         if worked and etype in ('0x1', '0x3'):
             out.append(('des', '', ip, acct, 'a ticket for %s in %s' % (service or '?',
                                                                          _ad25_etypes(etype))))
-        if 'Available Keys:' in rest:
+        if 'Available Keys:' in rest or 'MSDS-SupportedEncryptionTypes:' in rest:
             marks = list(_AD25_SECTION.finditer(rest))
             for i, sec in enumerate(marks):
                 part = rest[sec.end():marks[i + 1].start() if i + 1 < len(marks) else len(rest)]
+                if sec.group(1) in ('Account Information', 'Service Information'):
+                    allowed = _ad25_word(r'MSDS-SupportedEncryptionTypes:\s*(0x[0-9A-Fa-f]+)', part)
+                    try:
+                        des_on = bool(int(allowed, 16) & 0x3) if allowed else False
+                    except ValueError:
+                        des_on = False
+                    if des_on:
+                        named_as = (_ad25_val('Account Name', part) if sec.group(1) ==
+                                    'Account Information' else _ad25_val('Service Name', part))
+                        if named_as:
+                            out.append(('des-allowed', '', '', named_as[:180],
+                                        'msDS-SupportedEncryptionTypes %s' % allowed.upper()
+                                        .replace('0X', '0x')))
                 keys = _ad25_word(_AD25_KEYS, part)
                 named = re.findall(r'AES|RC4|DES', keys.upper())
                 # Only keys that are named and none of them AES: "N/A" and "-"
@@ -31457,7 +31557,12 @@ class Storage(object):
                         ("issue = 'ntlm' AND detail LIKE ?", ('checked for % at %',)),
                         ("issue IN ('ntlm', 'ntlm-srv') AND UPPER(client) IN (?, ?, ?)",
                          ('ERROR', 'SECURE', 'USER')),
-                        ("account IN (?, ?, ?)", ('Binding', 'Account', 'Service'))):
+                        ("account IN (?, ?, ?)", ('Binding', 'Account', 'Service')),
+                        # 1.10.330 read 4776 and 8004 - whose fields are one
+                        # space apart - to the next double space: a whole line
+                        # became one machine's name (1.10.331).
+                        ("issue IN ('ntlm', 'ntlm-srv') AND (client LIKE ? OR account LIKE ? "
+                         "OR detail LIKE ?)", ('%:%', '%:%', '%:%'))):
                     db.execute('DELETE FROM ad25_seen WHERE ' + sql, args)
         except sqlite3.Error as e:
             log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
@@ -31466,7 +31571,8 @@ class Storage(object):
         """Each kind of trouble Before Windows Server 2025 counts, since a
         moment: how many, from how many machines and accounts, the newest,
         and the machine and account doing the most of it."""
-        keys = [k for k, _l, _w in AD25_ISSUES if k not in ('ntlm', 'ntlm-srv', 'ldap-daily')]
+        keys = [k for k, _l, _w in AD25_ISSUES if k not in ('ntlm', 'ntlm-srv', 'ldap-daily',
+                                                              'des-allowed')]
         try:
             rows = self.db.execute(
                 'SELECT issue, ckey, MAX(client) AS client, MAX(ip) AS ip, '

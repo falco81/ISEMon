@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.330",
-  "made": "2026-11-09",
+  "version": "1.10.331",
+  "made": "2026-11-10",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -444,6 +444,10 @@
    "source": "A click on the code or the address copies it.",
    "text": "A click on the code or the address copies it."
   },
+  "s.a-client-connected-over-smb1.356b1de5": {
+   "source": "a client connected over SMB1",
+   "text": "a client connected over SMB1"
+  },
   "s.a-client-sending-packets-bigger-than.d8db7141": {
    "source": "A client sending packets bigger than its tunnel carries: the MTU along its way is smaller than it thinks. Slow or stalling applications over the VPN, for those people.",
    "text": "A client sending packets bigger than its tunnel carries: the MTU along its way is smaller than it thinks. Slow or stalling applications over the VPN, for those people."
@@ -511,6 +515,18 @@
   "s.a-computer-account.fc65bf09": {
    "source": "a computer account",
    "text": "a computer account"
+  },
+  "s.a-controller-counted-a-day-of.373ad35f": {
+   "source": "a controller counted a day of LDAPS binds without channel binding",
+   "text": "a controller counted a day of LDAPS binds without channel binding"
+  },
+  "s.a-controller-counted-a-day-of.f8303026": {
+   "source": "a controller counted a day of LDAP binds without signing or TLS",
+   "text": "a controller counted a day of LDAP binds without signing or TLS"
+  },
+  "s.a-controller-does-not-ask-for.e5e59222": {
+   "source": "a controller does not ask for LDAP channel binding",
+   "text": "a controller does not ask for LDAP channel binding"
   },
   "s.a-copy-is-consistent-even-while.4790eea5": {
    "source": "A copy is consistent even while the daemon is writing to it, and it is written as a portable file whatever this is running on — so a copy made on MariaDB or PostgreSQL goes back into either of those, or into the file on this machine.",
@@ -3051,6 +3067,14 @@
   "s.an-ise-node.e054cae1": {
    "source": "an ISE node",
    "text": "an ISE node"
+  },
+  "s.an-ldap-bind-without-signing-or.7ca8e655": {
+   "source": "an LDAP bind without signing or TLS",
+   "text": "an LDAP bind without signing or TLS"
+  },
+  "s.an-ldaps-bind-without-a-channel.9647d55a": {
+   "source": "an LDAPS bind without a channel binding token",
+   "text": "an LDAPS bind without a channel binding token"
   },
   "s.an-ntlm-or-kerberos-bind-over.82d5fd57": {
    "source": "An NTLM or Kerberos bind over LDAPS without a channel binding token is refused once binding is required.",
@@ -17664,6 +17688,10 @@
    "source": "Nothing beside this one yet. These are shipped by a script that runs once a minute, so an attempt from the last minute or two normally has nothing here — open it again shortly.",
    "text": "Nothing beside this one yet. These are shipped by a script that runs once a minute, so an attempt from the last minute or two normally has nothing here — open it again shortly."
   },
+  "s.nothing-breaks-by-itself-des-is.0f781461": {
+   "source": "Nothing breaks by itself: DES is never used while AES is there, and Windows Server 2025 simply has none. But an account or a controller that still allows it is set by hand or by a policy, and that setting is the one to tidy before the change.",
+   "text": "Nothing breaks by itself: DES is never used while AES is there, and Windows Server 2025 simply has none. But an account or a controller that still allows it is set by hand or by a policy, and that setting is the one to tidy before the change."
+  },
   "s.nothing-busy-just-now.0ec19e42": {
    "source": "nothing busy just now",
    "text": "nothing busy just now"
@@ -18259,6 +18287,10 @@
   "s.ntlm-by-the-server-it-was.d6e01d45": {
    "source": "NTLM by the server it was used for",
    "text": "NTLM by the server it was used for"
+  },
+  "s.ntlm-checked-for-a-server-ntlm.af31c9cd": {
+   "source": "NTLM checked for a server (NTLM audit)",
+   "text": "NTLM checked for a server (NTLM audit)"
   },
   "s.ntlm-operational.50aeed04": {
    "source": "NTLM/Operational",
@@ -28124,9 +28156,17 @@
    "source": "The jobs",
    "text": "The jobs"
   },
+  "s.the-kdc-found-no-suitable-key.dee8e5f2": {
+   "source": "the KDC found no suitable key for an account",
+   "text": "the KDC found no suitable key for an account"
+  },
   "s.the-kdc-s-own-warnings-about.0c2c6bf1": {
    "source": "the KDC’s own warnings about RC4 and missing keys",
    "text": "the KDC’s own warnings about RC4 and missing keys"
+  },
+  "s.the-kdc-warned-about-rc4-kb5073381.977065ca": {
+   "source": "the KDC warned about RC4 (KB5073381)",
+   "text": "the KDC warned about RC4 (KB5073381)"
   },
   "s.the-kdc-writes-here-only-when.2cb38cf6": {
    "source": "The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used.",
@@ -32551,6 +32591,10 @@
   "s.unreachable.408e9edf": {
    "source": "unreachable",
    "text": "unreachable"
+  },
+  "s.untick-des-in-the-policy-network.0a1daff0": {
+   "source": "Untick DES in the policy \"Network security: Configure encryption types allowed for Kerberos\" (AES128, AES256 and, until RC4 is gone, RC4); on an account, msDS-SupportedEncryptionTypes without the DES bits (0x1C or 0x18).",
+   "text": "Untick DES in the policy \"Network security: Configure encryption types allowed for Kerberos\" (AES128, AES256 and, until RC4 is gone, RC4); on an account, msDS-SupportedEncryptionTypes without the DES bits (0x1C or 0x18)."
   },
   "s.until-it-is-done-and-proved.2d3b6003": {
    "source": "Until it is done and proved, the cards here are worked out from the events themselves each time, which is slower on a big domain; the page switches over by itself.",
@@ -38886,9 +38930,9 @@
    "source": "{0}. Press for its networks, its SAs and what crossed it.",
    "text": "{0}. Press for its networks, its SAs and what crossed it."
   },
-  "p.press-for-the-events-of.39d84f7d": {
-   "source": "Press for the events of {0}",
-   "text": "Press for the events of {0}"
+  "p.press-for-the-events-behind-it.bff65ff9": {
+   "source": "Press for the events behind it: {0}",
+   "text": "Press for the events behind it: {0}"
   },
   "p.press-for-the-lines-of.f347b6c5": {
    "source": "Press for the lines of {0}.",
