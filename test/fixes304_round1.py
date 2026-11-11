@@ -102,7 +102,7 @@ try:
     ok('a complete export carries the passkeys', 'passkeys' in out.get('keys', {}))
     ok('...and so does a backup of the settings', 'passkeys' in isemon.RB_CONF_META)
     ok('the tables an older dump cannot hold are emptied after it',
-       isemon.Storage.DUMP_MAY_LACK, ('acme_events', 'acme_jobs', 'load_samples'))
+       isemon.Storage.DUMP_MAY_LACK, ('acme_events', 'acme_jobs', 'load_samples', 'acme_sync'))
     isemon.CONFIG['downgrade_offered'] = 1
     isemon.CONFIG['passkeys'] = 1
     why = daemon.upgrades.back_refused('1.10.300') if hasattr(daemon, 'upgrades') else \

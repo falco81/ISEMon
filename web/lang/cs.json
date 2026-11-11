@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.334",
+  "version": "1.10.335",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -2104,6 +2104,10 @@
    "source": "acme’s logs are not read: Settings → The acme logs.",
    "text": "Logy acme se nečtou: Nastavení → Logy acme."
   },
+  "s.acme-s-modules.e6c7f118": {
+   "source": "acme’s modules",
+   "text": "Moduly acme"
+  },
   "s.acme-s-nodes-10-1-2.8d515f0c": {
    "source": "acme's nodes: 10.1.2.3, 10.1.2.4",
    "text": "uzly acme: 10.1.2.3, 10.1.2.4"
@@ -3672,9 +3676,17 @@
    "source": "As the DNS server knows it, isemon-acme. ; allowed to update _acme-challenge records only.",
    "text": "Jak ho zná DNS server, isemon-acme. ; smí měnit jen záznamy _acme-challenge."
   },
+  "s.as-the-full-sync-said.8b0b3e38": {
+   "source": "as the full sync said",
+   "text": "jak řekla plná synchronizace"
+  },
   "s.as-the-key-was-made-tsig.e8eaa5f9": {
    "source": "As the key was made (tsig-keygen makes hmac-sha256).",
    "text": "Jak byl klíč vytvořen (tsig-keygen vytváří hmac-sha256)."
+  },
+  "s.as-the-last-full-sync-said.7d1bf5a7": {
+   "source": "as the last full sync said them",
+   "text": "jak je uvedla poslední plná synchronizace"
   },
   "s.as-the-log-wrote-it.4d593e57": {
    "source": "As the log wrote it",
@@ -9288,6 +9300,10 @@
    "source": "failed · FreeRADIUS VPN",
    "text": "neúspěšné · FreeRADIUS VPN"
   },
+  "s.failed-in-a-row.2cb19c53": {
+   "source": "Failed in a row",
+   "text": "Selhalo po sobě"
+  },
   "s.failed-last-24-h.ca9b828e": {
    "source": "Failed, last 24 h",
    "text": "Neúspěšné, posledních 24 h"
@@ -9556,6 +9572,10 @@
    "source": "Fetching the record…",
    "text": "Načítání záznamu…"
   },
+  "s.fewer-arrived-than-it-began-with.0fc6749f": {
+   "source": "- fewer arrived than it began with, or its end did not; nothing was let go",
+   "text": "- dorazilo méně, než ohlásila na začátku, nebo nedorazil její konec; nic nebylo odebráno"
+  },
   "s.fewer-checkpoints-while-thousands-of-lines.c0937152": {
    "source": "fewer checkpoints while thousands of lines a second are written",
    "text": "méně checkpointů, když se zapisují tisíce řádků za sekundu"
@@ -9719,6 +9739,10 @@
   "s.fine.2a1b875b": {
    "source": "fine",
    "text": "v pořádku"
+  },
+  "s.fingerprint-sha-256.939a329d": {
+   "source": "Fingerprint (SHA-256)",
+   "text": "Otisk (SHA-256)"
   },
   "s.fingerprint.fed4c905": {
    "source": "Fingerprint",
@@ -13408,6 +13432,10 @@
    "source": "Its certificates’ log in each",
    "text": "Log jeho certifikátů v každé"
   },
+  "s.its-checks.c12190a8": {
+   "source": "Its checks",
+   "text": "Jeho kontroly"
+  },
   "s.its-configuration-is-not-readable-or.9c9596bf": {
    "source": "its configuration is not readable, or not one of isemon",
    "text": "její konfigurace není čitelná, nebo to není konfigurace isemonu"
@@ -13519,6 +13547,10 @@
   "s.its-operating-system.65a6b2ab": {
    "source": "its operating system",
    "text": "jeho operační systém"
+  },
+  "s.its-own-cas.d0fdb6cd": {
+   "source": "Its own CAs",
+   "text": "Vlastní CA"
   },
   "s.its-own-certificate-is-kept.a37cf54b": {
    "source": "its own certificate is kept",
@@ -13643,6 +13675,10 @@
   "s.its-time.57d4da03": {
    "source": "Its time",
    "text": "Jeho čas"
+  },
+  "s.its-twin-until.d34b31c4": {
+   "source": "Its twin until",
+   "text": "Jeho dvojče platí do"
   },
   "s.its-virtual-domain.a3b92f12": {
    "source": "its virtual domain",
@@ -14172,6 +14208,10 @@
    "source": "Last downloaded",
    "text": "Naposledy staženo"
   },
+  "s.last-error.5e4df866": {
+   "source": "Last error",
+   "text": "Poslední chyba"
+  },
   "s.last-failure.d11afcf4": {
    "source": "Last failure",
    "text": "Poslední selhání"
@@ -14187,6 +14227,18 @@
   "s.last-filled.e8c89c82": {
    "source": "Last filled",
    "text": "Naposledy naplněno"
+  },
+  "s.last-fine.5be7cf17": {
+   "source": "Last fine",
+   "text": "Naposledy v pořádku"
+  },
+  "s.last-full-sync-not-whole.818bd9dd": {
+   "source": "last full sync, not whole,",
+   "text": "poslední plná synchronizace, neúplná,"
+  },
+  "s.last-full-sync.75a10a2b": {
+   "source": "last full sync",
+   "text": "poslední plná synchronizace"
   },
   "s.last-handshake.5ee83513": {
    "source": "Last handshake",
@@ -16547,6 +16599,10 @@
   "s.next-to-run-out.38eb7938": {
    "source": "Next to run out",
    "text": "Nejbližší vypršení"
+  },
+  "s.next-try.36971668": {
+   "source": "Next try",
+   "text": "Další pokus"
   },
   "s.next.bc981983": {
    "source": "Next",
@@ -20192,6 +20248,10 @@
    "source": "own",
    "text": "vlastní"
   },
+  "s.owner-tags.bb65e024": {
+   "source": "Owner, tags",
+   "text": "Vlastník, štítky"
+  },
   "s.pack-the-old-copies.e6f57d5e": {
    "source": "Pack the old copies",
    "text": "Zabalit staré kopie"
@@ -22248,6 +22308,10 @@
    "source": "renewed by ACME",
    "text": "obnovuje ACME"
   },
+  "s.renewed-by-itself.40505fd2": {
+   "source": "Renewed by itself",
+   "text": "Obnovuje se sám"
+  },
   "s.renewed-deploy.3c800ef6": {
    "source": "renewed, deploy",
    "text": "renewed, deploy"
@@ -22900,6 +22964,10 @@
    "source": "Running",
    "text": "Běží"
   },
+  "s.runs-after.c459857c": {
+   "source": "Runs after",
+   "text": "Spouští se po"
+  },
   "s.runs-out-soon.0e5a0cfa": {
    "source": "runs out soon",
    "text": "brzy vyprší"
@@ -22952,6 +23020,10 @@
    "source": "Said again:",
    "text": "Řečeno znovu:"
   },
+  "s.said-an-error.bff37a4f": {
+   "source": "said an error",
+   "text": "hlásí chybu"
+  },
   "s.said-bad-why.7ca2a949": {
    "source": "said bad why",
    "text": "odmítnuto, proč"
@@ -22959,6 +23031,10 @@
   "s.said-bad.3b054d5d": {
    "source": "said bad",
    "text": "odmítnuto"
+  },
+  "s.said-by-the-full-sync.62145118": {
+   "source": "Said by the full sync",
+   "text": "Uvedla plná synchronizace"
   },
   "s.said-good.ed264e2b": {
    "source": "said good",
@@ -24380,6 +24456,10 @@
    "source": "Source port",
    "text": "Zdrojový port"
   },
+  "s.source-validation.4efeee9f": {
+   "source": "Source, validation",
+   "text": "Zdroj, validace"
+  },
   "s.source.6da13add": {
    "source": "Source",
    "text": "Zdroj"
@@ -24723,6 +24803,10 @@
   "s.starttls.f3715f0f": {
    "source": "starttls",
    "text": "starttls"
+  },
+  "s.state-in-acme.6b1b0c1d": {
+   "source": "State in acme",
+   "text": "Stav v acme"
   },
   "s.state.a7250206": {
    "source": "State",
@@ -25159,6 +25243,10 @@
   "s.switched-off.3f4705b7": {
    "source": "Switched off.",
    "text": "Vypnuto."
+  },
+  "s.switched-off.7b4b3b9f": {
+   "source": "(switched off)",
+   "text": "(vypnuto)"
   },
   "s.switched-off.a18609ea": {
    "source": "Switched off",
@@ -25744,6 +25832,10 @@
    "source": "Test the local-in policy with an address of your own before relying on it: what it covers has changed between FortiOS releases. Each FortiGate model also has a ceiling on how many entries a threat feed may hold.",
    "text": "Než se na lokální vstupní politiku (local-in policy) spolehnete, otestujte ji s vlastní adresou: co pokrývá, se mezi verzemi FortiOS měnilo. Každý model FortiGate má také horní limit počtu položek, které může threat feed obsahovat."
   },
+  "s.test.640ab2ba": {
+   "source": "Test",
+   "text": "Test"
+  },
   "s.test.a94a8fe5": {
    "source": "test",
    "text": "test"
@@ -25751,6 +25843,10 @@
   "s.test2.109f4b3c": {
    "source": "test2",
    "text": "test2"
+  },
+  "s.tests.39fdec11": {
+   "source": "Tests",
+   "text": "Testy"
   },
   "s.text-markdown-charset-utf-8.08ec0ca2": {
    "source": "text/markdown;charset=utf-8",
@@ -33003,6 +33099,10 @@
   "s.validations-refused.c44614bc": {
    "source": "Validations refused",
    "text": "Odmítnuté validace"
+  },
+  "s.validations.6c259e54": {
+   "source": "Validations",
+   "text": "Validace"
   },
   "s.value.8dce170d": {
    "source": "Value",
@@ -40789,6 +40889,10 @@
   "p.wrong-password-s.0b12ffd6": {
    "source": "{0} wrong password(s)",
    "text": "{0} chybných hesel"
+  },
+  "p.yes-days-before-the-end.e489a264": {
+   "source": "yes, {0} days before the end",
+   "text": "ano, {0} dní před koncem"
   },
   "p.you-are-on-page-of.6ca172dc": {
    "source": "You are on page {0}{1} of {2}.",

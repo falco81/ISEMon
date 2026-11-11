@@ -48364,7 +48364,7 @@ var AM_STATE = {
 var AM_ACTION = {issued: 'issued', renewed: 'renewed', renew: 'renewal failed', deployed: 'deployed',
                  deploy: 'deployment failed', expiring: 'runs out soon', expired: 'ran out',
                  revoked: 'revoked', added: 'added', changed: 'changed', deleted: 'deleted',
-                 imported: 'imported'};
+                 imported: 'imported', sync: 'as the full sync said'};
 var AM_SERIES = [['issued', 'Issued and renewed', 'var(--info)'], ['deployed', 'Deployed', 'var(--ok)'],
                  ['warn', 'Warnings', 'var(--warn)'], ['failed', 'Failures', 'var(--crit)'],
                  ['other', 'Everything else', 'var(--tx-mut)']];
@@ -48493,7 +48493,9 @@ function drawAcmeLog() {
   top.appendChild(amPages());
   host.appendChild(top);
   if (AM.page !== 'certs') { amLoadPage(host); return; }
-  if (!d.total) {
+  /* A sync with no history brings certificates and no line of acme_events
+     (1.10.335): that is not "nothing from acme". */
+  if (!d.total && !(d.certs || []).length && !d.sync) {
     var empty = el('div', 'card full am-empty');
     empty.appendChild(el('h2', '', 'Nothing from acme yet'));
     empty.appendChild(el('p', 'note', 'The logs are read, and not one line of acme’s has been found in them. In acme: Settings → isemon - isemon=1, this machine in isemon_targets - then Send a test line. The Logs tab says whether the files are there and readable.'));
@@ -48514,6 +48516,7 @@ function drawAcmeLog() {
   three.appendChild(amTargets(d));
   three.appendChild(amNodes(d));
   host.appendChild(three);
+  if ((d.modules || []).length) host.appendChild(amModules(d));
   var four = el('div', 'grid halves am-two');
   four.appendChild(amFailures(d));
   four.appendChild(amKinds(d));
@@ -48543,6 +48546,17 @@ function amHead(d) {
     var last = el('span', 'am-live' + (Date.now() / 1000 - d.last_ts < 86400 ? ' on' : ''), 'last line ' + ago(d.last_ts));
     last.title = stamp(d.last_ts);
     sub.appendChild(last);
+  }
+  /* acme's first full sync (1.10.335): when the last one ended, and whether
+     it came whole - only a whole one lets go of what acme no longer has. */
+  if (d.sync) {
+    sub.appendChild(document.createTextNode(' · '));
+    var sy = el('span', d.sync.whole ? '' : 'am-bad',
+      (d.sync.whole ? 'last full sync ' : 'last full sync, not whole, ') + ago(d.sync.ts));
+    sy.appendChild(noI18n(el('span', 'muted', ' (' + (d.sync.sync || '') + ')')));
+    sy.title = stamp(d.sync.ts) + (d.sync.node ? ' · ' + d.sync.node : '') + (d.sync.who ? ' · ' + d.sync.who : '')
+      + (d.sync.whole ? '' : ' - fewer arrived than it began with, or its end did not; nothing was let go');
+    sub.appendChild(sy);
   }
   words.appendChild(sub);
   title.appendChild(words);
@@ -48975,6 +48989,41 @@ function amActivity(d) {
     legend.appendChild(it);
   });
   card.appendChild(legend);
+  return card;
+}
+
+/* acme's own modules, as its full sync said them (1.10.335): every target,
+   source, validation, test and CA it has - not only those a line named. */
+var AM_MODULE = {target: 'Targets', source: 'Sources', validation: 'Validations', test: 'Tests',
+                 authority: 'Its own CAs'};
+function amModules(d) {
+  var card = el('div', 'card full');
+  var h = el('h2', '', 'acme’s modules');
+  h.appendChild(el('span', 'right', 'as the last full sync said them'));
+  card.appendChild(h);
+  ['target', 'source', 'validation', 'test', 'authority'].forEach(function (kind) {
+    var list = (d.modules || []).filter(function (m) { return m.object === kind; });
+    if (!list.length) return;
+    card.appendChild(el('h4', '', AM_MODULE[kind]));
+    card.appendChild(listTable(['Name', 'Kind', 'State', 'Last fine', 'Last error'], list, function (m) {
+      var tr = el('tr');
+      var nm = el('td', '');
+      nm.appendChild(noI18n(el('b', '', m.name || '–')));
+      if (m.note) nm.appendChild(noI18n(el('div', 'small muted', m.note)));
+      if (m.subject) nm.appendChild(noI18n(el('div', 'small muted mono', m.subject)));
+      tr.appendChild(nm);
+      tr.appendChild(noI18n(el('td', 'small', m.module_kind || m.key_type || '–')));
+      var st = el('td', '');
+      var off = String(m.enabled) === '0';
+      st.appendChild(el('span', 'tag ' + (off ? '' : m.last_error ? 'warn' : 'ok'),
+        off ? 'switched off' : m.last_error ? 'said an error' : 'on'));
+      if (m.not_after) st.appendChild(noI18n(el('div', 'small muted', 'until ' + String(m.not_after).slice(0, 10))));
+      tr.appendChild(st);
+      tr.appendChild(noI18n(el('td', 'small', m.last_ok ? String(m.last_ok).replace('T', ' ').replace('Z', ' UTC') : '–')));
+      tr.appendChild(noI18n(el('td', 'small am-bad', m.last_error || '')));
+      return tr;
+    }, 'plain am-table'));
+  });
   return card;
 }
 
@@ -49973,7 +50022,35 @@ function amCert(c) {
                  ['On the node', noI18n(el('span', '', c.node || '–'))]];
     if (c.failed_at) facts.push(['Last failure', noI18n(el('span', 'am-bad', ago(c.failed_at) + ': ' + (c.failed_msg || '')))]);
     if (c.reason) facts.push(['Revoked because', noI18n(el('span', '', c.reason))]);
+    /* ...and what acme itself holds of it, from its full sync (1.10.335). */
+    var a = c.acme || {};
+    if (a.synced) {
+      if (a.cert_state) facts.push(['State in acme', noI18n(el('span', 'mono', a.cert_state + (String(a.enabled) === '0' ? ' (switched off)' : '')))]);
+      if (a.key_type) facts.push(['Key', noI18n(el('span', 'mono', a.key_type + (a.key_type_alt ? ' + ' + a.key_type_alt : '')))]);
+      if (a.source || a.challenge) facts.push(['Source, validation', noI18n(el('span', '', [a.source, a.challenge].filter(Boolean).join(', ')))]);
+      if (a.auto_renew !== undefined) facts.push(['Renewed by itself', String(a.auto_renew) === '1' ? (a.renew_days ? 'yes, ' + a.renew_days + ' days before the end' : 'yes') : 'no']);
+      if (a.next_try) facts.push(['Next try', noI18n(el('span', '', String(a.next_try).replace('T', ' ').replace('Z', ' UTC')))]);
+      if (a.fails && String(a.fails) !== '0') facts.push(['Failed in a row', noI18n(el('span', 'am-bad', String(a.fails) + (a.last_error ? ': ' + a.last_error : '')))]);
+      if (a.owner || a.tags) facts.push(['Owner, tags', noI18n(el('span', '', [a.owner, a.tags].filter(Boolean).join(' · ')))]);
+      if (a.fingerprint) facts.push(['Fingerprint (SHA-256)', noI18n(el('span', 'mono small', a.fingerprint))]);
+      if (a.alt_not_after) facts.push(['Its twin until', noI18n(el('span', '', String(a.alt_not_after).slice(0, 10) + (a.alt_state ? ' (' + a.alt_state + ')' : '')))]);
+      facts.push(['Said by the full sync', ago(a.synced)]);
+    }
     body.appendChild(netFacts(facts));
+    if ((c.checks || []).length) {
+      body.appendChild(el('h4', '', 'Its checks'));
+      body.appendChild(listTable(['Test', 'State', 'Runs after', 'Last'], c.checks, function (k) {
+        var tr = el('tr');
+        tr.appendChild(noI18n(el('td', '', k.test || k.check_id || '–')));
+        var s = el('td', '');
+        s.appendChild(noI18n(el('span', 'tag ' + (k.state === 'ok' ? 'ok' : k.state === 'warn' ? 'warn' : 'crit'), k.state || '–')));
+        if (k.msg) s.appendChild(noI18n(el('div', 'small muted', k.msg)));
+        tr.appendChild(s);
+        tr.appendChild(noI18n(el('td', 'small', k.after || '–')));
+        tr.appendChild(noI18n(el('td', 'small', k.last_at ? String(k.last_at).replace('T', ' ').replace('Z', ' UTC') : '–')));
+        return tr;
+      }));
+    }
     if ((c.targets || []).length) {
       body.appendChild(el('h4', '', 'Where it is'));
       body.appendChild(listTable(['Target', 'Kind', 'State', 'Version', 'When'], c.targets, function (t) {

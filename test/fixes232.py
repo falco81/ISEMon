@@ -56,8 +56,10 @@ PORT = 19400 + random.randint(0, 90)
 # owes): an older version writes its sessions without it and never reads it.
 # 1.10.321 added a table of its own (ad25_seen, Before Windows Server 2025),
 # which an older version never reads.
+# 1.10.335 added another (acme_sync, acme's first full sync), which an
+# older version never reads.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '7e12f4d7dd0be689c440fcc7cbbaac8df21d5da7c6e20db38939471a2959203d'}
+               'sha256': '8ec92f060abcd2972fe5ffff53c1931e9a276c17f121e7e3751f4e9b5c13e5d5'}
 
 
 def ok(what, got, want=True):

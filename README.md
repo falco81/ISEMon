@@ -372,6 +372,29 @@ working.
 
 ## Version
 
+1.10.335
+
+- **acme's first full sync (acme 1.0.71) is read.** These are the `kind=sync`
+  lines of `acme-jobs.log`. Before, the acme page said "0 certificates"
+  however much had been sent.
+- **The objects** (certificates, deployments, checks, targets, sources,
+  validations, tests, acme's own CAs) are kept by acme's own ids.
+- **A whole sync replaces what that host said before.** Whole means its
+  `end` came, with as many of each kind as `begin` announced. A sync that is
+  not whole lets nothing go, and the header says so.
+- **History and past jobs are kept once.** Their time comes from `at=`, they
+  are not kept twice when the same sync is sent again, and never beside the
+  live line of the same event or job. They go to the certificate's history
+  and to the Jobs page.
+- **A later live line wins** over the sync for the same certificate.
+- **On the page:**
+  - every certificate acme holds, with its deployments as its targets;
+  - in the certificate's popup, what acme says of it, and its checks;
+  - a new card, *acme's modules*;
+  - every check on the Checks page;
+  - the header says `last full sync <when> (<id>)`.
+- See `docs/acme-logs.md`, *The first full sync*.
+
 1.10.334
 
 - **Before Windows Server 2025, hunted for bugs again (daemon and page).**

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.334'
+__version__ = '1.10.335'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -20369,6 +20369,25 @@ CREATE TABLE IF NOT EXISTS ad25_seen (
     PRIMARY KEY (day, issue, ckey)
 );
 
+-- acme as its first full sync described it (1.10.335): every certificate,
+-- deployment, check and module as it stood, one row each, keyed by acme's own
+-- id (`okey`: cert_id, deploy_id, check_id, or the module's name). `sync` is
+-- the sync that last said it; one that a later COMPLETE sync of the same host
+-- no longer named is `removed` - gone from acme. `data` is every field, as
+-- it came.
+CREATE TABLE IF NOT EXISTS acme_sync (
+    host    TEXT NOT NULL,
+    object  TEXT NOT NULL,
+    okey    TEXT NOT NULL,
+    sync    TEXT,
+    node    TEXT,
+    ts      REAL,
+    at      REAL,
+    removed INTEGER DEFAULT 0,
+    data    TEXT,
+    PRIMARY KEY (host, object, okey)
+);
+
 -- What crossed the firewall, out of its own log. Never judged: the Traffic
 -- page and nothing else. One row a line of the log, except the sessions it
 -- let through where the site has said not to keep them; those are counted
@@ -36658,12 +36677,113 @@ class Storage(object):
         certs = self.acme_cert_facts()
         if certs is None:
             return []
-        out = []
-        for c in certs.values():
+        out = {}
+        for name, c in certs.items():
             c = dict(c)
             c['targets'] = dict(c['targets'])
-            out.append(c)
-        return self._acme_cert_states(out, now)
+            out[name] = c
+        # ...and what acme's full sync said of them (1.10.335): every one it
+        # holds, as it stands - a later live line of the same one wins.
+        self._acme_cert_sync(out)
+        return self._acme_cert_states(list(out.values()), now)
+
+    # What a certificate's state in acme says, in the words the lines use.
+    ACME_SYNC_STATE = {'failed': 'failed_at', 'revoke-failed': 'failed_at',
+                       'revoked': 'revoked_at', 'deleting': 'deleted_at'}
+
+    def _acme_cert_sync(self, certs):
+        objs = self.acme_sync_objects(('certificate', 'deployment', 'check'))
+        sync_certs = objs.get('certificate') or []
+        if not sync_certs:
+            return
+        deploys, checks = {}, {}
+        for d in objs.get('deployment') or []:
+            deploys.setdefault(str(d.get('cert_id') or ''), []).append(d)
+        for c in objs.get('check') or []:
+            checks.setdefault(str(c.get('cert_id') or ''), []).append(c)
+        named = set()
+        for sc in sync_certs:
+            name = str(sc.get('cert') or '')
+            if not name:
+                continue
+            named.add(name)
+            at = float(sc.get('_ts') or 0)
+            mine = {'cert': name, 'last_ts': at, 'last_action': 'sync', 'last_result': None,
+                    'last_level': 'info', 'last_msg': sc.get('msg'), 'node': sc.get('_node'),
+                    'names': sc.get('names') or sc.get('cn'), 'serial': sc.get('serial'),
+                    'not_after': acme_iso_ts(sc.get('not_after')), 'issuer': sc.get('issuer'),
+                    'version': sc.get('version'), 'reason': sc.get('last_error'),
+                    'targets': {}, 'issued_at': acme_iso_ts(sc.get('last_ok'))
+                    or acme_iso_ts(sc.get('not_before')),
+                    'failed_at': None, 'failed_msg': None, 'expired_at': None,
+                    'revoked_at': None, 'deleted_at': None,
+                    'added_at': acme_iso_ts(sc.get('created')), 'events': 0,
+                    'deploys_ok': 0, 'deploys_failed': 0}
+            when = self.ACME_SYNC_STATE.get(str(sc.get('cert_state') or ''))
+            if when:
+                mine[when] = acme_iso_ts(sc.get('last_try')) or at
+                if when == 'failed_at':
+                    mine['failed_msg'] = sc.get('last_error')
+                    # Failing since after it was last issued, whatever the times say.
+                    if mine['issued_at'] and mine['failed_at'] <= mine['issued_at']:
+                        mine['failed_at'] = mine['issued_at'] + 1
+            for d in deploys.get(str(sc.get('cert_id') or ''), []):
+                tname = str(d.get('target') or '')
+                if not tname:
+                    continue
+                ok = str(d.get('deploy_state') or '') != 'failed'
+                mine['targets'][tname] = {
+                    'target': tname, 'kind': None, 'ok': ok,
+                    'ts': acme_iso_ts(d.get('last_try')) or acme_iso_ts(d.get('last_ok')) or at,
+                    'version': d.get('deployed_version'), 'node': d.get('_node'),
+                    'msg': d.get('last_error') or d.get('msg') or '',
+                    'state': d.get('deploy_state'), 'enabled': d.get('enabled'),
+                    'current': (not sc.get('fingerprint') or not d.get('deployed_fp')
+                                or d.get('deployed_fp') == sc.get('fingerprint'))}
+                if ok:
+                    mine['deploys_ok'] += 1
+                else:
+                    mine['deploys_failed'] += 1
+            base = certs.get(name)
+            if base is not None and float(base.get('last_ts') or 0) > at:
+                # A later line said more: it stands, with what it left unsaid
+                # from the sync, and its targets over the sync's.
+                for k in ('names', 'serial', 'not_after', 'issuer', 'version'):
+                    if base.get(k) is None and mine.get(k) is not None:
+                        base[k] = mine[k]
+                targets = dict(mine['targets'])
+                targets.update(base['targets'])
+                base['targets'] = targets
+                one = base
+            else:
+                if base is not None:
+                    mine['events'] = base.get('events', 0)
+                    for tname, t in base['targets'].items():
+                        if float(t.get('ts') or 0) > at:
+                            mine['targets'][tname] = t
+                one = mine
+            one['acme'] = {k: sc.get(k) for k in (
+                'cert_id', 'cert_state', 'enabled', 'source', 'challenge', 'key_type',
+                'key_type_alt', 'fingerprint', 'issuer_dn', 'not_before', 'auto_renew',
+                'renew_days', 'last_ok', 'last_try', 'next_try', 'fails', 'last_error', 'owner',
+                'tags', 'note', 'eku', 'alt_not_after', 'alt_state', 'created', 'created_by',
+                'cn') if sc.get(k) not in (None, '')}
+            one['acme']['synced'] = at
+            one['checks'] = [{k: c.get(k) for k in ('check_id', 'test', 'enabled', 'state',
+                                                    'last_at', 'last_ok', 'fails', 'after',
+                                                    'msg') if c.get(k) not in (None, '')}
+                             for c in checks.get(str(sc.get('cert_id') or ''), [])]
+            certs[name] = one
+        # What a whole sync no longer names is gone from acme - where nothing
+        # was said of it since.
+        whole = [float((one.get('whole') or {}).get('ts') or 0)
+                 for one in self.acme_syncs().values() if one.get('whole')]
+        if whole:
+            last_whole = max(whole)
+            for name, c in certs.items():
+                if name not in named and float(c.get('last_ts') or 0) < last_whole \
+                        and not c.get('deleted_at'):
+                    c['deleted_at'] = last_whole
 
     # The facts of every certificate are worked out of its lines once and
     # kept until another line arrives (1.10.297): the header asked for them
@@ -36940,8 +37060,36 @@ class Storage(object):
         states = {}
         for c in live:
             states[c['state']] = states.get(c['state'], 0) + 1
+        # acme's modules as its full sync said them (1.10.335): the targets
+        # it has - not only the ones a line has named - its sources, its
+        # validations, its tests, its own CAs.
+        objs = self.acme_sync_objects(('target', 'source', 'validation', 'test', 'authority'))
+        modules = []
+        for kind in ('target', 'source', 'validation', 'test', 'authority'):
+            for m in sorted(objs.get(kind) or [], key=lambda x: str(x.get('name') or '')):
+                one = {k: m.get(k) for k in ('name', 'module_kind', 'enabled', 'last_ok',
+                                             'last_error', 'note', 'tags', 'subject',
+                                             'key_type', 'not_before', 'not_after',
+                                             'external', 'crl_at') if m.get(k) not in (None, '')}
+                one['object'] = kind
+                one['synced'] = m.get('_ts')
+                modules.append(one)
+                if kind == 'target' and m.get('name') and m['name'] not in targets:
+                    targets[m['name']] = {'target': m['name'], 'kind': m.get('module_kind'),
+                                          'certs': 0, 'ok': 0, 'failed': 0, 'last_ts': 0,
+                                          'last_ok': None, 'failing': []}
+        for t in targets.values():
+            for m in objs.get('target') or []:
+                if m.get('name') == t['target'] and not t.get('kind'):
+                    t['kind'] = m.get('module_kind')
+        sync_said = self.acme_sync_said()
+        if sync_said and sync_said.get('node') and \
+                sync_said['node'] not in [n['node'] for n in nodes]:
+            nodes.append({'node': sync_said['node'], 'last_ts': sync_said.get('ts'), 'events': 0,
+                          'in_period': 0, 'last_bad': None, 'events_on': False})
         return {
             'on': True, 'now': now, 'days': days, 'since': since, 'soon_days': self.ACME_SOON_DAYS,
+            'sync': sync_said, 'modules': modules,
             'kpi': {'certs': len(live), 'ok': states.get('ok', 0),
                     'expiring': states.get('expiring', 0), 'expired': states.get('expired', 0),
                     'failing': states.get('failing', 0) + states.get('deploy_failed', 0),
@@ -37433,6 +37581,24 @@ class Storage(object):
                 incidents.append({'ts': r['ts'], 'went': r['went'], 'cert': r['cert'],
                                   'test': r['test'], 'endpoint': r['endpoint'],
                                   'state': r['state'], 'msg': r['msg']})
+        # ...and every check acme's full sync named (1.10.335), as it stood -
+        # where no run has been read since.
+        for sc in self.acme_sync_objects(('check',)).get('check') or []:
+            key = str(sc.get('check_id') or '')
+            if not key:
+                continue
+            c = checks.get(key)
+            synced = acme_iso_ts(sc.get('last_at')) or float(sc.get('_ts') or 0)
+            if c is not None and float(c.get('last_ts') or 0) >= synced:
+                c.setdefault('after', sc.get('after'))
+                c.setdefault('enabled', sc.get('enabled'))
+                continue
+            c = checks.setdefault(key, {'check_id': key, 'runs': [], 'n': 0, 'good': 0, 'ms': []})
+            c.update({'test': sc.get('test'), 'cert': sc.get('cert'), 'state': sc.get('state'),
+                      'ok': 1 if sc.get('state') == 'ok' else 0,
+                      'fails': sc.get('fails'), 'msg': sc.get('msg'),
+                      'node': sc.get('_node'), 'after': sc.get('after'),
+                      'enabled': sc.get('enabled'), 'last_ts': synced, 'synced': True})
         out = []
         states = {}
         for c in checks.values():
@@ -37477,6 +37643,267 @@ class Storage(object):
         except sqlite3.Error as e:
             log('a line of acme\'s could not be written down: %s' % e, 'warn')
             return False
+
+    # ---- acme's first full sync (acme 1.0.71, isemon 1.10.335) -----------
+    #
+    # acme sends everything it holds at once - every certificate, deployment,
+    # check and module as it is now, its history and its jobs - as lines of
+    # acme-jobs with kind=sync, all carrying one `sync` id between a `begin`
+    # and an `end`. The objects are kept in `acme_sync`; a sync that ENDED
+    # with as many of each as its `begin` said replaces what that host said
+    # before, and what it no longer names is gone from acme. The history goes
+    # where acme-certs lines go and the jobs where acme-jobs lines go, each
+    # kept once however often it is sent, and never beside the live line of
+    # the same thing.
+
+    ACME_SYNC_KEYS = {'certificate': 'cert_id', 'deployment': 'deploy_id', 'check': 'check_id'}
+    # begin's counts, and the object each counts.
+    ACME_SYNC_COUNTS = (('certificates', 'certificate'), ('deployments', 'deployment'),
+                        ('checks', 'check'), ('targets', 'target'), ('sources', 'source'))
+
+    def acme_syncs(self):
+        """{host: what its syncs said} - the newest, and the one begun."""
+        try:
+            got = json.loads(self.get_meta('acme_syncs') or '{}')
+            return got if isinstance(got, dict) else {}
+        except (ValueError, TypeError):
+            return {}
+
+    def acme_sync_note(self, rec):
+        """One line of a full sync, kept."""
+        f = dict(rec.fields or {})
+        event = str(f.get('event') or '')
+        sync = str(f.get('sync') or '')[:40]
+        host = str(rec.host or '')[:200]
+        try:
+            if event == 'begin':
+                return self._acme_sync_begin(host, sync, f, rec)
+            if event == 'object':
+                return self._acme_sync_object(host, sync, f, rec)
+            if event == 'history':
+                return self._acme_sync_history(f, rec)
+            if event == 'job':
+                return self._acme_sync_job(host, f, rec)
+            if event == 'job_step':
+                return self._acme_sync_step(host, f, rec)
+            if event == 'end':
+                return self._acme_sync_end(host, sync, f, rec)
+        except sqlite3.Error as e:
+            log('a line of acme\'s full sync could not be written down: %s' % e, 'warn')
+            return False
+        return False
+
+    def _acme_sync_meta(self, host, change):
+        syncs = self.acme_syncs()
+        one = syncs.setdefault(host, {})
+        change(one)
+        self.set_meta('acme_syncs', json.dumps(syncs, sort_keys=True))
+        self.acme_lines_came()
+
+    def _acme_sync_begin(self, host, sync, f, rec):
+        counts = {}
+        for key, _obj in self.ACME_SYNC_COUNTS:
+            try:
+                counts[key] = int(f.get(key))
+            except (TypeError, ValueError):
+                pass
+
+        def change(one):
+            one['begun'] = {'sync': sync, 'ts': float(rec.ts), 'node': f.get('node'),
+                            'who': f.get('who'), 'counts': counts,
+                            'days': f.get('days')}
+        self._acme_sync_meta(host, change)
+        return True
+
+    def _acme_sync_object(self, host, sync, f, rec):
+        obj = str(f.get('object') or '')[:40]
+        okey = str(f.get(self.ACME_SYNC_KEYS.get(obj, 'name')) or '')[:300]
+        if not obj or not okey:
+            return False
+        data = {k: v for k, v in f.items()
+                if k not in ('level', 'kind', 'event', 'sync', 'object')}
+        if rec.msg:
+            data['msg'] = rec.msg
+        with self.db_write() as db:
+            db.execute('DELETE FROM acme_sync WHERE host = ? AND object = ? AND okey = ?',
+                       (host, obj, okey))
+            db.execute('INSERT INTO acme_sync (host, object, okey, sync, node, ts, at, removed, '
+                       'data) VALUES (?,?,?,?,?,?,?,0,?)',
+                       (host, obj, okey, sync, str(f.get('node') or '')[:200] or None,
+                        float(rec.ts), time.time(),
+                        json.dumps(data, ensure_ascii=False, sort_keys=True)[:16000]))
+        self.acme_lines_came()
+        return True
+
+    def _acme_sync_end(self, host, sync, f, rec):
+        """The sync is done: applied where it is whole."""
+        syncs = self.acme_syncs()
+        begun = (syncs.get(host) or {}).get('begun') or {}
+        have = {}
+        for r in self.db.execute('SELECT object, COUNT(*) AS n FROM acme_sync WHERE host = ? '
+                                 'AND sync = ? GROUP BY object', (host, sync)).fetchall():
+            have[r['object']] = int(r['n'] or 0)
+        # Whole: its begin was read, and every count it gave arrived. Short of
+        # that nothing is let go - an object not named may simply not have come.
+        whole = begun.get('sync') == sync and all(
+            have.get(obj, 0) >= int((begun.get('counts') or {}).get(key, 0) or 0)
+            for key, obj in self.ACME_SYNC_COUNTS)
+        gone = 0
+        if whole:
+            with self.db_write() as db:
+                gone = db.execute('UPDATE acme_sync SET removed = 1 WHERE host = ? AND '
+                                  "COALESCE(sync, '') <> ? AND removed = 0",
+                                  (host, sync)).rowcount or 0
+        said = {'sync': sync, 'ts': float(rec.ts), 'node': f.get('node'), 'who': f.get('who'),
+                'whole': bool(whole), 'have': have, 'gone': int(gone or 0),
+                'counts': begun.get('counts') if begun.get('sync') == sync else None}
+        for k in ('lines', 'events', 'jobs', 'took_ms'):
+            if f.get(k) not in (None, ''):
+                said[k] = f.get(k)
+
+        def change(one):
+            one['last'] = said
+            if whole:
+                one['whole'] = said
+            one.pop('begun', None)
+        self._acme_sync_meta(host, change)
+        log('acme\'s full sync %s from %s: %s%s' % (
+            sync, f.get('node') or host,
+            'applied' if whole else 'not whole, nothing let go',
+            (' - %d no longer in acme' % gone) if gone else ''), 'info')
+        return True
+
+    @staticmethod
+    def _acme_sync_ident(*parts):
+        return hashlib.sha256('\x1f'.join(str(p) for p in parts)
+                              .encode('utf-8', 'replace')).hexdigest()[:40]
+
+    def _acme_sync_history(self, f, rec):
+        """A past event of the certificates, where acme-certs lines go -
+        once: by its moment and its words, and not beside the live line of
+        the same event (same second, same words)."""
+        ts = acme_iso_ts(f.get('at')) or float(rec.ts)
+        msg = str(rec.msg or '')
+        row = self.db.execute('SELECT ident FROM acme_events WHERE ts >= ? AND ts < ? AND msg = ? '
+                              'LIMIT 1', (float(int(ts)), float(int(ts)) + 1.0, msg[:4000])
+                              ).fetchone()
+        if row is not None:
+            return False
+        g = {k: v for k, v in f.items() if k not in ('kind', 'event', 'sync', 'at', 'event_node', 'by')}
+        if f.get('event_node'):
+            g['node'] = f['event_node']
+        if f.get('by'):
+            g['who'] = f['by']
+        g['kind'] = 'history'
+        one = AcmeLine(ts, 'acme-certs', rec.host, rec.pid, g, msg, rec.raw,
+                       'sh-' + self._acme_sync_ident('history', int(ts), msg)[:37], rec.truncated)
+        return self.acme_note(one)
+
+    def _acme_sync_has_job(self, job, node):
+        return self.db.execute(
+            "SELECT 1 FROM acme_jobs WHERE kind = 'job' AND job = ? AND COALESCE(node, '') = ? "
+            "AND ident NOT LIKE 'sj-%' AND ident NOT LIKE 'sp-%' LIMIT 1",
+            (str(job)[:500], str(node or '')[:200])).fetchone() is not None
+
+    def _acme_sync_job(self, host, f, rec):
+        """A past job, as its start and its end - once, and not where the
+        live lines of the same job are."""
+        job = str(f.get('job') or '')
+        node = str(f.get('job_node') or f.get('node') or '')
+        if not job:
+            return False
+        self.__dict__.setdefault('_acme_sync_job_node', {})[(host, job)] = node
+        if self._acme_sync_has_job(job, node):
+            return False
+        at = acme_iso_ts(f.get('at')) or float(rec.ts)
+        common = {'level': f.get('level') or 'info', 'kind': 'job', 'node': node or None,
+                  'who': f.get('by'), 'job': job}
+        for k in ('job_kind', 'cert', 'cert_id', 'target', 'version'):
+            if f.get(k) not in (None, ''):
+                common[k] = f[k]
+        start = dict(common, event='start')
+        if f.get('deploy_id'):
+            start['deploy_id'] = f['deploy_id']
+        done = 0
+        self.acme_job_note(AcmeLine(at, 'acme-jobs', rec.host, rec.pid, start, '', False,
+                                    'sj-' + self._acme_sync_ident(node, job, 'start')[:37], False))
+        done += 1
+        state = str(f.get('state') or '')
+        if state and state not in ('running', 'queued'):
+            end_ts = acme_iso_ts(f.get('finished'))
+            if end_ts is None:
+                try:
+                    end_ts = at + float(f.get('took_ms') or 0) / 1000.0
+                except (TypeError, ValueError):
+                    end_ts = at
+            end = dict(common, event='end', state=state)
+            for k in ('ok', 'took_ms', 'steps'):
+                if f.get(k) not in (None, ''):
+                    end[k] = f[k]
+            if f.get('version') not in (None, ''):
+                end['result_version'] = f['version']
+            self.acme_job_note(AcmeLine(end_ts, 'acme-jobs', rec.host, rec.pid, end,
+                                        rec.msg, False,
+                                        'sj-' + self._acme_sync_ident(node, job, 'end')[:37],
+                                        rec.truncated))
+            done += 1
+        return done > 0
+
+    def _acme_sync_step(self, host, f, rec):
+        """One kept step of a past job, right after it - once."""
+        job = str(f.get('job') or '')
+        seq = f.get('seq')
+        if not job or seq in (None, ''):
+            return False
+        node = (getattr(self, '_acme_sync_job_node', {}) or {}).get((host, job))
+        if node is None:
+            node = str(f.get('job_node') or f.get('node') or '')
+        if self._acme_sync_has_job(job, node):
+            return False
+        at = acme_iso_ts(f.get('at')) or float(rec.ts)
+        step = {'level': f.get('level') or 'info', 'kind': 'job', 'node': node or None,
+                'event': 'step', 'job': job, 'seq': seq}
+        for k in ('job_kind', 'cert', 'cert_id'):
+            if f.get(k) not in (None, ''):
+                step[k] = f[k]
+        return self.acme_job_note(AcmeLine(at, 'acme-jobs', rec.host, rec.pid, step, rec.msg,
+                                           False,
+                                           'sp-' + self._acme_sync_ident(node, job, seq)[:37],
+                                           rec.truncated))
+
+    def acme_sync_objects(self, objects=None):
+        """What the syncs said, still in acme: {object: [fields]}, each with
+        its host, node and when the sync said it."""
+        out = {}
+        try:
+            q = 'SELECT host, object, okey, sync, node, ts, data FROM acme_sync WHERE removed = 0'
+            args = []
+            if objects:
+                q += ' AND object IN (%s)' % ','.join('?' * len(objects))
+                args = list(objects)
+            for r in self.db.execute(q, args).fetchall():
+                try:
+                    d = json.loads(r['data'] or '{}')
+                except (ValueError, TypeError):
+                    d = {}
+                d['_host'], d['_sync'], d['_ts'] = r['host'], r['sync'], float(r['ts'] or 0)
+                d['_node'] = r['node']
+                out.setdefault(r['object'], []).append(d)
+        except sqlite3.Error:
+            return {}
+        return out
+
+    def acme_sync_said(self):
+        """The newest sync of any host, for the header - or None."""
+        best = None
+        for host, one in self.acme_syncs().items():
+            w = one.get('last') or one.get('whole')
+            if w and (best is None or float(w.get('ts') or 0) > float(best.get('ts') or 0)):
+                best = dict(w, host=host)
+                # ...and, where the newest did not come whole, the last that did.
+                if not w.get('whole') and one.get('whole'):
+                    best['last_whole'] = one['whole']
+        return best
 
     def tidy_acme(self):
         """What acme did longer ago than the site keeps it, let go."""
@@ -44391,7 +44818,7 @@ class Storage(object):
         out = {}
         for table in ('failed', 'passed', 'win_events', 'win_rollup', 'seen_values',
                       'otp_asked', 'acme_events', 'acme_jobs', 'load_samples', 'eduroam_seen', 'fw_events',
-                      'fw_roll', 'fw_ready', 'ad25_seen',
+                      'fw_roll', 'fw_ready', 'ad25_seen', 'acme_sync',
                       'blocked', 'blocked_log', 'block_events',
                       'events', 'feed_ranges', 'geo_ranges', 'ptr', 'mac_vendors',
                       'users', 'sessions', 'fold_versions'):
@@ -44536,7 +44963,8 @@ class Storage(object):
                     'were read up to, so whatever is still in the files is read again from '
                     'the beginning. Lines that have already been rotated away do not come '
                     'back.',
-            'tables': ['acme_events', 'acme_jobs'],
+            'tables': ['acme_events', 'acme_jobs', 'acme_sync'],
+            'meta': ['acme_syncs'],
             'reread': ('acmelog',),
         },
         'perfmeter': {
@@ -45882,7 +46310,7 @@ class Storage(object):
             return self._restore_dump(path, say=say)
 
     # Tables a dump made by an older version may not have (see _restore_dump).
-    DUMP_MAY_LACK = ('acme_events', 'acme_jobs', 'load_samples')
+    DUMP_MAY_LACK = ('acme_events', 'acme_jobs', 'load_samples', 'acme_sync')
 
     def _restore_dump(self, path, say=None):
         """Replace everything in this database with what is in that dump.
@@ -51569,7 +51997,10 @@ class Daemon(object):
         # A line of acme's (1.10.287): kept as what acme did, never judged.
         if isinstance(record, AcmeLine):
             if record.tag == 'acme-jobs':
-                if not record.raw:
+                # acme's first full sync (1.10.335): the same file, kind=sync.
+                if not record.raw and (record.fields or {}).get('kind') == 'sync':
+                    self.store.acme_sync_note(record)
+                elif not record.raw:
                     self.store.acme_job_note(record)
             else:
                 self.store.acme_note(record)

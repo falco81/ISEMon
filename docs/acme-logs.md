@@ -194,6 +194,42 @@ well, how many failed in a row; and when one began (`went=bad`) or stopped
 `[hidden]` is a value acme left out on purpose (a secret, a TXT value): it
 is shown as such.
 
+### The first full sync (acme 1.0.71, `kind=sync`)
+
+acme can send everything it holds at once: Settings → isemon → *First full
+sync…*, or `acme --isemon-sync [DAYS]`. The lines arrive in `acme-jobs.log`,
+like the job lines, as `kind=sync`. Every line of one sync carries the same
+`sync=` id, from `event=begin` to `event=end`.
+
+What isemon does with them:
+
+- **The objects** (`event=object`) are kept in their own table, one row each.
+  Certificates are keyed by `cert_id`, deployments by `deploy_id`, checks by
+  `check_id`. Targets, sources, validations, tests and acme's own CAs are
+  keyed by their name.
+- **A whole sync** has its `end`, and as many of each kind as `begin`
+  announced. It replaces what that host said before: whatever it no longer
+  names is gone from acme. Its certificates show as *deleted* unless a live
+  line has spoken of them since.
+- **A sync that is not whole** (acme restarted mid-way, or fewer arrived) has
+  its objects kept, but nothing is let go. The header says so.
+- **The history** (`event=history`) goes where `acme-certs` lines go. Its time
+  comes from `at=`, not from the syslog stamp, which has no year. It is kept
+  once by its moment and its words, and never beside the live line of the
+  same event.
+- **The jobs** (`event=job`, `event=job_step`) go to the *Jobs* page as their
+  start, their steps and their end. Each is kept once, and not where the live
+  lines of the same job already are.
+- **A later live line wins** over the sync for the same certificate. So do
+  `acme-certs` lines, job ends and check results.
+- **The page shows:**
+  - every certificate acme holds, with its deployments as its targets;
+  - in its popup, what acme says of it: state, key, source, auto-renewal,
+    next try, failures, owner, fingerprint, and its checks;
+  - a card of acme's modules;
+  - the *Checks* page with every check acme has;
+  - in the header, `last full sync <when> (<id>)`.
+
 ### Searching
 
 The certificates, every line and the jobs are searched as every other list:
