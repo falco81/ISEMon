@@ -45873,12 +45873,30 @@ var A25_SOURCES = [
 var A25_PAGES = [['sum', 'Overview'], ['machines', 'Machines'], ['accounts', 'Accounts'],
                  ['rows', 'Every row'], ['logs', 'The logs and how to send them']];
 function loadAd25(quiet) {
-  if (!$('a25-host') || A25.asking) return;
+  if (!$('a25-host')) return;
+  /* Asked while an answer is on its way: asked again once it has come, so
+     a window chosen meanwhile is not lost (1.10.334). */
+  if (A25.asking) { A25.again = A25.again || (quiet ? 'quiet' : 'loud'); return; }
   A25.asking = true;
-  api('ad25&hours=' + encodeURIComponent($('a25-window').value || 168), undefined, {quiet: !!quiet})
-    .then(function (d) { A25.d = d; drawAd25(); })
+  var hours = String($('a25-window').value || 168);
+  api('ad25&hours=' + encodeURIComponent(hours), undefined, {quiet: !!quiet})
+    .then(function (d) {
+      /* ...and an answer for a window no longer chosen is not drawn. */
+      if (String($('a25-window').value || 168) !== hours) return;
+      var first = !A25.d;
+      A25.d = d;
+      if (A25.dc && (d.controllers || []).indexOf(A25.dc) < 0) A25.dc = '';
+      A25.refresh = !!quiet && !first;
+      drawAd25();
+      A25.refresh = false;
+    })
     .catch(function (e) { if (!quiet) oops(e); })
-    .then(function () { A25.asking = false; });
+    .then(function () {
+      A25.asking = false;
+      var again = A25.again;
+      A25.again = '';
+      if (again) loadAd25(again === 'quiet');
+    });
 }
 function a25Issue(k) {
   return ((A25.d && A25.d.issues) || []).filter(function (i) { return i.key === k; })[0] || {};
@@ -45911,10 +45929,13 @@ function a25Pages() {
     bar.appendChild(b);
   });
 }
-function a25Go(page, issue) {
+function a25Go(page, issue, only) {
   A25.page = page;
   A25.built = '';
-  if (issue !== undefined) A25.issue = issue;
+  /* Opened from a tile, the top card or an alarm: that and nothing else -
+     a search or a controller typed on another list is not carried over
+     into this one, where it would quietly empty it (1.10.334). */
+  if (issue !== undefined) { A25.issue = issue; A25.q = ''; A25.dc = ''; A25.only = only || ''; }
   (A25.st[page] = A25.st[page] || {sort: null, pg: 0}).pg = 0;
   drawAd25();
   /* Back to the top of the page: the strip is pinned, the list fills the rest. */
@@ -45932,7 +45953,7 @@ function drawAd25() {
   /* A list that is already up keeps its row of filters - the search box
      its focus - and only its rows are drawn again (the minute's refresh). */
   if (A25.built === A25.page && $('a25-box') && A25.page !== 'sum' && A25.page !== 'logs' && !d.error) {
-    a25Rows();
+    a25Rows(A25.refresh);
     return;
   }
   A25.built = A25.page;
@@ -45955,7 +45976,8 @@ function a25Overview(host, d) {
   var unseen = !ldapSeen && ((daily.simple || 0) + (daily.unsigned || 0)) > 0;
   var hero = el('div', 'a25-hero ' + (bad.length || unseen ? 'crit' : warn.length ? 'warn' : 'ok'));
   var big = el('div', 'a25-hero-big');
-  big.appendChild(el('span', 'a25-hero-n', num(bad.length + warn.length + (unseen ? 1 : 0))));
+  big.appendChild(el('span', 'a25-hero-n', num(bad.length || unseen ? bad.length + (unseen ? 1 : 0)
+                                                               : warn.length)));
   big.appendChild(el('span', 'a25-hero-w', bad.length || unseen ? 'kinds of trouble a 2025 controller would refuse'
     : warn.length ? 'kinds of trouble to put right before July 2026' : 'nothing here a 2025 controller would refuse'));
   hero.appendChild(big);
@@ -45967,14 +45989,16 @@ function a25Overview(host, d) {
   var ms = (d.machines || []).filter(function (m) { return a25Worst(m.issues) < 2; });
   var as = (d.accounts || []).filter(function (a) { return a25Worst(a.issues) < 2; });
   var facts = el('div', 'a25-hero-facts');
-  [[ms.length, 'machines', 'machines'], [as.filter(function (a) { return !a.computer; }).length, 'accounts', 'accounts'],
-   [as.filter(function (a) { return a.computer; }).length, 'computer accounts', 'accounts'],
-   [(d.controllers || []).length, 'controllers', 'logs']].forEach(function (f) {
+  [[ms.length, 'machines', 'machines', 'serious'], [as.filter(function (a) { return !a.computer; }).length, 'accounts', 'accounts', 'people'],
+   [as.filter(function (a) { return a.computer; }).length, 'computer accounts', 'accounts', 'computers'],
+   [(d.controllers || []).length, 'controllers', 'logs', '']].forEach(function (f) {
     var one = el('button', 'a25-fact');
     one.type = 'button';
     one.appendChild(el('b', '', num(f[0])));
     one.appendChild(el('span', '', f[1]));
-    one.onclick = function () { a25Go(f[2], ''); };
+    /* ...opening exactly the ones it counted (1.10.334: "12 machines"
+       opened all 282). */
+    one.onclick = function () { a25Go(f[2], '', f[3]); };
     facts.appendChild(one);
   });
   hero.appendChild(facts);
@@ -45997,10 +46021,13 @@ function a25Overview(host, d) {
       nums.appendChild(el('span', '', daily.controllers
         ? ('bind(s) a day · ' + num(daily.simple || 0) + ' in the clear, ' + num(daily.unsigned || 0)
            + ' unsigned · ' + num(daily.controllers) + ' controller(s)')
-        : 'not said yet - once a day'));
+        : i.rows.length ? 'only channel binding counted so far' : 'not said yet - once a day'));
     } else {
-      nums.appendChild(el('b', '', i.n ? num(i.clients || i.accounts) : '0'));
-      nums.appendChild(el('span', '', i.n ? ((i.clients ? 'machines' : 'accounts') + ' · ' + num(i.n) + '×') : 'none seen'));
+      nums.appendChild(el('b', '', i.n ? num(i.clients || i.accounts || i.n) : '0'));
+      nums.appendChild(el('span', '', !i.n ? 'none seen'
+        : i.clients ? 'machines \u00b7 ' + num(i.n) + '\u00d7'
+        : i.accounts ? 'accounts \u00b7 ' + num(i.n) + '\u00d7'
+        : 'times, with nobody named'));
     }
     t.appendChild(nums);
     t.appendChild(el('div', 'a25-tile-b', say.breaks || ''));
@@ -46013,7 +46040,8 @@ function a25Overview(host, d) {
     }
     t.disabled = !i.n;
     t.onclick = function () {
-      a25Go(i.key === 'ldap-daily' ? 'rows' : i.clients ? 'machines' : 'accounts', i.key);
+      a25Go(i.key === 'ldap-daily' || (!i.clients && !i.accounts) ? 'rows'
+            : i.clients ? 'machines' : 'accounts', i.key);
     };
     grid.appendChild(t);
   });
@@ -46117,6 +46145,10 @@ function a25Data(d, page) {
   var parsed = qLocalParse(A25.q, A25_QKNOWN[page]);
   var words = String(A25.q || '').toLowerCase().split(/\s+/).filter(Boolean);
   return a25All(d, page).filter(function (r) {
+    /* What the top card counted, when opened from it (1.10.334). */
+    if (A25.only === 'serious' && page !== 'rows' && a25Worst(r.issues) >= 2) return false;
+    if (A25.only === 'people' && (a25Worst(r.issues) >= 2 || r.computer)) return false;
+    if (A25.only === 'computers' && (a25Worst(r.issues) >= 2 || !r.computer)) return false;
     if (A25.issue) {
       if (page === 'rows' ? r.issue !== A25.issue : !(r.issues || {})[A25.issue]) return false;
     }
@@ -46164,6 +46196,9 @@ function a25List(host, d) {
   kind.appendChild(o0);
   (d.issues || []).forEach(function (i) {
     if (!i.n && i.key !== A25.issue) return;
+    /* A kind that names no machine (or no account) is not offered on that
+       list: it could only ever say "Nothing matches" (1.10.334). */
+    if (i.key !== A25.issue && ((page === 'accounts' && !i.accounts) || (page === 'machines' && !i.clients))) return;
     var o = el('option', '', i.words);
     o.value = i.key;
     kind.appendChild(o);
@@ -46195,7 +46230,7 @@ function a25List(host, d) {
   bar.appendChild(per);
   var wipe = cmdButton('Clear', 'close', 'small');
   wipe.onclick = function () {
-    A25.q = ''; A25.issue = ''; A25.dc = '';
+    A25.q = ''; A25.issue = ''; A25.dc = ''; A25.only = '';
     A25.st[page] = {sort: null, pg: 0};
     drawAd25();
   };
@@ -46227,9 +46262,12 @@ function a25Fix() {
   host.appendChild(say);
 }
 /* The table and its pager, drawn again on their own: a search, a sort, a page. */
-function a25Rows() {
+function a25Rows(keep) {
   var d = A25.d, page = A25.page, box = $('a25-box');
   if (!d || !box) return;
+  /* The minute's refresh keeps the place somebody is reading at; a search,
+     a sort, another page start at the top (1.10.334). */
+  var at = keep ? box.scrollTop : 0;
   var st = A25.st[page] = A25.st[page] || {sort: null, pg: 0};
   var cols = a25Cols(page);
   var all = a25All(d, page).length;
@@ -46248,6 +46286,11 @@ function a25Rows() {
   var shown = rows.slice(st.pg * A25.per, (st.pg + 1) * A25.per);
   var found = document.querySelector('.a25-found');
   if (found) found.textContent = rows.length === all ? num(all) + ' row(s)' : num(rows.length) + ' of ' + num(all) + ' row(s)';
+  if (found && A25.only) {
+    found.textContent += ' \u00b7 ' + ({serious: 'only what 2025 refuses or July 2026 stops',
+      people: 'only people\u2019s accounts doing what 2025 refuses or July 2026 stops',
+      computers: 'only computer accounts doing what 2025 refuses or July 2026 stops'})[A25.only];
+  }
   /* ...and where the daemon handed only those with the most, says so. */
   var whole = a25Total(d, page);
   if (found && whole > all) {
@@ -46291,10 +46334,10 @@ function a25Rows() {
   t.appendChild(body);
   box.appendChild(t);
   if (!shown.length) box.appendChild(el('div', 'center muted a25-none', A25.q || A25.issue || A25.dc ? 'Nothing matches.' : 'Nothing seen in this window.'));
-  box.scrollTop = 0;
+  box.scrollTop = at;
   /* The same pager as every other list on these pages. */
   pager('a25-pager', st.pg, A25.per, rows.length, function (n) { st.pg = n; a25Rows(); });
-  a25Fit(box);
+  if (!keep) a25Fit(box);
 }
 /* The list as tall as the window allows: its rows scroll inside, its pager
    stays in sight. On a phone the page scrolls as a whole instead. */
@@ -46379,8 +46422,13 @@ function a25Export() {
 }
 function a25Markdown(d, per, hideAcc, hideMach) {
   var acc = {}, mach = {}, nA = 0, nM = 0;
-  function pad(n) { return ('00' + n).slice(-3); }
+  function pad(n) { return String(n).length < 3 ? ('00' + n).slice(-3) : String(n); }
   function A(name) {
+    /* A computer's account names the computer: with the machines stood in,
+       it is stood in by the same name (1.10.334). */
+    if (name && !hideAcc && hideMach && /\$$|\$@/.test(name)) {
+      return M(String(name).replace(/\$.*$/, '')) + '$';
+    }
     if (!name || !hideAcc) return name || '';
     var k = String(name).toLowerCase();
     if (!acc[k]) acc[k] = (/\$$|\$@/.test(name) ? 'computer-' : 'account-') + pad(++nA);
@@ -46426,7 +46474,7 @@ function a25Markdown(d, per, hideAcc, hideMach) {
   L.push('');
   L.push('- Made: ' + when(Date.now() / 1000) + ' UTC, isemon ' + (d.version || '?') + (d.site ? ', ' + d.site : ''));
   L.push('- Window: the last ' + d.hours + ' hour(s); counted from the controllers\' own logs as they are read');
-  L.push('- Controllers seen: ' + ((d.controllers || []).join(', ') || '-'));
+  L.push('- Controllers seen: ' + ((d.controllers || []).map(M).join(', ') || '-'));
   L.push('- Names: ' + (hideAcc || hideMach ? 'put by stand-ins (' + [hideAcc ? 'accounts' : '', hideMach ? 'machines and addresses' : ''].filter(Boolean).join(', ') + ')' : 'as they are'));
   L.push('');
   L.push('## The logs arriving');
@@ -46456,7 +46504,7 @@ function a25Markdown(d, per, hideAcc, hideMach) {
     L.push('');
     var rows = i.rows.slice(0, per);
     L.push(table(['Machine', 'Address', 'Account', 'What it was', 'Controller', 'Times', 'First', 'Last'], rows.map(function (r) {
-      return [M(r.client), M(r.ip), A(r.account), D(r), r.server, r.n, when(r.first), when(r.last)];
+      return [M(r.client), M(r.ip), A(r.account), D(r), M(r.server), r.n, when(r.first), when(r.last)];
     })));
     if (i.rows.length + (i.more || 0) > rows.length) L.push('\n…and ' + (i.rows.length + (i.more || 0) - rows.length) + ' more, fewer times each.');
   });
@@ -46467,7 +46515,7 @@ function a25Markdown(d, per, hideAcc, hideMach) {
   L.push(table(['Machine', 'Address', 'What it does', 'Accounts from it', 'Controllers', 'Times', 'Last'], ms.map(function (m) {
     return [M(m.name), M(m.ip), Object.keys(m.issues).map(function (k) { return (a25Issue(k).words || k) + ' ' + m.issues[k]; }).join('; '),
             (m.accounts || []).slice(0, 5).map(A).join(', ') + (m.accounts_n > 5 ? ' +' + (m.accounts_n - 5) : ''),
-            (m.servers || []).join(', '), m.n, when(m.last)];
+            (m.servers || []).map(M).join(', '), m.n, when(m.last)];
   })));
   var as = (d.accounts || []).filter(function (a) { return a25Worst(a.issues) < 2; }).slice(0, per);
   L.push('');
@@ -46505,21 +46553,26 @@ var A25_EVENTS = {
 function a25Ask(page, r) {
   var kinds = page === 'rows' ? [r.issue]
     : (A25.issue ? [A25.issue] : Object.keys(r.issues || {}));
-  var ev = [];
+  /* A kind that is a few events among a million sign-ins is opened by its
+     mark (1.10.333: "NTLMv1" opened every sign-in of the machine) - also
+     beside other kinds, each in its own bracket, and as part of a list of
+     marks rather than the only one (1.10.334). */
+  var A25_MARK = {ntlmv1: 'ntlmv1', digest: 'digest', cleartext: 'cleartext'};
+  var ev = [], marked = [];
   kinds.forEach(function (k) {
+    if (A25_MARK[k]) { marked.push('(event:4624 mark:*' + A25_MARK[k] + '*)'); return; }
     (A25_EVENTS[k] || []).forEach(function (n) { if (ev.indexOf(n) < 0) ev.push(n); });
   });
-  var q = ev.length ? ['event:' + ev.join(',')] : [];
-  /* A kind that is a few events among a million sign-ins is opened by its
-     mark (1.10.333: "NTLMv1" opened every sign-in of the machine). */
-  var A25_MARK = {ntlmv1: 'ntlmv1', digest: 'digest', cleartext: 'cleartext'};
-  if (kinds.length === 1 && A25_MARK[kinds[0]]) q.push('mark:' + A25_MARK[kinds[0]]);
+  var parts = (ev.length ? ['event:' + ev.join(',')] : []).concat(marked);
+  var q = parts.length > 1 ? ['(' + parts.join(' OR ') + ')'] : parts;
   function bare(a) { return String(a || '').split('\\').pop().split('@')[0]; }
   function quoted(v) { return /[\s"]/.test(v) ? '"' + String(v).replace(/"/g, '') + '"' : v; }
   var from = [];
   if (page === 'machines') from = [r.name, r.ip];
   else if (page === 'rows') from = [r.client, r.ip];
-  from = from.filter(function (v, i, a) { return v && a.indexOf(v) === i && !/[\s,"]/.test(v); });
+  /* \\\\PC01 is PC01 in the events (1.10.334). */
+  from = from.map(function (v) { return String(v || '').replace(/^\\\\+/, ''); })
+    .filter(function (v, i, a) { return v && a.indexOf(v) === i && !/[\s,"()]/.test(v); });
   if (from.length) q.push('from:' + from.join(','));
   var acc = page === 'accounts' ? r.name : (page === 'rows' ? r.account : '');
   if (acc && bare(acc) && !/^event /.test(acc)) q.push(quoted(bare(acc)));

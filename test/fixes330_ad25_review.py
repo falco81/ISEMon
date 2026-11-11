@@ -163,7 +163,7 @@ ok('back from another tab, the list fitted again; never measured while hidden; t
     'if (!box.offsetParent || !box.getClientRects().length) return;' in page,
     page.count('sc = a25Scroller(box);') == 2), (True, True, True))
 ok('the export puts the names inside "what it was" by the stand-ins too',
-   'return [M(r.client), M(r.ip), A(r.account), D(r), r.server' in page)
+   'return [M(r.client), M(r.ip), A(r.account), D(r), M(r.server)' in page)
 ok('the top card does not say "nothing" while the daily count knows of binds no tile shows',
    'var unseen = !ldapSeen && ((daily.simple || 0) + (daily.unsigned || 0)) > 0;' in page)
 

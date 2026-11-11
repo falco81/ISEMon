@@ -95,7 +95,7 @@ print('\nThe page')
 page = (ROOT / 'web' / 'index.php').read_text()
 ok('a row opens its own events: the numbers its kind is counted from, the machine and its address, '
    'the account as a word',
-   ("var q = ev.length ? ['event:' + ev.join(',')] : [];" in page,
+   ("var parts = (ev.length ? ['event:' + ev.join(',')] : []).concat(marked);" in page,
     "if (from.length) q.push('from:' + from.join(','));" in page,
     "'ldap-clear': [2889], 'ldap-unsigned': [2889], 'ldap-cbt': [3039]," in page),
    (True, True, True))

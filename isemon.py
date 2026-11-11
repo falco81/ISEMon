@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.333'
+__version__ = '1.10.334'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -9065,7 +9065,10 @@ WIN_MARK_EVENTS = frozenset(
 # cannot be thrown away on its number alone. Both of them are a handful of
 # characters that must be IN the line, so looking for them costs a substring
 # search rather than the reading of forty fields.
-WIN_MARK_WORDS = re.compile(r'ANONYMOUS|Logon Type:\s+8(?!\d)', re.I)
+# ...and NTLMv1, LM and Digest (1.10.334): their marks save a sign-in from a
+# switched-off group only if the line is read far enough to earn them.
+WIN_MARK_WORDS = re.compile(r'ANONYMOUS|Logon Type:\s+8(?!\d)|NTLM V1|\(NTLM only\):\s*LM\b|WDigest',
+                            re.I)
 
 # The event number, off the front of the line, without reading the rest of
 # it. The whole line is matched properly a moment later for the lines that
@@ -9273,6 +9276,9 @@ AD25_SOURCE_OF = {4624: 'security', 4768: 'security', 4769: 'security', 4776: 's
                   3000: 'smb', 8004: 'ntlm', 14: 'kdc', 16: 'kdc', 26: 'kdc', 27: 'kdc'}
 AD25_SOURCE_OF.update({n: 'kdc' for n in range(201, 210)})
 AD25_KEEP_DAYS = 90
+# The version whose clean-up of rows earlier versions counted wrongly has
+# been run on this database (see `Storage.ad25_clean_up`).
+AD25_CLEANED = '1.10.334'
 # How much of it the page is handed: the machines and accounts with the most
 # first, and of each kind its rows with the most first. The page says when
 # there were more (1.10.329 - it was a silent 1,000 and 500).
@@ -9297,7 +9303,7 @@ _AD25_OFFERED = re.compile(r'Advertized Etypes:\s*(.*?)(?=\s*(?:Additional Infor
                            r'[A-Z][A-Za-z ]+ Information):|$)')
 _AD25_CLIENT = re.compile(r'Client Address:\s*(?:::ffff:)?([0-9A-Fa-f:.\[\]]+)')
 _AD25_ADDR = re.compile(r'(?:Client IP address|Client Address|Client IP Address|'
-                        r'IP Address):\s*\[?([0-9A-Fa-f:.]+?)\]?(?::(\d+))?(?=\s|$)')
+                        r'IP Address):\s*(\S+)')
 
 
 def ad25_on():
@@ -9377,10 +9383,22 @@ def _ad25_addr(text):
     if not m:
         return ''
     a = m.group(1)
-    if a.count(':') == 1 and '.' in a:          # 10.0.0.5:51234 the other way
+    # A port is cut only where it can be told from the address: after a
+    # bracket, or after an IPv4 address. An IPv6 address's last group is not
+    # a port (1.10.334: fe80::2 was read as fe80:).
+    if a.startswith('['):
+        a = a[1:].split(']', 1)[0]
+    elif a.count(':') == 1 and '.' in a:          # 10.0.0.5:51234
         a = a.split(':')[0]
+    else:
+        v4 = re.match(r'^(?:::ffff:)?(\d+\.\d+\.\d+\.\d+):\d+$', a, re.I)
+        if v4:
+            a = v4.group(1)
+    a = a.split('%', 1)[0]                        # fe80::1%12: the zone is not the address
     if a.lower().startswith('::ffff:'):
         a = a[7:]
+    if not re.match(r'^[0-9A-Fa-f:.]+$', a) or a in ('-', '::1', '127.0.0.1'):
+        return ''
     return a[:64]
 
 
@@ -9399,7 +9417,7 @@ def ad25_findings(event, line, whole=''):
     rest = line
     if event == 4776:
         acct = _ad25_val('Logon Account', rest)
-        ws = _ad25_val('Source Workstation', rest)
+        ws = _ad25_val('Source Workstation', rest).lstrip('\\')     # \\PC01 is PC01
         code = _ad25_word(r'Error Code:\s*(0x[0-9A-Fa-f]+)', rest, '0x0')
         out.append(('ntlm', ws.upper()[:120], '', '', 'checked for %s%s'
                     % (acct[:80], '' if code.lower() == '0x0' else ', refused (%s)' % code)))
@@ -9518,7 +9536,7 @@ def ad25_findings(event, line, whole=''):
             out.append(('smb1', '', ip, '', 'SMB1 to this controller'))
         return out
     if event == 8004:
-        ws = _ad25_val('Workstation name', rest)
+        ws = _ad25_val('Workstation name', rest).lstrip('\\')
         user = _ad25_val('User name', rest)
         dom = _ad25_val('Domain name', rest)
         to = _ad25_val('Secure Channel name', rest)
@@ -9605,6 +9623,10 @@ def ad25_take():
         q, AD25['queue'] = AD25['queue'], []
         src = {k: dict(v) for k, v in AD25['sources'].items()}
         diag = AD25['diag']
+        # Handed over once: what they say is kept in `meta` from here on, and
+        # left in place they were written there again on every pass, for
+        # ever, the page switched off or not (1.10.334).
+        AD25['sources'], AD25['diag'] = {}, 0.0
     return q, src, diag
 
 
@@ -31581,43 +31603,59 @@ class Storage(object):
             return 0
         return len(rows)
 
+    def ad25_clean_up(self, db):
+        """The rows earlier versions counted wrongly, deleted - once per
+        version that knew of some more (see `AD25_CLEANED`)."""
+        # Counted before 1.10.329 off "Available Keys: N/A" - the KDC not
+        # having looked, not an account without AES keys.
+        db.execute("DELETE FROM ad25_seen WHERE issue = 'noaes' AND detail LIKE ? "
+                   "AND detail NOT LIKE ? AND detail NOT LIKE ?",
+                   ('its keys: %', '%RC4%', '%DES%'))
+        # ...and what earlier versions counted wrongly (1.10.330): a null
+        # session as NTLMv1; an account WITH AES keys (17, 18 in the
+        # KDC's event) as one without; "offers no AES" off the first
+        # etype alone; the daily counts sharing one row; NTLM/Operational
+        # counted as a second NTLM; an empty field's next label taken
+        # for a machine or an account.
+        for sql, args in (
+                ("issue = 'ntlmv1' AND UPPER(account) IN (?, ?)",
+                 ('ANONYMOUS LOGON', 'ANONYMOUS')),
+                ("issue = 'noaes' AND detail LIKE ? AND (detail LIKE ? OR detail LIKE ?)",
+                 ('asked %', '%, has %17%', '%, has %18%')),
+                ("issue = 'rc4' AND detail LIKE ?", ('the client offers no AES (%',)),
+                ("issue = 'ldap-daily' AND account = ?", ('',)),
+                ("issue = 'ntlm' AND detail LIKE ?", ('checked for % at %',)),
+                ("issue IN ('ntlm', 'ntlm-srv') AND UPPER(client) IN (?, ?, ?)",
+                 ('ERROR', 'SECURE', 'USER')),
+                ("account IN (?, ?, ?)", ('Binding', 'Account', 'Service')),
+                # 1.10.330 read 4776 and 8004 - whose fields are one
+                # space apart - to the next double space: a whole line
+                # became one machine's name (1.10.331).
+                ("issue IN ('ntlm', 'ntlm-srv') AND (client LIKE ? OR account LIKE ? "
+                 "OR detail LIKE ?)", ('%:%', '%:%', '%:%')),
+                # \\PC01 kept as written, beside PC01 (1.10.334).
+                ("issue IN ('ntlm', 'ntlm-srv') AND SUBSTR(client, 1, 1) = ?", ('\\',))):
+            db.execute('DELETE FROM ad25_seen WHERE ' + sql, args)
+
     def ad25_tidy(self):
         """Older than the days kept, let go of; NTLM, the loudest, after a month."""
         today = int(time.time() // 86400)
+        cleaned = False
         try:
             with self.db_write() as db:
                 db.execute('DELETE FROM ad25_seen WHERE day < ?', (today - AD25_KEEP_DAYS,))
                 db.execute("DELETE FROM ad25_seen WHERE issue = 'ntlm' AND day < ?", (today - 31,))
-                # Counted before 1.10.329 off "Available Keys: N/A" - the KDC not
-                # having looked, not an account without AES keys.
-                db.execute("DELETE FROM ad25_seen WHERE issue = 'noaes' AND detail LIKE ? "
-                           "AND detail NOT LIKE ? AND detail NOT LIKE ?",
-                           ('its keys: %', '%RC4%', '%DES%'))
-                # ...and what earlier versions counted wrongly (1.10.330): a null
-                # session as NTLMv1; an account WITH AES keys (17, 18 in the
-                # KDC's event) as one without; "offers no AES" off the first
-                # etype alone; the daily counts sharing one row; NTLM/Operational
-                # counted as a second NTLM; an empty field's next label taken
-                # for a machine or an account.
-                for sql, args in (
-                        ("issue = 'ntlmv1' AND UPPER(account) IN (?, ?)",
-                         ('ANONYMOUS LOGON', 'ANONYMOUS')),
-                        ("issue = 'noaes' AND detail LIKE ? AND (detail LIKE ? OR detail LIKE ?)",
-                         ('asked %', '%, has %17%', '%, has %18%')),
-                        ("issue = 'rc4' AND detail LIKE ?", ('the client offers no AES (%',)),
-                        ("issue = 'ldap-daily' AND account = ?", ('',)),
-                        ("issue = 'ntlm' AND detail LIKE ?", ('checked for % at %',)),
-                        ("issue IN ('ntlm', 'ntlm-srv') AND UPPER(client) IN (?, ?, ?)",
-                         ('ERROR', 'SECURE', 'USER')),
-                        ("account IN (?, ?, ?)", ('Binding', 'Account', 'Service')),
-                        # 1.10.330 read 4776 and 8004 - whose fields are one
-                        # space apart - to the next double space: a whole line
-                        # became one machine's name (1.10.331).
-                        ("issue IN ('ntlm', 'ntlm-srv') AND (client LIKE ? OR account LIKE ? "
-                         "OR detail LIKE ?)", ('%:%', '%:%', '%:%'))):
-                    db.execute('DELETE FROM ad25_seen WHERE ' + sql, args)
+                # What earlier versions counted wrongly, let go of ONCE: run every
+                # day, the clean-ups would go on deleting a real account that
+                # happens to be called "Service" (1.10.334).
+                if (self.get_meta('ad25_cleaned') or '') != AD25_CLEANED:
+                    self.ad25_clean_up(db)
+                    cleaned = True
         except sqlite3.Error as e:
             log('Before Windows Server 2025: tidying: %s' % str(e)[:160], 'debug')
+            return
+        if cleaned:
+            self.set_meta('ad25_cleaned', AD25_CLEANED)
 
     def ad25_accounts_of(self, issues):
         """The accounts Before Windows Server 2025 has seen doing these
@@ -31634,7 +31672,7 @@ class Storage(object):
             a = str(r['account'] or '').split('\\')[-1].split('@')[0].strip()
             if a:
                 out.add(a)
-        return sorted(out)[:200]
+        return sorted(out)[:201]          # 201: "more than can be named"
 
     def ad25_worth(self, since):
         """Each kind of trouble Before Windows Server 2025 counts, since a
@@ -32041,8 +32079,11 @@ class Storage(object):
                         who = self.ad25_accounts_of(said['ad25_accounts'])
                         if not who:
                             continue        # nobody did it: nothing to read again
-                        ways.add('accounts')
-                        narrow |= set(who)
+                        if len(who) > 200:
+                            ways.add('all')     # too many to name: all of that event
+                        else:
+                            ways.add('accounts')
+                            narrow |= set(who)
                     else:
                         ways.add('all')
                     said = said.get('events') or ()
@@ -32071,7 +32112,14 @@ class Storage(object):
         had_names = set(str(one) for one in (was.get('names') or ()))
         moved = sorted(had_names.symmetric_difference(want_names))
         if moved:
-            plan['accounts'] = sorted(set(plan.get('accounts') or ()) | set(moved))[:200]
+            # The machines named or no longer named are a question about ALL
+            # their events; put together with a narrowing by event or mark it
+            # would be asked only of those (1.10.334). Then everything.
+            if plan.get('events') or plan.get('marks') or plan.get('accounts') or len(moved) > 200:
+                return ({'all': True},
+                        'the reading of some events has changed and so have the machines '
+                        'named as the directory\u2019s own')
+            plan['accounts'] = moved[:200]
             why.append('%s %s named as the directory\u2019s own, or no longer'
                        % (and_list(moved[:6]),
                           'is' if len(moved) == 1 else 'are'))

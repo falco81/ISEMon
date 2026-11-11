@@ -86,7 +86,7 @@ finally:
 print('\nThe page')
 page = (ROOT / 'web' / 'index.php').read_text()
 ok('a row of one such kind opens by its mark',
-   "if (kinds.length === 1 && A25_MARK[kinds[0]]) q.push('mark:' + A25_MARK[kinds[0]]);" in page)
+   "marked.push('(event:4624 mark:*' + A25_MARK[k] + '*)');" in page)
 
 print('\n%d passed, %d failed' % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

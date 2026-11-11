@@ -372,6 +372,41 @@ working.
 
 ## Version
 
+1.10.334
+
+- **Before Windows Server 2025, hunted for bugs again (daemon and page).**
+- **The daemon:**
+  - With sign-ins switched off, an NTLMv1, LM or Digest sign-in was dropped
+    before it could earn the mark that keeps it. It is now kept.
+  - Re-reading after an upgrade:
+    - when the machines named as controllers have changed too, every event
+      is read again, not only those of the changed events;
+    - above 200 accounts, every sign-in is read again instead of the first
+      200.
+  - `\\PC01` is PC01.
+  - IPv6 addresses are read whole. A port is cut only after a bracket or an
+    IPv4 address.
+  - The clean-up of what earlier versions counted wrongly runs once, not
+    every day. A real account called "Service" no longer loses its rows.
+  - What the logs said is written down once, not again on every pass.
+- **The page:**
+  - Choosing a window while an answer is on its way is no longer lost. An
+    answer for another window is not drawn.
+  - A tile, the top card or an alarm opens its list without a search or
+    controller left over from another list.
+  - The minute's refresh keeps your place in the list.
+  - A machine doing NTLMv1 and other things opens its NTLMv1 sign-ins by
+    their mark, not every sign-in. The mark matches among other marks too.
+  - The top card's "12 machines" opens those 12, not all of them. The same
+    goes for accounts and computer accounts.
+  - Export with stand-ins also stands in controllers and computer accounts,
+    and goes past 999.
+  - The top card's number counts what its words say.
+  - A kind that names nobody opens its rows. The lists offer only kinds that
+    can match them.
+  - The daily count says when only channel binding has been counted.
+  - The tile line can be translated.
+
 1.10.333
 
 - **A row of Before Windows Server 2025 for NTLMv1, Digest or a password

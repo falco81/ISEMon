@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.333",
+  "version": "1.10.334",
   "made": "2026-11-10",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -5899,6 +5899,10 @@
   "s.computer.c73f61cf": {
    "source": "computer-",
    "text": "computer-"
+  },
+  "s.computers.dd708279": {
+   "source": "computers",
+   "text": "computers"
   },
   "s.conf.1f3c4a17": {
    "source": "conf*",
@@ -15108,6 +15112,10 @@
    "source": "looks at every page and changes nothing;",
    "text": "looks at every page and changes nothing;"
   },
+  "s.loud.d1c6f1a8": {
+   "source": "loud",
+   "text": "loud"
+  },
   "s.low-findings.c90a60c3": {
    "source": "low findings",
    "text": "low findings"
@@ -19328,6 +19336,14 @@
    "source": "only by hand",
    "text": "only by hand"
   },
+  "s.only-channel-binding-counted-so-far.064b3d6a": {
+   "source": "only channel binding counted so far",
+   "text": "only channel binding counted so far"
+  },
+  "s.only-computer-accounts-doing-what-2025.f27fa15f": {
+   "source": "only computer accounts doing what 2025 refuses or July 2026 stops",
+   "text": "only computer accounts doing what 2025 refuses or July 2026 stops"
+  },
   "s.only-copies-left.1bf220de": {
    "source": "only copies left",
    "text": "only copies left"
@@ -19455,6 +19471,10 @@
   "s.only-one-wireless-network.4b056536": {
    "source": "Only one wireless network.",
    "text": "Only one wireless network."
+  },
+  "s.only-people-s-accounts-doing-what.a54c288d": {
+   "source": "only people’s accounts doing what 2025 refuses or July 2026 stops",
+   "text": "only people’s accounts doing what 2025 refuses or July 2026 stops"
   },
   "s.only-refusals-for-one-reason.2c5d91a8": {
    "source": "Only refusals for one reason.",
@@ -19587,6 +19607,10 @@
   "s.only-watched.e301bb08": {
    "source": "· only watched",
    "text": "· only watched"
+  },
+  "s.only-what-2025-refuses-or-july.c77a6ee9": {
+   "source": "only what 2025 refuses or July 2026 stops",
+   "text": "only what 2025 refuses or July 2026 stops"
   },
   "s.only-what-arrived-through-one-network.358a0638": {
    "source": "Only what arrived through one network device, by the name ISE calls it.",
@@ -20511,6 +20535,10 @@
   "s.people-sign-in-with-the-name.a44128a1": {
    "source": "People sign in with the name and password they already have. A name that is",
    "text": "People sign in with the name and password they already have. A name that is"
+  },
+  "s.people.ab3ccc8d": {
+   "source": "people",
+   "text": "people"
   },
   "s.people.b37554f6": {
    "source": "People",
@@ -21451,6 +21479,10 @@
   "s.quick.d41fceeb": {
    "source": "Quick:",
    "text": "Quick:"
+  },
+  "s.quiet.58bdb05d": {
+   "source": "quiet",
+   "text": "quiet"
   },
   "s.quiet.fe73d79f": {
    "source": "Quiet",
@@ -23407,6 +23439,10 @@
   "s.serial.83f8c31a": {
    "source": "Serial",
    "text": "Serial"
+  },
+  "s.serious.2b334818": {
+   "source": "serious",
+   "text": "serious"
   },
   "s.serve-the-time-to.eb2ffb80": {
    "source": "Serve the time to",
@@ -31872,6 +31908,10 @@
    "source": "timeout",
    "text": "timeout"
   },
+  "s.times-with-nobody-named.acef9a0e": {
+   "source": "times, with nobody named",
+   "text": "times, with nobody named"
+  },
   "s.times.4b0f911f": {
    "source": "Times",
    "text": "Times"
@@ -36402,6 +36442,10 @@
    "source": "{0} accounts",
    "text": "{0} accounts"
   },
+  "p.accounts.d67eb439": {
+   "source": "accounts · {0}×",
+   "text": "accounts · {0}×"
+  },
   "p.add-a.2f24a9e3": {
    "source": "Add a {0}",
    "text": "Add a {0}"
@@ -37101,6 +37145,10 @@
   "p.erase.b4246565": {
    "source": "Erase {0}?",
    "text": "Erase {0}?"
+  },
+  "p.event-4624-mark.a2cad0fa": {
+   "source": "(event:4624 mark:*{0}*)",
+   "text": "(event:4624 mark:*{0}*)"
   },
   "p.event-s-from-the-controllers-in.a31aaefd": {
    "source": "{0} event(s) from the controllers in this window. None of it is judged and none of it can earn anybody a ban.",
@@ -38189,6 +38237,10 @@
   "p.machine.4c9837df": {
    "source": "machine-{0}",
    "text": "machine-{0}"
+  },
+  "p.machines.4d621bb5": {
+   "source": "machines · {0}×",
+   "text": "machines · {0}×"
   },
   "p.machines.8f209a19": {
    "source": "{0} machines",
