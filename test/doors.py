@@ -2699,7 +2699,7 @@ ok('the alarm counts a ticket that was handed over, not one that was asked for',
 ok('...and RC4 the same way, because a refusal hands nothing over',
    'if event in (4768, 4769) and win_worked(event, fields) is not False:' in DAEMON, True)
 ok('...and every stored event is read again once, so the old marks go',
-   'WIN_SORT_VERSION = 7' in DAEMON, True)
+   'WIN_SORT_VERSION = 8' in DAEMON, True)
 
 # A switch is named with the address it answered from, everywhere. The name
 # is what somebody typed into ISE; the address is what is on the network, and

@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.335",
-  "made": "2026-11-11",
+  "version": "1.10.336",
+  "made": "2026-11-12",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -515,6 +515,10 @@
   "s.a-computer-account.fc65bf09": {
    "source": "a computer account",
    "text": "a computer account"
+  },
+  "s.a-computer-s-own-password-is.79203864": {
+   "source": "A computer’s own password is refused",
+   "text": "A computer’s own password is refused"
   },
   "s.a-controller-counted-a-day-of.373ad35f": {
    "source": "a controller counted a day of LDAPS binds without channel binding",
@@ -1224,6 +1228,10 @@
    "source": "a password for each account — Settings, who may open this",
    "text": "a password for each account — Settings, who may open this"
   },
+  "s.a-password-handed-over-as-it.c7a91c91": {
+   "source": "A password handed over as it is (logon type 8)",
+   "text": "A password handed over as it is (logon type 8)"
+  },
   "s.a-password-handed-to-the-controller.6c0fd027": {
    "source": "A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which).",
    "text": "A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which)."
@@ -1235,6 +1243,14 @@
   "s.a-password-is-never-kept-freeradius.bb9eadbe": {
    "source": "A password is never kept. FreeRADIUS writes what was offered on a refusal —",
    "text": "A password is never kept. FreeRADIUS writes what was offered on a refusal —"
+  },
+  "s.a-password-sent-in-the-clear.7e3fa6e4": {
+   "source": "A password sent in the clear",
+   "text": "A password sent in the clear"
+  },
+  "s.a-password-sent-to-ldap-in.f47993e0": {
+   "source": "A password sent to LDAP in the clear",
+   "text": "A password sent to LDAP in the clear"
   },
   "s.a-password.7847eb99": {
    "source": "a password",
@@ -1644,6 +1660,10 @@
    "source": "A ticket asked for without pre-authentication is ordinary against one of these and is somebody trying every account in turn against the rest.",
    "text": "A ticket asked for without pre-authentication is ordinary against one of these and is somebody trying every account in turn against the rest."
   },
+  "s.a-ticket-handed-over-with-no.9166335b": {
+   "source": "A ticket handed over with no pre-authentication",
+   "text": "A ticket handed over with no pre-authentication"
+  },
   "s.a-tls-handshake-completed.846bd84e": {
    "source": "a TLS handshake completed",
    "text": "a TLS handshake completed"
@@ -1884,10 +1904,6 @@
    "source": "account is locked out",
    "text": "account is locked out"
   },
-  "s.account-locked.6602d7a5": {
-   "source": "account locked",
-   "text": "account locked"
-  },
   "s.account-may-look-at-every-page.50c2f9ca": {
    "source": "account may look at every page and change nothing.",
    "text": "account may look at every page and change nothing."
@@ -1948,6 +1964,10 @@
    "source": "Accounts and groups changed",
    "text": "Accounts and groups changed"
   },
+  "s.accounts-and-groups.95057e5b": {
+   "source": "Accounts and groups",
+   "text": "Accounts and groups"
+  },
   "s.accounts-asked-for-a-token.bb65776c": {
    "source": "Accounts asked for a token",
    "text": "Accounts asked for a token"
@@ -1955,10 +1975,6 @@
   "s.accounts-from-it.08aa3fdc": {
    "source": "Accounts from it",
    "text": "Accounts from it"
-  },
-  "s.accounts-locked.96a3dadc": {
-   "source": "accounts locked",
-   "text": "accounts locked"
   },
   "s.accounts-that-are-meant-to-read.e7fb8158": {
    "source": "Accounts that are meant to read the directory whole",
@@ -1987,6 +2003,10 @@
   "s.accounts-to-leave-out-of-nps.d4c0f022": {
    "source": "Accounts to leave out of NPS altogether, comma separated — testaccount, say. Nothing they do is written down anywhere: not a row, not a count, not a door. It is for the account a switch or a controller tests the server with, and for a service account nobody wants to read about. A name is matched whole and without regard to case, with or without the domain in front of it (EXAMPLE\\svc or svc) and with or without an @ after it. The switches’ own probes are left out whether or not they are named here. Changing it changes what is read from now on; what is already stored stays until it is erased.",
    "text": "Accounts to leave out of NPS altogether, comma separated — testaccount, say. Nothing they do is written down anywhere: not a row, not a count, not a door. It is for the account a switch or a controller tests the server with, and for a service account nobody wants to read about. A name is matched whole and without regard to case, with or without the domain in front of it (EXAMPLE\\svc or svc) and with or without an @ after it. The switches’ own probes are left out whether or not they are named here. Changing it changes what is read from now on; what is already stored stays until it is erased."
+  },
+  "s.accounts-with-no-aes-keys.ef37dad4": {
+   "source": "Accounts with no AES keys",
+   "text": "Accounts with no AES keys"
   },
   "s.accounts.10db2797": {
    "source": "accounts",
@@ -2219,10 +2239,6 @@
   "s.ad-user-resolved-identities.98f63ba0": {
    "source": "AD-User-Resolved-Identities",
    "text": "AD-User-Resolved-Identities"
-  },
-  "s.ad2025.ff4530a5": {
-   "source": "ad2025",
-   "text": "ad2025"
   },
   "s.ad25.f84dcdd1": {
    "source": "ad25",
@@ -2716,6 +2732,10 @@
    "source": "an account, a machine or a program in the domain",
    "text": "an account, a machine or a program in the domain"
   },
+  "s.an-account-asked-to-replicate-the.829ea69b": {
+   "source": "An account asked to replicate the directory",
+   "text": "An account asked to replicate the directory"
+  },
   "s.an-account-changed.efd575e4": {
    "source": "an account changed",
    "text": "an account changed"
@@ -2823,6 +2843,10 @@
   "s.an-account-with-an-api-key.f18e797e": {
    "source": "An account with an API key",
    "text": "An account with an API key"
+  },
+  "s.an-account-with-no-aes-keys.ac826117": {
+   "source": "An account with no AES keys",
+   "text": "An account with no AES keys"
   },
   "s.an-accounting-record-sent-while-the.c3a3e087": {
    "source": "An accounting record sent while the session is open, which is how the head end says it has not ended.",
@@ -3311,6 +3335,10 @@
   "s.anon.61518fb1": {
    "source": "anon",
    "text": "anon"
+  },
+  "s.anonymous-sign-ins.b13f44c6": {
+   "source": "Anonymous sign-ins",
+   "text": "Anonymous sign-ins"
   },
   "s.another-acme-ca-step-ca-an.c6ffb2ff": {
    "source": "another ACME CA (step-ca, an internal CA...)",
@@ -6719,6 +6747,10 @@
   "s.des-is-not-there-at-all.0a137e3a": {
    "source": "DES is not there at all.",
    "text": "DES is not there at all."
+  },
+  "s.des-still-allowed-on-an-account.c0f89d33": {
+   "source": "DES still allowed on an account",
+   "text": "DES still allowed on an account"
   },
   "s.desc.deb80331": {
    "source": "desc",
@@ -14008,9 +14040,21 @@
    "source": "Kerberos refused it",
    "text": "Kerberos refused it"
   },
+  "s.kerberos-tickets-in-des.e98d0478": {
+   "source": "Kerberos tickets in DES",
+   "text": "Kerberos tickets in DES"
+  },
   "s.kerberos-where-it-can-be-names.a900f594": {
    "source": "Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place.",
    "text": "Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place."
+  },
+  "s.kerberos-with-des.36dd5030": {
+   "source": "Kerberos with DES",
+   "text": "Kerberos with DES"
+  },
+  "s.kerberos-with-rc4.71a964fe": {
+   "source": "Kerberos with RC4",
+   "text": "Kerberos with RC4"
   },
   "s.kerberos.53c35fb7": {
    "source": "Kerberos",
@@ -14368,9 +14412,25 @@
    "source": "lazy",
    "text": "lazy"
   },
+  "s.ldap-bind-without-signing.2d863bcc": {
+   "source": "LDAP bind without signing",
+   "text": "LDAP bind without signing"
+  },
   "s.ldap-binds-in-the-clear-or.b85bbba2": {
    "source": "LDAP binds in the clear or unsigned, channel binding",
    "text": "LDAP binds in the clear or unsigned, channel binding"
+  },
+  "s.ldap-binds-without-signing.7c082de6": {
+   "source": "LDAP binds without signing",
+   "text": "LDAP binds without signing"
+  },
+  "s.ldap-channel-binding-failed.4de2c167": {
+   "source": "LDAP channel binding failed",
+   "text": "LDAP channel binding failed"
+  },
+  "s.ldap-simple-bind-in-the-clear.79780ba8": {
+   "source": "LDAP simple bind in the clear",
+   "text": "LDAP simple bind in the clear"
   },
   "s.ldap-who-binds-in-the-clear.3ab0b534": {
    "source": "LDAP: who binds in the clear or unsigned (2889) and channel binding (3039). Takes effect at once; at 2 every such bind is an event - on a busy controller leave it on for the weeks before the change.",
@@ -14887,6 +14947,14 @@
   "s.lockout.a995293c": {
    "source": "lockout",
    "text": "lockout"
+  },
+  "s.lockouts-several-of-them.b3c47052": {
+   "source": "Lockouts, several of them",
+   "text": "Lockouts, several of them"
+  },
+  "s.lockouts.5abb8c4f": {
+   "source": "lockouts",
+   "text": "lockouts"
   },
   "s.locks-after.45f1b4d6": {
    "source": "Locks after",
@@ -16255,6 +16323,10 @@
   "s.names-of-addresses.01a6ccef": {
    "source": "Names of addresses",
    "text": "Names of addresses"
+  },
+  "s.names-that-do-not-exist-asked.b938ed46": {
+   "source": "Names that do not exist, asked about by NPS",
+   "text": "Names that do not exist, asked about by NPS"
   },
   "s.names-that-do-not-exist-this.cdb4d353": {
    "source": "Names that do not exist: this many go out for good",
@@ -17848,9 +17920,9 @@
    "source": "nothing has been read at all",
    "text": "nothing has been read at all"
   },
-  "s.nothing-has-been-read-yet.693bfa32": {
-   "source": ", nothing has been read yet",
-   "text": ", nothing has been read yet"
+  "s.nothing-has-been-read-yet.2b9950b9": {
+   "source": "nothing has been read yet",
+   "text": "nothing has been read yet"
   },
   "s.nothing-has-been-read-yet.7682967f": {
    "source": "Nothing has been read yet",
@@ -18364,6 +18436,10 @@
    "source": "NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options →",
    "text": "NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options →"
   },
+  "s.ntlm-by-the-server-it-was.0bc4c7ec": {
+   "source": "NTLM, by the server it was for",
+   "text": "NTLM, by the server it was for"
+  },
   "s.ntlm-by-the-server-it-was.d6e01d45": {
    "source": "NTLM by the server it was used for",
    "text": "NTLM by the server it was used for"
@@ -18376,6 +18452,10 @@
    "source": "NTLM/Operational",
    "text": "NTLM/Operational"
   },
+  "s.ntlm.026eac85": {
+   "source": "NTLM",
+   "text": "NTLM"
+  },
   "s.ntlm.4a9157a7": {
    "source": "ntlm",
    "text": "ntlm"
@@ -18387,6 +18467,10 @@
   "s.ntlmv1.5920a8fb": {
    "source": "ntlmv1",
    "text": "ntlmv1"
+  },
+  "s.ntlmv1.c32bd331": {
+   "source": "NTLMv1",
+   "text": "NTLMv1"
   },
   "s.ntlmv2-still-works-on-2025-but.372516ce": {
    "source": "NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all.",
@@ -18976,6 +19060,14 @@
    "source": "One, a range, or several by commas. Empty: every port.",
    "text": "One, a range, or several by commas. Empty: every port."
   },
+  "s.one-account-failing-over-and-over.bbd4f8b9": {
+   "source": "One account failing over and over",
+   "text": "One account failing over and over"
+  },
+  "s.one-account-s-password-used-to.3149dc89": {
+   "source": "One account’s password used to reach another machine",
+   "text": "One account’s password used to reach another machine"
+  },
   "s.one-address-ipv4-or-ipv6-it.20246fad": {
    "source": "One address, IPv4 or IPv6. It does not have to be banned, or even known: whatever is on record for it is shown, and if there is nothing the answer says so.",
    "text": "One address, IPv4 or IPv6. It does not have to be banned, or even known: whatever is on record for it is shown, and if there is nothing the answer says so."
@@ -19131,6 +19223,10 @@
   "s.one-line-of-the-firewall-s.d763ccfa": {
    "source": "One line of the firewall’s log",
    "text": "One line of the firewall’s log"
+  },
+  "s.one-machine-failing-against-many-accounts.22cfb0c8": {
+   "source": "One machine failing against many accounts",
+   "text": "One machine failing against many accounts"
   },
   "s.one-markdown-file-with-what-this.0f8398e8": {
    "source": "One Markdown file with what this page shows: each kind of trouble with what breaks and how to put it right, its rows most first, the worst machines and accounts, and which logs are arriving. Made here, out of what is loaded - the window chosen above, a few rows of each and no more.",
@@ -22092,6 +22188,10 @@
    "source": "refresh",
    "text": "refresh"
   },
+  "s.refusals-and-lockouts.904eaf4b": {
+   "source": "Refusals and lockouts",
+   "text": "Refusals and lockouts"
+  },
   "s.refusals-before-it.3186e037": {
    "source": "Refusals before it",
    "text": "Refusals before it"
@@ -22611,6 +22711,10 @@
   "s.right-now.afc65daa": {
    "source": "Right now",
    "text": "Right now"
+  },
+  "s.rights-that-take-a-machine-apart.67d32846": {
+   "source": "Rights that take a machine apart were taken",
+   "text": "Rights that take a machine apart were taken"
   },
   "s.rings.7a843240": {
    "source": "rings",
@@ -23556,6 +23660,10 @@
    "source": "Serves it",
    "text": "Serves it"
   },
+  "s.service-tickets-asked-for-in-rc4.a63e2dc7": {
+   "source": "Service tickets asked for in RC4",
+   "text": "Service tickets asked for in RC4"
+  },
   "s.service.329cb8b6": {
    "source": "Service",
    "text": "Service"
@@ -24032,6 +24140,14 @@
    "source": "Sign-ins to the firewall’s VPN or to the firewall itself that did not work. Press for them.",
    "text": "Sign-ins to the firewall’s VPN or to the firewall itself that did not work. Press for them."
   },
+  "s.sign-ins-with-digest-wdigest.ed823663": {
+   "source": "Sign-ins with Digest (WDigest)",
+   "text": "Sign-ins with Digest (WDigest)"
+  },
+  "s.sign-ins-with-ntlmv1.22ae0d71": {
+   "source": "Sign-ins with NTLMv1",
+   "text": "Sign-ins with NTLMv1"
+  },
   "s.sign-me-out.01183cd8": {
    "source": "Sign me out",
    "text": "Sign me out"
@@ -24244,6 +24360,10 @@
    "source": "SMB1 is not on Windows Server 2025, and signing is required.",
    "text": "SMB1 is not on Windows Server 2025, and signing is required."
   },
+  "s.smb1-to-a-domain-controller.38f16fb3": {
+   "source": "SMB1 to a domain controller",
+   "text": "SMB1 to a domain controller"
+  },
   "s.smb1-to-the-controller-smbserver-audit.46a50c5b": {
    "source": "SMB1 to the controller (SMBServer/Audit, 3000):",
    "text": "SMB1 to the controller (SMBServer/Audit, 3000):"
@@ -24352,6 +24472,10 @@
    "source": "Somebody else’s, left exactly as they are",
    "text": "Somebody else’s, left exactly as they are"
   },
+  "s.somebody-is-listing-who-is-in.781a7474": {
+   "source": "Somebody is listing who is in which group",
+   "text": "Somebody is listing who is in which group"
+  },
   "s.somebody-or-something-signing-in-to.97b10260": {
    "source": "Somebody or something signing in to a switch or a router with this account and an old password — a person at a terminal, or a backup or monitoring job that logs in on a schedule.",
    "text": "Somebody or something signing in to a switch or a router with this account and an old password — a person at a terminal, or a backup or monitoring job that logs in on a schedule."
@@ -24392,6 +24516,10 @@
    "source": "somebody tried to set the recovery password",
    "text": "somebody tried to set the recovery password"
   },
+  "s.somebody-was-put-into-a-group.e1718e73": {
+   "source": "Somebody was put into a group that runs the domain",
+   "text": "Somebody was put into a group that runs the domain"
+  },
   "s.somebody-who-works-here-mistypes-their.82ae06b5": {
    "source": "Somebody who works here mistypes their own password. A scanner offers a name that does not exist at all, and ISE writes that attempt as INVALID . This many of those from one address inside the window and it is kept out for good, without climbing any ladder — there is nothing to be patient about. 0 is off, and they are counted like anything else.",
    "text": "Somebody who works here mistypes their own password. A scanner offers a name that does not exist at all, and ISE writes that attempt as INVALID . This many of those from one address inside the window and it is kept out for good, without climbing any ladder — there is nothing to be patient about. 0 is off, and they are counted like anything else."
@@ -24419,6 +24547,10 @@
   "s.something-else.637828c0": {
    "source": "something else",
    "text": "something else"
+  },
+  "s.something-is-still-trying-a-dead.f8a074fa": {
+   "source": "Something is still trying a dead account",
+   "text": "Something is still trying a dead account"
   },
   "s.something-still-trying-one-of-these.e5277d23": {
    "source": "Something still trying one of these is something nobody told.",
@@ -26536,6 +26668,10 @@
    "source": "the audit log was cleared",
    "text": "the audit log was cleared"
   },
+  "s.the-audit-log-was-cleared.22a77dbc": {
+   "source": "The audit log was cleared",
+   "text": "The audit log was cleared"
+  },
   "s.the-audit-policy-on-an-object.571d7e4f": {
    "source": "the audit policy on an object was changed",
    "text": "the audit policy on an object was changed"
@@ -26996,6 +27132,10 @@
    "source": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.",
    "text": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging."
   },
+  "s.the-controller-s-own-daily-count.c24b1987": {
+   "source": "The controller's own daily count of LDAP binds",
+   "text": "The controller's own daily count of LDAP binds"
+  },
   "s.the-controller-that-saw-it.f196f27c": {
    "source": "the controller that saw it",
    "text": "the controller that saw it"
@@ -27348,6 +27488,10 @@
    "source": "the DHCP server that gave it out",
    "text": "the DHCP server that gave it out"
   },
+  "s.the-directory-being-read.0aa81e3d": {
+   "source": "The directory being read",
+   "text": "The directory being read"
+  },
   "s.the-directory-changed.428ae607": {
    "source": "the directory changed",
    "text": "the directory changed"
@@ -27399,6 +27543,10 @@
   "s.the-directory-is-not-being-asked.ad1c07f3": {
    "source": "The directory is not being asked about these accounts. Settings → The domain controllers → \"Ask the directory about the accounts in these logs\".",
    "text": "The directory is not being asked about these accounts. Settings → The domain controllers → \"Ask the directory about the accounts in these logs\"."
+  },
+  "s.the-directory-itself.ac2f5383": {
+   "source": "The directory itself",
+   "text": "The directory itself"
   },
   "s.the-directory-of-another-acme-ca.28161121": {
    "source": "The directory of another ACME CA,",
@@ -28688,9 +28836,9 @@
    "source": "The MAC vendor registers",
    "text": "The MAC vendor registers"
   },
-  "s.the-machine-accounts-are-counted-apart.a09b9de3": {
-   "source": "· the machine accounts are counted apart",
-   "text": "· the machine accounts are counted apart"
+  "s.the-machine-accounts-are-counted-apart.63d7412f": {
+   "source": "the machine accounts are counted apart",
+   "text": "the machine accounts are counted apart"
   },
   "s.the-machine-by-name.6aa8aa44": {
    "source": "the machine, by name",
@@ -35684,6 +35832,10 @@
    "source": "Who signed in to the firewall itself or changed it, and how much of that was refused.",
    "text": "Who signed in to the firewall itself or changed it, and how much of that was refused."
   },
+  "s.who-signed-in.634f9fec": {
+   "source": "Who signed in",
+   "text": "Who signed in"
+  },
   "s.who-signs-in-to-the-kit.77c22df1": {
    "source": "Who signs in to the kit",
    "text": "Who signs in to the kit"
@@ -38506,9 +38658,9 @@
    "source": ", newest {0}",
    "text": ", newest {0}"
   },
-  "p.newest.7458f19d": {
-   "source": ", newest {0}{1}",
-   "text": ", newest {0}{1}"
+  "p.newest.4680943e": {
+   "source": "newest {0}",
+   "text": "newest {0}"
   },
   "p.next.df2457aa": {
    "source": "next {0}",

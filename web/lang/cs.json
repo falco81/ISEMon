@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.335",
+  "version": "1.10.336",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -515,6 +515,10 @@
   "s.a-computer-account.fc65bf09": {
    "source": "a computer account",
    "text": "počítačový účet"
+  },
+  "s.a-computer-s-own-password-is.79203864": {
+   "source": "A computer’s own password is refused",
+   "text": "Odmítnuto vlastní heslo počítače"
   },
   "s.a-controller-counted-a-day-of.373ad35f": {
    "source": "a controller counted a day of LDAPS binds without channel binding",
@@ -1224,6 +1228,10 @@
    "source": "a password for each account — Settings, who may open this",
    "text": "heslo pro každý účet — Nastavení, kdo sem smí"
   },
+  "s.a-password-handed-over-as-it.c7a91c91": {
+   "source": "A password handed over as it is (logon type 8)",
+   "text": "Heslo předané tak, jak je (logon type 8)"
+  },
   "s.a-password-handed-to-the-controller.6c0fd027": {
    "source": "A password handed to the controller as it is - LDAP simple binds, basic authentication. Over TLS it stays fine; in the clear 2025 refuses it (the Directory Service log tells which).",
    "text": "Heslo předané řadiči tak, jak je - LDAP simple bind, basic autentizace. Přes TLS je to v pořádku; nešifrovaně to 2025 odmítne (který případ to je, řekne log Directory Service)."
@@ -1235,6 +1243,14 @@
   "s.a-password-is-never-kept-freeradius.bb9eadbe": {
    "source": "A password is never kept. FreeRADIUS writes what was offered on a refusal —",
    "text": "Heslo se nikdy neukládá. FreeRADIUS při odmítnutí zapisuje, co bylo zadáno —"
+  },
+  "s.a-password-sent-in-the-clear.7e3fa6e4": {
+   "source": "A password sent in the clear",
+   "text": "Heslo poslané nešifrovaně"
+  },
+  "s.a-password-sent-to-ldap-in.f47993e0": {
+   "source": "A password sent to LDAP in the clear",
+   "text": "Heslo poslané do LDAP nešifrovaně"
   },
   "s.a-password.7847eb99": {
    "source": "a password",
@@ -1644,6 +1660,10 @@
    "source": "A ticket asked for without pre-authentication is ordinary against one of these and is somebody trying every account in turn against the rest.",
    "text": "Ticket vyžádaný bez předběžného ověření je proti některému z nich běžný a proti ostatním je to někdo, kdo postupně zkouší všechny účty."
   },
+  "s.a-ticket-handed-over-with-no.9166335b": {
+   "source": "A ticket handed over with no pre-authentication",
+   "text": "Lístek vydaný bez předběžného ověření"
+  },
   "s.a-tls-handshake-completed.846bd84e": {
    "source": "a TLS handshake completed",
    "text": "TLS handshake dokončen"
@@ -1884,10 +1904,6 @@
    "source": "account is locked out",
    "text": "účet je zablokován"
   },
-  "s.account-locked.6602d7a5": {
-   "source": "account locked",
-   "text": "účet zablokován"
-  },
   "s.account-may-look-at-every-page.50c2f9ca": {
    "source": "account may look at every page and change nothing.",
    "text": "účet může prohlížet všechny stránky a nic nemění."
@@ -1948,6 +1964,10 @@
    "source": "Accounts and groups changed",
    "text": "Změněné účty a skupiny"
   },
+  "s.accounts-and-groups.95057e5b": {
+   "source": "Accounts and groups",
+   "text": "Účty a skupiny"
+  },
   "s.accounts-asked-for-a-token.bb65776c": {
    "source": "Accounts asked for a token",
    "text": "Účty, po kterých byl požadován token"
@@ -1955,10 +1975,6 @@
   "s.accounts-from-it.08aa3fdc": {
    "source": "Accounts from it",
    "text": "Účty z něj"
-  },
-  "s.accounts-locked.96a3dadc": {
-   "source": "accounts locked",
-   "text": "zablokované účty"
   },
   "s.accounts-that-are-meant-to-read.e7fb8158": {
    "source": "Accounts that are meant to read the directory whole",
@@ -1987,6 +2003,10 @@
   "s.accounts-to-leave-out-of-nps.d4c0f022": {
    "source": "Accounts to leave out of NPS altogether, comma separated — testaccount, say. Nothing they do is written down anywhere: not a row, not a count, not a door. It is for the account a switch or a controller tests the server with, and for a service account nobody wants to read about. A name is matched whole and without regard to case, with or without the domain in front of it (EXAMPLE\\svc or svc) and with or without an @ after it. The switches’ own probes are left out whether or not they are named here. Changing it changes what is read from now on; what is already stored stays until it is erased.",
    "text": "Účty, které se mají v NPS zcela vynechat, oddělené čárkou — například testaccount. Nic, co dělají, se nikde nezaznamená: žádný řádek, žádný počet, žádný vstup. Je to pro účet, kterým switch nebo kontrolér testuje server, a pro servisní účet, o kterém nikdo nechce číst. Jméno se porovnává celé, bez ohledu na velikost písmen, s doménou na začátku i bez ní (EXAMPLE\\svc nebo svc) a se zavináčem za ním i bez něj. Vlastní testovací dotazy switchů se vynechávají bez ohledu na to, zda jsou zde uvedeny. Změna ovlivní, co se načítá od této chvíle; co už je uloženo, zůstává, dokud se to nevymaže."
+  },
+  "s.accounts-with-no-aes-keys.ef37dad4": {
+   "source": "Accounts with no AES keys",
+   "text": "Účty bez klíčů AES"
   },
   "s.accounts.10db2797": {
    "source": "accounts",
@@ -2219,10 +2239,6 @@
   "s.ad-user-resolved-identities.98f63ba0": {
    "source": "AD-User-Resolved-Identities",
    "text": "AD-User-Resolved-Identities"
-  },
-  "s.ad2025.ff4530a5": {
-   "source": "ad2025",
-   "text": "ad2025"
   },
   "s.ad25.f84dcdd1": {
    "source": "ad25",
@@ -2716,6 +2732,10 @@
    "source": "an account, a machine or a program in the domain",
    "text": "účet, stroj nebo program v doméně"
   },
+  "s.an-account-asked-to-replicate-the.829ea69b": {
+   "source": "An account asked to replicate the directory",
+   "text": "Účet požádal o replikaci adresáře"
+  },
   "s.an-account-changed.efd575e4": {
    "source": "an account changed",
    "text": "účet se změnil"
@@ -2823,6 +2843,10 @@
   "s.an-account-with-an-api-key.f18e797e": {
    "source": "An account with an API key",
    "text": "Účet s API klíčem"
+  },
+  "s.an-account-with-no-aes-keys.ac826117": {
+   "source": "An account with no AES keys",
+   "text": "Účet bez klíčů AES"
   },
   "s.an-accounting-record-sent-while-the.c3a3e087": {
    "source": "An accounting record sent while the session is open, which is how the head end says it has not ended.",
@@ -3311,6 +3335,10 @@
   "s.anon.61518fb1": {
    "source": "anon",
    "text": "anon"
+  },
+  "s.anonymous-sign-ins.b13f44c6": {
+   "source": "Anonymous sign-ins",
+   "text": "Anonymní přihlášení"
   },
   "s.another-acme-ca-step-ca-an.c6ffb2ff": {
    "source": "another ACME CA (step-ca, an internal CA...)",
@@ -6719,6 +6747,10 @@
   "s.des-is-not-there-at-all.0a137e3a": {
    "source": "DES is not there at all.",
    "text": "DES tam vůbec není."
+  },
+  "s.des-still-allowed-on-an-account.c0f89d33": {
+   "source": "DES still allowed on an account",
+   "text": "Účet stále povoluje DES"
   },
   "s.desc.deb80331": {
    "source": "desc",
@@ -14008,9 +14040,21 @@
    "source": "Kerberos refused it",
    "text": "Kerberos to odmítl"
   },
+  "s.kerberos-tickets-in-des.e98d0478": {
+   "source": "Kerberos tickets in DES",
+   "text": "Kerberosové lístky v DES"
+  },
   "s.kerberos-where-it-can-be-names.a900f594": {
    "source": "Kerberos where it can be: names rather than addresses (a connection to an address falls back to NTLM), service names (SPNs) in place.",
    "text": "Kerberos, kde to jde: jména místo adres (spojení na adresu spadne na NTLM), správně nastavená jména služeb (SPN)."
+  },
+  "s.kerberos-with-des.36dd5030": {
+   "source": "Kerberos with DES",
+   "text": "Kerberos s DES"
+  },
+  "s.kerberos-with-rc4.71a964fe": {
+   "source": "Kerberos with RC4",
+   "text": "Kerberos s RC4"
   },
   "s.kerberos.53c35fb7": {
    "source": "Kerberos",
@@ -14368,9 +14412,25 @@
    "source": "lazy",
    "text": "líné"
   },
+  "s.ldap-bind-without-signing.2d863bcc": {
+   "source": "LDAP bind without signing",
+   "text": "LDAP bind bez podepisování"
+  },
   "s.ldap-binds-in-the-clear-or.b85bbba2": {
    "source": "LDAP binds in the clear or unsigned, channel binding",
    "text": "LDAP bindy nešifrované nebo nepodepsané, channel binding"
+  },
+  "s.ldap-binds-without-signing.7c082de6": {
+   "source": "LDAP binds without signing",
+   "text": "LDAP bindy bez podepisování"
+  },
+  "s.ldap-channel-binding-failed.4de2c167": {
+   "source": "LDAP channel binding failed",
+   "text": "Selhaný LDAP channel binding"
+  },
+  "s.ldap-simple-bind-in-the-clear.79780ba8": {
+   "source": "LDAP simple bind in the clear",
+   "text": "LDAP simple bind nešifrovaně"
   },
   "s.ldap-who-binds-in-the-clear.3ab0b534": {
    "source": "LDAP: who binds in the clear or unsigned (2889) and channel binding (3039). Takes effect at once; at 2 every such bind is an event - on a busy controller leave it on for the weeks before the change.",
@@ -14887,6 +14947,14 @@
   "s.lockout.a995293c": {
    "source": "lockout",
    "text": "zamčení účtu"
+  },
+  "s.lockouts-several-of-them.b3c47052": {
+   "source": "Lockouts, several of them",
+   "text": "Několik zamčení najednou"
+  },
+  "s.lockouts.5abb8c4f": {
+   "source": "lockouts",
+   "text": "zamčení"
   },
   "s.locks-after.45f1b4d6": {
    "source": "Locks after",
@@ -16255,6 +16323,10 @@
   "s.names-of-addresses.01a6ccef": {
    "source": "Names of addresses",
    "text": "Jména adres"
+  },
+  "s.names-that-do-not-exist-asked.b938ed46": {
+   "source": "Names that do not exist, asked about by NPS",
+   "text": "Neexistující jména, na která se ptalo NPS"
   },
   "s.names-that-do-not-exist-this.cdb4d353": {
    "source": "Names that do not exist: this many go out for good",
@@ -17848,9 +17920,9 @@
    "source": "nothing has been read at all",
    "text": "nic se vůbec nepřečetlo"
   },
-  "s.nothing-has-been-read-yet.693bfa32": {
-   "source": ", nothing has been read yet",
-   "text": ", zatím se nic nepřečetlo"
+  "s.nothing-has-been-read-yet.2b9950b9": {
+   "source": "nothing has been read yet",
+   "text": "zatím nebylo nic přečteno"
   },
   "s.nothing-has-been-read-yet.7682967f": {
    "source": "Nothing has been read yet",
@@ -18364,6 +18436,10 @@
    "source": "NTLM by server (NTLM/Operational, 8004) - a group policy on the Domain Controllers OU: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options →",
    "text": "NTLM podle serveru (NTLM/Operational, 8004) - skupinová politika na OU Domain Controllers: Computer Configuration → Policies → Windows Settings → Security Settings → Local Policies → Security Options →"
   },
+  "s.ntlm-by-the-server-it-was.0bc4c7ec": {
+   "source": "NTLM, by the server it was for",
+   "text": "NTLM podle serveru, pro který bylo"
+  },
   "s.ntlm-by-the-server-it-was.d6e01d45": {
    "source": "NTLM by the server it was used for",
    "text": "NTLM podle serveru, pro který bylo použito"
@@ -18376,6 +18452,10 @@
    "source": "NTLM/Operational",
    "text": "NTLM/Operational"
   },
+  "s.ntlm.026eac85": {
+   "source": "NTLM",
+   "text": "NTLM"
+  },
   "s.ntlm.4a9157a7": {
    "source": "ntlm",
    "text": "ntlm"
@@ -18387,6 +18467,10 @@
   "s.ntlmv1.5920a8fb": {
    "source": "ntlmv1",
    "text": "ntlmv1"
+  },
+  "s.ntlmv1.c32bd331": {
+   "source": "NTLMv1",
+   "text": "NTLMv1"
   },
   "s.ntlmv2-still-works-on-2025-but.372516ce": {
    "source": "NTLMv2 still works on 2025, but NTLM is on its way out and Protected Users cannot use it at all.",
@@ -18976,6 +19060,14 @@
    "source": "One, a range, or several by commas. Empty: every port.",
    "text": "Jeden, rozsah, nebo několik oddělených čárkou. Prázdné: všechny porty."
   },
+  "s.one-account-failing-over-and-over.bbd4f8b9": {
+   "source": "One account failing over and over",
+   "text": "Jeden účet selhává pořád dokola"
+  },
+  "s.one-account-s-password-used-to.3149dc89": {
+   "source": "One account’s password used to reach another machine",
+   "text": "Heslo jednoho účtu použité k přístupu na jiný stroj"
+  },
   "s.one-address-ipv4-or-ipv6-it.20246fad": {
    "source": "One address, IPv4 or IPv6. It does not have to be banned, or even known: whatever is on record for it is shown, and if there is nothing the answer says so.",
    "text": "Jedna adresa, IPv4 nebo IPv6. Nemusí být zablokovaná, ani známá: zobrazí se vše, co je k ní zaznamenáno, a pokud nic, odpověď to řekne."
@@ -19131,6 +19223,10 @@
   "s.one-line-of-the-firewall-s.d763ccfa": {
    "source": "One line of the firewall’s log",
    "text": "Jeden řádek logu firewallu"
+  },
+  "s.one-machine-failing-against-many-accounts.22cfb0c8": {
+   "source": "One machine failing against many accounts",
+   "text": "Jeden stroj selhává proti mnoha účtům"
   },
   "s.one-markdown-file-with-what-this.0f8398e8": {
    "source": "One Markdown file with what this page shows: each kind of trouble with what breaks and how to put it right, its rows most first, the worst machines and accounts, and which logs are arriving. Made here, out of what is loaded - the window chosen above, a few rows of each and no more.",
@@ -22092,6 +22188,10 @@
    "source": "refresh",
    "text": "obnovit"
   },
+  "s.refusals-and-lockouts.904eaf4b": {
+   "source": "Refusals and lockouts",
+   "text": "Odmítnutí a zamčení"
+  },
   "s.refusals-before-it.3186e037": {
    "source": "Refusals before it",
    "text": "Odmítnutí před ním"
@@ -22611,6 +22711,10 @@
   "s.right-now.afc65daa": {
    "source": "Right now",
    "text": "Právě teď"
+  },
+  "s.rights-that-take-a-machine-apart.67d32846": {
+   "source": "Rights that take a machine apart were taken",
+   "text": "Byla použita práva, kterými jde stroj rozebrat"
   },
   "s.rings.7a843240": {
    "source": "rings",
@@ -23556,6 +23660,10 @@
    "source": "Serves it",
    "text": "Podává ho"
   },
+  "s.service-tickets-asked-for-in-rc4.a63e2dc7": {
+   "source": "Service tickets asked for in RC4",
+   "text": "Servisní lístky vyžádané v RC4"
+  },
   "s.service.329cb8b6": {
    "source": "Service",
    "text": "Služba"
@@ -24032,6 +24140,14 @@
    "source": "Sign-ins to the firewall’s VPN or to the firewall itself that did not work. Press for them.",
    "text": "Neúspěšná přihlášení do VPN firewallu nebo k firewallu samotnému. Klikněte pro jejich zobrazení."
   },
+  "s.sign-ins-with-digest-wdigest.ed823663": {
+   "source": "Sign-ins with Digest (WDigest)",
+   "text": "Přihlášení přes Digest (WDigest)"
+  },
+  "s.sign-ins-with-ntlmv1.22ae0d71": {
+   "source": "Sign-ins with NTLMv1",
+   "text": "Přihlášení přes NTLMv1"
+  },
   "s.sign-me-out.01183cd8": {
    "source": "Sign me out",
    "text": "Odhlásit mě"
@@ -24244,6 +24360,10 @@
    "source": "SMB1 is not on Windows Server 2025, and signing is required.",
    "text": "SMB1 ve Windows Serveru 2025 není a podepisování je povinné."
   },
+  "s.smb1-to-a-domain-controller.38f16fb3": {
+   "source": "SMB1 to a domain controller",
+   "text": "SMB1 na řadič domény"
+  },
   "s.smb1-to-the-controller-smbserver-audit.46a50c5b": {
    "source": "SMB1 to the controller (SMBServer/Audit, 3000):",
    "text": "SMB1 na řadič (SMBServer/Audit, 3000):"
@@ -24352,6 +24472,10 @@
    "source": "Somebody else’s, left exactly as they are",
    "text": "Cizí, ponechané přesně tak, jak jsou"
   },
+  "s.somebody-is-listing-who-is-in.781a7474": {
+   "source": "Somebody is listing who is in which group",
+   "text": "Někdo vypisuje, kdo je v které skupině"
+  },
   "s.somebody-or-something-signing-in-to.97b10260": {
    "source": "Somebody or something signing in to a switch or a router with this account and an old password — a person at a terminal, or a backup or monitoring job that logs in on a schedule.",
    "text": "Někdo nebo něco se přihlašuje ke switchi nebo routeru tímto účtem a starým heslem — člověk u terminálu, nebo zálohovací či monitorovací úloha, která se přihlašuje podle plánu."
@@ -24392,6 +24516,10 @@
    "source": "somebody tried to set the recovery password",
    "text": "někdo se pokusil nastavit heslo pro obnovení"
   },
+  "s.somebody-was-put-into-a-group.e1718e73": {
+   "source": "Somebody was put into a group that runs the domain",
+   "text": "Někdo byl přidán do skupiny, která spravuje doménu"
+  },
   "s.somebody-who-works-here-mistypes-their.82ae06b5": {
    "source": "Somebody who works here mistypes their own password. A scanner offers a name that does not exist at all, and ISE writes that attempt as INVALID . This many of those from one address inside the window and it is kept out for good, without climbing any ladder — there is nothing to be patient about. 0 is off, and they are counted like anything else.",
    "text": "Někdo, kdo tu pracuje, se překlepne ve vlastním hesle. Skener zkouší jméno, které vůbec neexistuje, a ISE takový pokus zapíše jako INVALID . Tolik takových pokusů z jedné adresy v rámci časového okna a adresa je zablokována natrvalo, bez stoupání po stupních blokace — není na co čekat. 0 znamená vypnuto a počítají se stejně jako cokoli jiného."
@@ -24419,6 +24547,10 @@
   "s.something-else.637828c0": {
    "source": "something else",
    "text": "něco jiného"
+  },
+  "s.something-is-still-trying-a-dead.f8a074fa": {
+   "source": "Something is still trying a dead account",
+   "text": "Něco pořád zkouší mrtvý účet"
   },
   "s.something-still-trying-one-of-these.e5277d23": {
    "source": "Something still trying one of these is something nobody told.",
@@ -26536,6 +26668,10 @@
    "source": "the audit log was cleared",
    "text": "auditní log byl vymazán"
   },
+  "s.the-audit-log-was-cleared.22a77dbc": {
+   "source": "The audit log was cleared",
+   "text": "Auditní log byl vymazán"
+  },
   "s.the-audit-policy-on-an-object.571d7e4f": {
    "source": "the audit policy on an object was changed",
    "text": "byla změněna auditní politika objektu"
@@ -26996,6 +27132,10 @@
    "source": "The controller’s own count of the LDAP binds 2025 would refuse - said once a day even without the detailed logging.",
    "text": "Vlastní počet LDAP bindů, které by 2025 odmítl, od řadiče - jednou denně i bez podrobného logování."
   },
+  "s.the-controller-s-own-daily-count.c24b1987": {
+   "source": "The controller's own daily count of LDAP binds",
+   "text": "Vlastní denní počet LDAP bindů řadiče"
+  },
   "s.the-controller-that-saw-it.f196f27c": {
    "source": "the controller that saw it",
    "text": "řadič, který to viděl"
@@ -27348,6 +27488,10 @@
    "source": "the DHCP server that gave it out",
    "text": "DHCP server, který ji přidělil"
   },
+  "s.the-directory-being-read.0aa81e3d": {
+   "source": "The directory being read",
+   "text": "Čtení adresáře"
+  },
   "s.the-directory-changed.428ae607": {
    "source": "the directory changed",
    "text": "adresář se změnil"
@@ -27399,6 +27543,10 @@
   "s.the-directory-is-not-being-asked.ad1c07f3": {
    "source": "The directory is not being asked about these accounts. Settings → The domain controllers → \"Ask the directory about the accounts in these logs\".",
    "text": "Na tyto účty se adresáře nedotazujeme. Nastavení → Řadiče domény → „Dotazovat se adresáře na účty v těchto lozích“."
+  },
+  "s.the-directory-itself.ac2f5383": {
+   "source": "The directory itself",
+   "text": "Samotný adresář"
   },
   "s.the-directory-of-another-acme-ca.28161121": {
    "source": "The directory of another ACME CA,",
@@ -28688,9 +28836,9 @@
    "source": "The MAC vendor registers",
    "text": "Registry výrobců MAC"
   },
-  "s.the-machine-accounts-are-counted-apart.a09b9de3": {
-   "source": "· the machine accounts are counted apart",
-   "text": "· účty počítačů se počítají zvlášť"
+  "s.the-machine-accounts-are-counted-apart.63d7412f": {
+   "source": "the machine accounts are counted apart",
+   "text": "účty počítačů se počítají zvlášť"
   },
   "s.the-machine-by-name.6aa8aa44": {
    "source": "the machine, by name",
@@ -35684,6 +35832,10 @@
    "source": "Who signed in to the firewall itself or changed it, and how much of that was refused.",
    "text": "Kdo se přihlásil přímo na firewall nebo ho změnil a kolik z toho bylo odmítnuto."
   },
+  "s.who-signed-in.634f9fec": {
+   "source": "Who signed in",
+   "text": "Kdo se přihlásil"
+  },
   "s.who-signs-in-to-the-kit.77c22df1": {
    "source": "Who signs in to the kit",
    "text": "Kdo se přihlašuje k zařízením"
@@ -38506,9 +38658,9 @@
    "source": ", newest {0}",
    "text": ", nejnovější {0}"
   },
-  "p.newest.7458f19d": {
-   "source": ", newest {0}{1}",
-   "text": ", nejnovější {0}{1}"
+  "p.newest.4680943e": {
+   "source": "newest {0}",
+   "text": "nejnovější {0}"
   },
   "p.next.df2457aa": {
    "source": "next {0}",
@@ -42754,6 +42906,10 @@
    "source": "{0}{1} matching{2}",
    "text": "{0}{1} odpovídajících{2}"
   },
+  "p.newest.7458f19d": {
+   "source": ", newest {0}{1}",
+   "text": ", nejnovější {0}{1}"
+  },
   "p.not-connected.87e6ee2b": {
    "source": "not connected{0}",
    "text": "nepřipojeno{0}"
@@ -43102,9 +43258,17 @@
    "source": "A VPN sign-in checked against Active Directory is ONE attempt: the ISE record and the domain's own event are two views of it, and counting both would double every person on every page. These events live in a table of their own, are never a row under Failed attempts or Logins, and the chart on the front page does not know they exist.",
    "text": "Přihlášení k VPN ověřované proti Active Directory je JEDEN pokus: záznam ISE a vlastní událost domény jsou dva pohledy na něj a počítat obojí by zdvojilo každého člověka na každé stránce. Tyto události mají vlastní tabulku, nikdy nejsou řádkem v Neúspěšných pokusech ani v Přihlášeních a graf na úvodní stránce o nich neví."
   },
+  "s.account-locked.6602d7a5": {
+   "source": "account locked",
+   "text": "účet zablokován"
+  },
   "s.account-read-only.9a87aabe": {
    "source": "Account (read-only)",
    "text": "Účet (jen pro čtení)"
+  },
+  "s.accounts-locked.96a3dadc": {
+   "source": "accounts locked",
+   "text": "zablokované účty"
   },
   "s.acme-push-ed25519-aaaa-acme-acme1.41ad0a78": {
    "source": "acme-push-ed25519 AAAA… acme@acme1",
@@ -43133,6 +43297,10 @@
   "s.acme-the-certificate-manager-of-ours.bcd35938": {
    "source": "acme - the certificate manager of ours - gives this dashboard its certificate and renews it by itself, as it does for otp and zigmon. Pair it once here; each certificate it pushes is checked (signed by the paired acme, its key the certificate's, valid, holding the dashboard's name) and goes in as an upload does.",
    "text": "acme – náš správce certifikátů – dává tomuto dashboardu certifikát a sám ho obnovuje, stejně jako u otp a zigmonu. Spárujte ho tu jednou; každý certifikát, který dodá, se zkontroluje (podepsaný spárovaným acme, klíč patří k certifikátu, je platný, obsahuje jméno dashboardu) a uloží se jako ruční nahrání."
+  },
+  "s.ad2025.ff4530a5": {
+   "source": "ad2025",
+   "text": "ad2025"
   },
   "s.after-your-password-face-id-touch.119de544": {
    "source": "After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms it is you. Each device that may do it keeps a passkey; the server only its public half. A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices too. Take the last one away and your next sign-in sets Face ID up again.",
@@ -43766,6 +43934,10 @@
    "source": "Nothing changes until the last step. Until then isemon goes on exactly as it is, and Close leaves everything as it was.",
    "text": "Do posledního kroku se nic nemění. Do té doby isemon běží přesně jako teď a Zavřít nechá vše, jak bylo."
   },
+  "s.nothing-has-been-read-yet.693bfa32": {
+   "source": ", nothing has been read yet",
+   "text": ", zatím se nic nepřečetlo"
+  },
   "s.nothing-here-is-banned-yet-these.1566b2cf": {
    "source": "Nothing here is banned yet. These are the addresses the counting can see, and how far each one still has to go. Only the VPN is counted: 802.1X, MAB and TACACS+ are recorded and shown, never judged.",
    "text": "Zatím zde nic není zablokováno. Toto jsou adresy, které počítání vidí, a kolik má každá ještě před sebou. Počítá se pouze VPN: 802.1X, MAB a TACACS+ se zaznamenávají a zobrazují, nikdy neposuzují."
@@ -44169,6 +44341,10 @@
   "s.the-last-upgrade.08608510": {
    "source": "The last upgrade",
    "text": "Poslední aktualizace"
+  },
+  "s.the-machine-accounts-are-counted-apart.a09b9de3": {
+   "source": "· the machine accounts are counted apart",
+   "text": "· účty počítačů se počítají zvlášť"
   },
   "s.the-machines-it-has-heard-from.a6e1cd1c": {
    "source": "The machines it has heard from on its own networks: address, MAC and interface.",

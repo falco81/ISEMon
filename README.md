@@ -372,6 +372,53 @@ working.
 
 ## Version
 
+1.10.336
+
+- **Bug hunt, run 1: the domain and Before Windows Server 2025, checked
+  against a real controller's log, and the rest of the app.**
+- **The domain:**
+  - A 4625 with `Sub Status: 0x0` said "it worked". Its reason now comes from
+    Status.
+  - A broken-off sign-in (0xC00002EE) is not a password tried, so it no
+    longer raises "One account failing over and over".
+  - "Something is still trying a dead account" no longer counts Kerberos
+    tickets that simply ran out.
+  - "One machine failing against many accounts" leaves the controllers out.
+    The controller named there was itself checking passwords typed elsewhere.
+  - A refusal with no name in its account section has no account. It used to
+    be the controller's own.
+  - `Subject :`, written with a space, is read as the subject, so who read
+    the directory is kept.
+  - A 4648 to `localhost` names no machine.
+  - Reading again kept the why of the other logs' events (2889, 8004 …).
+    Before, it wiped it.
+- **The Domain page:**
+  - An alarm of Before Windows Server 2025 opens that page at the window it
+    was counted over. It used to open an empty list.
+  - The Overview's popups no longer change after a press on the 2025 page.
+  - A row of the 2025 page opens the events at its own window.
+  - "Everything" counts every kind.
+  - F5 keeps the 2025 page's own page.
+  - The button count is the window's.
+  - "lockouts" counts lockouts.
+  - On a phone, the 2025 list scrolls sideways and its strip is not pinned.
+  - The tabs, the kinds and the alarms the daemon names are in Czech too.
+- **acme's full sync:**
+  - Two acme installations no longer share each other's deployments or
+    checks.
+  - A sync sent from an HA pair's other node lets go of what the cluster no
+    longer has.
+  - One acme's sync no longer deletes another's certificates.
+  - An older sync read again does not roll anything back.
+  - A failure the sync knew was put right is not brought back by a later
+    line.
+  - Long keys fit MariaDB.
+  - A target holding an older certificate is not "deployed".
+  - History is kept once across time zones.
+  - A job's steps stay with it over a restart.
+- **Settings:** a save that breaks a second rule, beside one broken before,
+  is refused for the new one.
+
 1.10.335
 
 - **acme's first full sync (acme 1.0.71) is read.** These are the `kind=sync`

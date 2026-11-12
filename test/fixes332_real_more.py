@@ -47,7 +47,7 @@ ok('...and In-Filtered-Set',
    .facts['mark'])
 ok('the rows already marked are read again - only those, not every read of the directory',
    (isemon.Storage.WIN_SORT_VERSION, isemon.Storage.MARK_VERSIONS[6]),
-   (7, {'events': (4662,), 'marks': ('replication',)}))
+   (8, {'events': (4662,), 'marks': ('replication',)}))
 src = (ROOT / 'isemon.py').read_text()
 ok('...narrowed by the mark only when every step since says so',
    ("if narrow and len(ways) == 1 and not whole:" in src,

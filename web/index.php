@@ -4477,6 +4477,9 @@ function srcText(el) {
   .a25-none{padding:28px 0}
   .a25-filters .a25-found{margin-left:auto}
   @media (max-width:700px){.a25-scroll{max-height:none}.a25-scroll table.a25-t{table-layout:auto;min-width:720px}}
+  /* On a phone the page's strip is not pinned - two pinned strips were half the screen - and
+     the list scrolls sideways rather than one digit a line (1.10.336). */
+  @media (max-width:700px){.a25-strip{position:static}.a25-scroll table.a25-t{min-width:900px}.a25-scroll td{overflow-wrap:break-word}.a25-scroll td.num{white-space:nowrap}}
   /* SELinux (1.10.319) */
   .se-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;margin-top:12px}
   .se-node{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0;max-width:980px}
@@ -11135,7 +11138,9 @@ function hashSub(tab) {
     return 'events';
   }
   if (tab === 'windows' && typeof WPAGE_SHOWN !== 'undefined' && WPAGE_SHOWN === 'ad25') {
-    return 'ad2025';
+    /* ...and which of its pages (1.10.336): F5 on Machines came back on its
+       overview. */
+    return 'ad2025' + (typeof A25 !== 'undefined' && A25.page && A25.page !== 'sum' ? '-' + A25.page : '');
   }
   if (tab === 'failed' && typeof FKIND !== 'undefined' && FKIND && FKIND !== 'vpn') return FKIND;
   if (tab === 'logins' && typeof PKIND !== 'undefined' && PKIND && PKIND !== 'vpn') return PKIND;
@@ -11157,7 +11162,15 @@ function openHashSub(tab, sub) {
     if (sub === 'events') winShowPage('events');
     /* Before the status has come, on its word (a reload): the page goes
        back to the overview by itself if the status then says it is off. */
-    if (sub === 'ad2025' && (!STATUS || STATUS.ad2025_on)) winShowPage('ad25');
+    if (/^ad2025(-|$)/.test(sub) && (!STATUS || STATUS.ad2025_on)) {
+      var want = sub.split('-')[1];
+      /* Its block may not be read yet on a reload: kept for it to take up. */
+      window.A25_WANT = want || '';
+      if (want && typeof A25 !== 'undefined' && A25_PAGES.some(function (p) { return p[0] === want; })) {
+        A25.page = want;
+      }
+      winShowPage('ad25');
+    }
   } else if (tab === 'failed') {
     if (DOOR_SAYS[sub]) showFailedKind(sub);
   } else if (tab === 'logins') {
@@ -21904,11 +21917,13 @@ function drawWindows(d) {
   clear(tally);
   var count = function (n, words, says, tone, ask) {
     if (tally.firstChild) tally.appendChild(document.createTextNode(' \u00b7 '));
-    var b = el('b', tone || '', num(n) + ' ' + words);
+    var b = el('b', tone || '');
+    b.appendChild(noI18n(el('span', '', num(n) + ' ')));
+    b.appendChild(el('span', '', words));
     opensWith(b, says, ask);
     tally.appendChild(b);
   };
-  count(locked, locked === 1 ? 'account locked' : 'accounts locked',
+  count(locked, locked === 1 ? 'lockout' : 'lockouts',
         'Every lockout in this window.', 'bad',
         function () { winPeekEvents('The accounts the domain locked', {kind: 'lockout'}); });
   count(refused, 'refused', 'Every refusal in this window.', 'bad', function () {
@@ -21922,10 +21937,19 @@ function drawWindows(d) {
   count(all, 'events read', 'Everything read from the controllers.', 'good', function () {
     winPeekEvents('Everything the controllers wrote', {});
   });
-  tally.appendChild(document.createTextNode(
-    d.newest ? (', newest ' + ago(d.newest)
-                + (d.machines_shown ? '' : ' \u00b7 the machine accounts are counted apart'))
-             : ', nothing has been read yet'));
+  /* Each piece its own words, so each can be put into another language -
+     joined, no pattern matched it, and the newest one was stuck to the
+     count before it (1.10.336). */
+  tally.appendChild(document.createTextNode(' \u00b7 '));
+  if (d.newest) {
+    tally.appendChild(el('span', '', 'newest ' + ago(d.newest)));
+    if (!d.machines_shown) {
+      tally.appendChild(document.createTextNode(' \u00b7 '));
+      tally.appendChild(el('span', '', 'the machine accounts are counted apart'));
+    }
+  } else {
+    tally.appendChild(el('span', '', 'nothing has been read yet'));
+  }
   /* ...and where this window really begins. It starts on the hour, so
      "last 24 hours" was rounder than every number underneath it, and two
      people looking a minute apart could not reproduce each other's figures.
@@ -21950,6 +21974,52 @@ function drawWindows(d) {
   explainWhatWasDrawn($('tab-windows'));
 }
 
+/* The words the daemon hands this page for the domain - its tabs, the kinds
+   Before Windows Server 2025 counts, the alarms - written here as well so
+   that they are among the words put into another language (1.10.336:
+   they stayed English beside Czech). Never drawn from this list. */
+var WIN_DAEMON_WORDS = [
+  'Refusals and lockouts',
+  'Accounts and groups',
+  'Who signed in',
+  'The directory itself',
+  'The directory being read',
+  'LDAP simple bind in the clear',
+  'LDAP bind without signing',
+  'LDAP channel binding failed',
+  'NTLMv1',
+  'Kerberos with DES',
+  'Kerberos with RC4',
+  'An account with no AES keys',
+  'DES still allowed on an account',
+  'SMB1 to a domain controller',
+  'A password handed over as it is (logon type 8)',
+  'Sign-ins with Digest (WDigest)',
+  'NTLM',
+  'NTLM, by the server it was for',
+  "The controller's own daily count of LDAP binds",
+  'The audit log was cleared',
+  'An account asked to replicate the directory',
+  'Somebody was put into a group that runs the domain',
+  'One machine failing against many accounts',
+  'A computer’s own password is refused',
+  'Names that do not exist, asked about by NPS',
+  'One account failing over and over',
+  'Lockouts, several of them',
+  'Service tickets asked for in RC4',
+  'A ticket handed over with no pre-authentication',
+  'Something is still trying a dead account',
+  'Anonymous sign-ins',
+  'A password sent in the clear',
+  'Somebody is listing who is in which group',
+  'One account’s password used to reach another machine',
+  'Rights that take a machine apart were taken',
+  'A password sent to LDAP in the clear',
+  'Sign-ins with NTLMv1',
+  'Kerberos tickets in DES',
+  'LDAP binds without signing',
+  'Accounts with no AES keys'
+];
 /* ---- the patterns worth looking at --------------------------------------- */
 function drawWinIncidents(rows) {
   var host = $('w-incidents');
@@ -22011,6 +22081,14 @@ function winPeekIncident(one) {
      not events of their own but counted rows, so the page that holds them
      is opened at that kind of trouble, by machine or by account. */
   if (where.ad25 && typeof a25Go === 'function') {
+    /* ...at the window it was counted over: the 2025 page keeps its own,
+       and a week there under a month here opened an empty list (1.10.336). */
+    var hours = TAB === 'overview' && typeof overHours === 'function' ? overHours() : winHours();
+    var pick = $('a25-window'), best = null;
+    Array.prototype.forEach.call(pick ? pick.options : [], function (o) {
+      if (Number(o.value) >= hours && (best === null || Number(o.value) < Number(best))) best = o.value;
+    });
+    if (pick) { pick.value = best || pick.options[pick.options.length - 1].value; A25.built = ''; }
     if (TAB !== 'windows') showTab('windows');
     winShowPage('ad25');
     a25Go(where.page === 'accounts' ? 'accounts' : 'machines', String(where.ad25));
@@ -23126,7 +23204,12 @@ function loadWinEvents(quietly) {
     $('w-events-n').textContent = (d.capped ? 'more than ' : '') + num(d.total) + ' event(s)'
       + (d.sort_window && (d.capped || d.total > d.sort_window)
          ? ' \u00b7 ordered among the newest ' + num(d.sort_window) : '');
-    $('w-pages-n').textContent = (d.capped ? '>' : '') + num(d.total);
+    /* The button says how many the window holds, not what the last search
+       found - beside the 2025 page it said the count of a search long gone
+       (1.10.336). */
+    if (!$('w-q').value.trim() && !WKIND && !$('w-event').value && !$('w-server').value) {
+      $('w-pages-n').textContent = (d.capped ? '>' : '') + num(d.total);
+    }
     fillOnce($('w-server'), d.servers);
     fillPairs($('w-event'), (d.events || []).map(function (e) {
       return [String(e.event), e.event + ' \u00b7 ' + e.words + ' (' + num(e.n) + ')'];
@@ -23206,7 +23289,11 @@ function loadWinEvents(quietly) {
 function winKindTabs(tabs) {
   var host = $('w-kinds');
   clear(host);
-  var all = tabs.reduce(function (n, t) { return n + t.n; }, 0);
+  /* Every kind there is - the tabs leave out sign-outs, tickets and the
+     rest, and "Everything" was only what the tabs held (1.10.336). */
+  var every = WCOUNTS || {};
+  var all = Object.keys(every).reduce(function (n, k) { return n + (every[k] || 0); }, 0)
+    || tabs.reduce(function (n, t) { return n + t.n; }, 0);
   function tab(key, words, n, says) {
     var b = el('button');
     b.setAttribute('role', 'tab');
@@ -23391,8 +23478,12 @@ function winPeekEvents(title, ask, says, blameFor, over) {
   var hours = over.hours !== undefined ? over.hours : (front ? overHours() : winHours());
   var words = over.words || (front ? overWindowWords()
     : $('w-window').options[$('w-window').selectedIndex].textContent.trim());
+  /* The Overview's counts came with its own word on the machine accounts;
+     the events page's tick box is that page's, and a press on the 2025 page
+     ticks it (1.10.336: the Overview's popups then counted other things). */
   var machines = over.machines !== undefined ? !!over.machines
-    : (!front && $('w-machines').checked);
+    : (!front && (WPAGE_SHOWN === 'events' ? $('w-machines').checked
+                                           : !!(WIN && WIN.machines_shown)));
   var query = 'win-events&hours=' + hours + '&limit=250&choices=0';
   Object.keys(ask || {}).forEach(function (k) {
     if (ask[k]) query += '&' + k + '=' + encodeURIComponent(ask[k]);
@@ -45828,6 +45919,10 @@ setTimeout(function () { if (paneLive('sshkeys')) loadSshKeys(); }, 0);
    them at a time, sorted and searched over the whole of it, not the page.
    ========================================================================== */
 var A25 = {d: null, page: 'sum', issue: '', q: '', asking: false, st: {}, per: 50};
+/* The page an address named, read before this block was (1.10.336). */
+if (window.A25_WANT && ['machines', 'accounts', 'rows', 'logs'].indexOf(window.A25_WANT) >= 0) {
+  A25.page = window.A25_WANT;
+}
 try { A25.per = Number(localStorage.getItem('a25-per')) || 50; } catch (e) { /* none */ }
 var A25_SAY = {
   'ldap-clear': {icon: 'lock', breaks: 'A 2025 controller refuses a simple bind on 389 without TLS (strongerAuthRequired, result 8).',
@@ -45931,6 +46026,7 @@ function a25Pages() {
 }
 function a25Go(page, issue, only) {
   A25.page = page;
+  if (TAB === 'windows' && typeof writeHash === 'function') setTimeout(writeHash, 0);
   A25.built = '';
   /* Opened from a tile, the top card or an alarm: that and nothing else -
      a search or a controller typed on another list is not carried over
@@ -45945,6 +46041,7 @@ function a25Go(page, issue, only) {
 function drawAd25() {
   var d = A25.d, host = $('a25-host');
   if (!host || !d) return;
+  if (TAB === 'windows' && WPAGE_SHOWN === 'ad25' && typeof writeHash === 'function') writeHash();
   a25Pages();
   $('a25-logs-card').hidden = A25.page !== 'logs';
   host.hidden = A25.page === 'logs';
@@ -46592,12 +46689,12 @@ function a25Events(what) {
   $('w-machines').checked = true;
   /* The page's own window, as near as the events page has one. */
   var h = Number(($('a25-window') || {}).value) || 168;
-  var w = $('w-hours'), best = '168';
+  var w = $('w-hours'), best = null;
   if (w) {
     Array.prototype.forEach.call(w.options, function (o) {
-      if (Number(o.value) >= h && (best === '168' || Number(o.value) < Number(best))) best = o.value;
+      if (Number(o.value) >= h && (best === null || Number(o.value) < Number(best))) best = o.value;
     });
-    w.value = best;
+    w.value = best || '8760';
   }
   WPAGE = 0;
   loadWinEvents();

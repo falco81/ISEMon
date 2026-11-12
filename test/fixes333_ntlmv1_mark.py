@@ -68,6 +68,7 @@ try:
     st.db.commit() if hasattr(st.db, 'commit') else None
     was = st.meta_json('win_reading', None) or {}
     st.set_meta('win_reading', json.dumps(dict(was, version=6)))
+    st.WIN_SORT_VERSION = 7          # this version's own step, on its own
     plan, _why = st.win_marks_plan()
     ok('the plan: 4624, of the accounts Before Windows Server 2025 saw', plan,
        {'events': [4624], 'accounts': ['jnovak']})
@@ -79,6 +80,7 @@ try:
     st.db.execute('DELETE FROM ad25_seen')
     st.db.commit() if hasattr(st.db, 'commit') else None
     st.set_meta('win_reading', json.dumps(dict(was, version=6)))
+    st.WIN_SORT_VERSION = 7
     ok('a site without that page (nobody seen): nothing to read again', st.win_marks_plan()[0], {})
 finally:
     shutil.rmtree(str(work), ignore_errors=True)

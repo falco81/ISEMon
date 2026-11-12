@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.335'
+__version__ = '1.10.336'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2298,14 +2298,17 @@ def proxy_setting_checked(key, got):
     return v
 
 
-def check_settings_together(values):
-    """The rules that are about two settings rather than one."""
+def settings_problems(values):
+    """Every rule about two settings rather than one that these break, in
+    words - all of them, not the first (1.10.336): a save that broke a second
+    rule beside one broken before went through unchecked."""
+    out = []
     if int(values.get('banfeed') or 0) and \
             str(values.get('banfeed_auth') or 'none') == 'basic':
         user = str(values.get('banfeed_user') or '')
         if not user.strip() or ':' in user:
-            raise ValueError('basic authentication for the published list needs a user name, '
-                             'without a colon in it')
+            out.append('basic authentication for the published list needs a user name, '
+                       'without a colon in it')
         # A password that is there has to be long enough. One that is not
         # there - a settings file carried across without its secrets - is
         # not a reason to refuse the whole import: the list refuses every
@@ -2313,7 +2316,7 @@ def check_settings_together(values):
         # among what is still to be typed in.
         said = str(values.get('banfeed_password') or '')
         if said and len(said) < 12:
-            raise ValueError('basic authentication for the published list needs a password '
+            out.append('basic authentication for the published list needs a password '
                              'of at least twelve characters')
     # The banning's numbers that only mean something together (1.10.306).
     try:
@@ -2324,19 +2327,27 @@ def check_settings_together(values):
     except (TypeError, ValueError):
         tries, lots, most, first = 5, 0, 0, 60
     if 0 < lots <= tries:
-        raise ValueError('a burst that goes out for good (%d) has to be bigger than the '
+        out.append('a burst that goes out for good (%d) has to be bigger than the '
                          'failed logins that earn a ban (%d): as it is, every ban would be '
                          'for good' % (lots, tries))
     if not str(values.get('block_ladder') or '').strip() and 0 < most < first:
-        raise ValueError('the longest a ban may be (%d min) is shorter than the first ban '
+        out.append('the longest a ban may be (%d min) is shorter than the first ban '
                          '(%d min)' % (most, first))
     if str(values.get('geolist_name') or '').strip() and \
             Daemon.mikrotik_name(values.get('geolist_name') or 'x') == \
             Daemon.mikrotik_name(values.get('mikrotik_list') or 'y'):
-        raise ValueError('the country list and the blocked list must not share a name')
+        out.append('the country list and the blocked list must not share a name (MikroTik)')
     if str(values.get('pf_geolist') or '').strip() and \
             str(values.get('pf_geolist')).strip() == str(values.get('pf_list') or '').strip():
-        raise ValueError('the country list and the blocked list must not share a name')
+        out.append('the country list and the blocked list must not share a name (pfSense)')
+    return out
+
+
+def check_settings_together(values):
+    """The rules that are about two settings rather than one."""
+    said = settings_problems(values)
+    if said:
+        raise ValueError(said[0])
     return values
 
 
@@ -2348,15 +2359,12 @@ def check_settings_saved(fresh, was):
     on a site whose banning numbers predated the rule (1.10.306), with a word
     about banning nobody had touched. Changing anything the rule is about
     makes it the save's own, and then it is said as before."""
-    try:
-        check_settings_together(fresh)
-    except ValueError as e:
-        try:
-            check_settings_together(dict(was))
-        except ValueError as old:
-            if str(old) == str(e):
-                return fresh
-        raise
+    # Refused for a rule the save breaks that the settings before did not -
+    # every one of them weighed, not only the first (1.10.336).
+    before = set(settings_problems(dict(was)))
+    new = [one for one in settings_problems(fresh) if one not in before]
+    if new:
+        raise ValueError(new[0])
     return fresh
 
 
@@ -7660,6 +7668,8 @@ WIN_FIELD = re.compile(
         re.escape(one) for one in sorted(set(WIN_SECTIONS) | set(WIN_LABELS),
                                          key=len, reverse=True)) + r'):(?=\s|$)')
 _WIN_SECTION_SET = frozenset(WIN_SECTIONS)
+_WIN_SECTION_SPACED = re.compile(r'(?:(?<=\s)|^)(' + '|'.join(
+    re.escape(one) for one in sorted(WIN_SECTIONS, key=len, reverse=True)) + r') :(?=\s|$)')
 
 # The same fields found the quick way. One alternation of a hundred and forty
 # labels, tried at every position of every event, was most of the time it
@@ -7774,6 +7784,11 @@ def win_fields(rest):
             break
     if cut:
         text = text[:cut.start()]
+    # `Subject :` - a space before the colon, as some controllers write a
+    # section's heading - read as `Subject:` (1.10.336: who read the directory
+    # was lost on every 4662 of such a controller).
+    if ' :' in text:
+        text = _WIN_SECTION_SPACED.sub(r'\1:', text)
     out = WinFields()
     marks = win_field_marks(text)
     section = ''
@@ -7965,6 +7980,10 @@ WIN_STATUS = {
     '0xc000006f': 'outside the hours that account may sign in',
     '0xc0000070': 'not from that machine',
     '0xc0000071': 'the password has expired',
+    # A sign-in whose security context went away before it finished (Kerberos
+    # over a dropped connection, a client giving up): no password was weighed
+    # (1.10.336).
+    '0xc00002ee': 'the sign-in was broken off before it finished',
     '0xc0000072': 'the account is switched off',
     '0xc00000dc': 'the server was in the wrong state to answer',
     '0xc0000133': 'the clocks are too far apart',
@@ -8091,7 +8110,17 @@ def win_reason(event, fields):
         if not said and code and code not in ('0x0', '-'):
             said = 'Kerberos refused it (%s)' % code[:12]
         return said
-    code = str(win_said_last(fields, 'Sub Status', 'Status', 'Error Code') or '').lower()
+    # The first code that says something: a 4625 with `Sub Status: 0x0`
+    # has its reason in Status, and read as Sub Status it "worked" - a
+    # refusal saying it worked, counted against the account (1.10.336).
+    code = ''
+    for label in ('Sub Status', 'Status', 'Error Code'):
+        got = str(win_said_last(fields, label) or '').lower()
+        if got and got not in ('0x0', '0x00000000', '0', '-'):
+            code = got
+            break
+        if got and not code and event != 4625:
+            code = got
     if code:
         said = WIN_STATUS.get(code, '')
         if not said and code not in ('0x0', '-'):
@@ -8133,6 +8162,14 @@ def win_account(fields, event):
                         'New Computer Account / Account Name',
                         'Computer Account That Was Changed / Account Name',
                         'Member Name', 'SAM Account Name')
+    # Where the section of the account the event is about is there, an empty
+    # name in it is empty - not the Subject's, which is the controller itself
+    # (1.10.336: a Schannel refusal with no name was the controller failing).
+    for ev, section in ((4625, 'Account For Which Logon Failed'),
+                        (4648, 'Account Whose Credentials Were Used'),
+                        (4624, 'New Logon')):
+        if event == ev and any(str(k).startswith(section + ' / ') for k in fields):
+            return win_said(fields, section + ' / Account Name')
     if event == 4625:
         return win_said(fields, 'Account For Which Logon Failed / Account Name',
                         'Account Name')
@@ -8169,6 +8206,17 @@ def win_machine(fields, event):
     return win_said(fields, 'Caller Computer Name', 'Workstation Name',
                     'Source Workstation', 'Target Server Name',
                     'Network Information / Workstation Name').lstrip('\\')
+
+
+def win_machine_from(fields, event, server=''):
+    """`win_machine`, without what names no other machine: a 4648's
+    target that is `localhost`, or the controller writing it (1.10.336:
+    ten thousand rows a day "from localhost")."""
+    said = win_machine(fields, event)
+    if event == 4648 and (said.lower() in ('localhost', '127.0.0.1', '::1')
+                          or (server and win_short_name(said) == win_short_name(server))):
+        return ''
+    return said
 
 
 def win_address(fields):
@@ -8747,7 +8795,7 @@ def win_record_from(line, now=None, zone=None):
                            'Supplied Realm Name')[:120],
         'by': win_by(fields, event)[:180],
         'by_logon': win_logon_id(fields, event),
-        'machine': win_machine(fields, event)[:120],
+        'machine': win_machine_from(fields, event, m.group('host'))[:120],
         'ip': win_address(fields),
         'logon_type': str(win_said(fields, 'Logon Type') or '')[:4],
         'process': win_said(fields, 'Process Name', 'Caller Process Name')[:200],
@@ -31886,7 +31934,8 @@ class Storage(object):
     #    over.
     # 6: Get-Changes on its own is not replication (a DirSync reader).
     # 7: NTLMv1 and Digest sign-ins carry a mark of their own.
-    WIN_SORT_VERSION = 7
+    # 8: a 4625 with Sub Status 0x0 has its reason in Status.
+    WIN_SORT_VERSION = 8
 
     # ...and WHICH stored events each version changed the reading of.
     #
@@ -31910,6 +31959,8 @@ class Storage(object):
         # Before Windows Server 2025 has seen doing either, which is a handful
         # among a million; none at all where that page is off (1.10.333).
         7: {'events': (4624,), 'ad25_accounts': ('ntlmv1', 'digest')},
+        # 4625: why, out of Status where Sub Status is 0x0 (1.10.336).
+        8: (4625,),
     }
 
     # One walk of the table at a time, whoever asked for it. On the class
@@ -32339,8 +32390,14 @@ class Storage(object):
                 kind = win_kind_of(event, flat)
                 account = win_account(flat, event)
                 marks = win_marks(event, flat, account, kind)
+                reason = win_reason(event, flat)[:160]
+                # The other logs' events have their why from their own reading
+                # (`win_ad25_fill`), which the fields alone do not give back:
+                # read again, it was wiped (1.10.336).
+                if not reason and event in WIN_AD25_FILL:
+                    reason = str(row['said'] or '')[:160]
                 fresh = (kind, win_object(event, flat, marks)[:300],
-                         win_reason(event, flat)[:160], marks[:80],
+                         reason, marks[:80],
                          win_mark_bits(marks),
                          # The logon session, which is the only thread
                          # between an account change and the machine it
@@ -35190,10 +35247,16 @@ class Storage(object):
             try:
                 rows = self.db.execute(
                     sql + ' GROUP BY %s HAVING COUNT(DISTINCT account) >= ? '
-                    'ORDER BY names DESC LIMIT 5' % by,
+                    'ORDER BY names DESC LIMIT 20' % by,
                     args + [self.SPRAY_NAMES]).fetchall()
             except sqlite3.Error:
                 rows = []
+            # A controller named as the machine is the controller checking a
+            # password typed somewhere else - a UPN, an LDAP or web sign-in -
+            # for people, not one machine trying names (1.10.336).
+            rows = [r for r in rows if not (
+                (by == 'machine' and win_short_name(r['said']) in WIN_CONTROLLERS)
+                or (by == 'ip' and str(r['said']) in WIN_CONTROLLER_IPS))][:5]
             for row in rows:
                 out.append({'said': row['said'], 'names': int(row['names'] or 0),
                             'n': int(row['n'] or 0), 'last': float(row['last'] or 0),
@@ -35207,8 +35270,11 @@ class Storage(object):
         sql = ('SELECT account AS said, COUNT(*) AS n, MAX(ts) AS last, '
                'COUNT(DISTINCT machine) AS machines FROM win_events '
                "WHERE ts >= ? AND COALESCE(account,'') <> '' "
-               "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed') ")
-        args = [float(since)]
+               "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed') "
+               # ...where a password was weighed at all (1.10.336).
+               "AND COALESCE(said, '') NOT IN (?, ?) ")
+        args = [float(since), 'the sign-in was broken off before it finished',
+                'refused (0xc00002ee)']
         if machines is False:
             sql += ' AND COALESCE(is_machine,0) = 0'
         skip, more = self.win_not_chained()
@@ -35250,7 +35316,10 @@ class Storage(object):
     # What the domain says when the account cannot sign in whatever password
     # is offered. Matched on the words this program already wrote, so there is
     # one place that decides what those words are.
-    DEAD_WORDS = ('switched off', 'expired', 'locked out', 'has to be changed')
+    # The ACCOUNT expired, or its password - not a ticket that ran out, which
+    # is every Kerberos client's ordinary day (1.10.336).
+    DEAD_WORDS = ('switched off', 'account has expired', 'password has expired', 'locked out',
+                  'has to be changed')
 
     def win_dead_accounts(self, since, machines=None):
         """Refusals against accounts that cannot sign in anyway."""
@@ -36696,23 +36765,30 @@ class Storage(object):
         sync_certs = objs.get('certificate') or []
         if not sync_certs:
             return
+        # By host and acme's id: two acme installations both have a cert_id 1
+        # (1.10.336) - and one certificate is the newest that any host said.
         deploys, checks = {}, {}
         for d in objs.get('deployment') or []:
-            deploys.setdefault(str(d.get('cert_id') or ''), []).append(d)
+            deploys.setdefault((d.get('_host'), str(d.get('cert_id') or '')), []).append(d)
         for c in objs.get('check') or []:
-            checks.setdefault(str(c.get('cert_id') or ''), []).append(c)
-        named = set()
+            checks.setdefault((c.get('_host'), str(c.get('cert_id') or '')), []).append(c)
+        newest = {}
         for sc in sync_certs:
             name = str(sc.get('cert') or '')
-            if not name:
-                continue
-            named.add(name)
+            if name and (name not in newest or float(sc.get('_ts') or 0)
+                         > float(newest[name].get('_ts') or 0)):
+                newest[name] = sc
+        named = {}
+        for sc in newest.values():
+            name = str(sc.get('cert') or '')
+            named.setdefault(sc.get('_host'), set()).add(name)
             at = float(sc.get('_ts') or 0)
             mine = {'cert': name, 'last_ts': at, 'last_action': 'sync', 'last_result': None,
                     'last_level': 'info', 'last_msg': sc.get('msg'), 'node': sc.get('_node'),
                     'names': sc.get('names') or sc.get('cn'), 'serial': sc.get('serial'),
                     'not_after': acme_iso_ts(sc.get('not_after')), 'issuer': sc.get('issuer'),
                     'version': sc.get('version'), 'reason': sc.get('last_error'),
+                    'host': sc.get('_host'),
                     'targets': {}, 'issued_at': acme_iso_ts(sc.get('last_ok'))
                     or acme_iso_ts(sc.get('not_before')),
                     'failed_at': None, 'failed_msg': None, 'expired_at': None,
@@ -36727,19 +36803,27 @@ class Storage(object):
                     # Failing since after it was last issued, whatever the times say.
                     if mine['issued_at'] and mine['failed_at'] <= mine['issued_at']:
                         mine['failed_at'] = mine['issued_at'] + 1
-            for d in deploys.get(str(sc.get('cert_id') or ''), []):
+            for d in deploys.get((sc.get('_host'), str(sc.get('cert_id') or '')), []):
                 tname = str(d.get('target') or '')
                 if not tname:
                     continue
-                ok = str(d.get('deploy_state') or '') != 'failed'
+                current = (not sc.get('fingerprint') or not d.get('deployed_fp')
+                           or d.get('deployed_fp') == sc.get('fingerprint'))
+                # Failed, or holding an older certificate than acme's own
+                # (1.10.336): not where it should be. Pending or switched off
+                # is said as such, not as a failure.
+                ok = str(d.get('deploy_state') or '') != 'failed' and \
+                    (current or str(d.get('enabled')) == '0'
+                     or str(d.get('deploy_state') or '') in ('pending', 'disabled'))
                 mine['targets'][tname] = {
                     'target': tname, 'kind': None, 'ok': ok,
                     'ts': acme_iso_ts(d.get('last_try')) or acme_iso_ts(d.get('last_ok')) or at,
                     'version': d.get('deployed_version'), 'node': d.get('_node'),
                     'msg': d.get('last_error') or d.get('msg') or '',
                     'state': d.get('deploy_state'), 'enabled': d.get('enabled'),
-                    'current': (not sc.get('fingerprint') or not d.get('deployed_fp')
-                                or d.get('deployed_fp') == sc.get('fingerprint'))}
+                    'current': current}
+                if not current and not mine['targets'][tname]['msg']:
+                    mine['targets'][tname]['msg'] = 'holds an older certificate than acme has'
                 if ok:
                     mine['deploys_ok'] += 1
                 else:
@@ -36751,6 +36835,14 @@ class Storage(object):
                 for k in ('names', 'serial', 'not_after', 'issuer', 'version'):
                     if base.get(k) is None and mine.get(k) is not None:
                         base[k] = mine[k]
+                # ...but what the lines said BEFORE the sync is weighed against
+                # it: a failure the sync knows was put right is not brought
+                # back by a later line about something else (1.10.336).
+                if (mine.get('issued_at') or 0) > (base.get('issued_at') or 0):
+                    base['issued_at'] = mine['issued_at']
+                for k in ('failed_at', 'expired_at', 'revoked_at', 'deleted_at'):
+                    if base.get(k) and float(base[k]) < at and not mine.get(k):
+                        base[k] = None
                 targets = dict(mine['targets'])
                 targets.update(base['targets'])
                 base['targets'] = targets
@@ -36772,18 +36864,26 @@ class Storage(object):
             one['checks'] = [{k: c.get(k) for k in ('check_id', 'test', 'enabled', 'state',
                                                     'last_at', 'last_ok', 'fails', 'after',
                                                     'msg') if c.get(k) not in (None, '')}
-                             for c in checks.get(str(sc.get('cert_id') or ''), [])]
+                             for c in checks.get((sc.get('_host'), str(sc.get('cert_id') or '')), [])]
             certs[name] = one
         # What a whole sync no longer names is gone from acme - where nothing
-        # was said of it since.
-        whole = [float((one.get('whole') or {}).get('ts') or 0)
-                 for one in self.acme_syncs().values() if one.get('whole')]
-        if whole:
-            last_whole = max(whole)
+        # was said of it since. Only for the certificates of that acme: its
+        # host and the hosts it was found to be one cluster with; another
+        # acme's certificates are not this sync's to judge (1.10.336).
+        for host, said in self.acme_syncs().items():
+            whole = said.get('whole') or {}
+            if not whole:
+                continue
+            hosts = set(whole.get('hosts') or [host])
+            names = set()
+            for h in hosts:
+                names |= named.get(h, set())
+            ts = float(whole.get('ts') or 0)
             for name, c in certs.items():
-                if name not in named and float(c.get('last_ts') or 0) < last_whole \
-                        and not c.get('deleted_at'):
-                    c['deleted_at'] = last_whole
+                if name in names or c.get('deleted_at') or float(c.get('last_ts') or 0) >= ts:
+                    continue
+                if (c.get('host') or '')[:160] in hosts:
+                    c['deleted_at'] = ts
 
     # The facts of every certificate are worked out of its lines once and
     # kept until another line arrives (1.10.297): the header asked for them
@@ -36804,8 +36904,8 @@ class Storage(object):
         fresh = time.time() - getattr(self, '_acme_gen_at', 0.0) > 15
         try:
             rows = self.db.execute(
-                'SELECT ts, node, level, action, result, cert, names, serial, not_after, issuer, '
-                'target, target_kind, version, reason, msg FROM acme_events '
+                'SELECT ts, host, node, level, action, result, cert, names, serial, not_after, '
+                'issuer, target, target_kind, version, reason, msg FROM acme_events '
                 'WHERE cert IS NOT NULL ORDER BY ts DESC LIMIT %d'
                 % self.ACME_FACTS_LINES).fetchall()
             if len(rows) >= self.ACME_FACTS_LINES:
@@ -36818,7 +36918,7 @@ class Storage(object):
                     'GROUP BY cert').fetchall() if float(r['last'] or 0) < oldest][:5000]
                 for name in missing:
                     rows += self.db.execute(
-                        'SELECT ts, node, level, action, result, cert, names, serial, '
+                        'SELECT ts, host, node, level, action, result, cert, names, serial, '
                         'not_after, issuer, target, target_kind, version, reason, msg '
                         'FROM acme_events WHERE cert = ? ORDER BY ts DESC LIMIT 500',
                         (name,)).fetchall()
@@ -36843,7 +36943,8 @@ class Storage(object):
                 c = certs[name] = {
                     'cert': name, 'last_ts': r['ts'], 'last_action': r['action'],
                     'last_result': r['result'], 'last_level': r['level'], 'last_msg': r['msg'],
-                    'node': r['node'], 'names': None, 'serial': None, 'not_after': None,
+                    'node': r['node'], 'host': r.get('host'), 'names': None, 'serial': None,
+                    'not_after': None,
                     'issuer': None, 'version': None, 'reason': None, 'targets': {},
                     'issued_at': None, 'failed_at': None, 'failed_msg': None,
                     'expired_at': None, 'revoked_at': None, 'deleted_at': None, 'added_at': None,
@@ -37587,13 +37688,19 @@ class Storage(object):
             key = str(sc.get('check_id') or '')
             if not key:
                 continue
+            # Its live runs are keyed by its id; one only a sync named is
+            # keyed by its host as well - two acme installations both have a
+            # check 1 (1.10.336).
+            if key not in checks:
+                key = '%s|%s' % (sc.get('_host') or '', key)
             c = checks.get(key)
             synced = acme_iso_ts(sc.get('last_at')) or float(sc.get('_ts') or 0)
             if c is not None and float(c.get('last_ts') or 0) >= synced:
                 c.setdefault('after', sc.get('after'))
                 c.setdefault('enabled', sc.get('enabled'))
                 continue
-            c = checks.setdefault(key, {'check_id': key, 'runs': [], 'n': 0, 'good': 0, 'ms': []})
+            c = checks.setdefault(key, {'check_id': str(sc.get('check_id')), 'runs': [], 'n': 0,
+                                        'good': 0, 'ms': []})
             c.update({'test': sc.get('test'), 'cert': sc.get('cert'), 'state': sc.get('state'),
                       'ok': 1 if sc.get('state') == 'ok' else 0,
                       'fails': sc.get('fails'), 'msg': sc.get('msg'),
@@ -37674,7 +37781,7 @@ class Storage(object):
         f = dict(rec.fields or {})
         event = str(f.get('event') or '')
         sync = str(f.get('sync') or '')[:40]
-        host = str(rec.host or '')[:200]
+        host = str(rec.host or '')[:160]
         try:
             if event == 'begin':
                 return self._acme_sync_begin(host, sync, f, rec)
@@ -37715,10 +37822,28 @@ class Storage(object):
         self._acme_sync_meta(host, change)
         return True
 
+    @staticmethod
+    def _acme_sync_okey(value):
+        """A key short enough for every engine's primary key (MariaDB keeps
+        191 characters of one): a long name by its hash, never cut - two long
+        names cut alike would be one row (1.10.336)."""
+        value = str(value or '')
+        if len(value) <= 160:
+            return value
+        return 'h:' + hashlib.sha256(value.encode('utf-8', 'replace')).hexdigest()[:40]
+
     def _acme_sync_object(self, host, sync, f, rec):
         obj = str(f.get('object') or '')[:40]
-        okey = str(f.get(self.ACME_SYNC_KEYS.get(obj, 'name')) or '')[:300]
+        okey = self._acme_sync_okey(f.get(self.ACME_SYNC_KEYS.get(obj, 'name')))
+        host = host[:160]
         if not obj or not okey:
+            return False
+        # An older sync read again - a rotated file, lines out of order - does
+        # not put back what a newer one said (1.10.336).
+        had = self.db.execute('SELECT sync, ts FROM acme_sync WHERE host = ? AND object = ? AND '
+                              'okey = ?', (host, obj, okey)).fetchone()
+        if had is not None and str(had['sync'] or '') != sync and \
+                float(had['ts'] or 0) > float(rec.ts):
             return False
         data = {k: v for k, v in f.items()
                 if k not in ('level', 'kind', 'event', 'sync', 'object')}
@@ -37737,8 +37862,15 @@ class Storage(object):
 
     def _acme_sync_end(self, host, sync, f, rec):
         """The sync is done: applied where it is whole."""
+        host = host[:160]
         syncs = self.acme_syncs()
         begun = (syncs.get(host) or {}).get('begun') or {}
+        before = (syncs.get(host) or {}).get('whole') or {}
+        if before and before.get('sync') != sync and float(before.get('ts') or 0) > float(rec.ts):
+            # An older sync's end read again: what a newer one said stands.
+            log('acme\'s full sync %s from %s is older than the one already applied (%s): '
+                'left as it was' % (sync, f.get('node') or host, before.get('sync')), 'info')
+            return False
         have = {}
         for r in self.db.execute('SELECT object, COUNT(*) AS n FROM acme_sync WHERE host = ? '
                                  'AND sync = ? GROUP BY object', (host, sync)).fetchall():
@@ -37749,13 +37881,32 @@ class Storage(object):
             have.get(obj, 0) >= int((begun.get('counts') or {}).get(key, 0) or 0)
             for key, obj in self.ACME_SYNC_COUNTS)
         gone = 0
+        hosts = [host]
         if whole:
+            # One sync describes the whole cluster: an HA pair's other node,
+            # whose syslog host is another name, said the same certificates -
+            # its rows go too where most of its certificates are this sync's
+            # (1.10.336). Another acme altogether shares few or none, and is
+            # left alone.
+            mine = set()
+            for r in self.db.execute("SELECT okey, data FROM acme_sync WHERE host = ? AND "
+                                     "sync = ? AND object = 'certificate'", (host, sync)).fetchall():
+                mine.add((r['okey'], self._acme_sync_cert_name(r['data'])))
+            theirs = {}
+            for r in self.db.execute("SELECT host, okey, data FROM acme_sync WHERE host <> ? AND "
+                                     "object = 'certificate' AND removed = 0", (host,)).fetchall():
+                theirs.setdefault(r['host'], set()).add(
+                    (r['okey'], self._acme_sync_cert_name(r['data'])))
+            for other, keys in theirs.items():
+                if keys and len(keys & mine) * 2 >= len(keys):
+                    hosts.append(other)
             with self.db_write() as db:
-                gone = db.execute('UPDATE acme_sync SET removed = 1 WHERE host = ? AND '
-                                  "COALESCE(sync, '') <> ? AND removed = 0",
-                                  (host, sync)).rowcount or 0
+                for h in hosts:
+                    gone += db.execute('UPDATE acme_sync SET removed = 1 WHERE host = ? AND '
+                                       "COALESCE(sync, '') <> ? AND removed = 0",
+                                       (h, sync)).rowcount or 0
         said = {'sync': sync, 'ts': float(rec.ts), 'node': f.get('node'), 'who': f.get('who'),
-                'whole': bool(whole), 'have': have, 'gone': int(gone or 0),
+                'whole': bool(whole), 'have': have, 'gone': int(gone or 0), 'hosts': hosts,
                 'counts': begun.get('counts') if begun.get('sync') == sync else None}
         for k in ('lines', 'events', 'jobs', 'took_ms'):
             if f.get(k) not in (None, ''):
@@ -37774,6 +37925,13 @@ class Storage(object):
         return True
 
     @staticmethod
+    def _acme_sync_cert_name(data):
+        try:
+            return str((json.loads(data or '{}') or {}).get('cert') or '')
+        except (ValueError, TypeError):
+            return ''
+
+    @staticmethod
     def _acme_sync_ident(*parts):
         return hashlib.sha256('\x1f'.join(str(p) for p in parts)
                               .encode('utf-8', 'replace')).hexdigest()[:40]
@@ -37784,11 +37942,16 @@ class Storage(object):
         the same event (same second, same words)."""
         ts = acme_iso_ts(f.get('at')) or float(rec.ts)
         msg = str(rec.msg or '')
-        row = self.db.execute('SELECT ident FROM acme_events WHERE ts >= ? AND ts < ? AND msg = ? '
-                              'LIMIT 1', (float(int(ts)), float(int(ts)) + 1.0, msg[:4000])
-                              ).fetchone()
-        if row is not None:
-            return False
+        # The live line of the same event: the same words, the same second -
+        # or the same second a whole number of quarter hours away, where
+        # acme's clock writes its syslog stamps in another zone than this
+        # machine reads them in (1.10.336).
+        for r in self.db.execute('SELECT ts FROM acme_events WHERE ts >= ? AND ts < ? AND msg = ? '
+                                 'LIMIT 50', (float(int(ts)) - 50400.0, float(int(ts)) + 50401.0,
+                                              msg[:4000])).fetchall():
+            off = float(r['ts']) - float(int(ts))
+            if abs(off - round(off / 900.0) * 900.0) < 1.0:
+                return False
         g = {k: v for k, v in f.items() if k not in ('kind', 'event', 'sync', 'at', 'event_node', 'by')}
         if f.get('event_node'):
             g['node'] = f['event_node']
@@ -37798,6 +37961,12 @@ class Storage(object):
         one = AcmeLine(ts, 'acme-certs', rec.host, rec.pid, g, msg, rec.raw,
                        'sh-' + self._acme_sync_ident('history', int(ts), msg)[:37], rec.truncated)
         return self.acme_note(one)
+
+    def _acme_sync_live_node(self, job):
+        got = self.db.execute("SELECT node FROM acme_jobs WHERE kind = 'job' AND job = ? "
+                              "AND ident NOT LIKE 'sj-%' AND ident NOT LIKE 'sp-%' LIMIT 1",
+                              (str(job)[:500],)).fetchone()
+        return str(got['node'] or '') if got is not None else ''
 
     def _acme_sync_has_job(self, job, node):
         return self.db.execute(
@@ -37812,7 +37981,6 @@ class Storage(object):
         node = str(f.get('job_node') or f.get('node') or '')
         if not job:
             return False
-        self.__dict__.setdefault('_acme_sync_job_node', {})[(host, job)] = node
         if self._acme_sync_has_job(job, node):
             return False
         at = acme_iso_ts(f.get('at')) or float(rec.ts)
@@ -37855,9 +38023,15 @@ class Storage(object):
         seq = f.get('seq')
         if not job or seq in (None, ''):
             return False
-        node = (getattr(self, '_acme_sync_job_node', {}) or {}).get((host, job))
-        if node is None:
-            node = str(f.get('job_node') or f.get('node') or '')
+        # The node its job ran on: the job's own line came just before, and
+        # was kept - asked of what was kept rather than of memory, which a
+        # restart in between empties (1.10.336).
+        got = self.db.execute("SELECT node FROM acme_jobs WHERE job = ? AND ident LIKE 'sj-%' "
+                              'LIMIT 1', (job[:500],)).fetchone()
+        if got is not None:
+            node = str(got['node'] or '')
+        else:
+            node = str(f.get('job_node') or (self._acme_sync_live_node(job)) or f.get('node') or '')
         if self._acme_sync_has_job(job, node):
             return False
         at = acme_iso_ts(f.get('at')) or float(rec.ts)
