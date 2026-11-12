@@ -6220,6 +6220,8 @@ auditpol /set /subcategory:"Logon" /success:enable /failure:enable</pre>
 &lt;Route security_to_syslog&gt;
     Path        eventlog_security, eventlog_ds, eventlog_kdc, eventlog_smb1, eventlog_ntlm =&gt; out_syslog
 &lt;/Route&gt;</pre>
+      <p class="note">The Route <b>replaces</b> the one already in your file of the same name - two
+        routes of one name and NXLog does not start at all, the Security log with it.</p>
       <p class="note">2889 and 4769 are often longer than 1500 bytes: over UDP a lost fragment is a
         lost event. The TCP output already in your file (port 514) is the safer road.</p>
       <h4>3. Whether everything on a controller is as it should be</h4>
@@ -6247,12 +6249,13 @@ auditpol /set /subcategory:"Logon" /success:enable /failure:enable</pre>
         'Kerberos Service Ticket Operations' = 'Success and Failure'
         'Logon'                              = 'Success and Failure'
         'Account Lockout'                    = 'Failure'
+        'User Account Management'            = 'Success'
     }
     foreach ($sub in $want.Keys) {
         $line = (auditpol /get /subcategory:"$sub" /r | ConvertFrom-Csv | Select-Object -First 1)
         $has = $line.'Inclusion Setting'
         $need = $want[$sub]
-        $good = ($has -eq 'Success and Failure') -or ($need -eq 'Failure' -and $has -match 'Failure')
+        $good = ($has -eq 'Success and Failure') -or ($need -eq 'Failure' -and $has -match 'Failure') -or ($need -eq 'Success' -and $has -match 'Success')
         if ($good) { Say OK "$sub" $has } else { Say FAIL "$sub" "is '$has', wants '$need'" }
     }
     $force = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -ErrorAction SilentlyContinue).SCENoApplyLegacyAuditPolicy
@@ -12064,7 +12067,9 @@ function loadDashboard() {
     explainWhatWasDrawn($('tab-overview'));
   }).catch(function (e) { if (mine === DASH_ASKED) DASH_FLYING = 0; oops(e); });
 }
-$('ov-hours').onchange = function () { loadDashboard(); ovLoadDoor(true); };
+/* loadDashboard opens the door itself: asked twice, the first and dearest
+   answer was thrown away (1.10.337). */
+$('ov-hours').onchange = function () { loadDashboard(); };
 
 /* ==========================================================================
    The doors under the chart
@@ -12366,7 +12371,16 @@ function ovDrawDomain(d) {
   on.style.marginTop = '12px';
   var go = el('button', 'btn small');
   go.textContent = 'Everything the domain saw';
-  go.onclick = function () { showTab('windows'); };
+  /* ...at the window this card counted, as near as the Domain tab has one
+     (1.10.337: a month here opened 24 hours there, and "0 events read"). */
+  go.onclick = function () {
+    var h = typeof overHours === 'function' ? overHours() : 24, w = $('w-window'), best = null;
+    Array.prototype.forEach.call(w ? w.options : [], function (o) {
+      if (Number(o.value) >= h && (best === null || Number(o.value) < Number(best))) best = o.value;
+    });
+    if (w) w.value = best || w.options[w.options.length - 1].value;
+    showTab('windows');
+  };
   on.appendChild(go);
   host.appendChild(on);
   explainWhatWasDrawn(host);
@@ -23446,10 +23460,14 @@ function winBeside(body, name, hours) {
   var where = el('div');
   body.appendChild(where);
   var bare = String(name).split('@')[0].split('\\').pop();
-  api('win-events&hours=' + (hours || 168) + '&limit=60&machines=1&choices=0&account='
-      + encodeURIComponent(bare)).then(function (d) {
+  var ask = 'win-events&hours=' + (hours || 168) + '&machines=1&choices=0&account='
+      + encodeURIComponent(bare);
+  /* The lockouts asked for on their own: among the sixty newest of
+     everything a busy account's lock was never there (1.10.337). */
+  Promise.all([api(ask + '&limit=60'), api(ask + '&limit=1&kind=lockout')]).then(function (both) {
+    var d = both[0];
     if (!d.total) return;
-    var locks = (d.rows || []).filter(function (r) { return r.kind === 'lockout'; });
+    var locks = {length: both[1].total || 0};
     var head = el('h3', 'peek-h', 'What the domain saw');
     where.appendChild(head);
     where.appendChild(el('p', 'note', locks.length
@@ -46527,7 +46545,9 @@ function a25Markdown(d, per, hideAcc, hideMach) {
       return M(String(name).replace(/\$.*$/, '')) + '$';
     }
     if (!name || !hideAcc) return name || '';
-    var k = String(name).toLowerCase();
+    /* One account one stand-in, however it was written: `X`, `DOMAIN\\X`,
+       `X@REALM` (1.10.337: two stand-ins for one account). */
+    var k = String(name).toLowerCase().split('\\').pop().split('@')[0];
     if (!acc[k]) acc[k] = (/\$$|\$@/.test(name) ? 'computer-' : 'account-') + pad(++nA);
     return acc[k];
   }
@@ -46588,7 +46608,8 @@ function a25Markdown(d, per, hideAcc, hideMach) {
   L.push('');
   L.push(table(['Kind', 'How bad', 'Machines', 'Accounts', 'Times', 'Last'], (d.issues || []).map(function (i) {
     return [i.words, {crit: 'refused by 2025', warn: 'from July 2026', info: 'to know'}[i.level] || i.level,
-            i.clients, i.accounts, i.n, i.n ? when(i.last) : '-'];
+            i.clients, (i.key === 'ntlm' || i.key === 'smb1') && !i.accounts ? '-' : i.accounts,
+            i.n, i.n ? when(i.last) : '-'];
   })));
   (d.issues || []).forEach(function (i) {
     if (!i.n && !i.rows.length) return;

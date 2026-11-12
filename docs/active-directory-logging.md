@@ -519,12 +519,13 @@ already filled in.
         'Kerberos Service Ticket Operations' = 'Success and Failure'
         'Logon'                              = 'Success and Failure'
         'Account Lockout'                    = 'Failure'
+        'User Account Management'            = 'Success'
     }
     foreach ($sub in $want.Keys) {
         $line = (auditpol /get /subcategory:"$sub" /r | ConvertFrom-Csv | Select-Object -First 1)
         $has = $line.'Inclusion Setting'
         $need = $want[$sub]
-        $good = ($has -eq 'Success and Failure') -or ($need -eq 'Failure' -and $has -match 'Failure')
+        $good = ($has -eq 'Success and Failure') -or ($need -eq 'Failure' -and $has -match 'Failure') -or ($need -eq 'Success' -and $has -match 'Success')
         if ($good) { Say OK "$sub" $has } else { Say FAIL "$sub" "is '$has', wants '$need'" }
     }
     $force = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -ErrorAction SilentlyContinue).SCENoApplyLegacyAuditPolicy

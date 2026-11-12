@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.336",
+  "version": "1.10.337",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -22440,6 +22440,10 @@
    "source": "replaces everything",
    "text": "nahradí vše"
   },
+  "s.replaces.b0c8fbce": {
+   "source": "replaces",
+   "text": "nahrazuje"
+  },
   "s.report.a27297bd": {
    "source": "report",
    "text": "report"
@@ -29300,6 +29304,10 @@
    "source": "The one acme showed beside the file. Used here to open it, and not kept.",
    "text": "To, které acme ukázal vedle souboru. Použije se zde k jeho otevření a neuloží se."
   },
+  "s.the-one-already-in-your-file.2dafef6a": {
+   "source": "the one already in your file of the same name - two routes of one name and NXLog does not start at all, the Security log with it.",
+   "text": "tu, která už ve vašem souboru je, se stejným jménem - se dvěma Route stejného jména NXLog vůbec nenaběhne, a Security log s ním."
+  },
   "s.the-one-kept-now-is-replaced.4ff37c5d": {
    "source": "The one kept now is replaced",
    "text": "Ten uložený teď se nahradí"
@@ -29995,6 +30003,10 @@
   "s.the-reverse-zone-has-no-name.f24ecda6": {
    "source": "The reverse zone has no name for this address. It was asked for and the name servers under Settings, Names of addresses, answered that there is none — which is the ordinary answer for an address outside this site.",
    "text": "Reverzní zóna pro tuto adresu nemá žádné jméno. Byl proveden dotaz a DNS servery z Nastavení, Jména adres, odpověděly, že žádné není — což je běžná odpověď pro adresu mimo tuto lokalitu."
+  },
+  "s.the-route.f287fdfd": {
+   "source": "The Route",
+   "text": "Route"
   },
   "s.the-router-has-not-been-read.e4535bc5": {
    "source": "The router has not been read yet.",
@@ -40978,6 +40990,10 @@
    "source": "win-events&hours={0}&limit=250&choices=0",
    "text": "win-events&hours={0}&limit=250&choices=0"
   },
+  "p.win-events-hours-machines-1-choices.4e70485a": {
+   "source": "win-events&hours={0}&machines=1&choices=0&account={1}",
+   "text": "win-events&hours={0}&machines=1&choices=0&account={1}"
+  },
   "p.win-events-kind-logon-failed-kerberos.ddb61bf8": {
    "source": "win-events&kind=logon-failed,kerberos-failed,ntlm-failed,lockout&choices=0&limit={0}&offset={1}{2}{3}{4}",
    "text": "win-events&kind=logon-failed,kerberos-failed,ntlm-failed,lockout&choices=0&limit={0}&offset={1}{2}{3}{4}"
@@ -42287,6 +42303,10 @@
   "r.the-reverse-zone-calls-this-address.bfcba5ca": {
    "source": "The reverse zone calls this address <b>{0}</b>.<br><br>",
    "text": "Reverzní zóna označuje tuto adresu jako <b>{0}</b>.<br><br>"
+  },
+  "r.the-route-replaces-the-one-already.852d0fb7": {
+   "source": "The Route <b>replaces</b> the one already in your file of the same name - two routes of one name and NXLog does not start at all, the Security log with it.",
+   "text": "Tato Route <b>nahrazuje</b> tu, která už ve vašem souboru je, se stejným jménem - se dvěma Route stejného jména NXLog vůbec nenaběhne, a Security log s ním."
   },
   "r.the-router-s-certificate-is-checked.30279c8e": {
    "source": "The router’s certificate is checked as a browser checks a site: by the <b>authority</b> that signed it, and for its name.",

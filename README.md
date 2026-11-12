@@ -372,6 +372,43 @@ working.
 
 ## Version
 
+1.10.337
+
+- **Bug hunt, run 2.**
+- **TACACS+:**
+  - A name typed at a device's login prompt that held a sentence of its own
+    (`x' tty1 from 192.0.2.10 rejected`) could choose the address its
+    refusals were counted against, and so get any address banned. The
+    sentence is now the one ending at the last "from … rejected".
+  - rsyslog's `#015` is not part of a line.
+- **The domain:**
+  - The counted answers are let go of as soon as a re-read changes a row, and
+    when a re-read is picked up after a restart. Until now they were stale
+    until it finished, or for good.
+  - A refused service ticket (4769: no key, expired) weighs no password and
+    is no longer on the brute or spray cards.
+  - The object card is not answered by the rollup, which cuts a value at 190
+    characters.
+  - A marked row kept past its group's days is not "rewritten" on every
+    re-read.
+  - The lockstorm card gives the newest lockout's time.
+  - An account written as a UPN (`x@domain`) is found by its bare name: in
+    the lockout story, in "what else happened" and in the account filter.
+  - A lockout's address comes only from a refusal of its own machine.
+  - A zone refused names its setting.
+- **Before Windows Server 2025:**
+  - Events of one second split across two writes are all counted, and
+    identical lines of one second are counted as each.
+  - An RC4 ticket to a client offering only RC4 is one event, not two.
+- **The page:**
+  - The account popup finds the lockouts.
+  - The front page's Domain card opens the tab at its window.
+  - The export gives one account one stand-in.
+  - The front page asks the domain once per window change.
+  - The NXLog snippet says its Route replaces the existing one.
+  - The PowerShell check asks for User Account Management, which writes 4740.
+- **Restoring an older PostgreSQL dump** also empties `ad25_seen`.
+
 1.10.336
 
 - **Bug hunt, run 1: the domain and Before Windows Server 2025, checked

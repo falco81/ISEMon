@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.336'
+__version__ = '1.10.337'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2217,7 +2217,11 @@ def check_setting(key, value):
         # this is checked here rather than where the log is read: a zone
         # nobody can make sense of must be refused while somebody is still
         # looking at it, not six hours of records later.
-        zone_named(want)
+        # ...named, so the page marks the box it is about (1.10.337).
+        try:
+            zone_named(want)
+        except ValueError as e:
+            raise ValueError('%s: %s' % (key, e))
     if key in ('otp_paths', 'eduroam_paths', 'acmelog_paths'):
         # Nothing at all is allowed in either: it is what switching those
         # logs off and leaving them off looks like.
@@ -9217,11 +9221,18 @@ def win_parse_lines(lines, hold=None, now=None):
     # Before Windows Server 2025 (1.10.321): looked at before anything is
     # dropped, a few words of the few numbers that can say anything.
     ad25 = ad25_on()
+    # Which of identical lines each one is, as this reader has met them -
+    # carried across its reads, started afresh by a pass back over the file,
+    # which so reads them as the same lines again (1.10.337).
+    ad25_n = dict(slot.get('ad25_n') or [])
     for line in lines:
         if ad25:
             said = WIN_EVENT_ID.search(line)
             if said:
-                ad25_see(line, int(said.group(1)), zone)
+                h = hashlib.sha1((line or '').encode('utf-8', 'replace')).hexdigest()[:16]
+                n = ad25_n.get(h, 0)
+                ad25_n[h] = n + 1
+                ad25_see(line, int(said.group(1)), zone, n)
         if sieve:
             # The number, off the front of the line, before anything else is
             # read. A line whose whole group this site does not keep and
@@ -9257,6 +9268,9 @@ def win_parse_lines(lines, hold=None, now=None):
     slot['of'] = {i: where.get(key, '') for i, (key, _n) in enumerate(kept)}
     # A controller quiet for a day is forgotten.
     slot['newest_of'] = {k: v for k, v in newest_of.items() if v >= newest - 86400}
+    # The newest lines only: an identical line comes within its own second.
+    if ad25:
+        slot['ad25_n'] = list(ad25_n.items())[-2000:]
     return out
 
 
@@ -9347,8 +9361,7 @@ _AD25_SECTION = re.compile(r'(Account Information|Service Information|'
 # Every etype offered: one to a line in the event, so after NXLog they are
 # separated by runs of spaces - read up to the next section, not the next
 # run of spaces (1.10.330: only the first was read).
-_AD25_OFFERED = re.compile(r'Advertized Etypes:\s*(.*?)(?=\s*(?:Additional Information|'
-                           r'[A-Z][A-Za-z ]+ Information):|$)')
+_AD25_OFFERED = re.compile(r'Advertized Etypes:\s*(.*?)(?=\s+(?:[A-Z][a-z]+ )*Information:|$)')
 _AD25_CLIENT = re.compile(r'Client Address:\s*(?:::ffff:)?([0-9A-Fa-f:.\[\]]+)')
 _AD25_ADDR = re.compile(r'(?:Client IP address|Client Address|Client IP Address|'
                         r'IP Address):\s*(\S+)')
@@ -9548,7 +9561,9 @@ def ad25_findings(event, line, whole=''):
                     out.append(('noaes', '', '', who[:180], 'its keys: %s' % keys[:80]))
         offered = ' '.join(_ad25_word(_AD25_OFFERED, rest).split())
         names = re.findall(r'AES|RC4|DES', offered.upper())
-        if names and 'AES' not in names and ip:
+        # ...once a line: a ticket in RC4 to a client that offers only RC4 is
+        # one event, not two (1.10.337).
+        if names and 'AES' not in names and ip and not any(x[0] == 'rc4' for x in out):
             out.append(('rc4', '', ip, acct, 'the client offers only %s' % offered[:60]))
         return out
     if event in (2889, 3039):
@@ -9627,7 +9642,7 @@ def ad25_findings(event, line, whole=''):
     return out
 
 
-def ad25_see(line, event, zone=None):
+def ad25_see(line, event, zone=None, n=0):
     """One line read off a controller's log: noted when it says anything about
     a 2025 domain controller. Called for every line while the switch is on,
     before anything is dropped."""
@@ -9646,6 +9661,11 @@ def ad25_see(line, event, zone=None):
     except Exception as e:                              # noqa: BLE001
         log('Before Windows Server 2025: event %d not read: %s' % (event, str(e)[:120]), 'debug')
         found = []
+    # The line's own print, and which of identical lines of its reader it
+    # is: two events of one second told apart from one line read twice (see
+    # `ad25_flush`, 1.10.337).
+    mark = '%s:%d' % (hashlib.sha1((line or '').encode('utf-8', 'replace')).hexdigest()[:16],
+                      int(n or 0))
     with AD25_LOCK:
         seen = AD25['sources'].setdefault(src, {})
         if ts > float(seen.get(server, 0) or 0):
@@ -9657,7 +9677,7 @@ def ad25_see(line, event, zone=None):
             if len(q) >= AD25_QUEUE_MOST:
                 AD25['dropped'] += 1
                 continue
-            q.append((ts, server, issue, client, ip, account, detail, src))
+            q.append((ts, server, issue, client, ip, account, detail, src, mark))
 
 
 def ad25_ckey(server, client, ip, account):
@@ -9801,6 +9821,9 @@ TACPLUS_QUERY_WHOLE = re.compile(
     r"'(?P<user>.*)'\s+(?:'?(?P<port>[^'\s]+)'?\s+)?"
     r"from\s+(?P<from>\S+?)\s+(?P<verdict>accepted|rejected|denied|failed)\s*$",
     re.I)
+
+TACPLUS_FROM_VERDICT = re.compile(
+    r"\bfrom\s+\S+?\s+(?:accepted|rejected|denied|failed)\b", re.I)
 
 # `login failure: jnovak 192.9.211.198 (10.10.10.9) tty1`
 TACPLUS_FAILURE = re.compile(
@@ -10091,8 +10114,21 @@ def tacplus_said_from(line, now=None, zone=None):
     # record beside it either way.
     said_words = ''
     ok = None
-    said = (TACPLUS_QUERY_QUOTED.search(rest) or TACPLUS_QUERY_WHOLE.search(rest)
-            or TACPLUS_QUERY.search(rest))
+    # rsyslog's escaped CR at the end is not part of the sentence (as NPS).
+    rest = re.sub(r'(?:#015|\r)+\s*$', '', rest).strip()
+    said = TACPLUS_QUERY_QUOTED.search(rest) or TACPLUS_QUERY_WHOLE.search(rest)
+    if not said:
+        # Something after the verdict - `(bad password)`. The sentence is the
+        # one ending at the LAST "from <address> <verdict>": a name typed at
+        # the prompt - `x' tty1 from 192.0.2.10 rejected` - holding a sentence
+        # of its own, read by its first one, filed the refusal under an
+        # address of the typist's choosing, and banned it (1.10.337).
+        ends = list(TACPLUS_FROM_VERDICT.finditer(rest))
+        if ends:
+            head = rest[:ends[-1].end()]
+            said = TACPLUS_QUERY_QUOTED.search(head) or TACPLUS_QUERY_WHOLE.search(head)
+    if not said:
+        said = TACPLUS_QUERY.search(rest)
     if said:
         user, port = said.group('user') or '', said.group('port') or ''
         came = said.group('from') or ''
@@ -31619,6 +31655,7 @@ class Storage(object):
         for one in q:
             ts, server, issue, client, ip, account, detail = one[:7]
             src = one[7] if len(one) > 7 else 'security'
+            line_mark = one[8] if len(one) > 8 else ''
             # The KDC's own events a row of their own: they arrive by another
             # log, maybe late, and a row's newest moment off the Security log
             # would have them taken for lines already counted (1.10.330).
@@ -31630,6 +31667,7 @@ class Storage(object):
                                    'account': account, 'times': [], 'detail': detail,
                                    'last': ts}
             g['times'].append(ts)
+            g.setdefault('marks', []).append((ts, line_mark))
             if ts >= g['last']:
                 g['last'], g['detail'] = ts, detail
         # What each row already holds, by its newest moment.
@@ -31652,7 +31690,27 @@ class Storage(object):
         rows = []
         for key, g in groups.items():
             had = known.get(key)
-            times = [t for t in g['times'] if had is None or t > had]
+            # Events of the very second the row ends at may come in the next
+            # flush: those this daemon has not seen are counted, told from a
+            # line read twice by the line itself (1.10.337: the tiles came up
+            # a few short). After a restart that second is not known, and is
+            # taken as counted.
+            mem = self.__dict__.setdefault('_ad25_at_last', {})
+            seen_at = mem.get(key) or (None, frozenset())
+            times = []
+            for t, lm in g.get('marks') or [(t, '') for t in g['times']]:
+                if had is None or t > had:
+                    times.append(t)
+                elif t == had and seen_at[0] == had and lm and lm not in seen_at[1]:
+                    times.append(t)
+            newest = max([had or 0] + g['times'])
+            prints = set(seen_at[1]) if seen_at[0] == newest else set()
+            prints |= {lm for t, lm in (g.get('marks') or []) if t == newest and lm}
+            mem[key] = (newest, frozenset(prints))
+            if len(mem) > 50000:
+                today = int(time.time() // 86400)
+                for k in [k for k in mem if k[0] < today - 1]:
+                    mem.pop(k, None)
             if not times:
                 continue
             rows.append((key[0], key[1], key[2], g['server'][:120], g['client'][:120],
@@ -32289,9 +32347,27 @@ class Storage(object):
         after = ''
         mine = json.dumps(plan, sort_keys=True)
         kept = self.meta_json('win_reading_at', None) or {}
+        forgot = [False]
+
+        def forget_counts():
+            """The counted answers are about rows this pass is changing: let go
+            of at once, not when the pass is done - hours later, or never where
+            it is stopped or picked up again (1.10.337)."""
+            if forgot[0]:
+                return
+            forgot[0] = True
+            try:
+                if self.roll_on() and self.roll_state().get('state') != self.ROLL_NEW:
+                    self.roll_forget(everything=True)
+                    self.roll_said(self.ROLL_NEW, 'the events are being read again', 0)
+            except Exception as e:                       # noqa: BLE001
+                log('the counted answers could not be let go of: %s' % str(e)[:120], 'warn')
         if kept.get('plan') == mine and kept.get('after'):
             after = str(kept['after'])
             log('reading the domain events again: picking up where it stopped', 'info')
+            # A pass picked up again may already have changed rows before it
+            # stopped.
+            forget_counts()
         # A walk of a whole table takes minutes on a site with a year in it,
         # and from outside it is indistinguishable from a daemon that has
         # stopped. It says how far along it is, in the log and in a place the
@@ -32425,7 +32501,11 @@ class Storage(object):
                         and str(row['mark'] or '') == fresh[3]
                         and int(row['marks'] or 0) == int(fresh[4] or 0)
                         and str(row['by_logon'] or '') == str(fresh[5] or '')
-                        and int(row['keepc'] or 0) == win_keepc(fresh[0])):
+                        and (int(row['keepc'] or 0) == win_keepc(fresh[0])
+                             # ...a marked row kept past its group's days on
+                             # purpose (`split_expire`) is not "changed" (1.10.337).
+                             or (int(row['keepc'] or 0) == 0
+                                 and int(fresh[4] or 0) & win_telling_bits()))):
                     continue
                 # ...with the retention its kind is kept under now, which on
                 # PostgreSQL moves it to that kind's part of its day.
@@ -32436,6 +32516,7 @@ class Storage(object):
                 put.append(fresh + (win_keepc(fresh[0]), row['ident'], row['ts']))
             began = time.time()
             if put:
+                forget_counts()
                 with self.db_write() as db:
                     db.executemany('UPDATE win_events SET kind=?, object=?, said=?, '
                                    'mark=?, marks=?, by_logon=?, keepc=? WHERE ident=? AND ts=?', put)
@@ -32574,6 +32655,15 @@ class Storage(object):
             if not value:
                 continue
             value = str(value).strip().lower()
+            if column == 'account':
+                # Every way the controllers write the one account - `jnovak`,
+                # `KRAJ\\jnovak`, `jnovak@KRAJ.INT` (1.10.337: the UPN of a
+                # 4625 was never found by the bare name).
+                forms = self.win_account_forms([value], since)
+                forms = forms or ['']
+                sql += ' AND account IN (%s)' % ','.join('?' * len(forms))
+                args += forms
+                continue
             if column == 'ip' and re.fullmatch(r'[0-9.]+', value):
                 # An IPv4 address has no case to fold, and folded the
                 # column hid it from its index: the address popup walked
@@ -33611,7 +33701,10 @@ class Storage(object):
         # do not sum, so they are asked of the events - about those twelve
         # and nothing else, which is twelve seeks of an index rather than a
         # walk of the window.
-        if (self.roll_ready() and float(since) == self.roll_floor(since)
+        # Not `object`: the rollup keeps 190 characters of a value, and a
+        # directory object's DN and attribute run past that - two objects cut
+        # alike were one (1.10.337).
+        if (by != 'object' and self.roll_ready() and float(since) == self.roll_floor(since)
                 and by in {dim for dim, _f in ROLL_DIMS}):
             # The buckets were counted with the PDC's copies of refusals in
             # them; those are taken off here, where they are few, rather than
@@ -33806,9 +33899,13 @@ class Storage(object):
                     if said.get('machine'):
                         one['machine'] = said['machine']
                         break
+            # ...and its address only from a refusal of THAT machine: an
+            # address borrowed from another one's refusal put one machine's
+            # name beside another's address (1.10.337).
             if not one.get('ip'):
+                mine = win_short_name(one.get('machine'))
                 for said in one['before']:
-                    if said.get('ip'):
+                    if said.get('ip') and (not mine or win_short_name(said.get('machine')) == mine):
                         one['ip'] = said['ip']
                         break
             one['process'] = one.get('process') or next(
@@ -35227,6 +35324,15 @@ class Storage(object):
     SPRAY_NAMES = 5
     BRUTE_TRIES = 12
 
+    def win_newest_lockout(self, since):
+        """When the newest lockout of the window was (1.10.337)."""
+        try:
+            r = self.db.execute("SELECT MAX(ts) AS t FROM win_events WHERE kind = 'lockout' "
+                                'AND ts >= ?', (float(since),)).fetchone()
+            return float(r['t'] or 0) if r else 0.0
+        except sqlite3.Error:
+            return 0.0
+
     def win_spray(self, since, machines=None):
         """One machine, or one address, failing against many accounts."""
         out = []
@@ -35235,6 +35341,7 @@ class Storage(object):
                    'COUNT(*) AS n, MAX(ts) AS last FROM win_events '
                    "WHERE ts >= ? AND COALESCE(%s,'') <> '' "
                    "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed') "
+                   "AND event <> 4769 "
                    % (by, by))
             args = [float(since)]
             if machines is False:
@@ -35271,8 +35378,9 @@ class Storage(object):
                'COUNT(DISTINCT machine) AS machines FROM win_events '
                "WHERE ts >= ? AND COALESCE(account,'') <> '' "
                "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed') "
-               # ...where a password was weighed at all (1.10.336).
-               "AND COALESCE(said, '') NOT IN (?, ?) ")
+               # ...where a password was weighed at all (1.10.336) - a service
+               # ticket refused (4769: no key, expired) weighs none (1.10.337).
+               "AND COALESCE(said, '') NOT IN (?, ?) AND event <> 4769 ")
         args = [float(since), 'the sign-in was broken off before it finished',
                 'refused (0xc00002ee)']
         if machines is False:
@@ -35530,11 +35638,13 @@ class Storage(object):
         the machine and the program were unknown while the table below it
         listed both.
         """
+        # Every way the account is written (1.10.337).
+        forms = self.win_account_forms([str(account or '').strip()], float(at) - float(before))
+        forms = forms or ['']
         sql = ('SELECT ident, ts, server, event, kind, account, machine, ip, '
                'logon_type, process, said, by_who FROM win_events '
-               'WHERE LOWER(account) = ? AND ts >= ? AND ts <= ?')
-        args = [str(account or '').strip().lower(), float(at) - float(before),
-                float(at) + float(after)]
+               'WHERE account IN (%s) AND ts >= ? AND ts <= ?' % ','.join('?' * len(forms)))
+        args = list(forms) + [float(at) - float(before), float(at) + float(after)]
         if kinds:
             sql += ' AND kind IN (%s)' % ','.join('?' * len(kinds))
             args += list(kinds)
@@ -46484,7 +46594,7 @@ class Storage(object):
             return self._restore_dump(path, say=say)
 
     # Tables a dump made by an older version may not have (see _restore_dump).
-    DUMP_MAY_LACK = ('acme_events', 'acme_jobs', 'load_samples', 'acme_sync')
+    DUMP_MAY_LACK = ('acme_events', 'acme_jobs', 'load_samples', 'acme_sync', 'ad25_seen')
 
     def _restore_dump(self, path, say=None):
         """Replace everything in this database with what is in that dump.
@@ -65283,7 +65393,7 @@ class Daemon(object):
         # went off for two. The card says accounts; it has to count accounts.
         locks = store.win_locked_accounts(since, machines)
         if locks >= 3:
-            add('lockstorm', locks, '', store.win_newest(),
+            add('lockstorm', locks, '', store.win_newest_lockout(since) or store.win_newest(),
                 '%s account(s) locked' % num_words(locks),
                 {'kind': 'lockout', 'routine': '0'})
         dead = store.win_dead_accounts(since, machines)
