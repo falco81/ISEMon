@@ -743,6 +743,11 @@ def cert_now():
            'ciphers': directive_now(block, 'ssl_ciphers'),
            'dhparam': directive_now(block, 'ssl_dhparam'),
            'hsts': directive_now(block, 'add_header Strict-Transport-Security')}
+    # The port it answers TLS on (1.10.338), for isemon's own check of
+    # the chain it sends.
+    lm = re.search(r'(?m)^\s*listen\s+(?:\S*?:)?(\d+)[^;]*\bssl\b', block)
+    if lm:
+        out['port'] = lm.group(1)
     # A second pair (dual-cert, 1.10.261): its file named, its key never read.
     more = directive_all(block, 'ssl_certificate')[1:]
     if more:

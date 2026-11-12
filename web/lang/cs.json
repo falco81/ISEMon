@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.337",
+  "version": "1.10.338",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -1316,6 +1316,10 @@
    "source": "A PostgreSQL installed as it comes lets postgres in only on the machine itself, without a password. Give it one first, on the server:",
    "text": "PostgreSQL ve výchozí instalaci pouští účet postgres jen přímo na stroji a bez hesla. Nejdřív mu na serveru nastavte heslo:"
   },
+  "s.a-private-root-only-clients-that.1b914182": {
+   "source": "- a private root: only clients that trust it take it",
+   "text": "- soukromý kořen: přijmou ho jen klienti, kteří mu věří"
+  },
   "s.a-privileged-service-was-called.1a931cdd": {
    "source": "a privileged service was called",
    "text": "byla volána privilegovaná služba"
@@ -1443,6 +1447,10 @@
   "s.a-root-or-intermediate-certificate-authority.53c0779d": {
    "source": "a root or intermediate certificate authority (PEM, or one in DER) added to the system's trust. Asks first unless --yes",
    "text": "kořenová nebo zprostředkující certifikační autorita (PEM, nebo jedna v DER) přidaná do důvěry systému. Napřed se zeptá, není-li --yes"
+  },
+  "s.a-root-the-system-does-not.640fc343": {
+   "source": ", a root the system does not trust (a private CA?) - give its root (Upload the missing authority) and give it to the clients",
+   "text": ", ke kořeni, kterému systém nevěří (soukromá CA?) - zadejte jeho kořen (Nahrát chybějící autoritu) a dejte ho i klientům"
   },
   "s.a-route-put-in.af671fc7": {
    "source": "a route put in",
@@ -2299,6 +2307,10 @@
   "s.add-an-empty-column-to-the.d8649c7f": {
    "source": "Add an empty column to the left",
    "text": "Přidat prázdný sloupec vlevo"
+  },
+  "s.add-it-to-the-chain.9256ae57": {
+   "source": "Add it to the chain",
+   "text": "Přidat do řetězu"
   },
   "s.add-it.90c75b6d": {
    "source": "Add it",
@@ -3163,6 +3175,10 @@
   "s.and-cards-on-the-overview-each.f367285a": {
    "source": "— and cards on the Overview. Each of them appears only once NPS has really answered something through that door: a site whose NPS has no VPN behind it is never shown an NPS VPN button.",
    "text": "— a karty na Přehledu. Každá z nich se objeví teprve tehdy, když NPS přes daný vstup opravdu na něco odpověděl: lokalita, jejíž NPS za sebou žádnou VPN nemá, tlačítko NPS VPN nikdy neuvidí."
+  },
+  "s.and-could-not-be-completed.48bedfb1": {
+   "source": "and could not be completed:",
+   "text": "a nedá se doplnit:"
   },
   "s.and-every-other-interface-facing-the.947eb05e": {
    "source": "(and every other interface facing the internet): a rule at the top with",
@@ -5280,6 +5296,10 @@
    "source": "certificate: system authorities",
    "text": "certifikát: systémové autority"
   },
+  "s.certificate-up-to.c0ec8c6b": {
+   "source": "certificate up to",
+   "text": "certifikát až ke kořeni"
+  },
   "s.certificate.10de46b3": {
    "source": "Certificate",
    "text": "Certifikát"
@@ -5327,6 +5347,10 @@
   "s.certificates-only.9d575607": {
    "source": "certificates only",
    "text": "jen certifikáty"
+  },
+  "s.certificates-up-to.4c86b934": {
+   "source": "certificates up to",
+   "text": "certifikáty až ke kořeni"
   },
   "s.certificates.1102b412": {
    "source": "certificates",
@@ -5476,6 +5500,10 @@
    "source": "Check DNS",
    "text": "Zkontrolovat DNS"
   },
+  "s.check-from-here.96782d06": {
+   "source": "Check from here",
+   "text": "Ověřit odsud"
+  },
   "s.check-it-all.ce80abfc": {
    "source": "Check it all…",
    "text": "Zkontrolovat vše…"
@@ -5516,6 +5544,10 @@
    "source": "check the Active Directory connection, step by step",
    "text": "zkontrolovat připojení k Active Directory krok za krokem"
   },
+  "s.check-the-chain.dd4eab4e": {
+   "source": "Check the chain",
+   "text": "Zkontrolovat řetěz"
+  },
   "s.check-the-https-certificate-of-the.adc5dc03": {
    "source": "Check the HTTPS certificate of the pfSense. Switch it off only for a self-signed certificate on a network you trust.",
    "text": "Ověřovat HTTPS certifikát pfSense. Vypněte jen pro certifikát podepsaný sám sebou v síti, které důvěřujete."
@@ -5540,6 +5572,10 @@
    "source": "checkbox",
    "text": "zaškrtávací pole"
   },
+  "s.checked-against-the-system-s-root.44d2c0af": {
+   "source": "Checked against the system’s root authorities; an intermediate the certificate did not come with is fetched from its CA Issuers address, as browsers do it - so that curl, Python, acme and other clients that fetch nothing take it too.",
+   "text": "Ověří se proti kořenovým autoritám systému; mezilehlá autorita, která s certifikátem nepřišla, se stáhne z jeho adresy CA Issuers, jak to dělají prohlížeče - aby ho přijaly i curl, Python, acme a další klienti, kteří si nic nestahují."
+  },
   "s.checked-by-the-authorities-this-machine.8f438177": {
    "source": "checked by the authorities this machine trusts",
    "text": "ověřen autoritami, kterým tento stroj důvěřuje"
@@ -5551,6 +5587,10 @@
   "s.checked-by.14a628e6": {
    "source": "Checked by",
    "text": "Zkontroloval"
+  },
+  "s.checked-from-here.5671457d": {
+   "source": "Checked from here",
+   "text": "Ověřeno odsud"
   },
   "s.checked-with-this-machine-s-dns.aa60ce4d": {
    "source": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees.",
@@ -5804,6 +5844,10 @@
    "source": "client",
    "text": "klient"
   },
+  "s.clients-other-than-browsers-python-curl.1ca242c3": {
+   "source": "Clients other than browsers - Python, curl, openssl, Java, acme, monitoring agents - trust only the roots of their system: the web server must send the certificate followed by every intermediate authority up to such a root. Browsers fetch a missing one themselves, so they show nothing wrong.",
+   "text": "Klienti jiní než prohlížeče - Python, curl, openssl, Java, acme, monitorovací agenti - věří jen kořenům svého systému: web server musí poslat certifikát a za ním všechny mezilehlé autority až k takovému kořeni. Prohlížeče si chybějící stáhnou samy, proto u nich nic nevadí."
+  },
   "s.clipperton-island.58bb1c41": {
    "source": "Clipperton Island",
    "text": "Clippertonův ostrov"
@@ -5912,9 +5956,17 @@
    "source": "compiling a query pays for a query of minutes; these are thousands of short ones",
    "text": "kompilace se vyplatí u dotazu na minuty; tady jsou tisíce krátkých"
   },
+  "s.complete-the-chain.3f898aa7": {
+   "source": "Complete the chain",
+   "text": "Doplnit řetěz"
+  },
   "s.complete.0737c22d": {
    "source": "complete",
    "text": "dokončeno"
+  },
+  "s.complete.86eb4fb7": {
+   "source": "complete -",
+   "text": "úplný -"
   },
   "s.complexity.f564777a": {
    "source": "Complexity",
@@ -6415,6 +6467,10 @@
   "s.curl-fss.44df1ab3": {
    "source": "curl -fsS",
    "text": "curl -fsS"
+  },
+  "s.curl-python-acme-and-other-clients.05f377dc": {
+   "source": "; curl, Python, acme and other clients refuse it - only browsers fetch it themselves; send the certificate with its chain, or, for a private CA, its root",
+   "text": "; curl, Python, acme a další klienti ho odmítnou - jen prohlížeče si ji stáhnou samy; pošlete certifikát s jeho řetězem, u soukromé CA její kořen"
   },
   "s.current.405ab5d2": {
    "source": "current",
@@ -7071,6 +7127,10 @@
   "s.docs-windows-security-log-md.fec31352": {
    "source": "docs/windows-security-log.md",
    "text": "docs/windows-security-log.md"
+  },
+  "s.does-not-check-out.b835bfcf": {
+   "source": "does not check out:",
+   "text": "neověří se:"
   },
   "s.does-not-say-which-door-a.25dad639": {
    "source": "does not say which door a sign-in came through, so it is worked out: a calling station that is an",
@@ -9575,6 +9635,10 @@
   "s.fetched-the-download-starts.0f62de25": {
    "source": "fetched: the download starts",
    "text": "staženo: stahování začíná"
+  },
+  "s.fetched.60c40238": {
+   "source": "(fetched:",
+   "text": "(staženo:"
   },
   "s.fetches-the-list-not-the-ftd.b7abb31e": {
    "source": "fetches the list, not the FTD: it downloads it and hands it to every FTD whose access control policy uses it. An FTD managed by",
@@ -12304,6 +12368,10 @@
    "source": "Include the bans on a clock",
    "text": "Zahrnout blokace na časové ose"
   },
+  "s.incomplete-the-authority.219e67be": {
+   "source": "incomplete - the authority",
+   "text": "neúplný - autorita"
+  },
   "s.index.c2df9b93": {
    "source": "Index",
    "text": "Index"
@@ -12675,6 +12743,10 @@
   "s.is-never-kept.eff97323": {
    "source": ") is never kept.",
    "text": ") se nikdy neuchovává."
+  },
+  "s.is-not-sent.15568bfc": {
+   "source": "is not sent",
+   "text": "se neposílá"
   },
   "s.is-not-the-same-as-empty.4c7bf700": {
    "source": "is not the same as empty: nothing is known about what it is carrying, and the words behind it are whatever ssh said.",
@@ -13376,6 +13448,10 @@
    "source": "It is",
    "text": "Je to"
   },
+  "s.it-leads-to.16119fe8": {
+   "source": "it leads to",
+   "text": "vede k"
+  },
   "s.it-may-have-been-started-here.1095222b": {
    "source": "It may have been started here, by the daemon, or at a terminal. The page goes on working while it runs.",
    "text": "Mohl být spuštěn zde, démonem nebo v terminálu. Stránka během jeho běhu dál funguje."
@@ -13419,6 +13495,10 @@
   "s.it-sent-back.49928f16": {
    "source": "It sent back:",
    "text": "Vrátil:"
+  },
+  "s.it-was-not-sent-with-the.01c8ccb2": {
+   "source": "- it was not sent with the certificate)",
+   "text": "- nepřišla s certifikátem)"
   },
   "s.it-works.241cddf0": {
    "source": "It works",
@@ -15995,6 +16075,10 @@
   "s.mine.8034c43d": {
    "source": "mine",
    "text": "mine"
+  },
+  "s.missing-in-the-chain.2d8565e0": {
+   "source": "Missing in the chain:",
+   "text": "V řetězu chybí:"
   },
   "s.missing.5a013c49": {
    "source": "missing",
@@ -23532,9 +23616,17 @@
    "source": "SelectedShellProfile",
    "text": "SelectedShellProfile"
   },
+  "s.self-signed-no-chain-whoever-connects.fd2715cf": {
+   "source": "self-signed - no chain; whoever connects must trust this certificate itself",
+   "text": "self-signed - žádný řetěz; kdo se připojuje, musí věřit přímo tomuto certifikátu"
+  },
   "s.self-signed.0f6823be": {
    "source": "Self-signed",
    "text": "Self-signed"
+  },
+  "s.selfcheck.137a557e": {
+   "source": "selfcheck",
+   "text": "selfcheck"
   },
   "s.selfsigned.b481a6da": {
    "source": "selfsigned",
@@ -26944,6 +27036,10 @@
    "source": "The certificate, its key and the pin are deleted from this machine. The next connection pins whatever the router answers with - for a certificate replaced on purpose.",
    "text": "Certifikát, jeho klíč a pin se z tohoto stroje smažou. Další připojení si připne to, čím router odpoví – pro certifikát vyměněný záměrně."
   },
+  "s.the-certificate-of-that-authority-the.c69c2abd": {
+   "source": "The certificate of that authority - the intermediate (or several) your certificate authority gives with the certificate, often called \"CA bundle\", \"intermediate\" or \"chain\" - as PEM or a .cer / .crt file. Only certificates of authorities, never a key; the certificate and its key stay as they are. A root is kept to check with and never sent.",
+   "text": "Certifikát té autority - mezilehlá (nebo několik), kterou vaše certifikační autorita dává k certifikátu, často nazvaná „CA bundle“, „intermediate“ nebo „chain“ - jako PEM nebo soubor .cer / .crt. Jen certifikáty autorit, nikdy klíč; certifikát a jeho klíč zůstávají, jak jsou. Kořen se uloží ke kontrole a nikdy se neposílá."
+  },
   "s.the-certificate-of-the-authority-that.06520f17": {
    "source": "The certificate of the authority that signed the server’s.",
    "text": "Certifikát autority, která podepsala certifikát serveru."
@@ -30004,6 +30100,10 @@
    "source": "The reverse zone has no name for this address. It was asked for and the name servers under Settings, Names of addresses, answered that there is none — which is the ordinary answer for an address outside this site.",
    "text": "Reverzní zóna pro tuto adresu nemá žádné jméno. Byl proveden dotaz a DNS servery z Nastavení, Jména adres, odpověděly, že žádné není — což je běžná odpověď pro adresu mimo tuto lokalitu."
   },
+  "s.the-root-of-the-chain.825abfab": {
+   "source": "The root of the chain:",
+   "text": "Kořen řetězu:"
+  },
   "s.the-route.f287fdfd": {
    "source": "The Route",
    "text": "Route"
@@ -30175,6 +30275,10 @@
   "s.the-search-cannot-be-read-yet.4cc1b945": {
    "source": "The search cannot be read yet - see under the box",
    "text": "Hledání zatím nelze přečíst — viz pod polem"
+  },
+  "s.the-second-certificate.cb6266e7": {
+   "source": "· the second certificate:",
+   "text": "· druhý certifikát:"
   },
   "s.the-second-directory-has.5af7c577": {
    "source": "The second directory has",
@@ -31043,6 +31147,10 @@
   "s.the-web-filter.97848548": {
    "source": "The web filter",
    "text": "Webový filtr"
+  },
+  "s.the-web-server-asked-from-this.c6ff78b7": {
+   "source": "The web server asked from this machine as a client that fetches no missing link asks it (Python, curl, acme)",
+   "text": "Web server dotázaný z tohoto stroje tak, jak se ptá klient, který si chybějící článek nestahuje (Python, curl, acme)"
   },
   "s.the-whitelist.58ea6cd3": {
    "source": "the whitelist",
@@ -33051,6 +33159,10 @@
   "s.upload-the-certificate.f0f5d1c9": {
    "source": "Upload the certificate…",
    "text": "Nahrát certifikát…"
+  },
+  "s.upload-the-missing-authority.3af0b84c": {
+   "source": "Upload the missing authority",
+   "text": "Nahrát chybějící autoritu"
   },
   "s.upload.8bdf057f": {
    "source": "Upload",

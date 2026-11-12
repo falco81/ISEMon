@@ -59,6 +59,76 @@ the chain up from it in order, the root (the one that signed itself). The
 chain is checked against the root when a root is given. The password is used
 once to open the file and is not kept. A certificate that ran out is refused.
 
+## The chain
+
+The web server sends the certificate **followed by its intermediate
+authorities, nearest first** - never the root. Clients other than browsers
+(Python, curl, openssl, Java, Go, rsyslog, acme's push, monitoring agents,
+phone apps) trust only the roots of their own system: without the
+intermediate they refuse the connection with *unable to get local issuer
+certificate*. Browsers fetch a missing intermediate themselves, so they show
+nothing wrong.
+
+- **Upload** puts whatever was sent in order, from the certificate up (by
+  subject and issuer, and by key id where two have one name), and leaves the
+  root out of what is sent. When the chain is missing, or a link of it is,
+  it is completed as a browser completes it: the *CA Issuers* address
+  (Authority Information Access) of the last certificate is read - DER, PEM
+  or PKCS#7 (`.p7c`), over http, at most four steps - until the chain leads
+  to a root of the system (`/etc/pki/tls/certs/ca-bundle.crt`). What was read
+  is kept only when the chain then checks out with `openssl verify
+  -untrusted`, as a client checks it. When it cannot be completed (no CA
+  Issuers address, the address cannot be reached), the certificate is still
+  put in, with the warning in the message and in the events.
+- **Certificates from acme** (push) and from **Automatic certificates** are
+  served as `cert_pem + chain_pem` - the second one (`alt`, the other key
+  type) too; a link the CA did not send is read the same way.
+- **A company CA** (a certificate answered to a *Request (CSR)*): send the
+  company's intermediates with it, and its root if you like - the root is
+  kept to check the chain against, never sent. Clients must trust the
+  company's root.
+
+The card has a **Chain** line, in green or red:
+
+| The line | When |
+|---|---|
+| `complete - 2 certificates up to DigiCert Global Root G2` | it checks out against the system's roots |
+| `… (fetched: RapidSSL TLS RSA CA G1 - it was not sent with the certificate)` | completed from CA Issuers |
+| `… - a private root: only clients that trust it take it` | it checks out only with the root kept beside it (a company CA) |
+| `incomplete - the authority X is not sent and could not be completed (…)` | a link is missing and cannot be read |
+| `it leads to X, a root the system does not trust (a private CA?)` | the chain is whole, but its root is not one of the system's |
+| `self-signed - no chain; …` | the certificate signs itself (no chain buttons) |
+
+**Root** names the root kept beside it (to check with; it is never sent), or
+says *not given*.
+
+- **Complete the chain** (when it is incomplete; otherwise **Check the
+  chain**) checks the certificate in place again and reads what is missing
+  from CA Issuers. An answer of *not complete* is a warning, not an error.
+- **Upload the missing authority** (when it is incomplete): a dialog that
+  names the authority missing and takes its certificate - PEM, or a
+  `.cer`/`.crt`/`.p7c` file. Only certificates of authorities, never a key;
+  the certificate and its key stay as they are. A root given there is kept
+  to check with (a private CA) and never sent.
+
+When isemon does not look after the certificate, the line tells what nginx
+sends now.
+
+After every change of the certificate the web server is asked **from this
+machine** (`127.0.0.1` on its TLS port, with the certificate's name), as a
+client that fetches no missing link asks it. The result is the card's
+*Checked from here* line; a failure is an event (a warning), and so is the
+first good answer after one. *Check from here* asks again now. By hand:
+
+```bash
+openssl s_client -connect monitor.example:443 -servername monitor.example -showcerts </dev/null
+```
+
+Two certificates or more (`0 s:CN=monitor.example`, `1 s:CN=…CA…`) and
+`Verify return code: 0 (ok)` - the chain is complete; one certificate and
+`Verify return code: 21 (unable to verify the first certificate)` - it is
+not.
+
 ## Request (CSR)
 
 *Request (CSR)*: the name (CN), other names (names or addresses), the key

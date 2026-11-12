@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.337'
+__version__ = '1.10.338'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -66089,6 +66089,12 @@ class Daemon(object):
             self.webroot.due()
         except Exception as e:
             log('the web server and the firewall: %s' % e, 'warn')
+        # The chain the web server sends, checked from here after a change
+        # of its certificate (1.10.338).
+        try:
+            self.webroot.selfcheck_due()
+        except Exception as e:
+            log('the dashboard\'s own TLS check: %s' % str(e)[:160], 'debug')
         # A new version on the web, looked for once a day (1.10.228).
         try:
             self.upgrades.online_tick()
@@ -68208,6 +68214,349 @@ def tls_check_chain(cert, chain, root):
     return 'the chain leads to the root'
 
 
+# ---- the whole chain sent (1.10.338) ----------------------------------------
+# A web server that answers with its certificate alone, without the
+# intermediate authority that signed it, looks fine in a browser (which
+# fetches the missing link itself from the certificate's Authority
+# Information Access, or has it cached) and fails everywhere else - Python,
+# curl, openssl, Java, acme's push. So the chain is checked against the
+# system's roots as such a client checks it, completed from CA Issuers as a
+# browser would when it lacks a link, and the result shown and checked again
+# on the machine itself after every change.
+TLS_CA_BUNDLES = ('/etc/pki/tls/certs/ca-bundle.crt', '/etc/ssl/certs/ca-certificates.crt',
+                  '/etc/ssl/cert.pem', '/etc/pki/tls/cert.pem')
+TLS_AIA_MOST = 4
+TLS_AIA_BYTES = 128 * 1024
+_TLS_CHAIN_SEEN = {}
+
+
+def tls_system_roots():
+    """The file of the roots this machine trusts, or ''."""
+    env = os.environ.get('ISEMON_CA_BUNDLE')
+    if env is not None:
+        return env if env and os.path.isfile(env) else ''
+    for p in TLS_CA_BUNDLES:
+        if os.path.isfile(p):
+            return p
+    try:
+        import ssl
+        p = ssl.get_default_verify_paths().cafile or ''
+    except Exception:
+        p = ''
+    return p if p and os.path.isfile(p) else ''
+
+
+def _pem_list(text):
+    return [m.group(0) + '\n' for m in PEM_CERT_RE.finditer(str(text or ''))]
+
+
+def _cn_of(name):
+    m = re.search(r'(?:^|,)\s*CN\s*=\s*((?:\\,|[^,])+)', str(name or ''))
+    if m:
+        return m.group(1).replace('\\,', ',').strip()
+    return str(name or '').strip()
+
+
+def cert_links(pem):
+    """A certificate's subject, issuer, key ids and CA Issuers addresses."""
+    text = _openssl(['x509', '-noout', '-text', '-nameopt', 'RFC2253'], 'the certificate', pem)
+    out = {'subject': '', 'issuer': '', 'ski': '', 'aki': '', 'aia': []}
+    m = re.search(r'^\s*Subject:\s*(.*)$', text, re.M)
+    out['subject'] = m.group(1).strip() if m else ''
+    m = re.search(r'^\s*Issuer:\s*(.*)$', text, re.M)
+    out['issuer'] = m.group(1).strip() if m else ''
+    m = re.search(r'Subject Key Identifier:\s*\n\s*([0-9A-Fa-f:]+)', text)
+    out['ski'] = m.group(1).upper() if m else ''
+    m = re.search(r'Authority Key Identifier:\s*\n\s*(?:keyid:)?([0-9A-Fa-f:]+)', text)
+    out['aki'] = m.group(1).upper() if m else ''
+    out['aia'] = [u for u in re.findall(r'CA Issuers - URI:(\S+)', text)
+                  if re.match(r'^https?://', u, re.I)][:3]
+    out['self_signed'] = out['subject'] == out['issuer'] and \
+        (not out['aki'] or not out['ski'] or out['aki'] == out['ski'])
+    return out
+
+
+def tls_order(cert, more):
+    """The intermediates `more` put in order up from `cert`, each the issuer
+    of the one before (by subject and issuer, and by key id where two have
+    one name), with what signed itself left out. Returns (chain, root,
+    left over)."""
+    pool = []
+    for p in dict.fromkeys(_pem_list(more)):
+        try:
+            pool.append(dict(cert_links(p), pem=p))
+        except WebRootError:
+            continue
+    at = cert_links(cert)
+    chain, root, used = [], '', set()
+    while pool:
+        ups = [i for i, c in enumerate(pool) if i not in used and c['subject'] == at['issuer']]
+        if len(ups) > 1 and at['aki']:
+            ups = [i for i in ups if pool[i]['ski'] == at['aki']] or ups
+        if not ups:
+            break
+        i = ups[0]
+        used.add(i)
+        if pool[i]['self_signed']:
+            root = pool[i]['pem']
+            break
+        chain.append(pool[i]['pem'])
+        at = pool[i]
+    return ''.join(chain), root, len(pool) - len(used)
+
+
+def _tls_verify(cert, chain='', root='', system=True):
+    """openssl verify, as a client without AIA does it: (ok, the anchor's
+    name, what it said when not)."""
+    bundle = tls_system_roots() if system else ''
+    anchors = ''
+    if bundle:
+        try:
+            with open(bundle) as f:
+                anchors = f.read(8 * 1024 * 1024)
+        except OSError:
+            anchors = ''
+    anchors += '\n' + (root or '')
+    if not PEM_CERT_RE.search(anchors):
+        return False, '', 'there is no store of trusted roots on this machine'
+    with tempfile.TemporaryDirectory(prefix='isemon-tls-') as t:
+        for name, text in (('c', cert), ('i', chain or ''), ('r', anchors)):
+            with open(os.path.join(t, name), 'w') as f:
+                f.write(text)
+        args = ['openssl', 'verify', '-show_chain', '-CAfile', os.path.join(t, 'r')]
+        if PEM_CERT_RE.search(chain or ''):
+            args += ['-untrusted', os.path.join(t, 'i')]
+        try:
+            got = subprocess.run(args + [os.path.join(t, 'c')], capture_output=True,
+                                 text=True, timeout=60)
+        except FileNotFoundError:
+            return False, '', 'openssl is not on this machine'
+        except subprocess.TimeoutExpired:
+            return False, '', 'openssl did not answer'
+    out = (got.stdout or '') + '\n' + (got.stderr or '')
+    if got.returncode == 0 and re.search(r': OK\s*$', got.stdout or '', re.M):
+        depths = re.findall(r'^depth=\d+:\s*(.*?)(?:\s*\(untrusted\))?\s*$', got.stdout, re.M)
+        return True, _cn_of(depths[-1].replace(' = ', '=')) if depths else '', ''
+    m = re.search(r'error \d+ at \d+ depth lookup:\s*(.*)', out)
+    return False, '', (m.group(1).strip() if m else (out.strip().splitlines() or ['no'])[-1])[:200]
+
+
+def tls_chain_state(cert, chain='', root=''):
+    """How the chain sent with `cert` stands, checked against the system's
+    roots (and the root kept beside it - a company's), fetching nothing:
+    {state: complete | incomplete | self-signed | bad | unknown, n, top,
+    missing, said, company}."""
+    cert = (_pem_list(cert) or [''])[0]
+    if not cert:
+        return {'state': 'unknown', 'n': 0, 'top': '', 'missing': '', 'said': 'no certificate'}
+    chain = ''.join(_pem_list(chain))
+    root = ''.join(_pem_list(root))
+    bundle = tls_system_roots()
+    try:
+        mt = os.path.getmtime(bundle) if bundle else 0
+    except OSError:
+        mt = 0
+    key = hashlib.sha256((cert + '|' + chain + '|' + root + '|' + bundle + '|%s' % mt)
+                         .encode()).hexdigest()
+    hit = _TLS_CHAIN_SEEN.get(key)
+    if hit and time.time() - hit[0] < 3600:
+        return dict(hit[1])
+    n = 1 + len(_pem_list(chain))
+    out = {'state': 'unknown', 'n': n, 'top': '', 'missing': '', 'said': '', 'company': False}
+    try:
+        leaf = cert_links(cert)
+        last = cert_links(_pem_list(chain)[-1]) if chain else leaf
+    except WebRootError as e:
+        out['said'] = str(e)
+        return out
+    if leaf['self_signed']:
+        out['state'] = 'self-signed'
+        out['top'] = _cn_of(leaf['subject'])
+    else:
+        ok, top, said = _tls_verify(cert, chain, root)
+        if ok:
+            out.update(state='complete', top=top)
+            if root:
+                out['company'] = not _tls_verify(cert, chain, '')[0]
+        elif re.search(r'unable to get (local )?issuer certificate', said or '') or \
+                'unable to verify the first certificate' in (said or ''):
+            out.update(state='incomplete', said=said, missing=_cn_of(last['issuer']))
+        else:
+            out.update(state='bad', said=said)
+    if len(_TLS_CHAIN_SEEN) > 64:
+        _TLS_CHAIN_SEEN.clear()
+    _TLS_CHAIN_SEEN[key] = (time.time(), dict(out))
+    return out
+
+
+def tls_fetch(url):
+    """One CA Issuers address read, as a browser reads it: http(s), 128 KiB
+    at most, ten seconds."""
+    import urllib.request
+    if not re.match(r'^https?://[^\s/]+', str(url or ''), re.I):
+        raise WebRootError('%s is not an http address' % str(url)[:120])
+    req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
+    try:
+        # As the ACME CA is reached: Settings → Proxy where its switch is on.
+        with _acme_open(req, timeout=10, purpose='acme') as r:
+            data = r.read(TLS_AIA_BYTES + 1)
+    except Exception as e:
+        why = getattr(e, 'reason', None) or e
+        why = getattr(why, 'strerror', None) or str(why)
+        raise WebRootError('%s could not be read: %s' % (url[:120], str(why)[:160]))
+    if len(data) > TLS_AIA_BYTES:
+        raise WebRootError('%s is far bigger than a certificate' % url[:120])
+    return data
+
+
+def tls_read_any(data):
+    """The certificates of what an address gave: PEM, DER or PKCS#7 (.p7c)."""
+    if isinstance(data, str):
+        data = data.encode('utf-8', 'replace')
+    if b'-----BEGIN CERTIFICATE-----' in data:
+        return _pem_list(data.decode('ascii', 'replace'))
+    if b'-----BEGIN PKCS7-----' in data:
+        return _pem_list(_openssl(['pkcs7', '-print_certs'], 'the PKCS#7',
+                                  data.decode('ascii', 'replace')))
+    try:
+        return _pem_list(_openssl(['x509', '-inform', 'DER'], 'the certificate (DER)', data,
+                                  binary=True).decode('ascii', 'replace'))
+    except WebRootError:
+        pass
+    return _pem_list(_openssl(['pkcs7', '-inform', 'DER', '-print_certs'],
+                              'what was read is no certificate (DER, PEM or PKCS#7)', data,
+                              binary=True).decode('ascii', 'replace'))
+
+
+def tls_chain_complete(cert, chain='', root='', fetch=True):
+    """The chain of `cert` completed as a browser completes it: while it does
+    not lead to a root of the system, the issuer of its last certificate is
+    read from that one's CA Issuers address - four steps at most - and a root
+    found that way is not sent. What was read is kept only when the chain
+    then leads to a root. Returns (chain, state, added)."""
+    chain = ''.join(_pem_list(chain))
+    state = tls_chain_state(cert, chain, root)
+    if state['state'] != 'incomplete' or not fetch:
+        return chain, state, []
+    pems = _pem_list(chain)
+    at = cert_links(pems[-1] if pems else cert)
+    seen = {hashlib.sha256(p.strip().encode()).hexdigest() for p in pems}
+    added, why, private = [], '', ''
+    for _step in range(TLS_AIA_MOST):
+        if not at['aia']:
+            why = why or 'the certificate of %s gives no CA Issuers address to read %s from' % (
+                _cn_of(at['subject']), _cn_of(at['issuer']))
+            break
+        pick = None
+        for url in at['aia']:
+            try:
+                got = tls_read_any(tls_fetch(url))
+            except WebRootError as e:
+                why = str(e)
+                continue
+            links = []
+            for p in got:
+                try:
+                    links.append(dict(cert_links(p), pem=p))
+                except WebRootError:
+                    pass
+            fit = [c for c in links if c['subject'] == at['issuer']]
+            if len(fit) > 1 and at['aki']:
+                fit = [c for c in fit if c['ski'] == at['aki']] or fit
+            if fit:
+                pick = fit[0]
+                break
+            why = '%s gave no certificate of %s' % (url[:120], _cn_of(at['issuer']))
+        if not pick:
+            break
+        h = hashlib.sha256(pick['pem'].strip().encode()).hexdigest()
+        if pick['self_signed'] or h in seen:
+            if pick['self_signed']:
+                # The chain is whole; it ends at a root the system does not
+                # trust (a private CA): its root goes to the clients.
+                private = _cn_of(pick['subject'])
+            why = why or 'the authority %s is no root this machine trusts' % _cn_of(
+                pick['subject'])
+            break
+        seen.add(h)
+        pems.append(pick['pem'])
+        added.append(_cn_of(pick['subject']))
+        state = tls_chain_state(cert, ''.join(pems), root)
+        if state['state'] != 'incomplete':
+            break
+        at = pick
+    if added and state['state'] == 'complete':
+        return ''.join(pems), state, added
+    state = tls_chain_state(cert, chain, root)
+    if why:
+        state = dict(state, why=why)
+    if private:
+        state = dict(state, private_root=private)
+    return chain, state, []
+
+
+def tls_chain_words(state, added=()):
+    """A chain's state in a line, as the page and the events say it."""
+    s = state or {}
+    added = list(added or s.get('fetched') or [])
+    if s.get('state') == 'complete':
+        n = s.get('n') or 1
+        return 'complete - %d certificate%s up to %s%s%s' % (
+            n, '' if n == 1 else 's', s.get('top') or 'a root',
+            (' (fetched: %s - it was not sent with the certificate)' % ', '.join(added))
+            if added else '',
+            ' - a private root: only clients that trust it take it' if s.get('company') else '')
+    if s.get('state') == 'incomplete':
+        if s.get('private_root'):
+            return 'it leads to %s, a root the system does not trust (a private CA?) - give ' \
+                   'its root (Upload the missing authority) and give it to the clients' % \
+                   s['private_root']
+        return 'incomplete - the authority %s is not sent%s; curl, Python, acme and other ' \
+               'clients refuse it - only browsers fetch it themselves; send the certificate ' \
+               'with its chain, or, for a private CA, its root' % (
+                   s.get('missing') or '?', (' and could not be completed (%s)' % s['why'])
+                   if s.get('why') else '')
+    if s.get('state') == 'self-signed':
+        return 'self-signed - no chain; whoever connects must trust this certificate itself'
+    if s.get('state') == 'bad':
+        return 'the chain does not check out: %s' % (s.get('said') or '?')
+    return ''
+
+
+def tls_self_check(host, port=443, root='', timeout=8):
+    """The web server asked from this machine, as a client that fetches no
+    missing link asks it (Python's ssl): {ok, said, n}. ok is None when it
+    could not be reached at all."""
+    import socket
+    import ssl
+    bundle = tls_system_roots()
+    try:
+        ctx = ssl.create_default_context(cafile=bundle or None)
+        if root and PEM_CERT_RE.search(root):
+            ctx.load_verify_locations(cadata=''.join(_pem_list(root)))
+    except (ssl.SSLError, OSError, ValueError) as e:
+        return {'ok': None, 'said': 'the trusted roots could not be read: %s' % e}
+    host = str(host or '').strip().lstrip('*.') or 'localhost'
+    try:
+        ipaddress.ip_address(host)
+        ctx.check_hostname = False
+        sni = None
+    except ValueError:
+        sni = host
+    try:
+        with socket.create_connection(('127.0.0.1', int(port)), timeout=timeout) as s:
+            with ctx.wrap_socket(s, server_hostname=sni) as t:
+                n = len(getattr(t, 'get_unverified_chain', lambda: [])() or [])
+        return {'ok': True, 'n': n, 'said': 'the web server sends its whole chain%s' % (
+            (' (%d certificates)' % n) if n else '')}
+    except ssl.SSLCertVerificationError as e:
+        return {'ok': False, 'said': 'a client without the missing link refuses it: %s'
+                % (getattr(e, 'verify_message', '') or str(e))[:200]}
+    except (ssl.SSLError, OSError, ValueError) as e:
+        return {'ok': None, 'said': 'the web server on port %s could not be asked: %s'
+                % (port, str(e)[:160])}
+
+
 SAN_NAME_RE = re.compile(r'^(?=.{1,253}$)(\*\.)?[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?'
                          r'(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$')
 
@@ -68293,7 +68642,7 @@ KEY_KIND_WORDS = {'ec256': 'ECDSA P-256', 'ec384': 'ECDSA P-384', 'rsa2048': 'RS
 # as cert2, chain2 and key2 (sealed), put in by ACME only. Anything else that
 # puts a certificate in takes them away - one left there would go on being
 # answered with beside a certificate it has nothing to do with.
-TLS_SECOND = ('cert2', 'chain2', 'key2', 'cert2_for', 'root2')
+TLS_SECOND = ('cert2', 'chain2', 'key2', 'cert2_for', 'root2', 'chain2_fetched')
 
 
 def tls_drop_second(tls):
@@ -68803,6 +69152,53 @@ class WebRoot(object):
             return False
         return self.push('it differs from what is in place').get('pushed', False)
 
+    def selfcheck_due(self, force=False):
+        """After the certificate changed (1.10.338): the web server asked from
+        this machine as a client without AIA asks it, and what it said kept -
+        a failure an event, not silence. Once per certificate the web server
+        answers with, and again after root has put something in."""
+        if not self.helper_there():
+            return None
+        look = self.look(fresh_s=600)
+        now = look.get('cert') or {}
+        pems = _pem_list(now.get('pem'))
+        if not pems:
+            return None
+        st = self.read('status.json') or {}
+        if self.pending() and not force:
+            return None
+        mark = hashlib.sha256((''.join(pems) + '|' + str(st.get('hash') or '') + '|' +
+                               str(st.get('at') or '')).encode()).hexdigest()[:32]
+        had = self._meta('tls_selfcheck', {})
+        if not force and had.get('mark') == mark:
+            return had
+        tls = self.tls_conf()
+        try:
+            facts = cert_facts(pems[0])
+        except WebRootError:
+            return None
+        names = [n for n in facts.get('names') or [] if n] or [facts.get('cn') or '']
+        host = next((n for n in names if not n.startswith('*.')), names[0]) or 'localhost'
+        if host.startswith('*.'):
+            host = 'isemon.' + host[2:]
+        port = str(now.get('port') or '443')
+        if facts.get('self_signed'):
+            got = {'ok': True, 'said': 'the certificate signs itself: clients must trust it as '
+                                       'it is', 'self_signed': True}
+        else:
+            got = tls_self_check(host, port, tls.get('root') or '')
+        got.update(at=time.time(), mark=mark, host=host, port=port)
+        if got.get('ok') is False and had.get('ok') is not False:
+            self.store.add_event('control', 'the dashboard\'s own check of its TLS (%s:%s): %s - '
+                                            'clients other than browsers refuse it; on Settings '
+                                            '→ Certificates and TLS, Complete the chain'
+                                 % (host, port, got.get('said')), 'warn')
+        elif got.get('ok') and had.get('ok') is False:
+            self.store.add_event('control', 'the dashboard\'s own check of its TLS (%s:%s): %s'
+                                 % (host, port, got.get('said')))
+        self._put('tls_selfcheck', got)
+        return got
+
     def state(self):
         """How root's side stands, for the page."""
         st = self.read('status.json') or {}
@@ -68955,9 +69351,39 @@ class WebRoot(object):
             except WebRootError as e:
                 kept2 = {'said': str(e)}
         pend = tls.get('pending') or {}
+        # The chain (1.10.338): the one kept, and the one the web server
+        # answers with now - read off its file, nothing fetched.
+        chain = chain2 = served = None
+        if tls.get('cert'):
+            try:
+                chain = tls_chain_state(tls['cert'], tls.get('chain') or '', tls.get('root') or '')
+                chain['fetched'] = self._fetched(tls)
+                note = self._meta('tls_chain_note', {})
+                if chain.get('state') == 'incomplete' and \
+                        note.get('fp') == push_fingerprint(tls['cert']):
+                    chain.update({k: note[k] for k in ('why', 'private_root') if note.get(k)})
+                chain['words'] = tls_chain_words(chain, chain['fetched'])
+            except WebRootError as e:
+                chain = {'state': 'unknown', 'words': str(e)}
+        if tls_second(tls):
+            try:
+                chain2 = tls_chain_state(tls['cert2'], tls.get('chain2') or '',
+                                         tls.get('root2') or tls.get('root') or '')
+                chain2['words'] = tls_chain_words(chain2)
+            except WebRootError as e:
+                chain2 = {'state': 'unknown', 'words': str(e)}
+        if now.get('pem'):
+            try:
+                ps = _pem_list(now['pem'])
+                served = tls_chain_state(ps[0], ''.join(ps[1:]), tls.get('root') or '')
+                served['words'] = tls_chain_words(served)
+            except (WebRootError, IndexError) as e:
+                served = {'state': 'unknown', 'words': str(e)}
         return {'ok': True, 'may': may, 'managed': bool(tls.get('managed')),
-                'kept': kept, 'kept2': kept2,
+                'kept': kept, 'kept2': kept2, 'chain': chain, 'chain2': chain2,
+                'served_chain': served, 'selfcheck': self._meta('tls_selfcheck', {}) or None,
                 'chain_n': len(PEM_CERT_RE.findall(tls.get('chain') or '')),
+                'root_names': self._root_names(tls.get('root')),
                 'root': bool(tls.get('root')),
                 'key_ok': (unseal_secret(tls['key']) is not None) if tls.get('key') else None,
                 'settings': {k: tls.get(k) for k in ('preset', 'protocols', 'ciphers', 'prefer',
@@ -68977,6 +69403,16 @@ class WebRoot(object):
                 # here is kept as it is.
                 'acme': {'on': acme_on(), 'care': acme_care(self),
                          'state': acme_state(self.store), 'before': acme_before(self)}}
+
+    @staticmethod
+    def _root_names(text):
+        out = []
+        for p in _pem_list(text)[:4]:
+            try:
+                out.append(_cn_of(cert_links(p)['subject']))
+            except WebRootError:
+                pass
+        return out
 
     def tls_settings_checked(self, data, tls):
         preset = str(data.get('preset') or tls.get('preset') or 'standard')
@@ -69101,6 +69537,10 @@ class WebRoot(object):
                     raise WebRootError('the ECDSA certificate ran out on %s'
                                        % time.strftime('%Y-%m-%d', time.localtime(tf['until'])))
                 tls_check_chain(twin['cert'], twin['chain'], twin['root'])
+                # The whole chain sent with it (1.10.338), completed from CA
+                # Issuers when it was not.
+                twin['chain'], _st2, _add2 = tls_chain_complete(twin['cert'], twin['chain'],
+                                                                twin['root'])
             elif pfx2 is not None:
                 raise WebRootError('a second PFX is for a second certificate: send the first one '
                                    'with it')
@@ -69127,8 +69567,20 @@ class WebRoot(object):
                 raise WebRootError('this certificate ran out on %s'
                                    % time.strftime('%Y-%m-%d', time.localtime(f['until'])))
             said = tls_check_chain(got['cert'], got['chain'], got['root'])
+            # The web server sends the certificate with its chain (1.10.338):
+            # one sent without it - or with a link missing - is completed as
+            # a browser completes it, from CA Issuers, and when that cannot
+            # be done it is still put in, with the warning said loud.
+            got['chain'], cstate, cadded = tls_chain_complete(got['cert'], got['chain'],
+                                                              got['root'])
+            cwords = tls_chain_words(cstate, cadded)
             tls.update(cert=got['cert'], chain=got['chain'], root=got['root'],
                        key=seal_secret(key), managed=True, since=time.time(), by=by, how=how)
+            for k in ('chain_fetched', 'chain_fetched_for', 'chain_note'):
+                tls.pop(k, None)
+            if cadded:
+                tls.update(chain_fetched=cadded, chain_fetched_for=push_fingerprint(got['cert']))
+            self._chain_note(tls, cstate)
             tls_drop_second(tls)
             if twin:
                 tls.update(cert2=twin['cert'], chain2=twin['chain'], root2=twin['root'],
@@ -69142,14 +69594,20 @@ class WebRoot(object):
             tls.setdefault('preset', 'standard')
             tls.setdefault('protocols', TLS_PRESETS['standard']['protocols'])
             tls.setdefault('hsts', 63072000)
-            msg = 'the certificate for %s is kept%s%s' % (
+            msg = 'the certificate for %s is kept%s%s%s' % (
                 f.get('cn') or f.get('subject'),
                 ' - RSA, with the ECDSA one beside it' if twin else '',
-                ('; ' + said) if said else '')
+                ('; ' + said) if said else '',
+                ('; the chain: ' + cwords) if cwords and cstate.get('state') != 'self-signed'
+                else '')
             self.store.add_event('control', 'a certificate was put in for the dashboard: %s, '
                                             'until %s' % (f.get('subject'), time.strftime(
                                                 '%Y-%m-%d', time.localtime(f.get('until') or 0))),
                                  who=by)
+            if cstate.get('state') in ('incomplete', 'bad'):
+                self.store.add_event('control', 'the dashboard\'s certificate: %s - clients '
+                                                'other than browsers will refuse it' % cwords,
+                                     'warn', who=by)
         elif act in ('csr', 'selfsigned'):
             made = tls_make(data, self_signed=(act == 'selfsigned'))
             if act == 'csr':
@@ -69171,6 +69629,85 @@ class WebRoot(object):
             tls.setdefault('hsts', 63072000)
             msg = 'a certificate that signs itself is made for %s' % made['cn']
             self.store.add_event('control', msg, who=by)
+        elif act in ('tls_chain', 'complete_chain'):
+            # Complete / Check the chain (1.10.338): the certificate in place
+            # checked again against the system's roots, its missing links
+            # read from CA Issuers as a browser reads them. Said as
+            # complete: true | false - never refused for being incomplete.
+            if not tls.get('managed') or not tls.get('cert'):
+                raise WebRootError('isemon does not look after this certificate: put it in here '
+                                   '(Upload) with its chain')
+            st, words = self._chain_redo(tls)
+            self._put('web_tls', tls)
+            self.store.add_event('control', 'the chain of the dashboard\'s certificate was '
+                                            'checked: %s' % words,
+                                 'info' if st.get('state') == 'complete' else 'warn', who=by)
+            got = self.push('certificates and TLS', by, force=True)
+            return {'ok': True, 'message': words, 'complete': st.get('state') == 'complete',
+                    'pushed': bool(got.get('pushed'))}
+        elif act == 'tls_chain_add':
+            # The missing authority by hand (1.10.338): when it cannot be
+            # read from CA Issuers (no address, no way out, a private CA).
+            # Only certificates of authorities, never a key; a root is kept
+            # to check with and never sent, the rest go into the chain in
+            # order.
+            if not tls.get('managed') or not tls.get('cert'):
+                raise WebRootError('isemon does not look after this certificate: put it in here '
+                                   '(Upload) with its chain')
+            text = str(data.get('text') or '')[:300000]
+            if 'PRIVATE KEY' in text:
+                raise WebRootError('only the certificates of the authorities - no private key')
+            given = _pem_list(text)
+            if not given and data.get('der'):
+                try:
+                    given = tls_read_any(base64.b64decode(str(data['der']), validate=True))
+                except (ValueError, TypeError):
+                    raise WebRootError('the file did not arrive whole')
+            if not given:
+                raise WebRootError('no certificate in it (-----BEGIN CERTIFICATE-----, or a '
+                                   '.cer file)')
+            if len(given) > 8:
+                raise WebRootError('%d certificates - the chain of one certificate is a few'
+                                   % len(given))
+            have = {push_fingerprint(p) for p in _pem_list(tls.get('chain')) +
+                    _pem_list(tls.get('root')) + _pem_list(tls['cert'])}
+            new = [p for p in given if push_fingerprint(p) not in have]
+            if not new:
+                raise WebRootError('every certificate in it is there already')
+            pool = _pem_list(tls.get('chain')) + new
+            chain, root_found, _left = tls_order(tls['cert'], ''.join(pool))
+            roots = _pem_list(tls.get('root'))
+            if root_found and push_fingerprint(root_found) not in {
+                    push_fingerprint(r) for r in roots}:
+                roots.append(root_found)
+            for p in new:
+                try:
+                    if cert_links(p)['self_signed'] and p not in roots:
+                        roots.append(p)
+                except WebRootError:
+                    raise WebRootError('a certificate in it cannot be read')
+            useful = [p for p in new if p in _pem_list(chain) or p == root_found]
+            if not useful:
+                ordered = _pem_list(chain)
+                last = cert_links(ordered[-1] if ordered else tls['cert'])
+                raise WebRootError('none of these is the authority that signed the chain\'s '
+                                   'last certificate (%s)' % _cn_of(last['issuer']))
+            tls['chain'] = chain
+            tls['root'] = ''.join(roots)
+            st, words = self._chain_redo(tls)
+            self._put('web_tls', tls)
+            names = []
+            for p in useful:
+                try:
+                    names.append(_cn_of(cert_links(p)['subject']))
+                except WebRootError:
+                    pass
+            self.store.add_event('control', '%s added to the chain of the dashboard\'s '
+                                            'certificate: %s' % (', '.join(names) or '?', words),
+                                 'info' if st.get('state') == 'complete' else 'warn', who=by)
+            got = self.push('certificates and TLS', by, force=True)
+            return {'ok': True, 'message': words, 'complete': st.get('state') == 'complete',
+                    'pushed': bool(got.get('pushed'))}
         elif act == 'drop_request':
             tls.pop('pending', None)
             msg = 'the request and its key are gone'
@@ -69189,6 +69726,11 @@ class WebRoot(object):
                                             'nginx keeps the files it has', who=by)
             return {'ok': True, 'message': 'isemon no longer looks after TLS; nginx keeps the '
                                            'certificate it has'}
+        elif act == 'selfcheck':
+            got = self.selfcheck_due(force=True)
+            if not got:
+                raise WebRootError('the web server\'s certificate is not known here yet')
+            return {'ok': True, 'message': got.get('said') or '', 'selfcheck': got}
         elif act == 'retry':
             got = self.push('asked again on the page', by, force=True)
             return {'ok': True, 'message': 'root was asked again' if got.get('pushed')
@@ -69199,6 +69741,52 @@ class WebRoot(object):
         got = self.push('certificates and TLS', by, force=True)
         return {'ok': True, 'message': msg + ('; root puts it in within seconds'
                                               if got.get('pushed') else ' - ' + got.get('said', ''))}
+
+    def _chain_redo(self, tls):
+        """The chain of the certificate kept (and of the second one) put in
+        order, completed from CA Issuers, and what was read remembered.
+        Returns (the first one's state, its words)."""
+        first = None
+        for c, k, r, f in (('cert', 'chain', 'root', 'chain_fetched'),
+                           ('cert2', 'chain2', 'root2', 'chain2_fetched')):
+            if c == 'cert2' and not tls_second(tls):
+                continue
+            before = ''.join(_pem_list(tls.get(k)))
+            ordered, root_found, _left = tls_order(tls[c], before)
+            root = tls.get(r) or (tls.get('root') if c == 'cert2' else '') or root_found
+            new, st, added = tls_chain_complete(tls[c], ordered or before, root or '')
+            tls[k] = new
+            if root_found and not tls.get(r) and c == 'cert':
+                tls[r] = root_found
+            if added:
+                if c == 'cert' and tls.get('chain_fetched_for') != push_fingerprint(tls[c]):
+                    tls[f] = []
+                tls[f] = list(dict.fromkeys(list(tls.get(f) or []) + added))
+                if c == 'cert':
+                    tls['chain_fetched_for'] = push_fingerprint(tls[c])
+            elif st.get('state') != 'complete':
+                tls.pop(f, None)
+            if first is None:
+                first = st
+                self._chain_note(tls, st)
+        st = first or {}
+        return st, tls_chain_words(st, self._fetched(tls))
+
+    def _chain_note(self, tls, st):
+        """Why the chain could not be completed, kept for the card (beside
+        web_tls, not in it) - for the certificate it was found for."""
+        note = {k: st[k] for k in ('why', 'private_root') if st.get(k)}
+        if note and tls.get('cert'):
+            self._put('tls_chain_note', dict(note, fp=push_fingerprint(tls['cert'])))
+        else:
+            self._put('tls_chain_note', {})
+
+    @staticmethod
+    def _fetched(tls):
+        """What was read from CA Issuers for the certificate kept now."""
+        if tls.get('cert') and tls.get('chain_fetched_for') == push_fingerprint(tls['cert']):
+            return list(tls.get('chain_fetched') or [])
+        return []
 
     def tls_download(self, which):
         tls = self.tls_conf()
@@ -70661,7 +71249,20 @@ def _acme_sorted(chain_pem, key):
     if not got['key']:
         raise AcmeError('the CA\'s certificate is not the one of the key made for it')
     tls_check_chain(got['cert'], got['chain'], got['root'])
+    got['chain'] = tls_chain_whole(got)
     return got
+
+
+def tls_chain_whole(got):
+    """The chain of a certificate from a CA or from acme, with a link it
+    lacks read from CA Issuers (1.10.338) - and as it came whenever that
+    cannot be done: never a reason to refuse it."""
+    try:
+        return tls_chain_complete(got['cert'], got.get('chain') or '', got.get('root') or '')[0]
+    except Exception as e:
+        log('the chain of %s could not be completed: %s'
+            % ((got.get('facts') or {}).get('cn') or 'a certificate', str(e)[:160]), 'debug')
+        return got.get('chain') or ''
 
 
 def acme_install(wr, chain_pem, key, by, second=None, name=''):
@@ -71408,6 +72009,9 @@ def push_one(box, part):
         tls_check_chain(got['cert'], got['chain'], got['root'])
     except WebRootError as e:
         raise PushRefused('bad_cert', 422, str(e))
+    # Served as cert_pem + chain_pem (1.10.338), with a missing link read
+    # from CA Issuers when acme sent none.
+    got['chain'] = tls_chain_whole(got)
     got['fingerprint'] = fp
     got['kind'] = cert_key_kind(got['cert'])
     return got
@@ -75653,7 +76257,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '608286487ba03208eff249e4af89923466ea5e0e908c3cec0bb36f6708d445fa'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '81fd9279e48103a55c2cf6fe1e5c6eaa712bbf2cb6e94b21b4e5d1f6a5798f98'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),

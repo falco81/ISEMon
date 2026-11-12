@@ -4258,6 +4258,9 @@ function srcText(el) {
   .cert-kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 14px;margin:8px 0 0;font-size:13px}
   .cert-kv dt{color:var(--tx-dim);font-weight:600;white-space:nowrap}
   .cert-kv dd{margin:0;overflow-wrap:anywhere;font-weight:600}
+  .cert-kv .chain-good{color:var(--ok)}
+  .cert-kv .chain-bad{color:var(--crit)}
+  .cert-kv .chain-dim,.cert-kv .muted{color:var(--tx-mut);font-weight:400}
   .cert-prog{display:flex;flex-direction:column;gap:5px;padding:9px 11px;border:1px solid rgba(88,166,255,.35);
     border-radius:9px;background:rgba(88,166,255,.06)}
   .cert-prog-h{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;font-weight:600;color:var(--tx)}
@@ -44426,6 +44429,107 @@ function drawPush(d) {
 }
 function daysLeft(ts) { return ts ? Math.floor((ts - Date.now() / 1000) / 86400) : null; }
 function certTone(days) { return days === null ? 'dim' : (days < 0 ? 'crit' : (days < 21 ? 'warn' : 'ok')); }
+function tlsChainOf(d) {
+  /* What is kept when isemon looks after it; what nginx sends otherwise. */
+  return (d.managed && d.chain) ? d.chain : (d.served_chain || null);
+}
+function tlsChainBroken(d) {
+  var c = (d.managed && d.chain) ? d.chain : null, c2 = d.chain2;
+  return !!((c && (c.state === 'incomplete' || c.state === 'bad'))
+    || (c2 && (c2.state === 'incomplete' || c2.state === 'bad'))
+    || (d.served_chain && d.served_chain.state === 'incomplete' && d.managed));
+}
+function tlsChainLine(d) {
+  var c = tlsChainOf(d);
+  if (!c || !c.state || c.state === 'unknown') return d.chain_n ? d.chain_n + ' between it and the root' : null;
+  var tone = {complete: 'good', incomplete: 'bad', bad: 'bad', 'self-signed': 'dim'}[c.state] || 'dim';
+  var s = el('span', 'chain-' + tone);
+  var put = function (words, mine) { s.appendChild(mine ? noI18n(el('span', '', words)) : el('span', '', words)); };
+  if (c.state === 'complete') {
+    put('complete -');
+    put(' ' + c.n + ' ', true);
+    put(c.n === 1 ? 'certificate up to' : 'certificates up to');
+    put(' ' + (c.top || ''), true);
+    if (c.fetched && c.fetched.length) {
+      put(' (fetched:');
+      put(' ' + c.fetched.join(', ') + ' ', true);
+      put('- it was not sent with the certificate)');
+    }
+    if (c.company) put(' - a private root: only clients that trust it take it');
+  } else if (c.state === 'incomplete' && c.private_root) {
+    put('it leads to');
+    put(' ' + c.private_root, true);
+    put(', a root the system does not trust (a private CA?) - give its root (Upload the missing authority) and give it to the clients');
+  } else if (c.state === 'incomplete') {
+    put('incomplete - the authority');
+    put(' ' + (c.missing || '?') + ' ', true);
+    put('is not sent');
+    if (c.why) { put(' and could not be completed:'); put(' ' + c.why, true); }
+    put('; curl, Python, acme and other clients refuse it - only browsers fetch it themselves; send the certificate with its chain, or, for a private CA, its root');
+  } else if (c.state === 'self-signed') {
+    put('self-signed - no chain; whoever connects must trust this certificate itself');
+  } else {
+    put('does not check out:');
+    put(' ' + (c.said || ''), true);
+  }
+  explain(s, 'Clients other than browsers - Python, curl, openssl, Java, acme, monitoring agents - trust only the roots of their system: the web server must send the certificate followed by every intermediate authority up to such a root. Browsers fetch a missing one themselves, so they show nothing wrong.');
+  if (d.chain2 && d.chain2.state && d.chain2.state !== c.state) {
+    s.appendChild(el('span', 'muted', ' \u00b7 the second certificate: '));
+    s.appendChild(noI18n(el('span', '', d.chain2.words || d.chain2.state)));
+  }
+  return s;
+}
+/* Upload the missing authority (1.10.338, as plexmon 2.9.8): when it cannot
+   be read from CA Issuers - no address, no way out, a private CA. Only the
+   authorities, never the certificate and its key again. */
+function certChainAdd(d) {
+  var c = d.chain || {};
+  var missing = c.private_root || c.missing || String((d.kept || {}).issuer || '').replace(/^.*?CN=/, '').split(',')[0] || '?';
+  var area;
+  modal('Upload the missing authority', function (body) {
+    var p = el('p', 'note');
+    p.appendChild(el('span', '', c.private_root ? 'The root of the chain:' : 'Missing in the chain:'));
+    p.appendChild(document.createTextNode(' '));
+    p.appendChild(noI18n(el('b', '', missing)));
+    body.appendChild(p);
+    body.appendChild(el('p', 'note', 'The certificate of that authority - the intermediate (or several) your certificate authority gives with the certificate, often called "CA bundle", "intermediate" or "chain" - as PEM or a .cer / .crt file. Only certificates of authorities, never a key; the certificate and its key stay as they are. A root is kept to check with and never sent.'));
+    area = noI18n(el('textarea', 'mono'));
+    area.rows = 8; area.spellcheck = false; area.placeholder = '-----BEGIN CERTIFICATE-----';
+    area.style.width = '100%';
+    body.appendChild(area);
+    var fr = el('div', 'osr-tools');
+    fr.style.margin = '8px 0 0';
+    var pick = cmdButton('Read a file…', 'upload', 'small');
+    var input = el('input'); input.type = 'file'; input.hidden = true;
+    input.accept = '.pem,.crt,.cer,.der,.cert,.ca-bundle,.p7c,.p7b';
+    pick.onclick = function () { input.click(); };
+    input.onchange = function () {
+      var f = input.files && input.files[0];
+      if (!f) return;
+      if (f.size > 262144) { toast('that file is far bigger than certificates are', 'warn'); return; }
+      var r = new FileReader();
+      r.onload = function () { area.value = osrFileText(r.result); };
+      r.readAsArrayBuffer(f);
+    };
+    fr.appendChild(pick); fr.appendChild(input);
+    body.appendChild(fr);
+    setTimeout(function () { area.focus(); }, 60);
+  }, [{words: 'Cancel', close: true}, {words: 'Add it to the chain', cls: 'primary', icon: 'add', go: function (b) {
+    busy(b, true);
+    api('web-tls', {action: 'tls_chain_add', text: area.value.trim()}).then(function (x) {
+      closeModal();
+      toast(x.message, x.complete ? 'good' : 'warn');
+      loadTls();
+    }).catch(function (e) { busy(b, false); oops(e); });
+  }}], 'medium');
+}
+function tlsSelfcheckLine(c) {
+  var s = el('span', c.ok === false ? 'chain-bad' : (c.ok ? 'chain-good' : 'muted'));
+  s.appendChild(noI18n(el('span', '', (c.host || '') + ':' + (c.port || '443') + ' \u00b7 ')));
+  s.appendChild(noI18n(el('span', '', c.said || '')));
+  s.appendChild(noI18n(el('span', 'muted', ' \u00b7 ' + ago(c.at))));
+  return s;
+}
 function drawTls(d) {
   TLS.last = d;
   var host = $('tls-cards');
@@ -44463,10 +44567,14 @@ function tlsCard(d) {
                  /* Its key, and the second certificate's (1.10.261, as upsmon 4.1.6). */
                  ['Key', (info.key || '–') + (d.kept2 && d.kept2.key ? ' + ' + d.kept2.key + ' (a second certificate beside it)' : '')]];
     if (info.names && info.names.length) facts.push(['Names', noI18n(el('span', '', info.names.join(', ')))]);
-    if (d.managed && d.kept) {
-      facts.push(['Chain', d.chain_n ? d.chain_n + ' between it and the root' : '–']);
-      facts.push(['Root', d.root ? 'given' : 'not given']);
-    }
+    /* The chain the web server sends (1.10.338): complete up to a root of
+       the system, or a link missing - which browsers fetch themselves and
+       every other client refuses. */
+    var ch = tlsChainLine(d);
+    if (ch) facts.push(['Chain', ch]);
+    if (d.managed && d.kept) facts.push(['Root', d.root_names && d.root_names.length
+      ? noI18n(el('span', '', d.root_names.join(', '))) : 'not given']);
+    if (d.selfcheck && d.selfcheck.at) facts.push(['Checked from here', tlsSelfcheckLine(d.selfcheck)]);
     if (info.sha256) facts.push(['SHA-256', noI18n(el('span', 'mono small', info.sha256))]);
     var kv = el('dl', 'cert-kv');
     facts.forEach(function (f) {
@@ -44523,6 +44631,36 @@ function tlsCard(d) {
     var pol = cmdButton('TLS settings', 'gear', 'small');
     pol.onclick = function () { certPolicy(d); };
     tools.appendChild(pol);
+    /* Complete / Check the chain, and the missing authority by hand
+       (1.10.338, as plexmon 2.9.8): not for one that signs itself. */
+    var chs = (d.managed && d.chain) || null;
+    if (d.managed && d.kept && chs && chs.state !== 'self-signed') {
+      var broken = tlsChainBroken(d);
+      var ch = cmdButton(broken ? 'Complete the chain' : 'Check the chain', 'refresh', broken ? 'small primary' : 'small');
+      explain(ch, 'Checked against the system\u2019s root authorities; an intermediate the certificate did not come with is fetched from its CA Issuers address, as browsers do it - so that curl, Python, acme and other clients that fetch nothing take it too.');
+      ch.onclick = function () {
+        busy(ch, true);
+        api('web-tls', {action: 'tls_chain'}).then(function (x) { toast(x.message, x.complete ? 'good' : 'warn'); loadTls(); })
+          .catch(oops).then(function () { busy(ch, false); });
+      };
+      tools.appendChild(ch);
+      if (broken) {
+        var addc = cmdButton('Upload the missing authority', 'upload', 'small');
+        addc.onclick = function () { certChainAdd(d); };
+        tools.appendChild(addc);
+      }
+    }
+    if (d.now && d.now.facts && !d.now.facts.said) {
+      var sc = cmdButton('Check from here', 'check', 'small');
+      sc.title = 'The web server asked from this machine as a client that fetches no missing link asks it (Python, curl, acme)';
+      sc.onclick = function () {
+        sc.disabled = true;
+        api('web-tls', {action: 'selfcheck'}).then(function (x) {
+          toast(x.message, x.selfcheck && x.selfcheck.ok === false ? 'bad' : 'good'); loadTls();
+        }).catch(function (e) { sc.disabled = false; oops(e); });
+      };
+      tools.appendChild(sc);
+    }
     if ((d.managed && d.kept) || (d.now && d.now.facts && !d.now.facts.said)) {
       var dl = cmdButton('Download', 'download', 'small');
       dl.title = 'The certificate in the format chosen - PEM, DER, PKCS#7 or PFX - with its private key if wanted';

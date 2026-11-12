@@ -372,6 +372,34 @@ working.
 
 ## Version
 
+1.10.338
+
+- **The web server sends its whole chain.**
+  - A certificate uploaded without its intermediate authority is no longer
+    served alone, which browsers accept and every other client (Python, curl,
+    Java, acme's push) refuses. The missing links are read from the
+    certificate's CA Issuers address (DER, PEM or PKCS#7, at most four
+    steps) until the chain leads to a root of the system. What was read is
+    kept only when `openssl verify` then passes. When it cannot be completed,
+    the certificate is still put in, with a warning and an event.
+  - What is sent is put in order from the certificate up, by subject and
+    issuer and by key id; the root is never sent.
+  - Certificates from acme and from Automatic certificates, the second one
+    too, are served with their chain, and a link the CA left out is read
+    the same way.
+  - *Settings → Certificates and TLS*:
+    - a **Chain** line: complete up to which root (and what was fetched), a
+      private root, or incomplete and which authority is missing;
+    - **Root** names the root kept beside it;
+    - **Complete the chain** / **Check the chain** for the certificate in place;
+    - **Upload the missing authority**, a dialog for an authority that cannot
+      be read online (no CA Issuers address, no way out, a private CA): only
+      certificates of authorities, never a key, and a root is kept to check
+      with and never sent.
+  - After every change of the certificate, the web server is asked from this
+    machine as a client without AIA asks it. The card shows the result, a
+    failure is a warning event, and **Check from here** asks again.
+
 1.10.337
 
 - **Bug hunt, run 2.**
