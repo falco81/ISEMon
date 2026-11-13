@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.338",
-  "made": "2026-11-12",
+  "version": "1.10.339",
+  "made": "2026-11-13",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -7176,6 +7176,10 @@
    "source": "Domain (MS-CHAP)",
    "text": "Domain (MS-CHAP)"
   },
+  "s.domain-name.4e31a171": {
+   "source": "DOMAIN\\name",
+   "text": "DOMAIN\\name"
+  },
   "s.domain-workgroup.df3e3674": {
    "source": "Domain (workgroup)",
    "text": "Domain (workgroup)"
@@ -12844,9 +12848,9 @@
    "source": "is the VPN, and so is anything through a client named below as the VPN; a name that is the machine's own",
    "text": "is the VPN, and so is anything through a client named below as the VPN; a name that is the machine's own"
   },
-  "s.is-tried-as-well-so-somebody.b58d7279": {
-   "source": "is tried as well, so somebody who types their whole address gets in too.",
-   "text": "is tried as well, so somebody who types their whole address gets in too."
+  "s.is-tried-as-well-so-somebody.648adf70": {
+   "source": "is tried as well, so somebody who types their whole address gets in too - and so is",
+   "text": "is tried as well, so somebody who types their whole address gets in too - and so is"
   },
   "s.is-vmware-with-this-on-they.b97dd8fd": {
    "source": "is VMware. With this on they are fetched with the other things that are fetched by themselves, and pointing at any MAC anywhere on these pages says who made the machine — which turns a page of MAB refusals into a page of printers, phones and laptops. It needs a way out to the internet, like the country database. Nothing is ever judged by it.",
@@ -26752,9 +26756,9 @@
    "source": "The asking happens on threads of its own, a page is drawn from what is already known, and a name server that has gone away leaves a name blank and changes nothing else. Off, not one packet is sent.",
    "text": "The asking happens on threads of its own, a page is drawn from what is already known, and a name server that has gone away leaves a name blank and changes nothing else. Off, not one packet is sent."
   },
-  "s.the-attribute-a-person-s-name.21099b0f": {
-   "source": "The attribute a person’s name is matched against. sAMAccountName is the short name on Active Directory — jnovak , with no domain in front of it. Whatever is set here, userPrincipalName is tried as well, so somebody who types their whole address gets in too.",
-   "text": "The attribute a person’s name is matched against. sAMAccountName is the short name on Active Directory — jnovak , with no domain in front of it. Whatever is set here, userPrincipalName is tried as well, so somebody who types their whole address gets in too."
+  "s.the-attribute-a-person-s-name.c34506a4": {
+   "source": "The attribute a person’s name is matched against. sAMAccountName is the short name on Active Directory — jnovak , with no domain in front of it. Whatever is set here, userPrincipalName is tried as well, so somebody who types their whole address gets in too - and so is DOMAIN\\name . Whichever they type, it is one account here, kept under the short name the directory gives them.",
+   "text": "The attribute a person’s name is matched against. sAMAccountName is the short name on Active Directory — jnovak , with no domain in front of it. Whatever is set here, userPrincipalName is tried as well, so somebody who types their whole address gets in too - and so is DOMAIN\\name . Whichever they type, it is one account here, kept under the short name the directory gives them."
   },
   "s.the-attribute-a-person-s-name.d20d19e5": {
    "source": "The attribute a person’s name is matched against.",
@@ -35792,6 +35796,10 @@
    "source": "Which",
    "text": "Which"
   },
+  "s.whichever-they-type-it-is-one.1bec5722": {
+   "source": ". Whichever they type, it is one account here, kept under the short name the directory gives them.",
+   "text": ". Whichever they type, it is one account here, kept under the short name the directory gives them."
+  },
   "s.while-this-is-on-the-edge.a722d2bb": {
    "source": "While this is on, the edge of any column’s heading can be dragged to size it and the heading itself to move it, and the right button on a heading hides a column, brings a hidden one back or adds an empty one for room; each change is kept the moment you let go. It is for this sign-in only: signing out, the sign-in running out or the service restarting turn it off again. Off, the tables are drawn as you left them and nothing can move them.",
    "text": "While this is on, the edge of any column’s heading can be dragged to size it and the heading itself to move it, and the right button on a heading hides a column, brings a hidden one back or adds an empty one for room; each change is kept the moment you let go. It is for this sign-in only: signing out, the sign-in running out or the service restarting turn it off again. Off, the tables are drawn as you left them and nothing can move them."
@@ -42172,9 +42180,9 @@
    "source": "The addresses the counting can see right now — inside the window and not yet out — and how far each one still has to go.<br><br>It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.<br><br>An address is counted from the end of its last ban: what it was banned for once is not charged to it again, so serving a ban and being let back in both start it again at nought.<br><br>Only attempts at the VPN are counted here. A machine failing 802.1X or MAB on a socket, or somebody mistyping a password on a switch over TACACS+, is recorded and shown on its own tab and can never earn anybody a ban — the address on such a record is usually the switch itself.",
    "text": "The addresses the counting can see right now — inside the window and not yet out — and how far each one still has to go.<br><br>It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.<br><br>An address is counted from the end of its last ban: what it was banned for once is not charged to it again, so serving a ban and being let back in both start it again at nought.<br><br>Only attempts at the VPN are counted here. A machine failing 802.1X or MAB on a socket, or somebody mistyping a password on a switch over TACACS+, is recorded and shown on its own tab and can never earn anybody a ban — the address on such a record is usually the switch itself."
   },
-  "r.the-attribute-a-person-s-name.2f4ea4a9": {
-   "source": "The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too.",
-   "text": "The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too."
+  "r.the-attribute-a-person-s-name.da4d3fd7": {
+   "source": "The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too - and so is <code>DOMAIN\\name</code>. Whichever they type, it is one account here, kept under the short name the directory gives them.",
+   "text": "The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too - and so is <code>DOMAIN\\name</code>. Whichever they type, it is one account here, kept under the short name the directory gives them."
   },
   "r.the-certificate-and-its-private-key.b13d2a2b": {
    "source": "The certificate and its private key, as PEM - pasted, in any order - or a <code>.pfx</code> / <code>.p12</code> file. The key is kept sealed and never shown back.",

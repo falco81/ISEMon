@@ -372,6 +372,25 @@ working.
 
 ## Version
 
+1.10.339
+
+- **One person from Active Directory is one account.**
+  - Signing in as `jnovak`, `jnovak@corp.example` or `CORP\jnovak` is now the same
+    account. It is kept under the name the directory gives the person, their
+    `sAMAccountName`. Before, each name typed made an account of its own, with
+    its own sessions, columns and passkeys.
+  - The pairs made before are put together once, after the upgrade: the
+    accounts of one directory entry become the one without a domain. One known
+    only as `name@domain` is merged at its next sign-in. A switch-off under
+    either name stays, and settings, passkeys and sessions move with it. Rows
+    with a password set on this machine are never touched.
+  - A local account of the same name stays what that name is: the domain's
+    account is then kept under the name typed, as before.
+  - Somebody of another domain of the forest is kept as `name@domain`, never as
+    the short name alone.
+  - Ready for single sign-on by Kerberos: a principal (`jnovak@CORP.EXAMPLE`)
+    maps to the same account.
+
 1.10.338
 
 - **The web server sends its whole chain.**

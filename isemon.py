@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.338'
+__version__ = '1.10.339'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -44522,6 +44522,76 @@ class Storage(object):
                     db.execute('UPDATE users SET %s WHERE name=?' % ', '.join(sets), args)
         return self.user(name)
 
+    def merge_directory_person(self, keep, dn, by='the directory'):
+        """One directory person, one account (1.10.339): the rows of the same
+        directory entry under another name - `falco@kr-olomoucky.int` beside
+        `falco`, as signing in with the whole address made them before - put
+        into `keep` and taken away. Only rows the directory made and that
+        hold no password of this machine's: anything set here by hand is left
+        as it is. A switch-off under either name stays (it is a lock), and so
+        do the columns, finds and settings of the other name where `keep` has
+        none, its passkeys and its sessions. Returns the names taken away."""
+        keep = str(keep or '').strip().lower()
+        want = str(dn or '').strip().casefold()
+        if not keep or not want:
+            return []
+        mine = self.user(keep)
+        if not mine or not mine.get('from_dir'):
+            return []
+        others = [dict(r) for r in self.db.execute(
+            'SELECT name, dn, hash, disabled FROM users WHERE from_dir=1 AND name<>?', (keep,))
+            if str(r['dn'] or '').strip().casefold() == want and not (r['hash'] or '')]
+        if not others:
+            return []
+        gone = [o['name'] for o in others]
+        with self.db_write() as db:
+            if any(int(o.get('disabled') or 0) for o in others):
+                db.execute('UPDATE users SET disabled=1 WHERE name=?', (keep,))
+            for table in ('user_cols', 'user_finds', 'user_prefs'):
+                had = db.execute('SELECT 1 FROM %s WHERE name=?' % table, (keep,)).fetchone()
+                for name in gone:
+                    if had:
+                        db.execute('DELETE FROM %s WHERE name=?' % table, (name,))
+                    else:
+                        moved = db.execute('UPDATE %s SET name=? WHERE name=?' % table,
+                                           (keep, name)).rowcount
+                        had = bool(moved)
+            for name in gone:
+                db.execute('UPDATE sessions SET name=? WHERE name=?', (keep, name))
+                db.execute('DELETE FROM users WHERE name=?', (name,))
+        keys = self.passkeys()
+        if any(k.get('user') in gone for k in keys):
+            for k in keys:
+                if k.get('user') in gone:
+                    k['user'] = keep
+            self.put_passkeys(keys)
+        self.add_event('users', '%s and %s are one person in the directory: kept as one account, '
+                                '%s' % (', '.join(gone), keep, keep), who=by)
+        return gone
+
+    def merge_directory_people(self):
+        """The accounts made before 1.10.339, once: every directory entry kept
+        under two names or more becomes the one without a domain when there
+        is exactly one such - the short name, as a sign-in now keeps it. One
+        known only as name@domain becomes one account at its next sign-in."""
+        rows = [dict(r) for r in self.db.execute(
+            'SELECT name, dn, hash FROM users WHERE from_dir=1')]
+        by_dn = {}
+        for r in rows:
+            dn = str(r['dn'] or '').strip().casefold()
+            if dn:
+                by_dn.setdefault(dn, []).append(r)
+        merged = []
+        for dn, group in by_dn.items():
+            if len(group) < 2:
+                continue
+            short = [r for r in group if '@' not in r['name'] and '\\' not in r['name']]
+            if len(short) != 1:
+                continue
+            merged += self.merge_directory_person(short[0]['name'], group[0]['dn'],
+                                                  'isemon %s' % __version__)
+        return merged
+
     def drop_user(self, name):
         name = str(name).strip().lower()
         with self.db_write() as db:
@@ -58639,6 +58709,48 @@ class Daemon(object):
             raise LdapUnreachable(str(e)[:160])
         return link
 
+    def directory_account_name(self, entry, typed=''):
+        """The name a directory person's account is kept under (1.10.339):
+        their sAMAccountName, lower-cased - and name@domain only for
+        somebody of another domain than the directory's own (a forest read
+        through its global catalogue), where the short name alone could be
+        somebody else. The same for a name typed, a userPrincipalName, and -
+        for signing in by Kerberos later - the principal a ticket names
+        (`directory_principal_name`). Where that name is a local account of
+        this machine, the name typed is kept, as before: the local account
+        is what that name is here."""
+        attrs = entry.get('attrs', {}) if isinstance(entry, dict) else {}
+        typed = str(typed or '').strip().lower()
+        sam = str((attrs.get('sAMAccountName') or [''])[0] or '').strip().lower()
+        if not sam:
+            return typed
+        dn = (attrs.get('distinguishedName') or [entry.get('dn') or ''])[0]
+        home = dn_domain(dn)
+        mine = self.directory_domain('directory')
+        name = sam if not home or not mine or home == mine else '%s@%s' % (sam, home)
+        if name != typed:
+            there = self.store.user(name)
+            if there and not there.get('from_dir'):
+                return typed
+        return name
+
+    def directory_principal_name(self, principal):
+        """A Kerberos principal (`falco@KR-OLOMOUCKY.INT`) or a down-level name
+        (`KR-OLOMOUCKY\\falco`) as the account it is kept under, without
+        asking the directory: the short name for the directory's own realm,
+        name@realm for another. For single sign-on by Kerberos, which hands
+        over a principal and no password (1.10.339)."""
+        p = str(principal or '').strip()
+        if '\\' in p:
+            dom, user = p.split('\\', 1)
+            return user.strip().lower()
+        user, _at, realm = p.rpartition('@') if '@' in p else (p, '', '')
+        user, realm = user.strip().lower(), realm.strip().lower()
+        mine = self.directory_domain('directory')
+        if not realm or realm == mine:
+            return user
+        return '%s@%s' % (user, realm)
+
     @staticmethod
     def directory_name_filter(name):
         """Somebody typing their name, and nothing else.
@@ -58651,6 +58763,9 @@ class Daemon(object):
         attr = str(CONFIG.get('directory_user_attr') or 'sAMAccountName').strip()
         attr = re.sub(r'[^A-Za-z0-9-]', '', attr) or 'sAMAccountName'
         clean = str(name or '').strip()        # BER: raw, nothing to escape
+        # DOMAIN\name, as Windows writes it (1.10.339): the name after it.
+        if '\\' in clean:
+            clean = clean.split('\\', 1)[1].strip()
         return ldap_and(
             ldap_equal('objectClass', 'user'),
             ldap_or(ldap_equal(attr, clean), ldap_equal('userPrincipalName', clean)))
@@ -58851,7 +58966,15 @@ class Daemon(object):
                                 'use this' % name, code='no-group')
             return {
                 'dn': who,
-                'name': str(name or '').strip().lower(),
+                # One person, one account (1.10.339): kept under the name
+                # the directory gives them, whatever they typed - `falco`,
+                # `falco@kr-olomoucky.int` or `KR\\falco` are one account.
+                'name': self.directory_account_name(entry, name),
+                'typed': str(name or '').strip().lower(),
+                # Whether `name` is the one the directory gives them - not
+                # the name typed, kept where the other is a local account.
+                'canonical': self.directory_account_name(entry, name) ==
+                self.directory_account_name(entry, ''),
                 # Every name this entry answers to (1.10.198): what a switch
                 # here is checked against, under either of them.
                 'aliases': sorted({str(v).strip().lower() for v in (
@@ -59717,6 +59840,11 @@ class Daemon(object):
                     log('%s is a local account; the directory was not used for it' % name,
                         'info')
                     said = None
+            if said and said.get('name') and said['name'] != name:
+                # One person, one account (1.10.339): from here on the name
+                # the directory gives them, whichever of theirs was typed.
+                typed, name = name, said['name']
+                self._login_forget_one('user:' + typed, now)
             if said:
                 user = self.store.user(name)
                 # ...or switched off under its other name (1.10.197): the
@@ -59753,6 +59881,14 @@ class Daemon(object):
                     log('%s came back from the directory as %s, was %s'
                         % (name, said['role'], was), 'info')
                 self.store.remember_directory_user(said)
+                # ...and the rows made before under the other names of the
+                # same person put into this one (1.10.339).
+                try:
+                    if said.get('canonical'):
+                        self.store.merge_directory_person(name, said.get('dn'))
+                except Exception as e:                  # noqa: BLE001
+                    log('%s: the other accounts of the same person: %s' % (name, str(e)[:160]),
+                        'warn')
                 self._login_forget(where)
                 self._login_forget('user:' + name)
                 self._login_known(name, where, now)
@@ -60879,7 +61015,7 @@ class Daemon(object):
         'directory_base': 'The part of the tree people live in: <code>DC=example,DC=com</code>, or an organisational unit inside it if that is quicker to search.',
         'directory_bind': 'An account that may read the directory, and nothing more. Active Directory will not be searched by an anonymous client. Written as <code>reader@example.com</code> or as a whole distinguished name.',
         'directory_password': 'The password of that account. It is never anybody’s way in to this dashboard.',
-        'directory_user_attr': 'The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too.',
+        'directory_user_attr': 'The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too - and so is <code>DOMAIN\\name</code>. Whichever they type, it is one account here, kept under the short name the directory gives them.',
         'directory_admin_group': 'Being in this group means being able to change everything: ban, unban, the router, settings, accounts. Press <b>Find the groups</b> to pick it from the directory rather than typing it. More than one, separated by semicolons.',
         'directory_banadmin_group': 'Being in this group means being able to look at every page as read only does, and also to ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall, no letting everybody in at once. Somebody in this group and the full admin group is a full admin. More than one, separated by semicolons.',
         'directory_readonly_group': 'Being in this group means being able to look at every page and change nothing. Somebody in both groups is an administrator. A role whose group is left empty is given to nobody, and with no group filled in at all nobody from the directory may sign in.',
@@ -66095,6 +66231,17 @@ class Daemon(object):
             self.webroot.selfcheck_due()
         except Exception as e:
             log('the dashboard\'s own TLS check: %s' % str(e)[:160], 'debug')
+        # One directory person, one account (1.10.339): the pairs made
+        # before, put together once.
+        if not getattr(self, '_dir_merged', False):
+            self._dir_merged = True
+            try:
+                if self.store.get_meta('dir_people_merged') != '1':
+                    self.store.merge_directory_people()
+                    self.store.set_meta('dir_people_merged', '1')
+            except Exception as e:
+                log('putting together the accounts of one directory person: %s'
+                    % str(e)[:160], 'warn')
         # A new version on the web, looked for once a day (1.10.228).
         try:
             self.upgrades.online_tick()

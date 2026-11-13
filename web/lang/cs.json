@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.338",
+  "version": "1.10.339",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -7176,6 +7176,10 @@
    "source": "Domain (MS-CHAP)",
    "text": "Doména (MS-CHAP)"
   },
+  "s.domain-name.4e31a171": {
+   "source": "DOMAIN\\name",
+   "text": "DOMAIN\\name"
+  },
   "s.domain-workgroup.df3e3674": {
    "source": "Domain (workgroup)",
    "text": "Doména (pracovní skupina)"
@@ -12844,9 +12848,9 @@
    "source": "is the VPN, and so is anything through a client named below as the VPN; a name that is the machine's own",
    "text": "je VPN, a stejně tak cokoli přes klienta uvedeného níže jako VPN; jméno, které je vlastní"
   },
-  "s.is-tried-as-well-so-somebody.b58d7279": {
-   "source": "is tried as well, so somebody who types their whole address gets in too.",
-   "text": "se zkouší také, takže se přihlásí i ten, kdo zadá celou svou adresu."
+  "s.is-tried-as-well-so-somebody.648adf70": {
+   "source": "is tried as well, so somebody who types their whole address gets in too - and so is",
+   "text": ", takže se dostane dovnitř i ten, kdo zadá celou adresu - a stejně tak"
   },
   "s.is-vmware-with-this-on-they.b97dd8fd": {
    "source": "is VMware. With this on they are fetched with the other things that are fetched by themselves, and pointing at any MAC anywhere on these pages says who made the machine — which turns a page of MAB refusals into a page of printers, phones and laptops. It needs a way out to the internet, like the country database. Nothing is ever judged by it.",
@@ -26752,9 +26756,9 @@
    "source": "The asking happens on threads of its own, a page is drawn from what is already known, and a name server that has gone away leaves a name blank and changes nothing else. Off, not one packet is sent.",
    "text": "Dotazování probíhá ve vlastních vláknech, stránka se vykreslí z toho, co už je známo, a DNS server, který přestal odpovídat, nechá jméno prázdné a nic jiného nezmění. Je-li vypnuto, neodejde ani jeden paket."
   },
-  "s.the-attribute-a-person-s-name.21099b0f": {
-   "source": "The attribute a person’s name is matched against. sAMAccountName is the short name on Active Directory — jnovak , with no domain in front of it. Whatever is set here, userPrincipalName is tried as well, so somebody who types their whole address gets in too.",
-   "text": "Atribut, se kterým se porovnává jméno člověka. sAMAccountName je krátké jméno v Active Directory — jnovak , bez domény před ním. Ať je zde nastaveno cokoli, zkouší se také userPrincipalName, takže se dostane dovnitř i ten, kdo zadá celou adresu."
+  "s.the-attribute-a-person-s-name.c34506a4": {
+   "source": "The attribute a person’s name is matched against. sAMAccountName is the short name on Active Directory — jnovak , with no domain in front of it. Whatever is set here, userPrincipalName is tried as well, so somebody who types their whole address gets in too - and so is DOMAIN\\name . Whichever they type, it is one account here, kept under the short name the directory gives them.",
+   "text": "Atribut, se kterým se porovnává jméno uživatele. sAMAccountName je krátké jméno v Active Directory — jnovak , bez domény před ním. Ať je zde nastaveno cokoli, zkouší se i userPrincipalName, takže se dostane dovnitř i ten, kdo zadá celou adresu - a stejně tak DOMAIN\\name . Ať zadá kterékoli, je to tady jeden účet, vedený pod krátkým jménem, které mu dává adresář."
   },
   "s.the-attribute-a-person-s-name.d20d19e5": {
    "source": "The attribute a person’s name is matched against.",
@@ -35792,6 +35796,10 @@
    "source": "Which",
    "text": "Které"
   },
+  "s.whichever-they-type-it-is-one.1bec5722": {
+   "source": ". Whichever they type, it is one account here, kept under the short name the directory gives them.",
+   "text": ". Ať zadá kterékoli, je to tady jeden účet, vedený pod krátkým jménem, které mu dává adresář."
+  },
   "s.while-this-is-on-the-edge.a722d2bb": {
    "source": "While this is on, the edge of any column’s heading can be dragged to size it and the heading itself to move it, and the right button on a heading hides a column, brings a hidden one back or adds an empty one for room; each change is kept the moment you let go. It is for this sign-in only: signing out, the sign-in running out or the service restarting turn it off again. Off, the tables are drawn as you left them and nothing can move them.",
    "text": "Když je toto zapnuto, lze tažením okraje záhlaví sloupce změnit jeho šířku a tažením samotného záhlaví sloupec přesunout; pravé tlačítko na záhlaví sloupec skryje, vrátí skrytý nebo přidá prázdnou mezeru; každá změna se uloží v okamžiku, kdy pustíte tlačítko. Platí jen pro toto přihlášení: odhlášení, vypršení přihlášení nebo restart služby režim opět vypnou. Vypnuto: tabulky se vykreslují tak, jak jste je nechali, a nic s nimi nelze pohnout."
@@ -42172,9 +42180,9 @@
    "source": "The addresses the counting can see right now — inside the window and not yet out — and how far each one still has to go.<br><br>It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.<br><br>An address is counted from the end of its last ban: what it was banned for once is not charged to it again, so serving a ban and being let back in both start it again at nought.<br><br>Only attempts at the VPN are counted here. A machine failing 802.1X or MAB on a socket, or somebody mistyping a password on a switch over TACACS+, is recorded and shown on its own tab and can never earn anybody a ban — the address on such a record is usually the switch itself.",
    "text": "Adresy, které počítání právě vidí — v časovém okně a dosud nezablokované — a kolik jim ještě zbývá.<br><br>Je to ta polovina příběhu, kterou tato stránka dosud neukazovala: prázdný seznam výše neříká nic o tom, zda se nic neděje, nebo zda se děje všechno jeden pokus pod hranicí.<br><br>Adresa se počítá od konce své poslední blokace: to, za co už jednou zablokována byla, se jí znovu nepřičítá, takže odpykání blokace i odblokování ji obojí vrací na nulu.<br><br>Počítají se zde pouze pokusy o VPN. Stroj, který neprojde 802.1X nebo MAB na zásuvce, nebo někdo, kdo se splete v hesle na switchi přes TACACS+, se zaznamená a zobrazí na vlastní záložce a nikdy nikomu blokaci nevyslouží — adresou na takovém záznamu bývá obvykle samotný switch."
   },
-  "r.the-attribute-a-person-s-name.2f4ea4a9": {
-   "source": "The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too.",
-   "text": "Atribut, se kterým se porovnává jméno uživatele. <code>sAMAccountName</code> je krátké jméno v Active Directory — <code>jnovak</code>, bez domény před ním. Ať je zde nastaveno cokoli, zkouší se i <code>userPrincipalName</code>, takže se dostane dovnitř i ten, kdo zadá celou adresu."
+  "r.the-attribute-a-person-s-name.da4d3fd7": {
+   "source": "The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too - and so is <code>DOMAIN\\name</code>. Whichever they type, it is one account here, kept under the short name the directory gives them.",
+   "text": "Atribut, se kterým se porovnává jméno uživatele. <code>sAMAccountName</code> je krátké jméno v Active Directory — <code>jnovak</code>, bez domény před ním. Ať je zde nastaveno cokoli, zkouší se i <code>userPrincipalName</code>, takže se dostane dovnitř i ten, kdo zadá celou adresu - a stejně tak <code>DOMAIN\\name</code>. Ať zadá kterékoli, je to tady jeden účet, vedený pod krátkým jménem, které mu dává adresář."
   },
   "r.the-certificate-and-its-private-key.b13d2a2b": {
    "source": "The certificate and its private key, as PEM - pasted, in any order - or a <code>.pfx</code> / <code>.p12</code> file. The key is kept sealed and never shown back.",
@@ -43278,6 +43286,10 @@
    "source": "Switched on, every ban of it still running - the ones it made while only watched among them - is carried at once — to the firewalls, into the published list and into the access list: {0}. They can be looked through first on the Banned page, under <i>Only watched</i>.",
    "text": "Po zapnutí se každý jeho dosud běžící ban – včetně těch, které vznikly během pouhého sledování – okamžitě uplatní – na firewallech, ve zveřejněném seznamu i v access listu: {0}. Předem si je můžete projít na stránce Banned ve skupině <i>Jen sledované</i>."
   },
+  "r.the-attribute-a-person-s-name.2f4ea4a9": {
+   "source": "The attribute a person’s name is matched against. <code>sAMAccountName</code> is the short name on Active Directory — <code>jnovak</code>, with no domain in front of it. Whatever is set here, <code>userPrincipalName</code> is tried as well, so somebody who types their whole address gets in too.",
+   "text": "Atribut, se kterým se porovnává jméno uživatele. <code>sAMAccountName</code> je krátké jméno v Active Directory — <code>jnovak</code>, bez domény před ním. Ať je zde nastaveno cokoli, zkouší se i <code>userPrincipalName</code>, takže se dostane dovnitř i ten, kdo zadá celou adresu."
+  },
   "r.the-ladder-as-written-a-list.b1d5cd27": {
    "source": "The ladder, as written: a list of minutes, and whether the last<br> step is for good. \"10, 60, 1440, forever\" is ten minutes the first<br> time, an hour the second, a day the third and for good after that.<br> Empty means there is no ladder and the doubling below decides.<br>",
    "text": "Stupně blokace tak, jak jsou zapsány: seznam minut a údaj, zda poslední<br> stupeň platí natrvalo. „10, 60, 1440, forever“ znamená deset minut napoprvé,<br> hodinu napodruhé, den napotřetí a poté natrvalo.<br> Prázdné znamená, že žádné stupně blokace nejsou a rozhoduje zdvojování níže.<br>"
@@ -43850,6 +43862,10 @@
    "source": "is on",
    "text": "je zapnuto"
   },
+  "s.is-tried-as-well-so-somebody.b58d7279": {
+   "source": "is tried as well, so somebody who types their whole address gets in too.",
+   "text": "se zkouší také, takže se přihlásí i ten, kdo zadá celou svou adresu."
+  },
   "s.isemon-api-key.7ce248f5": {
    "source": "isemon-api.key",
    "text": "isemon-api.key"
@@ -44385,6 +44401,10 @@
   "s.the-answer-the-domain-gave.b505e1c3": {
    "source": "the answer the domain gave",
    "text": "odpověď, kterou dala doména"
+  },
+  "s.the-attribute-a-person-s-name.21099b0f": {
+   "source": "The attribute a person’s name is matched against. sAMAccountName is the short name on Active Directory — jnovak , with no domain in front of it. Whatever is set here, userPrincipalName is tried as well, so somebody who types their whole address gets in too.",
+   "text": "Atribut, se kterým se porovnává jméno člověka. sAMAccountName je krátké jméno v Active Directory — jnovak , bez domény před ním. Ať je zde nastaveno cokoli, zkouší se také userPrincipalName, takže se dostane dovnitř i ten, kdo zadá celou adresu."
   },
   "s.the-backups-have-no-password-so.2ee8353c": {
    "source": "The backups have no password, so nothing is sent: a backup holds the key of every password kept here. Set the password of the backups below (Make a strong one) and save.",
