@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.342",
+  "version": "1.10.343",
   "made": "2026-11-14",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -28724,6 +28724,14 @@
    "source": "the first record here…",
    "text": "the first record here…"
   },
+  "s.the-first-step-is-done-now.33cc6bb4": {
+   "source": "The first step is done. Now Face ID, Touch ID, Windows Hello or the PIN of your device.",
+   "text": "The first step is done. Now Face ID, Touch ID, Windows Hello or the PIN of your device."
+  },
+  "s.the-first-step-is-done-signing.51a741d1": {
+   "source": "The first step is done. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half.",
+   "text": "The first step is done. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half."
+  },
   "s.the-first-sync-replaces-it-save.ff12ff08": {
    "source": "; the first sync replaces it. Save and",
    "text": "; the first sync replaces it. Save and"
@@ -30171,14 +30179,6 @@
   "s.the-password-was-right-and-the.a966044d": {
    "source": "The password was right and the code from the app was asked for in a second window.",
    "text": "The password was right and the code from the app was asked for in a second window."
-  },
-  "s.the-password-was-right-now-face.1464c807": {
-   "source": "The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device.",
-   "text": "The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device."
-  },
-  "s.the-password-was-right-signing-in.3cd2e46d": {
-   "source": "The password was right. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half.",
-   "text": "The password was right. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half."
   },
   "s.the-password-was-wrong.70379bdd": {
    "source": "the password was wrong",

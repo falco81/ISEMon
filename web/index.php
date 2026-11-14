@@ -3543,8 +3543,11 @@ function srcText(el) {
   .signin .krb-or{display:flex;align-items:center;gap:10px;color:var(--tx-mut);font-size:12px;
     text-transform:uppercase;letter-spacing:.08em;margin:16px 0 12px}
   .signin .krb-or::before,.signin .krb-or::after{content:"";flex:1;border-top:1px solid var(--line)}
-  .signin .krb-box{display:flex;flex-direction:column;gap:10px}
+  .signin .krb-box{display:flex;flex-direction:column;gap:12px}
   .signin .krb-box .btn{display:flex;gap:9px;align-items:center}
+  /* An empty line under a button only when there is something to say (1.10.343):
+     the two buttons stood apart by a blank line each. */
+  .signin .krb-box .said:empty{display:none}
   /* A sign-in that did not work says one sentence. What the directory
      actually said - "80090308: LdapErr: DSID-0C090451, comment:
      AcceptSecurityContext error, data 52e" - is the line somebody setting
@@ -5544,13 +5547,18 @@ function srcText(el) {
     SECOND = kind;
     form.hidden = true;
     step.hidden = false;
+    /* ...and Windows and the certificate with it (1.10.343): their buttons
+       stood above the second step, as though it were a choice. */
+    var kb = document.getElementById('krb-box');
+    if (kb) kb.hidden = true;
     var enrol = kind === 'enrol';
     document.getElementById('pk-title').textContent = enrol ? 'Set up Face ID' : 'Confirm it is you';
+    /* Said of whichever way it was - a password, Windows or a certificate. */
     document.getElementById('pk-say').textContent = enrol
-      ? 'The password was right. Signing in here takes a second step: Face ID, Touch ID, '
+      ? 'The first step is done. Signing in here takes a second step: Face ID, Touch ID, '
         + 'Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, '
         + 'the server only its public half.'
-      : 'The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device.';
+      : 'The first step is done. Now Face ID, Touch ID, Windows Hello or the PIN of your device.';
     document.getElementById('pk-go-words').textContent = enrol ? 'Set up Face ID' : 'Use Face ID';
     pkSay('');
     pkGo.disabled = false;
@@ -5683,7 +5691,10 @@ function srcText(el) {
             /* ...and the certificate next, when it is tried by itself too
                (1.10.342). */
             if (then) { then(); return; }
-            if (!form.hidden) return;
+            /* Nothing said while there is something else to choose: the form,
+               or the certificate's button (1.10.343) - this computer is simply
+               not in the domain. */
+            if (!form.hidden || certGo) return;
           }
           krbSaid.className = 'said bad';
           krbSaid.textContent = (x.d && x.d.error) || 'Windows did not sign you in';

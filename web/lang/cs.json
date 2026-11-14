@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.342",
+  "version": "1.10.343",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -28724,6 +28724,14 @@
    "source": "the first record here…",
    "text": "první záznam zde…"
   },
+  "s.the-first-step-is-done-now.33cc6bb4": {
+   "source": "The first step is done. Now Face ID, Touch ID, Windows Hello or the PIN of your device.",
+   "text": "První krok je hotový. Teď Face ID, Touch ID, Windows Hello nebo PIN vašeho zařízení."
+  },
+  "s.the-first-step-is-done-signing.51a741d1": {
+   "source": "The first step is done. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half.",
+   "text": "První krok je hotový. Přihlášení sem vyžaduje druhý krok: Face ID, Touch ID, Windows Hello nebo PIN tohoto zařízení. Nastavte ho teď - toto zařízení si uloží passkey, server jen jeho veřejnou polovinu."
+  },
   "s.the-first-sync-replaces-it-save.ff12ff08": {
    "source": "; the first sync replaces it. Save and",
    "text": "; první synchronizace ji nahradí. Uložte a"
@@ -30171,14 +30179,6 @@
   "s.the-password-was-right-and-the.a966044d": {
    "source": "The password was right and the code from the app was asked for in a second window.",
    "text": "Heslo bylo správné a kód z aplikace byl vyžádán ve druhém okně."
-  },
-  "s.the-password-was-right-now-face.1464c807": {
-   "source": "The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device.",
-   "text": "Heslo bylo správně. Teď Face ID, Touch ID, Windows Hello nebo PIN vašeho zařízení."
-  },
-  "s.the-password-was-right-signing-in.3cd2e46d": {
-   "source": "The password was right. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half.",
-   "text": "Heslo bylo správně. Přihlášení sem má druhý krok: Face ID, Touch ID, Windows Hello nebo PIN tohoto zařízení. Nastavte ho teď – toto zařízení si uloží passkey, server jen její veřejnou část."
   },
   "s.the-password-was-wrong.70379bdd": {
    "source": "the password was wrong",
@@ -45289,6 +45289,14 @@
   "s.the-pairing-code-shown-this-once.a9b18e97": {
    "source": "The pairing code - shown this once",
    "text": "Párovací kód – zobrazí se jen jednou"
+  },
+  "s.the-password-was-right-now-face.1464c807": {
+   "source": "The password was right. Now Face ID, Touch ID, Windows Hello or the PIN of your device.",
+   "text": "Heslo bylo správně. Teď Face ID, Touch ID, Windows Hello nebo PIN vašeho zařízení."
+  },
+  "s.the-password-was-right-signing-in.3cd2e46d": {
+   "source": "The password was right. Signing in here takes a second step: Face ID, Touch ID, Windows Hello or the PIN of this device. Set it up now - this device keeps a passkey, the server only its public half.",
+   "text": "Heslo bylo správně. Přihlášení sem má druhý krok: Face ID, Touch ID, Windows Hello nebo PIN tohoto zařízení. Nastavte ho teď – toto zařízení si uloží passkey, server jen její veřejnou část."
   },
   "s.the-private-key-alone-key-pem.f14d26c9": {
    "source": "The private key alone (.key, PEM) - encrypted if a password is given.",

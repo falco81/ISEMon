@@ -372,6 +372,20 @@ working.
 
 ## Version
 
+1.10.343
+
+- **The sign-in page, tidied for its variants.**
+  - **The second step stands alone.** After a sign-in with Windows or a
+    certificate, the second step (Face ID) is no longer drawn under the
+    buttons of Windows and the certificate, as though it were a choice. It
+    now starts with "The first step is done" - it said "The password was
+    right" also when nobody had typed one.
+  - **No needless message** when only Windows and a certificate are offered
+    and this computer has no Windows ticket. The certificate's button is
+    there, and "the browser sent no ticket" was said in red above it.
+  - **No blank lines between the buttons** of Windows and the certificate: a
+    line for a message only when there is one.
+
 1.10.342
 
 - **The sign-in page with Windows and a certificate together.**
