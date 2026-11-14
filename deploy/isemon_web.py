@@ -285,6 +285,9 @@ def checked(r):
     else:
         out['fw'] = None
     out['access'] = access_checked(r.get('access'))
+    # Signing in with Windows (1.10.340): a Kerberos ticket of a person in
+    # many groups is larger than nginx's 8 kB header buffer.
+    out['big_headers'] = bool(r.get('big_headers'))
     # Automatic certificates by HTTP-01 (1.10.251): the names port 80
     # answers the ACME CA for - DNS names and nothing else, for they go into
     # server_name.
@@ -909,6 +912,12 @@ def nginx_part(r, last):
         if t:
             new, words = tls_into(new, t, dh_path)
             said += words
+        # Room for a Kerberos ticket (1.10.340): put in when it is not set
+        # anywhere in the file already - never taken out, never changed.
+        if r.get('big_headers') and not re.search(r'(?m)^\s*large_client_header_buffers\s',
+                                                    main):
+            new = set_directive(new, 'large_client_header_buffers', '4 32k')
+            said.append('nginx: room for a Windows (Kerberos) ticket in the headers')
         if new != block:
             write_root(NGINX_MAIN, main[:where[0]] + new + main[where[1]:], 0o644)
             changed = True

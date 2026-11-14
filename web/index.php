@@ -433,6 +433,60 @@ if (isset($_GET['api'])) {
         exit;
     }
 
+    /* Signing in with Windows (1.10.340, as otp 1.0.274): without a ticket
+       401 + "WWW-Authenticate: Negotiate" - a browser that may send one to
+       this name sends it at once, the same request again with the header -
+       and with it the ticket goes to the daemon, which checks it. Refused:
+       403, NEVER a second 401 (that makes a browser try again, fall back to
+       NTLM, or open a password window of its own). `kerberos-try` is the
+       card's "Try my browser's ticket": nobody is signed in by it. */
+    if (($what === 'kerberos-login' || $what === 'kerberos-try') && $post) {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        if (($_SERVER['HTTP_SEC_FETCH_SITE'] ?? 'same-origin') !== 'same-origin') {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'a request of these pages only']);
+            exit;
+        }
+        $auth = (string) ($_SERVER['HTTP_AUTHORIZATION']
+                          ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
+        /* PCRE quantifiers stop at 65535: the length is checked apart. */
+        if (strlen($auth) > 140000
+            || !preg_match('/^Negotiate\s+([A-Za-z0-9+\/]{8,}={0,2})\s*\z/i', $auth, $m)) {
+            if (stripos($auth, 'Negotiate ') === 0 || stripos($auth, 'NTLM ') === 0) {
+                /* Something, and not a Kerberos ticket: no second round. */
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'code' => 'bad_ticket',
+                                  'error' => 'Windows offered no Kerberos ticket for this name']);
+                exit;
+            }
+            http_response_code(401);
+            header('WWW-Authenticate: Negotiate');
+            echo json_encode(['ok' => false, 'code' => 'no_ticket',
+                              'error' => 'the browser sent no Windows (Kerberos) ticket - is '
+                                       . 'this name among its intranet sites?']);
+            exit;
+        }
+        if ($what === 'kerberos-try') {
+            [$status, $body] = isemon_call('/api/kerberos', 'POST',
+                                           ['action' => 'try', 'token' => $m[1]], 20.0);
+            http_response_code($status === 401 ? 403 : ($status ?: 503));
+            echo $body ?: json_encode(['ok' => false, 'error' => 'the daemon is not answering']);
+            exit;
+        }
+        [$status, $body] = isemon_call('/api/auth/kerberos', 'POST', ['token' => $m[1]], 20.0);
+        $data = json_decode((string) $body, true);
+        if ($status === 200 && is_array($data) && !empty($data['token'])) {
+            isemon_set_session((string) $data['token']);
+            unset($data['token']);
+            echo json_encode($data);
+            exit;
+        }
+        http_response_code($status === 401 ? 403 : ($status ?: 503));
+        echo json_encode(is_array($data) ? $data : ['ok' => false, 'error' => 'refused']);
+        exit;
+    }
+
     if ($what === 'logout' && $post) {
         isemon_call('/api/auth/logout', 'POST', [], 10.0);
         isemon_clear_session();
@@ -465,6 +519,8 @@ if (isset($_GET['api'])) {
         /* The firewall, who may reach which page, and TLS (1.10.222). */
         'web-firewall' => '/api/web/firewall',
         'web-tls'      => '/api/web/tls',
+        /* Signing in with Windows (1.10.340): the card on Active Directory. */
+        'kerberos'     => '/api/kerberos',
         'acme-push-admin' => '/api/acme-push-admin',
         'web-tls-export' => '/api/web/tls/export',
         'web-tls-download' => '/api/web/tls/download',
@@ -585,6 +641,8 @@ if (isset($_GET['api'])) {
     $writes = [
         'web-firewall' => '/api/web/firewall',
         'web-tls'      => '/api/web/tls',
+        /* Signing in with Windows (1.10.340): the card on Active Directory. */
+        'kerberos'     => '/api/kerberos',
         'acme-push-admin' => '/api/acme-push-admin',
         'web-tls-export' => '/api/web/tls/export',
         'upgrade'      => '/api/upgrade',
@@ -3382,6 +3440,12 @@ function srcText(el) {
   .signin .said{font-size:13px;min-height:19px;position:relative}
   .signin .said.bad{color:var(--crit)}
   .signin .said.good{color:var(--ok)}
+  /* Sign in with Windows (1.10.340) */
+  .signin .krb-or{display:flex;align-items:center;gap:10px;color:var(--tx-mut);font-size:12px;
+    text-transform:uppercase;letter-spacing:.08em;margin:16px 0 12px}
+  .signin .krb-or::before,.signin .krb-or::after{content:"";flex:1;border-top:1px solid var(--line)}
+  .signin .krb-box{display:flex;flex-direction:column;gap:10px}
+  .signin .krb-box .btn{display:flex;gap:9px;align-items:center}
   /* A sign-in that did not work says one sentence. What the directory
      actually said - "80090308: LdapErr: DSID-0C090451, comment:
      AcceptSecurityContext error, data 52e" - is the line somebody setting
@@ -5203,7 +5267,7 @@ function srcText(el) {
       <div class="offline">There is no account on this machine yet. Make one on the server:<br>
         <span class="mono">isemon --add-user yourname --role fulladmin</span></div>
     <?php endif; ?>
-    <form id="signin-form" autocomplete="on">
+    <form id="signin-form" autocomplete="on"<?= (is_array($health) && !empty($health['kerberos']['only'])) ? ' hidden' : '' ?>>
       <input type="text" id="in-name" name="username" placeholder="name" autocomplete="username"
              autocapitalize="none" spellcheck="false" required>
       <input type="password" id="in-pass" name="password" placeholder="password"
@@ -5218,6 +5282,23 @@ function srcText(el) {
         d="M18 9l3 3-3 3"/></svg><span>Sign in</span></button>
       <div class="said" id="in-said"></div>
     </form>
+    <?php /* Sign in with Windows (1.10.340): Kerberos, when it is on - a
+             button under the form, tried by itself when so set; with only
+             Windows, the form is not there at all. */
+          $krb = (is_array($health) && is_array($health['kerberos'] ?? null))
+                 ? $health['kerberos'] : []; ?>
+    <?php if (!empty($krb['on'])): ?>
+    <div class="krb-box" id="krb-box" data-auto="<?= !empty($krb['auto']) || !empty($krb['only']) ? '1' : '0' ?>"
+         data-only="<?= !empty($krb['only']) ? '1' : '0' ?>">
+      <?php if (empty($krb['only'])): ?><div class="krb-or"><span>or</span></div><?php endif; ?>
+      <button class="btn cmd<?= !empty($krb['only']) ? ' primary' : '' ?>" type="button" id="krb-go"><svg
+        viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+        stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5"/><rect
+        x="13" y="3.5" width="7.5" height="7.5"/><rect x="3.5" y="13" width="7.5" height="7.5"/><rect
+        x="13" y="13" width="7.5" height="7.5"/></svg><span>Sign in with Windows</span></button>
+      <div class="said" id="krb-said"></div>
+    </div>
+    <?php endif; ?>
     <?php /* The second step (1.10.303): after the password, Face ID - made the
              first time, used after that. */ ?>
     <div id="pk-step" class="pk-step" hidden>
@@ -5382,6 +5463,7 @@ function srcText(el) {
     });
   });
   document.getElementById('pk-out').addEventListener('click', function () {
+    try { sessionStorage.setItem('isemon.krb.out', '1'); } catch (e) { }
     fetch('?api=logout', {method: 'POST', credentials: 'same-origin',
       headers: {'Content-Type': 'application/json'}, body: '{}'})
       .then(function () { location.reload(); }, function () { location.reload(); });
@@ -5430,9 +5512,52 @@ function srcText(el) {
         if (words) words.textContent = 'Sign in'; else go.textContent = 'Sign in';
       });
   });
+  /* Sign in with Windows (1.10.340): fetch() of the same origin - the
+     browser answers the 401 "WWW-Authenticate: Negotiate" by itself when this
+     name is among its intranet sites; no code here handles the ticket. */
+  var krbBox = document.getElementById('krb-box');
+  var krbGo = document.getElementById('krb-go');
+  var krbSaid = document.getElementById('krb-said');
+  function krbTry(auto) {
+    if (!krbGo) return;
+    krbGo.disabled = true;
+    krbSaid.className = 'said';
+    krbSaid.textContent = '';
+    try { sessionStorage.setItem('isemon.krb.tried', '1'); } catch (e) { }
+    fetch('?api=kerberos-login', {method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'}, body: '{}'})
+      .then(function (r) { return r.json().then(function (d) { return {ok: r.ok, d: d}; },
+                                                function () { return {ok: false, d: {}}; }); })
+      .then(function (x) {
+        krbGo.disabled = false;
+        if (!x.ok || (x.d && x.d.ok === false)) {
+          /* By itself, and this computer not in the domain: nothing said -
+             the form is there. */
+          if (auto && x.d && x.d.code === 'no_ticket' && !form.hidden) return;
+          krbSaid.className = 'said bad';
+          krbSaid.textContent = (x.d && x.d.error) || 'Windows did not sign you in';
+          return;
+        }
+        if (x.d.second) { stepShow(x.d.second); return; }
+        krbSaid.className = 'said good';
+        krbSaid.textContent = 'Welcome back.';
+        location.reload();
+      }, function (e) {
+        krbGo.disabled = false;
+        krbSaid.className = 'said bad';
+        krbSaid.textContent = 'this dashboard could not be reached';
+      });
+  }
+  if (krbGo) krbGo.addEventListener('click', function () { krbTry(false); });
+  var krbTried = false;
+  try {
+    krbTried = !!(sessionStorage.getItem('isemon.krb.tried') || sessionStorage.getItem('isemon.krb.out'));
+  } catch (e) { }
   if (SECOND) {
     stepShow(SECOND);
-  } else {
+  } else if (krbBox && krbBox.dataset.auto === '1' && !krbTried) {
+    krbTry(true);
+  } else if (!form.hidden) {
     document.getElementById('in-name').focus();
   }
 }());
@@ -7342,6 +7467,17 @@ auditpol /set /subcategory:"Logon" /success:enable /failure:enable</pre>
         down.</p>
     </div>
     <div class="card full"><div id="sect-dir"></div></div>
+    <?php /* Signing in with Windows - Kerberos (1.10.340, as otp 1.0.274). */ ?>
+    <div class="card full" id="krb-card">
+      <h2>Signing in with Windows (Kerberos) <span class="tag dim" id="krb-state">off</span></h2>
+      <p class="note">A browser on a computer in the domain signs its person in to these pages
+        without a password: it sends a Kerberos ticket for the name it opened, checked here
+        against the keytab of that name. Only people of the directory above get in, with the
+        role of their groups - and Face ID, when it is on, is asked after it just the same.
+        NTLM is never taken. Switched on above (<b>Sign in with Windows (Kerberos)</b>); off,
+        nothing of it is offered.</p>
+      <div id="krb-body"></div>
+    </div>
 
     <div class="card full">
       <h2>The certificate authority <span class="right" id="ca-when"></span></h2>
@@ -12021,6 +12157,8 @@ if (!CAN_BAN) {
 }
 
 $('signout').onclick = function () {
+  /* Not signed straight back in with Windows by itself (1.10.340). */
+  try { sessionStorage.setItem('isemon.krb.out', '1'); } catch (e) { }
   api('logout', {}).then(function () { location.reload(); }).catch(function () {
     location.reload();
   });
@@ -27984,7 +28122,9 @@ var PANES = {
             'directory_verify', 'directory_base', 'directory_bind', 'directory_password',
             'directory_user_attr', 'directory_realms', 'directory_admin_group',
             'directory_banadmin_group', 'directory_readonly_group', 'directory_nested',
-            'directory_recheck_min', 'directory_watch'],
+            'directory_recheck_min', 'directory_watch',
+            /* Signing in with Windows (1.10.340). */
+            'kerberos', 'kerberos_auto', 'kerberos_realm', 'password_off'],
   dir2:    ['directory2', 'directory2_host', 'directory2_port', 'directory2_tls',
             'directory2_verify', 'directory2_base', 'directory2_bind', 'directory2_password',
             'directory2_user_attr', 'directory2_realms'],
@@ -29647,6 +29787,150 @@ function loadDirectory() {
     drawCaState(d.second || {}, 'ca2');
     drawDirUsers(d.mirrored || []);
   }).catch(oops);
+  loadKerberos();
+}
+
+/* Signing in with Windows (1.10.340): the keytab, trying this browser's
+   ticket, the names, and what to do in AD and in the browsers. */
+function loadKerberos() {
+  if (!$('krb-body')) return;
+  api('kerberos').then(drawKerberos).catch(function (e) {
+    clear($('krb-body'));
+    $('krb-body').appendChild(el('p', 'note bad', (e && e.message) || String(e)));
+  });
+}
+function drawKerberos(d) {
+  var host = $('krb-body');
+  clear(host);
+  var st = $('krb-state');
+  st.className = 'tag ' + (d.on ? 'ok' : (d.wanted ? 'warn' : 'dim'));
+  st.textContent = d.on ? 'on' : (d.wanted ? 'no keytab yet' : 'off');
+  var box = el('dl', 'cert-kv');
+  var fact = function (k, v) {
+    box.appendChild(el('dt', '', k));
+    var dd = el('dd');
+    if (v && v.nodeType) dd.appendChild(v); else dd.textContent = v;
+    box.appendChild(dd);
+  };
+  var realm = el('span');
+  realm.appendChild(noI18n(el('span', 'mono', d.realm || '–')));
+  if (!d.realm_set) realm.appendChild(el('span', 'muted', ' from the directory\u2019s base DN'));
+  fact('Realm', realm);
+  fact('Directory', d.directory ? 'set above' : 'none set - nobody can sign in with Windows');
+  fact('Second step after it', d.second ? 'Face ID, as after a password' : 'none (Face ID is off)');
+  fact('By itself on the sign-in page', d.auto ? 'yes - the form only when it did not work' : 'no - a button under the form');
+  fact('A password on the sign-in page', d.only_windows ? 'none - only Windows' : 'offered beside it');
+  fact('NTLM', 'never taken');
+  fact('The Kerberos library', d.library ? 'there (libgssapi_krb5)' : (d.library_said || 'not there'));
+  host.appendChild(box);
+
+  host.appendChild(el('h3', '', 'The keytab'));
+  var kt = d.keytab;
+  if (kt && kt.entries && kt.entries.length) {
+    var said = el('p', 'note');
+    said.appendChild(el('span', '', 'Put in'));
+    said.appendChild(noI18n(el('span', '', ' ' + stamp(kt.at) + ' \u00b7 ' + (kt.by || '') + ' ')));
+    said.appendChild(el('span', '', '- kept sealed in the database; its keys are never shown.'));
+    host.appendChild(said);
+    if (!kt.readable) host.appendChild(el('p', 'note bad', 'It was sealed on another machine and cannot be read here: put it in again.'));
+    host.appendChild(rowsTable(['Principal', 'Key version', 'Kind of key'], kt.entries.map(function (e) {
+      var kind = noI18n(el('span', e.weak ? 'bad' : '', e.kind + (e.weak ? ' (weak)' : '')));
+      return [noI18n(el('span', 'mono', e.principal)), String(e.kvno), kind];
+    })));
+  } else {
+    host.appendChild(el('p', 'note', 'None is put in yet. Make it in AD (below) and put it in here.'));
+  }
+  var tools = el('div', 'btnrow');
+  if (d.may) {
+    var put = cmdButton(kt ? 'Put in another keytab…' : 'Put in a keytab…', 'upload', 'small');
+    var input = el('input'); input.type = 'file'; input.hidden = true; input.accept = '.keytab,.kt';
+    put.onclick = function () { input.click(); };
+    input.onchange = function () {
+      var f = input.files && input.files[0];
+      if (!f) return;
+      if (f.size > 65536) { toast('a keytab is a few kB, not that', 'warn'); return; }
+      var r = new FileReader();
+      r.onload = function () {
+        var bytes = new Uint8Array(r.result), bin = '';
+        for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        api('kerberos', {action: 'keytab', keytab: btoa(bin)}).then(function (x) {
+          toast(x.message, 'good'); drawKerberos(x);
+        }).catch(oops);
+      };
+      r.readAsArrayBuffer(f);
+      input.value = '';
+    };
+    tools.appendChild(put); tools.appendChild(input);
+    if (kt) {
+      var drop = cmdButton('Take the keytab away', 'trash', 'small danger-soft');
+      drop.onclick = function () {
+        confirmThen('Take the keytab away', 'Nobody signs in with Windows until one is put in again; passwords still work.', 'Take it away', function () {
+          api('kerberos', {action: 'drop'}).then(function (x) { toast(x.message, 'good'); drawKerberos(x); }).catch(oops);
+        }, true);
+      };
+      tools.appendChild(drop);
+    }
+    var tryb = cmdButton('Try my browser\u2019s ticket', 'person', 'small');
+    var out = el('div', 'note');
+    tryb.title = 'Asks this browser for its ticket and says who it would sign in and as what - nobody is signed in';
+    tryb.onclick = function () {
+      busy(tryb, true);
+      clear(out);
+      fetch('?api=kerberos-try', {method: 'POST', credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'}, body: '{}'})
+        .then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (x) {
+          busy(tryb, false);
+          if (x && x.would) {
+            out.appendChild(el('span', 'tag ok', 'would sign in'));
+            out.appendChild(noI18n(el('span', 'mono', ' ' + x.principal + ' \u2192 ' + x.name + ' ')));
+            out.appendChild(el('span', 'tag dim', ({fulladmin: 'full admin', banadmin: 'ban admin', readonly: 'read only'})[x.role] || x.role));
+          } else {
+            out.appendChild(el('span', 'tag crit', 'would not'));
+            out.appendChild(noI18n(el('span', '', ' ' + ((x && (x.said || x.error)) || 'no answer'))));
+          }
+        }, function (e) { busy(tryb, false); out.textContent = String(e); });
+    };
+    tools.appendChild(tryb);
+    host.appendChild(tools);
+    host.appendChild(out);
+  }
+
+  host.appendChild(el('h3', '', 'The names the pages are opened by'));
+  host.appendChild(el('p', 'note', 'The browser asks for a ticket of HTTP/<the name in its address bar>. Each name needs its SPN on the service account in AD; one key of that account in the keytab serves them all. Never an address: there is no SPN for one, and Windows then offers NTLM - which is refused.'));
+  var name = location.hostname;
+  var spn = 'HTTP/' + name;
+  var byName = !!(kt && (kt.entries || []).some(function (e) {
+    return e.principal.toLowerCase() === (spn + '@' + d.realm).toLowerCase();
+  }));
+  var isAddr = /^[0-9.]+$|:/.test(name);
+  host.appendChild(rowsTable(['Name', 'SPN', 'In the keytab'], [[
+    noI18n(el('span', 'mono', name)), noI18n(el('span', 'mono', spn)),
+    isAddr ? el('span', 'tag crit', 'an address - open the pages by name')
+      : (byName ? el('span', 'tag ok', 'by name') : el('span', 'tag dim', kt ? 'by the account\u2019s key, if it has this SPN' : '–'))]]));
+
+  host.appendChild(el('h3', '', 'Making the keytab in AD'));
+  host.appendChild(el('p', 'note', 'On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, "This account supports Kerberos AES 256 bit encryption"), the SPN of each name, and the keytab. Changing the account\u2019s password later makes a new key version: make the keytab again.'));
+  var nb = d.netbios || 'CORP';
+  var acct = nb + '\\svc-isemon-http';
+  host.appendChild(noI18n(el('pre', 'lines',
+    '# 1. the account (once): ' + acct + ', AES 256 allowed\n'
+    + 'setspn -S ' + spn + ' ' + acct + '\n'
+    + 'ktpass -princ ' + spn + '@' + (d.realm || 'CORP.EXAMPLE') + ' -mapuser ' + acct
+    + ' -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab')));
+
+  host.appendChild(el('h3', '', 'Telling the browsers'));
+  var ul = el('ul', 'note');
+  [['Edge and Chrome (Windows, by group policy): ', 'AuthServerAllowlist = ' + name],
+   ['...or Internet Options \u2192 Security \u2192 Local intranet \u2192 Sites: ', name],
+   ['Firefox (policy or about:config): ', 'network.negotiate-auth.trusted-uris = ' + name]].forEach(function (x) {
+    var li = el('li');
+    li.appendChild(el('span', '', x[0]));
+    li.appendChild(noI18n(el('span', 'mono', x[1])));
+    ul.appendChild(li);
+  });
+  ul.appendChild(el('li', '', 'NTLM: nothing to set here - it is refused whatever the browser offers.'));
+  host.appendChild(ul);
 }
 
 function drawCaState(d, at) {
@@ -34280,11 +34564,14 @@ function userRows(rows, d) {
           said.style.marginRight = '10px';
           act.appendChild(said);
         } else {
-          var pw = cmdButton('Password', 'lock', 'small');
-          explain(pw, 'Set a new password for ' + wordsIn(u.name) + '. Every sign-in of that account '
-            + 'ends at once and they are asked to choose their own next time.');
-          pw.onclick = function () { setSomebodysPassword(u.name); };
-          act.appendChild(pw);
+          /* No password set from the pages while only Windows signs in. */
+          if (!ME.only_windows) {
+            var pw = cmdButton('Password', 'lock', 'small');
+            explain(pw, 'Set a new password for ' + wordsIn(u.name) + '. Every sign-in of that account '
+              + 'ends at once and they are asked to choose their own next time.');
+            pw.onclick = function () { setSomebodysPassword(u.name); };
+            act.appendChild(pw);
+          }
           /* One of the three roles, picked: it was a button that swapped
              between two. (1.10.165) */
           var role2 = el('select', 'small');
@@ -36798,7 +37085,10 @@ function showMe() {
     /* The password, where it is kept here. */
     var pw = el('div', 'me-sec');
     pw.appendChild(el('h3', '', 'Password'));
-    if (ME.from_dir) {
+    if (ME.only_windows) {
+      pw.appendChild(el('p', '', 'Only Windows signs in here: no password is set or changed on '
+        + 'these pages. The way back is root\u2019s, on the server: isemon --set password_off=0.'));
+    } else if (ME.from_dir) {
       pw.appendChild(el('p', '', 'Your password is the domain’s and is never kept here. '
         + 'Change it the way you change it for everything else on the domain.'));
     } else {

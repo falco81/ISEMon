@@ -291,6 +291,10 @@ function isemon_whoami(): ?array
         /* Anything else they chose for themselves - the language, for now. */
         $prefs = $got['prefs'] ?? null;
         $who['prefs'] = (is_array($prefs) && $prefs) ? $prefs : new stdClass();
+        /* Signed in with Windows, and whether only Windows signs in (1.10.340):
+           no password field anywhere then. */
+        $who['kerberos'] = !empty($got['kerberos']);
+        $who['only_windows'] = !empty($got['only_windows']);
     }
     return $who;
 }

@@ -372,6 +372,36 @@ working.
 
 ## Version
 
+1.10.340
+
+- **Signing in with Windows (Kerberos SSO).** An Active Directory administrator
+  on a computer in the domain opens the pages and is signed in without a
+  password. See `docs/windows-sign-in.md`.
+  - The ticket the browser sends (`Authorization: Negotiate`) is checked with
+    the system's GSS-API against a keytab put in on the pages. The keytab is
+    kept sealed and its keys are never shown.
+  - NTLM is never taken. A refusal is a 403, never a second 401.
+  - The person is looked up in the directory as with their password: one
+    entry, switched on, not locked out, not expired, and in a group with a
+    role. Face ID, when on, is asked after it just the same.
+  - Off by default.
+  - On the sign-in page: **Sign in with Windows**, or the attempt made by
+    itself when the page opens. It is never made by itself after *Sign out*.
+  - *Settings → Active Directory*:
+    - the switches and the realm (from the base DN when empty);
+    - the keytab, *Put in a keytab…* and *Take the keytab away*;
+    - *Try my browser's ticket*;
+    - the SPN of the name, and the `setspn` and `ktpass` commands and the
+      browsers' settings filled in.
+  - **Only Windows** (optional): no password anywhere - on the sign-in page,
+    in Your account or in Accounts - and a password sign-in is refused. It can
+    be switched on only from a Windows sign-in, and is in effect only while
+    Windows sign-in is on. The way back: `isemon --set password_off=0`.
+  - nginx gets `large_client_header_buffers 4 32k;` for the ticket of a
+    person in many groups: in the shipped vhost, and put into an older one by
+    the root helper while the sign-in is on, unless the file sets it already.
+    Run `./install.sh --upgrade` for the helper.
+
 1.10.339
 
 - **One person from Active Directory is one account.**

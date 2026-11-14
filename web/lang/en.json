@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.339",
-  "made": "2026-11-13",
+  "version": "1.10.340",
+  "made": "2026-11-14",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -379,6 +379,14 @@
   "s.a-blocklist-a-year-old-is.b213dbc5": {
    "source": "A blocklist a year old is a list of addresses that have since been cleaned up, and a country database a year old puts the wrong flag beside half the page. Both are fetched again by themselves; this is how often, and at what time of day.",
    "text": "A blocklist a year old is a list of addresses that have since been cleaned up, and a country database a year old puts the wrong flag beside half the page. Both are fetched again by themselves; this is how often, and at what time of day."
+  },
+  "s.a-browser-on-a-computer-in.6df77bae": {
+   "source": "A browser on a computer in the domain signs its person in without a password: it sends a Kerberos ticket for the name the page was opened by, checked here against the keytab put in below. Only people of the directory above get in, with the role their groups give, exactly as with their password - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off: nothing of it is offered.",
+   "text": "A browser on a computer in the domain signs its person in without a password: it sends a Kerberos ticket for the name the page was opened by, checked here against the keytab put in below. Only people of the directory above get in, with the role their groups give, exactly as with their password - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off: nothing of it is offered."
+  },
+  "s.a-browser-on-a-computer-in.e8aa7bb2": {
+   "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (",
+   "text": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above ("
   },
   "s.a-browser-that-saw-it-comes.577de8c5": {
    "source": "A browser that saw it comes back only over HTTPS for that long. install.sh sets two years.",
@@ -872,6 +880,10 @@
    "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root's authorized_keys.",
    "text": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root's authorized_keys."
   },
+  "s.a-keytab-is-a-few-kb.f2768791": {
+   "source": "a keytab is a few kB, not that",
+   "text": "a keytab is a few kB, not that"
+  },
   "s.a-knock-on-this-door-which.aca13bb2": {
    "source": "a knock on this door — which is why one failure is enough. Switched on and off with",
    "text": "a knock on this door — which is why one failure is enough. Switched on and off with"
@@ -1243,6 +1255,10 @@
   "s.a-password-is-never-kept-freeradius.bb9eadbe": {
    "source": "A password is never kept. FreeRADIUS writes what was offered on a refusal —",
    "text": "A password is never kept. FreeRADIUS writes what was offered on a refusal —"
+  },
+  "s.a-password-on-the-sign-in.0fdb8629": {
+   "source": "A password on the sign-in page",
+   "text": "A password on the sign-in page"
   },
   "s.a-password-sent-in-the-clear.7e3fa6e4": {
    "source": "A password sent in the clear",
@@ -2940,6 +2956,10 @@
    "source": "An address is counted from the end of its last ban: what it was banned for once is not charged to it again, so serving a ban and being let back in both start it again at nought.",
    "text": "An address is counted from the end of its last ban: what it was banned for once is not charged to it again, so serving a ban and being let back in both start it again at nought."
   },
+  "s.an-address-open-the-pages-by.41654640": {
+   "source": "an address - open the pages by name",
+   "text": "an address - open the pages by name"
+  },
   "s.an-address-or-a-network.46fdf1da": {
    "source": "An address or a network.",
    "text": "An address or a network."
@@ -3223,6 +3243,10 @@
   "s.and-more.ddee2e51": {
    "source": ", and more",
    "text": ", and more"
+  },
+  "s.and-no-password-at-all-only.55457112": {
+   "source": "...and no password at all - only Windows",
+   "text": "...and no password at all - only Windows"
   },
   "s.and-none-older-than-days.b7edf7f6": {
    "source": "And none older than (days)",
@@ -3963,6 +3987,10 @@
   "s.asking.b18ce81d": {
    "source": "Asking…",
    "text": "Asking…"
+  },
+  "s.asks-this-browser-for-its-ticket.dae696a7": {
+   "source": "Asks this browser for its ticket and says who it would sign in and as what - nobody is signed in",
+   "text": "Asks this browser for its ticket and says who it would sign in and as what - nobody is signed in"
   },
   "s.assignip.71fc5d89": {
    "source": "assignip",
@@ -5008,6 +5036,14 @@
    "source": "by its own engine's own program",
    "text": "by its own engine's own program"
   },
+  "s.by-itself-on-the-sign-in.43386604": {
+   "source": "By itself on the sign-in page",
+   "text": "By itself on the sign-in page"
+  },
+  "s.by-itself-when-the-sign-in.cf58b316": {
+   "source": "...by itself when the sign-in page opens",
+   "text": "...by itself when the sign-in page opens"
+  },
   "s.by-itself.d68bbea2": {
    "source": "By itself",
    "text": "By itself"
@@ -5020,6 +5056,10 @@
    "source": "by mail",
    "text": "by mail"
   },
+  "s.by-name.2c5bb516": {
+   "source": "by name",
+   "text": "by name"
+  },
   "s.by-sms.8a5390b2": {
    "source": "by SMS",
    "text": "by SMS"
@@ -5031,6 +5071,10 @@
   "s.by-target.0835693c": {
    "source": "By target",
    "text": "By target"
+  },
+  "s.by-the-account-s-key-if.c9a2f04d": {
+   "source": "by the account’s key, if it has this SPN",
+   "text": "by the account’s key, if it has this SPN"
   },
   "s.by-the-day.09ccb52e": {
    "source": "by the day",
@@ -6252,6 +6296,10 @@
    "source": "copy",
    "text": "copy"
   },
+  "s.corp-example.0c0ee835": {
+   "source": "CORP.EXAMPLE",
+   "text": "CORP.EXAMPLE"
+  },
   "s.corp.f8c322f0": {
    "source": "CORP",
    "text": "CORP"
@@ -6996,6 +7044,10 @@
    "source": "Directory Service log",
    "text": "Directory Service log"
   },
+  "s.directory.4b892fe0": {
+   "source": "Directory",
+   "text": "Directory"
+  },
   "s.directory.8d392f56": {
    "source": "directory",
    "text": "directory"
@@ -7687,6 +7739,10 @@
   "s.ed25519.1b7ef327": {
    "source": "ed25519",
    "text": "ed25519"
+  },
+  "s.edge-and-chrome-windows-by-group.9e25daef": {
+   "source": "Edge and Chrome (Windows, by group policy):",
+   "text": "Edge and Chrome (Windows, by group policy):"
   },
   "s.edit-0.0d5005bf": {
    "source": "edit 0",
@@ -9320,6 +9376,10 @@
    "source": "eye",
    "text": "eye"
   },
+  "s.face-id-as-after-a-password.10f40901": {
+   "source": "Face ID, as after a password",
+   "text": "Face ID, as after a password"
+  },
   "s.face-id-as-the-second-step.7fe09bb7": {
    "source": "Face ID as the second step of signing in (passkeys)",
    "text": "Face ID as the second step of signing in (passkeys)"
@@ -9851,6 +9911,10 @@
   "s.finland.c909b138": {
    "source": "Finland",
    "text": "Finland"
+  },
+  "s.firefox-policy-or-about-config.54cd4b05": {
+   "source": "Firefox (policy or about:config):",
+   "text": "Firefox (policy or about:config):"
   },
   "s.firehol-level-1.b61b973e": {
    "source": "FireHOL level 1",
@@ -10479,6 +10543,10 @@
   "s.from-the-ca.751b871b": {
    "source": "from the CA",
    "text": "from the CA"
+  },
+  "s.from-the-directory-s-base-dn.77630c53": {
+   "source": "from the directory’s base DN",
+   "text": "from the directory’s base DN"
   },
   "s.from-the-eduroam-logs.b0ab5c8d": {
    "source": "from the eduroam logs",
@@ -12316,6 +12384,10 @@
    "source": "in the groups that run the domain",
    "text": "in the groups that run the domain"
   },
+  "s.in-the-keytab.1de6b361": {
+   "source": "In the keytab",
+   "text": "In the keytab"
+  },
   "s.in-the-live-database-with-what.bbdaf39d": {
    "source": "in the live database with what is in that file. A copy of what is being replaced is made first and kept with the others, so this can be undone — but everything recorded since that file was made will only be in that copy.",
    "text": "in the live database with what is in that file. A copy of what is being replaced is made first and kept with the others, so this can be undone — but everything recorded since that file was made will only be in that copy."
@@ -13504,6 +13576,10 @@
    "source": "- it was not sent with the certificate)",
    "text": "- it was not sent with the certificate)"
   },
+  "s.it-was-sealed-on-another-machine.330e56fc": {
+   "source": "It was sealed on another machine and cannot be read here: put it in again.",
+   "text": "It was sealed on another machine and cannot be read here: put it in again."
+  },
   "s.it-works.241cddf0": {
    "source": "It works",
    "text": "It works"
@@ -14088,6 +14164,10 @@
    "source": "Kept out",
    "text": "Kept out"
   },
+  "s.kept-sealed-in-the-database-its.26293cda": {
+   "source": "- kept sealed in the database; its keys are never shown.",
+   "text": "- kept sealed in the database; its keys are never shown."
+  },
   "s.kept-sealed-like-the-other-passwords.a9f492ff": {
    "source": "Kept sealed, like the other passwords.",
    "text": "Kept sealed, like the other passwords."
@@ -14115,6 +14195,10 @@
   "s.kerberos-rc4-des-accounts-without-aes.f409a4dc": {
    "source": "Kerberos (RC4, DES, accounts without AES), NTLMv1, NTLM, passwords handed over as they are",
    "text": "Kerberos (RC4, DES, accounts without AES), NTLMv1, NTLM, passwords handed over as they are"
+  },
+  "s.kerberos-realm.387c55a3": {
+   "source": "Kerberos realm",
+   "text": "Kerberos realm"
   },
   "s.kerberos-refused-a-password.534f0065": {
    "source": "Kerberos refused a password",
@@ -14144,6 +14228,10 @@
    "source": "Kerberos",
    "text": "Kerberos"
   },
+  "s.kerberos.76f9c4f8": {
+   "source": "kerberos",
+   "text": "kerberos"
+  },
   "s.kernel.c65a0fb7": {
    "source": "kernel",
    "text": "kernel"
@@ -14151,6 +14239,10 @@
   "s.key-value.dc30e0fa": {
    "source": "key=value",
    "text": "key=value"
+  },
+  "s.key-version.2cff27e3": {
+   "source": "Key version",
+   "text": "Key version"
   },
   "s.key.a62f2225": {
    "source": "key",
@@ -14184,6 +14276,10 @@
    "source": "Keys",
    "text": "Keys"
   },
+  "s.keytab.2713bf0a": {
+   "source": "keytab",
+   "text": "keytab"
+  },
   "s.kind-dump.17159a62": {
    "source": "&kind=dump",
    "text": "&kind=dump"
@@ -14191,6 +14287,10 @@
   "s.kind-of-job.50599316": {
    "source": "Kind of job",
    "text": "Kind of job"
+  },
+  "s.kind-of-key.a52ce377": {
+   "source": "Kind of key",
+   "text": "Kind of key"
   },
   "s.kind-of-target.fd188a03": {
    "source": "Kind of target",
@@ -15740,6 +15840,10 @@
    "source": "makes you read only",
    "text": "makes you read only"
   },
+  "s.making-the-keytab-in-ad.42fc0650": {
+   "source": "Making the keytab in AD",
+   "text": "Making the keytab in AD"
+  },
   "s.making-the-report.5a829c74": {
    "source": "making the report…",
    "text": "making the report…"
@@ -16700,6 +16804,10 @@
    "source": "never run",
    "text": "never run"
   },
+  "s.never-taken.7a119325": {
+   "source": "never taken",
+   "text": "never taken"
+  },
   "s.never-unlocked-the-account-was-deleted.6648f35b": {
    "source": "never unlocked — the account was deleted",
    "text": "never unlocked — the account was deleted"
@@ -16800,6 +16908,10 @@
    "source": "NL",
    "text": "NL"
   },
+  "s.no-a-button-under-the-form.ce68b530": {
+   "source": "no - a button under the form",
+   "text": "no - a button under the form"
+  },
   "s.no-accounts.f34b92a4": {
    "source": "No accounts",
    "text": "No accounts"
@@ -16819,6 +16931,10 @@
   "s.no-answer-in-time-timed-out.68a65832": {
    "source": "no answer in time (timed out)",
    "text": "no answer in time (timed out)"
+  },
+  "s.no-answer.bfca15c2": {
+   "source": "no answer",
+   "text": "no answer"
   },
   "s.no-backup-has-been-sent-yet.05f6e064": {
    "source": "No backup has been sent yet",
@@ -16971,6 +17087,10 @@
   "s.no-key-yet-make-one-or.6b9618dd": {
    "source": "No key yet — make one, or let it sign in with a password.",
    "text": "No key yet — make one, or let it sign in with a password."
+  },
+  "s.no-keytab-yet.e8568cc9": {
+   "source": "no keytab yet",
+   "text": "no keytab yet"
   },
   "s.no-ladder-every-block-is-the.7467b844": {
    "source": "No ladder — every block is the single length above",
@@ -17304,6 +17424,10 @@
    "source": "Nobody signs in against it, no role comes from its groups, and no account is made from it. Like the first, it is only ever read.",
    "text": "Nobody signs in against it, no role comes from its groups, and no account is made from it. Like the first, it is only ever read."
   },
+  "s.nobody-signs-in-with-windows-until.7eef9735": {
+   "source": "Nobody signs in with Windows until one is put in again; passwords still work.",
+   "text": "Nobody signs in with Windows until one is put in again; passwords still work."
+  },
   "s.nobody-which-cannot-be-right-you.238c0d1c": {
    "source": "Nobody, which cannot be right — you are.",
    "text": "Nobody, which cannot be right — you are."
@@ -17340,6 +17464,10 @@
    "source": "none chosen",
    "text": "none chosen"
   },
+  "s.none-face-id-is-off.d04be11d": {
+   "source": "none (Face ID is off)",
+   "text": "none (Face ID is off)"
+  },
   "s.none-found.bcc1d293": {
    "source": "none found",
    "text": "none found"
@@ -17364,6 +17492,10 @@
    "source": "None is kept with it.",
    "text": "None is kept with it."
   },
+  "s.none-is-put-in-yet-make.64e2b6be": {
+   "source": "None is put in yet. Make it in AD (below) and put it in here.",
+   "text": "None is put in yet. Make it in AD (below) and put it in here."
+  },
   "s.none-is-there-yet-and-mutual.20f440f2": {
    "source": "- none is there yet, and mutual TLS needs one",
    "text": "- none is there yet, and mutual TLS needs one"
@@ -17376,6 +17508,10 @@
    "source": "None of them names a folder of these.",
    "text": "None of them names a folder of these."
   },
+  "s.none-only-windows.b6905a1d": {
+   "source": "none - only Windows",
+   "text": "none - only Windows"
+  },
   "s.none-said.61398ec7": {
    "source": "none said",
    "text": "none said"
@@ -17387,6 +17523,10 @@
   "s.none-seen.668bd8b2": {
    "source": "none seen",
    "text": "none seen"
+  },
+  "s.none-set-nobody-can-sign-in.43433871": {
+   "source": "none set - nobody can sign in with Windows",
+   "text": "none set - nobody can sign in with Windows"
   },
   "s.none-set.b0784217": {
    "source": "none set",
@@ -18536,6 +18676,10 @@
    "source": "NTLM checked for a server (NTLM audit)",
    "text": "NTLM checked for a server (NTLM audit)"
   },
+  "s.ntlm-nothing-to-set-here-it.f4d459b7": {
+   "source": "NTLM: nothing to set here - it is refused whatever the browser offers.",
+   "text": "NTLM: nothing to set here - it is refused whatever the browser offers."
+  },
   "s.ntlm-operational.50aeed04": {
    "source": "NTLM/Operational",
    "text": "NTLM/Operational"
@@ -18720,6 +18864,10 @@
    "source": "Off - nothing is counted",
    "text": "Off - nothing is counted"
   },
+  "s.off-nothing-of-it-is-offered.ced00cb9": {
+   "source": "); off, nothing of it is offered.",
+   "text": "); off, nothing of it is offered."
+  },
   "s.off-or-give-the-opnsense-a.11882dd7": {
    "source": "off — or give the OPNsense a certificate this machine trusts and leave it on.",
    "text": "off — or give the OPNsense a certificate this machine trusts and leave it on."
@@ -18755,6 +18903,10 @@
   "s.offer-going-back-to-an-older.fb586e89": {
    "source": "Offer going back to an older version",
    "text": "Offer going back to an older version"
+  },
+  "s.offered-beside-it.494ff6d3": {
+   "source": "offered beside it",
+   "text": "offered beside it"
   },
   "s.offset.ce667716": {
    "source": "Offset",
@@ -18815,6 +18967,10 @@
   "s.on-a-disk-that-spins-the.a1d56e9a": {
    "source": "on a disk that spins the pages beside one are written in the same turn",
    "text": "on a disk that spins the pages beside one are written in the same turn"
+  },
+  "s.on-a-domain-controller-as-a.706b1027": {
+   "source": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, \"This account supports Kerberos AES 256 bit encryption\"), the SPN of each name, and the keytab. Changing the account’s password later makes a new key version: make the keytab again.",
+   "text": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, \"This account supports Kerberos AES 256 bit encryption\"), the SPN of each name, and the keytab. Changing the account’s password later makes a new key version: make the keytab again."
   },
   "s.on-a-pfsense-the-tables-are.98a01875": {
    "source": "On a pfSense the tables are filled again from the configuration whenever the filter is reloaded, and what this put in them goes with it: the sync here puts it back.",
@@ -18887,6 +19043,10 @@
   "s.on-mariadb-and-on-the-file.8ad441b0": {
    "source": "on MariaDB, and on the file SQLite's own backup, which is the file. It is a fraction of the size of the database, and it is the format the server's own tools read, so it can be put back by somebody who has never heard of this program.",
    "text": "on MariaDB, and on the file SQLite's own backup, which is the file. It is a fraction of the size of the database, and it is the format the server's own tools read, so it can be put back by somebody who has never heard of this program."
+  },
+  "s.on-nobody-signs-in-with-a.39f6caa6": {
+   "source": "On: nobody signs in with a password, local accounts neither - the sign-in page offers only Windows, and no password is set or changed. Switched on only from a sign-in with Windows, so whoever does has shown it works for them. In effect only while Sign in with Windows is on; the way back, as root on the server: isemon --set password_off=0.",
+   "text": "On: nobody signs in with a password, local accounts neither - the sign-in page offers only Windows, and no password is set or changed. Switched on only from a sign-in with Windows, so whoever does has shown it works for them. In effect only while Sign in with Windows is on; the way back, as root on the server: isemon --set password_off=0."
   },
   "s.on-not-paired-yet.1be56839": {
    "source": "on - not paired yet",
@@ -19079,6 +19239,10 @@
   "s.on-the-settings-page.fc8f0fc7": {
    "source": "on the settings page",
    "text": "on the settings page"
+  },
+  "s.on-the-sign-in-page-tries.bf629e1e": {
+   "source": "On: the sign-in page tries Windows at once and shows the form only when that did not work. Off: a button \"Sign in with Windows\" under the form. After signing out it is not tried by itself again in that tab - or signing out would sign straight back in.",
+   "text": "On: the sign-in page tries Windows at once and shows the form only when that did not work. Off: a button \"Sign in with Windows\" under the form. After signing out it is not tried by itself again in that tab - or signing out would sign straight back in."
   },
   "s.on-the-tacacs-side-ise-writes.d7bf72f1": {
    "source": "On the TACACS side ISE writes two kinds:",
@@ -19919,6 +20083,34 @@
   "s.only-when-it-was-locked-with.beca5421": {
    "source": "Only when it was locked with another password than the one set here now.",
    "text": "Only when it was locked with another password than the one set here now."
+  },
+  "s.only-windows-is-switched-on-only.d2da0f3f": {
+   "source": "\"Only Windows\" is switched on only from a sign-in with Windows: sign out, sign in with Windows, and switch it on then",
+   "text": "\"Only Windows\" is switched on only from a sign-in with Windows: sign out, sign in with Windows, and switch it on then"
+  },
+  "s.only-windows-needs-sign-in-with.fb4d04b1": {
+   "source": "\"Only Windows\" needs Sign in with Windows on, with a keytab put in",
+   "text": "\"Only Windows\" needs Sign in with Windows on, with a keytab put in"
+  },
+  "s.only-windows-signs-in-here-no.2d4d2770": {
+   "source": "only Windows signs in here: no password is set or changed while that is on",
+   "text": "only Windows signs in here: no password is set or changed while that is on"
+  },
+  "s.only-windows-signs-in-here-no.829ba122": {
+   "source": "only Windows signs in here: no password is set or changed while that is on (Settings → Active Directory)",
+   "text": "only Windows signs in here: no password is set or changed while that is on (Settings → Active Directory)"
+  },
+  "s.only-windows-signs-in-here-no.fb51a145": {
+   "source": "Only Windows signs in here: no password is set or changed on these pages. The way back is root’s, on the server: isemon --set password_off=0.",
+   "text": "Only Windows signs in here: no password is set or changed on these pages. The way back is root’s, on the server: isemon --set password_off=0."
+  },
+  "s.only-windows-signs-in-here-switch.299cae5f": {
+   "source": "only Windows signs in here: switch that off first, or nobody could sign in",
+   "text": "only Windows signs in here: switch that off first, or nobody could sign in"
+  },
+  "s.only-windows-signs-in-here-use.0597ce24": {
+   "source": "only Windows signs in here: use Sign in with Windows",
+   "text": "only Windows signs in here: use Sign in with Windows"
   },
   "s.only-with-the-words.d402b3a0": {
    "source": "only with the words",
@@ -21272,6 +21464,10 @@
    "source": "primary",
    "text": "primary"
   },
+  "s.principal.f3b86b13": {
+   "source": "Principal",
+   "text": "Principal"
+  },
   "s.private-key.b3631886": {
    "source": "private key",
    "text": "private key"
@@ -21520,6 +21716,14 @@
    "source": "Put here by the counting, by itself: this address failed often enough inside the window. A hand always beats the counting.",
    "text": "Put here by the counting, by itself: this address failed often enough inside the window. A hand always beats the counting."
   },
+  "s.put-in-a-keytab.96c8c35d": {
+   "source": "Put in a keytab…",
+   "text": "Put in a keytab…"
+  },
+  "s.put-in-another-keytab.48fcfd93": {
+   "source": "Put in another keytab…",
+   "text": "Put in another keytab…"
+  },
   "s.put-in-save-to-keep-it.32310d40": {
    "source": "put in — save to keep it",
    "text": "put in — save to keep it"
@@ -21539,6 +21743,10 @@
   "s.put-in-what-isemon-needs.6e8c9afe": {
    "source": "Put in what isemon needs",
    "text": "Put in what isemon needs"
+  },
+  "s.put-in.9476276a": {
+   "source": "Put in",
+   "text": "Put in"
   },
   "s.put-in.a9229e72": {
    "source": "put in:",
@@ -22167,6 +22375,10 @@
   "s.realm.5bee6642": {
    "source": "realm",
    "text": "realm"
+  },
+  "s.realm.6127f714": {
+   "source": "Realm",
+   "text": "Realm"
   },
   "s.reason-code.f36c5328": {
    "source": "Reason-Code",
@@ -23552,6 +23764,10 @@
    "source": "Searching…",
    "text": "Searching…"
   },
+  "s.second-step-after-it.744d2479": {
+   "source": "Second step after it",
+   "text": "Second step after it"
+  },
   "s.second.352f7829": {
    "source": "second",
    "text": "second"
@@ -23827,6 +24043,10 @@
   "s.sessions.e11e37a9": {
    "source": "Sessions",
    "text": "Sessions"
+  },
+  "s.set-above.c1a049c9": {
+   "source": "set above",
+   "text": "set above"
   },
   "s.set-action-deny.86c0293f": {
    "source": "set action deny",
@@ -24196,6 +24416,14 @@
    "source": "Sign in with Active Directory",
    "text": "Sign in with Active Directory"
   },
+  "s.sign-in-with-windows-kerberos.35c332f4": {
+   "source": "Sign in with Windows (Kerberos)",
+   "text": "Sign in with Windows (Kerberos)"
+  },
+  "s.sign-in-with-windows.d876ad98": {
+   "source": "Sign in with Windows",
+   "text": "Sign in with Windows"
+  },
   "s.sign-in-with.95a5458d": {
    "source": "Sign in with",
    "text": "Sign in with"
@@ -24319,6 +24547,14 @@
   "s.signing-in-with-the-user-name.807c40df": {
    "source": ", signing in with the user name and the password saved on the settings page (HTTP basic authentication):",
    "text": ", signing in with the user name and the password saved on the settings page (HTTP basic authentication):"
+  },
+  "s.signing-in-with-windows-is-off.64f9a54e": {
+   "source": "signing in with Windows is off",
+   "text": "signing in with Windows is off"
+  },
+  "s.signing-in-with-windows-kerberos.0d1ae8b5": {
+   "source": "Signing in with Windows (Kerberos)",
+   "text": "Signing in with Windows (Kerberos)"
   },
   "s.signing-in-with.f8d82cb3": {
    "source": "Signing in with",
@@ -24759,6 +24995,10 @@
   "s.split-the-biggest-tables-by-day.c2c53519": {
    "source": "Split the biggest tables by day (PostgreSQL)",
    "text": "Split the biggest tables by day (PostgreSQL)"
+  },
+  "s.spn.93a2fa21": {
+   "source": "SPN",
+   "text": "SPN"
   },
   "s.sport.8ab6a8a0": {
    "source": "sport",
@@ -25856,6 +26096,10 @@
    "source": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again",
    "text": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again"
   },
+  "s.take-the-keytab-away.0fd6a0f9": {
+   "source": "Take the keytab away",
+   "text": "Take the keytab away"
+  },
   "s.take-the-ladder-away-every-block.a184df67": {
    "source": "Take the ladder away; every block becomes the single length set above",
    "text": "Take the ladder away; every block becomes the single length set above"
@@ -26043,6 +26287,10 @@
   "s.tctl.a2699339": {
    "source": "Tctl",
    "text": "Tctl"
+  },
+  "s.telling-the-browsers.b2f99e2b": {
+   "source": "Telling the browsers",
+   "text": "Telling the browsers"
   },
   "s.telnet.89307d41": {
    "source": "Telnet",
@@ -26943,6 +27191,10 @@
   "s.the-british-virgin-islands.be52eead": {
    "source": "the British Virgin Islands",
    "text": "the British Virgin Islands"
+  },
+  "s.the-browser-asks-for-a-ticket.cf7fca4a": {
+   "source": "The browser asks for a ticket of HTTP/",
+   "text": "The browser asks for a ticket of HTTP/"
   },
   "s.the-browser-refused-the-clipboard-select.039033ac": {
    "source": "the browser refused the clipboard; select the text and copy it by hand",
@@ -28576,6 +28828,10 @@
    "source": "The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used.",
    "text": "The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used."
   },
+  "s.the-kerberos-library.bc0d9a1e": {
+   "source": "The Kerberos library",
+   "text": "The Kerberos library"
+  },
   "s.the-kernel-s-command-line-has.dd5541ef": {
    "source": "The kernel's command line has selinux=0 - it stays off whatever the configuration says.",
    "text": "The kernel's command line has selinux=0 - it stays off whatever the configuration says."
@@ -28651,6 +28907,18 @@
   "s.the-keys-that-may-sign-in.e26240fb": {
    "source": "The keys that may sign in to this server as root over SSH: made here, added or taken away.",
    "text": "The keys that may sign in to this server as root over SSH: made here, added or taken away."
+  },
+  "s.the-keytab-did-not-arrive-whole.633a62a0": {
+   "source": "the keytab did not arrive whole",
+   "text": "the keytab did not arrive whole"
+  },
+  "s.the-keytab-is-taken-away.77382fcf": {
+   "source": "the keytab is taken away",
+   "text": "the keytab is taken away"
+  },
+  "s.the-keytab.6caccb31": {
+   "source": "The keytab",
+   "text": "The keytab"
   },
   "s.the-kind-of-connection.d3e4886a": {
    "source": "the kind of connection",
@@ -29215,6 +29483,10 @@
   "s.the-names-that-are-not-names.2f00a327": {
    "source": "The names that are not names",
    "text": "The names that are not names"
+  },
+  "s.the-names-the-pages-are-opened.fb7dd4c8": {
+   "source": "The names the pages are opened by",
+   "text": "The names the pages are opened by"
   },
   "s.the-names.7d5e4108": {
    "source": "The names",
@@ -30003,6 +30275,10 @@
   "s.the-readings-of-the-performance-meter.88525f69": {
    "source": "the readings of the performance meter",
    "text": "the readings of the performance meter"
+  },
+  "s.the-realm-whose-people-may-sign.1a3744be": {
+   "source": "The realm whose people may sign in, in capitals (CORP.EXAMPLE). Empty: taken from the base DN of the directory above (DC=corp,DC=example). A ticket of any other realm is refused.",
+   "text": "The realm whose people may sign in, in capitals (CORP.EXAMPLE). Empty: taken from the base DN of the directory above (DC=corp,DC=example). A ticket of any other realm is refused."
   },
   "s.the-reason-this-address-is-being.edd8356d": {
    "source": "The reason this address is being kept out, written when the ban was made. It is kept word for word so that somebody reading it next Tuesday knows what happened without having to find the records themselves.",
@@ -31444,6 +31720,10 @@
    "source": "There is nothing to fold: no two banned addresses share a subnet this wide.",
    "text": "There is nothing to fold: no two banned addresses share a subnet this wide."
   },
+  "s.there-libgssapi-krb5.0fe3b7d9": {
+   "source": "there (libgssapi_krb5)",
+   "text": "there (libgssapi_krb5)"
+  },
   "s.there-was-nothing-to-pack.4130092e": {
    "source": "there was nothing to pack",
    "text": "there was nothing to pack"
@@ -32644,6 +32924,10 @@
    "source": "Try it",
    "text": "Try it"
   },
+  "s.try-my-browser-s-ticket.55f3644b": {
+   "source": "Try my browser’s ticket",
+   "text": "Try my browser’s ticket"
+  },
   "s.try-one-person-s-sign-in.6bcab48c": {
    "source": "Try one person's sign-in from here, so you find out it works before you sign out.",
    "text": "Try one person's sign-in from here, so you find out it works before you sign out."
@@ -33707,6 +33991,10 @@
   "s.wdc-wd40efrx.73195baf": {
    "source": "WDC WD40EFRX",
    "text": "WDC WD40EFRX"
+  },
+  "s.weak.a8c14d5f": {
+   "source": "(weak)",
+   "text": "(weak)"
   },
   "s.web-blocked.c05d9d55": {
    "source": "Web blocked",
@@ -36124,6 +36412,14 @@
    "source": "Window",
    "text": "Window"
   },
+  "s.windows-did-not-sign-you-in.2cd6b1b6": {
+   "source": "Windows did not sign you in - the ticket was not taken",
+   "text": "Windows did not sign you in - the ticket was not taken"
+  },
+  "s.windows-did-not-sign-you-in.78fd384d": {
+   "source": "Windows did not sign you in",
+   "text": "Windows did not sign you in"
+  },
   "s.windows-started-up.d7ed7f65": {
    "source": "Windows started up",
    "text": "Windows started up"
@@ -36424,6 +36720,14 @@
    "source": "Worth reading: something changed, or somebody was kept out.",
    "text": "Worth reading: something changed, or somebody was kept out."
   },
+  "s.would-not.addf4a67": {
+   "source": "would not",
+   "text": "would not"
+  },
+  "s.would-sign-in.b84f9407": {
+   "source": "would sign in",
+   "text": "would sign in"
+  },
   "s.wpad-dat.71eaa456": {
    "source": "*/wpad.dat",
    "text": "*/wpad.dat"
@@ -36583,6 +36887,10 @@
   "s.yemen.ac33d641": {
    "source": "Yemen",
    "text": "Yemen"
+  },
+  "s.yes-the-form-only-when-it.6ae10d09": {
+   "source": "yes - the form only when it did not work",
+   "text": "yes - the form only when it did not work"
   },
   "s.yes.fb360f9c": {
    "source": "yes",
@@ -37073,6 +37381,10 @@
   "p.authorities.cfe36efd": {
    "source": "{0} authorities",
    "text": "{0} authorities"
+  },
+  "p.authserverallowlist.3cc19e9b": {
+   "source": "AuthServerAllowlist = {0}",
+   "text": "AuthServerAllowlist = {0}"
   },
   "p.back-to-add-a-column-field.c95e663d": {
    "source": ", back to {0} — add a column field (an address, a port, a kind) to look further back",
@@ -37994,6 +38306,10 @@
    "source": "HTTP {0}",
    "text": "HTTP {0}"
   },
+  "p.http.e15ea6b5": {
+   "source": "HTTP/{0}",
+   "text": "HTTP/{0}"
+  },
   "p.huge-pages-is-on-and-a.1261a780": {
    "source": "huge_pages is on, and a start needs enough of them for the new shared_buffers: check vm.nr_hugepages, then run systemctl restart {0} as root",
    "text": "huge_pages is on, and a start needs enough of them for the new shared_buffers: check vm.nr_hugepages, then run systemctl restart {0} as root"
@@ -38414,6 +38730,10 @@
    "source": "&kind={0}",
    "text": "&kind={0}"
   },
+  "p.ktpass-princ-mapuser-crypto-aes256-sha1.bdbad64e": {
+   "source": "ktpass -princ {0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab",
+   "text": "ktpass -princ {0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab"
+  },
   "p.last-answered.ae970e33": {
    "source": ", last answered {0}",
    "text": ", last answered {0}"
@@ -38773,6 +39093,10 @@
   "p.needed-after-the-update.2b173de5": {
    "source": "needed after the update - {0}",
    "text": "needed after the update - {0}"
+  },
+  "p.network-negotiate-auth-trusted-uris.f3e57fca": {
+   "source": "network.negotiate-auth.trusted-uris = {0}",
+   "text": "network.negotiate-auth.trusted-uris = {0}"
   },
   "p.newest-hour-counted.c95689ff": {
    "source": "Newest hour counted: {0}.",
@@ -39758,6 +40082,10 @@
    "source": "set-{0}",
    "text": "set-{0}"
   },
+  "p.setspn-s.05f01c0b": {
+   "source": "setspn -S {0} {1}",
+   "text": "setspn -S {0} {1}"
+  },
   "p.setting-it-up.994dd8ca": {
    "source": "Setting it up: {0}",
    "text": "Setting it up: {0}"
@@ -39942,6 +40270,10 @@
    "source": "{0} successful login(s)",
    "text": "{0} successful login(s)"
   },
+  "p.svc-isemon-http.16ed5c42": {
+   "source": "{0}\\svc-isemon-http",
+   "text": "{0}\\svc-isemon-http"
+  },
   "p.sw3word.520077fd": {
    "source": "sw3word {0}",
    "text": "sw3word {0}"
@@ -39977,6 +40309,10 @@
   "p.table-s-laid-out-by-you.93f2033b": {
    "source": "{0} table(s) laid out by you",
    "text": "{0} table(s) laid out by you"
+  },
+  "p.tag.9a706b8d": {
+   "source": "tag {0}",
+   "text": "tag {0}"
   },
   "p.take-off-the-whitelist-it-can.57307341": {
    "source": "Take {0} off the whitelist. It can be banned again from that moment, by the counting like anybody else.",
@@ -40313,6 +40649,10 @@
   "p.the-keys-could-not-be-put.03fbc035": {
    "source": "the keys could not be put into the copy: {0}",
    "text": "the keys could not be put into the copy: {0}"
+  },
+  "p.the-keytab-is-put-in-key.5ff4cdbd": {
+   "source": "the keytab is put in: {0} key(s)",
+   "text": "the keytab is put in: {0} key(s)"
   },
   "p.the-last-8-tries.d792648a": {
    "source": "{0} - the last 8 tries",
@@ -41207,6 +41547,10 @@
   "r.401-no-user-name-and-password.f60acaf5": {
    "source": "· <b>401</b> no user name and password, or wrong ones",
    "text": "· <b>401</b> no user name and password, or wrong ones"
+  },
+  "r.a-browser-on-a-computer-in.c98b3f3d": {
+   "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (<b>Sign in with Windows (Kerberos)</b>); off, nothing of it is offered.",
+   "text": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (<b>Sign in with Windows (Kerberos)</b>); off, nothing of it is offered."
   },
   "r.a-certificate-authority-of-your-own.f4f9c3dc": {
    "source": "A certificate authority of your own - a root, or an intermediate - as PEM (<code>-----BEGIN CERTIFICATE-----</code>), or a <code>.pem</code>, <code>.crt</code> or <code>.cer</code> file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key.",

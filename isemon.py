@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.339'
+__version__ = '1.10.340'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -854,6 +854,14 @@ DEFAULTS = {
     # Face ID, Touch ID or Windows Hello as the second step of every sign-in
     # (1.10.303): off as it comes.
     'passkeys': 0,
+    # Signing in with Windows - Kerberos (1.10.340): off until switched on;
+    # by itself when the sign-in page opens; the realm (empty: the
+    # directory's base DN); and "only Windows", no password anywhere -
+    # in effect only while Kerberos is on.
+    'kerberos': 0,
+    'kerberos_auto': 0,
+    'kerberos_realm': '',
+    'password_off': 0,
     # Changes that could cut this server off, taken back unless kept
     # (1.10.228, after otp 1.0.137): a new network (Settings - Network) and
     # a change of the firewall or of who may reach which page go back to what
@@ -18819,6 +18827,223 @@ class Refused(ValueError):
     def __init__(self, words, detail=''):
         super(Refused, self).__init__(words)
         self.detail = str(detail or '')
+
+
+# ---- signing in with Windows: Kerberos (1.10.340, as otp 1.0.274) ----------
+# A browser on a computer in the domain sends a Kerberos ticket for the name
+# the page was opened by ("Authorization: Negotiate"); it is checked here with
+# the system's GSS-API (libgssapi_krb5, MIT) through ctypes, against the
+# keytab put in on the pages - no KDC is asked, nothing is installed. NTLM is
+# never taken, bare or inside SPNEGO, nor any other mechanism. Kerberos takes
+# the place of the PASSWORD only: the person is looked up in the directory as
+# a password sign-in looks them up, and the second step is asked after it.
+KRB5_MECH = bytes.fromhex('2a864886f712010202')          # 1.2.840.113554.1.2.2
+KRB_TOKEN_MAX = 65536
+KRB_ENCTYPES = {1: 'des-cbc-crc', 3: 'des-cbc-md5', 16: 'des3-cbc-sha1',
+                17: 'aes128-cts-hmac-sha1-96', 18: 'aes256-cts-hmac-sha1-96',
+                19: 'aes128-cts-hmac-sha256-128', 20: 'aes256-cts-hmac-sha384-192',
+                23: 'rc4-hmac', 24: 'rc4-hmac-exp'}
+KRB_WEAK = (1, 3, 16, 23, 24)
+KRB_KEYTAB_MOST = 64 * 1024
+
+
+class KrbError(ValueError):
+    """The ticket is not taken; the words say why (never anything secret)."""
+
+
+_GSS = {'lib': None, 'err': '', 'tried': False, 'lock': threading.Lock(),
+        'accept': threading.Lock()}
+
+
+def _gss_types():
+    import ctypes as C
+
+    class Buf(C.Structure):
+        _fields_ = [('length', C.c_size_t), ('value', C.c_void_p)]
+
+    class Oid(C.Structure):
+        _fields_ = [('length', C.c_uint32), ('elements', C.c_void_p)]
+    return Buf, Oid
+
+
+def gss_lib():
+    """The system's libgssapi_krb5, or None (and why, in _GSS['err'])."""
+    import ctypes as C
+    import ctypes.util
+    with _GSS['lock']:
+        if _GSS['tried']:
+            return _GSS['lib']
+        _GSS['tried'] = True
+        try:
+            Buf, Oid = _gss_types()
+            lib = C.CDLL(ctypes.util.find_library('gssapi_krb5') or 'libgssapi_krb5.so.2')
+            P, U, V = C.POINTER, C.c_uint32, C.c_void_p
+            lib.gss_accept_sec_context.argtypes = [P(U), P(V), V, P(Buf), V, P(V), P(P(Oid)),
+                                                   P(Buf), P(U), P(U), P(V)]
+            lib.gss_accept_sec_context.restype = U
+            lib.gss_display_name.argtypes = [P(U), V, P(Buf), P(P(Oid))]
+            lib.gss_display_name.restype = U
+            lib.gss_display_status.argtypes = [P(U), U, C.c_int, V, P(U), P(Buf)]
+            lib.gss_display_status.restype = U
+            lib.gss_release_buffer.argtypes = [P(U), P(Buf)]
+            lib.gss_release_name.argtypes = [P(U), P(V)]
+            lib.gss_delete_sec_context.argtypes = [P(U), P(V), V]
+            lib._isemon_types = (Buf, Oid)
+            _GSS['lib'] = lib
+        except (OSError, AttributeError) as e:
+            _GSS['err'] = 'the Kerberos library (libgssapi_krb5, krb5-libs) is not there: %s' % e
+        return _GSS['lib']
+
+
+def _gss_words(lib, major, minor):
+    import ctypes as C
+    Buf = lib._isemon_types[0]
+    out = []
+    for code, kind in ((major, 1), (minor, 2)):
+        if not code:
+            continue
+        ctx = C.c_uint32(0)
+        for _ in range(8):
+            m, buf = C.c_uint32(), Buf()
+            if lib.gss_display_status(C.byref(m), code, kind, None, C.byref(ctx), C.byref(buf)):
+                break
+            try:
+                w = C.string_at(buf.value, buf.length).decode('utf-8', 'replace').strip()
+            finally:
+                lib.gss_release_buffer(C.byref(m), C.byref(buf))
+            if w and w not in out:
+                out.append(w)
+            if not ctx.value:
+                break
+    return '; '.join(out)[:400] or 'GSS-API status %#x/%d' % (major, minor)
+
+
+def krb_is_ntlm(token):
+    return b'NTLMSSP\x00' in bytes(token or b'')
+
+
+def gss_accept(token):
+    """The principal a ticket proves ('jnovak@CORP.EXAMPLE'), or KrbError.
+    The keytab is the one KRB5_KTNAME names (krb_keytab_ready)."""
+    import ctypes as C
+    token = bytes(token or b'')
+    if not token:
+        raise KrbError('no ticket')
+    if len(token) > KRB_TOKEN_MAX:
+        raise KrbError('larger than any Kerberos ticket')
+    if krb_is_ntlm(token):
+        raise KrbError('NTLM is never taken - only Kerberos')
+    lib = gss_lib()
+    if lib is None:
+        raise KrbError(_GSS['err'])
+    Buf, Oid = lib._isemon_types
+    minor, ctx, src, flags = C.c_uint32(), C.c_void_p(), C.c_void_p(), C.c_uint32()
+    raw = C.create_string_buffer(token, len(token))
+    inb = Buf(len(token), C.cast(raw, C.c_void_p))
+    mech, out = C.POINTER(Oid)(), Buf()
+    with _GSS['accept']:
+        try:
+            major = lib.gss_accept_sec_context(C.byref(minor), C.byref(ctx), None, C.byref(inb),
+                                               None, C.byref(src), C.byref(mech), C.byref(out),
+                                               C.byref(flags), None, None)
+            if major == 1:
+                raise KrbError('more than one round - not Kerberos')
+            if major != 0:
+                raise KrbError('not taken: %s' % _gss_words(lib, major, minor.value))
+            if not mech or C.string_at(mech.contents.elements,
+                                       mech.contents.length) != KRB5_MECH:
+                raise KrbError('a mechanism that is not Kerberos 5')
+            name, m2 = Buf(), C.c_uint32()
+            if lib.gss_display_name(C.byref(m2), src, C.byref(name), None):
+                raise KrbError('no name that can be read')
+            try:
+                return C.string_at(name.value, name.length).decode('utf-8', 'replace')
+            finally:
+                lib.gss_release_buffer(C.byref(m2), C.byref(name))
+        finally:
+            m3 = C.c_uint32()
+            if out.value:
+                lib.gss_release_buffer(C.byref(m3), C.byref(out))
+            if src.value:
+                lib.gss_release_name(C.byref(m3), C.byref(src))
+            if ctx.value:
+                lib.gss_delete_sec_context(C.byref(m3), C.byref(ctx), None)
+
+
+def krb_split(principal):
+    """('jnovak', 'CORP.EXAMPLE') of a person; a service (HTTP/x@R) refused."""
+    p = str(principal or '')
+    if p.count('@') != 1 or '/' in p or '\\' in p:
+        raise KrbError('%s is not the name of a person' % p[:200])
+    user, realm = p.split('@', 1)
+    if not user or not realm:
+        raise KrbError('%s is not the name of a person' % p[:200])
+    return user, realm.upper()
+
+
+def krb_keytab_entries(raw):
+    """[{principal, kvno, kind, weak}] of a keytab (0x0502); never a key."""
+    import struct
+    raw = bytes(raw or b'')
+    if len(raw) < 2 or raw[0] != 5 or raw[1] != 2:
+        raise ValueError('that is not a keytab (one starts 0x05 0x02)')
+    out, i = [], 2
+    while i + 4 <= len(raw):
+        size = struct.unpack('>i', raw[i:i + 4])[0]
+        i += 4
+        if size == 0:
+            break
+        if size < 0:
+            i += -size
+            continue
+        end = i + size
+        if end > len(raw):
+            raise ValueError('the keytab ends in the middle of an entry')
+        rec, j = raw[i:end], [0]
+
+        def take(n):
+            if j[0] + n > len(rec):
+                raise ValueError('the keytab ends in the middle of an entry')
+            b = rec[j[0]:j[0] + n]
+            j[0] += n
+            return b
+        count = struct.unpack('>H', take(2))[0]
+        realm = take(struct.unpack('>H', take(2))[0]).decode('utf-8', 'replace')
+        comps = [take(struct.unpack('>H', take(2))[0]).decode('utf-8', 'replace')
+                 for _ in range(count)]
+        take(8)                                   # name type, timestamp
+        kvno = take(1)[0]
+        enc = struct.unpack('>H', take(2))[0]
+        take(struct.unpack('>H', take(2))[0])     # the key: never kept apart
+        if len(rec) - j[0] >= 4:
+            kvno = struct.unpack('>I', rec[j[0]:j[0] + 4])[0] or kvno
+        out.append({'principal': '%s@%s' % ('/'.join(comps), realm), 'kvno': kvno,
+                    'kind': KRB_ENCTYPES.get(enc, 'type %d' % enc), 'weak': enc in KRB_WEAK})
+        i = end
+    if not out:
+        raise ValueError('the keytab holds no key')
+    return out
+
+
+def krb_token_from_header(value):
+    v = str(value or '').strip()
+    if not v.lower().startswith('negotiate '):
+        raise KrbError('no Negotiate header')
+    try:
+        return base64.b64decode(v[10:].strip(), validate=True)
+    except ValueError:
+        raise KrbError('the ticket is not base64')
+
+
+def krb_filetime(value):
+    """An AD FILETIME (100 ns since 1601) as a Unix time; 0 for none/never."""
+    try:
+        v = int(str(value or '0').strip() or 0)
+    except ValueError:
+        return 0
+    if v <= 0 or v >= 0x7FFFFFFFFFFFFFFF:
+        return 0
+    return v / 1e7 - 11644473600
 
 
 # The matching rule Active Directory uses for "in this group, or in a group
@@ -59706,6 +59931,16 @@ class Daemon(object):
         # a megabyte at a time in the counts below.
         name = str(name or '').strip().lower()[:128]
         where = str(ip or '')[:64]
+        if self.password_off():
+            # Only Windows (1.10.340): no password signs in, a local
+            # account's neither. The way back is root's: isemon --set
+            # password_off=0 (or kerberos=0).
+            self.store.add_event('login', 'a sign-in with a password for %s from %s was refused: '
+                                          'only Windows signs in here' % (name or '(no name)',
+                                                                          where or 'somewhere'),
+                                 'warn')
+            raise Refused('only Windows signs in here: use Sign in with Windows',
+                          'passwords are switched off (Settings → Active Directory)')
         now = time.time()
         wait_s = max(1, int(CONFIG.get('login_wait_min') or 15)) * 60
         too_many, left = self._login_note(where, now, wait_s)
@@ -59949,6 +60184,284 @@ class Daemon(object):
     @staticmethod
     def passkeys_on():
         return bool(int(CONFIG.get('passkeys') or 0))
+
+    # ---- signing in with Windows: Kerberos (1.10.340) -------------------------
+    def kerberos_wanted(self):
+        """Switched on, with the directory administrators sign in against."""
+        return bool(int(CONFIG.get('kerberos') or 0)) and self.directory_on()
+
+    def kerberos_realm(self):
+        """The realm whose people may sign in: as set, or the directory's own
+        base DN in capitals (DC=corp,DC=example is CORP.EXAMPLE)."""
+        got = re.sub(r'[^A-Za-z0-9.-]', '', str(CONFIG.get('kerberos_realm') or ''))
+        return (got or self.directory_domain('directory')).upper()
+
+    def kerberos_keytab(self):
+        """The keytab put in on the pages: {raw, at, by, entries} or None."""
+        kept = self.store.meta_json('kerberos_keytab', None)
+        if not isinstance(kept, dict) or not kept.get('sealed'):
+            return None
+        raw = unseal_secret(kept['sealed'])
+        if not raw:
+            return dict(kept, raw=None)
+        try:
+            return dict(kept, raw=base64.b64decode(raw))
+        except ValueError:
+            return dict(kept, raw=None)
+
+    def kerberos_on(self):
+        return self.kerberos_wanted() and bool((self.kerberos_keytab() or {}).get('raw'))
+
+    def password_off(self):
+        """"Only Windows": no password signs in - in effect only while
+        Kerberos is on, so switching Kerberos off (as root, isemon --set
+        kerberos=0 or password_off=0) always brings passwords back."""
+        return bool(int(CONFIG.get('password_off') or 0)) and self.kerberos_on()
+
+    @staticmethod
+    def kerberos_folder():
+        return Path(STATE_DIR) / 'kerberos'
+
+    def kerberos_ready(self):
+        """The keytab written where the library reads it (0600, this
+        account's), and the library told where - written again whenever what
+        is kept differs from the file. Returns the keytab or raises KrbError."""
+        kt = self.kerberos_keytab()
+        if not kt or not kt.get('raw'):
+            raise KrbError('no keytab is put in (Settings → Active Directory)')
+        folder = self.kerberos_folder()
+        folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+        (folder / 'rcache').mkdir(mode=0o700, exist_ok=True)
+        path = folder / 'http.keytab'
+        try:
+            same = path.read_bytes() == kt['raw']
+        except OSError:
+            same = False
+        if not same:
+            fd, tmp = tempfile.mkstemp(prefix='.keytab-', dir=str(folder))
+            try:
+                os.fchmod(fd, 0o600)
+                with os.fdopen(fd, 'wb') as f:
+                    f.write(kt['raw'])
+                os.replace(tmp, str(path))
+            except OSError:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+                raise
+        os.environ['KRB5_KTNAME'] = 'FILE:%s' % path
+        os.environ['KRB5RCACHEDIR'] = str(folder / 'rcache')
+        return kt
+
+    def kerberos_drop_file(self):
+        try:
+            (self.kerberos_folder() / 'http.keytab').unlink()
+        except OSError:
+            pass
+
+    def kerberos_put(self, raw, by=''):
+        raw = bytes(raw or b'')
+        if len(raw) > KRB_KEYTAB_MOST:
+            raise ValueError('a keytab is a few kB, not that')
+        entries = krb_keytab_entries(raw)
+        people = [e['principal'] for e in entries if not e['principal'].upper().startswith('HTTP/')]
+        if len(people) == len(entries):
+            raise ValueError('that keytab holds no HTTP/ name - it is not the keytab of a web '
+                             'service (%s)' % ', '.join(people[:3]))
+        self.store.set_meta('kerberos_keytab', json.dumps({
+            'sealed': seal_secret(base64.b64encode(raw).decode()), 'at': time.time(),
+            'by': by, 'entries': entries}))
+        self.kerberos_drop_file()
+        self.store.add_event('users', 'a keytab was put in for signing in with Windows: %s'
+                             % ', '.join(sorted({e['principal'] for e in entries}))[:400],
+                             who=by)
+        return entries
+
+    def kerberos_take_away(self, by=''):
+        self.store.set_meta('kerberos_keytab', '')
+        self.kerberos_drop_file()
+        self.store.add_event('users', 'the keytab for signing in with Windows was taken away',
+                             'warn', who=by)
+
+    def _kerberos_once(self, token):
+        """A ticket is taken once (the library's replay cache is this
+        machine's own file too): its hash kept a day."""
+        seen = self.__dict__.setdefault('_krb_once', {})
+        now = time.time()
+        h = hashlib.sha256(token).hexdigest()
+        with self._login_watch:
+            if len(seen) > 20000:
+                for k in [k for k, t in seen.items() if now - t > 86400]:
+                    seen.pop(k, None)
+            if h in seen and now - seen[h] < 86400:
+                return False
+            seen[h] = now
+        return True
+
+    def kerberos_mark(self, token, how='kerberos'):
+        """Which sessions were opened by Kerberos ("only Windows" is switched
+        on only from one): their hashes, kept as long as a session lasts."""
+        kept = self.store.meta_json('kerberos_sessions', {}) or {}
+        now = time.time()
+        most = max(1, int(CONFIG.get('session_hours') or 12)) * 3600 + 3600
+        kept = {k: v for k, v in kept.items() if now - float(v or 0) < most}
+        kept[self._cols_key(token)] = now
+        self.store.set_meta('kerberos_sessions', json.dumps(kept))
+
+    def kerberos_session(self, token):
+        kept = self.store.meta_json('kerberos_sessions', {}) or {}
+        return bool(token) and self._cols_key(token) in kept
+
+    def kerberos_find(self, link, user):
+        """The person by sAMAccountName (the principal's name: the UPN suffix
+        often differs), every entry that answers to it."""
+        base = str(CONFIG.get('directory_base') or '').strip()
+        return link.search(base, ldap_and(ldap_equal('objectClass', 'user'),
+                                          ldap_equal('sAMAccountName', user)),
+                           self.WANTED_ATTRS + ('lockoutTime', 'accountExpires'), limit=3)
+
+    def kerberos_check(self, token_b64, ip=''):
+        """A ticket, checked and the person looked up - nobody signed in:
+        {principal, name, role, said} or KrbError with why."""
+        if not self.kerberos_wanted():
+            raise KrbError('signing in with Windows is off')
+        try:
+            token = base64.b64decode(str(token_b64 or ''), validate=True)
+        except ValueError:
+            raise KrbError('the ticket is not base64')
+        self.kerberos_ready()
+        principal = gss_accept(token)
+        user, realm = krb_split(principal)
+        want = self.kerberos_realm()
+        if realm != want:
+            raise KrbError('%s is of the realm %s, and only %s signs in here'
+                           % (principal, realm, want))
+        if not self._kerberos_once(token):
+            raise KrbError('this ticket was used already (a replay?)')
+        if user.endswith('$'):
+            raise KrbError('%s is a computer, not a person' % principal)
+        try:
+            link = self.directory_reader()
+        except LdapError as e:
+            raise KrbError('the directory could not be asked: %s' % str(e)[:200])
+        try:
+            try:
+                found = self.kerberos_find(link, user)
+            except LdapError as e:
+                raise KrbError('the directory could not be searched: %s' % str(e)[:200])
+            if not found:
+                raise KrbError('%s is not in the directory' % principal)
+            if len(found) > 1:
+                raise KrbError('more than one entry of the directory answers to %s' % user)
+            entry = found[0]
+            attrs = entry.get('attrs', {})
+            if self.directory_disabled(entry):
+                raise KrbError('the directory says %s is switched off' % user)
+            if krb_filetime((attrs.get('lockoutTime') or [''])[0]):
+                raise KrbError('the directory says %s is locked out' % user)
+            ends = krb_filetime((attrs.get('accountExpires') or [''])[0])
+            if ends and ends < time.time():
+                raise KrbError('the directory says the account %s has expired' % user)
+            groups = self.directory_groups(link, entry)
+        finally:
+            link.close()
+        role = self.directory_role(groups)
+        if not role:
+            raise KrbError('%s is known, and none of the groups given a role here holds it'
+                           % principal)
+        name = self.directory_account_name(entry, user)
+        local = self.store.user(name)
+        if local and not local.get('from_dir'):
+            raise KrbError('%s is an account of this machine: it signs in with its password'
+                           % name)
+        who = (attrs.get('distinguishedName') or [entry.get('dn') or ''])[0]
+        said = {'dn': who, 'name': name, 'typed': user.lower(), 'canonical': True,
+                'aliases': sorted({str(v).strip().lower() for v in (
+                    (attrs.get('sAMAccountName') or [''])[0],
+                    (attrs.get('userPrincipalName') or [''])[0], user) if str(v or '').strip()}),
+                'role': role,
+                'display': (attrs.get('displayName') or attrs.get('sAMAccountName') or [''])[0],
+                'mail': (attrs.get('mail') or [''])[0], 'groups': sorted(groups)[:40]}
+        if (local and local.get('disabled')) or self.store.dn_switched_off(who, said['aliases']):
+            raise KrbError('%s is switched off here' % name)
+        return {'principal': principal, 'name': name, 'role': role, 'said': said}
+
+    def kerberos_login(self, token_b64, ip='', agent=''):
+        """Signing in with a ticket: as a password sign-in does from the
+        directory's answer on - the account remembered, the second step owed,
+        a session. KrbError (said in the events) when not."""
+        where = str(ip or '')[:64]
+        now = time.time()
+        wait_s = max(1, int(CONFIG.get('login_wait_min') or 15)) * 60
+        too_many, left = self._login_note(where, now, wait_s)
+        if too_many:
+            raise KrbError('too many refused sign-ins; try again in %s' % human_span(left))
+        try:
+            got = self.kerberos_check(token_b64, where)
+        except KrbError as e:
+            self.store.add_event('login', 'a sign-in with Windows (Kerberos) from %s was '
+                                          'refused: %s' % (where or 'somewhere', str(e)[:300]),
+                                 'warn')
+            raise
+        name, said = got['name'], got['said']
+        self._login_forget_one(where, now)
+        user = self.store.user(name)
+        was = (user or {}).get('role')
+        if was and was != said['role'] and user.get('from_dir'):
+            self.store.add_event('users', '%s is now %s rather than %s: their groups in the '
+                                          'directory have changed' % (name, said['role'], was),
+                                 'warn', who=name)
+        self.store.remember_directory_user(said)
+        try:
+            self.store.merge_directory_person(name, said.get('dn'))
+        except Exception as e:                          # noqa: BLE001
+            log('%s: the other accounts of the same person: %s' % (name, str(e)[:160]), 'warn')
+        self._login_forget(where)
+        self._login_known(name, where, now)
+        second = self.second_owed(name)
+        token = self.store.new_session(name, said['role'], where, agent, second)
+        self.kerberos_mark(token)
+        self.store.note_login(name, where)
+        self.store.add_event('login', '%s signed in from %s with Windows (Kerberos, %s) as %s%s'
+                             % (name, where or 'somewhere', got['principal'], said['role'],
+                                self.second_words(second)), who=name)
+        return {'token': token, 'name': name, 'role': said['role'], 'must_change': False,
+                'from_dir': True, 'second': second, 'display': said.get('display') or '',
+                'how': 'kerberos'}
+
+    def kerberos_health(self):
+        try:
+            on = self.kerberos_on()
+        except Exception:                               # noqa: BLE001
+            on = False
+        return {'on': on, 'auto': on and bool(int(CONFIG.get('kerberos_auto') or 0)),
+                'only': on and self.password_off()}
+
+    def kerberos_view(self, may=False):
+        """The card on Settings → Active Directory: never a key."""
+        kt = self.kerberos_keytab() or {}
+        lib = gss_lib()
+        realm = self.kerberos_realm()
+        return {'ok': True, 'may': may,
+                'wanted': bool(int(CONFIG.get('kerberos') or 0)),
+                'directory': self.directory_on(), 'on': self.kerberos_on(),
+                'auto': bool(int(CONFIG.get('kerberos_auto') or 0)),
+                'password_off': bool(int(CONFIG.get('password_off') or 0)),
+                'only_windows': self.password_off(),
+                'realm': realm, 'realm_set': bool(str(CONFIG.get('kerberos_realm') or '').strip()),
+                'second': 'passkeys' if self.passkeys_on() else '',
+                'library': lib is not None, 'library_said': '' if lib else _GSS['err'],
+                'keytab': {'at': kt.get('at') or 0, 'by': kt.get('by') or '',
+                           'entries': kt.get('entries') or [],
+                           'readable': bool(kt.get('raw'))} if kt else None,
+                'netbios': (self.directory_domain('directory').split('.')[0] or '').upper()}
+
+    def passwords_refused(self):
+        """A password set or changed while only Windows signs in is refused."""
+        if self.password_off():
+            raise ValueError('only Windows signs in here (Settings → Active Directory): no '
+                             'password is set or changed while that is on')
 
     def second_owed(self, name):
         """What a fresh sign-in of this account still owes (1.10.303): to make
@@ -60534,6 +61047,8 @@ class Daemon(object):
         'geolist_chunk': (20, 500), 'mikrotik_chunk': (1, 200), 'mikrotik_read_s': (30, 1800),
         'session_hours': (1, 720), 'session_idle_min': (5, 10080),
         'login_tries': (1, 100), 'login_wait_min': (1, 1440), 'passkeys': (0, 1),
+        'kerberos': (0, 1), 'kerberos_auto': (0, 1), 'kerberos_realm': 'str',
+        'password_off': (0, 1),
         'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
         'retain_failed_days': (0, 3650), 'retain_passed_days': (0, 3650),
         'retain_events_days': (0, 3650),
@@ -60825,6 +61340,10 @@ class Daemon(object):
         'login_tries': 'Wrong passwords before waiting',
         'login_wait_min': 'Then wait (min)',
         'passkeys': 'Face ID as the second step of signing in (passkeys)',
+        'kerberos': 'Sign in with Windows (Kerberos)',
+        'kerberos_auto': '...by itself when the sign-in page opens',
+        'kerberos_realm': 'Kerberos realm',
+        'password_off': '...and no password at all - only Windows',
         'net_confirm_min': 'A new network goes back unless kept within (min)',
         'fw_confirm_min': 'A firewall change goes back unless kept within (min)',
         'retain_failed_days': 'Keep failed attempts for (days)',
@@ -61942,6 +62461,24 @@ class Daemon(object):
         'session_idle_min': 'How long a sign-in may sit untouched before it ends.',
         'login_tries': 'Wrong passwords from one address before it has to wait.',
         'login_wait_min': 'How long it waits.',
+        'kerberos': 'A browser on a computer in the domain signs its person in without a '
+                    'password: it sends a Kerberos ticket for the name the page was opened '
+                    'by, checked here against the keytab put in below. Only people of the '
+                    'directory above get in, with the role their groups give, exactly as with '
+                    'their password - and Face ID, when it is on, is asked after it just the '
+                    'same. NTLM is never taken. Off: nothing of it is offered.',
+        'kerberos_auto': 'On: the sign-in page tries Windows at once and shows the form only '
+                         'when that did not work. Off: a button "Sign in with Windows" under '
+                         'the form. After signing out it is not tried by itself again in that '
+                         'tab - or signing out would sign straight back in.',
+        'kerberos_realm': 'The realm whose people may sign in, in capitals (CORP.EXAMPLE). '
+                          'Empty: taken from the base DN of the directory above '
+                          '(DC=corp,DC=example). A ticket of any other realm is refused.',
+        'password_off': 'On: nobody signs in with a password, local accounts neither - the '
+                        'sign-in page offers only Windows, and no password is set or changed. '
+                        'Switched on only from a sign-in with Windows, so whoever does has '
+                        'shown it works for them. In effect only while Sign in with Windows is '
+                        'on; the way back, as root on the server: isemon --set password_off=0.',
         'passkeys': 'After the password, everybody confirms it is them with Face ID, Touch ID, '
                     'Windows Hello or the PIN of their device (a passkey). The first sign-in '
                     'after this is switched on sets it up; a full admin can set it up again for '
@@ -62869,7 +63406,8 @@ class Daemon(object):
             out['keys'] = {name: (self.store.get_meta(name) or '')
                            for name in ('mikrotik_key', 'mikrotik_public',
                                         'mikrotik2_key', 'mikrotik2_public',
-                                        'directory_ca', 'directory2_ca', 'passkeys')
+                                        'directory_ca', 'directory2_ca', 'passkeys',
+                                        'kerberos_keytab')
                            + FW_OTHER_KEYS}
             # The key in the published ban list's URL. It lives in a file
             # beside the database rather than in it, and was left behind: a
@@ -63051,7 +63589,7 @@ class Daemon(object):
             # password first made it.
             for name in ('mikrotik_key', 'mikrotik_public',
                          'mikrotik2_key', 'mikrotik2_public', 'directory_ca',
-                         'directory2_ca', 'passkeys') + FW_OTHER_KEYS:
+                         'directory2_ca', 'passkeys', 'kerberos_keytab') + FW_OTHER_KEYS:
                 value = given['keys'].get(name)
                 if value:
                     self.store.set_meta(name, str(value))
@@ -69243,6 +69781,12 @@ class WebRoot(object):
                     if key2:
                         t.update(cert2=tls['cert2'], key2=key2, chain2=tls.get('chain2') or '')
             out['tls'] = t
+        # Room in nginx for a Windows sign-in's ticket (1.10.340).
+        try:
+            if self.daemon.kerberos_wanted():
+                out['big_headers'] = True
+        except Exception:                               # noqa: BLE001
+            pass
         # ACME by HTTP-01 (1.10.251): port 80 answers the CA for the name.
         if acme_on() and acme_http():
             out['acme'] = acme_http_names(self)
@@ -76404,7 +76948,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '81fd9279e48103a55c2cf6fe1e5c6eaa712bbf2cb6e94b21b4e5d1f6a5798f98'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '4d6b6cf56e221e6286aa579eba795d909ab80aec7bec3953884ea5f7f44b0a65'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
@@ -84054,6 +84598,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                                    # In maintenance (1.10.266): healthz.php
                                    # says 503. Only whether - never why.
                                    'maintenance': bool(maintenance_now().get('on')),
+                                   # The sign-in page's button (1.10.340):
+                                   # whether, by itself, and whether the
+                                   # form is offered at all.
+                                   'kerberos': self.daemon.kerberos_health(),
                                    'database': {
                                        'ok': not said, 'trouble': said,
                                        'engine': str(want.get('engine') or ''),
@@ -84360,6 +84908,69 @@ class ApiHandler(BaseHTTPRequestHandler):
                 raise Refused(str(e), '')
             return self.send_json({'ok': True, **got})
 
+        # Signing in with Windows (1.10.340): the ticket the page's PHP took
+        # out of "Authorization: Negotiate". Refused: 401, which the PHP turns
+        # into 403 for the browser (a second 401 would make it try NTLM).
+        if path == '/api/auth/kerberos' and method == 'POST':
+            data = self.body()
+            if not daemon.kerberos_on():
+                return self.fail('signing in with Windows is off', 404)
+            try:
+                got = daemon.kerberos_login(data.get('token'), ip=self.caller(),
+                                            agent=str(self.headers.get('User-Agent') or ''))
+            except KrbError as e:
+                # The words of why are in the events; the page says what can
+                # be told to somebody not signed in.
+                words = str(e)
+                if words.startswith(('the directory says', 'too many')) or \
+                        'none of the groups' in words or 'switched off here' in words:
+                    return self.fail(words.split(' - ')[0][:200], 401)
+                return self.fail('Windows did not sign you in - the ticket was not taken', 401)
+            return self.send_json({'ok': True, **got})
+
+        if path == '/api/kerberos':
+            # The card on Settings → Active Directory: read by any account
+            # that may read the settings, changed by a full admin.
+            if method != 'POST':
+                me = self.need_login()
+                if not me:
+                    return None
+                return self.send_json(daemon.kerberos_view(me.get('role') == 'fulladmin'))
+            me = self.need_admin()
+            if not me:
+                return None
+            data = self.body()
+            act = str(data.get('action') or '')
+            try:
+                if act == 'keytab':
+                    try:
+                        raw = base64.b64decode(str(data.get('keytab') or ''), validate=True)
+                    except ValueError:
+                        return self.fail('the keytab did not arrive whole')
+                    entries = daemon.kerberos_put(raw, me['name'])
+                    return self.send_json({'ok': True, 'message': 'the keytab is put in: %d key(s)'
+                                           % len(entries), **daemon.kerberos_view(True)})
+                if act == 'drop':
+                    if daemon.password_off():
+                        return self.fail('only Windows signs in here: switch that off first, '
+                                         'or nobody could sign in', 409)
+                    daemon.kerberos_take_away(me['name'])
+                    return self.send_json({'ok': True, 'message': 'the keytab is taken away',
+                                           **daemon.kerberos_view(True)})
+                if act == 'try':
+                    # Try my browser's ticket: who it would sign in, and as
+                    # what - nobody signed in.
+                    try:
+                        got = daemon.kerberos_check(data.get('token'), self.caller())
+                    except KrbError as e:
+                        return self.send_json({'ok': True, 'would': False, 'said': str(e)})
+                    return self.send_json({'ok': True, 'would': True,
+                                           'principal': got['principal'], 'name': got['name'],
+                                           'role': got['role']})
+            except (ValueError, OSError) as e:
+                return self.fail(str(e))
+            return self.fail('nothing to do')
+
         if path == '/api/auth/whoami':
             me = self.who()
             # Half a sign-in is told who it is and what it still owes -
@@ -84375,6 +84986,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                                    'prefs': store.user_prefs(me['name']) if me else {},
                                    'cols_edit': bool(me) and daemon.cols_editing(
                                        self.headers.get('X-Isemon-Session') or ''),
+                                   # Signed in with Windows, and whether only
+                                   # Windows signs in (1.10.340).
+                                   'kerberos': bool(me) and daemon.kerberos_session(
+                                       self.headers.get('X-Isemon-Session') or ''),
+                                   'only_windows': daemon.password_off(),
                                    'anybody': store.user_count() > 0})
 
         if path == '/api/auth/settings':
@@ -84807,6 +85423,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             me = self.need_login()
             if not me:
                 return None
+            if daemon.password_off():
+                return self.fail('only Windows signs in here: no password is set or changed '
+                                 'while that is on', 409)
             data = self.body()
             user = store.user(me['name'])
             # An account the directory owns has its password in the directory.
@@ -87184,6 +87803,19 @@ class ApiHandler(BaseHTTPRequestHandler):
                 except ValueError as e:
                     return self.fail('Face ID is not switched on from this page: %s. Open this '
                                      'page as https://name/ and switch it on there.' % e, 409)
+            # Only Windows (1.10.340): switched on only from a sign-in with
+            # Windows - whoever does has shown it works for them - and only
+            # with it on and a keytab in.
+            if str(given.get('password_off', '')) in ('1', 'True', 'true') and \
+                    not int(CONFIG.get('password_off') or 0):
+                if not daemon.kerberos_session(self.headers.get('X-Isemon-Session') or ''):
+                    return self.fail('"Only Windows" is switched on only from a sign-in with '
+                                     'Windows: sign out, sign in with Windows, and switch it '
+                                     'on then', 409)
+                if not daemon.kerberos_on() or str(given.get('kerberos', '1')) in ('0', 'False',
+                                                                                   'false'):
+                    return self.fail('"Only Windows" needs Sign in with Windows on, with a '
+                                     'keytab put in', 409)
             # How the database in use is reached (1.10.278): tried before it
             # is saved, and isemon starts again on it.
             try:
@@ -87364,6 +87996,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not me:
                 return None
             data = self.body()
+            if (data.get('add') or data.get('password_for')) and daemon.password_off():
+                # Only Windows (1.10.340): no password is set from the pages.
+                return self.fail('only Windows signs in here: no password is set or changed '
+                                 'while that is on (Settings → Active Directory)', 409)
             if data.get('add'):
                 # Without the hash. Every other answer about an account strips
                 # it - the list, the one-account read, the role change - and
