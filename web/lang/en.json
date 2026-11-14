@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.346",
+  "version": "1.10.347",
   "made": "2026-11-14",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -2600,6 +2600,10 @@
    "source": "after it where it is not 53. The first one that hands over a",
    "text": "after it where it is not 53. The first one that hands over a"
   },
+  "s.after-revoking-a-lost-card-publish.1345dacb": {
+   "source": "After revoking a lost card: publish the CRL at once (certutil -CRL), then Fetch now here - a CRL kept here is used for ten minutes at most after the new one is published.",
+   "text": "After revoking a lost card: publish the CRL at once (certutil -CRL), then Fetch now here - a CRL kept here is used for ten minutes at most after the new one is published."
+  },
   "s.after-sign-out.3e3b455f": {
    "source": "After Sign out",
    "text": "After Sign out"
@@ -4608,6 +4612,14 @@
    "source": "Barbados",
    "text": "Barbados"
   },
+  "s.base-crl.6d349f82": {
+   "source": "base CRL",
+   "text": "base CRL"
+  },
+  "s.base.1405df66": {
+   "source": "base",
+   "text": "base"
+  },
   "s.basic.61a7508e": {
    "source": "basic",
    "text": "basic"
@@ -5664,6 +5676,10 @@
    "source": "Checked against the system’s root authorities; an intermediate the certificate did not come with is fetched from its CA Issuers address, as browsers do it - so that curl, Python, acme and other clients that fetch nothing take it too.",
    "text": "Checked against the system’s root authorities; an intermediate the certificate did not come with is fetched from its CA Issuers address, as browsers do it - so that curl, Python, acme and other clients that fetch nothing take it too."
   },
+  "s.checked-by-openssl-at-each-sign.1a27aebc": {
+   "source": "checked by openssl at each sign-in",
+   "text": "checked by openssl at each sign-in"
+  },
   "s.checked-by-the-authorities-this-machine.8f438177": {
    "source": "checked by the authorities this machine trusts",
    "text": "checked by the authorities this machine trusts"
@@ -5680,9 +5696,9 @@
    "source": "Checked from here",
    "text": "Checked from here"
   },
-  "s.checked-the-crl-at-the-certificate.f7a8c415": {
-   "source": "checked - the CRL at the certificate’s CRL Distribution Point; none to be had, no sign-in",
-   "text": "checked - the CRL at the certificate’s CRL Distribution Point; none to be had, no sign-in"
+  "s.checked-the-crl-and-its-delta.3477eae3": {
+   "source": "checked - the CRL (and its delta) of the certificate and of every authority above it but the root; none to be had, no sign-in",
+   "text": "checked - the CRL (and its delta) of the certificate and of every authority above it but the root; none to be had, no sign-in"
   },
   "s.checked-with-this-machine-s-dns.aa60ce4d": {
    "source": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees.",
@@ -5824,6 +5840,14 @@
    "source": "Clear all",
    "text": "Clear all"
   },
+  "s.clear-every-crl.08c5ce09": {
+   "source": "Clear every CRL?",
+   "text": "Clear every CRL?"
+  },
+  "s.clear-every-crl.4e14c499": {
+   "source": "Clear every CRL",
+   "text": "Clear every CRL"
+  },
   "s.clear-it.cec806d9": {
    "source": "Clear it",
    "text": "Clear it"
@@ -5831,6 +5855,10 @@
   "s.clear-my-search-history.cc8277d7": {
    "source": "Clear my search history",
    "text": "Clear my search history"
+  },
+  "s.clear-one-crl.06047abb": {
+   "source": "Clear one CRL",
+   "text": "Clear one CRL"
   },
   "s.clear-the-list-of-backups-sent.f9f287e8": {
    "source": "Clear the list of backups sent?",
@@ -5855,6 +5883,10 @@
   "s.clear-then-close.0baa7f3b": {
    "source": "clear, then close",
    "text": "clear, then close"
+  },
+  "s.clear-this-crl-fetched-again-at.bde3c50b": {
+   "source": "Clear this CRL - fetched again at the next sign-in",
+   "text": "Clear this CRL - fetched again at the next sign-in"
   },
   "s.clear-who-fetched-it.2f969605": {
    "source": "Clear who fetched it…",
@@ -6316,6 +6348,10 @@
    "source": "Copy it",
    "text": "Copy it"
   },
+  "s.copy-the-address.311bee6a": {
+   "source": "Copy the address",
+   "text": "Copy the address"
+  },
   "s.copy-the-commands.1a2995f3": {
    "source": "Copy the commands",
    "text": "Copy the commands"
@@ -6527,6 +6563,10 @@
   "s.criticalcount.a9a7cae1": {
    "source": "criticalcount",
    "text": "criticalcount"
+  },
+  "s.crl-number.d8b46a6c": {
+   "source": "CRL number",
+   "text": "CRL number"
   },
   "s.crlevel.2c8a4cb1": {
    "source": "crlevel",
@@ -6828,6 +6868,14 @@
    "source": "deletes",
    "text": "deletes"
   },
+  "s.delta-crl-freshest-crl-applied-over.92f2988b": {
+   "source": "delta CRL (Freshest CRL) - applied over its base CRL",
+   "text": "delta CRL (Freshest CRL) - applied over its base CRL"
+  },
+  "s.delta.736fcab4": {
+   "source": "delta",
+   "text": "delta"
+  },
   "s.denmark.89da124e": {
    "source": "Denmark",
    "text": "Denmark"
@@ -7043,6 +7091,10 @@
   "s.diagnostics-tables.db0a8e28": {
    "source": "Diagnostics → Tables",
    "text": "Diagnostics → Tables"
+  },
+  "s.did-not-answer-in-a-minute.dd45a27c": {
+   "source": "did not answer in a minute - is isemon running?",
+   "text": "did not answer in a minute - is isemon running?"
   },
   "s.diego-garcia.f92182a4": {
    "source": "Diego Garcia",
@@ -8428,6 +8480,14 @@
    "source": "every country",
    "text": "every country"
   },
+  "s.every-crl-fetched-again-now-those.8cc234c5": {
+   "source": "Every CRL fetched again now: those kept and those the authorities name. One that cannot be fetched lets nobody in: the last good one is kept until its next update, else nobody signs in with a certificate of it.",
+   "text": "Every CRL fetched again now: those kept and those the authorities name. One that cannot be fetched lets nobody in: the last good one is kept until its next update, else nobody signs in with a certificate of it."
+  },
+  "s.every-crl-kept-is-forgotten-the.916dcd57": {
+   "source": "Every CRL kept is forgotten; the next sign-in fetches them again. While an address does not answer then, nobody signs in with a certificate of its authority - the last good CRL is gone too.",
+   "text": "Every CRL kept is forgotten; the next sign-in fetches them again. While an address does not answer then, nobody signs in with a certificate of its authority - the last good CRL is gone too."
+  },
   "s.every-day-the-day-files-and.12e2eafd": {
    "source": ": every day the day files and their copies older than two days packed, those older than",
    "text": ": every day the day files and their copies older than two days packed, those older than"
@@ -9668,6 +9728,14 @@
    "source": "feeds",
    "text": "feeds"
   },
+  "s.fetch-every-crl-again-now-or.beadd973": {
+   "source": "fetch every CRL again now (or the one at URL); a fetch that fails lets nobody in that was not before",
+   "text": "fetch every CRL again now (or the one at URL); a fetch that fails lets nobody in that was not before"
+  },
+  "s.fetch-every-crl-now.7e250e6c": {
+   "source": "Fetch every CRL now",
+   "text": "Fetch every CRL now"
+  },
   "s.fetch-every-switched-on-list-and.d0b4e30d": {
    "source": "Fetch every switched-on list and, if it is on, the country database — now, rather than waiting for the next round. It shows what it is doing as it goes.",
    "text": "Fetch every switched-on list and, if it is on, the country database — now, rather than waiting for the next round. It shows what it is doing as it goes."
@@ -9691,6 +9759,14 @@
   "s.fetch-it.4d10f6e0": {
    "source": "Fetch it",
    "text": "Fetch it"
+  },
+  "s.fetch-now.d45a7a2d": {
+   "source": "Fetch now",
+   "text": "Fetch now"
+  },
+  "s.fetch-one-crl-now.ca8d5598": {
+   "source": "Fetch one CRL now",
+   "text": "Fetch one CRL now"
   },
   "s.fetch-the-country-database-again-by.fe425fbe": {
    "source": "Fetch the country database again by itself. It is published monthly.",
@@ -9736,6 +9812,10 @@
    "source": "Fetch them every (h)",
    "text": "Fetch them every (h)"
   },
+  "s.fetch-this-crl-now.ed9b7604": {
+   "source": "Fetch this CRL now",
+   "text": "Fetch this CRL now"
+  },
   "s.fetch-this-month-s-country-database.c799d24c": {
    "source": "Fetch this month's country database now. It is about 100 MB compressed and replaces everything currently held; every flag on the page is redrawn from it afterwards.",
    "text": "Fetch this month's country database now. It is about 100 MB compressed and replaces everything currently held; every flag on the page is redrawn from it afterwards."
@@ -9748,9 +9828,17 @@
    "source": "Fetched and checked, and left ready below - put in when Upgrade is pressed.",
    "text": "Fetched and checked, and left ready below - put in when Upgrade is pressed."
   },
+  "s.fetched-at-a-sign-in-at.30a9a068": {
+   "source": "Fetched at a sign-in, at most every ten minutes, and kept until the next update; its signature is checked by openssl against the authorities put in. A row opens to its details.",
+   "text": "Fetched at a sign-in, at most every ten minutes, and kept until the next update; its signature is checked by openssl against the authorities put in. A row opens to its details."
+  },
   "s.fetched-by.d2c42503": {
    "source": "Fetched by",
    "text": "Fetched by"
+  },
+  "s.fetched-not-everything.30fcc0df": {
+   "source": "fetched - not everything",
+   "text": "fetched - not everything"
   },
   "s.fetched-the-download-starts.0f62de25": {
    "source": "fetched: the download starts",
@@ -9763,6 +9851,10 @@
   "s.fetched.60c40238": {
    "source": "(fetched:",
    "text": "(fetched:"
+  },
+  "s.fetched.8fa7310a": {
+   "source": "fetched",
+   "text": "fetched"
   },
   "s.fetches-the-list-not-the-ftd.b7abb31e": {
    "source": "fetches the list, not the FTD: it downloads it and hands it to every FTD whose access control policy uses it. An FTD managed by",
@@ -9791,6 +9883,10 @@
   "s.fetching-the-record.690584e0": {
    "source": "Fetching the record…",
    "text": "Fetching the record…"
+  },
+  "s.fetching.2246be56": {
+   "source": "Fetching…",
+   "text": "Fetching…"
   },
   "s.fewer-arrived-than-it-began-with.0fc6749f": {
    "source": "- fewer arrived than it began with, or its end did not; nothing was let go",
@@ -10351,6 +10447,14 @@
   "s.forget-the-client-certificate.e494ef05": {
    "source": "Forget the client certificate",
    "text": "Forget the client certificate"
+  },
+  "s.forget-the-crls-kept-or-the.2c0e6e95": {
+   "source": "forget the CRLs kept (or the one at URL) - the next sign-in fetches them again. All of them: asks first unless --yes",
+   "text": "forget the CRLs kept (or the one at URL) - the next sign-in fetches them again. All of them: asks first unless --yes"
+  },
+  "s.forget-the-crls-kept-the-next.21bad6cb": {
+   "source": "Forget the CRLs kept: the next sign-in (or Fetch now) fetches them again.",
+   "text": "Forget the CRLs kept: the next sign-in (or Fetch now) fetches them again."
   },
   "s.forget-the-host-key.9bb42a7f": {
    "source": "Forget the host key",
@@ -11007,6 +11111,10 @@
   "s.gone.a6dfdeaa": {
    "source": "gone",
    "text": "gone"
+  },
+  "s.good-checked-by-openssl-against-the.0ae2f3e7": {
+   "source": "good - checked by openssl against the authorities put in",
+   "text": "good - checked by openssl against the authorities put in"
   },
   "s.good-until.cd5037b6": {
    "source": "Good until",
@@ -16552,6 +16660,14 @@
    "source": "Name:",
    "text": "Name:"
   },
+  "s.named-by-the-authority.00ff1dc4": {
+   "source": "Named by the authority",
+   "text": "Named by the authority"
+  },
+  "s.named-by.130a5e79": {
+   "source": "named by",
+   "text": "named by"
+  },
   "s.names-a-person.1c9ba157": {
    "source": "names a person",
    "text": "names a person"
@@ -16587,6 +16703,10 @@
   "s.names-it-tried.e6e1a7c6": {
    "source": "Names it tried",
    "text": "Names it tried"
+  },
+  "s.names-no-crl-over-http-while.6128029b": {
+   "source": "names no CRL over http: while revocation is checked, nobody signs in with a certificate it issued. Give it a CRL Distribution Point over http (its root’s CRL) and issue it again.",
+   "text": "names no CRL over http: while revocation is checked, nobody signs in with a certificate it issued. Give it a CRL Distribution Point over http (its root’s CRL) and issue it again."
   },
   "s.names-of-addresses.01a6ccef": {
    "source": "Names of addresses",
@@ -17708,6 +17828,10 @@
    "source": "none yet — pinned at the first connection",
    "text": "none yet — pinned at the first connection"
   },
+  "s.none-yet-the-crl-at-a.8e7c19dc": {
+   "source": "None yet: the CRL at a certificate’s CRL Distribution Point is fetched at its first sign-in and kept until its next update.",
+   "text": "None yet: the CRL at a certificate’s CRL Distribution Point is fetched at its first sign-in and kept until its next update."
+  },
   "s.none-yet.02942cec": {
    "source": "none yet",
    "text": "none yet"
@@ -17800,6 +17924,10 @@
    "source": "Not checked: anybody in between could answer instead of the router.",
    "text": "Not checked: anybody in between could answer instead of the router."
   },
+  "s.not-checked-its-authority-is-not.0aaf8877": {
+   "source": "not checked - its authority is not put in",
+   "text": "not checked - its authority is not put in"
+  },
   "s.not-checked-not-safe.5a2ee8a8": {
    "source": "not checked (not safe)",
    "text": "not checked (not safe)"
@@ -17856,6 +17984,14 @@
    "source": "Not every site's RADIUS is ISE. Where a Windows",
    "text": "Not every site's RADIUS is ISE. Where a Windows"
   },
+  "s.not-everything.72c8b449": {
+   "source": "not everything",
+   "text": "not everything"
+  },
+  "s.not-fetched-yet-at-the-first.0220125c": {
+   "source": "not fetched yet - at the first sign-in that needs it, or Fetch now",
+   "text": "not fetched yet - at the first sign-in that needs it, or Fetch now"
+  },
   "s.not-fetched-yet.2472fa73": {
    "source": "not fetched yet",
    "text": "not fetched yet"
@@ -17872,6 +18008,10 @@
    "source": "not given",
    "text": "not given"
   },
+  "s.not-good-openssl-does-not-take.106265c6": {
+   "source": "NOT good - openssl does not take it: nobody signs in by it",
+   "text": "NOT good - openssl does not take it: nobody signs in by it"
+  },
   "s.not-good.3b66e675": {
    "source": "Not good",
    "text": "Not good"
@@ -17883,6 +18023,14 @@
   "s.not-growing-what-arrives-is-let.cbb51a1a": {
    "source": "not growing: what arrives is let go of as it ages",
    "text": "not growing: what arrives is let go of as it ages"
+  },
+  "s.not-had-nobody-signs-in-with.bfd988ea": {
+   "source": "not had - nobody signs in with a certificate whose revocation it should say",
+   "text": "not had - nobody signs in with a certificate whose revocation it should say"
+  },
+  "s.not-had.d83cc32d": {
+   "source": "not had",
+   "text": "not had"
   },
   "s.not-in-the-group-that-is.66223cc6": {
    "source": "not in the group that is allowed",
@@ -18155,6 +18303,10 @@
   "s.not-used.487f8bcd": {
    "source": "not used",
    "text": "not used"
+  },
+  "s.not-verified.c75397d7": {
+   "source": "not verified",
+   "text": "not verified"
   },
   "s.not-watching-it-any-more.59da70d2": {
    "source": "not watching it any more",
@@ -23128,6 +23280,14 @@
    "source": "Reversible encryption",
    "text": "Reversible encryption"
   },
+  "s.revocation-is-not-checked.050a4862": {
+   "source": "Revocation is not checked.",
+   "text": "Revocation is not checked."
+  },
+  "s.revocation-lists-crl.c2b84b81": {
+   "source": "Revocation lists (CRL)",
+   "text": "Revocation lists (CRL)"
+  },
   "s.revocation.6f6bf2c2": {
    "source": "Revocation",
    "text": "Revocation"
@@ -24667,6 +24827,10 @@
   "s.sign-up-at-desec-io-free.353597da": {
    "source": "Sign up at desec.io (free) and confirm the mail.",
    "text": "Sign up at desec.io (free) and confirm the mail."
+  },
+  "s.signature.2f32be1d": {
+   "source": "Signature",
+   "text": "Signature"
   },
   "s.signed-by-an-authority-yours-given.5f15f050": {
    "source": "Signed by an authority - yours, given below, or one this machine trusts - and for the name it is checked for.",
@@ -26964,6 +27128,10 @@
    "source": "the address and port the source was made",
    "text": "the address and port the source was made"
   },
+  "s.the-address-copied.1949f591": {
+   "source": "the address copied",
+   "text": "the address copied"
+  },
   "s.the-address-for-acme.6b52f336": {
    "source": "The address for acme",
    "text": "The address for acme"
@@ -27848,9 +28016,9 @@
    "source": "The CRL at the certificate's CRL Distribution Point (http), kept until its next update. On: no CRL to be had, no sign-in. Off only for an authority that publishes none.",
    "text": "The CRL at the certificate's CRL Distribution Point (http), kept until its next update. On: no CRL to be had, no sign-in. Off only for an authority that publishes none."
   },
-  "s.the-crls-fetched.f6f262c1": {
-   "source": "The CRLs fetched",
-   "text": "The CRLs fetched"
+  "s.the-crls-of-the-sign-in.f2608561": {
+   "source": "the CRLs of the sign-in with a certificate: each address, its authority, number, this and next update, revoked entries, signature - those the authorities name and not fetched yet too (--json)",
+   "text": "the CRLs of the sign-in with a certificate: each address, its authority, number, this and next update, revoked entries, signature - those the authorities name and not fetched yet too (--json)"
   },
   "s.the-current-password-is-not-right.43db85c8": {
    "source": "the current password is not right",
@@ -32580,6 +32748,10 @@
    "source": "this server",
    "text": "this server"
   },
+  "s.this-server.d75b2349": {
+   "source": "This server",
+   "text": "This server"
+  },
   "s.this-session-in-the-list.a5d2cc0c": {
    "source": "This session in the list",
    "text": "This session in the list"
@@ -32615,6 +32787,10 @@
   "s.this-signs-in-over-ssh-and.a2701ea2": {
    "source": "This signs in over ssh and runs",
    "text": "This signs in over ssh and runs"
+  },
+  "s.this-update.40fe4691": {
+   "source": "This update",
+   "text": "This update"
   },
   "s.this-version-s-readme-has-no.1e7a1f1a": {
    "source": "This version’s README has no entry for it.",
@@ -33979,6 +34155,10 @@
   "s.verdict.860360ac": {
    "source": "verdict",
    "text": "verdict"
+  },
+  "s.verified.ec734b65": {
+   "source": "verified",
+   "text": "verified"
   },
   "s.verify.86a4261d": {
    "source": "verify",
@@ -36800,9 +36980,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "with --downgrade-check: what changed in each older version as well"
   },
-  "s.with-erase-reboot-poweroff-os-update.0131ff8a": {
-   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off or --otp-tls-remove: do not ask first",
-   "text": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off or --otp-tls-remove: do not ask first"
+  "s.with-erase-reboot-poweroff-os-update.b7f7632d": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear or --otp-tls-remove: do not ask first",
+   "text": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear or --otp-tls-remove: do not ask first"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -36963,6 +37143,10 @@
   "s.with.564f8c6e": {
    "source": "With",
    "text": "With"
+  },
+  "s.within-a-day.788259de": {
+   "source": "within a day",
+   "text": "within a day"
   },
   "s.without-a-certificate-made-here-the.65eab387": {
    "source": "Without a certificate made here, the one api-ssl already has is pinned at the first connection.",
@@ -37822,6 +38006,10 @@
    "source": "cat > {0} <<'EOF'",
    "text": "cat > {0} <<'EOF'"
   },
+  "p.certificate-sign-in-refused.3a860eab": {
+   "source": "Certificate sign-in refused: {0}",
+   "text": "Certificate sign-in refused: {0}"
+  },
   "p.certificates-targets.b6b5d6a9": {
    "source": "{0} certificates · {1} targets · {2}",
    "text": "{0} certificates · {1} targets · {2}"
@@ -37969,6 +38157,10 @@
   "p.create.8c4c751d": {
    "source": "create {0}",
    "text": "create {0}"
+  },
+  "p.crl.cb207faa": {
+   "source": "crl_{0}",
+   "text": "crl_{0}"
   },
   "p.curl-fss-u-password.6b89dd51": {
    "source": "curl -fsS -u '{0}:PASSWORD'",
@@ -38417,6 +38609,10 @@
   "p.forget-the-key-for.80f6f8db": {
    "source": "Forget the key for {0}",
    "text": "Forget the key for {0}"
+  },
+  "p.forgotten.a8b7c303": {
+   "source": "{0} forgotten",
+   "text": "{0} forgotten"
   },
   "p.found-by-and-written-down-then.4b796988": {
    "source": "{0} — found by {1} and written down then; nothing is being checked while it stands. The page is asking the events themselves, so nothing it shows is wrong, only slower.",
@@ -39658,6 +39854,10 @@
    "source": "{0} of dumps on a disk with {1} free.",
    "text": "{0} of dumps on a disk with {1} free."
   },
+  "p.of-fetched.01fe9be6": {
+   "source": "{0} of {1} fetched",
+   "text": "{0} of {1} fetched"
+  },
   "p.of-indexes-not-used-yet.8cf24bcb": {
    "source": "{0} of indexes not used yet",
    "text": "{0} of indexes not used yet"
@@ -40773,10 +40973,6 @@
   "p.the-cards-the-chart-the-lists.0574284b": {
    "source": "({0}): the cards, the chart, the lists and the search, all of them for this one firewall.",
    "text": "({0}): the cards, the chart, the lists and the search, all of them for this one firewall."
-  },
-  "p.the-certificate-could-not-be-checked.690cbc09": {
-   "source": "the certificate could not be checked: {0}",
-   "text": "the certificate could not be checked: {0}"
   },
   "p.the-certificate-is-not-trusted.752639f2": {
    "source": "the certificate is not trusted: {0}",

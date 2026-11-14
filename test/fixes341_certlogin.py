@@ -96,6 +96,8 @@ crl_server = http.server.ThreadingHTTPServer(('127.0.0.1', crlport), Quiet)
 threading.Thread(target=crl_server.serve_forever, daemon=True).start()
 for k in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY'):
     os.environ.pop(k, None)
+# The CRLs are served on 127.0.0.1: allowed for the tests only (1.10.347).
+os.environ['ISEMON_CDP_LOOPBACK_OK'] = '1'
 
 
 def pem(name):
@@ -464,9 +466,13 @@ else:
         code, h, b = https(PCERT, '/index.php?api=cert-login&n=%s' % n, cert='outsider',
                            cookie='isemon_certn=%s' % n)
         loc = re.search(r'(?mi)^Location: (.*)$', h)
-        ok('outsider: back, told why', urllib.parse.unquote(
-            loc.group(1).strip() if loc else '').endswith('none of the groups given a role here holds it'),
-           True)
+        # The person is told little (1.10.347); why goes to Events.
+        ok('outsider: back, told it was refused', urllib.parse.unquote(
+            loc.group(1).strip() if loc else '').replace('+', ' ').endswith(
+                'Certificate sign-in refused: certificate not accepted'), True)
+        ok('...why in Events', store.db.execute(
+            "SELECT COUNT(*) FROM events WHERE detail LIKE '%none of the groups given a role%'"
+        ).fetchone()[0] >= 1, True)
         code, h, b = https(PCERT, '/index.php?api=cert-login&n=%s' % n,
                            cookie='isemon_certn=%s' % n)
         loc = re.search(r'(?mi)^Location: (.*)$', h)

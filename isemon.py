@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.346'
+__version__ = '1.10.347'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -19095,12 +19095,32 @@ CL_CERT_MOST = 16384
 CL_CRL_MOST = 8 << 20
 CL_CRL_CACHE = {}
 CL_CRL_LOCK = threading.Lock()
+CL_OID_FRESHEST = '2.5.29.46'       # Freshest CRL: where the delta CRL is
+CL_OID_DELTA = '2.5.29.27'          # Delta CRL Indicator (of a CRL)
+# A CRL is used for ten minutes at most (or until its next update, if sooner),
+# then fetched again; while its address does not answer, the last good one
+# until its next update - nothing after it (1.10.347).
+CL_CRL_FRESH_S = 600
+CL_CRL_FETCH_S = 15                 # one CRL: the whole fetch
+CL_CRLS_SAID = 24                   # CRLs on the card
+CL_CDP_NAMES_NO = ('metadata', 'metadata.google.internal', 'metadata.goog', 'instance-data',
+                   'instance-data.ec2.internal', 'metadata.azure.com', 'metadata.oraclecloud.com')
+CL_CDP_IPS_NO = ('169.254.169.254', '169.254.170.2', 'fd00:ec2::254', '100.100.100.200')
+CL_CA_CDPS = {}
+CL_KIND_WORDS = {'certificate': 'certificate not accepted', 'revoked': 'revoked',
+                 'expired': 'run out', 'unavailable': 'not available just now'}
 CL_MATCHES = ('compat', 'strong', 'upn')
 CL_PORT_REFUSED = (22, 25, 53, 80, 443, 514, 1812, 1813, 3306, 5432, 6514)
 
 
 class CertLoginError(ValueError):
-    """A certificate not taken; the words say why."""
+    """A certificate not taken; the words say why (for the events and the
+    administrator), `kind` what the person is told (1.10.347): certificate,
+    revoked, expired or unavailable."""
+
+    def __init__(self, why, kind='certificate'):
+        ValueError.__init__(self, why)
+        self.kind = kind
 
 
 def _cl_der(b, i=0):
@@ -19231,9 +19251,12 @@ def cl_cert_facts(pem):
             is_ca = bool(p and p[0][0] == 0x01 and p[0][1] == b'\xff')
         except ValueError:
             is_ca = False
-    cdp = []
+    cdp, freshest = [], []
     if CL_OID_CDP in exts:
         cdp = [u.decode('ascii', 'replace') for u in _cl_der_find(exts[CL_OID_CDP][1], 0x86)]
+    if CL_OID_FRESHEST in exts:
+        freshest = [u.decode('ascii', 'replace')
+                    for u in _cl_der_find(exts[CL_OID_FRESHEST][1], 0x86)][:6]
     try:
         txt = _openssl(['x509', '-noout', '-subject', '-issuer', '-serial', '-startdate',
                         '-enddate', '-fingerprint', '-sha256', '-nameopt', 'RFC2253'],
@@ -19249,10 +19272,11 @@ def cl_cert_facts(pem):
             'not_before': one('notBefore'), 'not_after': one('notAfter'),
             'sha256': (fp.group(1) if fp else '').replace(':', '').lower(), 'upn': upns,
             'mail': mails, 'sid': sid, 'eku': eku, 'ca': is_ca, 'cdp': cdp,
+            'freshest': freshest,
             'unknown_critical': sorted(
                 k for k, (c, _v) in exts.items()
                 if c and k not in (CL_OID_SAN, CL_OID_EKU, CL_OID_BC, '2.5.29.15', CL_OID_CDP,
-                                   '2.5.29.32'))}
+                                   '2.5.29.32', CL_OID_FRESHEST))}
 
 
 def cl_sid_text(raw):
@@ -19271,100 +19295,398 @@ def cl_sid_text(raw):
 def _cl_when(text):
     import calendar
     try:
-        return calendar.timegm(time.strptime(str(text).strip().replace(' GMT', ''),
-                                             '%b %d %H:%M:%S %Y'))
+        return calendar.timegm(time.strptime(re.sub(r'\s+', ' ', str(text or '').strip())
+                                             .replace(' GMT', ''), '%b %d %H:%M:%S %Y'))
     except ValueError:
         return 0
 
 
-def cl_crl_fetch(url):
-    """The CRL at `url` as PEM and its next update - kept until then (an hour
-    when it says nothing), and the last one used while still good when the
-    address does not answer for a moment."""
-    import urllib.request
-    now = time.time()
-    with CL_CRL_LOCK:
-        got = CL_CRL_CACHE.get(url)
-    if got and got.get('pem') and now < got['next'] and now - got['at'] < 86400:
-        return got
+# ---- the CRLs of a certificate sign-in (1.10.347, from acme 1.0.104's kit) ----
+# A CRL Distribution Point is text in a certificate: an address treated as
+# untrusted. http only, the machine's own DNS and no proxy, every address the
+# name has checked and the connection made to the address checked - never a
+# loopback, link-local, metadata, multicast or reserved one. Private ones are
+# fetched from: AD CS's CDPs live inside.
+def cl_addr_no(ip):
+    """Why no CRL is fetched from an address ('' when it is)."""
+    if isinstance(ip, str):
+        ip = ipaddress.ip_address(ip.split('%', 1)[0])
+    if getattr(ip, 'ipv4_mapped', None):
+        ip = ip.ipv4_mapped
+    if any(ip == ipaddress.ip_address(x) for x in CL_CDP_IPS_NO):
+        return 'a cloud\'s metadata service'
+    if ip.is_loopback:
+        # The tests' CRLs are served on this machine: never set by isemon.
+        return '' if os.environ.get('ISEMON_CDP_LOOPBACK_OK') == '1' else 'loopback'
+    if ip.is_link_local:
+        return 'link-local'
+    if ip.is_multicast:
+        return 'multicast'
+    if ip.is_unspecified or (ip.version == 4 and ip in ipaddress.ip_network('0.0.0.0/8')):
+        return 'unspecified'
+    if ip.is_reserved:
+        return 'reserved'
+    return ''
+
+
+def cl_cdp_ok(url):
+    """An address a CRL is fetched from: http, no user or password in it, no
+    name of a cloud's metadata service, no number cl_addr_no refuses."""
     try:
-        raw = b''
-        req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
-        # The machine's own DNS, not ACME's (1.10.346): a CRL Distribution
-        # Point is in the domain, and ACME's servers are public ones.
-        with url_open(req, 'acme', timeout=10) as r:
-            while len(raw) <= CL_CRL_MOST:
-                part = r.read(65536)
+        u = urllib.parse.urlsplit(str(url or ''))
+        u.port
+    except ValueError:
+        return False
+    if u.scheme != 'http' or not u.hostname or u.username or u.password:
+        return False
+    host = u.hostname.lower().rstrip('.')
+    if host in CL_CDP_NAMES_NO or any(host.endswith('.' + n) for n in CL_CDP_NAMES_NO
+                                      if '.' in n):
+        return False
+    try:
+        return not cl_addr_no(ipaddress.ip_address(host.split('%', 1)[0]))
+    except ValueError:
+        return True
+
+
+def cl_http_get(url):
+    """The body at a CRL's http address: every address of its name looked up
+    and checked, the connection made to the one checked (never looked up
+    again), no redirect followed, CL_CRL_MOST and CL_CRL_FETCH_S at most."""
+    import http.client as _hc
+    if not cl_cdp_ok(url):
+        raise ValueError('not an address isemon fetches a CRL from (http; no loopback, '
+                         'link-local or metadata address)')
+    u = urllib.parse.urlsplit(url)
+    host, port = u.hostname, u.port or 80
+    deadline = time.monotonic() + CL_CRL_FETCH_S
+    try:
+        infos = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+    except (OSError, UnicodeError) as e:
+        raise ValueError('%s cannot be looked up (%s)' % (host, getattr(e, 'strerror', None)
+                                                          or e))
+    addrs = []
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(str(info[4][0]).split('%', 1)[0])
+        except ValueError:
+            raise ValueError('%s has an address isemon cannot read (%s)' % (host, info[4][0]))
+        if ip not in addrs:
+            addrs.append(ip)
+    if not addrs:
+        raise ValueError('%s has no address' % host)
+    for ip in addrs:
+        why = cl_addr_no(ip)
+        if why:
+            raise ValueError('%s is %s (%s) - no CRL is fetched from it' % (host, ip, why))
+    path = (u.path or '/') + ('?' + u.query if u.query else '')
+    last = None
+    for ip in addrs[:4]:
+        left = deadline - time.monotonic()
+        if left <= 0:
+            break
+        conn = _hc.HTTPConnection(str(ip), port, timeout=min(5.0, left))
+        try:
+            conn.request('GET', path, headers={
+                'Host': ('[%s]' % host if ':' in host else host) + (':%d' % port if u.port else ''),
+                'User-Agent': 'isemon/%s' % __version__, 'Accept': '*/*', 'Connection': 'close'})
+            r = conn.getresponse()
+            if 300 <= r.status < 400:
+                raise ValueError('it answers with a redirect (HTTP %d to %s) - not followed'
+                                 % (r.status, str(r.getheader('Location') or '?')[:120]))
+            if r.status != 200:
+                raise ValueError('HTTP %d' % r.status)
+            try:
+                if int(r.getheader('Content-Length') or 0) > CL_CRL_MOST:
+                    raise ValueError('larger than %d MB' % (CL_CRL_MOST >> 20))
+            except (TypeError, ValueError) as e:
+                if 'larger' in str(e):
+                    raise
+            raw = b''
+            while True:
+                if time.monotonic() > deadline:
+                    raise ValueError('it took longer than %d s' % CL_CRL_FETCH_S)
+                part = r.read1(65536)
                 if not part:
                     break
                 raw += part
-        if len(raw) > CL_CRL_MOST:
-            raise ValueError('larger than %d MB' % (CL_CRL_MOST >> 20))
-        if b'-----BEGIN X509 CRL' in raw:
-            pem = _openssl(['crl', '-outform', 'PEM'], 'the CRL', raw, binary=True)
-        else:
-            pem = _openssl(['crl', '-inform', 'DER', '-outform', 'PEM'], 'the CRL', raw,
-                           binary=True)
-        pem = pem.decode('ascii', 'replace')
-        nu = _openssl(['crl', '-noout', '-nextupdate'], 'the CRL', pem)
+                if len(raw) > CL_CRL_MOST:
+                    raise ValueError('larger than %d MB' % (CL_CRL_MOST >> 20))
+            return raw
+        except (OSError, _hc.HTTPException) as e:
+            last = e
+        finally:
+            conn.close()
+    raise ValueError(('%s' % (getattr(last, 'strerror', None) or last))[:200] if last
+                     else 'it took longer than %d s' % CL_CRL_FETCH_S)
+
+
+def _cl_der_count(b):
+    n, i = 0, 0
+    while i < len(b):
+        _t, _v, i = _cl_der(b, i)
+        n += 1
+    return n
+
+
+def cl_crl_info(pem):
+    """Of a CRL (PEM): its next update (or None), the Freshest CRL it names,
+    whether it is a delta CRL; its issuer, number, this update and how many
+    certificates it lists as revoked."""
+    out = {'next': None, 'freshest': [], 'delta': False, 'issuer': '', 'number': '',
+           'this': None, 'revoked': None}
+    m = re.search(r'-----BEGIN X509 CRL-----([A-Za-z0-9+/=\s]+)-----END X509 CRL-----', pem)
+    try:
+        der = base64.b64decode(re.sub(r'\s+', '', m.group(1))) if m else b''
+        _t, body, _ = _cl_der(der)
+        _t, tbs, _ = _cl_der(body)
+        items = _cl_der_all(tbs)
+        times = [i for i, (t, _v) in enumerate(items) if t in (0x17, 0x18)]
+        if times:
+            after = times[-1] + 1
+            out['revoked'] = _cl_der_count(items[after][1]) \
+                if after < len(items) and items[after][0] == 0x30 else 0
+        for t, v in items:
+            if t != 0xa0:
+                continue
+            for _t, one in _cl_der_all(_cl_der(v)[1]):
+                parts = _cl_der_all(one)
+                oid = _cl_oid(parts[0][1])
+                if oid == CL_OID_FRESHEST:
+                    out['freshest'] = [u.decode('ascii', 'replace')
+                                       for u in _cl_der_find(parts[-1][1], 0x86)][:6]
+                elif oid == CL_OID_DELTA:
+                    out['delta'] = True
+    except (ValueError, IndexError, AttributeError):
+        pass
+    try:
+        nu = _openssl(['crl', '-noout', '-issuer', '-crlnumber', '-lastupdate', '-nextupdate',
+                       '-nameopt', 'RFC2253'], 'the CRL', pem)
         m = re.search(r'nextUpdate=(.+)', nu)
-        nxt = now + 3600
         if m and 'NONE' not in m.group(1):
-            nxt = _cl_when(m.group(1)) or nxt
-        one = {'at': now, 'pem': pem, 'next': nxt, 'url': url, 'err': ''}
+            out['next'] = _cl_when(m.group(1)) or None
+        m = re.search(r'lastUpdate=(.+)', nu)
+        if m:
+            out['this'] = _cl_when(m.group(1)) or None
+        m = re.search(r'(?m)^issuer=\s*(.*)$', nu)
+        out['issuer'] = m.group(1).strip()[:300] if m else ''
+        m = re.search(r'crlNumber=(\S+)', nu)
+        out['number'] = m.group(1)[:80] if m and 'NONE' not in m.group(1) else ''
+    except WebRootError:
+        pass
+    return out
+
+
+def cl_crl_sig(pem, ca_file):
+    """Whether a CRL's signature is good by the authorities put in, as openssl
+    crl -CAfile says: 'ok', 'bad', 'unknown' (its authority is not among
+    them) or '' (none written out). Only said: openssl verify checks it again
+    at every sign-in."""
+    if not ca_file or not os.path.exists(str(ca_file)):
+        return ''
+    env = dict(os.environ, SSL_CERT_DIR='/nonexistent', SSL_CERT_FILE='/nonexistent')
+    args = ['openssl', 'crl', '-noout', '-CAfile', str(ca_file), '-no-CApath', '-no-CAstore']
+    try:
+        r = subprocess.run(args, input=pem.encode(), capture_output=True, timeout=30, env=env)
+        words = (r.stdout or b'').decode('utf-8', 'replace') + \
+            (r.stderr or b'').decode('utf-8', 'replace')
+        if r.returncode and re.search(r'(?i)unknown option|unrecognized', words):
+            args.remove('-no-CAstore')                  # OpenSSL 1.1.1
+            r = subprocess.run(args, input=pem.encode(), capture_output=True, timeout=30,
+                               env=env)
+            words = (r.stdout or b'').decode('utf-8', 'replace') + \
+                (r.stderr or b'').decode('utf-8', 'replace')
+    except (OSError, subprocess.SubprocessError):
+        return ''
+    if 'verify OK' in words:
+        return 'ok'
+    if 'verify fail' in words:
+        return 'bad'
+    return 'unknown'
+
+
+def cl_crl_fetch(url, force=False, ca_file=None):
+    """The CRL at url as PEM: fetched again after CL_CRL_FRESH_S at most -
+    sooner at its next update; while the address does not answer, the last
+    good one until its next update, then nothing (CertLoginError,
+    'unavailable'). A CRL already past its next update is none. `force`
+    (Fetch now): fetched whatever is kept - failing, the same rule."""
+    now = time.time()
+    with CL_CRL_LOCK:
+        got = CL_CRL_CACHE.get(url)
+    good = bool(got and got.get('pem') and now < got['next'])
+    if good and not force and (now - got['at'] < CL_CRL_FRESH_S or
+                               now - float(got.get('tried') or 0) < 60):
+        return got
+    try:
+        raw = cl_http_get(url)
+        form = 'PEM' if b'-----BEGIN X509 CRL' in raw else 'DER'
+        pem = _openssl(['crl', '-inform', form, '-outform', 'PEM'], 'the CRL', raw,
+                       binary=True).decode('ascii', 'replace')
+        info = cl_crl_info(pem)
+        nxt = info['next'] or now + 3600
+        if nxt <= now:
+            raise ValueError('it has run out (its next update was %s)'
+                             % time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime(nxt)))
+        one = {'at': now, 'pem': pem, 'next': nxt, 'url': url, 'err': '', 'tried': 0,
+               'freshest': info['freshest'], 'delta': info['delta'], 'issuer': info['issuer'],
+               'number': info['number'], 'this': info['this'], 'revoked': info['revoked'],
+               'size': len(raw), 'sig': cl_crl_sig(pem, ca_file)}
         with CL_CRL_LOCK:
             if len(CL_CRL_CACHE) > 50:
                 CL_CRL_CACHE.clear()
             CL_CRL_CACHE[url] = one
         return one
     except Exception as e:                              # noqa: BLE001
-        why = getattr(e, 'reason', None) or e
-        why = (getattr(why, 'strerror', None) or str(why))[:200] or e.__class__.__name__
-        if got and got.get('pem') and now < got['next']:
-            return got
+        why = str(e)[:200] or e.__class__.__name__
+        if good:
+            kept = dict(got, err=why, tried=now, err_at=now)
+            with CL_CRL_LOCK:
+                CL_CRL_CACHE[url] = kept
+            return kept
         with CL_CRL_LOCK:
-            CL_CRL_CACHE[url] = {'at': now, 'pem': '', 'next': 0, 'url': url, 'err': why}
+            CL_CRL_CACHE[url] = {'at': now, 'pem': '', 'next': 0, 'url': url, 'err': why,
+                                 'err_at': now}
         raise CertLoginError('the CRL at %s could not be had (%s) - nobody signs in while the '
-                             'certificate cannot be checked' % (url, why))
+                             'certificate cannot be checked for revocation' % (url, why),
+                             'unavailable')
 
 
-def _cl_verify(ca_file, leaf, crl_pem=''):
+def _cl_crl_any(urls, ca_file=None):
+    last = None
+    for u in urls[:3]:
+        try:
+            return cl_crl_fetch(u, ca_file=ca_file)
+        except CertLoginError as e:
+            last = e
+    raise last
+
+
+def cl_crls_of(c, what, ca_file=None):
+    """The CRL of one certificate (a person's, or an authority's above it)
+    and its delta CRL when it or the CRL names one: [PEM], and whether a delta
+    is among them. No CRL, no sign-in; a delta named and not had neither."""
+    urls = [u for u in (c.get('cdp') or []) if u.lower().startswith('http://')]
+    if not urls:
+        raise CertLoginError('%s names no CRL over http (CRL Distribution Points) - it cannot '
+                             'be checked for revocation' % what)
+    urls = [u for u in urls if cl_cdp_ok(u)]
+    if not urls:
+        raise CertLoginError('the CRL Distribution Point of %s is not an address isemon fetches '
+                             'from (http; no loopback, link-local or metadata address)' % what)
+    base = _cl_crl_any(urls, ca_file)
+    out = [base['pem']]
+    named = list(dict.fromkeys(list(c.get('freshest') or []) + list(base.get('freshest') or [])))
+    if not named:
+        return out, False
+    urls = [u for u in named if u.lower().startswith('http://') and cl_cdp_ok(u)]
+    if not urls:
+        raise CertLoginError('the delta CRL (Freshest CRL) of %s is at no address isemon fetches '
+                             'from (http; no loopback, link-local or metadata address) - its '
+                             'revocations of the last days cannot be seen' % what, 'unavailable')
+    out.append(_cl_crl_any(urls, ca_file)['pem'])
+    return out, True
+
+
+def _cl_verify(ca_file, leaf, crl_pem='', deltas=False):
+    """openssl verify against the authorities put in and nothing else. With
+    CRLs: every certificate of the chain checked (-crl_check_all - the root,
+    its own anchor, not), delta CRLs applied (-use_deltas)."""
+    env = dict(os.environ, SSL_CERT_DIR='/nonexistent', SSL_CERT_FILE='/nonexistent')
     with tempfile.TemporaryDirectory(prefix='isemon-cert-') as work:
         # The authorities put in here and NOTHING else (1.10.345): without
-        # -no-CApath/-no-CAstore openssl trusts the system's store as well, and
-        # any authority of it - a public one, the domain's other CA - signed
-        # people in.
+        # -no-CApath/-no-CAstore openssl trusts the system's store as well.
         args = ['openssl', 'verify', '-no-CApath', '-no-CAstore', '-CAfile', str(ca_file)]
         if crl_pem:
             cp = os.path.join(work, 'crl.pem')
             with open(cp, 'w') as fh:
                 fh.write(crl_pem)
-            args += ['-crl_check', '-CRLfile', cp]
+            args += ['-crl_check_all', '-CRLfile', cp] + (['-use_deltas'] if deltas else [])
         lp = os.path.join(work, 'leaf.pem')
         with open(lp, 'w') as fh:
             fh.write(leaf + '\n')
         try:
-            got = subprocess.run(args + [lp], capture_output=True, text=True, timeout=30)
+            got = subprocess.run(args + [lp], capture_output=True, text=True, timeout=30,
+                                 env=env)
             if got.returncode != 0 and 'no-CAstore' in (got.stderr or '') and \
                     re.search(r'(?i)unknown option|unrecognized', got.stderr or ''):
                 # OpenSSL 1.1.1 (RHEL 8) has no stores: -no-CApath is enough.
                 args.remove('-no-CAstore')
-                got = subprocess.run(args + [lp], capture_output=True, text=True, timeout=30)
+                got = subprocess.run(args + [lp], capture_output=True, text=True, timeout=30,
+                                     env=env)
         except (OSError, subprocess.SubprocessError) as e:
-            raise CertLoginError('openssl did not run: %s' % e)
+            raise CertLoginError('openssl did not run: %s' % e, 'unavailable')
     if got.returncode != 0 or not re.search(r':\s*OK\s*$', got.stdout or ''):
         words = (got.stdout or '') + '\n' + (got.stderr or '')
-        m = re.search(r'error \d+ at (\d+) depth lookup:\s*(.+)', words)
+        m = re.search(r'error (\d+) at (\d+) depth lookup:\s*(.+)', words)
+        code = int(m.group(1)) if m else 0
+        kind = {23: 'revoked', 10: 'expired', 12: 'unavailable', 11: 'unavailable',
+                3: 'unavailable'}.get(code, 'certificate')
+        if code in (10, 23) and m.group(2) != '0':
+            kind = 'certificate'
         raise CertLoginError('the certificate is not taken: %s' % (
-            ('%s%s' % (m.group(2).strip(), '' if m.group(1) == '0'
+            ('%s%s' % (m.group(3).strip(), '' if m.group(2) == '0'
                        else ' (an authority above it)')) if m
-            else re.sub(r'\S*isemon-cert-\S*:?\s*', '', words).strip()[:300]))
+            else re.sub(r'\S*isemon-cert-\S*:?\s*', '', words).strip()[:300]), kind)
+
+
+def cl_ca_facts(ca_file):
+    """The authorities of a file of them, as cl_cert_facts reads each."""
+    out = []
+    try:
+        text = Path(str(ca_file)).read_text()
+    except OSError:
+        return out
+    for body in re.findall(r'-----BEGIN CERTIFICATE-----[A-Za-z0-9+/=\s]+'
+                           r'-----END CERTIFICATE-----', text):
+        try:
+            out.append(cl_cert_facts(body))
+        except CertLoginError:
+            continue
+    return out
+
+
+def cl_chain(f, cas):
+    """The authorities above a certificate among those put in, the nearest
+    first, by subject and issuer; a root ends it."""
+    out, want, seen = [], f.get('issuer'), set()
+    for _ in range(8):
+        hit = [c for c in cas if c['subject'] == want and c['sha256'] not in seen]
+        if not hit:
+            break
+        for c in hit:
+            seen.add(c['sha256'])
+            out.append(c)
+        if any(c['subject'] == c['issuer'] for c in hit):
+            break
+        want = hit[0]['issuer']
+    return out
+
+
+def cl_crls_now():
+    """The CRLs kept here, as the card shows them: facts and dates only,
+    never a CRL - CL_CRLS_SAID at most."""
+    with CL_CRL_LOCK:
+        got = list(CL_CRL_CACHE.values())
+    out = []
+    for c in sorted(got, key=lambda c: c['url'])[:CL_CRLS_SAID]:
+        one = {'url': c['url'], 'ok': bool(c.get('pem')), 'at': c.get('at'),
+               'next': c.get('next') or None, 'err': c.get('err') or ''}
+        for k in ('err_at', 'this', 'size', 'revoked', 'number', 'issuer', 'sig', 'delta'):
+            if c.get(k) not in (None, ''):
+                one[k] = c[k]
+        if c.get('freshest'):
+            one['freshest'] = list(c['freshest'])[:3]
+        out.append(one)
+    return out
 
 
 def cl_cert_check(pem, ca_file, crl=True):
     """The facts of a client certificate that passed every check, or
     CertLoginError. The chain is checked before any CRL is fetched: the CRL's
-    address is read only from a certificate one of the authorities signed."""
+    address is read only from a certificate one of the authorities signed.
+    Then its CRL and delta, and those of every authority above it but the
+    root, and openssl verify -crl_check_all once more (1.10.347)."""
     pem = str(pem or '').strip()
     if not pem:
         raise CertLoginError('no certificate was sent (none chosen, or the browser has none from '
@@ -19384,20 +19706,14 @@ def cl_cert_check(pem, ca_file, crl=True):
         raise CertLoginError('no authority is put in')
     _cl_verify(ca_file, pem)
     if crl:
-        urls = [u for u in f['cdp'] if u.lower().startswith(('http://', 'https://'))]
-        if not urls:
-            raise CertLoginError('the certificate names no CRL over http (CRL Distribution '
-                                 'Points) - it cannot be checked for revocation')
-        got, last = None, None
-        for u in urls[:3]:
-            try:
-                got = cl_crl_fetch(u)
-                break
-            except CertLoginError as e:
-                last = e
-        if got is None:
-            raise last
-        _cl_verify(ca_file, pem, got['pem'])
+        pems, deltas = cl_crls_of(f, 'the certificate', ca_file)
+        for c in cl_chain(f, cl_ca_facts(ca_file)):
+            if c['subject'] != c['issuer']:
+                more, d = cl_crls_of(c, 'the authority %s' % c['subject'], ca_file)
+                pems += more
+                deltas = deltas or d
+        _cl_verify(ca_file, pem, ''.join(p if p.endswith('\n') else p + '\n' for p in pems),
+                   deltas)
     if not f['upn']:
         raise CertLoginError('the certificate names no user (no UPN in its Subject Alternative '
                              'Name)')
@@ -61116,7 +61432,8 @@ class Daemon(object):
         wait_s = max(1, int(CONFIG.get('login_wait_min') or 15)) * 60
         too_many, left = self._login_note(where, now, wait_s)
         if too_many:
-            raise CertLoginError('too many refused sign-ins; try again in %s' % human_span(left))
+            raise CertLoginError('too many refused sign-ins; try again in %s' % human_span(left),
+                                 'wait')
         try:
             got = self.certlogin_check(pem)
         except CertLoginError as e:
@@ -61152,12 +61469,168 @@ class Daemon(object):
                 'from_dir': True, 'second': second, 'display': said.get('display') or '',
                 'how': 'certificate'}
 
-    def certlogin_view(self, may=False):
-        crls = []
+    # ---- the CRLs on the card: Fetch now, Clear (1.10.347) ----
+    def certlogin_crl_known(self):
+        """The CRLs the authorities put in name (CRL Distribution Points,
+        Freshest CRL) - those a sign-in fetches for the authorities above a
+        person's certificate; the roots' own left out: [{url, of, delta}]."""
+        out = {}
+        for c in self.certlogin_cas():
+            f = CL_CA_CDPS.get(c.get('sha256'))
+            if f is None:
+                try:
+                    got = cl_cert_facts(c['pem'])
+                    f = {'cdp': got['cdp'], 'freshest': got['freshest'],
+                         'root': got['subject'] == got['issuer']}
+                except CertLoginError:
+                    f = {'cdp': [], 'freshest': [], 'root': True}
+                if len(CL_CA_CDPS) > 200:
+                    CL_CA_CDPS.clear()
+                CL_CA_CDPS[c.get('sha256')] = f
+            if f['root']:
+                continue
+            for delta, urls in ((False, f['cdp']), (True, f['freshest'])):
+                for u in urls:
+                    if u.lower().startswith('http://') and cl_cdp_ok(u):
+                        one = out.setdefault(u, {'url': u, 'of': [], 'delta': delta})
+                        if c.get('subject') and c['subject'] not in one['of']:
+                            one['of'].append(c['subject'])
+        return [out[u] for u in sorted(out)][:CL_CRLS_SAID]
+
+    def certlogin_crl_blind(self):
+        """The authorities put in, not a root, that name no CRL over http: with
+        revocation checked, nobody signs in with a certificate of theirs."""
+        out = []
+        for c in self.certlogin_cas():
+            try:
+                f = cl_cert_facts(c['pem'])
+            except CertLoginError:
+                continue
+            if f['subject'] != f['issuer'] and not any(
+                    u.lower().startswith('http://') and cl_cdp_ok(u) for u in f['cdp']):
+                out.append(f['subject'])
+        return out
+
+    def certlogin_crl_rows(self):
+        """One row of the card for each CRL kept here, and for each one the
+        authorities name and not fetched yet."""
+        node = db_node_name()
+        seen = {}
+        for c in cl_crls_now():
+            seen.setdefault(c['url'], []).append(dict(c, node=node))
+        known = {k['url']: k for k in self.certlogin_crl_known()}
+        out = []
+        now = time.time()
+        for url in sorted(set(seen) | set(known)):
+            each = sorted(seen.get(url) or [], key=lambda c: c['node'])
+            good = [c for c in each if c.get('ok') and float(c.get('next') or 0) > now]
+            best = max(good or each, key=lambda c: float(c.get('at') or 0)) if each else {}
+            k = known.get(url) or {}
+            row = {'url': url, 'fetched': bool(each), 'ok': bool(good),
+                   'of': k.get('of') or [], 'named': bool(k),
+                   'delta': bool(best.get('delta') if best else k.get('delta')),
+                   'err': next((c.get('err') for c in sorted(each, key=lambda c: -float(
+                       c.get('err_at') or c.get('at') or 0)) if c.get('err')), '') if each else '',
+                   'nodes': [{x: c.get(x) for x in ('node', 'ok', 'at', 'next', 'err', 'err_at',
+                                                   'number')} for c in each]}
+            for x in ('at', 'next', 'this', 'issuer', 'number', 'size', 'revoked', 'sig',
+                      'err_at'):
+                row[x] = best.get(x) if best else None
+            out.append(row)
+        return out[:CL_CRLS_SAID * 2]
+
+    def certlogin_crl_urls(self):
+        """Every CRL Fetch now fetches: those kept (and the delta CRLs they
+        name) and those the authorities name."""
         with CL_CRL_LOCK:
-            for u, c in CL_CRL_CACHE.items():
-                crls.append({'url': u, 'at': c.get('at') or 0, 'next': c.get('next') or 0,
-                             'err': c.get('err') or ''})
+            got = list(CL_CRL_CACHE.values())
+        urls = [c['url'] for c in got]
+        for c in got:
+            urls += [u for u in c.get('freshest') or [] if u.lower().startswith('http://')]
+        urls += [k['url'] for k in self.certlogin_crl_known()]
+        return [u for u in dict.fromkeys(urls) if cl_cdp_ok(u)][:CL_CRLS_SAID]
+
+    def certlogin_crl_do(self, act, url=''):
+        """Fetch now ('fetch') or Clear ('clear') - every CRL, or the one at
+        url. A fetch that fails lets nobody in that was refused before: the
+        last good CRL until its next update, else none. [{url, ok, err}]."""
+        out = []
+        if act == 'clear':
+            with CL_CRL_LOCK:
+                gone = [u for u in CL_CRL_CACHE if not url or u == url]
+                for u in gone:
+                    CL_CRL_CACHE.pop(u, None)
+            out = [{'url': u, 'ok': True, 'err': ''} for u in sorted(gone)]
+        elif act == 'fetch':
+            try:
+                ca = self.certlogin_ca_file()
+            except CertLoginError:
+                ca = None
+            todo, done = ([url] if url else self.certlogin_crl_urls()), set()
+            while todo and len(done) < CL_CRLS_SAID:
+                u = todo.pop(0)
+                if u in done:
+                    continue
+                done.add(u)
+                try:
+                    got = cl_crl_fetch(u, force=True, ca_file=ca)
+                    out.append({'url': u, 'ok': not got.get('err'), 'err': got.get('err') or '',
+                                'number': got.get('number') or ''})
+                    if not url:
+                        todo += [f for f in got.get('freshest') or []
+                                 if f.lower().startswith('http://') and cl_cdp_ok(f)]
+                except CertLoginError as e:
+                    with CL_CRL_LOCK:
+                        why = (CL_CRL_CACHE.get(u) or {}).get('err') or str(e)
+                    out.append({'url': u, 'ok': False, 'err': str(why)[:200]})
+                except Exception as e:                  # noqa: BLE001
+                    out.append({'url': u, 'ok': False, 'err': str(e)[:200]})
+        return out
+
+    def certlogin_crl_ask(self, act, url, by):
+        """Fetch now or Clear asked: done in a thread of its own, its answer
+        kept under an id - {id, nodes}. ValueError for an address not known."""
+        url = str(url or '').strip()
+        if act not in ('fetch', 'clear'):
+            raise ValueError('no such thing to do')
+        if url:
+            known = {k['url'] for k in self.certlogin_crl_known()}
+            known.update(c['url'] for c in cl_crls_now())
+            if url not in known:
+                raise ValueError('no CRL at that address is known here (isemon --cert-login-crl '
+                                 'lists them)')
+        if act == 'fetch':
+            words = ('%s asked to fetch the CRL at %s again' % (by, url) if url else
+                     '%s asked to fetch every CRL of the sign-in with a certificate again' % by)
+        else:
+            words = ('%s cleared the CRL at %s - it is fetched again at the next sign-in'
+                     % (by, url) if url else '%s cleared the CRLs of the sign-in with a '
+                     'certificate - each is fetched again at the next sign-in' % by)
+        self.store.add_event('users', words[:600], who=by)
+        ident = secrets.token_hex(6)
+        node = db_node_name()
+        answers = self.__dict__.setdefault('_crl_answers', collections.OrderedDict())
+        answers[ident] = None
+        while len(answers) > 50:
+            answers.popitem(last=False)
+
+        def go():
+            try:
+                got = self.certlogin_crl_do(act, url)
+                got = {'ok': all(x['ok'] for x in got) if act == 'fetch' else True, 'crls': got}
+            except Exception as e:                      # noqa: BLE001
+                got = {'ok': False, 'error': str(e)[:300]}
+            got.update(id=ident, at=time.time(), node=node)
+            answers[ident] = got
+        threading.Thread(target=go, name='crl-' + act, daemon=True).start()
+        return {'id': ident, 'nodes': [node]}
+
+    def certlogin_crl_result(self, ident):
+        got = (self.__dict__.get('_crl_answers') or {}).get(str(ident or ''))
+        return {'nodes': {db_node_name(): got}}
+
+    def certlogin_view(self, may=False):
+        crls = self.certlogin_crl_rows()
         return {'ok': True, 'may': may, 'wanted': bool(int(CONFIG.get('certlogin') or 0)),
                 'directory': self.directory_on(), 'on': self.certlogin_on(),
                 'port': self.certlogin_port(),
@@ -61168,8 +61641,8 @@ class Daemon(object):
                 'only': self.password_off(),
                 'cas': [{k: c.get(k) for k in ('subject', 'issuer', 'until', 'sha256', 'at', 'by')}
                         for c in self.certlogin_cas()],
-                'crls': crls, 'root': (self.webroot.read('look.json') or {}).get('certlogin')
-                or {}}
+                'crls': crls, 'node': db_node_name(), 'blind': self.certlogin_crl_blind(),
+                'root': (self.webroot.read('look.json') or {}).get('certlogin') or {}}
 
     def second_owed(self, name):
         """What a fresh sign-in of this account still owes (1.10.303): to make
@@ -85744,9 +86217,16 @@ class ApiHandler(BaseHTTPRequestHandler):
                 got = daemon.certlogin_login(str(data.get('cert') or ''), ip=self.caller(),
                                              agent=str(self.headers.get('User-Agent') or ''))
             except CertLoginError as e:
-                return self.fail(str(e)[:300], 401)
+                # The person is told little (1.10.347): why goes to Events.
+                kind = getattr(e, 'kind', '')
+                return self.fail(str(e)[:300] if kind == 'wait' else
+                                 'Certificate sign-in refused: %s' % CL_KIND_WORDS.get(
+                                     kind, CL_KIND_WORDS['certificate']), 401)
             except WebRootError as e:
-                return self.fail('the certificate could not be checked: %s' % str(e)[:200], 401)
+                log('a sign-in with a certificate could not be checked: %s' % str(e)[:200],
+                    'warn')
+                return self.fail('Certificate sign-in refused: %s'
+                                 % CL_KIND_WORDS['unavailable'], 401)
             return self.send_json({'ok': True, **got})
 
         if path == '/api/certlogin':
@@ -85773,6 +86253,16 @@ class ApiHandler(BaseHTTPRequestHandler):
             me = self.need_admin()
             if not me:
                 return None
+            if act in ('crl_fetch', 'crl_clear'):
+                # Fetch now / Clear of the CRLs (1.10.347): a full admin only.
+                try:
+                    asked = daemon.certlogin_crl_ask(act[4:], data.get('url'), me['name'])
+                except ValueError as e:
+                    return self.fail(str(e)[:300], 404)
+                return self.send_json(dict(asked, ok=True, message=(
+                    'the CRLs are fetched again' if act == 'crl_fetch' else 'the CRLs are cleared')))
+            if act == 'result':
+                return self.send_json(dict(daemon.certlogin_crl_result(data.get('id')), ok=True))
             try:
                 if act == 'put':
                     raw = str(data.get('text') or '').encode('utf-8', 'replace')
@@ -93634,6 +94124,99 @@ def cmd_selinux_report(args, pal, store):
     return 0
 
 
+def cmd_cert_login_crl(args, pal, store):
+    """--cert-login-crl, --cert-login-crl-fetch [URL], --cert-login-crl-clear
+    [URL] (1.10.347): the card's table of the CRLs, its Fetch now and Clear."""
+    session = cli_session(store)
+    act = 'fetch' if args.cert_login_crl_fetch is not None else (
+        'clear' if args.cert_login_crl_clear is not None else '')
+    if act:
+        url = (args.cert_login_crl_fetch if act == 'fetch' else args.cert_login_crl_clear) or ''
+        if act == 'clear' and not url:
+            pal.say('  every CRL kept is forgotten - while an address does not answer then, '
+                    'nobody signs in with a certificate of its authority')
+            if not _ot_yes(args, pal, 'clear them?'):
+                return 1
+        status, asked = api_call('/api/certlogin', 'POST', {'action': 'crl_' + act, 'url': url},
+                                 session=session)
+        if not need_daemon(pal, status, asked):
+            return 1
+        began, got = time.time(), {}
+        while time.time() - began < 60:
+            status, r = api_call('/api/certlogin', 'POST', {'action': 'result',
+                                                            'id': asked.get('id')},
+                                 session=session)
+            got = (r or {}).get('nodes') or {}
+            if got and all(got.values()):
+                break
+            time.sleep(1)
+        if as_json(args, {'nodes': got}):
+            return 0 if got and all(v and v.get('ok') for v in got.values()) else 1
+        bad = not got
+        for n, v in sorted(got.items()):
+            if not v:
+                bad = True
+                pal.warn('%s: no answer in a minute - is isemon running?' % n)
+                continue
+            rows = v.get('crls') or []
+            if v.get('error'):
+                bad = True
+                pal.warn('%s: %s' % (n, v['error']))
+            elif act == 'clear':
+                pal.good('%s: %d CRL%s cleared' % (n, len(rows), '' if len(rows) == 1 else 's'))
+            else:
+                (pal.good if v.get('ok') else pal.warn)(
+                    '%s: %d of %d CRL%s fetched' % (n, sum(1 for x in rows if x.get('ok')),
+                                                    len(rows), '' if len(rows) == 1 else 's'))
+                bad = bad or not v.get('ok')
+            for x in rows:
+                pal.say('  %-64s %s' % (x['url'][:64], ('number %s' % x['number']
+                                                       if x.get('number') else 'ok')
+                                        if x.get('ok') else 'NOT FETCHED: %s' % x.get('err')))
+        return 1 if bad else 0
+    status, v = api_call('/api/certlogin', session=session)
+    if not need_daemon(pal, status, v):
+        return 1
+    crls = v.get('crls') or []
+    if as_json(args, {'crls': crls}):
+        return 0
+    for who in v.get('blind') or []:
+        pal.warn('the authority %s names no CRL over http: nobody signs in with a certificate '
+                 'of it while revocation is checked' % who)
+    if not crls:
+        pal.good('no CRL kept or named yet - a CRL is fetched at the first sign-in of a '
+                 'certificate naming it (or isemon --cert-login-crl-fetch)')
+        return 0
+    now = time.time()
+    for c in crls:
+        if not c['fetched']:
+            state = 'not fetched yet'
+        elif not c['ok']:
+            state = 'NOT HAD'
+        elif float(c.get('next') or 0) - now < 86400:
+            state = 'good, its next update within a day'
+        else:
+            state = 'good'
+        line = '%s %s  %s' % ('delta CRL' if c['delta'] else 'CRL', c['url'], state)
+        (pal.good if c['ok'] and state == 'good' else pal.warn)(line)
+        if c.get('issuer'):
+            pal.say('  issued by     %s' % c['issuer'])
+        elif c.get('of'):
+            pal.say('  named by      %s' % '; '.join(c['of']))
+        if c['fetched'] and c.get('this'):
+            pal.say('  number %s, this update %s, next update %s' % (
+                c.get('number') or '-', stamp(c['this']), stamp(c.get('next'))))
+            pal.say('  %s revoked, %s bytes, signature %s' % (
+                '-' if c.get('revoked') is None else c['revoked'], c.get('size') or '-',
+                {'ok': 'good (openssl, by the authorities put in)', 'bad': 'NOT GOOD',
+                 'unknown': 'not checked - its authority is not put in'}.get(c.get('sig'), '-')))
+        for n in c.get('nodes') or []:
+            pal.say('  %s %s%s' % (
+                n['node'], 'fetched %s' % stamp(n.get('at')) if n.get('ok') else 'not had',
+                ('  (%s, %s)' % (n['err'], stamp(n.get('err_at')))) if n.get('err') else ''))
+    return 0
+
+
 def cmd_os_roots(args, pal, store):
     """--os-roots, --os-roots-add FILE, --os-roots-remove FINGERPRINT (1.10.319):
     Settings - Certificates and TLS - Trusted roots of the system."""
@@ -97922,6 +98505,18 @@ def main(argv=None):
     act.add_argument('--os-roots-remove', metavar='FINGERPRINT', dest='os_roots_remove',
                      help='one taken out again, by its SHA-256 (12 characters of it at least). '
                           'Asks first unless --yes')
+    act.add_argument('--cert-login-crl', action='store_true', dest='cert_login_crl',
+                     help='the CRLs of the sign-in with a certificate: each address, its '
+                          'authority, number, this and next update, revoked entries, signature '
+                          '- those the authorities name and not fetched yet too (--json)')
+    act.add_argument('--cert-login-crl-fetch', metavar='URL', nargs='?', const='', default=None,
+                     dest='cert_login_crl_fetch',
+                     help='fetch every CRL again now (or the one at URL); a fetch that fails '
+                          'lets nobody in that was not before')
+    act.add_argument('--cert-login-crl-clear', metavar='URL', nargs='?', const='', default=None,
+                     dest='cert_login_crl_clear',
+                     help='forget the CRLs kept (or the one at URL) - the next sign-in fetches '
+                          'them again. All of them: asks first unless --yes')
     act.add_argument('--otp-tls-remove', action='store_true', dest='otp_tls_remove',
                      help='take the encrypted receiving away whole - the input, its '
                           'certificate, key and authorities; the plain one on 514 stays. '
@@ -97979,7 +98574,8 @@ def main(argv=None):
                           'settings or the whitelist')
     act.add_argument('--yes', action='store_true',
                      help='with --erase, --reboot, --poweroff, --os-update, '
-                          '--root-key-drop, --otp-tls-import, --otp-tls-off or '
+                          '--root-key-drop, --otp-tls-import, --otp-tls-off, '
+                          '--cert-login-crl-clear or '
                           '--otp-tls-remove: do not ask '
                           'first')
     act.add_argument('--stop-job', metavar='NAME', dest='stop_job',
@@ -98109,6 +98705,8 @@ def main(argv=None):
         (args.selinux is not None, cmd_selinux),
         (args.selinux_report is not None, cmd_selinux_report),
         (args.os_roots or bool(args.os_roots_add) or bool(args.os_roots_remove), cmd_os_roots),
+        (args.cert_login_crl or args.cert_login_crl_fetch is not None or
+         args.cert_login_crl_clear is not None, cmd_cert_login_crl),
         (args.acme, cmd_acme), (bool(args.acme_order), cmd_acme_order),
         (args.proxy_test is not None, cmd_proxy_test),
         (args.failed, cmd_failed), (args.passed, cmd_passed),

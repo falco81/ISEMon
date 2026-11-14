@@ -4446,6 +4446,103 @@ function srcText(el) {
   .sso-card table td{overflow-wrap:anywhere}
   .sso-facts .k{color:var(--tx-dim)}
   .sso-facts .v{color:var(--tx)}
+  /* The CRLs of the sign-in with a certificate (1.10.347): a row each, opened
+     to its details; on a phone each row a block, every value under its label. */
+  .krb-tw{overflow-x:auto;margin:6px 0 10px}
+  table.krb-t{width:100%;border-collapse:collapse;font-size:13px}
+  table.krb-t th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx-mut);
+    font-weight:650;padding:7px 12px;border-bottom:1px solid var(--line)}
+  table.krb-t td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.krb-t tr:last-child td{border-bottom:0}
+  table.krb-t .tag{margin-left:6px}
+  .cert-crl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:22px 0 8px}
+  .cert-crl-head h3.sso-h{margin:0}
+  .cert-crl-head .btnrow{margin:0;gap:8px}
+  .cert-crl-head .btn.danger{color:var(--crit);border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
+  /* Widths of its own, fixed (the card's tables do not move when their
+     contents change): the address gets the room. */
+  .sso-card table.cert-crl-t{table-layout:fixed;width:100%}
+  table.cert-crl-t th:nth-child(1){width:26px}
+  table.cert-crl-t th:nth-child(2){width:31%}
+  table.cert-crl-t th:nth-child(3){width:17%}
+  table.cert-crl-t th:nth-child(4){width:78px}
+  table.cert-crl-t th:nth-child(5){width:25%}
+  table.cert-crl-t th:nth-child(6){width:84px;text-align:right}
+  table.cert-crl-t th:nth-child(7){width:16%}
+  table.cert-crl-t th:nth-child(8){width:88px}
+  td.cert-crl-at{overflow:hidden;text-overflow:ellipsis}
+  td.cert-crl-next{overflow:hidden;text-overflow:ellipsis}
+  .sso-card table.cert-crl-nodes{table-layout:auto;width:auto}
+  table.krb-t .cert-crl-v .tag, table.krb-t .cert-crl-nodes .tag, table.cert-crl-t td .tag{margin-left:0}
+  table.cert-crl-t tr.cert-crl-row{cursor:pointer}
+  table.cert-crl-t tr.cert-crl-row:hover td{background:var(--panel2)}
+  table.cert-crl-t tr.cert-crl-row:focus-visible{outline:2px solid var(--info);outline-offset:-2px}
+  table.cert-crl-t tr.cert-crl-row.open td{border-bottom-color:transparent;background:var(--panel2)}
+  table.cert-crl-t th:first-child, table.cert-crl-t td.cert-crl-chev{width:14px;padding-right:0}
+  .cert-crl-arrow{display:inline-block;color:var(--tx-mut);font-size:11px;transition:transform .15s}
+  tr.cert-crl-row.open .cert-crl-arrow{transform:rotate(90deg)}
+  .cert-crl-url-in{display:flex;align-items:center;gap:6px;min-width:0}
+  td.cert-crl-url .cert-crl-url-in{max-width:100%}
+  td.cert-crl-url .mono{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  td.cert-crl-url .iconbtn, td.cert-crl-act .iconbtn{flex:none;padding:4px 5px}
+  td.cert-crl-iss{overflow-wrap:anywhere}
+  td.cert-crl-next, td.cert-crl-at{white-space:nowrap}
+  table.cert-crl-t td.cert-crl-next .tag{margin:0 8px 0 0}
+  td.cert-crl-num{text-align:right;font-variant-numeric:tabular-nums}
+  td.cert-crl-act{white-space:nowrap;text-align:right}
+  td.cert-crl-act .iconbtn + .iconbtn{margin-left:4px}
+  .cert-crl-lab{display:none}
+  tr.cert-crl-more > td{background:var(--panel2);padding:4px 16px 14px 38px}
+  .cert-crl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 24px;margin:2px 0 4px}
+  .cert-crl-fact{min-width:0}
+  .cert-crl-fact.wide{grid-column:1/-1}
+  .cert-crl-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx-mut);font-weight:650;margin-bottom:3px}
+  .cert-crl-v{font-size:13px;overflow-wrap:anywhere;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+  .cert-crl-v .tag{margin:0}
+  .cert-crl-addr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0}
+  .cert-crl-addr .mono{overflow-wrap:anywhere;min-width:0}
+  .cert-crl-nw{margin-top:12px}
+  table.cert-crl-nodes{width:auto;min-width:min(100%,640px);border-collapse:collapse;font-size:12.5px}
+  table.cert-crl-nodes th{text-align:left;font-weight:600;color:var(--tx-dim);padding:4px 12px 4px 0;border-bottom:1px solid var(--line)}
+  table.cert-crl-nodes td{padding:5px 12px 5px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+  table.cert-crl-nodes tr:last-child td{border-bottom:0}
+  table.cert-crl-nodes .tag{margin:0}
+  .cert-crl-said{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:0 0 10px;font-size:13px;background:var(--panel2)}
+  .cert-crl-said-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cert-crl-said-h .iconbtn{margin-left:auto;padding:3px 4px}
+  .cert-crl-said-n{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .cert-crl-said-n .tag{margin:0}
+  .cert-crl-said-e{flex-basis:100%;display:flex;gap:8px;flex-wrap:wrap;padding-left:2px}
+  .cert-crl-said-e .mono{overflow-wrap:anywhere;min-width:0}
+  @media (max-width:640px){
+    .cert-crl-tw{overflow-x:visible}
+    table.cert-crl-t, table.cert-crl-t tbody{display:block;width:100%}
+    table.cert-crl-t tr.cert-crl-hr{display:none}
+    table.cert-crl-t tr.cert-crl-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 12px;
+      padding:12px 4px;border-bottom:1px solid var(--line);position:relative}
+    table.cert-crl-t tr.cert-crl-row.open{border-bottom:0;background:var(--panel2)}
+    table.cert-crl-t tr.cert-crl-row td{display:block;padding:0;border:0;min-width:0;max-width:none;background:none;width:auto}
+    table.cert-crl-t tr.cert-crl-row td.cert-crl-chev{position:absolute;left:4px;top:19px;width:auto}
+    table.cert-crl-t tr.cert-crl-row td.cert-crl-url{grid-column:1/-1;padding:0 70px 0 18px}
+    table.cert-crl-t tr.cert-crl-row td.cert-crl-act{position:absolute;right:4px;top:10px}
+    table.cert-crl-t tr.cert-crl-row td.cert-crl-iss{grid-column:1/-1}
+    table.cert-crl-t tr.cert-crl-row td.cert-crl-next{white-space:normal}
+    table.cert-crl-t tr.cert-crl-row td.cert-crl-num{text-align:left}
+    table.cert-crl-t td .cert-crl-lab{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+      color:var(--tx-mut);font-weight:650;margin-bottom:2px}
+    table.cert-crl-t tr.cert-crl-more{display:block;border-bottom:1px solid var(--line);background:var(--panel2)}
+    table.cert-crl-t tr.cert-crl-more > td{display:block;padding:2px 4px 14px 18px;border:0}
+    .cert-crl-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 14px}
+    .cert-crl-fact:has(.mono){grid-column:1/-1}
+    table.cert-crl-nodes, table.cert-crl-nodes tbody{display:block;min-width:0}
+    table.cert-crl-nodes tr:first-child{display:none}
+    table.cert-crl-nodes tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 12px;padding:6px 0;border-bottom:1px solid var(--line)}
+    table.cert-crl-nodes tr:last-child{border-bottom:0}
+    table.cert-crl-nodes td{border:0;padding:0;min-width:0}
+    table.cert-crl-nodes td:last-child{grid-column:1/-1}
+    table.cert-crl-nodes td .cert-crl-lab{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+      color:var(--tx-mut);font-weight:650;margin-bottom:2px}
+  }
   .sso-h{font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--tx-dim);
     margin:22px 0 8px}
   .sso-card .note{max-width:1000px}
@@ -30095,12 +30192,326 @@ function loadCertLogin() {
     $('cl-body').appendChild(el('p', 'note bad', (e && e.message) || String(e)));
   });
 }
-function drawCertLogin(d) {
+/* ---- the CRLs of the sign-in with a certificate (1.10.347) -----------------
+   One row for each CRL kept here, or named by an authority put in and not
+   fetched yet; its next update as a pill; a row opens to its details. Fetch
+   now and Clear (all, or one row) are done by the daemon and followed here.
+   The card is redrawn off the page and swapped in one step, the row clicked
+   held where it was on the screen: nothing moves under the hand. */
+var CLC = {d: null, crlOpen: {}, crlAsk: null, crlSaid: null};
+function crlTag(cls, words) { return el('span', 'tag ' + cls, words); }
+function crlScroller(node) {
+  for (var n = node && node.parentElement; n && n !== document.body; n = n.parentElement) {
+    var oy = getComputedStyle(n).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight) return n;
+  }
+  return document.scrollingElement || document.documentElement;
+}
+function crlKeyOf(node, host) {
+  for (var n = node; n && n !== host; n = n.parentElement) if (n.dataset && n.dataset.key) return n.dataset.key;
+  return null;
+}
+function crlFirstVisible(host) {
+  var all = host.querySelectorAll('[data-key]');
+  for (var i = 0; i < all.length; i++) {
+    var r = all[i].getBoundingClientRect();
+    if (r.bottom > 0 && r.top < window.innerHeight) return all[i].dataset.key;
+  }
+  return null;
+}
+/* Built off the page and translated there, swapped in one step (no height
+   held: nothing is painted between), the scroll put back by the row looked
+   at, the focus kept without scrolling. */
+function redrawKeepingPlace(host, build, anchor) {
+  var sc = crlScroller(host);
+  var active = document.activeElement && host.contains(document.activeElement) ? document.activeElement : null;
+  var key = crlKeyOf(anchor, host) || crlKeyOf(active, host) || crlFirstVisible(host);
+  var focusKey = crlKeyOf(active, host);
+  var before = null, q = function (k) { return host.querySelector('[data-key="' + (window.CSS && CSS.escape ? CSS.escape(k) : k) + '"]'); };
+  if (key) { var old = q(key); if (old) before = old.getBoundingClientRect().top; }
+  var box = document.createElement('div');
+  build(box);
+  try { if (typeof I18N !== 'undefined' && I18N.on) i18nWalk(box); } catch (e) { /* words left in English */ }
+  var frag = document.createDocumentFragment();
+  while (box.firstChild) frag.appendChild(box.firstChild);
+  host.replaceChildren(frag);
+  host._drew = undefined;
+  if (key && before !== null) {
+    var now = q(key);
+    if (now) {
+      var dlt = now.getBoundingClientRect().top - before;
+      if (Math.abs(dlt) >= 1) sc.scrollTop += dlt;
+    }
+  }
+  if (focusKey) {
+    var f = q(focusKey);
+    if (f && f.focus) { try { f.focus({preventScroll: true}); } catch (e) { /* not focusable */ } }
+  }
+}
+function certCrlRedraw(anchor) { if (CLC.d) drawCertLogin(CLC.d, anchor); }
+function certCrlState(c) {
+  var now = Date.now() / 1000;
+  if (!c.fetched) return ['dim', 'not fetched yet'];
+  if (!c.ok) return ['crit', c.next && c.next <= now && !c.err ? 'run out' : 'not had'];
+  if (c.next && c.next - now < 86400) return ['warn', 'within a day'];
+  if (c.err) return ['warn', 'last fetch failed'];
+  return ['ok', 'good'];
+}
+function certCrlAsk(act, url, anchor) {
+  if (CLC.crlAsk) return;
+  var ask = CLC.crlAsk = {act: act, url: url || '', nodes: {}, done: false};
+  var node = (CLC.d && CLC.d.node) || 'isemon';
+  ask.nodes[node] = null;
+  var finish = function () {
+    ask.done = true;
+    CLC.crlAsk = null;
+    CLC.crlSaid = ask;
+    var bad = Object.keys(ask.nodes).filter(function (n) { return !ask.nodes[n] || !ask.nodes[n].ok; });
+    toast(act === 'clear' ? 'cleared' : (bad.length ? 'fetched - not everything' : 'fetched'), bad.length ? 'warn' : 'good');
+    api('certlogin').then(function (d) { drawCertLogin(d); }).catch(function () { certCrlRedraw(); });
+  };
+  api('certlogin', {action: 'crl_' + act, url: url || ''}).then(function (x) {
+    var began = Date.now();
+    var timer = setInterval(function () {
+      api('certlogin', {action: 'result', id: x.id}).then(function (r) {
+        var got = r.nodes || {}, all = true;
+        Object.keys(got).forEach(function (n) { ask.nodes[n] = got[n]; if (!got[n]) all = false; });
+        if (all || Date.now() - began > 60000) {
+          clearInterval(timer);
+          Object.keys(ask.nodes).forEach(function (n) { if (!ask.nodes[n]) ask.nodes[n] = {ok: false, error: 'did not answer in a minute - is isemon running?'}; });
+          finish();
+        }
+      }).catch(function () {
+        if (Date.now() - began > 60000) {
+          clearInterval(timer);
+          Object.keys(ask.nodes).forEach(function (n) { if (!ask.nodes[n]) ask.nodes[n] = {ok: false, error: 'did not answer in a minute - is isemon running?'}; });
+          finish();
+        }
+      });
+    }, 1000);
+  }).catch(function (e) { CLC.crlAsk = null; oops(e); certCrlRedraw(); });
+  certCrlRedraw(anchor);
+}
+function certCrlSaid(host) {
+  /* What was answered to the last Fetch now or Clear - drawn at its final
+     shape at once: a line that reads "waiting" until the answer is in. */
+  var ask = CLC.crlAsk || CLC.crlSaid;
+  if (!ask) return;
+  var box = el('div', 'cert-crl-said');
+  box.dataset.key = 'said';
+  var head = el('div', 'cert-crl-said-h');
+  head.appendChild(el('b', '', ask.act === 'clear' ? (ask.url ? 'Clear one CRL' : 'Clear every CRL') : (ask.url ? 'Fetch one CRL now' : 'Fetch every CRL now')));
+  if (ask.url) head.appendChild(noI18n(el('span', 'mono small', ask.url)));
+  if (!ask.done) head.appendChild(el('span', 'muted small', 'asked…'));
+  else {
+    var x = iconButton('close', 'Hide this');
+    x.dataset.key = 'said-x';
+    x.onclick = function () { CLC.crlSaid = null; certCrlRedraw(); };
+    head.appendChild(x);
+  }
+  box.appendChild(head);
+  Object.keys(ask.nodes).sort().forEach(function (n) {
+    var got = ask.nodes[n], line = el('div', 'cert-crl-said-n');
+    line.appendChild(noI18n(el('span', 'mono', n)));
+    if (!got) line.appendChild(crlTag('dim', 'waiting'));
+    else if (got.error) { line.appendChild(crlTag('crit', 'failed')); line.appendChild(noI18n(el('span', 'small bad', got.error))); }
+    else {
+      var rows = got.crls || [], ok = rows.filter(function (r) { return r.ok; }).length;
+      if (ask.act === 'clear') line.appendChild(crlTag('ok', 'cleared'));
+      else line.appendChild(crlTag(ok === rows.length ? 'ok' : 'crit', ok === rows.length ? 'fetched' : 'not everything'));
+      line.appendChild(el('span', 'muted small', ask.act === 'clear' ? rows.length + ' forgotten' : ok + ' of ' + rows.length + ' fetched'));
+      rows.filter(function (r) { return !r.ok; }).forEach(function (r) {
+        var e = el('div', 'cert-crl-said-e small');
+        e.appendChild(noI18n(el('span', 'mono', r.url)));
+        e.appendChild(noI18n(el('span', 'bad', r.err || '')));
+        line.appendChild(e);
+      });
+    }
+    box.appendChild(line);
+  });
+  host.appendChild(box);
+}
+function certCrls(host, d) {
+  var crls = d.crls || [], may = !!d.may;
+  var head = el('div', 'cert-crl-head');
+  head.appendChild(el('h3', 'sso-h', 'Revocation lists (CRL)'));
+  if (may && (crls.length || CLC.crlAsk)) {
+    var row = el('div', 'btnrow');
+    var isBusy = !!CLC.crlAsk;
+    var fb = cmdButton(isBusy && CLC.crlAsk.act === 'fetch' ? 'Fetching…' : 'Fetch now', 'refresh', 'small');
+    fb.dataset.key = 'fetch-now';
+    fb.title = 'Every CRL fetched again now: those kept and those the authorities name. One that cannot be fetched lets nobody in: the last good one is kept until its next update, else nobody signs in with a certificate of it.';
+    fb.disabled = isBusy;
+    fb.onclick = function (ev) { certCrlAsk('fetch', '', ev.currentTarget); };
+    var cb = cmdButton('Clear all', 'broom', 'small danger');
+    cb.dataset.key = 'clear-all';
+    cb.title = 'Forget the CRLs kept: the next sign-in (or Fetch now) fetches them again.';
+    cb.disabled = isBusy || !crls.some(function (c) { return c.fetched; });
+    cb.onclick = function () {
+      confirmThen('Clear every CRL?', 'Every CRL kept is forgotten; the next sign-in fetches them again. While an address does not answer then, nobody signs in with a certificate of its authority - the last good CRL is gone too.', 'Clear them', function () { certCrlAsk('clear', ''); }, true);
+    };
+    row.appendChild(fb);
+    row.appendChild(cb);
+    head.appendChild(row);
+  }
+  host.appendChild(head);
+  (d.blind || []).forEach(function (who) {
+    var p = el('p', 'note bad');
+    p.appendChild(el('span', '', 'The authority '));
+    p.appendChild(noI18n(el('span', 'mono', who)));
+    p.appendChild(el('span', '', ' names no CRL over http: while revocation is checked, nobody signs in with a certificate it issued. Give it a CRL Distribution Point over http (its root’s CRL) and issue it again.'));
+    host.appendChild(p);
+  });
+  certCrlSaid(host);
+  if (!crls.length) {
+    host.appendChild(el('p', 'note', d.crl ? 'None yet: the CRL at a certificate’s CRL Distribution Point is fetched at its first sign-in and kept until its next update.' : 'Revocation is not checked.'));
+    return;
+  }
+  host.appendChild(el('p', 'note', 'Fetched at a sign-in, at most every ten minutes, and kept until the next update; its signature is checked by openssl against the authorities put in. A row opens to its details.'));
+  var t = el('table', 'rows krb-t cert-crl-t');
+  var hr = el('tr', 'cert-crl-hr');
+  ['', 'Address', 'Issued by', 'Type', 'Next update', 'Revoked', 'Fetched', ''].forEach(function (h) { hr.appendChild(el('th', '', h)); });
+  t.appendChild(hr);
+  var cell = function (tr, label, cls) {
+    var td = el('td', cls || '');
+    if (label) td.appendChild(el('span', 'cert-crl-lab', label));
+    tr.appendChild(td);
+    return td;
+  };
+  crls.forEach(function (c) {
+    var open = !!CLC.crlOpen[c.url], st = certCrlState(c);
+    var tr = el('tr', 'cert-crl-row' + (open ? ' open' : ''));
+    tr.dataset.key = 'row:' + c.url;
+    tr.tabIndex = 0;
+    tr.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var toggle = function () { CLC.crlOpen[c.url] = !CLC.crlOpen[c.url]; certCrlRedraw(tr); };
+    tr.onclick = function (ev) { if (ev.target.closest('button,.copyable')) return; toggle(); };
+    tr.onkeydown = function (ev) { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target === tr) { ev.preventDefault(); toggle(); } };
+    var chev = cell(tr, '', 'cert-crl-chev');
+    chev.appendChild(el('span', 'cert-crl-arrow', '▸'));
+    var a = cell(tr, '', 'cert-crl-url');
+    var u = noI18n(el('span', 'mono', c.url));
+    u.title = c.url;
+    var ain = el('div', 'cert-crl-url-in');
+    ain.appendChild(u);
+    var cp = iconButton('copy', 'Copy the address');
+    cp.dataset.key = 'copy:' + c.url;
+    cp.onclick = function (ev) { ev.stopPropagation(); copyText(c.url, 'the address copied'); };
+    ain.appendChild(cp);
+    a.appendChild(ain);
+    var iss = cell(tr, 'Issued by', 'cert-crl-iss');
+    if (c.issuer) {
+      var cnm = /(?:^|,)\s*CN=([^,]+)/i.exec(String(c.issuer));
+      var dn = noI18n(el('span', 'small', cnm ? cnm[1] : String(c.issuer)));
+      dn.title = String(c.issuer);
+      iss.appendChild(dn);
+    } else if ((c.of || []).length) {
+      iss.appendChild(el('span', 'muted small', 'named by '));
+      var ofs = (c.of || []).map(function (x) { var m = /(?:^|,)\s*CN=([^,]+)/i.exec(String(x)); return m ? m[1] : String(x); });
+      var on = noI18n(el('span', 'small', ofs.join('; ')));
+      on.title = c.of.join('; ');
+      iss.appendChild(on);
+    } else iss.appendChild(el('span', 'muted', '–'));
+    var ty = cell(tr, 'Type');
+    ty.appendChild(crlTag(c.delta ? 'info' : 'dim', c.delta ? 'delta' : 'base'));
+    var nu = cell(tr, 'Next update', 'cert-crl-next');
+    nu.appendChild(crlTag(st[0], st[1]));
+    if (c.next) nu.appendChild(noI18n(el('span', 'small', stamp(c.next))));
+    var rv = cell(tr, 'Revoked', 'cert-crl-num');
+    rv.appendChild(noI18n(el('span', '', c.revoked === null || c.revoked === undefined ? '–' : String(c.revoked))));
+    var fa = cell(tr, 'Fetched', 'cert-crl-at');
+    fa.appendChild(noI18n(el('span', 'small', c.fetched && c.ok && c.at ? stamp(c.at) : '–')));
+    var act = cell(tr, '', 'cert-crl-act');
+    if (may) {
+      var f1 = iconButton('refresh', 'Fetch this CRL now');
+      f1.dataset.key = 'fetch:' + c.url;
+      f1.disabled = !!CLC.crlAsk;
+      f1.onclick = function (ev) { ev.stopPropagation(); certCrlAsk('fetch', c.url, tr); };
+      act.appendChild(f1);
+      if (c.fetched) {
+        var c1 = iconButton('broom', 'Clear this CRL - fetched again at the next sign-in');
+        c1.dataset.key = 'clear:' + c.url;
+        c1.disabled = !!CLC.crlAsk;
+        c1.onclick = function (ev) { ev.stopPropagation(); certCrlAsk('clear', c.url, tr); };
+        act.appendChild(c1);
+      }
+    }
+    t.appendChild(tr);
+    if (!open) return;
+    var dr = el('tr', 'cert-crl-more');
+    dr.dataset.key = 'more:' + c.url;
+    var td = el('td', '');
+    td.colSpan = 8;
+    var grid = el('div', 'cert-crl-grid');
+    var fact = function (label, value) {
+      var f = el('div', 'cert-crl-fact');
+      f.appendChild(el('div', 'cert-crl-k', label));
+      var v = el('div', 'cert-crl-v');
+      (Array.isArray(value) ? value : [value]).forEach(function (x) { v.appendChild(typeof x === 'string' ? el('span', '', x) : x); });
+      f.appendChild(v);
+      grid.appendChild(f);
+      return f;
+    };
+    var sig = {ok: ['ok', 'good - checked by openssl against the authorities put in'], bad: ['crit', 'NOT good - openssl does not take it: nobody signs in by it'], unknown: ['warn', 'not checked - its authority is not put in']}[c.sig];
+    var data = function (x) { return noI18n(el('span', '', x)); };
+    if (c.fetched && c.ok) {
+      fact('This update', data(c.this ? stamp(c.this) : '–'));
+      fact('Next update', data(c.next ? stamp(c.next) : '–'));
+      fact('CRL number', noI18n(el('span', 'mono', c.number || '–')));
+      fact('Size', data(c.size ? bytes(c.size) + (c.size >= 1024 ? ' (' + c.size + ' B)' : '') : '–'));
+      fact('Revoked', data(c.revoked === null || c.revoked === undefined ? '–' : String(c.revoked)));
+      fact('Signature', sig ? [crlTag(sig[0], sig[0] === 'ok' ? 'verified' : (sig[0] === 'crit' ? 'bad' : 'not verified')), el('span', 'small muted', sig[1])] : el('span', 'muted', 'checked by openssl at each sign-in'));
+    } else {
+      fact('State', c.fetched ? el('span', 'bad', 'not had - nobody signs in with a certificate whose revocation it should say') : el('span', 'muted', 'not fetched yet - at the first sign-in that needs it, or Fetch now'));
+    }
+    if (c.issuer) fact('Issued by', noI18n(el('span', 'mono', c.issuer)));
+    if ((c.of || []).length) fact('Named by the authority', noI18n(el('span', 'mono', c.of.join('; '))));
+    fact('Type', c.delta ? 'delta CRL (Freshest CRL) - applied over its base CRL' : 'base CRL');
+    if (c.err) fact('Last error', [noI18n(el('span', 'bad', c.err)), noI18n(el('span', 'muted small', c.err_at ? stamp(c.err_at) : ''))]);
+    var addr = el('div', 'cert-crl-addr');
+    addr.appendChild(noI18n(el('span', 'mono', c.url)));
+    var cpb = cmdButton('Copy', 'copy', 'small');
+    cpb.dataset.key = 'copy2:' + c.url;
+    cpb.onclick = function () { copyText(c.url, 'the address copied'); };
+    addr.appendChild(cpb);
+    fact('Address', addr).classList.add('wide');
+    td.appendChild(grid);
+    if ((c.nodes || []).length) {
+      var nt = el('table', 'cert-crl-nodes');
+      var nh = el('tr', '');
+      ['Server', 'Fetched', 'Next update', 'CRL number', 'Last error'].forEach(function (h) { nh.appendChild(el('th', '', h)); });
+      nt.appendChild(nh);
+      c.nodes.forEach(function (n) {
+        var r = el('tr', '');
+        var nc = function (label, x) { var ntd = el('td', ''); ntd.appendChild(el('span', 'cert-crl-lab', label)); ntd.appendChild(x); r.appendChild(ntd); };
+        nc('Server', noI18n(el('span', 'mono', n.node)));
+        nc('Fetched', n.ok ? noI18n(el('span', '', stamp(n.at))) : crlTag('crit', 'not had'));
+        nc('Next update', noI18n(el('span', '', n.next ? stamp(n.next) : '–')));
+        nc('CRL number', noI18n(el('span', 'mono', n.number || '–')));
+        nc('Last error', noI18n(el('span', 'small ' + (n.err ? 'bad' : 'muted'), n.err ? n.err + (n.err_at ? ' (' + stamp(n.err_at) + ')' : '') : '–')));
+        nt.appendChild(r);
+      });
+      var nw = el('div', 'cert-crl-nw');
+      nw.appendChild(el('div', 'cert-crl-k', 'This server'));
+      nw.appendChild(nt);
+      td.appendChild(nw);
+    }
+    dr.appendChild(td);
+    t.appendChild(dr);
+  });
+  var wrap = el('div', 'krb-tw cert-crl-tw');
+  wrap.appendChild(t);
+  host.appendChild(wrap);
+}
+function drawCertLogin(d, anchor) {
   SI.cl = d;
+  CLC.d = d;
   drawSignInPage();
-  var host = $('cl-body');
-  clear(host);
   ssoDots('cl-dots', d.on, d.wanted);
+  if (!$('cl-body')) return;
+  redrawKeepingPlace($('cl-body'), function (host) { drawCertInto(host, d); }, anchor);
+}
+function drawCertInto(host, d) {
   var r = d.root || {};
   var pills = [[d.on ? 'On' : 'Off', d.on ? 'ok' : '']];
   if (!(d.cas || []).length) pills.push(['No authority yet', 'warn']);
@@ -30113,7 +30524,7 @@ function drawCertLogin(d) {
     ['Which account it is', {compat: 'the UPN, and the SID (KB5014754) when the certificate carries one',
       strong: 'the UPN and the SID (KB5014754) - a certificate without one is refused',
       upn: 'the UPN alone'}[d.match] || d.match],
-    ['Revocation', d.crl ? 'checked - the CRL at the certificate\u2019s CRL Distribution Point; none to be had, no sign-in' : 'not checked'],
+    ['Revocation', d.crl ? 'checked - the CRL (and its delta) of the certificate and of every authority above it but the root; none to be had, no sign-in' : 'not checked'],
     ['Second step after it', d.second ? 'Face ID, as after a password' : 'off'],
     ['By itself on the sign-in page', d.auto ? 'yes - the form only when it did not work' : 'no - a button under the form'],
     ['A password on the sign-in page', d.only ? 'none - only Windows or a certificate' : 'offered beside it']]);
@@ -30160,17 +30571,12 @@ function drawCertLogin(d) {
     }
     host.appendChild(tools);
   }
-  if ((d.crls || []).length) {
-    ssoHead(host, 'The CRLs fetched');
-    host.appendChild(rowsTable(['Address', 'Fetched', 'Next update', 'Trouble'], d.crls.map(function (c) {
-      return [noI18n(el('span', 'mono small', c.url)), c.at ? stamp(c.at) : '–', c.next ? stamp(c.next) : '–',
-              noI18n(el('span', c.err ? 'bad' : '', c.err || ''))];
-    })));
-  }
+  if (d.crl || (d.crls || []).length) certCrls(host, d);
   ssoHead(host, 'In AD CS');
   var ul = el('ul', 'sso-list');
   ['A template from Smartcard Logon (or User): Subject Name built from AD with the User principal name (UPN) in the Subject Alternative Name; the key usages Client Authentication and Smart Card Logon; published on the issuing authority.',
-   'The authority’s Extensions: a CRL Distribution Point over http that this server reaches (the default http://<server>/CertEnroll/... is).',
+   'The authority’s Extensions: a CRL Distribution Point over http that this server reaches (the default http://<server>/CertEnroll/... is) - the issuing authority’s own certificate needs one too, for its root’s CRL.',
+   'After revoking a lost card: publish the CRL at once (certutil -CRL), then Fetch now here - a CRL kept here is used for ten minutes at most after the new one is published.',
    'A YubiKey (PIV): enrolled from Windows with the template, or with YubiKey Manager - a request from slot 9a signed by the authority, imported back to 9a.',
    'Here: put in the issuing authority and its root (PEM, .cer or .p7b).',
    'The browsers need no setting; Edge and Chrome may choose the certificate by themselves (policy AutoSelectCertificateForUrls).',

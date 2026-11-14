@@ -231,7 +231,7 @@ ok('acme: a certificate for a dashboard with no name is no match',
 
 print('1.10.346: an authority\'s CRL and certificates by the machine\'s own DNS, not ACME\'s')
 ok('no ACME DNS for them', "_acme_open(req, timeout=10, purpose='acme')" not in src and
-   src.count("url_open(req, 'acme', timeout=10)") == 2, True)
+   src.count("url_open(req, 'acme', timeout=10)") == 1 and 'def cl_http_get(' in src, True)
 
 print('\n%d passed, %d failed' % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

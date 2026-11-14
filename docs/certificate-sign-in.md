@@ -37,7 +37,9 @@ certificate, and Windows asks for the card's PIN. Built after otp 1.0.275.
    - published on the issuing authority.
 2. The authority's *Extensions*: a CRL Distribution Point over **http** that
    the isemon server can reach. The default `http://<server>/CertEnroll/...`
-   is fine.
+   is fine. The issuing authority's own certificate needs one too, for its
+   root's CRL (isemon 1.10.347 checks every authority above a card but the
+   root). The card says which authority put in has none.
 3. A YubiKey (PIV): enrol it from Windows with the template (smart card
    enrolment, `certreq`), or with YubiKey Manager: a request from slot 9a,
    signed by the authority and imported back to 9a.
@@ -60,17 +62,16 @@ certificate, and Windows asks for the card's PIN. Built after otp 1.0.275.
   certificate's port at once. The browser offers its certificate, the card
   asks for its PIN, and the form is shown only when that did not work. Off:
   a button "Sign in with a certificate" under the form.
-- **Check that a certificate is not revoked (CRL)**: on by default. The CRL is
-  kept until its next update. If no CRL can be fetched, nobody signs in (fail
-  closed). The last CRL is used until its next update while the address is
-  down for a moment.
+- **Check that a certificate is not revoked (CRL)**: on by default. See
+  [Revocation lists (CRL)](#revocation-lists-crl) below.
 
 The card **Signing in with a certificate** shows:
 
 - **the authorities**: *Put in an authority…* takes PEM, `.cer` or `.p7b`. A
   person's certificate is refused. Each authority can be taken away again.
   Put in the issuing authority **and** its root.
-- **the CRLs fetched**, with their next update or what went wrong;
+- **Revocation lists (CRL)**: one row for each CRL, with **Fetch now** and
+  **Clear all** (see below);
 - **nginx**: whether its server on the port is in place;
 - **Try my certificate**: goes to the port, where the browser offers its
   certificate, and says who it would sign in and as what. Nobody is signed in.
@@ -133,7 +134,10 @@ browser (443)                    browser (:8443)                       isemon
 - **Why the SID**: a UPN can be given to somebody else; the SID in the
   certificate cannot be moved.
 
-What is refused, and said on the sign-in page and in *Events* as a warning:
+What is refused, written to *Events* as a warning with the reason. The
+person is told little (1.10.347): *Certificate sign-in refused: revoked*,
+*run out*, *not available just now* or *certificate not accepted*. *Try my
+certificate* shows an administrator the whole reason.
 
 - the certificate: of an authority, of another authority, run out, revoked,
   not for signing in, with no UPN, or whose CRL cannot be fetched;
@@ -177,6 +181,85 @@ isemon --set password_off=0
 
 or `isemon --set certlogin=0`.
 
+## Revocation lists (CRL)
+
+From the CRL kit of acme 1.0.104 (1.10.347).
+
+**The rules**
+
+1. **No CRL, no sign-in (fail closed).** When a CRL cannot be had and no good
+   copy is kept, nobody signs in with a certificate it covers.
+2. **The certificate's CRL, its delta, and those of the authorities above it.**
+   The root is skipped: it is its own anchor. Up to three `http://` URIs of the
+   CRL Distribution Point are tried in turn. A delta CRL (*Freshest CRL*, named
+   by the certificate or by its base CRL) is applied. A delta that is named but
+   cannot be had means no sign-in: without it, a card revoked since the weekly
+   base would still pass. An issuing authority with no http CDP is refused, the
+   same as a person's certificate.
+3. **Fetched only for a certificate whose chain is already good.** The chain
+   is checked without CRLs first, so an address written into just anybody's
+   certificate is never fetched.
+4. **Ten minutes at most.** A CRL is kept for ten minutes, or until its next
+   update if that comes sooner. A fetch that failed less than a minute ago is
+   not tried again at every sign-in. If the address does not answer, the last
+   good CRL is kept until its next update, then nothing. A CRL already past its
+   next update when fetched counts as not had. One with no next update is kept
+   for an hour.
+5. **http only, with SSRF guards.** No https, ldap, user or password in the
+   address, and no name of a cloud's metadata service. The machine's own DNS,
+   and no proxy. **Every** address the name resolves to is checked: no
+   loopback, link-local, multicast, unspecified, reserved, or metadata address
+   (169.254.169.254, 169.254.170.2, fd00:ec2::254, 100.100.100.200), in any
+   spelling (`2852039166`, `0251.0376.0251.0376`, `127.1`). Private addresses
+   are fine: AD CS's CDPs live inside. The connection goes to the address
+   checked, with a `Host:` header, so the name is never looked up again. No
+   redirect is followed. 8 MB at most, 15 s for the whole fetch.
+6. **Checked by openssl** (`verify -crl_check_all [-use_deltas]`) against the
+   authorities put in, never the system's store.
+7. **Only a full administrator** can press Fetch now or Clear, and both are
+   written to *Events*.
+
+**The lag**: a revoked card stops signing in once the authority has
+**published** a CRL listing it, plus up to ten minutes. With AD CS's defaults
+(base weekly, delta daily) that can be a day. After revoking a lost card,
+publish by hand (`certutil -CRL`), then press **Fetch now**.
+
+**The table** on the card *Signing in with a certificate*: one row for each
+CRL kept, and one for each CRL an authority names that has not been fetched
+yet. The columns are address (with a copy button), issued by, type (`base` or
+`delta`), next update, revoked entries, when fetched, and the row's own Fetch
+now / Clear. The pill reads, in this order:
+
+| Pill | When |
+|---|---|
+| **not fetched yet** (grey) | no copy yet; the first sign-in that needs it, or Fetch now, fetches it |
+| **run out** (red) | no good copy, its next update has passed, and no error was recorded |
+| **not had** (red) | no good copy: nobody signs in with a certificate it covers |
+| **within a day** (amber) | good, but its next update is less than 24 h away (AD CS's delta CRLs always are) |
+| **last fetch failed** (amber) | good: the last good copy is kept until its next update, but the latest fetch failed |
+| **good** (green) | everything else |
+
+A row opens (click, Enter or Space) to this update, next update, CRL number,
+size, revoked entries, its signature (*verified* by `openssl crl -CAfile`
+against the authorities put in, *bad*, or *not verified* when its authority is
+not put in), the issuer's whole DN, the authority that names it, the last error
+and when, and the address with *Copy*. **Fetch now** fetches every CRL again at
+once: those kept, those the authorities name, and the delta CRLs these name.
+**Clear all** asks first: every CRL kept is forgotten, and the next sign-in
+fetches them again. A box above the table shows the answer. The card is
+redrawn off the page and swapped in one step, holding the row that was
+clicked where it was on the screen.
+
+**From the command line**, the same as the page:
+
+```
+isemon --cert-login-crl [--json]        the table as text
+isemon --cert-login-crl-fetch [URL]     Fetch now - every CRL, or one; exit 1 if one failed
+isemon --cert-login-crl-clear [URL]     Clear - one, or all (asks first; --yes)
+```
+
+An unknown URL is refused: *no CRL at that address is known here*.
+
 ## Testing without a domain
 
 `test/fixes341_certlogin.py` makes an AD CS of its own with openssl
@@ -190,3 +273,13 @@ certificate: the nonce on 443, the sign-in on the port, the session back on
 443, the refusals, and nothing else served on the port. In Playwright:
 `newContext({clientCertificates: [{origin: 'https://name:8443', certPath,
 keyPath}]})`.
+
+`test/fixes347_crl.py` makes the CRL kit's PKI (`test/pki_crl.sh`): a root,
+an issuing authority naming the root's CRL, a base CRL, a delta CRL, and an
+authority the root revoked. It checks every SSRF guard, alice (good), bob
+(revoked in the base), carol (run out), dave (CRL not to be had), erin
+(revoked in the delta only) and frank (his authority revoked by the root), the
+ten-minute cache and the last good copy, a delta not to be had, the card's
+rows, Fetch now and Clear (refused to read-only), the events, what the person
+is told, and the command line. The test CRLs are on 127.0.0.1, which only the
+tests' switch `ISEMON_CDP_LOOPBACK_OK=1` allows. isemon never sets it.

@@ -372,6 +372,37 @@ working.
 
 ## Version
 
+1.10.347
+
+- **Revocation lists (CRL) for the sign-in with a certificate, as acme 1.0.104
+  checks and shows them.**
+  - **The delta CRL** (*Freshest CRL*) is fetched and applied. A card revoked
+    since the weekly base CRL passed until the next base.
+  - **The CRL of every authority above the card but the root** is checked too
+    (`-crl_check_all`). An issuing authority revoked by its root signs nobody
+    in.
+  - A CRL is used for **ten minutes at most**, then fetched again. It was kept
+    until its next update, often a week. While the address does not answer,
+    the last good CRL is kept until its next update. A CRL already past its
+    next update counts as not had.
+  - **SSRF guards**: http only; every address of the name checked (no
+    loopback, link-local, metadata, multicast or reserved address, in any
+    spelling); the connection made to the address checked; no redirect; 8 MB
+    and 15 s at most. The machine's own DNS, and no proxy.
+  - **The table** on the card: one row for each CRL kept or named by an
+    authority, a pill for its state, details per row, **Fetch now** and
+    **Clear all** (and per row) for a full administrator, written to Events.
+    The card no longer jumps when it is redrawn.
+  - `isemon --cert-login-crl [--json]`, `--cert-login-crl-fetch [URL]` and
+    `--cert-login-crl-clear [URL]`.
+  - The person is told only *Certificate sign-in refused: revoked* (*run
+    out*, *not available just now*, *certificate not accepted*). The reason
+    goes to Events.
+  - **Check before upgrading**: the issuing authority's own certificate needs
+    an http CRL Distribution Point (its root's CRL) that this server reaches.
+    Without one, nobody signs in with a certificate it issued. The card names
+    such an authority.
+
 1.10.346
 
 - **A certificate's CRL and its authority's certificates are fetched by the
