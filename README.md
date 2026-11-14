@@ -372,6 +372,16 @@ working.
 
 ## Version
 
+1.10.346
+
+- **A certificate's CRL and its authority's certificates are fetched by the
+  machine's own DNS.** They went by the DNS servers set for Automatic
+  certificates (ACME). Those are public servers, set for a CA on the
+  internet, and an authority's address in the domain (`pki.firma.cz`) was not
+  known to them: "pki.firma.cz is not known to 8.8.8.8, 1.1.1.1", and nobody
+  signed in with a certificate. Settings → Proxy still applies where its
+  switch for ACME is on, with its addresses reached straight.
+
 1.10.345
 
 - **Three rounds of looking for bugs and security problems.**

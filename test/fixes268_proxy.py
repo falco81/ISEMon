@@ -522,7 +522,8 @@ try:
            proxied_since(n), [])
     src = (ROOT / 'isemon.py').read_text()
     ok('every request to the web names its use',
-       sorted(re.findall(r"url_open\(req, '([a-z_]+)'", src)), ['geo', 'lists', 'mac', 'upgrade'])
+       sorted(re.findall(r"url_open\(req, '([a-z_]+)'", src)),
+       ['acme', 'acme', 'geo', 'lists', 'mac', 'upgrade'])
     ok('...urllib\'s own urlopen only for the command line\'s road to the daemon',
        src.count('urllib.request.urlopen('), 1)
     try:

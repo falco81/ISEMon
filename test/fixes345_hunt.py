@@ -229,5 +229,9 @@ ok('to a viewer, not the account the firewalls fetch with', st['user'], '')
 ok('acme: a certificate for a dashboard with no name is no match',
    "if slot['names'] and all(push_name_holds(names, n) for n in slot['names']):" in src, True)
 
+print('1.10.346: an authority\'s CRL and certificates by the machine\'s own DNS, not ACME\'s')
+ok('no ACME DNS for them', "_acme_open(req, timeout=10, purpose='acme')" not in src and
+   src.count("url_open(req, 'acme', timeout=10)") == 2, True)
+
 print('\n%d passed, %d failed' % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)

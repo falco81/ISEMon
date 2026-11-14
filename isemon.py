@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.345'
+__version__ = '1.10.346'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -19290,7 +19290,9 @@ def cl_crl_fetch(url):
     try:
         raw = b''
         req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
-        with _acme_open(req, timeout=10, purpose='acme') as r:
+        # The machine's own DNS, not ACME's (1.10.346): a CRL Distribution
+        # Point is in the domain, and ACME's servers are public ones.
+        with url_open(req, 'acme', timeout=10) as r:
             while len(raw) <= CL_CRL_MOST:
                 part = r.read(65536)
                 if not part:
@@ -69836,8 +69838,11 @@ def tls_fetch(url):
         raise WebRootError('%s is not an address an authority is fetched from' % url[:120])
     req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
     try:
-        # As the ACME CA is reached: Settings → Proxy where its switch is on.
-        with _acme_open(req, timeout=10, purpose='acme') as r:
+        # Through Settings → Proxy where its switch for ACME is on - but by
+        # the machine's own DNS, never ACME's (1.10.346): those are public
+        # servers, set for a CA on the internet, and an authority's address
+        # in the domain (pki.firma.cz) is not known to them.
+        with url_open(req, 'acme', timeout=10) as r:
             if not re.match(r'^https?://', str(r.geturl() or ''), re.I):
                 raise WebRootError('%s led elsewhere than http' % url[:120])
             data = r.read(TLS_AIA_BYTES + 1)
