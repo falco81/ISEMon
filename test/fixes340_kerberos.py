@@ -60,7 +60,7 @@ page = (HERE.parent / 'web' / 'index.php').read_text()
 print('off by default, and nothing of it offered')
 ok('off', (isemon.DEFAULTS['kerberos'], isemon.DEFAULTS['password_off']), (0, 0))
 ok('the sign-in page is told off', daemon.kerberos_health(),
-   {'on': False, 'auto': False, 'only': False, 'cert': False, 'cert_port': 0})
+   {'on': False, 'auto': False, 'only': False, 'cert': False, 'cert_port': 0, 'cert_auto': False})
 ok('the realm from the directory\'s base DN', daemon.kerberos_realm(), 'CORPNET.LOC')
 isemon.CONFIG['kerberos_realm'] = 'corp.example'
 ok('...or as set, in capitals', daemon.kerberos_realm(), 'CORP.EXAMPLE')

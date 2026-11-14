@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.341",
+  "version": "1.10.342",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -395,6 +395,10 @@
   "s.a-burst-this-big-goes-out.720d7864": {
    "source": "A burst this big goes out for good",
    "text": "Takto velký nápor znamená blokaci natrvalo"
+  },
+  "s.a-button-under-the-form.ac24df89": {
+   "source": "a button under the form",
+   "text": "tlačítko pod formulářem"
   },
   "s.a-certificate-a-name-a-serial.4d80abf7": {
    "source": "a certificate, a name, a serial, a target…",
@@ -2584,6 +2588,10 @@
    "source": "Afghanistan",
    "text": "Afghánistán"
   },
+  "s.after-a-refusal.9101d241": {
+   "source": "After a refusal",
+   "text": "Po odmítnutí"
+  },
   "s.after-every-backup-the-one-just.bf316a8d": {
    "source": "after every backup, the one just sent",
    "text": "po každé záloze, právě odeslanou"
@@ -2591,6 +2599,10 @@
   "s.after-it-where-it-is-not.36b3f076": {
    "source": "after it where it is not 53. The first one that hands over a",
    "text": "za ním, pokud to není 53. První, který vrátí"
+  },
+  "s.after-sign-out.3e3b455f": {
+   "source": "After Sign out",
+   "text": "Po odhlášení"
   },
   "s.after-the-password-everybody-confirms-it.4837c412": {
    "source": "After the password, everybody confirms it is them with Face ID, Touch ID, Windows Hello or the PIN of their device (a passkey). The first sign-in after this is switched on sets it up; a full admin can set it up again for anybody under Accounts (a lost iPad), and their next sign-in makes a new one. Only on pages opened by name over https, with a certificate the browser trusts - and so switched on only from such a page. Those signed in already stay signed in. Locked out: isemon --set passkeys=0 on the server.",
@@ -3259,10 +3271,6 @@
   "s.and-more.ddee2e51": {
    "source": ", and more",
    "text": ", a další"
-  },
-  "s.and-no-password-at-all-only.81cced79": {
-   "source": "...and no password at all - only Windows or a certificate",
-   "text": "...a žádné heslo - jen Windows nebo certifikát"
   },
   "s.and-none-older-than-days.b7edf7f6": {
    "source": "And none older than (days)",
@@ -16520,6 +16528,10 @@
    "source": "nad",
    "text": "nad"
   },
+  "s.name-and-password.cc2e3a44": {
+   "source": "Name and password",
+   "text": "Jméno a heslo"
+  },
   "s.name-asked-for.49a67f5a": {
    "source": "Name asked for",
    "text": "Dotazované jméno"
@@ -17260,6 +17272,14 @@
    "source": "No older version is there.",
    "text": "Žádná starší verze tam není."
   },
+  "s.no-password-at-all-is-switched.fd13a8ea": {
+   "source": "No password at all is switched on only while Windows or a certificate is on, and only from a sign-in made that way.",
+   "text": "Žádné heslo se zapíná jen, když jsou zapnuté Windows nebo certifikát, a jen z přihlášení, které tak proběhlo."
+  },
+  "s.no-password-at-all-only-windows.7295029c": {
+   "source": "No password at all - only Windows or a certificate",
+   "text": "Žádné heslo - jen Windows nebo certifikát"
+  },
   "s.no-password-is-saved-yet.68fe4be7": {
    "source": "no password is saved yet",
    "text": "zatím není uloženo žádné heslo"
@@ -17611,6 +17631,10 @@
   "s.none-is-there-yet-and-mutual.20f440f2": {
    "source": "- none is there yet, and mutual TLS needs one",
    "text": "- zatím tam žádná není a vzájemné TLS ji potřebuje"
+  },
+  "s.none-no-password-signs-in-local.ba82ec51": {
+   "source": "none - no password signs in, local accounts neither",
+   "text": "žádné - heslem se nikdo nepřihlásí, ani lokální účty"
   },
   "s.none-of-the-ones-switched-on.37bcfcfb": {
    "source": "none of the ones switched on",
@@ -18564,6 +18588,10 @@
    "source": "nothing sent here yet",
    "text": "sem se zatím nic neposlalo"
   },
+  "s.nothing-the-person-chooses.212475aa": {
+   "source": "nothing - the person chooses",
+   "text": "nic - vybere si uživatel"
+  },
   "s.nothing-the-url-is-open-and.29a80308": {
    "source": "Nothing: the URL is open, and who may fetch it is the web server’s allow list and the addresses above. It is what a firewall fetching a list expects, and it is the default. A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and for a pfSense; it works for a FortiGate and an OPNsense too. User name and password: HTTP basic authentication. A FortiGate sends them (the external threat feed’s own user name and password), and so does a recent OPNsense (the URL alias’s Basic authentication); an FMC and a pfSense cannot, so they need one of the other two.",
    "text": "Nic: URL je otevřená a o tom, kdo ji smí stáhnout, rozhoduje allow list webového serveru a adresy výše. To očekává firewall, který stahuje seznam, a je to výchozí volba. Klíč v URL: dlouhý náhodný klíč obsažený v URL, který změníte tlačítkem Nový klíč. Je to jediná možnost pro FMC, které nemá kam zadat heslo pro feed, a pro pfSense; funguje i pro FortiGate a OPNsense. Uživatelské jméno a heslo: HTTP basic autentizace. FortiGate je posílá (vlastní uživatelské jméno a heslo externího threat feedu) a stejně tak novější OPNsense (Basic autentizace URL aliasu); FMC a pfSense to neumí, takže potřebují jednu z dalších dvou možností."
@@ -18603,6 +18631,10 @@
   "s.nothing-to-switch-off-rsyslog-has.bb9fa8da": {
    "source": "Nothing to switch off: rsyslog has no encrypted input for otp here.",
    "text": "Není co vypnout: rsyslog tu nemá šifrovaný vstup pro otp."
+  },
+  "s.nothing-tried-by-itself-in-that.53fab0f9": {
+   "source": "nothing tried by itself in that tab",
+   "text": "v té záložce se už nic samo nezkouší"
   },
   "s.nothing-typed-inside-configure-terminal-is.27dafee3": {
    "source": "Nothing typed inside configure terminal is in this list — not because it was lost here, but because the device never sent it. A Cisco device asks the TACACS+ server about commands typed in configuration mode only with “aaa authorization config-commands”, and a tac_plus server writes them down only with “aaa accounting commands 15 default start-stop group tacacs+”. Without either, what was changed is not recorded anywhere.",
@@ -19040,6 +19072,10 @@
    "source": "offered beside it",
    "text": "nabízí se vedle"
   },
+  "s.offered.da6028d5": {
+   "source": "offered",
+   "text": "nabízí se"
+  },
   "s.offset.ce667716": {
    "source": "Offset",
    "text": "Odchylka"
@@ -19371,6 +19407,10 @@
   "s.on-the-settings-page.fc8f0fc7": {
    "source": "on the settings page",
    "text": "na stránce nastavení"
+  },
+  "s.on-the-sign-in-page-goes.ab032a65": {
+   "source": "On: the sign-in page goes to the certificate's port at once - the browser offers its certificate, the card asks for its PIN - and shows the form only when that did not work. With Windows tried by itself as well, Windows goes first and the certificate only when this computer has no Windows ticket (not in the domain). Off: a button \"Sign in with a certificate\" under the form. Never tried by itself again in a tab after Sign out or after a refusal.",
+   "text": "Zapnuto: přihlašovací stránka hned přejde na port certifikátu - prohlížeč nabídne svůj certifikát, karta se zeptá na PIN - a formulář ukáže, jen když to nevyšlo. Když se samo zkouší i Windows, jdou Windows první a certifikát jen tehdy, když tento počítač nemá Windows ticket (není v doméně). Vypnuto: tlačítko „Přihlásit certifikátem“ pod formulářem. Po odhlášení nebo po odmítnutí se v té záložce už samo nezkouší."
   },
   "s.on-the-sign-in-page-tries.bf629e1e": {
    "source": "On: the sign-in page tries Windows at once and shows the form only when that did not work. Off: a button \"Sign in with Windows\" under the form. After signing out it is not tried by itself again in that tab - or signing out would sign straight back in.",
@@ -23580,6 +23620,10 @@
    "source": "said only",
    "text": "uvedlo jen"
   },
+  "s.said-why-on-the-page-nothing.9438e721": {
+   "source": "said why on the page; nothing else tried by itself",
+   "text": "na stránce se řekne proč; nic dalšího se samo nezkouší"
+  },
   "s.said.abc1350f": {
    "source": "said",
    "text": "uvedlo"
@@ -27504,6 +27548,10 @@
    "source": "The certificate the authority signed for the router - with its private key, flag",
    "text": "Certifikát, který autorita podepsala pro router – s jeho privátním klíčem, příznak"
   },
+  "s.the-certificate-the-browser-s-chooser.e8db6709": {
+   "source": "the certificate - the browser’s chooser and the card’s PIN at once",
+   "text": "certifikát - výběr v prohlížeči a PIN karty hned"
+  },
   "s.the-certificate-the-dashboard-answers-with.191b1fb9": {
    "source": "The certificate the dashboard answers with - uploaded, requested from your CA, or made here - and how it speaks TLS. Root puts it in, and nginx is asked before it is reloaded.",
    "text": "Certifikát, kterým dashboard odpovídá – nahraný, vyžádaný od vaší CA nebo vytvořený zde – a jak mluví TLS. Nasadí ho root a nginx je před reloadem dotázán."
@@ -31000,6 +31048,10 @@
    "source": "the sign-in did not finish",
    "text": "přihlášení nedoběhlo"
   },
+  "s.the-sign-in-page.dc9aaf30": {
+   "source": "The sign-in page",
+   "text": "Přihlašovací stránka"
+  },
   "s.the-site-also-names-it.9c1d4c6d": {
    "source": "The site also names it",
    "text": "Lokalita jej také nazývá"
@@ -31603,6 +31655,10 @@
   "s.the-waiting-request.74bca48f": {
    "source": "The waiting request",
    "text": "Čekající žádost"
+  },
+  "s.the-way-back-from-no-password.874e1c38": {
+   "source": "The way back from no password at all, as root: isemon --set password_off=0.",
+   "text": "Cesta zpět ze žádného hesla, jako root: isemon --set password_off=0."
   },
   "s.the-way-back-from-no-password.8ce4c952": {
    "source": "The way back from \"no password at all\", as root: isemon --set password_off=0 (or Kerberos switched off). More: docs/windows-sign-in.md in the package.",
@@ -33071,6 +33127,14 @@
   "s.trial.069fd3a4": {
    "source": "trial",
    "text": "na zkoušku"
+  },
+  "s.tried-by-itself-when-the-page.9839b444": {
+   "source": "tried by itself when the page opens",
+   "text": "zkouší se samo po otevření stránky"
+  },
+  "s.tried-by-itself-when-the-page.9f935cd1": {
+   "source": "Tried by itself when the page opens",
+   "text": "Samo po otevření stránky"
   },
   "s.tried-it-can-be-put-back.a2d14001": {
    "source": "tried: it can be put back",
@@ -35056,6 +35120,10 @@
    "source": "What the sessions were, as the firewall named them.",
    "text": "Jaké to byly relace, jak je pojmenoval firewall."
   },
+  "s.what-the-sign-in-page-offers.769f5465": {
+   "source": "What the sign-in page offers, with Windows and a certificate side by side: each is a button under the name and password, or is tried by itself when the page opens. Both tried by itself: Windows first - silently - and the certificate only when this computer has no Windows ticket (a computer outside the domain with a smart card). A refusal of either stops there and says why; the form stays unless there is no password at all. After Sign out nothing is tried by itself again in that tab.",
+   "text": "Co přihlašovací stránka nabízí, s Windows a certifikátem vedle sebe: každé je tlačítko pod jménem a heslem, nebo se zkouší samo po otevření stránky. Když se zkouší samo obojí: nejdřív Windows - potichu - a certifikát jen tehdy, když tento počítač nemá Windows ticket (počítač mimo doménu s čipovou kartou). Odmítnutí jednoho z nich tam skončí a řekne proč; formulář zůstává, pokud není zapnuté žádné heslo. Po odhlášení se v té záložce už nic samo nezkouší."
+  },
   "s.what-the-source-was-made-on.3869b6a7": {
    "source": "What the source was made on the way out.",
    "text": "Na co byl zdroj přeložen cestou ven."
@@ -36647,6 +36715,14 @@
   "s.windows-did-not-sign-you-in.78fd384d": {
    "source": "Windows did not sign you in",
    "text": "Windows vás nepřihlásily"
+  },
+  "s.windows-silently-then-the-certificate-when.59f5161d": {
+   "source": "Windows silently, then the certificate when this computer has no Windows ticket",
+   "text": "Windows potichu, pak certifikát, když tento počítač nemá Windows ticket"
+  },
+  "s.windows-silently.83e9ba3c": {
+   "source": "Windows silently",
+   "text": "Windows potichu"
   },
   "s.windows-started-up.d7ed7f65": {
    "source": "Windows started up",
@@ -44081,6 +44157,10 @@
   "s.and-no-password-at-all-only.55457112": {
    "source": "...and no password at all - only Windows",
    "text": "...a žádné heslo - jen Windows"
+  },
+  "s.and-no-password-at-all-only.81cced79": {
+   "source": "...and no password at all - only Windows or a certificate",
+   "text": "...a žádné heslo - jen Windows nebo certifikát"
   },
   "s.and-nothing-here-can-earn-anybody.07fe7fc0": {
    "source": "and nothing here can earn anybody a ban. Switched off, not one file is opened and nothing anywhere behaves differently.",

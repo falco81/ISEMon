@@ -5423,7 +5423,8 @@ function srcText(el) {
                  ? $health['kerberos'] : []; ?>
     <?php if (!empty($krb['on']) || !empty($krb['cert'])): ?>
     <div class="krb-box" id="krb-box" data-auto="<?= !empty($krb['on']) && (!empty($krb['auto']) || !empty($krb['only'])) ? '1' : '0' ?>"
-         data-only="<?= !empty($krb['only']) ? '1' : '0' ?>">
+         data-only="<?= !empty($krb['only']) ? '1' : '0' ?>"
+         data-cert-auto="<?= !empty($krb['cert_auto']) ? '1' : '0' ?>">
       <?php if (empty($krb['only'])): ?><div class="krb-or"><span>or</span></div><?php endif; ?>
       <?php if (!empty($krb['on'])): ?>
       <button class="btn cmd<?= !empty($krb['only']) ? ' primary' : '' ?>" type="button" id="krb-go"><svg
@@ -5663,7 +5664,7 @@ function srcText(el) {
   var krbBox = document.getElementById('krb-box');
   var krbGo = document.getElementById('krb-go');
   var krbSaid = document.getElementById('krb-said');
-  function krbTry(auto) {
+  function krbTry(auto, then) {
     if (!krbGo) return;
     krbGo.disabled = true;
     krbSaid.className = 'said';
@@ -5678,7 +5679,12 @@ function srcText(el) {
         if (!x.ok || (x.d && x.d.ok === false)) {
           /* By itself, and this computer not in the domain: nothing said -
              the form is there. */
-          if (auto && x.d && x.d.code === 'no_ticket' && !form.hidden) return;
+          if (auto && x.d && x.d.code === 'no_ticket') {
+            /* ...and the certificate next, when it is tried by itself too
+               (1.10.342). */
+            if (then) { then(); return; }
+            if (!form.hidden) return;
+          }
           krbSaid.className = 'said bad';
           krbSaid.textContent = (x.d && x.d.error) || 'Windows did not sign you in';
           return;
@@ -5699,8 +5705,10 @@ function srcText(el) {
      the card's PIN - and back here, signed in or told why not. */
   var certGo = document.getElementById('cert-go');
   var certSaid = document.getElementById('cert-said');
-  if (certGo) certGo.addEventListener('click', function () {
+  function certStart(auto) {
+    if (!certGo) return;
     certGo.disabled = true;
+    try { sessionStorage.setItem('isemon.cert.tried', '1'); } catch (e) { }
     fetch('?api=cert-nonce', {method: 'POST', credentials: 'same-origin',
       headers: {'Content-Type': 'application/json'}, body: '{}'})
       .then(function (r) { return r.json(); })
@@ -5714,7 +5722,8 @@ function srcText(el) {
         certSaid.className = 'said bad';
         certSaid.textContent = 'this dashboard could not be reached';
       });
-  });
+  }
+  if (certGo) certGo.addEventListener('click', function () { certStart(false); });
   try {
     var certWhy = new URLSearchParams(location.search).get('certsaid');
     if (certWhy) {
@@ -5724,14 +5733,22 @@ function srcText(el) {
       history.replaceState(null, '', location.pathname);
     }
   } catch (e) { }
-  var krbTried = false;
+  var krbTried = false, certTried = false;
   try {
     krbTried = !!(sessionStorage.getItem('isemon.krb.tried') || sessionStorage.getItem('isemon.krb.out'));
+    /* A certificate is not tried by itself after Sign out, after it was
+       tried once in this tab, or right after a refusal (1.10.342). */
+    certTried = !!(sessionStorage.getItem('isemon.cert.tried') || sessionStorage.getItem('isemon.krb.out')
+                   || new URLSearchParams(location.search).get('certsaid') || certSaid && certSaid.textContent);
   } catch (e) { }
+  var krbAuto = krbBox && krbBox.dataset.auto === '1' && !krbTried;
+  var certAuto = krbBox && krbBox.dataset.certAuto === '1' && !certTried && !!certGo;
   if (SECOND) {
     stepShow(SECOND);
-  } else if (krbBox && krbBox.dataset.auto === '1' && !krbTried) {
-    krbTry(true);
+  } else if (krbAuto) {
+    krbTry(true, certAuto ? function () { certStart(true); } : null);
+  } else if (certAuto) {
+    certStart(true);
   } else if (!form.hidden) {
     document.getElementById('in-name').focus();
   }
@@ -7665,6 +7682,19 @@ auditpol /set /subcategory:"Logon" /success:enable /failure:enable</pre>
         SID) and their groups. Face ID, when it is on, is asked after it just the same.</p>
       <div id="sect-cl"></div>
       <div id="cl-body"></div>
+    </div>
+    <?php /* The sign-in page as a whole (1.10.342): the password, Windows and the
+             certificate together. */ ?>
+    <div class="card full sso-card" id="si-card">
+      <h2>The sign-in page</h2>
+      <p class="note sso-lede">What the sign-in page offers, with Windows and a certificate side by
+        side: each is a button under the name and password, or is tried by itself when the page
+        opens. Both tried by itself: Windows first - silently - and the certificate only when this
+        computer has no Windows ticket (a computer outside the domain with a smart card). A
+        refusal of either stops there and says why; the form stays unless there is no password at
+        all. After Sign out nothing is tried by itself again in that tab.</p>
+      <div id="sect-signin"></div>
+      <div id="si-body"></div>
     </div>
 
     <div class="card full">
@@ -28312,9 +28342,11 @@ var PANES = {
             'directory_banadmin_group', 'directory_readonly_group', 'directory_nested',
             'directory_recheck_min', 'directory_watch'],
   /* Signing in with Windows (1.10.340), drawn in its own card as acme has it. */
-  krb:     ['kerberos', 'kerberos_auto', 'kerberos_realm', 'password_off'],
+  krb:     ['kerberos', 'kerberos_auto', 'kerberos_realm'],
   /* Signing in with a certificate (1.10.341), the same way. */
-  cl:      ['certlogin', 'certlogin_port', 'certlogin_match', 'certlogin_crl'],
+  cl:      ['certlogin', 'certlogin_auto', 'certlogin_port', 'certlogin_match', 'certlogin_crl'],
+  /* The sign-in page as a whole (1.10.342): what both of them share. */
+  signin:  ['password_off'],
   dir2:    ['directory2', 'directory2_host', 'directory2_port', 'directory2_tls',
             'directory2_verify', 'directory2_base', 'directory2_bind', 'directory2_password',
             'directory2_user_attr', 'directory2_realms'],
@@ -29114,8 +29146,8 @@ function drawSettings() {
    spends a while working out why nothing happened. */
 var ONLY_WHEN = {
   /* Signing in with Windows and with a certificate (1.10.341): as acme has them. */
-  kerberos_auto: ['kerberos', '1'], kerberos_realm: ['kerberos', '1'], password_off: ['kerberos', '1'],
-  certlogin_port: ['certlogin', '1'], certlogin_match: ['certlogin', '1'], certlogin_crl: ['certlogin', '1'],
+  kerberos_auto: ['kerberos', '1'], kerberos_realm: ['kerberos', '1'],
+  certlogin_auto: ['certlogin', '1'], certlogin_port: ['certlogin', '1'], certlogin_match: ['certlogin', '1'], certlogin_crl: ['certlogin', '1'],
   /* Settings → Proxy (1.10.268): as otp has them. */
   proxy_url: ['proxy', '1'], proxy_user: ['proxy', '1'], proxy_password: ['proxy', '1'],
   proxy_no: ['proxy', '1'], proxy_upgrade: ['proxy', '1'], proxy_os: ['proxy', '1'],
@@ -29984,6 +30016,34 @@ function loadDirectory() {
   loadCertLogin();
 }
 
+/* The sign-in page as a whole (1.10.342): what a person meets, from both. */
+var SI = {krb: null, cl: null};
+function drawSignInPage() {
+  var host = $('si-body');
+  if (!host || !SI.krb || !SI.cl) return;
+  clear(host);
+  var k = SI.krb, c = SI.cl;
+  var only = !!(k.only_windows || c.only);
+  var way = function (on, auto, wanted) {
+    return on ? (auto ? 'tried by itself when the page opens' : 'a button under the form')
+      : (wanted ? 'switched on, not ready yet' : 'off');
+  };
+  var order;
+  if (k.on && k.auto && c.on && c.auto) order = 'Windows silently, then the certificate when this computer has no Windows ticket';
+  else if (k.on && k.auto) order = 'Windows silently';
+  else if (c.on && c.auto) order = 'the certificate - the browser\u2019s chooser and the card\u2019s PIN at once';
+  else order = 'nothing - the person chooses';
+  ssoFacts(host, [
+    ['Name and password', only ? 'none - no password signs in, local accounts neither' : 'offered'],
+    ['Sign in with Windows', way(k.on, k.auto, k.wanted)],
+    ['Sign in with a certificate', way(c.on, c.auto, c.wanted)],
+    ['Tried by itself when the page opens', order],
+    ['After a refusal', 'said why on the page; nothing else tried by itself'],
+    ['After Sign out', 'nothing tried by itself in that tab']]);
+  if (!k.on && !c.on) host.appendChild(el('p', 'note', 'No password at all is switched on only while Windows or a certificate is on, and only from a sign-in made that way.'));
+  host.appendChild(el('p', 'sso-foot', 'The way back from no password at all, as root: isemon --set password_off=0.'));
+}
+
 /* Signing in with a certificate (1.10.341): the authorities, Try my
    certificate, and what to do in AD CS, on a YubiKey and in the network. */
 function loadCertLogin() {
@@ -29994,6 +30054,8 @@ function loadCertLogin() {
   });
 }
 function drawCertLogin(d) {
+  SI.cl = d;
+  drawSignInPage();
   var host = $('cl-body');
   clear(host);
   ssoDots('cl-dots', d.on, d.wanted);
@@ -30011,6 +30073,7 @@ function drawCertLogin(d) {
       upn: 'the UPN alone'}[d.match] || d.match],
     ['Revocation', d.crl ? 'checked - the CRL at the certificate\u2019s CRL Distribution Point; none to be had, no sign-in' : 'not checked'],
     ['Second step after it', d.second ? 'Face ID, as after a password' : 'off'],
+    ['By itself on the sign-in page', d.auto ? 'yes - the form only when it did not work' : 'no - a button under the form'],
     ['A password on the sign-in page', d.only ? 'none - only Windows or a certificate' : 'offered beside it']]);
   ssoHead(host, 'The authorities');
   if ((d.cas || []).length) {
@@ -30169,6 +30232,8 @@ function ssoCode(host, caption, text, marks) {
   host.appendChild(pre);
 }
 function drawKerberos(d) {
+  SI.krb = d;
+  drawSignInPage();
   var host = $('krb-body');
   clear(host);
   ssoDots('krb-dots', d.on, d.wanted);

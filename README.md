@@ -372,6 +372,24 @@ working.
 
 ## Version
 
+1.10.342
+
+- **The sign-in page with Windows and a certificate together.**
+  - **A certificate can be tried by itself** when the sign-in page opens
+    (*...by itself when the sign-in page opens*), as Windows can. It is off by
+    default: a button "Sign in with a certificate" under the form.
+  - **Both tried by itself**: Windows goes first, silently. The certificate is
+    tried only when this computer has no Windows ticket - a computer outside
+    the domain with a smart card. A refusal of either stops there and says
+    why.
+  - Nothing is tried by itself again in a tab after *Sign out* or after a
+    refusal.
+  - **No password at all** is one setting for both, in a card of its own,
+    *The sign-in page*. That card also says what a person meets: name and
+    password offered or not, each way as a button or tried by itself, and in
+    which order. Before, the setting sat in the Windows card and could be
+    switched on only with Windows on, not with a certificate alone.
+
 1.10.341
 
 - **Signing in with a certificate: a smart card or a YubiKey.** A certificate

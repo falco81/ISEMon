@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.341'
+__version__ = '1.10.342'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -871,6 +871,10 @@ DEFAULTS = {
     'certlogin_port': 8443,
     'certlogin_match': 'compat',
     'certlogin_crl': 1,
+    # ...tried by itself when the sign-in page opens (1.10.342): after
+    # Windows when that is tried by itself too and this computer has no
+    # ticket - a computer outside the domain with a smart card.
+    'certlogin_auto': 0,
     # Changes that could cut this server off, taken back unless kept
     # (1.10.228, after otp 1.0.137): a new network (Settings - Network) and
     # a change of the firewall or of who may reach which page go back to what
@@ -60781,7 +60785,8 @@ class Daemon(object):
         return {'on': on, 'auto': on and bool(int(CONFIG.get('kerberos_auto') or 0)),
                 'only': (on or cert) and self.password_off(),
                 # Signing in with a certificate (1.10.341): its button.
-                'cert': cert, 'cert_port': self.certlogin_port() if cert else 0}
+                'cert': cert, 'cert_port': self.certlogin_port() if cert else 0,
+                'cert_auto': cert and bool(int(CONFIG.get('certlogin_auto') or 0))}
 
     def kerberos_view(self, may=False):
         """The card on Settings → Active Directory: never a key."""
@@ -61030,6 +61035,7 @@ class Daemon(object):
                 'port': self.certlogin_port(),
                 'match': str(CONFIG.get('certlogin_match') or 'compat'),
                 'crl': bool(int(CONFIG.get('certlogin_crl', 1) or 0)),
+                'auto': bool(int(CONFIG.get('certlogin_auto') or 0)),
                 'second': 'passkeys' if self.passkeys_on() else '',
                 'only': self.password_off(),
                 'cas': [{k: c.get(k) for k in ('subject', 'issuer', 'until', 'sha256', 'at', 'by')}
@@ -61624,7 +61630,7 @@ class Daemon(object):
         'kerberos': (0, 1), 'kerberos_auto': (0, 1), 'kerberos_realm': 'str',
         'password_off': (0, 1),
         'certlogin': (0, 1), 'certlogin_port': (1024, 65535),
-        'certlogin_match': ('compat', 'strong', 'upn'), 'certlogin_crl': (0, 1),
+        'certlogin_match': ('compat', 'strong', 'upn'), 'certlogin_crl': (0, 1), 'certlogin_auto': (0, 1),
         'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
         'retain_failed_days': (0, 3650), 'retain_passed_days': (0, 3650),
         'retain_events_days': (0, 3650),
@@ -61919,11 +61925,12 @@ class Daemon(object):
         'kerberos': 'Sign in with Windows (Kerberos)',
         'kerberos_auto': '...by itself when the sign-in page opens',
         'kerberos_realm': 'Kerberos realm',
-        'password_off': '...and no password at all - only Windows or a certificate',
+        'password_off': 'No password at all - only Windows or a certificate',
         'certlogin': 'Sign in with a certificate (a smart card, a YubiKey)',
         'certlogin_port': 'The certificate\'s own port',
         'certlogin_match': 'Which account a certificate is',
         'certlogin_crl': 'Check that a certificate is not revoked (CRL)',
+        'certlogin_auto': '...by itself when the sign-in page opens',
         'net_confirm_min': 'A new network goes back unless kept within (min)',
         'fw_confirm_min': 'A firewall change goes back unless kept within (min)',
         'retain_failed_days': 'Keep failed attempts for (days)',
@@ -63076,6 +63083,13 @@ class Daemon(object):
         'certlogin_match': 'compat: the SID AD CS writes into a certificate since KB5014754 must '
                            'be the account\'s when it carries one. strong: it must carry one '
                            '(Microsoft\'s full enforcement). upn: the UPN alone.',
+        'certlogin_auto': 'On: the sign-in page goes to the certificate\'s port at once - the '
+                          'browser offers its certificate, the card asks for its PIN - and '
+                          'shows the form only when that did not work. With Windows tried by '
+                          'itself as well, Windows goes first and the certificate only when '
+                          'this computer has no Windows ticket (not in the domain). Off: a '
+                          'button "Sign in with a certificate" under the form. Never tried by '
+                          'itself again in a tab after Sign out or after a refusal.',
         'certlogin_crl': 'The CRL at the certificate\'s CRL Distribution Point (http), kept '
                          'until its next update. On: no CRL to be had, no sign-in. Off only for '
                          'an authority that publishes none.',

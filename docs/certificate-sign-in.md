@@ -56,6 +56,10 @@ certificate, and Windows asks for the card's PIN. Built after otp 1.0.275.
   - `strong`: the certificate must carry that SID (Microsoft's full
     enforcement);
   - `upn`: the UPN alone.
+- **...by itself when the sign-in page opens**: the page goes to the
+  certificate's port at once. The browser offers its certificate, the card
+  asks for its PIN, and the form is shown only when that did not work. Off:
+  a button "Sign in with a certificate" under the form.
 - **Check that a certificate is not revoked (CRL)**: on by default. The CRL is
   kept until its next update. If no CRL can be fetched, nobody signs in (fail
   closed). The last CRL is used until its next update while the address is
@@ -140,6 +144,19 @@ What is refused, and said on the sign-in page and in *Events* as a warning:
 - here: an account switched off here, or a local account of the same name;
 - the request: no nonce or a nonce of another browser, or no certificate
   offered.
+
+## With Windows (Kerberos) as well
+
+Both can be on together. Each is a button under the form, or is tried by
+itself when the page opens. When both are tried by themselves:
+
+1. Windows goes first, silently.
+2. The certificate is tried only when this computer has no Windows ticket -
+   a computer outside the domain with a smart card.
+3. A refusal of either stops there and says why.
+
+Nothing is tried by itself again in that tab after *Sign out* or after a
+refusal. The card *The sign-in page* shows what a person meets.
 
 ## No password at all
 

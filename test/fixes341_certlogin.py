@@ -139,6 +139,10 @@ p7b = subprocess.run(['openssl', 'crl2pkcs7', '-nocrl', '-certfile', str(pki / '
 added = daemon.certlogin_put(p7b, 'boss')
 ok('a .p7b: the one not there yet', [a['subject'] for a in added],
    ['CN=Corpnet Root CA,DC=corpnet,DC=loc'])
+ok('not tried by itself unless so set', daemon.kerberos_health()['cert_auto'], False)
+isemon.CONFIG['certlogin_auto'] = 1
+ok('...tried by itself when set', daemon.kerberos_health()['cert_auto'], True)
+isemon.CONFIG['certlogin_auto'] = 0
 ok('on now; the page offers it, with its port', (daemon.certlogin_on(),
                                                  daemon.kerberos_health()['cert_port']),
    (True, 8443))
