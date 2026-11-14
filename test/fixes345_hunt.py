@@ -125,7 +125,7 @@ ok('GET only, no multipart body, the dashboard\'s rate',
                           'limit_req zone=isemon_all burst=20 nodelay;')), True)
 web = (ROOT / 'deploy' / 'isemon_web.py').read_text()
 ok('built last, of the dashboard\'s server as this request leaves it',
-   web.index("final, words = certlogin_into(final, cl)") > web.index("new, words = tls_into(new, t, dh_path)"),
+   web.index("final, words = certlogin_into(final, cl, on_disk)") > web.index("new, words = tls_into(new, t, dh_path)"),
    True)
 
 print('round 1: the sign-in page')

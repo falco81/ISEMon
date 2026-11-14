@@ -231,15 +231,29 @@ function sent_body(): array
    certificate goes to the daemon, which checks it, and the browser goes back
    to the pages - signed in, or told why not. Cookies are not kept apart by
    port: the session set here is the session there. */
-function isemon_cert_back(string $said = '', string $key = 'certsaid'): void
+function isemon_cert_host(): string
 {
+    /* The name the browser asked for, without its port: a name, or an IPv6
+       address in brackets (1.10.349) - anything else is localhost. */
     $host = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? ''));
-    if (!preg_match('/^[A-Za-z0-9.-]{1,253}\z/', (string) $host)) {
+    if (!preg_match('/^([A-Za-z0-9.-]{1,253}|\[[0-9A-Fa-f:.]{2,45}\])\z/', (string) $host)) {
         $host = 'localhost';
     }
+    return (string) $host;
+}
+function isemon_cert_back(string $said = '', string $key = 'certsaid'): void
+{
+    $host = isemon_cert_host();
+    /* Back to the dashboard's own port (1.10.349): it is not always 443. Kept
+       by the sign-in page in a cookie of its own, digits only. */
+    $port = (string) ($_COOKIE['isemon_certp'] ?? '');
+    $port = preg_match('/^\d{1,5}\z/', $port) && (int) $port > 0 && (int) $port <= 65535
+        && (int) $port !== 443 ? ':' . (int) $port : '';
     $back = (string) getenv('ISEMON_CERT_BACK');      /* the tests' own pages only */
-    $base = $back !== '' ? $back : 'https://' . $host . '/';
-    header('Location: ' . $base . ($said !== '' ? '?' . $key . '=' . rawurlencode(substr($said, 0, 300)) : ''), true, 303);
+    $base = $back !== '' ? $back : 'https://' . $host . $port . '/';
+    /* 300 characters, not bytes: a name cut in the middle of a letter. */
+    $short = preg_match('/^.{0,300}/su', $said, $mm) ? $mm[0] : substr($said, 0, 300);
+    header('Location: ' . $base . ($said !== '' ? '?' . $key . '=' . rawurlencode($short) : ''), true, 303);
     exit;
 }
 if ((string) ($_SERVER['ISEMON_CERT_PORT'] ?? '') === '1') {
@@ -572,10 +586,10 @@ if (isset($_GET['api'])) {
         $n = bin2hex(random_bytes(16));
         setcookie('isemon_certn', $n, ['expires' => time() + 300, 'path' => '/',
                   'secure' => isemon_https(), 'httponly' => true, 'samesite' => 'Strict']);
-        $host = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? ''));
-        if (!preg_match('/^[A-Za-z0-9.-]{1,253}\z/', (string) $host)) {
-            $host = 'localhost';
-        }
+        $host = isemon_cert_host();
+        $p = preg_match('/:(\d{1,5})\z/', (string) ($_SERVER['HTTP_HOST'] ?? ''), $pm) ? $pm[1] : '';
+        setcookie('isemon_certp', $p, ['expires' => time() + 300, 'path' => '/',
+                  'secure' => isemon_https(), 'httponly' => true, 'samesite' => 'Strict']);
         $sent = sent_body();
         echo json_encode(['ok' => true, 'url' => 'https://' . $host . ':' . (int) $k['cert_port']
             . '/index.php?api=' . (!empty($sent['try']) ? 'cert-check' : 'cert-login') . '&n=' . $n]);
@@ -5839,7 +5853,7 @@ function srcText(el) {
     certGo.disabled = true;
     try {
       sessionStorage.setItem('isemon.cert.tried', '1');
-      sessionStorage.setItem('isemon.cert.went', '1');
+      sessionStorage.setItem('isemon.cert.went', String(Date.now()));
     } catch (e) { }
     fetch('?api=cert-nonce', {method: 'POST', credentials: 'same-origin',
       headers: {'Content-Type': 'application/json'}, body: '{}'})
@@ -5862,9 +5876,11 @@ function srcText(el) {
     if (certWhy) history.replaceState(null, '', location.pathname);
     /* Said only to a tab that went to the certificate's port itself
        (1.10.345): a link of somebody else's put any words it liked here. */
-    var went = sessionStorage.getItem('isemon.cert.went');
+    var went = Number(sessionStorage.getItem('isemon.cert.went') || 0);
     sessionStorage.removeItem('isemon.cert.went');
-    if (certWhy && went) {
+    /* ...and only within minutes of it (1.10.349): a flag left from a sign-in
+       that worked let a later link of anybody's say its words here. */
+    if (certWhy && went && Date.now() - went < 180000) {
       var into = certSaid || said;
       into.className = 'said bad';
       into.textContent = certWhy;          /* text, never HTML */
@@ -30275,39 +30291,43 @@ function certCrlState(c) {
   return ['ok', 'good'];
 }
 function certCrlAsk(act, url, anchor) {
-  if (CLC.crlAsk) return;
+  if (CLC.crlAsk) { toast('something is still being asked - try again in a moment', 'warn'); return; }
   var ask = CLC.crlAsk = {act: act, url: url || '', nodes: {}, done: false};
   var node = (CLC.d && CLC.d.node) || 'isemon';
   ask.nodes[node] = null;
+  var lost = function () {
+    Object.keys(ask.nodes).forEach(function (n) { if (!ask.nodes[n]) ask.nodes[n] = {ok: false, error: 'did not answer in a minute - is isemon running?'}; });
+  };
+  /* Once, whatever answers late (1.10.349): a slow daemon had several polls
+     in flight, each one finished the ask again - and a late one cleared the
+     next ask the person had already started. */
   var finish = function () {
+    if (ask.done) return;
     ask.done = true;
-    CLC.crlAsk = null;
+    if (CLC.crlAsk === ask) CLC.crlAsk = null;
     CLC.crlSaid = ask;
     var bad = Object.keys(ask.nodes).filter(function (n) { return !ask.nodes[n] || !ask.nodes[n].ok; });
     var ocsp = act.indexOf('ocsp_') === 0, clr = act === 'clear' || act === 'ocsp_clear';
-    toast(clr ? 'cleared' : (bad.length ? (ocsp ? 'asked - not every responder answered' : 'fetched - not everything') : (ocsp ? 'every responder answered' : 'fetched')), bad.length ? 'warn' : 'good');
+    toast(clr ? (bad.length ? 'not cleared - see the box above the table' : 'cleared')
+      : (bad.length ? (ocsp ? 'asked - not every responder answered' : 'fetched - not everything') : (ocsp ? 'every responder answered' : 'fetched')), bad.length ? 'warn' : 'good');
     api('certlogin').then(function (d) { drawCertLogin(d); }).catch(function () { certCrlRedraw(); });
   };
   api('certlogin', {action: act.indexOf('ocsp_') === 0 ? act : 'crl_' + act, url: url || ''}).then(function (x) {
     var began = Date.now();
-    var timer = setInterval(function () {
+    /* One poll at a time: the next is asked only when this one has answered. */
+    var poll = function () {
+      if (ask.done) return;
+      if (Date.now() - began > 60000) { lost(); finish(); return; }
       api('certlogin', {action: 'result', id: x.id}).then(function (r) {
+        if (ask.done) return;
         var got = r.nodes || {}, all = true;
         Object.keys(got).forEach(function (n) { ask.nodes[n] = got[n]; if (!got[n]) all = false; });
-        if (all || Date.now() - began > 60000) {
-          clearInterval(timer);
-          Object.keys(ask.nodes).forEach(function (n) { if (!ask.nodes[n]) ask.nodes[n] = {ok: false, error: 'did not answer in a minute - is isemon running?'}; });
-          finish();
-        }
-      }).catch(function () {
-        if (Date.now() - began > 60000) {
-          clearInterval(timer);
-          Object.keys(ask.nodes).forEach(function (n) { if (!ask.nodes[n]) ask.nodes[n] = {ok: false, error: 'did not answer in a minute - is isemon running?'}; });
-          finish();
-        }
-      });
-    }, 1000);
-  }).catch(function (e) { CLC.crlAsk = null; oops(e); certCrlRedraw(); });
+        if (all) { finish(); return; }
+        setTimeout(poll, 1000);
+      }).catch(function () { if (!ask.done) setTimeout(poll, 1000); });
+    };
+    setTimeout(poll, 1000);
+  }).catch(function (e) { if (CLC.crlAsk === ask) CLC.crlAsk = null; ask.done = true; oops(e); certCrlRedraw(); });
   certCrlRedraw(anchor);
 }
 function certCrlSaid(host, kind) {
@@ -30420,8 +30440,10 @@ function certCrls(host, d) {
     chev.appendChild(el('span', 'cert-crl-arrow', '▸'));
     var a = cell(tr, '', 'cert-crl-url');
     var ldapCn = c.via === 'ldap' ? /^ldap:\/\/[^\/]*\/CN=([^,?]+)/i.exec(c.url) : null;
-    var u = noI18n(el('span', 'mono', ldapCn ? decodeURIComponent(ldapCn[1]) : c.url));
-    u.title = c.url;
+    var cnText = ldapCn ? ldapCn[1] : c.url;
+    if (ldapCn) { try { cnText = decodeURIComponent(ldapCn[1]); } catch (e) { cnText = ldapCn[1]; } }
+    var u = noI18n(el('span', 'mono', cnText));
+    u.title = wordsIn(c.url);
     var ain = el('div', 'cert-crl-url-in');
     if (c.via === 'ldap') ain.appendChild(crlTag('info', 'LDAP'));
     ain.appendChild(u);
@@ -30434,13 +30456,13 @@ function certCrls(host, d) {
     if (c.issuer) {
       var cnm = /(?:^|,)\s*CN=([^,]+)/i.exec(String(c.issuer));
       var dn = noI18n(el('span', 'small', cnm ? cnm[1] : String(c.issuer)));
-      dn.title = String(c.issuer);
+      dn.title = wordsIn(String(c.issuer));
       iss.appendChild(dn);
     } else if ((c.of || []).length) {
       iss.appendChild(el('span', 'muted small', 'named by '));
       var ofs = (c.of || []).map(function (x) { var m = /(?:^|,)\s*CN=([^,]+)/i.exec(String(x)); return m ? m[1] : String(x); });
       var on = noI18n(el('span', 'small', ofs.join('; ')));
-      on.title = c.of.join('; ');
+      on.title = wordsIn(c.of.join('; '));
       iss.appendChild(on);
     } else iss.appendChild(el('span', 'muted', '–'));
     var ty = cell(tr, 'Type');
@@ -30636,20 +30658,20 @@ function certOcsp(host, d) {
     cell(tr, '', 'cert-crl-chev').appendChild(el('span', 'cert-crl-arrow', '▸'));
     var who = cell(tr, '', 'cert-crl-url');
     var w = noI18n(el('span', 'mono', cn(c.subject)));
-    w.title = c.subject || '';
+    w.title = wordsIn(c.subject || '');
     var win = el('div', 'cert-crl-url-in');
     win.appendChild(w);
     who.appendChild(win);
     var iss = cell(tr, 'Issued by', 'cert-crl-iss');
     var isn = noI18n(el('span', 'small', cn(c.issuer)));
-    isn.title = c.issuer || '';
+    isn.title = wordsIn(c.issuer || '');
     iss.appendChild(isn);
     cell(tr, 'Status').appendChild(crlTag(st[0], st[1]));
     var nu = cell(tr, 'Next update', 'cert-crl-next');
     nu.appendChild(noI18n(el('span', 'small', c.next ? stamp(c.next) : '–')));
     var sn = cell(tr, 'Serial', 'cert-crl-num');
     var snv = noI18n(el('span', 'mono small', c.serial || '–'));
-    snv.title = c.serial || '';
+    snv.title = wordsIn(c.serial || '');
     sn.appendChild(snv);
     cell(tr, 'Asked', 'cert-crl-at').appendChild(noI18n(el('span', 'small', c.at ? stamp(c.at) : '–')));
     var act = cell(tr, '', 'cert-crl-act');
@@ -30771,7 +30793,7 @@ function drawCertInto(host, d) {
           .then(function (rr) { return rr.json(); })
           .then(function (x) {
             if (x && x.url) {
-              try { sessionStorage.setItem('isemon.cert.trywent', '1'); } catch (e) { }
+              try { sessionStorage.setItem('isemon.cert.trywent', String(Date.now())); } catch (e) { }
               location.href = x.url;
             } else { busy(tryb, false); toast((x && x.error) || 'that did not work', 'warn'); } },
                 function (e) { busy(tryb, false); oops(e); });
@@ -42624,8 +42646,9 @@ function qBoxesInstall() {
   /* Back from Try my certificate (1.10.341): what it said, and the card. */
   try {
     var certTry = new URLSearchParams(location.search).get('certtry');
-    var tryWent = sessionStorage.getItem('isemon.cert.trywent');
+    var tryWent = Number(sessionStorage.getItem('isemon.cert.trywent') || 0);
     sessionStorage.removeItem('isemon.cert.trywent');
+    if (!(tryWent && Date.now() - tryWent < 180000)) tryWent = 0;
     if (certTry && !tryWent) history.replaceState(null, '', location.pathname + location.hash);
     if (certTry && tryWent) {
       history.replaceState(null, '', location.pathname + '#settings/dir');

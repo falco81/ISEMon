@@ -372,6 +372,46 @@ working.
 
 ## Version
 
+1.10.349
+
+- **A round of looking for bugs in the certificate sign-in.**
+  - **OCSP: a revoked certificate could be taken as good** (security). The
+    verdict was read from `openssl ocsp -resp_text`, which also prints the
+    certificates an answer carries outside its signature. A certificate whose
+    extension read "Response verify OK" and "x: good" decided it. Now only
+    openssl's own verdict counts: its return code, its "Response verify OK" on
+    stderr, and the status line of this certificate. An answer with no next
+    update is refused after a day.
+  - `both` with no responder named refused. It was the CRL alone.
+  - The authorities above are the ones that really signed, one per step. A
+    renewed authority of the same name put in refused everybody in OCSP modes.
+    A revoked authority is said as one above it.
+  - A delta CRL named by a CRL itself is fetched only when that CRL's
+    signature is the authority's.
+  - The CDP in the directory must be under the configuration, anchored.
+  - The CRL and OCSP caches keep to their size without throwing the last good
+    copies away. A critical AIA is refused again, as before 1.10.348. With
+    revocation off, no openssl runs for the authorities. The card no longer
+    runs openssl for every authority each time it is asked.
+- **nginx's server for the certificate** (root helper):
+  - its error path is guarded like the sign-in (GET only, no multipart, the
+    rate);
+  - it takes no body and resumes no TLS session;
+  - a port another program listens on is refused before nginx is touched;
+  - a mark without its end line is refused rather than guessed at.
+- **Windows sign-in (Kerberos)**: the OID Windows puts first for Kerberos 5
+  (1.2.840.48018.1.2.2) is taken.
+- **The page**:
+  - Fetch now / Clear asks one poll at a time and finishes once. A slow daemon
+    finished it several times and could cancel the next ask.
+  - The way back from the certificate's port goes to the dashboard's own port,
+    and an IPv6 address is kept.
+  - Certificate data in help panels is shown as text.
+  - A certificate refusal is said only within minutes of going to the port.
+- **docs/certificate-sign-in.md**: iPad and iPhone. Safari with a YubiKey
+  needs a key of ECC P-256 or RSA 2048. With RSA 4096 it closes the
+  connection before asking for the PIN.
+
 1.10.348
 
 - **OCSP for the sign-in with a certificate.**

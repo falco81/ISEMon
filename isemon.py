@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.348'
+__version__ = '1.10.349'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -18893,6 +18893,9 @@ class Refused(ValueError):
 # the place of the PASSWORD only: the person is looked up in the directory as
 # a password sign-in looks them up, and the second step is asked after it.
 KRB5_MECH = bytes.fromhex('2a864886f712010202')          # 1.2.840.113554.1.2.2
+# The same Kerberos 5 under the OID Windows puts first in its SPNEGO token
+# (1.2.840.48018.1.2.2): MIT hands it back as the mechanism (1.10.349).
+KRB5_MECHS = (KRB5_MECH, bytes.fromhex('2a864882f712010202'))
 KRB_TOKEN_MAX = 65536
 KRB_ENCTYPES = {1: 'des-cbc-crc', 3: 'des-cbc-md5', 16: 'des3-cbc-sha1',
                 17: 'aes128-cts-hmac-sha1-96', 18: 'aes256-cts-hmac-sha1-96',
@@ -19006,7 +19009,7 @@ def gss_accept(token):
             if major != 0:
                 raise KrbError('not taken: %s' % _gss_words(lib, major, minor.value))
             if not mech or C.string_at(mech.contents.elements,
-                                       mech.contents.length) != KRB5_MECH:
+                                       mech.contents.length) not in KRB5_MECHS:
                 raise KrbError('a mechanism that is not Kerberos 5')
             name, m2 = Buf(), C.c_uint32()
             if lib.gss_display_name(C.byref(m2), src, C.byref(name), None):
@@ -19310,7 +19313,7 @@ def cl_cert_facts(pem):
             'unknown_critical': sorted(
                 k for k, (c, _v) in exts.items()
                 if c and k not in (CL_OID_SAN, CL_OID_EKU, CL_OID_BC, '2.5.29.15', CL_OID_CDP,
-                                   '2.5.29.32', CL_OID_FRESHEST, CL_OID_AIA))}
+                                   '2.5.29.32', CL_OID_FRESHEST))}
 
 
 def cl_sid_text(raw):
@@ -19544,6 +19547,21 @@ def cl_crl_sig(pem, ca_file):
     return 'unknown'
 
 
+def _cl_cache_put(cache, key, value, most):
+    """One entry into a cache of CRLs or OCSP answers, under its lock (the
+    caller's), kept to `most` (1.10.349): entries with nothing usable go first,
+    then the oldest - never the whole of it, which threw away the last good
+    copies a CDP that does not answer is meant to be covered by."""
+    cache[key] = value
+    if len(cache) <= most:
+        return
+    usable = lambda c: bool(c.get('pem') or c.get('status'))
+    order = sorted((k for k in cache if k != key),
+                   key=lambda k: (usable(cache[k]), float(cache[k].get('at') or 0)))
+    for k in order[:len(cache) - most]:
+        cache.pop(k, None)
+
+
 def cl_crl_fetch(url, force=False, ca_file=None):
     """The CRL at url as PEM: fetched again after CL_CRL_FRESH_S at most -
     sooner at its next update; while the address does not answer, the last
@@ -19578,20 +19596,18 @@ def cl_crl_fetch(url, force=False, ca_file=None):
                'number': info['number'], 'this': info['this'], 'revoked': info['revoked'],
                'size': len(raw), 'sig': cl_crl_sig(pem, ca_file)}
         with CL_CRL_LOCK:
-            if len(CL_CRL_CACHE) > 50:
-                CL_CRL_CACHE.clear()
-            CL_CRL_CACHE[url] = one
+            _cl_cache_put(CL_CRL_CACHE, url, one, 50)
         return one
     except Exception as e:                              # noqa: BLE001
         why = str(e)[:200] or e.__class__.__name__
         if good:
             kept = dict(got, err=why, tried=now, err_at=now)
             with CL_CRL_LOCK:
-                CL_CRL_CACHE[url] = kept
+                _cl_cache_put(CL_CRL_CACHE, url, kept, 50)
             return kept
         with CL_CRL_LOCK:
-            CL_CRL_CACHE[url] = {'at': now, 'pem': '', 'next': 0, 'url': url, 'err': why,
-                                 'err_at': now}
+            _cl_cache_put(CL_CRL_CACHE, url, {'at': now, 'pem': '', 'next': 0, 'url': url,
+                                              'err': why, 'err_at': now}, 50)
         raise CertLoginError('the CRL at %s could not be had (%s) - nobody signs in while the '
                              'certificate cannot be checked for revocation' % (url, why),
                              'unavailable')
@@ -19623,7 +19639,11 @@ def cl_crls_of(c, what, ca_file=None):
                              'from (http; no loopback, link-local or metadata address)' % what)
     base = _cl_crl_any(urls, ca_file)
     out = [base['pem']]
-    named = list(dict.fromkeys(list(c.get('freshest') or []) + list(base.get('freshest') or [])))
+    # The delta named by the CRL itself only when the CRL's signature is the
+    # authority's (1.10.349): an address read from bytes nobody has checked
+    # yet is no more trusted than a CDP in anybody's certificate.
+    named = list(dict.fromkeys(list(c.get('freshest') or []) + (
+        list(base.get('freshest') or []) if base.get('sig') == 'ok' else [])))
     if not named:
         return out, False
     urls = cl_crl_urls(named)
@@ -19635,7 +19655,7 @@ def cl_crls_of(c, what, ca_file=None):
     return out, True
 
 
-def _cl_verify(ca_file, leaf, crl_pem='', deltas=False, every=True):
+def _cl_verify(ca_file, leaf, crl_pem='', deltas=False, every=True, above=False):
     """openssl verify against the authorities put in and nothing else. With
     CRLs: every certificate of the chain checked (-crl_check_all - the root,
     its own anchor, not), delta CRLs applied (-use_deltas)."""
@@ -19670,10 +19690,10 @@ def _cl_verify(ca_file, leaf, crl_pem='', deltas=False, every=True):
         code = int(m.group(1)) if m else 0
         kind = {23: 'revoked', 10: 'expired', 12: 'unavailable', 11: 'unavailable',
                 3: 'unavailable'}.get(code, 'certificate')
-        if code in (10, 23) and m.group(2) != '0':
+        if code in (10, 23) and (m.group(2) != '0' or above):
             kind = 'certificate'
         raise CertLoginError('the certificate is not taken: %s' % (
-            ('%s%s' % (m.group(3).strip(), '' if m.group(2) == '0'
+            ('%s%s' % (m.group(3).strip(), '' if m.group(2) == '0' and not above
                        else ' (an authority above it)')) if m
             else re.sub(r'\S*isemon-cert-\S*:?\s*', '', words).strip()[:300]), kind)
 
@@ -19708,6 +19728,54 @@ def cl_chain(f, cas):
         if any(c['subject'] == c['issuer'] for c in hit):
             break
         want = hit[0]['issuer']
+    return out
+
+
+def _cl_signed_by(child_pem, parent_pem):
+    """Whether parent_pem's key signed child_pem (openssl, the parent alone as
+    the anchor) - to tell apart authorities of one name."""
+    env = dict(os.environ, SSL_CERT_DIR='/nonexistent', SSL_CERT_FILE='/nonexistent')
+    with tempfile.TemporaryDirectory(prefix='isemon-cert-') as work:
+        cp, pp = os.path.join(work, 'c.pem'), os.path.join(work, 'p.pem')
+        with open(cp, 'w') as fh:
+            fh.write(child_pem.strip() + '\n')
+        with open(pp, 'w') as fh:
+            fh.write(parent_pem.strip() + '\n')
+        args = ['openssl', 'verify', '-no-CApath', '-no-CAstore', '-partial_chain',
+                '-CAfile', pp, cp]
+        try:
+            got = subprocess.run(args, capture_output=True, text=True, timeout=30, env=env)
+            if got.returncode and re.search(r'(?i)unknown option|unrecognized', got.stderr or ''):
+                args.remove('-no-CAstore')
+                got = subprocess.run(args, capture_output=True, text=True, timeout=30, env=env)
+        except (OSError, subprocess.SubprocessError):
+            return False
+    return got.returncode == 0 and bool(re.search(r':\s*OK\s*$', got.stdout or ''))
+
+
+def cl_signed_path(f, pem, cas):
+    """The authorities above a certificate, one per step, each the one that
+    really signed the one below it (1.10.349): of several with one name - a
+    renewed authority, a cross-certified one - the one now valid whose key
+    signed it, not every one of the name. [(facts, pem)], the root last."""
+    out, cur, cur_pem, seen = [], f, pem, set()
+    now = time.time()
+    for _ in range(8):
+        hit = [c for c in cas if c['subject'] == cur.get('issuer') and c['sha256'] not in seen]
+        if not hit:
+            break
+        if len(hit) > 1:
+            fresh = [c for c in hit if (_cl_when(c.get('not_before')) or 0) <= now <=
+                     (_cl_when(c.get('not_after')) or now + 1)]
+            hit = fresh or hit
+        if len(hit) > 1:
+            hit = [c for c in hit if _cl_signed_by(cur_pem, c['pem'])] or hit[:1]
+        c = hit[0]
+        seen.add(c['sha256'])
+        out.append(c)
+        if c['subject'] == c['issuer']:
+            break
+        cur, cur_pem = c, c['pem']
     return out
 
 
@@ -19752,8 +19820,9 @@ def cl_ldap_cdp(url):
         return None
     if scope not in ('', 'base') or not dn or len(dn) > 600 or '\x00' in dn:
         return None
-    if not re.search(r'(?i),\s*CN=CDP\s*,\s*CN=Public Key Services\s*,\s*CN=Services\s*,\s*'
-                     r'CN=Configuration\s*,\s*DC=', dn):
+    if not re.fullmatch(r'(?i)CN=[^,=]+(\s*,\s*CN=[^,=]+)?\s*,\s*CN=CDP\s*,\s*'
+                        r'CN=Public Key Services\s*,\s*CN=Services\s*,\s*CN=Configuration'
+                        r'(\s*,\s*DC=[^,=]+)+\s*', dn):
         return None
     return dn, ('certificateRevocationList' if base_attr == 'certificaterevocationlist'
                 else 'deltaRevocationList')
@@ -19836,53 +19905,70 @@ def cl_ocsp_ask(url, f, pem, issuer_pem, ca_file, force=False):
                               most=CL_OCSP_MOST)
             with open(rs, 'wb') as fh:
                 fh.write(raw)
+            # The verdict from openssl's own summary and nothing else
+            # (1.10.349): -resp_text printed the certificates an answer
+            # carries outside its signature, and a line inside one of them
+            # ("Response verify OK", "x: good") was read as the verdict.
             said = _cl_ocsp_args(['openssl', 'ocsp', '-respin', rs, '-issuer', ip, '-cert', cp,
                                   '-CAfile', str(ca_file), '-no-CApath', '-no-CAstore',
-                                  '-resp_text'], env)
-        words = (said.stdout or '') + '\n' + (said.stderr or '')
-        m = re.search(r'OCSP Response Status:\s*(\w+)', words)
-        if not m:
-            raise ValueError('not an OCSP answer')
-        if m.group(1).lower() != 'successful':
-            raise ValueError('the responder said: %s' % m.group(1))
-        if 'Response verify OK' not in words:
-            why = re.search(r'OCSP_basic_verify:([^:\n]+)', said.stderr or '') or \
-                re.search(r'(?m)^.*verify[^\n]*$', said.stderr or '')
+                                  '-status_age', '86400'], env)
+            shown = _cl_ocsp_args(['openssl', 'ocsp', '-respin', rs, '-noverify', '-resp_text'],
+                                  env)
+        out = said.stdout or ''
+        bad = re.search(r'(?m)^Responder Error:\s*(\S+)', out)
+        if bad:
+            raise ValueError('the responder said: %s' % bad.group(1))
+        if said.returncode != 0 or not re.search(r'(?m)^Response verify OK\s*$',
+                                                  said.stderr or ''):
+            why = re.search(r'OCSP routines:[^:\n]*:([^:\n]+)', said.stderr or '')
             raise ValueError('the answer\'s signature is not good by the authorities put in '
-                             '(%s)' % (why.group(1) if why and why.groups() else
-                                       (why.group(0) if why else 'openssl said no')).strip()[:120])
-        if re.search(r'(?i)status times invalid', words):
-            raise ValueError('the answer is out of date (its next update has passed)')
-        st = re.search(r'(?m)^\S[^\n]*?:\s*(good|revoked|unknown)\s*$', said.stdout or '')
-        if not st:
+                             '(%s)' % ((why.group(1) if why else 'openssl said no').strip()[:120]))
+        lines = out.split('\n')
+        at = next((i for i, x in enumerate(lines)
+                   if re.fullmatch(r'%s: (good|revoked|unknown)\s*' % re.escape(cp), x)), None)
+        if at is None:
             raise ValueError('the answer says nothing of this certificate')
+        status = lines[at].rsplit(': ', 1)[1].strip()
+        mine = []
+        for x in lines[at + 1:]:
+            if not x.startswith(('\t', ' ')):
+                break
+            mine.append(x.strip())
+        if any(re.search(r'(?i)status times invalid', x) for x in mine) or \
+                re.search(r'(?i)status times invalid', said.stderr or ''):
+            raise ValueError('the answer is out of date (its next update has passed)')
 
         def when(label):
-            mm = re.search(r'(?m)^\s*%s:\s*(.+)$' % label, said.stdout or '')
-            return (_cl_when(mm.group(1)) or None) if mm else None
-        rid = re.search(r'(?m)^\s*Responder Id:\s*(.+)$', words)
-        reason = re.search(r'(?m)^\s*Reason:\s*(.+)$', said.stdout or '')
+            mm = next((x.split(':', 1)[1] for x in mine if x.startswith(label + ':')), '')
+            return (_cl_when(mm) or None) if mm else None
+        reason = next((x.split(':', 1)[1].strip() for x in mine if x.startswith('Reason:')), '')
+        # Only shown on the card, never decided by: the first Responder Id,
+        # printed before any certificate the answer carries.
+        rid = re.search(r'(?m)^\s*Responder Id:\s*(.+)$', shown.stdout or '')
+
+        class _St(object):
+            def group(self, n):
+                return status
+        st = _St()
         one = dict(base, status=st.group(1), at=now, tried=0, err='', err_at=None,
                    this=when('This Update'), next=when('Next Update'),
                    revoked_at=when('Revocation Time'),
-                   reason=reason.group(1).strip()[:60] if reason else '',
+                   reason=reason[:60],
                    responder=re.sub(r'\s*=\s*', '=', rid.group(1).strip())[:200] if rid else '',
                    size=len(raw))
         with CL_OCSP_LOCK:
-            if len(CL_OCSP_CACHE) > 200:
-                CL_OCSP_CACHE.clear()
-            CL_OCSP_CACHE[key] = one
+            _cl_cache_put(CL_OCSP_CACHE, key, one, 200)
         return one
     except Exception as e:                              # noqa: BLE001
         why = str(e)[:200] or e.__class__.__name__
         if usable and got.get('next'):
             kept = dict(got, err=why, tried=now, err_at=now)
             with CL_OCSP_LOCK:
-                CL_OCSP_CACHE[key] = kept
+                _cl_cache_put(CL_OCSP_CACHE, key, kept, 200)
             return kept
         with CL_OCSP_LOCK:
-            CL_OCSP_CACHE[key] = dict(base, status='', at=now, next=None, err=why, err_at=now,
-                                      tried=now)
+            _cl_cache_put(CL_OCSP_CACHE, key, dict(base, status='', at=now, next=None, err=why,
+                                                   err_at=now, tried=now), 200)
         raise CertLoginError('the OCSP responder at %s gave no answer (%s)' % (url, why),
                              'unavailable')
 
@@ -19908,11 +19994,11 @@ def cl_revocation(f, pem, ca_file, crl=True, ocsp='off', ocsp_url=''):
       both  OCSP and the CRL, both must say good.
     The certificate and every authority above it but the root. CertLoginError,
     or [how each was checked]."""
+    if ocsp not in ('first', 'only', 'both') and not crl:
+        return []
     cas = cl_ca_facts(ca_file)
-    chain = cl_chain(f, cas)
     if ocsp not in ('first', 'only', 'both'):
-        if not crl:
-            return []
+        chain = cl_chain(f, cas)
         pems, deltas = cl_crls_of(f, 'the certificate', ca_file)
         for c in chain:
             if c['subject'] != c['issuer']:
@@ -19922,20 +20008,23 @@ def cl_revocation(f, pem, ca_file, crl=True, ocsp='off', ocsp_url=''):
         _cl_verify(ca_file, pem, ''.join(p if p.endswith('\n') else p + '\n' for p in pems),
                    deltas)
         return ['crl']
-    items = [(f, pem, 'the certificate', True)]
-    items += [(c, c['pem'], 'the authority %s' % c['subject'], False)
-              for c in chain if c['subject'] != c['issuer']]
+    path = cl_signed_path(f, pem, cas)
+    items = [(f, pem, 'the certificate', True, path[0] if path else None)]
+    items += [(c, c['pem'], 'the authority %s' % c['subject'], False,
+               path[i + 1] if i + 1 < len(path) else None)
+              for i, c in enumerate(path) if c['subject'] != c['issuer']]
     how = []
-    for c, cpem, what, leaf in items:
-        parent = next((p for p in cas if p['subject'] == c['issuer']), None)
+    for c, cpem, what, leaf, parent in items:
         urls = [ocsp_url] if ocsp_url else \
             [u for u in c.get('ocsp') or [] if u.lower().startswith('http://')][:2]
         by_crl = ocsp == 'both'
         if not urls or parent is None:
-            if ocsp == 'only':
+            if ocsp in ('only', 'both'):
+                # both: OCSP and the CRL must both say good - the CRL alone
+                # is not both (1.10.349).
                 raise CertLoginError('%s names no OCSP responder (Authority Information Access) '
-                                     'and none is set - with OCSP only it cannot be checked'
-                                     % what, 'unavailable')
+                                     'and none is set - with OCSP %s it cannot be checked'
+                                     % (what, ocsp), 'unavailable')
             by_crl = True
         else:
             answer, last = None, None
@@ -19966,7 +20055,8 @@ def cl_revocation(f, pem, ca_file, crl=True, ocsp='off', ocsp_url=''):
             if crl or ocsp == 'both':
                 pems, deltas = cl_crls_of(c, what, ca_file)
                 _cl_verify(ca_file, cpem, ''.join(p if p.endswith('\n') else p + '\n'
-                                                  for p in pems), deltas, every=False)
+                                                  for p in pems), deltas, every=False,
+                           above=not leaf)
                 how.append('crl')
     return how
 
@@ -61828,17 +61918,7 @@ class Daemon(object):
         person's certificate; the roots' own left out: [{url, of, delta}]."""
         out = {}
         for c in self.certlogin_cas():
-            f = CL_CA_CDPS.get(c.get('sha256'))
-            if f is None:
-                try:
-                    got = cl_cert_facts(c['pem'])
-                    f = {'cdp': got['cdp'], 'freshest': got['freshest'],
-                         'root': got['subject'] == got['issuer']}
-                except CertLoginError:
-                    f = {'cdp': [], 'freshest': [], 'root': True}
-                if len(CL_CA_CDPS) > 200:
-                    CL_CA_CDPS.clear()
-                CL_CA_CDPS[c.get('sha256')] = f
+            f = self.certlogin_ca_said(c)
             if f['root']:
                 continue
             for delta, urls in ((False, f['cdp']), (True, f['freshest'])):
@@ -61849,14 +61929,32 @@ class Daemon(object):
                             one['of'].append(c['subject'])
         return [out[u] for u in sorted(out)][:CL_CRLS_SAID]
 
+    @staticmethod
+    def certlogin_ca_said(c):
+        """What the card reads of an authority put in - kept by its SHA-256, so
+        a page asking every few seconds runs no openssl for it (1.10.349)."""
+        f = CL_CA_CDPS.get(c.get('sha256'))
+        if f is None:
+            try:
+                got = cl_cert_facts(c['pem'])
+                f = {'cdp': got['cdp'], 'freshest': got['freshest'], 'ocsp': got['ocsp'],
+                     'subject': got['subject'], 'issuer': got['issuer'],
+                     'root': got['subject'] == got['issuer'], 'read': True}
+            except CertLoginError:
+                f = {'cdp': [], 'freshest': [], 'ocsp': [], 'subject': '', 'issuer': '',
+                     'root': True, 'read': False}
+            if len(CL_CA_CDPS) > 200:
+                CL_CA_CDPS.clear()
+            CL_CA_CDPS[c.get('sha256')] = f
+        return f
+
     def certlogin_crl_blind(self):
         """The authorities put in, not a root, that name no CRL over http: with
         revocation checked, nobody signs in with a certificate of theirs."""
         out = []
         for c in self.certlogin_cas():
-            try:
-                f = cl_cert_facts(c['pem'])
-            except CertLoginError:
+            f = self.certlogin_ca_said(c)
+            if not f['read']:
                 continue
             if f['subject'] != f['issuer'] and not any(cl_crl_where_ok(u) for u in f['cdp']) \
                     and not (self.certlogin_ocsp_mode() in ('first', 'only') and
@@ -61901,8 +61999,9 @@ class Daemon(object):
             got = list(CL_CRL_CACHE.values())
         urls = [c['url'] for c in got]
         for c in got:
-            urls += [u for u in c.get('freshest') or [] if u.lower().startswith('http://')]
-        urls += [u for c in got for u in c.get('freshest') or [] if u.lower().startswith('ldap:')]
+            if c.get('sig') == 'ok':
+                urls += [u for u in c.get('freshest') or []
+                         if u.lower().startswith(('http://', 'ldap:'))]
         urls += [k['url'] for k in self.certlogin_crl_known()]
         return [u for u in dict.fromkeys(urls) if cl_crl_where_ok(u)][:CL_CRLS_SAID]
 
@@ -61933,7 +62032,7 @@ class Daemon(object):
                     got = cl_crl_fetch(u, force=True, ca_file=ca)
                     out.append({'url': u, 'ok': not got.get('err'), 'err': got.get('err') or '',
                                 'number': got.get('number') or ''})
-                    if not url:
+                    if not url and got.get('sig') == 'ok':
                         todo += [f for f in got.get('freshest') or [] if cl_crl_where_ok(f)]
                 except CertLoginError as e:
                     with CL_CRL_LOCK:
@@ -78626,7 +78725,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'ffa2ec572e0bccd7298ce4c7038495ecc8ba021e3bc3da616b31c87965eb4b46'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '79b1e1954d4edbdbe95233764d7be9f40ed7122cae370b7d12ae9bc640f9599e'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
@@ -86682,7 +86781,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                 except ValueError as e:
                     return self.fail(str(e)[:300], 404)
                 return self.send_json(dict(asked, ok=True, message=(
-                    'the CRLs are fetched again' if act == 'crl_fetch' else 'the CRLs are cleared')))
+                    {'crl_fetch': 'the CRLs are fetched again', 'crl_clear': 'the CRLs are cleared',
+                     'ocsp_fetch': 'every responder is asked again',
+                     'ocsp_clear': 'the OCSP answers are cleared'}[act])))
             if act == 'result':
                 return self.send_json(dict(daemon.certlogin_crl_result(data.get('id')), ok=True))
             try:

@@ -207,6 +207,7 @@ try:
     ok('alice', check('alice', 'both'), 'ok:ocsp+crl+ocsp+crl')
     ok('hal: good by OCSP, revoked by the CRL - refused', check('hal', 'both'), 'revoked')
     ok('dan: no answer - refused', check('dan', 'both'), 'unavailable')
+    ok('eve: no responder named - refused (both is both, 1.10.349)', check('eve', 'both'), 'unavailable')
 
     print('an answer not signed by the authorities put in')
     fresh()

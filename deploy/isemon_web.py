@@ -344,13 +344,17 @@ def certlogin_checked(c):
 
 
 def certlogin_strip(text):
-    """The file without isemon's certificate server."""
+    """The file without isemon's certificate server. A mark without its end,
+    or more than one, is refused (1.10.349): what lies between two of them
+    may be somebody's own, and it would have gone with them."""
     a = text.find(CERTLOGIN_MARK)
     if a < 0:
         return text
     b = text.find(CERTLOGIN_END, a)
-    if b < 0:
-        return text
+    if b < 0 or text.count(CERTLOGIN_MARK) != 1 or text.count(CERTLOGIN_END) != 1:
+        raise Refused('%s holds isemon\'s certificate server without its end line, or more '
+                      'than once - put it right by hand (the lines "%s" and "%s"), nothing '
+                      'was changed' % (NGINX_MAIN, CERTLOGIN_MARK, CERTLOGIN_END))
     b = text.find('\n', b)
     b = len(text) if b < 0 else b + 1
     return (text[:a].rstrip('\n') + '\n' + text[b:].lstrip('\n')).rstrip('\n') + '\n'
@@ -416,6 +420,11 @@ def certlogin_block(main, c):
             '    ssl_verify_client         optional_no_ca;\n'
             '    ssl_verify_depth          4;\n'
             '    large_client_header_buffers 4 32k;\n'
+            # Nothing to carry in (a GET), and no resumed session standing in
+            # for a card taken out a moment ago (1.10.349).
+            '    client_max_body_size      1k;\n'
+            '    ssl_session_tickets       off;\n'
+            '    ssl_session_cache         off;\n'
             '%s'
             '    add_header X-Frame-Options "DENY" always;\n'
             '    add_header Referrer-Policy "no-referrer" always;\n'
@@ -431,16 +440,33 @@ def certlogin_block(main, c):
             '    location @certfail {\n'
             '%s'
             '%s'
+            '%s'
             '        fastcgi_param  ISEMON_CERT_FAIL 1;\n'
             '        fastcgi_param  SSL_CLIENT_VERIFY $ssl_client_verify;\n'
             '    }\n'
             '    location / { return 404; }\n'
             '}\n'
             '%s\n' % (CERTLOGIN_MARK, c['port'], c['port'], name, root, pairs, CERTLOGIN_CA,
-                       hsts, acc, guard, fcgi, acc, fcgi, CERTLOGIN_END))
+                       hsts, acc, guard, fcgi, acc, guard, fcgi, CERTLOGIN_END))
 
 
-def certlogin_into(main, c):
+def port_listening(port):
+    """Whether something listens on the TCP port now (/proc/net/tcp, tcp6)."""
+    for name in ('/proc/net/tcp', '/proc/net/tcp6'):
+        try:
+            with open(name) as fh:
+                next(fh, None)
+                for line in fh:
+                    parts = line.split()
+                    if len(parts) > 3 and parts[3] == '0A' and \
+                            int(parts[1].rsplit(':', 1)[1], 16) == port:
+                        return True
+        except (OSError, ValueError, IndexError):
+            continue
+    return False
+
+
+def certlogin_into(main, c, was=None):
     """The dashboard's file with isemon's certificate server as asked: put
     in (or written again) when on, taken away when off. (new text, words)"""
     bare = certlogin_strip(main)
@@ -448,6 +474,17 @@ def certlogin_into(main, c):
         if bare != main:
             return bare, 'nginx: the port of the certificate sign-in closed'
         return main, ''
+    # A port something else listens on passes nginx -t and the reload, and
+    # stops nginx starting at the next restart (1.10.349): refused unless it
+    # is the one isemon's own server already has.
+    # `was`: the file as it is on disk - the caller may have taken isemon's
+    # server out of `main` already, and its own port is in use by nginx.
+    was = main if was is None else was
+    had = re.search(r'listen\s+(\d+)\s+ssl', was[was.find(CERTLOGIN_MARK):]) \
+        if CERTLOGIN_MARK in was else None
+    if (not had or int(had.group(1)) != c['port']) and port_listening(c['port']):
+        raise Refused('port %d is already used by another program on this machine - choose '
+                      'another for the certificate sign-in' % c['port'])
     new = bare.rstrip('\n') + '\n\n' + certlogin_block(bare, c)
     return new, ('nginx: the certificate sign-in on port %d' % c['port']) if new != main else ''
 
@@ -1105,7 +1142,7 @@ def nginx_part(r, last):
             elif os.path.exists(CERTLOGIN_CA):
                 os.unlink(CERTLOGIN_CA)
                 changed = True
-            final, words = certlogin_into(final, cl)
+            final, words = certlogin_into(final, cl, on_disk)
             if words and final != on_disk:
                 said.append(words)
         if final != on_disk:

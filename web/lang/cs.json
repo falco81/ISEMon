@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.348",
+  "version": "1.10.349",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -18064,6 +18064,10 @@
    "source": "not checked",
    "text": "nekontroluje se"
   },
+  "s.not-cleared-see-the-box-above.a443a3c0": {
+   "source": "not cleared - see the box above the table",
+   "text": "nevymazáno - viz box nad tabulkou"
+  },
   "s.not-combined.54aed7fc": {
    "source": "not combined",
    "text": "nekombinovaný"
@@ -25391,6 +25395,10 @@
   "s.something-else.637828c0": {
    "source": "something else",
    "text": "něco jiného"
+  },
+  "s.something-is-still-being-asked-try.d1ce3e53": {
+   "source": "something is still being asked - try again in a moment",
+   "text": "ještě běží jiný dotaz - zkuste to za chvíli"
   },
   "s.something-is-still-trying-a-dead.f8a074fa": {
    "source": "Something is still trying a dead account",

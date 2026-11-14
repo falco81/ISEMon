@@ -185,6 +185,27 @@ isemon --set password_off=0
 
 or `isemon --set certlogin=0`.
 
+## iPad and iPhone
+
+Safari on iPadOS and iOS uses a YubiKey's certificate only through a smart card extension. With
+Yubico Authenticator, open *Smart card extension*, enable it, and add the certificate of slot 9A
+to the device.
+
+- **Key type**: use **ECC P-256** (template: Purpose *Signature*, algorithm *ECDSA_P256*,
+  provider *Microsoft Smart Card Key Storage Provider*), or RSA 2048. With an **RSA 4096** key,
+  Safari closes the connection before it asks for the PIN, and says "could not establish a secure
+  connection". Windows, with the same token, works. On the server, `tcpdump` shows the iPad
+  closing the connection right after the server's certificate request, with nothing sent.
+- **Generate the key in slot 9A** and import the certificate:
+  `ykman piv keys generate --algorithm ECCP256 9a pubkey.pem`, then
+  `ykman piv certificates request ...`, `certreq -submit -attrib "CertificateTemplate:<name>" ...`,
+  `ykman piv certificates import 9a cert.cer`. Then remove the old certificate in the
+  extension and add the new one.
+- The iPad does not need to trust the internal CA for this. Only isemon checks the client
+  certificate. The server certificate on the port is the dashboard's.
+- nginx writes a failed TLS handshake to its error log only at level `info`
+  (`error_log /var/log/nginx/error.log info;`).
+
 ## Revocation lists (CRL)
 
 From the CRL kit of acme 1.0.104 (1.10.347).

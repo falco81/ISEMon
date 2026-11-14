@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.348",
+  "version": "1.10.349",
   "made": "2026-11-14",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -18064,6 +18064,10 @@
    "source": "not checked",
    "text": "not checked"
   },
+  "s.not-cleared-see-the-box-above.a443a3c0": {
+   "source": "not cleared - see the box above the table",
+   "text": "not cleared - see the box above the table"
+  },
   "s.not-combined.54aed7fc": {
    "source": "not combined",
    "text": "not combined"
@@ -25391,6 +25395,10 @@
   "s.something-else.637828c0": {
    "source": "something else",
    "text": "something else"
+  },
+  "s.something-is-still-being-asked-try.d1ce3e53": {
+   "source": "something is still being asked - try again in a moment",
+   "text": "something is still being asked - try again in a moment"
   },
   "s.something-is-still-trying-a-dead.f8a074fa": {
    "source": "Something is still trying a dead account",
