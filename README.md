@@ -372,6 +372,52 @@ working.
 
 ## Version
 
+1.10.341
+
+- **Signing in with a certificate: a smart card or a YubiKey.** A certificate
+  of the domain's authority (AD CS) signs its person in without a password.
+  The card asks for its PIN. See `docs/certificate-sign-in.md`.
+  - **The port**: nginx asks for a certificate only on a port of its own
+    (8443, never 443) and serves nothing else there. The root helper puts in a
+    server of isemon's own, between marked lines, takes it away whole when
+    the sign-in is off, and lets the port in through isemon's firewall.
+  - **The checks**, done by isemon:
+    - the chain to the authorities put in, the dates, and a key usage for
+      signing in;
+    - revocation, by the CRL at its Distribution Point, kept until its next
+      update; no CRL means no sign-in;
+    - the UPN in the directory: one entry, switched on, not locked out, not
+      expired, and in a group with a role;
+    - the SID of KB5014754 (`compat`, `strong` or `upn`).
+  - **The account** is the same `sAMAccountName` account as with a password
+    or Windows. Face ID, when on, is asked after the certificate just the
+    same.
+  - **Login CSRF**: a one-time nonce in an HttpOnly, SameSite=Strict cookie.
+  - **Refusals** are told on the sign-in page and written in *Events*.
+  - **Off by default.**
+  - *Settings → Active Directory*:
+    - the switch, the port, how a certificate is matched, and the CRL check;
+    - the authorities (PEM, `.cer` or `.p7b`; a person's certificate is
+      refused) and the CRLs fetched;
+    - **Try my certificate**, which signs nobody in;
+    - the guides for AD CS, YubiKey and the network.
+  - **No password at all** now also covers a certificate: "only Windows or a
+    certificate". The last authority cannot be taken away while it alone
+    signs people in. The way back: `isemon --set password_off=0`.
+  - Run `./install.sh --upgrade` for the new root helper.
+- **The Windows (Kerberos) and certificate cards look as acme draws them.**
+  - Each card holds its own settings, with "Not in use while … is off" under
+    the ones that depend on the switch.
+  - Then come pills for the state, the facts in two fixed columns, and
+    sections with uppercase headings.
+  - The commands for AD are filled in with the names to put in, which are
+    marked, and have a *Copy* button.
+- **Texts no longer jump when something changes.**
+  - The facts of the certificate cards and the dashboard's own certificate
+    have a label column of a fixed width. Before, a longer label coming or
+    going moved every value sideways.
+  - The live numbers of the performance panel keep their width.
+
 1.10.340
 
 - **Signing in with Windows (Kerberos SSO).** An Active Directory administrator

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.340'
+__version__ = '1.10.341'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -862,6 +862,15 @@ DEFAULTS = {
     'kerberos_auto': 0,
     'kerberos_realm': '',
     'password_off': 0,
+    # Signing in with a certificate - a smart card, a YubiKey (1.10.341): off
+    # until switched on; the port of its own nginx asks for one on (never
+    # 443); how a certificate is matched to its account (compat: the SID of
+    # KB5014754 when it carries one, strong: it must, upn: the UPN alone);
+    # and whether it is checked against its authority's CRL.
+    'certlogin': 0,
+    'certlogin_port': 8443,
+    'certlogin_match': 'compat',
+    'certlogin_crl': 1,
     # Changes that could cut this server off, taken back unless kept
     # (1.10.228, after otp 1.0.137): a new network (Settings - Network) and
     # a change of the firewall or of who may reach which page go back to what
@@ -19035,6 +19044,324 @@ def krb_token_from_header(value):
         raise KrbError('the ticket is not base64')
 
 
+# ---- signing in with a certificate: a smart card, a YubiKey (1.10.341) ------
+# As otp 1.0.275 does it: nginx asks for a client certificate on a port of
+# its own (never on 443) with optional_no_ca, and hands it to the page; THIS
+# checks it - the chain to the authorities put in, the dates, a key usage for
+# signing in, revocation by the CRL at its CRL Distribution Point, the UPN
+# looked up in the directory, the SID of KB5014754 - and signs the person in
+# as with their password, the second step after it.
+CL_OID_SAN = '2.5.29.17'
+CL_OID_EKU = '2.5.29.37'
+CL_OID_CDP = '2.5.29.31'
+CL_OID_BC = '2.5.29.19'
+CL_OID_UPN = '1.3.6.1.4.1.311.20.2.3'
+CL_OID_SID_EXT = '1.3.6.1.4.1.311.25.2'
+CL_OID_SID = '1.3.6.1.4.1.311.25.2.1'
+CL_EKU_SIGN_IN = {'1.3.6.1.5.5.7.3.2': 'Client Authentication',
+                  '1.3.6.1.4.1.311.20.2.2': 'Smart Card Logon'}
+CL_CERT_MOST = 16384
+CL_CRL_MOST = 8 << 20
+CL_CRL_CACHE = {}
+CL_CRL_LOCK = threading.Lock()
+CL_MATCHES = ('compat', 'strong', 'upn')
+CL_PORT_REFUSED = (22, 25, 53, 80, 443, 514, 1812, 1813, 3306, 5432, 6514)
+
+
+class CertLoginError(ValueError):
+    """A certificate not taken; the words say why."""
+
+
+def _cl_der(b, i=0):
+    if i + 2 > len(b):
+        raise ValueError('cut short')
+    tag, n = b[i], b[i + 1]
+    i += 2
+    if n & 0x80:
+        k = n & 0x7f
+        if not 0 < k <= 4 or i + k > len(b):
+            raise ValueError('a length that cannot be')
+        n = int.from_bytes(b[i:i + k], 'big')
+        i += k
+    if i + n > len(b):
+        raise ValueError('cut short')
+    return tag, b[i:i + n], i + n
+
+
+def _cl_der_all(b):
+    out, i = [], 0
+    while i < len(b):
+        t, v, i = _cl_der(b, i)
+        out.append((t, v))
+    return out
+
+
+def _cl_oid(v):
+    if not v:
+        return ''
+    parts = [v[0] // 40, v[0] % 40] if v[0] < 80 else [2, v[0] - 80]
+    n = 0
+    for c in v[1:]:
+        n = (n << 7) | (c & 0x7f)
+        if not c & 0x80:
+            parts.append(n)
+            n = 0
+    return '.'.join(str(x) for x in parts)
+
+
+def _cl_der_find(b, want, depth=0):
+    out = []
+    if depth > 12:
+        return out
+    try:
+        items = _cl_der_all(b)
+    except ValueError:
+        return out
+    for t, v in items:
+        if t == want:
+            out.append(v)
+        if t & 0x20:
+            out += _cl_der_find(v, want, depth + 1)
+    return out
+
+
+def cl_cert_der(pem):
+    m = re.search(r'-----BEGIN CERTIFICATE-----([A-Za-z0-9+/=\s]+)-----END CERTIFICATE-----',
+                  str(pem or ''))
+    if not m:
+        raise CertLoginError('that is not a certificate (PEM)')
+    try:
+        return base64.b64decode(re.sub(r'\s+', '', m.group(1)), validate=True)
+    except ValueError:
+        raise CertLoginError('the certificate is not whole')
+
+
+def cl_cert_facts(pem):
+    """What the checks need of a certificate: its extensions read from DER,
+    its names and dates from openssl."""
+    der = cl_cert_der(pem)
+    try:
+        cert = _cl_der(der)[1]
+        tbs = _cl_der(cert)[1]
+        items = _cl_der_all(tbs)
+    except ValueError as e:
+        raise CertLoginError('the certificate cannot be read: %s' % e)
+    exts = {}
+    for t, v in items:
+        if t != 0xa3:
+            continue
+        try:
+            for _t, one in _cl_der_all(_cl_der(v)[1]):
+                parts = _cl_der_all(one)
+                oid = _cl_oid(parts[0][1])
+                crit = len(parts) == 3 and parts[1][0] == 0x01 and parts[1][1] == b'\xff'
+                exts[oid] = (crit, parts[-1][1])
+        except (ValueError, IndexError):
+            raise CertLoginError('the extensions of the certificate cannot be read')
+    upns, mails, sid = [], [], ''
+    if CL_OID_SAN in exts:
+        try:
+            for gt, gv in _cl_der_all(_cl_der(exts[CL_OID_SAN][1])[1]):
+                if gt == 0xa0:                      # otherName
+                    p = _cl_der_all(gv)
+                    if p and _cl_oid(p[0][1]) == CL_OID_UPN and len(p) > 1:
+                        inner = _cl_der_all(p[1][1])
+                        if inner:
+                            upns.append(inner[0][1].decode('utf-8', 'replace'))
+                    elif p and _cl_oid(p[0][1]) == CL_OID_SID and len(p) > 1:
+                        inner = _cl_der_all(p[1][1])
+                        if inner:
+                            sid = sid or inner[0][1].decode('ascii', 'replace')
+                elif gt == 0x81:                    # rfc822Name
+                    mails.append(gv.decode('ascii', 'replace'))
+        except (ValueError, IndexError):
+            raise CertLoginError('the Subject Alternative Name of the certificate cannot be read')
+    if CL_OID_SID_EXT in exts:
+        try:
+            for gt, gv in _cl_der_all(_cl_der(exts[CL_OID_SID_EXT][1])[1]):
+                p = _cl_der_all(gv)
+                if p and _cl_oid(p[0][1]) == CL_OID_SID and len(p) > 1:
+                    inner = _cl_der_all(p[1][1])
+                    if inner:
+                        sid = inner[0][1].decode('ascii', 'replace')
+        except (ValueError, IndexError):
+            raise CertLoginError('the SID extension of the certificate cannot be read')
+    eku = []
+    if CL_OID_EKU in exts:
+        try:
+            eku = [_cl_oid(v) for t, v in _cl_der_all(_cl_der(exts[CL_OID_EKU][1])[1])
+                   if t == 0x06]
+        except ValueError:
+            raise CertLoginError('the key usages of the certificate cannot be read')
+    is_ca = False
+    if CL_OID_BC in exts:
+        try:
+            p = _cl_der_all(_cl_der(exts[CL_OID_BC][1])[1])
+            is_ca = bool(p and p[0][0] == 0x01 and p[0][1] == b'\xff')
+        except ValueError:
+            is_ca = False
+    cdp = []
+    if CL_OID_CDP in exts:
+        cdp = [u.decode('ascii', 'replace') for u in _cl_der_find(exts[CL_OID_CDP][1], 0x86)]
+    try:
+        txt = _openssl(['x509', '-noout', '-subject', '-issuer', '-serial', '-startdate',
+                        '-enddate', '-fingerprint', '-sha256', '-nameopt', 'RFC2253'],
+                       'the certificate', pem)
+    except WebRootError as e:
+        raise CertLoginError(str(e)[:300])
+
+    def one(k):
+        m = re.search(r'(?m)^%s=\s*(.*)$' % k, txt)
+        return m.group(1).strip() if m else ''
+    fp = re.search(r'(?mi)^sha256 Fingerprint=([0-9A-F:]+)', txt)
+    return {'subject': one('subject'), 'issuer': one('issuer'), 'serial': one('serial'),
+            'not_before': one('notBefore'), 'not_after': one('notAfter'),
+            'sha256': (fp.group(1) if fp else '').replace(':', '').lower(), 'upn': upns,
+            'mail': mails, 'sid': sid, 'eku': eku, 'ca': is_ca, 'cdp': cdp,
+            'unknown_critical': sorted(
+                k for k, (c, _v) in exts.items()
+                if c and k not in (CL_OID_SAN, CL_OID_EKU, CL_OID_BC, '2.5.29.15', CL_OID_CDP,
+                                   '2.5.29.32'))}
+
+
+def cl_sid_text(raw):
+    """S-1-5-21-... of a SID in its binary form (objectSid), or ''."""
+    try:
+        b = bytes(raw)
+        if len(b) < 8 or b[0] != 1 or len(b) != 8 + 4 * b[1]:
+            return ''
+        auth = int.from_bytes(b[2:8], 'big')
+        subs = [int.from_bytes(b[8 + 4 * i:12 + 4 * i], 'little') for i in range(b[1])]
+        return 'S-%d-%d' % (b[0], auth) + ''.join('-%d' % x for x in subs)
+    except (TypeError, ValueError):
+        return ''
+
+
+def _cl_when(text):
+    import calendar
+    try:
+        return calendar.timegm(time.strptime(str(text).strip().replace(' GMT', ''),
+                                             '%b %d %H:%M:%S %Y'))
+    except ValueError:
+        return 0
+
+
+def cl_crl_fetch(url):
+    """The CRL at `url` as PEM and its next update - kept until then (an hour
+    when it says nothing), and the last one used while still good when the
+    address does not answer for a moment."""
+    import urllib.request
+    now = time.time()
+    with CL_CRL_LOCK:
+        got = CL_CRL_CACHE.get(url)
+    if got and got.get('pem') and now < got['next'] and now - got['at'] < 86400:
+        return got
+    try:
+        raw = b''
+        req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
+        with _acme_open(req, timeout=10, purpose='acme') as r:
+            while len(raw) <= CL_CRL_MOST:
+                part = r.read(65536)
+                if not part:
+                    break
+                raw += part
+        if len(raw) > CL_CRL_MOST:
+            raise ValueError('larger than %d MB' % (CL_CRL_MOST >> 20))
+        if b'-----BEGIN X509 CRL' in raw:
+            pem = _openssl(['crl', '-outform', 'PEM'], 'the CRL', raw, binary=True)
+        else:
+            pem = _openssl(['crl', '-inform', 'DER', '-outform', 'PEM'], 'the CRL', raw,
+                           binary=True)
+        pem = pem.decode('ascii', 'replace')
+        nu = _openssl(['crl', '-noout', '-nextupdate'], 'the CRL', pem)
+        m = re.search(r'nextUpdate=(.+)', nu)
+        nxt = now + 3600
+        if m and 'NONE' not in m.group(1):
+            nxt = _cl_when(m.group(1)) or nxt
+        one = {'at': now, 'pem': pem, 'next': nxt, 'url': url, 'err': ''}
+        with CL_CRL_LOCK:
+            if len(CL_CRL_CACHE) > 50:
+                CL_CRL_CACHE.clear()
+            CL_CRL_CACHE[url] = one
+        return one
+    except Exception as e:                              # noqa: BLE001
+        why = getattr(e, 'reason', None) or e
+        why = (getattr(why, 'strerror', None) or str(why))[:200] or e.__class__.__name__
+        if got and got.get('pem') and now < got['next']:
+            return got
+        with CL_CRL_LOCK:
+            CL_CRL_CACHE[url] = {'at': now, 'pem': '', 'next': 0, 'url': url, 'err': why}
+        raise CertLoginError('the CRL at %s could not be had (%s) - nobody signs in while the '
+                             'certificate cannot be checked' % (url, why))
+
+
+def _cl_verify(ca_file, leaf, crl_pem=''):
+    with tempfile.TemporaryDirectory(prefix='isemon-cert-') as work:
+        args = ['openssl', 'verify', '-CAfile', str(ca_file)]
+        if crl_pem:
+            cp = os.path.join(work, 'crl.pem')
+            with open(cp, 'w') as fh:
+                fh.write(crl_pem)
+            args += ['-crl_check', '-CRLfile', cp]
+        lp = os.path.join(work, 'leaf.pem')
+        with open(lp, 'w') as fh:
+            fh.write(leaf + '\n')
+        try:
+            got = subprocess.run(args + [lp], capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError) as e:
+            raise CertLoginError('openssl did not run: %s' % e)
+    if got.returncode != 0 or not re.search(r':\s*OK\s*$', got.stdout or ''):
+        words = (got.stdout or '') + '\n' + (got.stderr or '')
+        m = re.search(r'error \d+ at (\d+) depth lookup:\s*(.+)', words)
+        raise CertLoginError('the certificate is not taken: %s' % (
+            ('%s%s' % (m.group(2).strip(), '' if m.group(1) == '0'
+                       else ' (an authority above it)')) if m
+            else re.sub(r'\S*isemon-cert-\S*:?\s*', '', words).strip()[:300]))
+
+
+def cl_cert_check(pem, ca_file, crl=True):
+    """The facts of a client certificate that passed every check, or
+    CertLoginError. The chain is checked before any CRL is fetched: the CRL's
+    address is read only from a certificate one of the authorities signed."""
+    pem = str(pem or '').strip()
+    if not pem:
+        raise CertLoginError('no certificate was sent (none chosen, or the browser has none from '
+                             'the authorities put in here)')
+    if len(pem) > CL_CERT_MOST:
+        raise CertLoginError('larger than any certificate of a person')
+    f = cl_cert_facts(pem)
+    if f['ca']:
+        raise CertLoginError('that is the certificate of an authority, not of a person')
+    if f['unknown_critical']:
+        raise CertLoginError('the certificate has a critical extension isemon does not know (%s)'
+                             % ', '.join(f['unknown_critical']))
+    if not f['eku'] or not set(f['eku']) & set(CL_EKU_SIGN_IN):
+        raise CertLoginError('the certificate is not for signing in (no Client Authentication or '
+                             'Smart Card Logon among its key usages)')
+    if not os.path.exists(str(ca_file)):
+        raise CertLoginError('no authority is put in')
+    _cl_verify(ca_file, pem)
+    if crl:
+        urls = [u for u in f['cdp'] if u.lower().startswith(('http://', 'https://'))]
+        if not urls:
+            raise CertLoginError('the certificate names no CRL over http (CRL Distribution '
+                                 'Points) - it cannot be checked for revocation')
+        got, last = None, None
+        for u in urls[:3]:
+            try:
+                got = cl_crl_fetch(u)
+                break
+            except CertLoginError as e:
+                last = e
+        if got is None:
+            raise last
+        _cl_verify(ca_file, pem, got['pem'])
+    if not f['upn']:
+        raise CertLoginError('the certificate names no user (no UPN in its Subject Alternative '
+                             'Name)')
+    return f
+
+
 def krb_filetime(value):
     """An AD FILETIME (100 ns since 1601) as a Unix time; 0 for none/never."""
     try:
@@ -19821,6 +20148,11 @@ class Ldap(object):
             while deep < len(values):
                 _t, value, deep = _ber_read(values, deep)
                 got.append(value.decode('utf-8', 'replace'))
+                # A SID is binary: kept as it came as well (1.10.341, the
+                # certificate sign-in compares it with the certificate's).
+                if name.lower() in (b'objectsid',):
+                    entry.setdefault('raw', {}).setdefault(name.decode('ascii', 'replace'),
+                                                           []).append(bytes(value))
             entry['attrs'][name.decode('utf-8', 'replace')] = got
         return entry
 
@@ -59936,10 +60268,10 @@ class Daemon(object):
             # account's neither. The way back is root's: isemon --set
             # password_off=0 (or kerberos=0).
             self.store.add_event('login', 'a sign-in with a password for %s from %s was refused: '
-                                          'only Windows signs in here' % (name or '(no name)',
-                                                                          where or 'somewhere'),
+                                          'no password signs in here' % (name or '(no name)',
+                                                                         where or 'somewhere'),
                                  'warn')
-            raise Refused('only Windows signs in here: use Sign in with Windows',
+            raise Refused('no password signs in here: sign in with Windows or with a certificate',
                           'passwords are switched off (Settings → Active Directory)')
         now = time.time()
         wait_s = max(1, int(CONFIG.get('login_wait_min') or 15)) * 60
@@ -60216,7 +60548,10 @@ class Daemon(object):
         """"Only Windows": no password signs in - in effect only while
         Kerberos is on, so switching Kerberos off (as root, isemon --set
         kerberos=0 or password_off=0) always brings passwords back."""
-        return bool(int(CONFIG.get('password_off') or 0)) and self.kerberos_on()
+        if not int(CONFIG.get('password_off') or 0):
+            return False
+        # ...or while signing in with a certificate is (1.10.341).
+        return self.kerberos_on() or self.certlogin_on()
 
     @staticmethod
     def kerberos_folder():
@@ -60273,6 +60608,10 @@ class Daemon(object):
             'sealed': seal_secret(base64.b64encode(raw).decode()), 'at': time.time(),
             'by': by, 'entries': entries}))
         self.kerberos_drop_file()
+        try:
+            self.kerberos_ready()          # written out at once, not at the first sign-in
+        except (KrbError, OSError) as e:
+            log('the keytab could not be written out: %s' % e, 'warn')
         self.store.add_event('users', 'a keytab was put in for signing in with Windows: %s'
                              % ', '.join(sorted({e['principal'] for e in entries}))[:400],
                              who=by)
@@ -60435,8 +60774,14 @@ class Daemon(object):
             on = self.kerberos_on()
         except Exception:                               # noqa: BLE001
             on = False
+        try:
+            cert = self.certlogin_on()
+        except Exception:                               # noqa: BLE001
+            cert = False
         return {'on': on, 'auto': on and bool(int(CONFIG.get('kerberos_auto') or 0)),
-                'only': on and self.password_off()}
+                'only': (on or cert) and self.password_off(),
+                # Signing in with a certificate (1.10.341): its button.
+                'cert': cert, 'cert_port': self.certlogin_port() if cert else 0}
 
     def kerberos_view(self, may=False):
         """The card on Settings → Active Directory: never a key."""
@@ -60455,13 +60800,242 @@ class Daemon(object):
                 'keytab': {'at': kt.get('at') or 0, 'by': kt.get('by') or '',
                            'entries': kt.get('entries') or [],
                            'readable': bool(kt.get('raw'))} if kt else None,
-                'netbios': (self.directory_domain('directory').split('.')[0] or '').upper()}
+                'netbios': (self.directory_domain('directory').split('.')[0] or '').upper(),
+                # The machine's own name, beside the one the page was opened by
+                # (1.10.341), and whether the keytab is written out here.
+                'fqdn': socket.getfqdn().lower(), 'written': self._keytab_written(kt)}
+
+    def _keytab_written(self, kt):
+        if not kt or not kt.get('raw'):
+            return None
+        try:
+            return (self.kerberos_folder() / 'http.keytab').read_bytes() == kt['raw']
+        except OSError:
+            return False
 
     def passwords_refused(self):
         """A password set or changed while only Windows signs in is refused."""
         if self.password_off():
-            raise ValueError('only Windows signs in here (Settings → Active Directory): no '
+            raise ValueError('no password signs in here (Settings → Active Directory): no '
                              'password is set or changed while that is on')
+
+    # ---- signing in with a certificate: a smart card, a YubiKey (1.10.341) ----
+    def certlogin_wanted(self):
+        return bool(int(CONFIG.get('certlogin') or 0)) and self.directory_on()
+
+    def certlogin_port(self):
+        try:
+            port = int(CONFIG.get('certlogin_port') or 8443)
+        except (TypeError, ValueError):
+            port = 8443
+        return port if 1024 <= port <= 65535 and port not in CL_PORT_REFUSED else 8443
+
+    def certlogin_cas(self):
+        got = self.store.meta_json('certlogin_cas', []) or []
+        return [c for c in got if isinstance(c, dict) and c.get('pem') and c.get('sha256')]
+
+    def certlogin_on(self):
+        return self.certlogin_wanted() and bool(self.certlogin_cas())
+
+    def certlogin_folder(self):
+        return Path(STATE_DIR) / 'certlogin'
+
+    def certlogin_ca_file(self):
+        """The authorities put in, as one file openssl verify reads - written
+        again whenever what is kept differs from it."""
+        cas = self.certlogin_cas()
+        if not cas:
+            raise CertLoginError('no authority is put in (Settings → Active Directory)')
+        folder = self.certlogin_folder()
+        folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+        path = folder / 'cas.pem'
+        text = ''.join(c['pem'].strip() + '\n' for c in cas)
+        try:
+            same = path.read_text() == text
+        except OSError:
+            same = False
+        if not same:
+            write_replacing(path, text, 0o600)
+        return path
+
+    def certlogin_put(self, data, by=''):
+        """Authorities, as PEM, DER or PKCS#7 (.p7b): every one an authority's
+        certificate - a person's is refused. Returns those added."""
+        raw = data if isinstance(data, bytes) else str(data or '').encode('utf-8', 'replace')
+        if len(raw) > 256 * 1024:
+            raise ValueError('authorities are a few kB, not that')
+        try:
+            pems = tls_read_any(raw)
+        except WebRootError as e:
+            raise ValueError(str(e))
+        if not pems:
+            raise ValueError('no certificate in it (PEM, .cer or .p7b)')
+        kept = self.certlogin_cas()
+        have = {c['sha256'] for c in kept}
+        added = []
+        for pem in pems[:10]:
+            f = cl_cert_facts(pem)
+            if not f['ca']:
+                raise ValueError('%s is the certificate of a person, not of an authority: put in '
+                                 'the authority that issues the cards (and its root)'
+                                 % (f['subject'] or '?')[:120])
+            if f['sha256'] in have:
+                continue
+            have.add(f['sha256'])
+            one = {'pem': pem, 'subject': f['subject'], 'issuer': f['issuer'],
+                   'until': f['not_after'], 'sha256': f['sha256'], 'at': time.time(), 'by': by}
+            kept.append(one)
+            added.append(one)
+        if not added:
+            raise ValueError('every authority in it is there already')
+        self.store.set_meta('certlogin_cas', json.dumps(kept))
+        self.store.add_event('users', 'authorities put in for signing in with a certificate: %s'
+                             % '; '.join(a['subject'] for a in added)[:400], who=by)
+        return added
+
+    def certlogin_drop(self, sha, by=''):
+        kept = self.certlogin_cas()
+        left = [c for c in kept if c['sha256'] != str(sha or '').lower()]
+        if len(left) == len(kept):
+            raise ValueError('no such authority is put in')
+        if not left and self.password_off() and not self.kerberos_on():
+            raise ValueError('only a certificate signs in here: switch that off first, or nobody '
+                             'could sign in')
+        self.store.set_meta('certlogin_cas', json.dumps(left))
+        gone = [c for c in kept if c not in left][0]
+        self.store.add_event('users', 'an authority for signing in with a certificate was taken '
+                             'away: %s' % gone['subject'][:300], 'warn', who=by)
+
+    def certlogin_find(self, link, upn):
+        base = str(CONFIG.get('directory_base') or '').strip()
+        return link.search(base, ldap_and(ldap_equal('objectClass', 'user'),
+                                          ldap_equal('userPrincipalName', upn)),
+                           self.WANTED_ATTRS + ('lockoutTime', 'accountExpires', 'objectSid'),
+                           limit=3)
+
+    def certlogin_check(self, pem):
+        """A certificate checked and its person looked up - nobody signed in:
+        {upn, name, role, said, facts} or CertLoginError with why."""
+        if not self.certlogin_wanted():
+            raise CertLoginError('signing in with a certificate is off')
+        f = cl_cert_check(pem, self.certlogin_ca_file(),
+                          crl=bool(int(CONFIG.get('certlogin_crl', 1) or 0)))
+        upn = f['upn'][0].strip()
+        try:
+            link = self.directory_reader()
+        except LdapError as e:
+            raise CertLoginError('the directory could not be asked: %s' % str(e)[:200])
+        try:
+            try:
+                found = self.certlogin_find(link, upn)
+            except LdapError as e:
+                raise CertLoginError('the directory could not be searched: %s' % str(e)[:200])
+            if not found:
+                raise CertLoginError('%s is not in the directory' % upn)
+            if len(found) > 1:
+                raise CertLoginError('more than one entry of the directory answers to %s' % upn)
+            entry = found[0]
+            attrs = entry.get('attrs', {})
+            sam = str((attrs.get('sAMAccountName') or [''])[0] or '').strip()
+            if not sam or sam.endswith('$'):
+                raise CertLoginError('%s is not a person\'s account' % upn)
+            if self.directory_disabled(entry):
+                raise CertLoginError('the directory says %s is switched off' % sam)
+            if krb_filetime((attrs.get('lockoutTime') or [''])[0]):
+                raise CertLoginError('the directory says %s is locked out' % sam)
+            ends = krb_filetime((attrs.get('accountExpires') or [''])[0])
+            if ends and ends < time.time():
+                raise CertLoginError('the directory says the account %s has expired' % sam)
+            # KB5014754: the SID AD CS writes into a certificate is the
+            # account's - a UPN can be given to somebody else, a SID cannot.
+            mode = str(CONFIG.get('certlogin_match') or 'compat')
+            mine = cl_sid_text(((entry.get('raw') or {}).get('objectSid') or [b''])[0])
+            if mode in ('compat', 'strong'):
+                if not f['sid'] and mode == 'strong':
+                    raise CertLoginError('the certificate carries no SID (KB5014754), and this '
+                                         'takes only certificates that do')
+                if f['sid'] and f['sid'] != mine:
+                    raise CertLoginError('the SID in the certificate (%s) is not the one of %s'
+                                         % (f['sid'], sam))
+            groups = self.directory_groups(link, entry)
+        finally:
+            link.close()
+        role = self.directory_role(groups)
+        if not role:
+            raise CertLoginError('%s is known, and none of the groups given a role here holds it'
+                                 % upn)
+        name = self.directory_account_name(entry, sam)
+        local = self.store.user(name)
+        if local and not local.get('from_dir'):
+            raise CertLoginError('%s is an account of this machine: it signs in with its '
+                                 'password' % name)
+        who = (attrs.get('distinguishedName') or [entry.get('dn') or ''])[0]
+        said = {'dn': who, 'name': name, 'typed': sam.lower(), 'canonical': True,
+                'aliases': sorted({str(v).strip().lower() for v in (sam, upn) if v}),
+                'role': role,
+                'display': (attrs.get('displayName') or attrs.get('sAMAccountName') or [''])[0],
+                'mail': (attrs.get('mail') or [''])[0], 'groups': sorted(groups)[:40]}
+        if (local and local.get('disabled')) or self.store.dn_switched_off(who, said['aliases']):
+            raise CertLoginError('%s is switched off here' % name)
+        return {'upn': upn, 'name': name, 'role': role, 'said': said, 'facts': f}
+
+    def certlogin_login(self, pem, ip='', agent=''):
+        where = str(ip or '')[:64]
+        now = time.time()
+        wait_s = max(1, int(CONFIG.get('login_wait_min') or 15)) * 60
+        too_many, left = self._login_note(where, now, wait_s)
+        if too_many:
+            raise CertLoginError('too many refused sign-ins; try again in %s' % human_span(left))
+        try:
+            got = self.certlogin_check(pem)
+        except CertLoginError as e:
+            self.store.add_event('login', 'a sign-in with a certificate from %s was refused: %s'
+                                 % (where or 'somewhere', str(e)[:300]), 'warn')
+            raise
+        name, said = got['name'], got['said']
+        self._login_forget_one(where, now)
+        user = self.store.user(name)
+        was = (user or {}).get('role')
+        if was and was != said['role'] and user.get('from_dir'):
+            self.store.add_event('users', '%s is now %s rather than %s: their groups in the '
+                                          'directory have changed' % (name, said['role'], was),
+                                 'warn', who=name)
+        self.store.remember_directory_user(said)
+        try:
+            self.store.merge_directory_person(name, said.get('dn'))
+        except Exception as e:                          # noqa: BLE001
+            log('%s: the other accounts of the same person: %s' % (name, str(e)[:160]), 'warn')
+        self._login_forget(where)
+        self._login_known(name, where, now)
+        second = self.second_owed(name)
+        token = self.store.new_session(name, said['role'], where, agent, second)
+        self.kerberos_mark(token)
+        self.store.note_login(name, where)
+        f = got['facts']
+        self.store.add_event('login', '%s signed in from %s with a certificate (%s, %s) as %s%s'
+                             % (name, where or 'somewhere', got['upn'], f['subject'][:120],
+                                said['role'], self.second_words(second)), who=name)
+        return {'token': token, 'name': name, 'role': said['role'], 'must_change': False,
+                'from_dir': True, 'second': second, 'display': said.get('display') or '',
+                'how': 'certificate'}
+
+    def certlogin_view(self, may=False):
+        crls = []
+        with CL_CRL_LOCK:
+            for u, c in CL_CRL_CACHE.items():
+                crls.append({'url': u, 'at': c.get('at') or 0, 'next': c.get('next') or 0,
+                             'err': c.get('err') or ''})
+        return {'ok': True, 'may': may, 'wanted': bool(int(CONFIG.get('certlogin') or 0)),
+                'directory': self.directory_on(), 'on': self.certlogin_on(),
+                'port': self.certlogin_port(),
+                'match': str(CONFIG.get('certlogin_match') or 'compat'),
+                'crl': bool(int(CONFIG.get('certlogin_crl', 1) or 0)),
+                'second': 'passkeys' if self.passkeys_on() else '',
+                'only': self.password_off(),
+                'cas': [{k: c.get(k) for k in ('subject', 'issuer', 'until', 'sha256', 'at', 'by')}
+                        for c in self.certlogin_cas()],
+                'crls': crls, 'root': (self.webroot.read('look.json') or {}).get('certlogin')
+                or {}}
 
     def second_owed(self, name):
         """What a fresh sign-in of this account still owes (1.10.303): to make
@@ -61049,6 +61623,8 @@ class Daemon(object):
         'login_tries': (1, 100), 'login_wait_min': (1, 1440), 'passkeys': (0, 1),
         'kerberos': (0, 1), 'kerberos_auto': (0, 1), 'kerberos_realm': 'str',
         'password_off': (0, 1),
+        'certlogin': (0, 1), 'certlogin_port': (1024, 65535),
+        'certlogin_match': ('compat', 'strong', 'upn'), 'certlogin_crl': (0, 1),
         'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
         'retain_failed_days': (0, 3650), 'retain_passed_days': (0, 3650),
         'retain_events_days': (0, 3650),
@@ -61343,7 +61919,11 @@ class Daemon(object):
         'kerberos': 'Sign in with Windows (Kerberos)',
         'kerberos_auto': '...by itself when the sign-in page opens',
         'kerberos_realm': 'Kerberos realm',
-        'password_off': '...and no password at all - only Windows',
+        'password_off': '...and no password at all - only Windows or a certificate',
+        'certlogin': 'Sign in with a certificate (a smart card, a YubiKey)',
+        'certlogin_port': 'The certificate\'s own port',
+        'certlogin_match': 'Which account a certificate is',
+        'certlogin_crl': 'Check that a certificate is not revoked (CRL)',
         'net_confirm_min': 'A new network goes back unless kept within (min)',
         'fw_confirm_min': 'A firewall change goes back unless kept within (min)',
         'retain_failed_days': 'Keep failed attempts for (days)',
@@ -62475,10 +63055,30 @@ class Daemon(object):
                           'Empty: taken from the base DN of the directory above '
                           '(DC=corp,DC=example). A ticket of any other realm is refused.',
         'password_off': 'On: nobody signs in with a password, local accounts neither - the '
-                        'sign-in page offers only Windows, and no password is set or changed. '
-                        'Switched on only from a sign-in with Windows, so whoever does has '
-                        'shown it works for them. In effect only while Sign in with Windows is '
-                        'on; the way back, as root on the server: isemon --set password_off=0.',
+                        'sign-in page offers only Windows or a certificate, and no password is '
+                        'set or changed. Switched on only from a sign-in with Windows or a '
+                        'certificate, so whoever does has shown it works for them. In effect '
+                        'only while one of the two is on; the way back, as root on the server: '
+                        'isemon --set password_off=0.',
+        'certlogin': 'A certificate of the domain\'s authority (AD CS) - on a smart card, a '
+                     'YubiKey (PIV) or in the computer - signs its person in without a password: '
+                     'the browser goes to a port of its own, offers the certificate (Windows asks '
+                     'for the card\'s PIN), and comes back signed in. Checked here: the chain to '
+                     'the authorities put in below, the dates, a key usage for signing in, the '
+                     'CRL, the person in the directory above and their groups. Face ID, when it '
+                     'is on, is asked after it just the same. Off: nothing of it is offered and '
+                     'no port is opened.',
+        'certlogin_port': 'nginx asks for a certificate on this port only - never on 443, so '
+                          'nobody who opens the pages is asked for one - and serves nothing '
+                          'there but the sign-in with it. 8443 is http_port_t for SELinux '
+                          'already; 80, 443 and the ports of logs and databases are refused. '
+                          'The firewall lets it in from where the dashboard is.',
+        'certlogin_match': 'compat: the SID AD CS writes into a certificate since KB5014754 must '
+                           'be the account\'s when it carries one. strong: it must carry one '
+                           '(Microsoft\'s full enforcement). upn: the UPN alone.',
+        'certlogin_crl': 'The CRL at the certificate\'s CRL Distribution Point (http), kept '
+                         'until its next update. On: no CRL to be had, no sign-in. Off only for '
+                         'an authority that publishes none.',
         'passkeys': 'After the password, everybody confirms it is them with Face ID, Touch ID, '
                     'Windows Hello or the PIN of their device (a passkey). The first sign-in '
                     'after this is switched on sets it up; a full admin can set it up again for '
@@ -69625,14 +70225,22 @@ class WebRoot(object):
         pages = [acc.get('dashboard') or {'any': True}] + [
             acc.get(k) for k in ('banfeed', 'health')
             if isinstance(acc.get(k), dict) and not acc[k].get('same')]
+        # ...and the certificate's own port while signing in with one is on
+        # (1.10.341): from where the dashboard is.
+        wp = '80,443'
+        try:
+            if self.daemon.certlogin_on():
+                wp += ',%d' % self.daemon.certlogin_port()
+        except Exception:                               # noqa: BLE001
+            pass
         if any(p.get('any') for p in pages):
-            web = both('tcp', '80,443', '', 'the dashboard')
-            why = 'tcp 80,443 from everybody - a page is for everybody under Who may reach ' \
-                  'which page'
+            web = both('tcp', wp, '', 'the dashboard')
+            why = 'tcp %s from everybody - a page is for everybody under Who may reach ' \
+                  'which page' % wp
         else:
             nets = list(dict.fromkeys(n for p in pages for n in p.get('from') or []))
-            web = [r for n in nets for r in both('tcp', '80,443', n, 'the dashboard')]
-            why = 'tcp 80,443 from the networks the pages are for (Who may reach which page)'
+            web = [r for n in nets for r in both('tcp', wp, n, 'the dashboard')]
+            why = 'tcp %s from the networks the pages are for (Who may reach which page)' % wp
         items.append({'key': 'web', 'title': 'The dashboard (HTTP, HTTPS)', 'why': why,
                       'rules': web})
         ports = look.get('rsyslog') or []
@@ -69785,6 +70393,20 @@ class WebRoot(object):
         try:
             if self.daemon.kerberos_wanted():
                 out['big_headers'] = True
+        except Exception:                               # noqa: BLE001
+            pass
+        # Signing in with a certificate (1.10.341): a server of nginx's on a
+        # port of its own that asks for one, with the authorities' names -
+        # and taken away again once it is off (only when it was ever there).
+        try:
+            if self.daemon.certlogin_on():
+                out['certlogin'] = {'on': True, 'port': self.daemon.certlogin_port(),
+                                    'cas': ''.join(c['pem'].strip() + '\n'
+                                                   for c in self.daemon.certlogin_cas())}
+                if self.store.get_meta('certlogin_pushed') != '1':
+                    self.store.set_meta('certlogin_pushed', '1')
+            elif self.store.get_meta('certlogin_pushed') == '1':
+                out['certlogin'] = {'on': False}
         except Exception:                               # noqa: BLE001
             pass
         # ACME by HTTP-01 (1.10.251): port 80 answers the CA for the name.
@@ -76948,7 +77570,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '4d6b6cf56e221e6286aa579eba795d909ab80aec7bec3953884ea5f7f44b0a65'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '944df69569e3ce6e618c8e2ab82eabf418fc35b87cb472819244584b6d36c529'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
@@ -84928,6 +85550,66 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.fail('Windows did not sign you in - the ticket was not taken', 401)
             return self.send_json({'ok': True, **got})
 
+        # Signing in with a certificate (1.10.341): the certificate nginx took
+        # on its own port, handed on by the page there.
+        if path == '/api/auth/cert' and method == 'POST':
+            data = self.body()
+            if not daemon.certlogin_on():
+                return self.fail('signing in with a certificate is off', 404)
+            try:
+                got = daemon.certlogin_login(str(data.get('cert') or ''), ip=self.caller(),
+                                             agent=str(self.headers.get('User-Agent') or ''))
+            except CertLoginError as e:
+                return self.fail(str(e)[:300], 401)
+            except WebRootError as e:
+                return self.fail('the certificate could not be checked: %s' % str(e)[:200], 401)
+            return self.send_json({'ok': True, **got})
+
+        if path == '/api/certlogin':
+            if method != 'POST':
+                me = self.need_login()
+                if not me:
+                    return None
+                return self.send_json(daemon.certlogin_view(me.get('role') == 'fulladmin'))
+            data = self.body()
+            act = str(data.get('action') or '')
+            if act == 'try':
+                # Try my certificate (from the port, by its page): who it would
+                # sign in, and as what - nobody signed in. Any signed-in admin.
+                me = self.need_admin()
+                if not me:
+                    return None
+                try:
+                    got = daemon.certlogin_check(str(data.get('cert') or ''))
+                except (CertLoginError, WebRootError) as e:
+                    return self.send_json({'ok': True, 'would': False, 'said': str(e)[:300]})
+                return self.send_json({'ok': True, 'would': True, 'upn': got['upn'],
+                                       'name': got['name'], 'role': got['role'],
+                                       'subject': got['facts']['subject']})
+            me = self.need_admin()
+            if not me:
+                return None
+            try:
+                if act == 'put':
+                    raw = str(data.get('text') or '').encode('utf-8', 'replace')
+                    if data.get('der'):
+                        try:
+                            raw = base64.b64decode(str(data['der']), validate=True)
+                        except ValueError:
+                            return self.fail('the file did not arrive whole')
+                    added = daemon.certlogin_put(raw, me['name'])
+                    daemon.webroot.push('signing in with a certificate', me['name'])
+                    return self.send_json({'ok': True, 'message': '%d authority(-ies) put in'
+                                           % len(added), **daemon.certlogin_view(True)})
+                if act == 'drop':
+                    daemon.certlogin_drop(data.get('sha256'), me['name'])
+                    daemon.webroot.push('signing in with a certificate', me['name'])
+                    return self.send_json({'ok': True, 'message': 'the authority is taken away',
+                                           **daemon.certlogin_view(True)})
+            except (ValueError, OSError, WebRootError) as e:
+                return self.fail(str(e))
+            return self.fail('nothing to do')
+
         if path == '/api/kerberos':
             # The card on Settings → Active Directory: read by any account
             # that may read the settings, changed by a full admin.
@@ -84951,7 +85633,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                     return self.send_json({'ok': True, 'message': 'the keytab is put in: %d key(s)'
                                            % len(entries), **daemon.kerberos_view(True)})
                 if act == 'drop':
-                    if daemon.password_off():
+                    if daemon.password_off() and not daemon.certlogin_on():
                         return self.fail('only Windows signs in here: switch that off first, '
                                          'or nobody could sign in', 409)
                     daemon.kerberos_take_away(me['name'])
@@ -85424,7 +86106,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not me:
                 return None
             if daemon.password_off():
-                return self.fail('only Windows signs in here: no password is set or changed '
+                return self.fail('no password signs in here: no password is set or changed '
                                  'while that is on', 409)
             data = self.body()
             user = store.user(me['name'])
@@ -87809,13 +88491,25 @@ class ApiHandler(BaseHTTPRequestHandler):
             if str(given.get('password_off', '')) in ('1', 'True', 'true') and \
                     not int(CONFIG.get('password_off') or 0):
                 if not daemon.kerberos_session(self.headers.get('X-Isemon-Session') or ''):
-                    return self.fail('"Only Windows" is switched on only from a sign-in with '
-                                     'Windows: sign out, sign in with Windows, and switch it '
-                                     'on then', 409)
-                if not daemon.kerberos_on() or str(given.get('kerberos', '1')) in ('0', 'False',
-                                                                                   'false'):
-                    return self.fail('"Only Windows" needs Sign in with Windows on, with a '
-                                     'keytab put in', 409)
+                    return self.fail('"No password" is switched on only from a sign-in with '
+                                     'Windows or a certificate: sign out, sign in that way, and '
+                                     'switch it on then', 409)
+                off = ('0', 'False', 'false')
+                if not ((daemon.kerberos_on() and str(given.get('kerberos', '1')) not in off) or
+                        (daemon.certlogin_on() and str(given.get('certlogin', '1')) not in off)):
+                    return self.fail('"No password" needs Sign in with Windows (with a keytab) or '
+                                     'Sign in with a certificate (with its authorities) on', 409)
+            # The certificate's port (1.10.341): never one of these pages' own,
+            # nor of the logs and databases.
+            if 'certlogin_port' in given:
+                try:
+                    cp = int(given.get('certlogin_port'))
+                except (TypeError, ValueError):
+                    return self.fail('the certificate\'s port is a number')
+                if cp in CL_PORT_REFUSED or cp == int(CONFIG.get('api_port') or 0) or \
+                        not 1024 <= cp <= 65535:
+                    return self.fail('the certificate\'s port is one of its own, 1024-65535: not '
+                                     '%d' % cp)
             # How the database in use is reached (1.10.278): tried before it
             # is saved, and isemon starts again on it.
             try:
@@ -87998,7 +88692,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             data = self.body()
             if (data.get('add') or data.get('password_for')) and daemon.password_off():
                 # Only Windows (1.10.340): no password is set from the pages.
-                return self.fail('only Windows signs in here: no password is set or changed '
+                return self.fail('no password signs in here: no password is set or changed '
                                  'while that is on (Settings → Active Directory)', 409)
             if data.get('add'):
                 # Without the hash. Every other answer about an account strips

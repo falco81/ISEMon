@@ -222,6 +222,74 @@ function sent_body(): array
    Every one of them is a relay to the daemon. The two exceptions are signing
    in and out, which also have to set and clear the cookie — the daemon knows
    nothing about cookies and should not have to. */
+/* ---- signing in with a certificate, on its own port (1.10.341) ----------
+   nginx's server of isemon's own on the certificate's port sets
+   ISEMON_CERT_PORT (a fastcgi_param - never a header of the browser's, which
+   would be HTTP_...) and hands over the certificate the browser offered.
+   Nothing but the sign-in is served there: the nonce the sign-in page set is
+   checked against its cookie (a link of somebody else's signs nobody in), the
+   certificate goes to the daemon, which checks it, and the browser goes back
+   to the pages - signed in, or told why not. Cookies are not kept apart by
+   port: the session set here is the session there. */
+function isemon_cert_back(string $said = '', string $key = 'certsaid'): void
+{
+    $host = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if (!preg_match('/^[A-Za-z0-9.-]{1,253}\z/', (string) $host)) {
+        $host = 'localhost';
+    }
+    $back = (string) getenv('ISEMON_CERT_BACK');      /* the tests' own pages only */
+    $base = $back !== '' ? $back : 'https://' . $host . '/';
+    header('Location: ' . $base . ($said !== '' ? '?' . $key . '=' . rawurlencode(substr($said, 0, 300)) : ''), true, 303);
+    exit;
+}
+if ((string) ($_SERVER['ISEMON_CERT_PORT'] ?? '') === '1') {
+    header('Cache-Control: no-store');
+    $try = (string) ($_GET['api'] ?? '') === 'cert-check';
+    if ((string) ($_SERVER['ISEMON_CERT_FAIL'] ?? '') === '1') {
+        isemon_cert_back('the certificate is not taken: '
+            . preg_replace('/^FAILED:/', '', (string) ($_SERVER['SSL_CLIENT_VERIFY'] ?? '')),
+            $try ? 'certtry' : 'certsaid');
+    }
+    $what = (string) ($_GET['api'] ?? '');
+    if ($what !== 'cert-login' && $what !== 'cert-check') {
+        http_response_code(404);
+        exit;
+    }
+    $n = (string) ($_GET['n'] ?? '');
+    $c = (string) ($_COOKIE['isemon_certn'] ?? '');
+    setcookie('isemon_certn', '', ['expires' => time() - 3600, 'path' => '/',
+              'secure' => isemon_https(), 'httponly' => true, 'samesite' => 'Strict']);
+    if (!preg_match('/^[0-9a-f]{32}\z/', $n) || $c === '' || !hash_equals($c, $n)) {
+        isemon_cert_back('not started from this browser\'s sign-in page - try again',
+                         $try ? 'certtry' : 'certsaid');
+    }
+    $pem = rawurldecode((string) ($_SERVER['SSL_CLIENT_CERT'] ?? ''));
+    if ($pem === '' || strlen($pem) > 20000) {
+        isemon_cert_back('no certificate was sent (none chosen, or the browser has none of the '
+                         . 'authorities put in here)', $try ? 'certtry' : 'certsaid');
+    }
+    if ($try) {
+        /* Try my certificate: who it would sign in, and as what - nobody is. */
+        [$status, $body] = isemon_call('/api/certlogin', 'POST', ['action' => 'try', 'cert' => $pem], 30.0);
+        $d = json_decode((string) $body, true);
+        if (!is_array($d)) {
+            isemon_cert_back('the daemon is not answering', 'certtry');
+        }
+        if (!empty($d['would'])) {
+            isemon_cert_back('would sign in: ' . $d['upn'] . ' -> ' . $d['name'] . ' (' . $d['role'] . ')', 'certtry');
+        }
+        isemon_cert_back('would not: ' . (string) ($d['said'] ?? $d['error'] ?? '?'), 'certtry');
+    }
+    [$status, $body] = isemon_call('/api/auth/cert', 'POST', ['cert' => $pem], 30.0);
+    $d = json_decode((string) $body, true);
+    if ($status === 200 && is_array($d) && !empty($d['token'])) {
+        isemon_set_session((string) $d['token']);
+        isemon_cert_back();          /* the page then asks the second step when it is owed */
+    }
+    isemon_cert_back(is_array($d) ? (string) ($d['error'] ?? 'refused')
+                                  : 'the daemon is not answering');
+}
+
 if (isset($_GET['api'])) {
     $what = (string) $_GET['api'];
     $post = $_SERVER['REQUEST_METHOD'] === 'POST';
@@ -487,6 +555,33 @@ if (isset($_GET['api'])) {
         exit;
     }
 
+    /* Signing in with a certificate (1.10.341): a nonce in a cookie of its
+       own, and the address of the certificate's port with it - the button
+       goes there as a top-level navigation, where the browser shows its
+       certificate chooser and the card asks for its PIN. */
+    if ($what === 'cert-nonce' && $post) {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        $hh = isemon_get('/api/health', 5.0);
+        $k = is_array($hh) && is_array($hh['kerberos'] ?? null) ? $hh['kerberos'] : [];
+        if (empty($k['cert']) || empty($k['cert_port'])) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'signing in with a certificate is off']);
+            exit;
+        }
+        $n = bin2hex(random_bytes(16));
+        setcookie('isemon_certn', $n, ['expires' => time() + 300, 'path' => '/',
+                  'secure' => isemon_https(), 'httponly' => true, 'samesite' => 'Strict']);
+        $host = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if (!preg_match('/^[A-Za-z0-9.-]{1,253}\z/', (string) $host)) {
+            $host = 'localhost';
+        }
+        $sent = sent_body();
+        echo json_encode(['ok' => true, 'url' => 'https://' . $host . ':' . (int) $k['cert_port']
+            . '/index.php?api=' . (!empty($sent['try']) ? 'cert-check' : 'cert-login') . '&n=' . $n]);
+        exit;
+    }
+
     if ($what === 'logout' && $post) {
         isemon_call('/api/auth/logout', 'POST', [], 10.0);
         isemon_clear_session();
@@ -521,6 +616,8 @@ if (isset($_GET['api'])) {
         'web-tls'      => '/api/web/tls',
         /* Signing in with Windows (1.10.340): the card on Active Directory. */
         'kerberos'     => '/api/kerberos',
+        /* Signing in with a certificate (1.10.341). */
+        'certlogin'    => '/api/certlogin',
         'acme-push-admin' => '/api/acme-push-admin',
         'web-tls-export' => '/api/web/tls/export',
         'web-tls-download' => '/api/web/tls/download',
@@ -643,6 +740,8 @@ if (isset($_GET['api'])) {
         'web-tls'      => '/api/web/tls',
         /* Signing in with Windows (1.10.340): the card on Active Directory. */
         'kerberos'     => '/api/kerberos',
+        /* Signing in with a certificate (1.10.341). */
+        'certlogin'    => '/api/certlogin',
         'acme-push-admin' => '/api/acme-push-admin',
         'web-tls-export' => '/api/web/tls/export',
         'upgrade'      => '/api/upgrade',
@@ -4319,9 +4418,40 @@ function srcText(el) {
   .cert-paste::placeholder{color:var(--tx-mut);opacity:.75;white-space:pre}
   .cert-csr{white-space:pre;overflow-x:auto;font-size:11.5px;padding:10px 12px;border:1px dashed var(--line);
     border-radius:8px;background:var(--panel2);max-height:340px;cursor:copy}
-  .cert-kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 14px;margin:8px 0 0;font-size:13px}
+  /* The label column a fixed width (1.10.341): sized to its words it moved the
+     values sideways whenever a longer label came or went. */
+  .cert-kv{display:grid;grid-template-columns:minmax(0,11.5em) minmax(0,1fr);gap:5px 14px;margin:8px 0 0;font-size:13px}
   .cert-kv dt{color:var(--tx-dim);font-weight:600;white-space:nowrap}
   .cert-kv dd{margin:0;overflow-wrap:anywhere;font-weight:600}
+  /* Signing in with Windows / a certificate (1.10.341), drawn as acme draws them. */
+  .sso-card h2{display:flex;align-items:center;gap:10px}
+  .sso-card .sso-lede{max-width:1000px}
+  .sso-dots{display:inline-flex;gap:4px;align-items:center;padding:4px 8px;border:1px solid var(--line);
+    border-radius:999px}
+  .sso-dots i{width:7px;height:7px;border-radius:50%;background:var(--tx-mut);display:inline-block}
+  .sso-dots i.ok{background:var(--ok)}
+  .sso-dots i.warn{background:var(--warn)}
+  .sso-pills{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}
+  .sso-pill{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--tx-dim)}
+  .sso-pill.ok{color:var(--ok);border-color:var(--ok);background:var(--ok-bg)}
+  .sso-pill.warn{color:var(--warn);border-color:var(--warn);background:var(--warn-bg)}
+  .sso-pill.crit{color:var(--crit);border-color:var(--crit);background:var(--crit-bg)}
+  /* Two fixed halves: the values never move when one of them gets longer. */
+  .sso-facts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px 24px;margin:6px 0 4px;font-size:13.5px}
+  .sso-facts .v{overflow-wrap:anywhere}
+  .sso-card table{table-layout:fixed;width:100%}
+  .sso-card table td{overflow-wrap:anywhere}
+  .sso-facts .k{color:var(--tx-dim)}
+  .sso-facts .v{color:var(--tx)}
+  .sso-h{font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--tx-dim);
+    margin:22px 0 8px}
+  .sso-card .note{max-width:1000px}
+  .sso-cmdhead{display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px;color:var(--tx-mut);font-size:12.5px}
+  .sso-code{margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);
+    font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+  .sso-code .hl{color:var(--info);background:var(--info-bg);border-radius:3px;padding:0 2px}
+  .sso-list{margin:6px 0;padding-left:20px;font-size:13.5px;line-height:1.9}
+  .sso-foot{color:var(--tx-mut);font-size:12.5px;margin-top:12px}
   .cert-kv .chain-good{color:var(--ok)}
   .cert-kv .chain-bad{color:var(--crit)}
   .cert-kv .chain-dim,.cert-kv .muted{color:var(--tx-mut);font-weight:400}
@@ -5049,6 +5179,10 @@ function srcText(el) {
   .hl-panel .hp-row.hp-nic2{grid-template-columns:0 1fr}
   .hl-panel .hp-wide{grid-column:1/-1}
   .hl-panel .num{text-align:right;font-variant-numeric:tabular-nums}
+  /* Live numbers keep their width (1.10.341): a value one digit longer moved
+     everything beside it. */
+  .hl-panel .hp-row>.num{min-width:7ch}
+  .hload .hl-v{font-variant-numeric:tabular-nums}
   .hl-panel .hp-cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
   .hl-panel .hp-core{border:1px solid var(--line,#30363d);border-radius:7px;padding:5px 7px}
   .hl-panel .hp-core-top,.hl-panel .hp-core-bot{display:flex;justify-content:space-between;gap:6px;font-variant-numeric:tabular-nums}
@@ -5287,16 +5421,27 @@ function srcText(el) {
              Windows, the form is not there at all. */
           $krb = (is_array($health) && is_array($health['kerberos'] ?? null))
                  ? $health['kerberos'] : []; ?>
-    <?php if (!empty($krb['on'])): ?>
-    <div class="krb-box" id="krb-box" data-auto="<?= !empty($krb['auto']) || !empty($krb['only']) ? '1' : '0' ?>"
+    <?php if (!empty($krb['on']) || !empty($krb['cert'])): ?>
+    <div class="krb-box" id="krb-box" data-auto="<?= !empty($krb['on']) && (!empty($krb['auto']) || !empty($krb['only'])) ? '1' : '0' ?>"
          data-only="<?= !empty($krb['only']) ? '1' : '0' ?>">
       <?php if (empty($krb['only'])): ?><div class="krb-or"><span>or</span></div><?php endif; ?>
+      <?php if (!empty($krb['on'])): ?>
       <button class="btn cmd<?= !empty($krb['only']) ? ' primary' : '' ?>" type="button" id="krb-go"><svg
         viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
         stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5"/><rect
         x="13" y="3.5" width="7.5" height="7.5"/><rect x="3.5" y="13" width="7.5" height="7.5"/><rect
         x="13" y="13" width="7.5" height="7.5"/></svg><span>Sign in with Windows</span></button>
       <div class="said" id="krb-said"></div>
+      <?php endif; ?>
+      <?php /* Signing in with a certificate - a smart card, a YubiKey (1.10.341). */ ?>
+      <?php if (!empty($krb['cert'])): ?>
+      <button class="btn cmd<?= !empty($krb['only']) && empty($krb['on']) ? ' primary' : '' ?>" type="button" id="cert-go"><svg
+        viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect
+        x="3" y="5" width="18" height="14" rx="2"/><rect x="6" y="9" width="4.5" height="4" rx=".8"/><path
+        d="M13.5 10h4.5M13.5 13h3"/></svg><span>Sign in with a certificate</span></button>
+      <div class="said" id="cert-said"></div>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
     <?php /* The second step (1.10.303): after the password, Face ID - made the
@@ -5549,6 +5694,36 @@ function srcText(el) {
       });
   }
   if (krbGo) krbGo.addEventListener('click', function () { krbTry(false); });
+  /* Signing in with a certificate (1.10.341): a nonce first, then the
+     certificate's port as a top-level navigation - the browser's chooser,
+     the card's PIN - and back here, signed in or told why not. */
+  var certGo = document.getElementById('cert-go');
+  var certSaid = document.getElementById('cert-said');
+  if (certGo) certGo.addEventListener('click', function () {
+    certGo.disabled = true;
+    fetch('?api=cert-nonce', {method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'}, body: '{}'})
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.url) { location.href = d.url; return; }
+        certGo.disabled = false;
+        certSaid.className = 'said bad';
+        certSaid.textContent = (d && d.error) || 'that did not work';
+      }, function () {
+        certGo.disabled = false;
+        certSaid.className = 'said bad';
+        certSaid.textContent = 'this dashboard could not be reached';
+      });
+  });
+  try {
+    var certWhy = new URLSearchParams(location.search).get('certsaid');
+    if (certWhy) {
+      var into = certSaid || said;
+      into.className = 'said bad';
+      into.textContent = certWhy;          /* text, never HTML */
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch (e) { }
   var krbTried = false;
   try {
     krbTried = !!(sessionStorage.getItem('isemon.krb.tried') || sessionStorage.getItem('isemon.krb.out'));
@@ -7468,15 +7643,28 @@ auditpol /set /subcategory:"Logon" /success:enable /failure:enable</pre>
     </div>
     <div class="card full"><div id="sect-dir"></div></div>
     <?php /* Signing in with Windows - Kerberos (1.10.340, as otp 1.0.274). */ ?>
-    <div class="card full" id="krb-card">
-      <h2>Signing in with Windows (Kerberos) <span class="tag dim" id="krb-state">off</span></h2>
-      <p class="note">A browser on a computer in the domain signs its person in to these pages
-        without a password: it sends a Kerberos ticket for the name it opened, checked here
-        against the keytab of that name. Only people of the directory above get in, with the
-        role of their groups - and Face ID, when it is on, is asked after it just the same.
-        NTLM is never taken. Switched on above (<b>Sign in with Windows (Kerberos)</b>); off,
-        nothing of it is offered.</p>
+    <div class="card full sso-card" id="krb-card">
+      <h2>Signing in with Windows (Kerberos) <span class="sso-dots" id="krb-dots"></span></h2>
+      <p class="note sso-lede">A browser on a computer in the domain signs its person in to these
+        pages without a password: it sends a Kerberos ticket for the name it opened, checked here
+        against the keytab of that name. Only accounts of the directory above get in, with the
+        role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM
+        is never taken. Off, nothing of it is offered.</p>
+      <div id="sect-krb"></div>
       <div id="krb-body"></div>
+    </div>
+    <?php /* Signing in with a certificate - a smart card, a YubiKey (1.10.341). */ ?>
+    <div class="card full sso-card" id="cl-card">
+      <h2>Signing in with a certificate (a smart card, a YubiKey) <span class="sso-dots" id="cl-dots"></span></h2>
+      <p class="note sso-lede">A certificate of the domain’s authority (AD CS) - on a smart card, a YubiKey
+        or in the computer - signs its person in without a password. The browser goes to a port
+        of its own, where nginx asks for a certificate (never on 443: nobody who opens the pages is
+        asked for one), offers it - Windows asks for the card’s PIN - and comes back signed in.
+        isemon checks it: the chain to the authorities below, the dates, a key usage for signing
+        in, the CRL, the person in the directory above (by the UPN in the certificate, and its
+        SID) and their groups. Face ID, when it is on, is asked after it just the same.</p>
+      <div id="sect-cl"></div>
+      <div id="cl-body"></div>
     </div>
 
     <div class="card full">
@@ -28122,9 +28310,11 @@ var PANES = {
             'directory_verify', 'directory_base', 'directory_bind', 'directory_password',
             'directory_user_attr', 'directory_realms', 'directory_admin_group',
             'directory_banadmin_group', 'directory_readonly_group', 'directory_nested',
-            'directory_recheck_min', 'directory_watch',
-            /* Signing in with Windows (1.10.340). */
-            'kerberos', 'kerberos_auto', 'kerberos_realm', 'password_off'],
+            'directory_recheck_min', 'directory_watch'],
+  /* Signing in with Windows (1.10.340), drawn in its own card as acme has it. */
+  krb:     ['kerberos', 'kerberos_auto', 'kerberos_realm', 'password_off'],
+  /* Signing in with a certificate (1.10.341), the same way. */
+  cl:      ['certlogin', 'certlogin_port', 'certlogin_match', 'certlogin_crl'],
   dir2:    ['directory2', 'directory2_host', 'directory2_port', 'directory2_tls',
             'directory2_verify', 'directory2_base', 'directory2_bind', 'directory2_password',
             'directory2_user_attr', 'directory2_realms'],
@@ -28923,6 +29113,9 @@ function drawSettings() {
    like one that is in play, it is how somebody sets a value, saves it, and
    spends a while working out why nothing happened. */
 var ONLY_WHEN = {
+  /* Signing in with Windows and with a certificate (1.10.341): as acme has them. */
+  kerberos_auto: ['kerberos', '1'], kerberos_realm: ['kerberos', '1'], password_off: ['kerberos', '1'],
+  certlogin_port: ['certlogin', '1'], certlogin_match: ['certlogin', '1'], certlogin_crl: ['certlogin', '1'],
   /* Settings → Proxy (1.10.268): as otp has them. */
   proxy_url: ['proxy', '1'], proxy_user: ['proxy', '1'], proxy_password: ['proxy', '1'],
   proxy_no: ['proxy', '1'], proxy_upgrade: ['proxy', '1'], proxy_os: ['proxy', '1'],
@@ -29788,6 +29981,134 @@ function loadDirectory() {
     drawDirUsers(d.mirrored || []);
   }).catch(oops);
   loadKerberos();
+  loadCertLogin();
+}
+
+/* Signing in with a certificate (1.10.341): the authorities, Try my
+   certificate, and what to do in AD CS, on a YubiKey and in the network. */
+function loadCertLogin() {
+  if (!$('cl-body')) return;
+  api('certlogin').then(drawCertLogin).catch(function (e) {
+    clear($('cl-body'));
+    $('cl-body').appendChild(el('p', 'note bad', (e && e.message) || String(e)));
+  });
+}
+function drawCertLogin(d) {
+  var host = $('cl-body');
+  clear(host);
+  ssoDots('cl-dots', d.on, d.wanted);
+  var r = d.root || {};
+  var pills = [[d.on ? 'On' : 'Off', d.on ? 'ok' : '']];
+  if (!(d.cas || []).length) pills.push(['No authority yet', 'warn']);
+  if (!d.directory) pills.push(['No directory set', 'warn']);
+  if (d.on) pills.push(r.there ? ['nginx listening on ' + r.port, 'ok'] : ['nginx: not yet - root puts it in within a minute', 'warn']);
+  ssoPills(host, pills);
+  ssoFacts(host, [
+    ['The port', noI18n(el('span', 'mono', location.hostname + ':' + d.port))],
+    ['Directory', d.directory ? 'set above' : 'none set - nobody can sign in with a certificate'],
+    ['Which account it is', {compat: 'the UPN, and the SID (KB5014754) when the certificate carries one',
+      strong: 'the UPN and the SID (KB5014754) - a certificate without one is refused',
+      upn: 'the UPN alone'}[d.match] || d.match],
+    ['Revocation', d.crl ? 'checked - the CRL at the certificate\u2019s CRL Distribution Point; none to be had, no sign-in' : 'not checked'],
+    ['Second step after it', d.second ? 'Face ID, as after a password' : 'off'],
+    ['A password on the sign-in page', d.only ? 'none - only Windows or a certificate' : 'offered beside it']]);
+  ssoHead(host, 'The authorities');
+  if ((d.cas || []).length) {
+    host.appendChild(rowsTable(['Subject', 'Issued by', 'Valid until', 'SHA-256', ''], d.cas.map(function (c) {
+      var rm = el('span');
+      if (d.may) {
+        var b = cmdButton('Take away', 'trash', 'small danger-soft');
+        b.onclick = function () {
+          confirmThen('Take the authority away', 'Certificates it issued no longer sign anybody in.', 'Take it away', function () {
+            api('certlogin', {action: 'drop', sha256: c.sha256}).then(function (x) { toast(x.message, 'good'); drawCertLogin(x); }).catch(oops);
+          }, true);
+        };
+        rm.appendChild(b);
+      }
+      return [noI18n(el('span', 'mono small', c.subject)), noI18n(el('span', 'mono small', c.issuer)),
+              noI18n(el('span', '', c.until)), noI18n(el('span', 'mono small', c.sha256.slice(0, 16) + '…')), rm];
+    })));
+  } else {
+    host.appendChild(el('p', 'note', 'None is put in yet: put in the authority that issues the cards, and its root.'));
+  }
+  if (d.may) {
+    var tools = el('div', 'btnrow');
+    var put = cmdButton('Put in an authority…', 'upload', 'small');
+    put.onclick = function () { certLoginPut(); };
+    tools.appendChild(put);
+    if (d.on) {
+      var tryb = cmdButton('Try my certificate', 'person', 'small');
+      tryb.title = 'Goes to the certificate’s port: the browser offers its certificate and this page says who it would sign in and as what - nobody is signed in';
+      tryb.onclick = function () {
+        busy(tryb, true);
+        fetch('?api=cert-nonce', {method: 'POST', credentials: 'same-origin',
+          headers: {'Content-Type': 'application/json'}, body: JSON.stringify({try: 1})})
+          .then(function (rr) { return rr.json(); })
+          .then(function (x) { if (x && x.url) location.href = x.url; else { busy(tryb, false); toast((x && x.error) || 'that did not work', 'warn'); } },
+                function (e) { busy(tryb, false); oops(e); });
+      };
+      tools.appendChild(tryb);
+    }
+    host.appendChild(tools);
+  }
+  if ((d.crls || []).length) {
+    ssoHead(host, 'The CRLs fetched');
+    host.appendChild(rowsTable(['Address', 'Fetched', 'Next update', 'Trouble'], d.crls.map(function (c) {
+      return [noI18n(el('span', 'mono small', c.url)), c.at ? stamp(c.at) : '–', c.next ? stamp(c.next) : '–',
+              noI18n(el('span', c.err ? 'bad' : '', c.err || ''))];
+    })));
+  }
+  ssoHead(host, 'In AD CS');
+  var ul = el('ul', 'sso-list');
+  ['A template from Smartcard Logon (or User): Subject Name built from AD with the User principal name (UPN) in the Subject Alternative Name; the key usages Client Authentication and Smart Card Logon; published on the issuing authority.',
+   'The authority’s Extensions: a CRL Distribution Point over http that this server reaches (the default http://<server>/CertEnroll/... is).',
+   'A YubiKey (PIV): enrolled from Windows with the template, or with YubiKey Manager - a request from slot 9a signed by the authority, imported back to 9a.',
+   'Here: put in the issuing authority and its root (PEM, .cer or .p7b).',
+   'The browsers need no setting; Edge and Chrome may choose the certificate by themselves (policy AutoSelectCertificateForUrls).',
+   'The port must reach this server as it is: a load balancer has to pass it through as TCP - one that ends TLS cannot hand on the browser’s certificate.'].forEach(function (t) {
+    ul.appendChild(el('li', '', t));
+  });
+  host.appendChild(ul);
+}
+function certLoginPut() {
+  var area;
+  modal('Put in an authority', function (body) {
+    body.appendChild(el('p', 'note', 'The authority that issues the cards and its root - as PEM, or a .cer, .crt or .p7b file. Only authorities: a person’s certificate is refused.'));
+    area = noI18n(el('textarea', 'mono'));
+    area.rows = 8; area.spellcheck = false; area.placeholder = '-----BEGIN CERTIFICATE-----';
+    area.style.width = '100%';
+    body.appendChild(area);
+    var fr = el('div', 'osr-tools');
+    fr.style.margin = '8px 0 0';
+    var pick = cmdButton('Read a file…', 'upload', 'small');
+    var input = el('input'); input.type = 'file'; input.hidden = true;
+    input.accept = '.pem,.crt,.cer,.der,.p7b,.p7c';
+    pick.onclick = function () { input.click(); };
+    input.onchange = function () {
+      var f = input.files && input.files[0];
+      if (!f) return;
+      if (f.size > 262144) { toast('that file is far bigger than certificates are', 'warn'); return; }
+      var r = new FileReader();
+      r.onload = function () {
+        var bytes = new Uint8Array(r.result), head = '';
+        for (var i = 0; i < Math.min(bytes.length, 4096); i++) head += String.fromCharCode(bytes[i]);
+        if (head.indexOf('-----BEGIN') >= 0) { area.value = new TextDecoder('ascii').decode(bytes); area.dataset.der = ''; return; }
+        var bin = '';
+        for (var j = 0; j < bytes.length; j++) bin += String.fromCharCode(bytes[j]);
+        area.dataset.der = btoa(bin);
+        area.value = '(' + f.name + ')';
+      };
+      r.readAsArrayBuffer(f);
+    };
+    fr.appendChild(pick); fr.appendChild(input);
+    body.appendChild(fr);
+  }, [{words: 'Cancel', close: true}, {words: 'Put it in', cls: 'primary', icon: 'add', go: function (b) {
+    busy(b, true);
+    var ask = area.dataset.der ? {action: 'put', der: area.dataset.der} : {action: 'put', text: area.value.trim()};
+    api('certlogin', ask).then(function (x) {
+      closeModal(); toast(x.message, 'good'); drawCertLogin(x);
+    }).catch(function (e) { busy(b, false); oops(e); });
+  }}], 'medium');
 }
 
 /* Signing in with Windows (1.10.340): the keytab, trying this browser's
@@ -29799,50 +30120,94 @@ function loadKerberos() {
     $('krb-body').appendChild(el('p', 'note bad', (e && e.message) || String(e)));
   });
 }
+/* Pieces of the two sign-in cards (1.10.341), as acme draws them. */
+function ssoDots(id, on, wanted) {
+  var h = $(id);
+  if (!h) return;
+  clear(h);
+  [on ? 'ok' : (wanted ? 'warn' : ''), on ? 'ok' : ''].forEach(function (c) { h.appendChild(el('i', c)); });
+  h.title = on ? 'on' : (wanted ? 'switched on, not ready yet' : 'off');
+}
+function ssoPills(host, pills) {
+  var row = el('div', 'sso-pills');
+  pills.forEach(function (p) { row.appendChild(el('span', 'sso-pill ' + (p[1] || ''), p[0])); });
+  host.appendChild(row);
+}
+function ssoFacts(host, rows) {
+  var g = el('div', 'sso-facts');
+  rows.forEach(function (r) {
+    g.appendChild(el('div', 'k', r[0]));
+    var v = el('div', 'v');
+    if (r[1] && r[1].nodeType) v.appendChild(r[1]); else v.textContent = r[1];
+    g.appendChild(v);
+  });
+  host.appendChild(g);
+}
+function ssoHead(host, words) { host.appendChild(el('h3', 'sso-h', words)); }
+function ssoCode(host, caption, text, marks) {
+  var head = el('div', 'sso-cmdhead');
+  head.appendChild(el('span', '', caption));
+  var c = cmdButton('Copy', 'copy', 'small');
+  c.onclick = function () { copyText(text, 'on the clipboard'); };
+  head.appendChild(c);
+  host.appendChild(head);
+  var pre = noI18n(el('pre', 'sso-code mono'));
+  /* The names filled in from here are marked, as acme marks them. */
+  var parts = [text];
+  (marks || []).filter(Boolean).forEach(function (m) {
+    var next = [];
+    parts.forEach(function (p) {
+      if (typeof p !== 'string') { next.push(p); return; }
+      var bits = p.split(m);
+      bits.forEach(function (b, i) { if (i) next.push({hl: m}); next.push(b); });
+    });
+    parts = next;
+  });
+  parts.forEach(function (p) {
+    pre.appendChild(typeof p === 'string' ? document.createTextNode(p) : el('span', 'hl', p.hl));
+  });
+  host.appendChild(pre);
+}
 function drawKerberos(d) {
   var host = $('krb-body');
   clear(host);
-  var st = $('krb-state');
-  st.className = 'tag ' + (d.on ? 'ok' : (d.wanted ? 'warn' : 'dim'));
-  st.textContent = d.on ? 'on' : (d.wanted ? 'no keytab yet' : 'off');
-  var box = el('dl', 'cert-kv');
-  var fact = function (k, v) {
-    box.appendChild(el('dt', '', k));
-    var dd = el('dd');
-    if (v && v.nodeType) dd.appendChild(v); else dd.textContent = v;
-    box.appendChild(dd);
-  };
-  var realm = el('span');
-  realm.appendChild(noI18n(el('span', 'mono', d.realm || '–')));
-  if (!d.realm_set) realm.appendChild(el('span', 'muted', ' from the directory\u2019s base DN'));
-  fact('Realm', realm);
-  fact('Directory', d.directory ? 'set above' : 'none set - nobody can sign in with Windows');
-  fact('Second step after it', d.second ? 'Face ID, as after a password' : 'none (Face ID is off)');
-  fact('By itself on the sign-in page', d.auto ? 'yes - the form only when it did not work' : 'no - a button under the form');
-  fact('A password on the sign-in page', d.only_windows ? 'none - only Windows' : 'offered beside it');
-  fact('NTLM', 'never taken');
-  fact('The Kerberos library', d.library ? 'there (libgssapi_krb5)' : (d.library_said || 'not there'));
-  host.appendChild(box);
-
-  host.appendChild(el('h3', '', 'The keytab'));
+  ssoDots('krb-dots', d.on, d.wanted);
   var kt = d.keytab;
-  if (kt && kt.entries && kt.entries.length) {
+  var pills = [[d.on ? 'On' : 'Off', d.on ? 'ok' : '']];
+  if (!kt || !(kt.entries || []).length) pills.push(['No keytab yet', 'warn']);
+  else if (!kt.readable) pills.push(['The keytab cannot be read here', 'crit']);
+  if (!d.directory) pills.push(['No directory set', 'warn']);
+  if (!d.library) pills.push(['No Kerberos library', 'crit']);
+  ssoPills(host, pills);
+  var realm = el('span');
+  realm.appendChild(noI18n(el('b', 'mono', d.realm || '–')));
+  if (!d.realm_set) realm.appendChild(el('span', 'muted', ' from the directory’s base DN'));
+  ssoFacts(host, [
+    ['Realm', realm],
+    ['Directory', d.directory ? noI18n(el('span', '', (d.realm || '').toLowerCase())) : 'none set - nobody can sign in with Windows'],
+    ['Second step after it', d.second ? 'Face ID, as after a password' : 'off'],
+    ['By itself on the sign-in page', d.auto ? 'yes - the form only when it did not work' : 'no - a button under the form'],
+    ['A password on the sign-in page', d.only_windows ? 'none - only Windows' : 'offered beside it'],
+    ['NTLM', 'never taken']]);
+
+  ssoHead(host, 'The keytab');
+  if (kt && (kt.entries || []).length) {
     var said = el('p', 'note');
     said.appendChild(el('span', '', 'Put in'));
-    said.appendChild(noI18n(el('span', '', ' ' + stamp(kt.at) + ' \u00b7 ' + (kt.by || '') + ' ')));
+    said.appendChild(noI18n(el('span', '', ' ' + stamp(kt.at) + ' · ' + (kt.by || '') + ' ')));
     said.appendChild(el('span', '', '- kept sealed in the database; its keys are never shown.'));
     host.appendChild(said);
-    if (!kt.readable) host.appendChild(el('p', 'note bad', 'It was sealed on another machine and cannot be read here: put it in again.'));
     host.appendChild(rowsTable(['Principal', 'Key version', 'Kind of key'], kt.entries.map(function (e) {
-      var kind = noI18n(el('span', e.weak ? 'bad' : '', e.kind + (e.weak ? ' (weak)' : '')));
-      return [noI18n(el('span', 'mono', e.principal)), String(e.kvno), kind];
+      return [noI18n(el('span', 'mono', e.principal)), String(e.kvno),
+              noI18n(el('span', e.weak ? 'bad' : '', e.kind + (e.weak ? ' (weak)' : '')))];
     })));
   } else {
-    host.appendChild(el('p', 'note', 'None is put in yet. Make it in AD (below) and put it in here.'));
+    host.appendChild(el('p', 'note', 'None yet. Make it in AD (below) and put it in here.'));
   }
-  var tools = el('div', 'btnrow');
+  var out = el('div', 'note');
   if (d.may) {
-    var put = cmdButton(kt ? 'Put in another keytab…' : 'Put in a keytab…', 'upload', 'small');
+    var tools = el('div', 'btnrow');
+    var put = cmdButton(kt ? 'Put in another keytab…' : 'Put in a keytab…', 'upload', kt ? 'small' : 'small primary');
     var input = el('input'); input.type = 'file'; input.hidden = true; input.accept = '.keytab,.kt';
     put.onclick = function () { input.click(); };
     input.onchange = function () {
@@ -29869,61 +30234,74 @@ function drawKerberos(d) {
         }, true);
       };
       tools.appendChild(drop);
+      var tryb = cmdButton('Try my browser’s ticket', 'person', 'small');
+      tryb.title = 'Asks this browser for its ticket and says who it would sign in and as what - nobody is signed in';
+      tryb.onclick = function () {
+        busy(tryb, true);
+        clear(out);
+        fetch('?api=kerberos-try', {method: 'POST', credentials: 'same-origin',
+          headers: {'Content-Type': 'application/json'}, body: '{}'})
+          .then(function (r) { return r.json().catch(function () { return {}; }); })
+          .then(function (x) {
+            busy(tryb, false);
+            if (x && x.would) {
+              out.appendChild(el('span', 'tag ok', 'would sign in'));
+              out.appendChild(noI18n(el('span', 'mono', ' ' + x.principal + ' → ' + x.name + ' ')));
+              out.appendChild(el('span', 'tag dim', ({fulladmin: 'full admin', banadmin: 'ban admin', readonly: 'read only'})[x.role] || x.role));
+            } else {
+              out.appendChild(el('span', 'tag crit', 'would not'));
+              out.appendChild(noI18n(el('span', '', ' ' + ((x && (x.said || x.error)) || 'no answer'))));
+            }
+          }, function (e) { busy(tryb, false); out.textContent = String(e); });
+      };
+      tools.appendChild(tryb);
     }
-    var tryb = cmdButton('Try my browser\u2019s ticket', 'person', 'small');
-    var out = el('div', 'note');
-    tryb.title = 'Asks this browser for its ticket and says who it would sign in and as what - nobody is signed in';
-    tryb.onclick = function () {
-      busy(tryb, true);
-      clear(out);
-      fetch('?api=kerberos-try', {method: 'POST', credentials: 'same-origin',
-        headers: {'Content-Type': 'application/json'}, body: '{}'})
-        .then(function (r) { return r.json().catch(function () { return {}; }); })
-        .then(function (x) {
-          busy(tryb, false);
-          if (x && x.would) {
-            out.appendChild(el('span', 'tag ok', 'would sign in'));
-            out.appendChild(noI18n(el('span', 'mono', ' ' + x.principal + ' \u2192 ' + x.name + ' ')));
-            out.appendChild(el('span', 'tag dim', ({fulladmin: 'full admin', banadmin: 'ban admin', readonly: 'read only'})[x.role] || x.role));
-          } else {
-            out.appendChild(el('span', 'tag crit', 'would not'));
-            out.appendChild(noI18n(el('span', '', ' ' + ((x && (x.said || x.error)) || 'no answer'))));
-          }
-        }, function (e) { busy(tryb, false); out.textContent = String(e); });
-    };
-    tools.appendChild(tryb);
     host.appendChild(tools);
     host.appendChild(out);
   }
 
-  host.appendChild(el('h3', '', 'The names the pages are opened by'));
+  ssoHead(host, 'The names the pages are opened by');
   host.appendChild(el('p', 'note', 'The browser asks for a ticket of HTTP/<the name in its address bar>. Each name needs its SPN on the service account in AD; one key of that account in the keytab serves them all. Never an address: there is no SPN for one, and Windows then offers NTLM - which is refused.'));
-  var name = location.hostname;
-  var spn = 'HTTP/' + name;
-  var byName = !!(kt && (kt.entries || []).some(function (e) {
-    return e.principal.toLowerCase() === (spn + '@' + d.realm).toLowerCase();
-  }));
-  var isAddr = /^[0-9.]+$|:/.test(name);
-  host.appendChild(rowsTable(['Name', 'SPN', 'In the keytab'], [[
-    noI18n(el('span', 'mono', name)), noI18n(el('span', 'mono', spn)),
-    isAddr ? el('span', 'tag crit', 'an address - open the pages by name')
-      : (byName ? el('span', 'tag ok', 'by name') : el('span', 'tag dim', kt ? 'by the account\u2019s key, if it has this SPN' : '–'))]]));
+  var isAddr = function (n) { return /^[0-9.]+$|:/.test(n); };
+  var names = [[location.hostname, 'this page']];
+  if (d.fqdn && d.fqdn !== location.hostname && d.fqdn.indexOf('.') > 0 && !isAddr(d.fqdn)) names.push([d.fqdn, 'this machine']);
+  var inKt = function (spn) {
+    return !!(kt && (kt.entries || []).some(function (e) {
+      return e.principal.toLowerCase() === (spn + '@' + d.realm).toLowerCase();
+    }));
+  };
+  host.appendChild(rowsTable(['Name', 'Of', 'SPN', 'In the keytab'], names.map(function (n) {
+    var spn = 'HTTP/' + n[0];
+    return [noI18n(el('span', 'mono', n[0])), n[1], noI18n(el('span', 'mono', spn)),
+      isAddr(n[0]) ? el('span', 'tag crit', 'an address - open the pages by name')
+        : (!kt ? el('span', 'tag warn', 'no keytab')
+           : (inKt(spn) ? el('span', 'tag ok', 'by name') : el('span', 'tag dim', 'by the account’s key')))];
+  })));
 
-  host.appendChild(el('h3', '', 'Making the keytab in AD'));
-  host.appendChild(el('p', 'note', 'On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, "This account supports Kerberos AES 256 bit encryption"), the SPN of each name, and the keytab. Changing the account\u2019s password later makes a new key version: make the keytab again.'));
+  ssoHead(host, 'This machine');
+  host.appendChild(rowsTable(['Node', 'Heard from', 'The keytab', 'Kerberos library', 'Trouble'], [[
+    noI18n(el('span', 'mono', d.fqdn && d.fqdn.indexOf('.') > 0 ? d.fqdn : location.hostname)), el('span', 'tag ok', 'yes'),
+    !kt ? el('span', 'tag dim', 'none to write') : (d.written ? el('span', 'tag ok', 'written') : el('span', 'tag warn', 'not written yet')),
+    d.library ? el('span', 'tag ok', 'there') : el('span', 'tag crit', 'missing'),
+    noI18n(el('span', 'bad', d.library ? '' : (d.library_said || '')))]]));
+
+  ssoHead(host, 'Making the keytab in AD');
+  host.appendChild(el('p', 'note', 'On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, AES allowed), the SPN of each name, and the keytab of the first one - the others are served by the same key. Changing the account’s password later makes a new key version: make the keytab again.'));
   var nb = d.netbios || 'CORP';
   var acct = nb + '\\svc-isemon-http';
-  host.appendChild(noI18n(el('pre', 'lines',
-    '# 1. the account (once): ' + acct + ', AES 256 allowed\n'
-    + 'setspn -S ' + spn + ' ' + acct + '\n'
-    + 'ktpass -princ ' + spn + '@' + (d.realm || 'CORP.EXAMPLE') + ' -mapuser ' + acct
-    + ' -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab')));
+  var realmU = d.realm || 'CORP.EXAMPLE';
+  var cmd = '# 1. the account (once): ' + acct + ', "This account supports Kerberos AES 256 bit encryption"\n'
+    + names.filter(function (n) { return !isAddr(n[0]); }).map(function (n) { return 'setspn -S HTTP/' + n[0] + ' ' + acct + '\n'; }).join('')
+    + 'ktpass -princ HTTP/' + names[0][0] + '@' + realmU + ' -mapuser ' + acct
+    + ' -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab';
+  ssoCode(host, 'cmd.exe on a domain controller', cmd, [acct, realmU]);
 
-  host.appendChild(el('h3', '', 'Telling the browsers'));
-  var ul = el('ul', 'note');
-  [['Edge and Chrome (Windows, by group policy): ', 'AuthServerAllowlist = ' + name],
-   ['...or Internet Options \u2192 Security \u2192 Local intranet \u2192 Sites: ', name],
-   ['Firefox (policy or about:config): ', 'network.negotiate-auth.trusted-uris = ' + name]].forEach(function (x) {
+  ssoHead(host, 'Telling the browsers');
+  var list = names.filter(function (n) { return !isAddr(n[0]); }).map(function (n) { return n[0]; });
+  var ul = el('ul', 'sso-list');
+  [['Edge and Chrome (Windows, by group policy): ', 'AuthServerAllowlist = ' + list.join(',')],
+   ['...or Internet Options → Security → Local intranet → Sites: ', list.join(', ')],
+   ['Firefox (policy or about:config): ', 'network.negotiate-auth.trusted-uris = ' + list.join(',')]].forEach(function (x) {
     var li = el('li');
     li.appendChild(el('span', '', x[0]));
     li.appendChild(noI18n(el('span', 'mono', x[1])));
@@ -29931,6 +30309,7 @@ function drawKerberos(d) {
   });
   ul.appendChild(el('li', '', 'NTLM: nothing to set here - it is refused whatever the browser offers.'));
   host.appendChild(ul);
+  host.appendChild(el('p', 'sso-foot', 'The way back from "no password at all", as root: isemon --set password_off=0 (or Kerberos switched off). More: docs/windows-sign-in.md in the package.'));
 }
 
 function drawCaState(d, at) {
@@ -41515,6 +41894,21 @@ function qBoxesInstall() {
   /* "choose dates…" on every list searched over time. */
   ['f-hours', 'p-hours', 'w-hours', 't-window'].forEach(windowInstall);
   qBoxesInstall();
+  /* Back from Try my certificate (1.10.341): what it said, and the card. */
+  try {
+    var certTry = new URLSearchParams(location.search).get('certtry');
+    if (certTry) {
+      history.replaceState(null, '', location.pathname + '#settings/dir');
+      showTab('settings');
+      showPane('dir');
+      modal('Try my certificate', function (body) {
+        var good = /^would sign in/.test(certTry);
+        body.appendChild(el('span', 'tag ' + (good ? 'ok' : 'crit'), good ? 'would sign in' : 'would not'));
+        body.appendChild(noI18n(el('p', '', certTry.replace(/^would (sign in|not): /, ''))));
+        body.appendChild(el('p', 'note', 'Nobody was signed in by it.'));
+      }, [{words: 'Close', close: true}], true);
+    }
+  } catch (e) { }
 }());
 </script>
 <script nonce="<?= h($nonce) ?>">

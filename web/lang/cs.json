@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.340",
+  "version": "1.10.341",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -384,9 +384,9 @@
    "source": "A browser on a computer in the domain signs its person in without a password: it sends a Kerberos ticket for the name the page was opened by, checked here against the keytab put in below. Only people of the directory above get in, with the role their groups give, exactly as with their password - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off: nothing of it is offered.",
    "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele bez hesla: pošle Kerberos ticket pro jméno, kterým byla stránka otevřena, a ten se tady ověří proti keytabu nahranému níže. Dovnitř se dostanou jen lidé z adresáře výše, s rolí podle svých skupin, přesně jako s heslem - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Vypnuto: nic z toho se nenabízí."
   },
-  "s.a-browser-on-a-computer-in.e8aa7bb2": {
-   "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (",
-   "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele na tyto stránky bez hesla: pošle Kerberos ticket pro jméno, které otevřel, a ten se tady ověří proti keytabu toho jména. Dovnitř se dostanou jen lidé z adresáře výše, s rolí podle svých skupin - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Zapíná se výše ("
+  "s.a-browser-on-a-computer-in.943ae9cf": {
+   "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only accounts of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off, nothing of it is offered.",
+   "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele na tyto stránky bez hesla: pošle Kerberos ticket pro jméno, které otevřel, a ten se tady ověří proti keytabu toho jména. Dovnitř se dostanou jen účty z adresáře výše, s rolí podle svých skupin - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Vypnuto: nic z toho se nenabízí."
   },
   "s.a-browser-that-saw-it-comes.577de8c5": {
    "source": "A browser that saw it comes back only over HTTPS for that long. install.sh sets two years.",
@@ -419,6 +419,14 @@
   "s.a-certificate-for-the-dashboard.17d7d6d2": {
    "source": "A certificate for the dashboard",
    "text": "Certifikát pro dashboard"
+  },
+  "s.a-certificate-of-the-domain-s.a1f3cdf3": {
+   "source": "A certificate of the domain’s authority (AD CS) - on a smart card, a YubiKey or in the computer - signs its person in without a password. The browser goes to a port of its own, where nginx asks for a certificate (never on 443: nobody who opens the pages is asked for one), offers it - Windows asks for the card’s PIN - and comes back signed in. isemon checks it: the chain to the authorities below, the dates, a key usage for signing in, the CRL, the person in the directory above (by the UPN in the certificate, and its SID) and their groups. Face ID, when it is on, is asked after it just the same.",
+   "text": "Certifikát doménové autority (AD CS) - na čipové kartě, YubiKey nebo v počítači - přihlásí svého uživatele bez hesla. Prohlížeč přejde na vlastní port, kde nginx žádá o certifikát (nikdy na 443: nikoho, kdo otevře stránky, o něj nežádá), nabídne ho - Windows se zeptají na PIN karty - a vrátí se přihlášený. isemon ho ověří: řetěz k autoritám níže, platnost, použití klíče pro přihlášení, CRL, osobu v adresáři výše (podle UPN v certifikátu a jeho SID) a její skupiny. Face ID, je-li zapnuté, se po něm vyžaduje stejně."
+  },
+  "s.a-certificate-of-the-domain-s.b23474a4": {
+   "source": "A certificate of the domain's authority (AD CS) - on a smart card, a YubiKey (PIV) or in the computer - signs its person in without a password: the browser goes to a port of its own, offers the certificate (Windows asks for the card's PIN), and comes back signed in. Checked here: the chain to the authorities put in below, the dates, a key usage for signing in, the CRL, the person in the directory above and their groups. Face ID, when it is on, is asked after it just the same. Off: nothing of it is offered and no port is opened.",
+   "text": "Certifikát doménové autority (AD CS) - na čipové kartě, YubiKey (PIV) nebo v počítači - přihlásí svého uživatele bez hesla: prohlížeč přejde na vlastní port, nabídne certifikát (Windows se zeptají na PIN karty) a vrátí se přihlášený. Tady se ověří: řetěz k autoritám nahraným níže, platnost, použití klíče pro přihlášení, CRL, osoba v adresáři výše a její skupiny. Face ID, je-li zapnuté, se po něm vyžaduje stejně. Vypnuto: nic z toho se nenabízí a žádný port se neotevře."
   },
   "s.a-certificate-pasted-here.690f5be6": {
    "source": "a certificate pasted here",
@@ -1672,6 +1680,10 @@
    "source": "A TACACS+ daemon of this site's own — tac_plus rather than ISE — in front of the switches and routers: whether its logs are read at all, which folders it writes into, and what its two files are called. Off unless somebody switches it on, and off it changes nothing. Nothing read here is ever judged.",
    "text": "Vlastní TACACS+ démon tohoto místa — tac_plus místo ISE — před switchi a routery: zda se jeho logy vůbec čtou, do kterých složek zapisuje a jak se jmenují jeho dva soubory. Ve výchozím stavu vypnuto, dokud to někdo nezapne, a vypnuté nic nemění. Nic, co se zde načte, se nikdy nevyhodnocuje."
   },
+  "s.a-template-from-smartcard-logon-or.5b9e34f3": {
+   "source": "A template from Smartcard Logon (or User): Subject Name built from AD with the User principal name (UPN) in the Subject Alternative Name; the key usages Client Authentication and Smart Card Logon; published on the issuing authority.",
+   "text": "Šablona ze Smartcard Logon (nebo User): Subject Name sestavené z AD s User principal name (UPN) v Subject Alternative Name; použití klíče Client Authentication a Smart Card Logon; publikovaná na vydávající autoritě."
+  },
   "s.a-test-by-an-administrator.947235d8": {
    "source": "a test by an administrator",
    "text": "test správcem"
@@ -1811,6 +1823,10 @@
   "s.a-year.fbe0b376": {
    "source": "a year",
    "text": "rok"
+  },
+  "s.a-yubikey-piv-enrolled-from-windows.0da543c3": {
+   "source": "A YubiKey (PIV): enrolled from Windows with the template, or with YubiKey Manager - a request from slot 9a signed by the authority, imported back to 9a.",
+   "text": "YubiKey (PIV): zapsaný z Windows se šablonou, nebo přes YubiKey Manager - žádost ze slotu 9a podepsaná autoritou a importovaná zpět do 9a."
   },
   "s.a-za-z.961e299f": {
    "source": "(?<![A-Za-z])",
@@ -3244,9 +3260,9 @@
    "source": ", and more",
    "text": ", a další"
   },
-  "s.and-no-password-at-all-only.55457112": {
-   "source": "...and no password at all - only Windows",
-   "text": "...a žádné heslo - jen Windows"
+  "s.and-no-password-at-all-only.81cced79": {
+   "source": "...and no password at all - only Windows or a certificate",
+   "text": "...a žádné heslo - jen Windows nebo certifikát"
   },
   "s.and-none-older-than-days.b7edf7f6": {
    "source": "And none older than (days)",
@@ -5072,9 +5088,9 @@
    "source": "By target",
    "text": "Podle cíle"
   },
-  "s.by-the-account-s-key-if.c9a2f04d": {
-   "source": "by the account’s key, if it has this SPN",
-   "text": "klíčem účtu, pokud má tento SPN"
+  "s.by-the-account-s-key.b53d20a8": {
+   "source": "by the account’s key",
+   "text": "klíčem účtu"
   },
   "s.by-the-day.09ccb52e": {
    "source": "by the day",
@@ -5384,6 +5400,10 @@
    "source": "Certificates in the firewall’s trustpoints that have expired or are about to - the VPN’s own name among them, the one every client checks.",
    "text": "Certifikáty v trustpointech firewallu, které vypršely nebo brzy vyprší – mezi nimi i vlastní jméno VPN, které kontroluje každý klient."
   },
+  "s.certificates-it-issued-no-longer-sign.beb9ad46": {
+   "source": "Certificates it issued no longer sign anybody in.",
+   "text": "Certifikáty, které vydala, už nikoho nepřihlásí."
+  },
   "s.certificates-only-nothing-but-acme-certs.e581a105": {
    "source": "“certificates only”: nothing but acme-certs came from that node this week - isemon_events is off there.",
    "text": "„jen certifikáty“: z toho uzlu tento týden přišlo jen acme-certs - isemon_events je tam vypnuté."
@@ -5404,9 +5424,21 @@
    "source": "Certificates",
    "text": "Certifikáty"
   },
+  "s.certlogin.f29381d4": {
+   "source": "certlogin",
+   "text": "certlogin"
+  },
   "s.certs.c7eb5bbc": {
    "source": "certs",
    "text": "certs"
+  },
+  "s.certsaid.3d0b1430": {
+   "source": "certsaid",
+   "text": "certsaid"
+  },
+  "s.certtry.1a5ab6eb": {
+   "source": "certtry",
+   "text": "certtry"
   },
   "s.cfg.6ed7efe0": {
    "source": "cfg",
@@ -5572,6 +5604,10 @@
    "source": "check, start, cancel, clear, hide or reboot",
    "text": "check, start, cancel, clear, hide nebo reboot"
   },
+  "s.check-that-a-certificate-is-not.fe6d64a8": {
+   "source": "Check that a certificate is not revoked (CRL)",
+   "text": "Ověřovat, že certifikát není odvolaný (CRL)"
+  },
   "s.check-that-domain-s-certificate-against.366993cc": {
    "source": "Check that domain’s certificate against an authority this machine trusts, or the one imported below.",
    "text": "Ověřit certifikát této domény vůči autoritě, které tento stroj důvěřuje, nebo vůči té importované níže."
@@ -5635,6 +5671,10 @@
   "s.checked-from-here.5671457d": {
    "source": "Checked from here",
    "text": "Ověřeno odsud"
+  },
+  "s.checked-the-crl-at-the-certificate.f7a8c415": {
+   "source": "checked - the CRL at the certificate’s CRL Distribution Point; none to be had, no sign-in",
+   "text": "ověřuje se - CRL z CRL Distribution Point certifikátu; když není k mání, nikdo se nepřihlásí"
   },
   "s.checked-with-this-machine-s-dns.aa60ce4d": {
    "source": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees.",
@@ -5916,6 +5956,10 @@
    "source": "cloudflare",
    "text": "cloudflare"
   },
+  "s.cmd-exe-on-a-domain-controller.c94d6211": {
+   "source": "cmd.exe on a domain controller",
+   "text": "cmd.exe na řadiči domény"
+  },
   "s.cn-ru.733cb76c": {
    "source": "CN,RU",
    "text": "CN,RU"
@@ -5995,6 +6039,10 @@
   "s.comoros.e5bb59a2": {
    "source": "Comoros",
    "text": "Komory"
+  },
+  "s.compat-the-sid-ad-cs-writes.156b574f": {
+   "source": "compat: the SID AD CS writes into a certificate since KB5014754 must be the account's when it carries one. strong: it must carry one (Microsoft's full enforcement). upn: the UPN alone.",
+   "text": "compat: SID, který AD CS od KB5014754 zapisuje do certifikátu, musí být SID účtu, pokud ho certifikát nese. strong: certifikát ho nést musí (plné vynucení Microsoftu). upn: jen UPN."
   },
   "s.compiling-a-query-pays-for-a.e8798993": {
    "source": "compiling a query pays for a query of minutes; these are thousands of short ones",
@@ -9700,6 +9748,10 @@
    "source": "fetched: the download starts",
    "text": "staženo: stahování začíná"
   },
+  "s.fetched.44169079": {
+   "source": "Fetched",
+   "text": "Staženo"
+  },
   "s.fetched.60c40238": {
    "source": "(fetched:",
    "text": "(staženo:"
@@ -10896,6 +10948,10 @@
    "source": "Go",
    "text": "Spustit"
   },
+  "s.goes-to-the-certificate-s-port.70ad358e": {
+   "source": "Goes to the certificate’s port: the browser offers its certificate and this page says who it would sign in and as what - nobody is signed in",
+   "text": "Přejde na port certifikátu: prohlížeč nabídne svůj certifikát a stránka řekne, koho by přihlásil a s jakou rolí - nikdo se nepřihlásí"
+  },
   "s.going-back-now.f34819d5": {
    "source": "going back now",
    "text": "vrací se teď"
@@ -11155,6 +11211,10 @@
   "s.here-it-has.e5dfaaa6": {
    "source": "Here it has",
    "text": "Zde má"
+  },
+  "s.here-put-in-the-issuing-authority.1c18d200": {
+   "source": "Here: put in the issuing authority and its root (PEM, .cer or .p7b).",
+   "text": "Tady: nahrajte vydávající autoritu a její kořen (PEM, .cer nebo .p7b)."
   },
   "s.here.0154c0da": {
    "source": "here",
@@ -12271,6 +12331,10 @@
   "s.in-acme.be33b15b": {
    "source": "In acme:",
    "text": "V acme:"
+  },
+  "s.in-ad-cs.2b005fb6": {
+   "source": "In AD CS",
+   "text": "V AD CS"
   },
   "s.in-an-ordinary-firewall-policy-from.3b4e9748": {
    "source": "In an ordinary firewall policy from the internet side, put",
@@ -13576,10 +13640,6 @@
    "source": "- it was not sent with the certificate)",
    "text": "- nepřišla s certifikátem)"
   },
-  "s.it-was-sealed-on-another-machine.330e56fc": {
-   "source": "It was sealed on another machine and cannot be read here: put it in again.",
-   "text": "Byl zapečetěn na jiném stroji a tady se nedá přečíst: nahrajte ho znovu."
-  },
   "s.it-works.241cddf0": {
    "source": "It works",
    "text": "Funguje to"
@@ -14183,6 +14243,10 @@
   "s.kept.727edd6b": {
    "source": "Kept",
    "text": "Uloženo"
+  },
+  "s.kerberos-library.2f75ab30": {
+   "source": "Kerberos library",
+   "text": "Knihovna Kerberos"
   },
   "s.kerberos-or-at-least-ntlmv2-in.6c461dff": {
    "source": "Kerberos (or at least NTLMv2) in that application - often a print server or an old web application - and then Digest switched off where it is offered.",
@@ -16872,6 +16936,10 @@
    "source": "Next try",
    "text": "Další pokus"
   },
+  "s.next-update.68b807f7": {
+   "source": "Next update",
+   "text": "Další aktualizace"
+  },
   "s.next.bc981983": {
    "source": "Next",
    "text": "Další"
@@ -16883,6 +16951,14 @@
   "s.nextstat.19a8de27": {
    "source": "nextstat",
    "text": "nextstat"
+  },
+  "s.nginx-asks-for-a-certificate-on.60161a8d": {
+   "source": "nginx asks for a certificate on this port only - never on 443, so nobody who opens the pages is asked for one - and serves nothing there but the sign-in with it. 8443 is http_port_t for SELinux already; 80, 443 and the ports of logs and databases are refused. The firewall lets it in from where the dashboard is.",
+   "text": "nginx žádá o certifikát jen na tomto portu - nikdy na 443, takže nikoho, kdo otevře stránky, o něj nežádá - a neobsluhuje na něm nic jiného než přihlášení s ním. 8443 je pro SELinux už http_port_t; 80, 443 a porty logů a databází se odmítnou. Firewall ho pustí odtud, odkud je přístupný dashboard."
+  },
+  "s.nginx-not-yet-root-puts-it.7fca1598": {
+   "source": "nginx: not yet - root puts it in within a minute",
+   "text": "nginx: zatím ne - root ho nastaví do minuty"
   },
   "s.nginx.58a3ed6f": {
    "source": "nginx",
@@ -16935,6 +17011,10 @@
   "s.no-answer.bfca15c2": {
    "source": "no answer",
    "text": "bez odpovědi"
+  },
+  "s.no-authority-yet.cb4f1587": {
+   "source": "No authority yet",
+   "text": "Zatím bez autority"
   },
   "s.no-backup-has-been-sent-yet.05f6e064": {
    "source": "No backup has been sent yet",
@@ -17024,6 +17104,10 @@
    "source": "No directory is set up, so there is nothing to ask. With one, this page can weigh an alarm by what the account actually is.",
    "text": "Není nastaven žádný adresář, takže není koho se zeptat. S adresářem by tato stránka mohla posoudit poplach podle toho, čím účet skutečně je."
   },
+  "s.no-directory-set.2854547e": {
+   "source": "No directory set",
+   "text": "Adresář není nastavený"
+  },
   "s.no-driver.0af2259d": {
    "source": "no driver",
    "text": "bez ovladače"
@@ -17080,6 +17164,10 @@
    "source": "No job of acme’s yet",
    "text": "Od acme zatím žádná úloha"
   },
+  "s.no-kerberos-library.27b2568e": {
+   "source": "No Kerberos library",
+   "text": "Chybí knihovna Kerberos"
+  },
   "s.no-key-lets-root-in-over.7a439df4": {
    "source": "No key lets root in over SSH on this server.",
    "text": "Žádný klíč nepustí roota na tento server přes SSH."
@@ -17088,9 +17176,13 @@
    "source": "No key yet — make one, or let it sign in with a password.",
    "text": "Zatím žádný klíč — vytvořte ho, nebo nechte přihlašování heslem."
   },
-  "s.no-keytab-yet.e8568cc9": {
-   "source": "no keytab yet",
-   "text": "zatím bez keytabu"
+  "s.no-keytab-yet.bca2b6f9": {
+   "source": "No keytab yet",
+   "text": "Zatím bez keytabu"
+  },
+  "s.no-keytab.42ac6e64": {
+   "source": "no keytab",
+   "text": "bez keytabu"
   },
   "s.no-ladder-every-block-is-the.7467b844": {
    "source": "No ladder — every block is the single length above",
@@ -17172,13 +17264,33 @@
    "source": "no password is saved yet",
    "text": "zatím není uloženo žádné heslo"
   },
+  "s.no-password-is-switched-on-only.5746eeef": {
+   "source": "\"No password\" is switched on only from a sign-in with Windows or a certificate: sign out, sign in that way, and switch it on then",
+   "text": "„Žádné heslo“ se zapíná jen z přihlášení přes Windows nebo certifikátem: odhlaste se, přihlaste se tak a pak ho zapněte"
+  },
   "s.no-password-needed.dfc97ab3": {
    "source": "No password needed",
    "text": "Heslo není potřeba"
   },
+  "s.no-password-needs-sign-in-with.fb44d1f8": {
+   "source": "\"No password\" needs Sign in with Windows (with a keytab) or Sign in with a certificate (with its authorities) on",
+   "text": "„Žádné heslo“ potřebuje zapnuté Přihlašovat přes Windows (s keytabem) nebo Přihlašovat certifikátem (s jeho autoritami)"
+  },
   "s.no-password-nothing-is-sent.89034b89": {
    "source": "no password - nothing is sent",
    "text": "bez hesla – nic se neposílá"
+  },
+  "s.no-password-signs-in-here-no.31d0415b": {
+   "source": "no password signs in here: no password is set or changed while that is on (Settings → Active Directory)",
+   "text": "tady se heslem nepřihlašuje: dokud je to zapnuté, žádné heslo se nenastavuje ani nemění (Nastavení → Active Directory)"
+  },
+  "s.no-password-signs-in-here-no.707ee988": {
+   "source": "no password signs in here: no password is set or changed while that is on",
+   "text": "tady se heslem nepřihlašuje: dokud je to zapnuté, žádné heslo se nenastavuje ani nemění"
+  },
+  "s.no-password-signs-in-here-sign.fa970b68": {
+   "source": "no password signs in here: sign in with Windows or with a certificate",
+   "text": "tady se heslem nepřihlašuje: přihlaste se přes Windows nebo certifikátem"
   },
   "s.no-place-yet-add-the-machine.b3bcb2b2": {
    "source": "No place yet. Add the machine or the network people normally reach the switches from.",
@@ -17428,6 +17540,10 @@
    "source": "Nobody signs in with Windows until one is put in again; passwords still work.",
    "text": "Dokud se nenahraje znovu, nikdo se přes Windows nepřihlásí; hesla dál fungují."
   },
+  "s.nobody-was-signed-in-by-it.ce4a05e8": {
+   "source": "Nobody was signed in by it.",
+   "text": "Nikdo se tím nepřihlásil."
+  },
   "s.nobody-which-cannot-be-right-you.238c0d1c": {
    "source": "Nobody, which cannot be right — you are.",
    "text": "Nikdo, což nemůže být pravda — vy přece ano."
@@ -17464,10 +17580,6 @@
    "source": "none chosen",
    "text": "nic nevybráno"
   },
-  "s.none-face-id-is-off.d04be11d": {
-   "source": "none (Face ID is off)",
-   "text": "žádný (Face ID je vypnuté)"
-  },
   "s.none-found.bcc1d293": {
    "source": "none found",
    "text": "nic nenalezeno"
@@ -17492,9 +17604,9 @@
    "source": "None is kept with it.",
    "text": "Žádný u něj uložen není."
   },
-  "s.none-is-put-in-yet-make.64e2b6be": {
-   "source": "None is put in yet. Make it in AD (below) and put it in here.",
-   "text": "Zatím není nahraný žádný. Udělejte ho v AD (níže) a nahrajte ho sem."
+  "s.none-is-put-in-yet-put.9ecd0d76": {
+   "source": "None is put in yet: put in the authority that issues the cards, and its root.",
+   "text": "Zatím není nahraná žádná: nahrajte autoritu, která vydává karty, a její kořen."
   },
   "s.none-is-there-yet-and-mutual.20f440f2": {
    "source": "- none is there yet, and mutual TLS needs one",
@@ -17507,6 +17619,10 @@
   "s.none-of-them-names-a-folder.2da0a896": {
    "source": "None of them names a folder of these.",
    "text": "Žádný z nich nejmenuje žádnou z těchto složek."
+  },
+  "s.none-only-windows-or-a-certificate.874b032e": {
+   "source": "none - only Windows or a certificate",
+   "text": "žádné - jen Windows nebo certifikát"
   },
   "s.none-only-windows.b6905a1d": {
    "source": "none - only Windows",
@@ -17523,6 +17639,10 @@
   "s.none-seen.668bd8b2": {
    "source": "none seen",
    "text": "nic neviděno"
+  },
+  "s.none-set-nobody-can-sign-in.3b4bc9eb": {
+   "source": "none set - nobody can sign in with a certificate",
+   "text": "není nastavený - certifikátem se nikdo nepřihlásí"
   },
   "s.none-set-nobody-can-sign-in.43433871": {
    "source": "none set - nobody can sign in with Windows",
@@ -17548,9 +17668,17 @@
    "source": "none - the detailed LDAP logging is off",
    "text": "none - the detailed LDAP logging is off"
   },
+  "s.none-to-write.de9e7b11": {
+   "source": "none to write",
+   "text": "není co zapsat"
+  },
   "s.none-yet-isemon-s-own-rules.9d84291f": {
    "source": "None yet - isemon’s own rules below are enough for what it does.",
    "text": "Zatím žádná – vlastní pravidla isemonu níže stačí na to, co dělá."
+  },
+  "s.none-yet-make-it-in-ad.2311aace": {
+   "source": "None yet. Make it in AD (below) and put it in here.",
+   "text": "Zatím žádný. Udělejte ho v AD (níže) a nahrajte ho sem."
   },
   "s.none-yet-pinned-at-the-first.e5551258": {
    "source": "none yet — pinned at the first connection",
@@ -18015,6 +18143,10 @@
   "s.not-with-that-account-yet.a6ad2c16": {
    "source": "not with that account yet",
    "text": "zatím ne s tímto účtem"
+  },
+  "s.not-written-yet.4cdcc8e1": {
+   "source": "not written yet",
+   "text": "zatím nezapsaný"
   },
   "s.not-yet.3a230353": {
    "source": "not yet",
@@ -18820,6 +18952,10 @@
    "source": "of type",
    "text": "typu"
   },
+  "s.of.b7512f39": {
+   "source": "Of",
+   "text": "Čí"
+  },
   "s.of.de04fa0e": {
    "source": "of",
    "text": "z"
@@ -18863,10 +18999,6 @@
   "s.off-nothing-is-counted.1c61f102": {
    "source": "Off - nothing is counted",
    "text": "Vypnuto – nic se nepočítá"
-  },
-  "s.off-nothing-of-it-is-offered.ced00cb9": {
-   "source": "); off, nothing of it is offered.",
-   "text": "); vypnuto, nic z toho se nenabízí."
   },
   "s.off-or-give-the-opnsense-a.11882dd7": {
    "source": "off — or give the OPNsense a certificate this machine trusts and leave it on.",
@@ -18968,9 +19100,9 @@
    "source": "on a disk that spins the pages beside one are written in the same turn",
    "text": "na rotačním disku se sousední stránky zapíší ve stejné otáčce"
   },
-  "s.on-a-domain-controller-as-a.706b1027": {
-   "source": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, \"This account supports Kerberos AES 256 bit encryption\"), the SPN of each name, and the keytab. Changing the account’s password later makes a new key version: make the keytab again.",
-   "text": "Na řadiči domény, jako doménový administrátor: vlastní servisní účet (běžný uživatel, heslo nikdy nevyprší, „Tento účet podporuje 256bitové šifrování Kerberos AES“), SPN každého jména a keytab. Pozdější změna hesla účtu vytvoří novou verzi klíče: keytab pak udělejte znovu."
+  "s.on-a-domain-controller-as-a.97a4ccc7": {
+   "source": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, AES allowed), the SPN of each name, and the keytab of the first one - the others are served by the same key. Changing the account’s password later makes a new key version: make the keytab again.",
+   "text": "Na řadiči domény, jako doménový administrátor: vlastní servisní účet (běžný uživatel, heslo nikdy nevyprší, povolené AES), SPN každého jména a keytab prvního z nich - ostatní obslouží stejný klíč. Pozdější změna hesla účtu vytvoří novou verzi klíče: keytab pak udělejte znovu."
   },
   "s.on-a-pfsense-the-tables-are.98a01875": {
    "source": "On a pfSense the tables are filled again from the configuration whenever the filter is reloaded, and what this put in them goes with it: the sync here puts it back.",
@@ -19044,9 +19176,9 @@
    "source": "on MariaDB, and on the file SQLite's own backup, which is the file. It is a fraction of the size of the database, and it is the format the server's own tools read, so it can be put back by somebody who has never heard of this program.",
    "text": "na MariaDB a pro soubor vlastní záloha SQLite, kterou je ten soubor. Má zlomek velikosti databáze a je to formát, který čtou vlastní nástroje serveru, takže ji může obnovit i někdo, kdo o tomto programu nikdy neslyšel."
   },
-  "s.on-nobody-signs-in-with-a.39f6caa6": {
-   "source": "On: nobody signs in with a password, local accounts neither - the sign-in page offers only Windows, and no password is set or changed. Switched on only from a sign-in with Windows, so whoever does has shown it works for them. In effect only while Sign in with Windows is on; the way back, as root on the server: isemon --set password_off=0.",
-   "text": "Zapnuto: nikdo se nepřihlásí heslem, ani lokální účty - přihlašovací stránka nabízí jen Windows a žádné heslo se nenastavuje ani nemění. Zapíná se jen z přihlášení přes Windows, takže kdo to dělá, ukázal, že mu funguje. Platí jen, dokud je zapnuté Přihlašovat přes Windows; cesta zpět, jako root na serveru: isemon --set password_off=0."
+  "s.on-nobody-signs-in-with-a.da9e212e": {
+   "source": "On: nobody signs in with a password, local accounts neither - the sign-in page offers only Windows or a certificate, and no password is set or changed. Switched on only from a sign-in with Windows or a certificate, so whoever does has shown it works for them. In effect only while one of the two is on; the way back, as root on the server: isemon --set password_off=0.",
+   "text": "Zapnuto: nikdo se nepřihlásí heslem, ani lokální účty - přihlašovací stránka nabízí jen Windows nebo certifikát a žádné heslo se nenastavuje ani nemění. Zapíná se jen z přihlášení přes Windows nebo certifikátem, takže kdo to dělá, ukázal, že mu to funguje. Platí jen, dokud je jedno z obou zapnuté; cesta zpět, jako root na serveru: isemon --set password_off=0."
   },
   "s.on-not-paired-yet.1be56839": {
    "source": "on - not paired yet",
@@ -20084,22 +20216,6 @@
    "source": "Only when it was locked with another password than the one set here now.",
    "text": "Jen pokud byla zamčená jiným heslem než tím, které je tu nastavené teď."
   },
-  "s.only-windows-is-switched-on-only.d2da0f3f": {
-   "source": "\"Only Windows\" is switched on only from a sign-in with Windows: sign out, sign in with Windows, and switch it on then",
-   "text": "„Jen Windows“ se zapíná jen z přihlášení přes Windows: odhlaste se, přihlaste se přes Windows a pak ho zapněte"
-  },
-  "s.only-windows-needs-sign-in-with.fb4d04b1": {
-   "source": "\"Only Windows\" needs Sign in with Windows on, with a keytab put in",
-   "text": "„Jen Windows“ potřebuje zapnuté Přihlašovat přes Windows a nahraný keytab"
-  },
-  "s.only-windows-signs-in-here-no.2d4d2770": {
-   "source": "only Windows signs in here: no password is set or changed while that is on",
-   "text": "tady se přihlašuje jen přes Windows: dokud je to zapnuté, žádné heslo se nenastavuje ani nemění"
-  },
-  "s.only-windows-signs-in-here-no.829ba122": {
-   "source": "only Windows signs in here: no password is set or changed while that is on (Settings → Active Directory)",
-   "text": "tady se přihlašuje jen přes Windows: dokud je to zapnuté, žádné heslo se nenastavuje ani nemění (Nastavení → Active Directory)"
-  },
   "s.only-windows-signs-in-here-no.fb51a145": {
    "source": "Only Windows signs in here: no password is set or changed on these pages. The way back is root’s, on the server: isemon --set password_off=0.",
    "text": "Tady se přihlašuje jen přes Windows: na těchto stránkách se žádné heslo nenastavuje ani nemění. Cesta zpět je rootova, na serveru: isemon --set password_off=0."
@@ -20107,10 +20223,6 @@
   "s.only-windows-signs-in-here-switch.299cae5f": {
    "source": "only Windows signs in here: switch that off first, or nobody could sign in",
    "text": "tady se přihlašuje jen přes Windows: nejdřív to vypněte, jinak by se nikdo nepřihlásil"
-  },
-  "s.only-windows-signs-in-here-use.0597ce24": {
-   "source": "only Windows signs in here: use Sign in with Windows",
-   "text": "tady se přihlašuje jen přes Windows: použijte Přihlásit přes Windows"
   },
   "s.only-with-the-words.d402b3a0": {
    "source": "only with the words",
@@ -21720,6 +21832,14 @@
    "source": "Put in a keytab…",
    "text": "Nahrát keytab…"
   },
+  "s.put-in-an-authority.d4076cfa": {
+   "source": "Put in an authority…",
+   "text": "Nahrát autoritu…"
+  },
+  "s.put-in-an-authority.e9b960dc": {
+   "source": "Put in an authority",
+   "text": "Nahrát autoritu"
+  },
   "s.put-in-another-keytab.48fcfd93": {
    "source": "Put in another keytab…",
    "text": "Nahrát jiný keytab…"
@@ -21847,6 +21967,10 @@
   "s.put-this-txt-record-in-dns.d78d46ed": {
    "source": "Put this TXT record in DNS",
    "text": "Vložte tento záznam TXT do DNS"
+  },
+  "s.put.132aeadf": {
+   "source": "put",
+   "text": "put"
   },
   "s.put.7fd768e4": {
    "source": "Put",
@@ -22963,6 +23087,10 @@
   "s.reversible-encryption.280418f7": {
    "source": "Reversible encryption",
    "text": "Vratné šifrování"
+  },
+  "s.revocation.6f6bf2c2": {
+   "source": "Revocation",
+   "text": "Odvolání"
   },
   "s.revoked-because.58f9fcb9": {
    "source": "Revoked because",
@@ -24412,6 +24540,14 @@
    "source": "Sign in to the second firewall and ask it its own name. Nothing is written and nothing is changed — it is the quickest way to find out whether its address, its account and its key are right.",
    "text": "Přihlásit se k druhému firewallu a zeptat se ho na jeho jméno. Nic se nezapisuje ani nemění — je to nejrychlejší způsob, jak zjistit, zda jsou jeho adresa, účet a klíč správné."
   },
+  "s.sign-in-with-a-certificate-a.396e16a7": {
+   "source": "Sign in with a certificate (a smart card, a YubiKey)",
+   "text": "Přihlašovat certifikátem (čipová karta, YubiKey)"
+  },
+  "s.sign-in-with-a-certificate.aed0ed04": {
+   "source": "Sign in with a certificate",
+   "text": "Přihlásit certifikátem"
+  },
   "s.sign-in-with-active-directory.147bba95": {
    "source": "Sign in with Active Directory",
    "text": "Přihlásit se přes Active Directory"
@@ -24539,6 +24675,14 @@
   "s.signing-in-to-a-switch-or.1459c764": {
    "source": "Signing in to a switch or a router over TACACS+. A different system with a different person in front of it, and never judged.",
    "text": "Přihlášení ke switchi nebo routeru přes TACACS+. Jiný systém s jiným člověkem u klávesnice, a nikdy se nevyhodnocuje."
+  },
+  "s.signing-in-with-a-certificate-a.4c8ad89b": {
+   "source": "Signing in with a certificate (a smart card, a YubiKey)",
+   "text": "Přihlašování certifikátem (čipová karta, YubiKey)"
+  },
+  "s.signing-in-with-a-certificate-is.f96e01d2": {
+   "source": "signing in with a certificate is off",
+   "text": "přihlašování certifikátem je vypnuté"
   },
   "s.signing-in-with-active-directory-which.afcf2123": {
    "source": "Signing in with Active Directory: which server, how it is reached, and which groups get which role.",
@@ -25500,6 +25644,10 @@
    "source": "Subject not found",
    "text": "Subjekt nenalezen"
   },
+  "s.subject.8d183dbd": {
+   "source": "Subject",
+   "text": "Subjekt"
+  },
   "s.subtype-vpn-logdesc-ipsec.0bd3e533": {
    "source": "subtype:vpn logdesc:*IPsec*",
    "text": "subtype:vpn logdesc:*IPsec*"
@@ -25747,6 +25895,10 @@
   "s.switched-on-it-opens-by-itself.07cae8ec": {
    "source": "). Switched on, it opens by itself when root signs in there;",
    "text": "). Zapnutá se otevře sama, když se tam přihlásí root;"
+  },
+  "s.switched-on-not-ready-yet.48b3374b": {
+   "source": "switched on, not ready yet",
+   "text": "zapnuto, zatím nepřipraveno"
   },
   "s.switched-on-the-security-logs-are.bfc450e4": {
    "source": "Switched on, the Security logs are read the way the ISE logs are — one folder per controller, all of them read into one timeline — and a",
@@ -26067,6 +26219,10 @@
   "s.take-that-certificate-authority-away.f6beb205": {
    "source": "Take that certificate authority away",
    "text": "Odebrat tuto certifikační autoritu"
+  },
+  "s.take-the-authority-away.babcb244": {
+   "source": "Take the authority away",
+   "text": "Odebrat autoritu"
   },
   "s.take-the-certificate-authority-away.cfae455d": {
    "source": "Take the certificate authority away",
@@ -27052,9 +27208,17 @@
    "source": "The authorities this machine trusts — or give your own.",
    "text": "Autority, kterým tento stroj důvěřuje — nebo zadejte vlastní."
   },
+  "s.the-authorities.e59498de": {
+   "source": "The authorities",
+   "text": "Autority"
+  },
   "s.the-authority-is-gone.602cc0bd": {
    "source": "the authority is gone",
    "text": "autorita je pryč"
+  },
+  "s.the-authority-is-taken-away.2c07fe64": {
+   "source": "the authority is taken away",
+   "text": "autorita je odebraná"
   },
   "s.the-authority-pem.b8f7cf9d": {
    "source": "The authority (PEM)",
@@ -27063,6 +27227,14 @@
   "s.the-authority-s-certificate-whole-including.7498c8a7": {
    "source": "The authority’s certificate, whole, including its",
    "text": "Certifikát autority, celý, včetně řádků"
+  },
+  "s.the-authority-s-extensions-a-crl.80a4e302": {
+   "source": "The authority’s Extensions: a CRL Distribution Point over http that this server reaches (the default http://",
+   "text": "Rozšíření autority: CRL Distribution Point přes http, na který tento server dosáhne (výchozí http://"
+  },
+  "s.the-authority-that-issues-the-cards.65f1f4c7": {
+   "source": "The authority that issues the cards and its root - as PEM, or a .cer, .crt or .p7b file. Only authorities: a person’s certificate is refused.",
+   "text": "Autorita, která vydává karty, a její kořen - jako PEM nebo soubor .cer, .crt či .p7b. Jen autority: certifikát osoby se odmítne."
   },
   "s.the-authority-was-stored.35beabbe": {
    "source": "the authority was stored",
@@ -27200,6 +27372,10 @@
    "source": "the browser refused the clipboard; select the text and copy it by hand",
    "text": "prohlížeč odmítl přístup ke schránce; označte text a zkopírujte ho ručně"
   },
+  "s.the-browsers-need-no-setting-edge.ccb5deab": {
+   "source": "The browsers need no setting; Edge and Chrome may choose the certificate by themselves (policy AutoSelectCertificateForUrls).",
+   "text": "Prohlížeče žádné nastavení nepotřebují; Edge a Chrome mohou certifikát vybrat samy (politika AutoSelectCertificateForUrls)."
+  },
   "s.the-built-in-default-not-in.4cdd7c44": {
    "source": "the built-in default (not in config.json)",
    "text": "vestavěná výchozí hodnota (není v config.json)"
@@ -27315,6 +27491,14 @@
   "s.the-certificate-put-in-on-certificates.07c1a55a": {
    "source": "The certificate put in on Certificates and TLS (uploaded, from a request, self-signed) stays: ACME does not replace it. Look after it, or Order it now, gives it to ACME.",
    "text": "Certifikát vložený v Certifikáty a TLS (nahraný, z žádosti, self-signed) zůstává: ACME ho nenahradí. Starat se o něj nebo Objednat teď ho předá ACME."
+  },
+  "s.the-certificate-s-own-port.1c5c2f06": {
+   "source": "The certificate's own port",
+   "text": "Vlastní port certifikátu"
+  },
+  "s.the-certificate-s-port-is-a.a4ecc58b": {
+   "source": "the certificate's port is a number",
+   "text": "port certifikátu je číslo"
   },
   "s.the-certificate-the-authority-signed-for.b2f4bbcf": {
    "source": "The certificate the authority signed for the router - with its private key, flag",
@@ -27611,6 +27795,14 @@
   "s.the-country-the-firewall-puts-that.3b00229a": {
    "source": "the country the firewall puts that address in",
    "text": "země, do které firewall tuto adresu řadí"
+  },
+  "s.the-crl-at-the-certificate-s.ed730523": {
+   "source": "The CRL at the certificate's CRL Distribution Point (http), kept until its next update. On: no CRL to be had, no sign-in. Off only for an authority that publishes none.",
+   "text": "CRL z CRL Distribution Point certifikátu (http), drží se do své další aktualizace. Zapnuto: když CRL není k mání, nikdo se nepřihlásí. Vypnout jen u autority, která žádné nevydává."
+  },
+  "s.the-crls-fetched.f6f262c1": {
+   "source": "The CRLs fetched",
+   "text": "Stažené CRL"
   },
   "s.the-current-password-is-not-right.43db85c8": {
    "source": "the current password is not right",
@@ -28828,10 +29020,6 @@
    "source": "The KDC writes here only when an account lacks the keys asked for, or (with the 2026 updates) when RC4 is used.",
    "text": "KDC sem zapisuje jen tehdy, když účtu chybí požadované klíče, nebo (s aktualizacemi z roku 2026) když se použije RC4."
   },
-  "s.the-kerberos-library.bc0d9a1e": {
-   "source": "The Kerberos library",
-   "text": "Knihovna Kerberos"
-  },
   "s.the-kernel-s-command-line-has.dd5541ef": {
    "source": "The kernel's command line has selinux=0 - it stays off whatever the configuration says.",
    "text": "Příkazová řádka jádra má selinux=0 - zůstane vypnutý, ať říká konfigurace cokoli."
@@ -28907,6 +29095,10 @@
   "s.the-keys-that-may-sign-in.e26240fb": {
    "source": "The keys that may sign in to this server as root over SSH: made here, added or taken away.",
    "text": "Klíče, kterými se lze na tento server přihlásit jako root přes SSH: vytvořené zde, přidané nebo odebrané."
+  },
+  "s.the-keytab-cannot-be-read-here.3b47e694": {
+   "source": "The keytab cannot be read here",
+   "text": "Keytab tady nejde přečíst"
   },
   "s.the-keytab-did-not-arrive-whole.633a62a0": {
    "source": "the keytab did not arrive whole",
@@ -30040,6 +30232,10 @@
    "source": "the port it went to (also: port)",
    "text": "port, kam směřovalo (také: port)"
   },
+  "s.the-port-must-reach-this-server.e04a0ef7": {
+   "source": "The port must reach this server as it is: a load balancer has to pass it through as TCP - one that ends TLS cannot hand on the browser’s certificate.",
+   "text": "Port musí dorazit na tento server tak, jak je: load balancer ho musí propustit jako TCP - ten, který TLS ukončuje, certifikát prohlížeče dál nepředá."
+  },
   "s.the-port-mutual-tls-and-the.e3acddea": {
    "source": "The port, mutual TLS and the nodes that may send - the certificate stays as it is.",
    "text": "Port, vzájemné TLS a uzly, které smějí posílat - certifikát zůstane, jak je."
@@ -30067,6 +30263,10 @@
   "s.the-port-there.99b6a942": {
    "source": "the port there",
    "text": "port tam"
+  },
+  "s.the-port.8c2b6c50": {
+   "source": "The port",
+   "text": "Port"
   },
   "s.the-primary-dns-server-of-the.54c617b9": {
    "source": "The primary DNS server of the zone,",
@@ -31196,6 +31396,18 @@
    "source": "The uploaded package is deleted; send it again to upgrade.",
    "text": "Nahraný balíček se smaže; pro upgrade ho pošlete znovu."
   },
+  "s.the-upn-alone.85b00c20": {
+   "source": "the UPN alone",
+   "text": "jen UPN"
+  },
+  "s.the-upn-and-the-sid-kb5014754.d1c1a137": {
+   "source": "the UPN and the SID (KB5014754) - a certificate without one is refused",
+   "text": "UPN a SID (KB5014754) - certifikát bez něj se odmítne"
+  },
+  "s.the-upn-and-the-sid-kb5014754.ff0ff05d": {
+   "source": "the UPN, and the SID (KB5014754) when the certificate carries one",
+   "text": "UPN a SID (KB5014754), pokud ho certifikát nese"
+  },
   "s.the-url-below-and.e74f30b1": {
    "source": "the URL below, and",
    "text": "URL níže a"
@@ -31391,6 +31603,10 @@
   "s.the-waiting-request.74bca48f": {
    "source": "The waiting request",
    "text": "Čekající žádost"
+  },
+  "s.the-way-back-from-no-password.8ce4c952": {
+   "source": "The way back from \"no password at all\", as root: isemon --set password_off=0 (or Kerberos switched off). More: docs/windows-sign-in.md in the package.",
+   "text": "Cesta zpět z „žádného hesla“, jako root: isemon --set password_off=0 (nebo vypnutý Kerberos). Víc: docs/windows-sign-in.md v balíčku."
   },
   "s.the-way-out-through-the-proxy.59df9fd4": {
    "source": "the way out through the proxy tried: an address of your own, or the upgrades' one, asked through the proxy of Settings - Proxy (or straight where none is set or the address is in its list) - each step with its time",
@@ -31719,10 +31935,6 @@
   "s.there-is-nothing-to-fold-no.48a40a1d": {
    "source": "There is nothing to fold: no two banned addresses share a subnet this wide.",
    "text": "Není co sloučit: žádné dvě zablokované adresy nesdílejí takto širokou podsíť."
-  },
-  "s.there-libgssapi-krb5.0fe3b7d9": {
-   "source": "there (libgssapi_krb5)",
-   "text": "je tu (libgssapi_krb5)"
   },
   "s.there-was-nothing-to-pack.4130092e": {
    "source": "there was nothing to pack",
@@ -32123,6 +32335,10 @@
   "s.this-machine-reaches-the-opnsense-over.df8ecd40": {
    "source": "This machine reaches the OPNsense over HTTPS on its web interface’s port. With the certificate it makes for itself, switch",
    "text": "Tento stroj se k OPNsense připojuje přes HTTPS na portu jeho webového rozhraní. S certifikátem, který si vytváří sám, vypněte"
+  },
+  "s.this-machine.2bb8c877": {
+   "source": "This machine",
+   "text": "Tento stroj"
   },
   "s.this-machine.8ada74cb": {
    "source": "this machine",
@@ -32927,6 +33143,10 @@
   "s.try-my-browser-s-ticket.55f3644b": {
    "source": "Try my browser’s ticket",
    "text": "Vyzkoušet ticket mého prohlížeče"
+  },
+  "s.try-my-certificate.5556e0d3": {
+   "source": "Try my certificate",
+   "text": "Vyzkoušet můj certifikát"
   },
   "s.try-one-person-s-sign-in.6bcab48c": {
    "source": "Try one person's sign-in from here, so you find out it works before you sign out.",
@@ -35656,9 +35876,17 @@
    "source": "Which access point heard it. The controller writes it in front of the network name and it is the only thing in these records that says where in the building the machine actually was — the \"port\" a controller reports is one tunnel for the lot of them.",
    "text": "Který access point ho zachytil. Kontrolér ho zapisuje před název sítě a je to jediný údaj v těchto záznamech, který říká, kde v budově počítač skutečně byl — „port“, který kontrolér hlásí, je jeden tunel pro všechny."
   },
+  "s.which-account-a-certificate-is.9c312086": {
+   "source": "Which account a certificate is",
+   "text": "Kterému účtu certifikát patří"
+  },
   "s.which-account-did-it-or-nothing.204759b1": {
    "source": "Which account did it, or nothing at all when the rules did it by themselves.",
    "text": "Který účet to provedl, nebo nic, pokud to pravidla udělala sama."
+  },
+  "s.which-account-it-is.4da742ec": {
+   "source": "Which account it is",
+   "text": "Kterému účtu patří"
   },
   "s.which-address-its-dhcp-server-has.b9e68651": {
    "source": "Which address its DHCP server has given to which machine, now.",
@@ -37382,6 +37610,10 @@
    "source": "{0} authorities",
    "text": "{0} autorit"
   },
+  "p.authority-ies-put-in.ea643542": {
+   "source": "{0} authority(-ies) put in",
+   "text": "nahráno autorit: {0}"
+  },
   "p.authserverallowlist.3cc19e9b": {
    "source": "AuthServerAllowlist = {0}",
    "text": "AuthServerAllowlist = {0}"
@@ -38730,9 +38962,9 @@
    "source": "&kind={0}",
    "text": "&kind={0}"
   },
-  "p.ktpass-princ-mapuser-crypto-aes256-sha1.bdbad64e": {
-   "source": "ktpass -princ {0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab",
-   "text": "ktpass -princ {0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab"
+  "p.ktpass-princ-http-mapuser-crypto-aes256.70d1b5c6": {
+   "source": "{0}ktpass -princ HTTP/{1}@{2} -mapuser {3} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab",
+   "text": "{0}ktpass -princ HTTP/{1}@{2} -mapuser {3} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab"
   },
   "p.last-answered.ae970e33": {
    "source": ", last answered {0}",
@@ -39125,6 +39357,10 @@
   "p.nginx-keeps-the-files-it-has.babab939": {
    "source": "nginx keeps the files it has now; isemon no longer changes them.{0}",
    "text": "nginx si nechá soubory, které má teď; isemon je už nemění.{0}"
+  },
+  "p.nginx-listening-on.c2b5383e": {
+   "source": "nginx listening on {0}",
+   "text": "nginx naslouchá na {0}"
   },
   "p.no-account-called.a695490f": {
    "source": "{0} no account called",
@@ -40082,9 +40318,9 @@
    "source": "set-{0}",
    "text": "set-{0}"
   },
-  "p.setspn-s.05f01c0b": {
-   "source": "setspn -S {0} {1}",
-   "text": "setspn -S {0} {1}"
+  "p.setspn-s-http.2b038fa3": {
+   "source": "setspn -S HTTP/{0} {1}",
+   "text": "setspn -S HTTP/{0} {1}"
   },
   "p.setting-it-up.994dd8ca": {
    "source": "Setting it up: {0}",
@@ -40093,6 +40329,10 @@
   "p.setting-s-saved.8323a362": {
    "source": "{0} setting(s) saved",
    "text": "{0} nastavení uloženo"
+  },
+  "p.settings-dir.09cf021d": {
+   "source": "{0}#settings/dir",
+   "text": "{0}#settings/dir"
   },
   "p.settings-network.312f8e07": {
    "source": "{0}//{1}{2}{3}#settings/network",
@@ -40310,10 +40550,6 @@
    "source": "{0} table(s) laid out by you",
    "text": "{0} {0:tabulka|tabulky|tabulek} s vaším rozvržením"
   },
-  "p.tag.9a706b8d": {
-   "source": "tag {0}",
-   "text": "tag {0}"
-  },
   "p.take-off-the-whitelist-it-can.57307341": {
    "source": "Take {0} off the whitelist. It can be banned again from that moment, by the counting like anybody else.",
    "text": "Odebrat {0} z whitelistu. Od té chvíle může být znovu zablokována, podle počítání jako kdokoli jiný."
@@ -40462,6 +40698,10 @@
    "source": "({0}): the cards, the chart, the lists and the search, all of them for this one firewall.",
    "text": "({0}): karty, graf, seznamy i hledání, vše pouze pro tento jeden firewall."
   },
+  "p.the-certificate-could-not-be-checked.690cbc09": {
+   "source": "the certificate could not be checked: {0}",
+   "text": "certifikát se nepodařilo ověřit: {0}"
+  },
   "p.the-certificate-is-not-trusted.752639f2": {
    "source": "the certificate is not trusted: {0}",
    "text": "certifikát není důvěryhodný: {0}"
@@ -40473,6 +40713,10 @@
   "p.the-certificate-nginx-answers-with-on.55ba1792": {
    "source": "the certificate nginx answers with on this name{0}",
    "text": "certifikát, kterým nginx odpovídá na tomto jméně{0}"
+  },
+  "p.the-certificate-s-port-is-one.e2fff556": {
+   "source": "the certificate's port is one of its own, 1024-65535: not {0}",
+   "text": "port certifikátu je vlastní, 1024-65535: ne {0}"
   },
   "p.the-certificate-s-up-to-the.a66519c8": {
    "source": "The {0} certificate(s) up to the root.",
@@ -41548,10 +41792,6 @@
    "source": "· <b>401</b> no user name and password, or wrong ones",
    "text": "· <b>401</b> chybí uživatelské jméno a heslo, nebo jsou chybné"
   },
-  "r.a-browser-on-a-computer-in.c98b3f3d": {
-   "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (<b>Sign in with Windows (Kerberos)</b>); off, nothing of it is offered.",
-   "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele na tyto stránky bez hesla: pošle Kerberos ticket pro jméno, které otevřel, a ten se tady ověří proti keytabu toho jména. Dovnitř se dostanou jen lidé z adresáře výše, s rolí podle svých skupin - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Zapíná se výše (<b>Přihlašovat přes Windows (Kerberos)</b>); vypnuto, nic z toho se nenabízí."
-  },
   "r.a-certificate-authority-of-your-own.f4f9c3dc": {
    "source": "A certificate authority of your own - a root, or an intermediate - as PEM (<code>-----BEGIN CERTIFICATE-----</code>), or a <code>.pem</code>, <code>.crt</code> or <code>.cer</code> file. A chain adds every authority in it. Only authorities are taken (CA:TRUE), never a private key.",
    "text": "Vlastní certifikační autorita - kořenová nebo zprostředkující - jako PEM (<code>-----BEGIN CERTIFICATE-----</code>), nebo soubor <code>.pem</code>, <code>.crt</code> či <code>.cer</code>. Řetězec přidá každou autoritu v něm. Berou se jen autority (CA:TRUE), nikdy soukromý klíč."
@@ -42443,6 +42683,10 @@
   "r.set-username-set-password-password.e82e3793": {
    "source": "set username \"{0}\"<br> set password PASSWORD<br>",
    "text": "set username \"{0}\"<br> set password PASSWORD<br>"
+  },
+  "r.setspn-s-http.72e07ffd": {
+   "source": "setspn -S HTTP/{0} {1}<br>",
+   "text": "setspn -S HTTP/{0} {1}<br>"
   },
   "r.show-only-the-rows-from-one.32b735f8": {
    "source": "Show only the rows from one country. Search it by name or by its two letters; <b>ZZ</b> is what the country database says about an address that belongs to nobody in particular - a private range, a reserved block, something unallocated.",
@@ -43362,6 +43606,10 @@
    "source": "its driver is not installed here: {0}",
    "text": "její ovladač tu není nainstalovaný: {0}"
   },
+  "p.ktpass-princ-mapuser-crypto-aes256-sha1.bdbad64e": {
+   "source": "ktpass -princ {0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab",
+   "text": "ktpass -princ {0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab"
+  },
   "p.last-read.98f86991": {
    "source": "· last read {0}",
    "text": "· naposledy čteno {0}"
@@ -43369,6 +43617,10 @@
   "p.line-s-kept-counted-bucket-s.72f62731": {
    "source": "{0} line(s) kept{1} · {2} counted bucket(s) behind the cards and the chart · kept {3}{4} day(s) for the rest",
    "text": "{0} řádků uchováno{1} · {2} započtených intervalů za kartami a grafem · ostatní uchovávány {3}{4} dní"
+  },
+  "p.listening-on.845b29eb": {
+   "source": "listening on {0}",
+   "text": "naslouchá na {0}"
   },
   "p.live-copies-packed.560870e5": {
    "source": "live {0} · copies {1} · packed {2}",
@@ -43442,6 +43694,10 @@
    "source": "{0} rows",
    "text": "{0} řádků"
   },
+  "p.setspn-s.05f01c0b": {
+   "source": "setspn -S {0} {1}",
+   "text": "setspn -S {0} {1}"
+  },
   "p.setting-up.d846bce0": {
    "source": "Setting up {0}",
    "text": "Nastavuje se {0}"
@@ -43469,6 +43725,10 @@
   "p.table-s-thrown-away-it-is.606abac9": {
    "source": "{0} table(s) thrown away; it is as good as new",
    "text": "{0} tabulek zahozeno; je jako nové"
+  },
+  "p.tag.9a706b8d": {
+   "source": "tag {0}",
+   "text": "tag {0}"
   },
   "p.that-file-is-far-bigger-than.ec707f1d": {
    "source": "That file is far bigger than any settings file ({0})",
@@ -43557,6 +43817,10 @@
   "p.your-settings-were-saved-to-table.2bc2e217": {
    "source": "Your settings were saved to {0} ({1} table layout(s), {2} search(es))",
    "text": "Vaše nastavení byla uložena do {0} ({1} rozvržení tabulek, {2} hledání)"
+  },
+  "r.a-browser-on-a-computer-in.c98b3f3d": {
+   "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (<b>Sign in with Windows (Kerberos)</b>); off, nothing of it is offered.",
+   "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele na tyto stránky bez hesla: pošle Kerberos ticket pro jméno, které otevřel, a ten se tady ověří proti keytabu toho jména. Dovnitř se dostanou jen lidé z adresáře výše, s rolí podle svých skupin - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Zapíná se výše (<b>Přihlašovat přes Windows (Kerberos)</b>); vypnuto, nic z toho se nenabízí."
   },
   "r.an-external-alias-is-empty-after.cc237b99": {
    "source": "<b>An External alias is empty after the OPNsense restarts.</b> Its content lives only in the pf table. The sync here puts it back: set <i>How often to look at the firewall</i> to a few minutes rather than only on a change.",
@@ -43673,6 +43937,10 @@
   "s.a-backup-of-everything-the-database.4a2f1f25": {
    "source": "A backup of everything - the database with its keys - locked with a password and sent to another machine, on a schedule or now; and one put back.",
    "text": "Záloha všeho – databáze s jejími klíči – zamčená heslem a poslaná na jiný stroj, podle plánu nebo hned; a obnovení z ní."
+  },
+  "s.a-browser-on-a-computer-in.e8aa7bb2": {
+   "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (",
+   "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele na tyto stránky bez hesla: pošle Kerberos ticket pro jméno, které otevřel, a ten se tady ověří proti keytabu toho jména. Dovnitř se dostanou jen lidé z adresáře výše, s rolí podle svých skupin - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Zapíná se výše ("
   },
   "s.a-downloadable-acl.743e60c2": {
    "source": "A downloadable ACL ·",
@@ -43810,6 +44078,10 @@
    "source": "and a machine that has fetched one and then turned the switch off",
    "text": "a stroj, který ji už stáhl a pak přepínač vypnul,"
   },
+  "s.and-no-password-at-all-only.55457112": {
+   "source": "...and no password at all - only Windows",
+   "text": "...a žádné heslo - jen Windows"
+  },
   "s.and-nothing-here-can-earn-anybody.07fe7fc0": {
    "source": "and nothing here can earn anybody a ban. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "a nic tady nemůže nikomu vysloužit blokaci. Když je vypnuto, neotevře se jediný soubor a nic se nikde nechová jinak."
@@ -43925,6 +44197,10 @@
   "s.by-machine.6626fbe2": {
    "source": "By machine",
    "text": "Podle stroje"
+  },
+  "s.by-the-account-s-key-if.c9a2f04d": {
+   "source": "by the account’s key, if it has this SPN",
+   "text": "klíčem účtu, pokud má tento SPN"
   },
   "s.carry-everything-across.05a15b90": {
    "source": "carry everything across",
@@ -44266,6 +44542,10 @@
    "source": "It is reachable and empty of ours, which is exactly what something to carry everything into should look like.",
    "text": "Je dostupný a neobsahuje nic našeho, což je přesně to, jak má vypadat místo, kam se má vše přenést."
   },
+  "s.it-was-sealed-on-another-machine.330e56fc": {
+   "source": "It was sealed on another machine and cannot be read here: put it in again.",
+   "text": "Byl zapečetěn na jiném stroji a tady se nedá přečíst: nahrajte ho znovu."
+  },
   "s.it-was-there-already.72b40faf": {
    "source": "it was there already",
    "text": "už tam byl"
@@ -44370,6 +44650,10 @@
    "source": "No acme yet: nothing is taken until one is paired.",
    "text": "Zatím žádné acme: dokud se žádné nespáruje, nic se nepřijímá."
   },
+  "s.no-authority-yet.15acecf0": {
+   "source": "no authority yet",
+   "text": "zatím bez autority"
+  },
   "s.no-certificate.2a6a501e": {
    "source": "no certificate",
    "text": "žádný certifikát"
@@ -44377,6 +44661,10 @@
   "s.no-key-yet.4eb24632": {
    "source": "no key yet",
    "text": "zatím žádný klíč"
+  },
+  "s.no-keytab-yet.e8568cc9": {
+   "source": "no keytab yet",
+   "text": "zatím bez keytabu"
   },
   "s.no-line-is-like-that.32b556b0": {
    "source": "No line is like that.",
@@ -44386,9 +44674,21 @@
    "source": "No other isemon uses this database: it may be moved.",
    "text": "Žádný jiný isemon tuto databázi nepoužívá: lze ji přesunout."
   },
+  "s.no-port-open.7a3cd67e": {
+   "source": "no port open",
+   "text": "žádný port není otevřený"
+  },
   "s.no-the-one-certificate.1975debf": {
    "source": "No - the one certificate",
    "text": "Ne - jen jeden certifikát"
+  },
+  "s.none-face-id-is-off.d04be11d": {
+   "source": "none (Face ID is off)",
+   "text": "žádný (Face ID je vypnuté)"
+  },
+  "s.none-is-put-in-yet-make.64e2b6be": {
+   "source": "None is put in yet. Make it in AD (below) and put it in here.",
+   "text": "Zatím není nahraný žádný. Udělejte ho v AD (níže) a nahrajte ho sem."
   },
   "s.none-known-yet-acme-name.a6cd3416": {
    "source": "none known yet (acme_name)",
@@ -44421,6 +44721,10 @@
   "s.not-this-one.febeb00d": {
    "source": "Not this one",
    "text": "Tento ne"
+  },
+  "s.not-yet-root-puts-it-in.e5032566": {
+   "source": "not yet - root puts it in within a minute",
+   "text": "zatím ne - root ho nastaví do minuty"
   },
   "s.nothing-changes-until-the-last-step.03b8a85c": {
    "source": "Nothing changes until the last step. Until then isemon goes on exactly as it is, and Close leaves everything as it was.",
@@ -44482,6 +44786,10 @@
    "source": "Off: a certificate that does not hold the dashboard’s name is refused, so none can take it over silently.",
    "text": "Vypnuto: certifikát, který neobsahuje jméno dashboardu, se odmítne, takže ho žádný nemůže potichu převzít."
   },
+  "s.off-nothing-of-it-is-offered.ced00cb9": {
+   "source": "); off, nothing of it is offered.",
+   "text": "); vypnuto, nic z toho se nenabízí."
+  },
   "s.older-lines.ccdcd2fd": {
    "source": "Older lines",
    "text": "Starší řádky"
@@ -44490,9 +44798,17 @@
    "source": "Oldest",
    "text": "Nejstarší"
   },
+  "s.on-a-domain-controller-as-a.706b1027": {
+   "source": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, \"This account supports Kerberos AES 256 bit encryption\"), the SPN of each name, and the keytab. Changing the account’s password later makes a new key version: make the keytab again.",
+   "text": "Na řadiči domény, jako doménový administrátor: vlastní servisní účet (běžný uživatel, heslo nikdy nevyprší, „Tento účet podporuje 256bitové šifrování Kerberos AES“), SPN každého jména a keytab. Pozdější změna hesla účtu vytvoří novou verzi klíče: keytab pak udělejte znovu."
+  },
   "s.on-its-own-interval.cb843a3f": {
    "source": "· on its own interval",
    "text": "· ve vlastním intervalu"
+  },
+  "s.on-nobody-signs-in-with-a.39f6caa6": {
+   "source": "On: nobody signs in with a password, local accounts neither - the sign-in page offers only Windows, and no password is set or changed. Switched on only from a sign-in with Windows, so whoever does has shown it works for them. In effect only while Sign in with Windows is on; the way back, as root on the server: isemon --set password_off=0.",
+   "text": "Zapnuto: nikdo se nepřihlásí heslem, ani lokální účty - přihlašovací stránka nabízí jen Windows a žádné heslo se nenastavuje ani nemění. Zapíná se jen z přihlášení přes Windows, takže kdo to dělá, ukázal, že mu funguje. Platí jen, dokud je zapnuté Přihlašovat přes Windows; cesta zpět, jako root na serveru: isemon --set password_off=0."
   },
   "s.once-everything-is-in-the-other.5feaa877": {
    "source": "Once everything is in the other database and it is the one in use, the one it came from is just a spare copy: the file may be deleted, or the server uninstalled. Going the other way is these same steps with the file chosen instead — which is what makes it safe to try a server at all.",
@@ -44525,6 +44841,26 @@
   "s.only-watched.7d55ea54": {
    "source": "Only watched",
    "text": "Jen sledované"
+  },
+  "s.only-windows-is-switched-on-only.d2da0f3f": {
+   "source": "\"Only Windows\" is switched on only from a sign-in with Windows: sign out, sign in with Windows, and switch it on then",
+   "text": "„Jen Windows“ se zapíná jen z přihlášení přes Windows: odhlaste se, přihlaste se přes Windows a pak ho zapněte"
+  },
+  "s.only-windows-needs-sign-in-with.fb4d04b1": {
+   "source": "\"Only Windows\" needs Sign in with Windows on, with a keytab put in",
+   "text": "„Jen Windows“ potřebuje zapnuté Přihlašovat přes Windows a nahraný keytab"
+  },
+  "s.only-windows-signs-in-here-no.2d4d2770": {
+   "source": "only Windows signs in here: no password is set or changed while that is on",
+   "text": "tady se přihlašuje jen přes Windows: dokud je to zapnuté, žádné heslo se nenastavuje ani nemění"
+  },
+  "s.only-windows-signs-in-here-no.829ba122": {
+   "source": "only Windows signs in here: no password is set or changed while that is on (Settings → Active Directory)",
+   "text": "tady se přihlašuje jen přes Windows: dokud je to zapnuté, žádné heslo se nenastavuje ani nemění (Nastavení → Active Directory)"
+  },
+  "s.only-windows-signs-in-here-use.0597ce24": {
+   "source": "only Windows signs in here: use Sign in with Windows",
+   "text": "tady se přihlašuje jen přes Windows: použijte Přihlásit přes Windows"
   },
   "s.or-let-this-page-do-it.61a9dfd8": {
    "source": "Or let this page do it: install.sh sets that up when PostgreSQL is on the same machine.",
@@ -44822,6 +45158,10 @@
    "source": "The full DNS name its certificate is for - it goes into the certificate as its name (CN) and in its alternative names (SAN). The CA gives it only for a name that points at this server (HTTP-01) or whose TXT record can be put in (DNS-01).",
    "text": "Plné DNS jméno, pro které je jeho certifikát – jde do certifikátu jako jeho jméno (CN) a do alternativních jmen (SAN). CA ho vydá jen pro jméno, které ukazuje na tento server (HTTP-01), nebo jehož záznam TXT lze vložit (DNS-01)."
   },
+  "s.the-kerberos-library.bc0d9a1e": {
+   "source": "The Kerberos library",
+   "text": "Knihovna Kerberos"
+  },
   "s.the-ladder-as-written-a-list.256b4df9": {
    "source": "The ladder, as written: a list of minutes, and whether the last",
    "text": "Stupně blokace tak, jak jsou zapsány: seznam minut a údaj, zda poslední"
@@ -44905,6 +45245,10 @@
   "s.there-is-no-chain-kept-with.edc688bd": {
    "source": "There is no chain kept with it - a self-signed certificate, or one uploaded alone.",
    "text": "Žádný řetězec u něj uložen není - certifikát podepsaný sám sebou, nebo nahraný samostatně."
+  },
+  "s.there-libgssapi-krb5.0fe3b7d9": {
+   "source": "there (libgssapi_krb5)",
+   "text": "je tu (libgssapi_krb5)"
   },
   "s.this-browser-will-not-let-go.a4beccfa": {
    "source": "this browser will not let go of the clipboard",

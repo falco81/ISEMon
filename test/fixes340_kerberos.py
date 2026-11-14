@@ -60,7 +60,7 @@ page = (HERE.parent / 'web' / 'index.php').read_text()
 print('off by default, and nothing of it offered')
 ok('off', (isemon.DEFAULTS['kerberos'], isemon.DEFAULTS['password_off']), (0, 0))
 ok('the sign-in page is told off', daemon.kerberos_health(),
-   {'on': False, 'auto': False, 'only': False})
+   {'on': False, 'auto': False, 'only': False, 'cert': False, 'cert_port': 0})
 ok('the realm from the directory\'s base DN', daemon.kerberos_realm(), 'CORPNET.LOC')
 isemon.CONFIG['kerberos_realm'] = 'corp.example'
 ok('...or as set, in capitals', daemon.kerberos_realm(), 'CORP.EXAMPLE')
@@ -255,7 +255,7 @@ for who, pw in (('admin', 'local-password-1'), ('falco', 'x')):
         daemon.login(who, pw, ip='10.1.5.1')
         ok('%s with a password: refused' % who, False)
     except isemon.Refused as e:
-        ok('%s with a password: refused' % who, 'only Windows' in str(e))
+        ok('%s with a password: refused' % who, 'no password signs in here' in str(e))
 try:
     daemon.passwords_refused()
     ok('passwords_refused says so', False)

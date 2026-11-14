@@ -288,6 +288,8 @@ def checked(r):
     # Signing in with Windows (1.10.340): a Kerberos ticket of a person in
     # many groups is larger than nginx's 8 kB header buffer.
     out['big_headers'] = bool(r.get('big_headers'))
+    # Signing in with a certificate (1.10.341).
+    out['certlogin'] = certlogin_checked(r.get('certlogin'))
     # Automatic certificates by HTTP-01 (1.10.251): the names port 80
     # answers the ACME CA for - DNS names and nothing else, for they go into
     # server_name.
@@ -307,6 +309,152 @@ ACME_NAME_RE = re.compile(r'^(?=.{1,253}\Z)([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-
 
 
 # ---- nginx: finding things in a file somebody else may have written ------------
+# Signing in with a certificate - a smart card, a YubiKey (1.10.341): a server
+# of nginx's of isemon's own, on a port of its own, that asks for a client
+# certificate (never on 443: nobody who opens the pages is asked for one) and
+# serves nothing but the sign-in with it. Written between these two lines at
+# the end of the dashboard's file, and taken away whole; nothing else in the
+# file is touched. The authorities' names it sends are in CERTLOGIN_CA.
+CERTLOGIN_MARK = '# ---- isemon: signing in with a certificate (written by isemon, do not edit)'
+CERTLOGIN_END = '# ---- isemon: signing in with a certificate - end'
+CERTLOGIN_CA = os.path.join(CERT_DIR, 'isemon-client-ca.pem')
+CERTLOGIN_REFUSED = (22, 25, 53, 80, 443, 514, 1812, 1813, 3306, 5432, 6514)
+
+
+def certlogin_checked(c):
+    if c is None:
+        return None
+    if not isinstance(c, dict):
+        raise Refused('the certificate sign-in is an object')
+    if not c.get('on'):
+        return {'on': False}
+    try:
+        port = int(c.get('port'))
+    except (TypeError, ValueError):
+        raise Refused('the certificate\'s port is a number')
+    if not 1024 <= port <= 65535 or port in CERTLOGIN_REFUSED:
+        raise Refused('the certificate\'s port is 1024-65535 and none of the others: not %d'
+                      % port)
+    cas = str(c.get('cas') or '')
+    pems = re.findall(r'-----BEGIN CERTIFICATE-----[A-Za-z0-9+/=\s]+?-----END CERTIFICATE-----',
+                      cas)
+    if not pems or len(cas) > 262144:
+        raise Refused('the authorities of the certificate sign-in are PEM certificates')
+    return {'on': True, 'port': port, 'cas': ''.join(p + '\n' for p in pems)}
+
+
+def certlogin_strip(text):
+    """The file without isemon's certificate server."""
+    a = text.find(CERTLOGIN_MARK)
+    if a < 0:
+        return text
+    b = text.find(CERTLOGIN_END, a)
+    if b < 0:
+        return text
+    b = text.find('\n', b)
+    b = len(text) if b < 0 else b + 1
+    return (text[:a].rstrip('\n') + '\n' + text[b:].lstrip('\n')).rstrip('\n') + '\n'
+
+
+def certlogin_block(main, c):
+    """isemon's certificate server, made of the dashboard's own: its name,
+    folder, certificate, PHP and who may reach it."""
+    where = server_block(main)
+    if not where:
+        raise Refused('no HTTPS server { } was found in %s' % NGINX_MAIN)
+    block = main[where[0]:where[1]]
+    name = directive_now(block, 'server_name') or '_'
+    root = directive_now(block, 'root') or '/var/www/isemon'
+    certs = directive_all(block, 'ssl_certificate')
+    keys = directive_all(block, 'ssl_certificate_key')
+    if not certs or len(certs) != len(keys):
+        raise Refused('the dashboard\'s server has no certificate to answer with')
+    m = re.search(r'fastcgi_pass\s+([^;\s]+)\s*;', block)
+    if not m:
+        raise Refused('the dashboard\'s server hands no page to PHP (fastcgi_pass)')
+    php = m.group(1)
+    anywhere = list(dict.fromkeys(line.strip() for line in block.split('\n')
+                                  if re.match(r'^\s*(allow|deny)\s+[^;]+;', line)))
+    depth, own = 0, []
+    for line in block.split('\n'):
+        if depth == 1 and re.match(r'^\s*(allow|deny)\s+[^;]+;', line):
+            own.append(line.strip())
+        depth += line.count('{') - line.count('}')
+    # Who may reach the dashboard may reach this, and nobody else.
+    access = own or anywhere or ['allow all;']
+    pairs = ''.join('    ssl_certificate           %s;\n    ssl_certificate_key       %s;\n'
+                    % (a, b) for a, b in zip(certs, keys))
+    acc = ''.join('        %s\n' % a for a in access)
+    fcgi = ('        fastcgi_pass   %s;\n'
+            '        fastcgi_param  SCRIPT_FILENAME $document_root/index.php;\n'
+            '        fastcgi_param  HTTPS on;\n'
+            '        include        fastcgi_params;\n'
+            '        fastcgi_param  ISEMON_CERT_PORT 1;\n' % php)
+    return ('%s\n'
+            '# The sign-in with a certificate on its own port (Settings -> Active Directory):\n'
+            '# a client certificate is asked for here only, checked by isemon (optional_no_ca).\n'
+            'server {\n'
+            '    listen      %d ssl;\n'
+            '    listen      [::]:%d ssl;\n'
+            '    server_name %s;\n'
+            '    root  %s;\n'
+            '    server_tokens off;\n'
+            '%s'
+            '    ssl_protocols             TLSv1.2 TLSv1.3;\n'
+            '    ssl_client_certificate    %s;\n'
+            '    ssl_verify_client         optional_no_ca;\n'
+            '    ssl_verify_depth          4;\n'
+            '    large_client_header_buffers 4 32k;\n'
+            '    add_header Strict-Transport-Security "max-age=63072000" always;\n'
+            '    add_header X-Frame-Options "DENY" always;\n'
+            '    add_header Referrer-Policy "no-referrer" always;\n'
+            '    error_page 495 = @certfail;\n'
+            '    location = /index.php {\n'
+            '%s'
+            '        if ($arg_api !~ "^cert-(login|check)$") { return 404; }\n'
+            '%s'
+            '        fastcgi_param  SSL_CLIENT_CERT $ssl_client_escaped_cert;\n'
+            '        fastcgi_param  SSL_CLIENT_VERIFY $ssl_client_verify;\n'
+            '    }\n'
+            '    location @certfail {\n'
+            '%s'
+            '%s'
+            '        fastcgi_param  ISEMON_CERT_FAIL 1;\n'
+            '        fastcgi_param  SSL_CLIENT_VERIFY $ssl_client_verify;\n'
+            '    }\n'
+            '    location / { return 404; }\n'
+            '}\n'
+            '%s\n' % (CERTLOGIN_MARK, c['port'], c['port'], name, root, pairs, CERTLOGIN_CA,
+                       acc, fcgi, acc, fcgi, CERTLOGIN_END))
+
+
+def certlogin_into(main, c):
+    """The dashboard's file with isemon's certificate server as asked: put
+    in (or written again) when on, taken away when off. (new text, words)"""
+    bare = certlogin_strip(main)
+    if not c.get('on'):
+        if bare != main:
+            return bare, 'nginx: the port of the certificate sign-in closed'
+        return main, ''
+    new = bare.rstrip('\n') + '\n\n' + certlogin_block(bare, c)
+    return new, ('nginx: the certificate sign-in on port %d' % c['port']) if new != main else ''
+
+
+def certlogin_now():
+    """What the page shows of it: isemon's server there, on which port."""
+    try:
+        with open(NGINX_MAIN) as f:
+            text = f.read()
+    except OSError:
+        return {}
+    a = text.find(CERTLOGIN_MARK)
+    if a < 0:
+        return {'there': False}
+    m = re.search(r'listen\s+(\d+)\s+ssl', text[a:])
+    return {'there': True, 'port': int(m.group(1)) if m else 0,
+            'ca': os.path.exists(CERTLOGIN_CA)}
+
+
 def server_block(text):
     """(start, end) of the HTTPS server { } of an nginx file."""
     i = 0
@@ -325,6 +473,11 @@ def server_block(text):
                     break
             j += 1
         block = text[start:j + 1]
+        if CERTLOGIN_MARK in block:
+            # isemon's own server for signing in with a certificate
+            # (1.10.341) is not the dashboard's.
+            i = j + 1
+            continue
         if re.search(r'(?m)^\s*listen\s+[^;]*443[^;]*ssl', block) or \
                 re.search(r'(?m)^\s*ssl_certificate\s', block):
             return start, j + 1
@@ -879,7 +1032,7 @@ def nginx_part(r, last):
         dh_path = dh_file(t['dh'], TLS_FILES['dh'], last.get('dh'))
         dh = t['dh']
     dh_new = snapshot(list(dh_snap)) != dh_snap
-    paths = [NGINX_MAIN] + list(TLS_FILES.values())
+    paths = [NGINX_MAIN, CERTLOGIN_CA] + list(TLS_FILES.values())
     snap = snapshot(paths)
     snap.update(dh_snap)
     changed = False
@@ -889,6 +1042,25 @@ def nginx_part(r, last):
                 main = f.read()
         except OSError as e:
             raise Refused('the dashboard\'s nginx file cannot be read (%s): %s' % (NGINX_MAIN, e))
+        if r.get('certlogin') is not None:
+            cl = r['certlogin']
+            if cl.get('on'):
+                try:
+                    with open(CERTLOGIN_CA) as f:
+                        same = f.read() == cl['cas']
+                except OSError:
+                    same = False
+                if not same:
+                    write_root(CERTLOGIN_CA, cl['cas'], 0o644)
+                    changed = True
+            elif os.path.exists(CERTLOGIN_CA):
+                os.unlink(CERTLOGIN_CA)
+            new_main, words = certlogin_into(main, cl)
+            if words:
+                said.append(words)
+            if new_main != main:
+                write_root(NGINX_MAIN, new_main, 0o644)
+                main, changed = new_main, True
         if r.get('acme') is not None:
             new_main, words = acme_into(main, r['acme'])
             if words:
@@ -1299,6 +1471,7 @@ def ssh_ports():
 def look():
     """Everything the page shows of how things are here, changing nothing."""
     out = {'at': time.time(), 'cert': cert_now(), 'access': access_now(),
+           'certlogin': certlogin_now(),
            'backend': fw_backend(), 'rsyslog': rsyslog_ports(), 'ssh': ssh_ports(),
            'nginx_conf': NGINX_MAIN, 'files': {
                str(f): os.path.exists(p) for f, p in FW_FILES.items()}}
