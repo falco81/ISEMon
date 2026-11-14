@@ -372,6 +372,18 @@ working.
 
 ## Version
 
+1.10.344
+
+- **Windows tried by itself, on a computer outside the domain.** There the
+  browser has no Kerberos ticket and opens a name-and-password window of its
+  own (Chrome, Edge). After one such try without a ticket - the window
+  cancelled, or no ticket to be had - the sign-in page no longer tries
+  Windows by itself in that browser for 30 days. *Sign in with Windows* is
+  still a button, and a sign-in with Windows that works clears it. When the
+  window is filled in with an AD name (`name@domain`), Windows gets a
+  Kerberos ticket with it and the sign-in is Kerberos; NTLM is refused as
+  always.
+
 1.10.343
 
 - **The sign-in page, tidied for its variants.**

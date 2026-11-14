@@ -79,6 +79,19 @@ The keytab is kept in the database, sealed with the installation's key, and
 written out by the daemon itself (`/var/lib/isemon/kerberos/http.keytab`,
 0600, the service's own account) whenever it is needed.
 
+### A computer outside the domain
+
+The browser has no ticket there. Chrome and Edge then open a name and password
+window of their own. Filled in with an AD name (`falco@corp.example`), Windows
+gets a Kerberos ticket with it from a domain controller it reaches, and the
+sign-in is Kerberos. When no controller can be reached, Windows would offer
+NTLM, which isemon refuses.
+
+With *...by itself* on, that window would come up on every visit. After one
+try without a ticket, the page no longer tries Windows by itself in that
+browser for 30 days (`localStorage`). The button stays, and a Windows sign-in
+that works clears it.
+
 ### 3. In the browsers
 
 - **Edge and Chrome on Windows** (group policy): `AuthServerAllowlist` = the

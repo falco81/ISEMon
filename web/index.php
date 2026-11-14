@@ -5688,6 +5688,11 @@ function srcText(el) {
           /* By itself, and this computer not in the domain: nothing said -
              the form is there. */
           if (auto && x.d && x.d.code === 'no_ticket') {
+            /* This browser has no Windows ticket - a computer outside the
+               domain, where the browser asked for a name and password in a
+               window of its own (1.10.344). Not tried by itself again in
+               this browser: the button is there. */
+            try { localStorage.setItem('isemon.krb.none', String(Date.now())); } catch (e) { }
             /* ...and the certificate next, when it is tried by itself too
                (1.10.342). */
             if (then) { then(); return; }
@@ -5700,6 +5705,8 @@ function srcText(el) {
           krbSaid.textContent = (x.d && x.d.error) || 'Windows did not sign you in';
           return;
         }
+        /* Windows works in this browser: tried by itself again (1.10.344). */
+        try { localStorage.removeItem('isemon.krb.none'); } catch (e) { }
         if (x.d.second) { stepShow(x.d.second); return; }
         krbSaid.className = 'said good';
         krbSaid.textContent = 'Welcome back.';
@@ -5747,6 +5754,10 @@ function srcText(el) {
   var krbTried = false, certTried = false;
   try {
     krbTried = !!(sessionStorage.getItem('isemon.krb.tried') || sessionStorage.getItem('isemon.krb.out'));
+    /* ...nor in a browser that had no Windows ticket the last time, within
+       30 days - unless only Windows is offered (1.10.344). */
+    var none = Number(localStorage.getItem('isemon.krb.none') || 0);
+    if (none && Date.now() - none < 30 * 86400000 && !form.hidden) krbTried = true;
     /* A certificate is not tried by itself after Sign out, after it was
        tried once in this tab, or right after a refusal (1.10.342). */
     certTried = !!(sessionStorage.getItem('isemon.cert.tried') || sessionStorage.getItem('isemon.krb.out')
