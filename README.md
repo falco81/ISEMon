@@ -372,6 +372,81 @@ working.
 
 ## Version
 
+1.10.345
+
+- **Three rounds of looking for bugs and security problems.**
+- **Signing in with a certificate:**
+  - Only the authorities put in were meant to be trusted, but `openssl
+    verify` trusted the system's whole store as well. A certificate of the
+    domain's other CA, or of a public one, with a UPN in it signed its person
+    in.
+  - nginx's certificate server now takes GET only, no multipart body
+    (php2shell), at the dashboard's rate.
+  - It is built last, from the dashboard's server as the request leaves it.
+    Built first, it kept the networks and certificate files of the push
+    before, and once a file it named was gone, `nginx -t` refused every push
+    after.
+  - It takes the dashboard's own HSTS or none, and only the server's own
+    allow lines.
+- **Windows (Kerberos):**
+  - A ticket now signs in only a person of its own realm's domain. Before, a
+    namesake in another domain under the same base was signed in instead.
+  - `DOMAIN\name` of another domain is `name@domain`.
+  - A keytab or authorities that cannot be written out are said, not a 500
+    that counted as a wrong password.
+- **One person, one account:**
+  - A DN given again to somebody new is no longer the same person. Before,
+    the one who left had their passkeys, sessions and switch-off put into the
+    new account.
+  - Only the account's own names are put together.
+- **Root:**
+  - `install.sh` no longer follows links the service account could put in
+    its way. These could get any file copied to it, any folder chowned to it,
+    or `config.json`'s mode set on another file.
+  - Folders of the account are made by the account.
+  - The owner of a file written as root (`isemon --set`, `--maintenance`) is
+    given to the new file, never to its name afterwards.
+- **Sign-in:**
+  - Wrong passwords from an address are no longer let go when somebody signs
+    in as themselves from it. Only that name's own are.
+  - An account that must change its password reaches no other account's
+    passkeys.
+- **Backups**: a destination is checked as it is used. One put back with a
+  backup, with a newline or `;` in its folder, was a command to sftp or
+  smbclient.
+- **The domain:**
+  - The account filter finds `Administrator` as written; on SQLite and
+    PostgreSQL it found nothing.
+  - Two flushes of the 2025 counts no longer run at once and lose events.
+  - Its memory is pruned once a flush, not at every row.
+  - 4743 (a computer deleted) and 4781 (an account renamed) are read whole,
+    and read again once.
+  - With desktop rebuilding hidden, an administrator making a computer
+    account is no longer hidden as routine.
+  - The lockout card's blame takes every spelling of the account, and the tab
+    counts start at the same hour as the list.
+  - Pages:
+    - the 2025 strip opens a list whole;
+    - *Everything the domain saw* opens the overview;
+    - `#windows/ad2025` is its overview;
+    - the export stands in for a computer account with a domain.
+- **The sign-in page:**
+  - Without the browser's storage, nothing is tried by itself. Before, it
+    could reload for ever.
+  - NTLM offered by the browser counts as no ticket, so the certificate goes
+    next.
+  - A message of the certificate's port is shown only to a tab that went
+    there, not to anybody's link.
+- **Speed and safety of reading:**
+  - No log line longer than 64 KB reaches a parser.
+  - The patterns that took seconds of the whole daemon on a crafted line (a
+    firewall search, a RouterOS or FTD line, an AD2025 field) are plain now.
+- **Smaller:**
+  - An AIA address of a certificate is never link-local (a cloud's metadata).
+  - The ban list's fetch account is shown only to a full admin.
+  - acme cannot match a dashboard that has no name.
+  - A record's own words in a help panel make no tags.
+
 1.10.344
 
 - **Windows tried by itself, on a computer outside the domain.** There the

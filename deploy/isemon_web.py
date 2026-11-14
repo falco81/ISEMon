@@ -373,17 +373,28 @@ def certlogin_block(main, c):
     if not m:
         raise Refused('the dashboard\'s server hands no page to PHP (fastcgi_pass)')
     php = m.group(1)
-    anywhere = list(dict.fromkeys(line.strip() for line in block.split('\n')
-                                  if re.match(r'^\s*(allow|deny)\s+[^;]+;', line)))
     depth, own = 0, []
     for line in block.split('\n'):
         if depth == 1 and re.match(r'^\s*(allow|deny)\s+[^;]+;', line):
             own.append(line.strip())
         depth += line.count('{') - line.count('}')
-    # Who may reach the dashboard may reach this, and nobody else.
-    access = own or anywhere or ['allow all;']
+    # Who may reach the dashboard may reach this, and nobody else - its own
+    # lines only (1.10.345): a location's `deny all` is not the server's.
+    access = own or ['allow all;']
     pairs = ''.join('    ssl_certificate           %s;\n    ssl_certificate_key       %s;\n'
                     % (a, b) for a, b in zip(certs, keys))
+    # The dashboard's own HSTS, or none (1.10.345): two years always here
+    # overrode an administrator's 0 for the whole host.
+    hsts = directive_now(block, 'add_header Strict-Transport-Security')
+    hsts = ('    add_header Strict-Transport-Security %s;\n' % hsts) if hsts and \
+        re.match(r'^"?[A-Za-z0-9=;, -]+"?( always)?$', hsts) else ''
+    # A GET is all the sign-in is (a top-level navigation): nothing else, no
+    # body - php2shell comes in by a multipart one - and the dashboard's own
+    # rate where its zone is there (1.10.345).
+    guard = ('        if ($request_method !~ ^(GET|HEAD)$) { return 405; }\n'
+             '        if ($http_content_type ~* "multipart") { return 403; }\n')
+    if 'zone=isemon_all:' in main:
+        guard += '        limit_req zone=isemon_all burst=20 nodelay;\n'
     acc = ''.join('        %s\n' % a for a in access)
     fcgi = ('        fastcgi_pass   %s;\n'
             '        fastcgi_param  SCRIPT_FILENAME $document_root/index.php;\n'
@@ -405,13 +416,14 @@ def certlogin_block(main, c):
             '    ssl_verify_client         optional_no_ca;\n'
             '    ssl_verify_depth          4;\n'
             '    large_client_header_buffers 4 32k;\n'
-            '    add_header Strict-Transport-Security "max-age=63072000" always;\n'
+            '%s'
             '    add_header X-Frame-Options "DENY" always;\n'
             '    add_header Referrer-Policy "no-referrer" always;\n'
             '    error_page 495 = @certfail;\n'
             '    location = /index.php {\n'
             '%s'
             '        if ($arg_api !~ "^cert-(login|check)$") { return 404; }\n'
+            '%s'
             '%s'
             '        fastcgi_param  SSL_CLIENT_CERT $ssl_client_escaped_cert;\n'
             '        fastcgi_param  SSL_CLIENT_VERIFY $ssl_client_verify;\n'
@@ -425,7 +437,7 @@ def certlogin_block(main, c):
             '    location / { return 404; }\n'
             '}\n'
             '%s\n' % (CERTLOGIN_MARK, c['port'], c['port'], name, root, pairs, CERTLOGIN_CA,
-                       acc, fcgi, acc, fcgi, CERTLOGIN_END))
+                       hsts, acc, guard, fcgi, acc, fcgi, CERTLOGIN_END))
 
 
 def certlogin_into(main, c):
@@ -473,7 +485,7 @@ def server_block(text):
                     break
             j += 1
         block = text[start:j + 1]
-        if CERTLOGIN_MARK in block:
+        if CERTLOGIN_MARK in text[max(0, start - 400):start]:
             # isemon's own server for signing in with a certificate
             # (1.10.341) is not the dashboard's.
             i = j + 1
@@ -1042,31 +1054,19 @@ def nginx_part(r, last):
                 main = f.read()
         except OSError as e:
             raise Refused('the dashboard\'s nginx file cannot be read (%s): %s' % (NGINX_MAIN, e))
+        # isemon's certificate server is taken out first and put back LAST
+        # (1.10.345), made of the dashboard's server as this request leaves
+        # it: built before, it kept the networks and the certificate files of
+        # the push before - and once a file it named was gone, nginx -t
+        # refused every push after.
+        on_disk = main
         if r.get('certlogin') is not None:
-            cl = r['certlogin']
-            if cl.get('on'):
-                try:
-                    with open(CERTLOGIN_CA) as f:
-                        same = f.read() == cl['cas']
-                except OSError:
-                    same = False
-                if not same:
-                    write_root(CERTLOGIN_CA, cl['cas'], 0o644)
-                    changed = True
-            elif os.path.exists(CERTLOGIN_CA):
-                os.unlink(CERTLOGIN_CA)
-            new_main, words = certlogin_into(main, cl)
-            if words:
-                said.append(words)
-            if new_main != main:
-                write_root(NGINX_MAIN, new_main, 0o644)
-                main, changed = new_main, True
+            main = certlogin_strip(main)
         if r.get('acme') is not None:
             new_main, words = acme_into(main, r['acme'])
             if words:
                 said.append(words)
             if new_main != main:
-                write_root(NGINX_MAIN, new_main, 0o644)
                 main, changed = new_main, True
         where = server_block(main)
         if not where:
@@ -1090,8 +1090,26 @@ def nginx_part(r, last):
                                                     main):
             new = set_directive(new, 'large_client_header_buffers', '4 32k')
             said.append('nginx: room for a Windows (Kerberos) ticket in the headers')
-        if new != block:
-            write_root(NGINX_MAIN, main[:where[0]] + new + main[where[1]:], 0o644)
+        final = main[:where[0]] + new + main[where[1]:]
+        if r.get('certlogin') is not None:
+            cl = r['certlogin']
+            if cl.get('on'):
+                try:
+                    with open(CERTLOGIN_CA) as f:
+                        same = f.read() == cl['cas']
+                except OSError:
+                    same = False
+                if not same:
+                    write_root(CERTLOGIN_CA, cl['cas'], 0o644)
+                    changed = True
+            elif os.path.exists(CERTLOGIN_CA):
+                os.unlink(CERTLOGIN_CA)
+                changed = True
+            final, words = certlogin_into(final, cl)
+            if words and final != on_disk:
+                said.append(words)
+        if final != on_disk:
+            write_root(NGINX_MAIN, final, 0o644)
             changed = True
         elif t and (t['pem'] or (dh_new and dh_path)):
             changed = True          # the same lines, new files: nginx reads them again

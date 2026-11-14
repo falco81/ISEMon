@@ -610,12 +610,12 @@ store.set_meta('win_reading', json.dumps(dict(was, version=3)))
 plan, why = store.win_marks_plan()
 ok('a version that changed two events asks for those two events '
    '(and 4662 with them, 1.10.332: a step that is not narrowed by a mark widens the plan)',
-   plan, {'events': [4625, 4648, 4662, 4768, 4769]})
+   plan, {'events': [4625, 4648, 4662, 4724, 4738, 4741, 4742, 4743, 4768, 4769, 4781]})
 ok('...and says so in one line', '4768' in why and '4648' in why, True)
 store.set_meta('win_reading', json.dumps(dict(was, version=7)))
 plan, why = store.win_marks_plan()
-ok('...one version behind: only what that version changed (1.10.200, 1.10.336)',
-   plan, {'events': [4625]})
+ok('...from 7: only what the versions since changed (1.10.200, 1.10.336, 1.10.345)',
+   plan, {'events': [4625, 4724, 4738, 4741, 4742, 4743, 4781]})
 store.set_meta('win_reading', json.dumps(dict(was, version=5)))
 _v = store.WIN_SORT_VERSION
 store.WIN_SORT_VERSION = 6

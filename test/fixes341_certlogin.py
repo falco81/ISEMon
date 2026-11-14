@@ -287,6 +287,25 @@ for what, there in (('listen      8443 ssl;', True), ('ssl_verify_client        
                     ('location / { return 404; }', True)):
     ok('...%s' % what, what in blk, there)
 ok('443 asks nobody for a certificate', 'ssl_verify_client' in vhost, False)
+for what in ('if ($request_method !~ ^(GET|HEAD)$) { return 405; }',
+             'if ($http_content_type ~* "multipart") { return 403; }',
+             'limit_req zone=isemon_all burst=20 nodelay;',
+             'add_header Strict-Transport-Security "max-age=63072000" always;'):
+    ok('...%s (as the dashboard)' % what, what in blk, True)
+nohsts = vhost.replace('    add_header Strict-Transport-Security "max-age=63072000" always;\n', '')
+b2 = isemon_web.certlogin_into(nohsts, cl)[0]
+ok('the dashboard without HSTS: none on the port either',
+   'Strict-Transport-Security' in b2[b2.index(isemon_web.CERTLOGIN_MARK):], False)
+inner = vhost.replace('    allow 192.168.0.0/16;', '    location /x/ { deny all; }\n    allow 192.168.0.0/16;')
+b3 = isemon_web.certlogin_into(inner, cl)[0]
+ok('a location\'s deny all is not the port\'s', b3[b3.index(isemon_web.CERTLOGIN_MARK):]
+   .count('deny  all;') + b3[b3.index(isemon_web.CERTLOGIN_MARK):].count('deny all;'), 2)
+# isemon's server put BEFORE the dashboard's (by hand): never taken for the dashboard's
+blk_only = new[new.index(isemon_web.CERTLOGIN_MARK):]
+moved = blk_only + '\n' + vhost
+w2 = isemon_web.server_block(moved)
+ok('isemon\'s certificate server is never taken for the dashboard\'s', 'listen      443 ssl'
+   in moved[w2[0]:w2[1]], True)
 w = isemon_web.server_block(new)
 ok('the dashboard\'s own server is still the one found', 'listen      443 ssl' in new[w[0]:w[1]],
    True)

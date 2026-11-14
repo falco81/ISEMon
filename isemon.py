@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.344'
+__version__ = '1.10.345'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2434,7 +2434,7 @@ def narrow_on(name):
                       'passed_ip': 'passed'}.get(name, '')
 
 
-def write_replacing(where, text, mode=0o640):
+def write_replacing(where, text, mode=0o640, owner=None):
     """A file written whole and put in place in one step - safely.
 
     Written to a new file of its own, made with a random name that cannot
@@ -2450,6 +2450,11 @@ def write_replacing(where, text, mode=0o640):
                                suffix='.new')
     try:
         os.fchmod(fd, mode)
+        # Its owner given to the new file itself, before it is put in place
+        # (1.10.345): a chown of the name afterwards followed whatever link
+        # was renamed over it in between - as root, into /etc/shadow.
+        if owner is not None and owner[0] >= 0 and os.geteuid() == 0:
+            os.fchown(fd, owner[0], owner[1])
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
             f.write(text)
         os.replace(tmp, str(where))
@@ -2636,7 +2641,8 @@ def write_file_settings(changes, path=None):
         mode, owner, group = 0o640, -1, -1
     try:
         write_replacing(where, json.dumps(had, indent=2, sort_keys=True,
-                                          ensure_ascii=False) + '\n', mode)
+                                          ensure_ascii=False) + '\n', mode,
+                        owner=(owner, group))
     except OSError as e:
         # This is the one file this daemon writes outside its own state
         # directory, and it is written as the account the daemon runs as.
@@ -2654,12 +2660,6 @@ def write_file_settings(changes, path=None):
             '  isemon --set db_engine=... --set db_host=...'
             % (where, e.strerror or e, SERVICE_USER, where.parent, where.parent,
                where.parent))
-    try:
-        os.chmod(where, mode)
-        if owner >= 0 and os.geteuid() == 0:
-            os.chown(where, owner, group)
-    except OSError:
-        pass
     return where
 
 
@@ -7650,6 +7650,8 @@ WIN_SECTIONS = (
     'Object', 'Operation', 'Attribute', 'Member', 'Group', 'Directory Service',
     'Certificate Information', 'Changed Attributes', 'Attributes', 'New Computer Account',
     'Additional Group Membership', 'Computer Account That Was Changed',
+    # 4743: the computer deleted (1.10.345).
+    'Target Computer',
 )
 # ...and the fields themselves. Written out rather than found by shape,
 # because a value is free text and a run of spaces is all that separates it
@@ -7659,6 +7661,9 @@ WIN_SECTIONS = (
 # is kept whole beside the row.
 WIN_LABELS = (
     'Security ID', 'Account Name', 'Account Domain', 'Logon ID', 'Logon Type',
+    # 4781: an account renamed (1.10.345) - before `Account Name` was found
+    # inside them, and the account read `jnovak  New`.
+    'Old Account Name', 'New Account Name',
     'Logon Process', 'Authentication Package', 'Workstation Name',
     'Source Network Address', 'Source Port', 'Client Address', 'Client Port',
     'Network Address', 'Port', 'Process ID', 'Process Name', 'Caller Computer Name',
@@ -8182,7 +8187,9 @@ def win_account(fields, event):
     if event in (4740, 4767, 4720, 4722, 4723, 4724, 4725, 4726, 4738, 4781,
                  4728, 4729, 4732, 4733, 4756, 4757, 4741, 4742, 4743):
         return win_said(fields, 'Account That Was Locked Out / Account Name',
+                        'Target Account / Old Account Name',
                         'Target Account / Account Name',
+                        'Target Computer / Account Name',
                         'Member / Account Name', 'Target Account Name',
                         'New Computer Account / Account Name',
                         'Computer Account That Was Changed / Account Name',
@@ -8710,7 +8717,9 @@ def win_marks(event, fields, account, kind):
             out.append('digest')
     if event in (4798, 4799):
         out.append('listing')
-    if WIN_VDI[0] and win_is_machinery(event, fields, account):
+    # ...with who DID it (1.10.345): the account of these events is the one
+    # done to, and an administrator making a computer account was hidden.
+    if WIN_VDI[0] and win_is_machinery(event, fields, win_by(fields, event) or account):
         out.append('routine')
     # Credentials typed in for somebody OTHER than whoever is signed in. It
     # is how a scheduled task starts and how `runas` works, and it is also
@@ -9580,7 +9589,12 @@ def ad25_findings(event, line, whole=''):
                     continue
                 if who and who != '-':
                     out.append(('noaes', '', '', who[:180], 'its keys: %s' % keys[:80]))
-        offered = ' '.join(_ad25_word(_AD25_OFFERED, rest).split())
+        # Read from just after its label (1.10.345): the pattern over the
+        # whole line is quadratic, and a name sent to the controller could
+        # put the label in front of the real one.
+        at = rest.rfind('Advertized Etypes:')
+        offered = ' '.join(_ad25_word(_AD25_OFFERED, rest[at:at + 600] if at >= 0 else '')
+                           .split())
         names = re.findall(r'AES|RC4|DES', offered.upper())
         # ...once a line: a ticket in RC4 to a client that offers only RC4 is
         # one event, not two (1.10.337).
@@ -12537,9 +12551,12 @@ def ftd_record_from(line, now=None, seen=None):
         if msgid in ('607001', '607002', '607003'):
             f['app'] = 'SIP'
             rest['_count'] = 0
-        rm = re.search(r'reason - (.*?)\.?\s*(?:,|$)', body)
+        rm = re.search(r'reason - ([^,]*)', body)
         if rm:
-            rest['reason'] = rm.group(1)
+            # ...cut by hand, not by `(.*?)\.?\s*` - quadratic on a line of
+            # tabs (1.10.345).
+            why = rm.group(1).rstrip()
+            rest['reason'] = (why[:-1] if why.endswith('.') else why).rstrip()
     elif msgid in ('113004', '113005', '113008', '113012', '113015', '113021'):
         m = P['aaa'].match(body) or P['aaa_status'].match(body)
         failed = msgid in FTD_FAILED_IDS
@@ -13317,7 +13334,7 @@ ROS_SEVERITIES = ('info', 'warning', 'error', 'critical', 'debug')
 ROS_LINE = re.compile(
     r'^(?P<head>.*?\S)\s+(?P<topics>[a-z][a-z0-9-]*(?:,[a-z][a-z0-9-]*)+)\s+(?P<msg>.*?)\s*$')
 ROS_FW = re.compile(
-    r'^(?P<prefix>.*?)\s*(?P<chain>[\w.-]+):\s+in:(?P<inif>\(unknown \d+\)|[^\s,]*)\s+'
+    r'^(?P<prefix>.{0,400}?)\s{0,64}(?P<chain>[\w.-]+):\s+in:(?P<inif>\(unknown \d+\)|[^\s,]*)\s+'
     r'out:(?P<outif>\(unknown \d+\)|[^\s,]*),\s*(?P<rest>.*)$')
 # `, proto TCP` after a MAC, ` proto TCP` straight after the connection state.
 ROS_PROTO = re.compile(r'(?:^|,\s*|\s)proto\s+(?P<proto>[A-Za-z0-9-]+)(?:\s+\((?P<flags>[^)]*)\))?')
@@ -16471,8 +16488,12 @@ class FwLeaf(object):
             if field == 'policy' and op in (':', '=', '~', '!=') \
                     and str(value or '').strip().lower() == 'local-in':
                 field, self.field, value, self.value = 'subtype', 'subtype', 'local', 'local'
-            elif field == 'policy' and op in (':', '=', '~', '!=') and value and not re.match(
-                    r'^\s*#?\s*[\d,\s-]+$|^\s*(>=|<=|>|<)', str(value)):
+            # Two plain questions rather than one pattern (1.10.345): three
+            # `\s*` around one run of spaces took seconds of the whole daemon
+            # on a quoted search of two thousand.
+            elif field == 'policy' and op in (':', '=', '~', '!=') and value and not (
+                    re.fullmatch(r'#?[\d,\s-]+', str(value).strip()) or
+                    re.match(r'\s*(>=|<=|>|<)', str(value))):
                 field = self.field = 'policyname'
             # `bytes:>1M` as well as `bytes>1M`, as every other box reads it
             # (1.10.166).
@@ -18051,6 +18072,9 @@ LOG_PARSERS = {'ise': ise_parse_lines, 'otp': otp_parse_lines, 'acmelog': acme_p
                'fwlog': fw_parse_lines}
 
 
+LOG_LINE_MOST = 65536
+
+
 def log_lines(text):
     """A piece of a log file as its lines - split where the FILE ends a line.
 
@@ -18074,7 +18098,10 @@ def log_lines(text):
     # with a daemon that does not append). It is nothing, and the line after
     # it is a line - it was read as one beginning with NULs and lost.
     # (1.10.159)
-    return [(line[:-1] if line.endswith('\r') else line).lstrip('\x00') for line in out]
+    # No line longer than any log writes one (1.10.345): a megabyte without a
+    # line end went whole into every parser's patterns.
+    return [(line[:-1] if line.endswith('\r') else line).lstrip('\x00')[:LOG_LINE_MOST]
+            for line in out]
 
 
 # Every record made out of any log, added up as it is made - for the pace in
@@ -19301,7 +19328,11 @@ def cl_crl_fetch(url):
 
 def _cl_verify(ca_file, leaf, crl_pem=''):
     with tempfile.TemporaryDirectory(prefix='isemon-cert-') as work:
-        args = ['openssl', 'verify', '-CAfile', str(ca_file)]
+        # The authorities put in here and NOTHING else (1.10.345): without
+        # -no-CApath/-no-CAstore openssl trusts the system's store as well, and
+        # any authority of it - a public one, the domain's other CA - signed
+        # people in.
+        args = ['openssl', 'verify', '-no-CApath', '-no-CAstore', '-CAfile', str(ca_file)]
         if crl_pem:
             cp = os.path.join(work, 'crl.pem')
             with open(cp, 'w') as fh:
@@ -19312,6 +19343,11 @@ def _cl_verify(ca_file, leaf, crl_pem=''):
             fh.write(leaf + '\n')
         try:
             got = subprocess.run(args + [lp], capture_output=True, text=True, timeout=30)
+            if got.returncode != 0 and 'no-CAstore' in (got.stderr or '') and \
+                    re.search(r'(?i)unknown option|unrecognized', got.stderr or ''):
+                # OpenSSL 1.1.1 (RHEL 8) has no stores: -no-CApath is enough.
+                args.remove('-no-CAstore')
+                got = subprocess.run(args + [lp], capture_output=True, text=True, timeout=30)
         except (OSError, subprocess.SubprocessError) as e:
             raise CertLoginError('openssl did not run: %s' % e)
     if got.returncode != 0 or not re.search(r':\s*OK\s*$', got.stdout or ''):
@@ -32190,7 +32226,15 @@ class Storage(object):
         't_last = CASE WHEN excluded.t_last > ad25_seen.t_last THEN excluded.t_last '
         'ELSE ad25_seen.t_last END')
 
+    _AD25_FLUSH_LOCK = threading.Lock()
+
     def ad25_flush(self):
+        """One at a time (1.10.345): the reader and the web pass both flush,
+        and two at once dropped the older one's events as counted already."""
+        with Storage._AD25_FLUSH_LOCK:
+            return self._ad25_flush()
+
+    def _ad25_flush(self):
         """What the reader noted written down: a row a day, a kind of trouble,
         a client, an account and a controller. A line read again - a rotation,
         the pass back over every log, two files with the same lines - is not
@@ -32268,15 +32312,16 @@ class Storage(object):
             prints = set(seen_at[1]) if seen_at[0] == newest else set()
             prints |= {lm for t, lm in (g.get('marks') or []) if t == newest and lm}
             mem[key] = (newest, frozenset(prints))
-            if len(mem) > 50000:
-                today = int(time.time() // 86400)
-                for k in [k for k in mem if k[0] < today - 1]:
-                    mem.pop(k, None)
             if not times:
                 continue
             rows.append((key[0], key[1], key[2], g['server'][:120], g['client'][:120],
                          g['ip'][:64], g['account'][:180], str(g['detail'])[:200], len(times),
                          min(times), max(times)))
+        # Older days let go once a flush, not at every row (1.10.345).
+        if len(mem) > 50000:
+            today = int(time.time() // 86400)
+            for k in [k for k in mem if k[0] < today - 1]:
+                mem.pop(k, None)
         if not rows:
             return 0
         try:
@@ -32554,7 +32599,7 @@ class Storage(object):
     # 6: Get-Changes on its own is not replication (a DirSync reader).
     # 7: NTLMv1 and Digest sign-ins carry a mark of their own.
     # 8: a 4625 with Sub Status 0x0 has its reason in Status.
-    WIN_SORT_VERSION = 8
+    WIN_SORT_VERSION = 10
 
     # ...and WHICH stored events each version changed the reading of.
     #
@@ -32580,6 +32625,11 @@ class Storage(object):
         7: {'events': (4624,), 'ad25_accounts': ('ntlmv1', 'digest')},
         # 4625: why, out of Status where Sub Status is 0x0 (1.10.336).
         8: (4625,),
+        # 4743 and 4781: the computer deleted and the account renamed, read
+        # whole (1.10.345).
+        9: (4743, 4781),
+        # Desktops being rebuilt only where a MACHINE did it (1.10.345).
+        10: {'events': (4741, 4742, 4743, 4724, 4738), 'marks': ('routine',)},
     }
 
     # One walk of the table at a time, whoever asked for it. On the class
@@ -33215,12 +33265,15 @@ class Storage(object):
                               ('process', process), ('object', object), ('said', said)):
             if not value:
                 continue
-            value = str(value).strip().lower()
+            raw = str(value).strip()
+            value = raw.lower()
             if column == 'account':
                 # Every way the controllers write the one account - `jnovak`,
                 # `KRAJ\\jnovak`, `jnovak@KRAJ.INT` (1.10.337: the UPN of a
-                # 4625 was never found by the bare name).
-                forms = self.win_account_forms([value], since)
+                # 4625 was never found by the bare name) - and as it was
+                # asked for, case and all (1.10.345: `Administrator` folded
+                # to lower case was never found on SQLite or PostgreSQL).
+                forms = self.win_account_forms([raw, value], since)
                 forms = forms or ['']
                 sql += ' AND account IN (%s)' % ','.join('?' * len(forms))
                 args += forms
@@ -34477,8 +34530,10 @@ class Storage(object):
             # one thing trying once - it is a telephone, a mapped drive and a
             # scheduled task all holding the same old password, and only the
             # list of them tells somebody what to go and fix.
-            one['blame'] = self.win_blame(one['account'], one['ts'] - 1800,
-                                          one['ts'] + 60, 8)
+            # Every spelling of the account, as "what else happened" has (1.10.345).
+            one['blame'] = self.win_blame(self.win_account_forms(
+                [one['account']], one['ts'] - 1800) or one['account'], one['ts'] - 1800,
+                one['ts'] + 60, 8)
             # ...and how it ended. A lockout that somebody has already dealt
             # with and one that is still locked read identically on this page
             # otherwise, and which of the two it is is the first thing
@@ -45083,7 +45138,7 @@ class Storage(object):
                     db.execute('UPDATE users SET %s WHERE name=?' % ', '.join(sets), args)
         return self.user(name)
 
-    def merge_directory_person(self, keep, dn, by='the directory'):
+    def merge_directory_person(self, keep, dn, by='the directory', names=None):
         """One directory person, one account (1.10.339): the rows of the same
         directory entry under another name - `falco@kr-olomoucky.int` beside
         `falco`, as signing in with the whole address made them before - put
@@ -45099,9 +45154,16 @@ class Storage(object):
         mine = self.user(keep)
         if not mine or not mine.get('from_dir'):
             return []
+        # ...and only under a name of this entry's own (1.10.345): a DN is
+        # given again to somebody new, and that is not the same person - the
+        # one who left kept their passkeys and their switch-off.
+        own = {str(n).strip().lower() for n in (names or ()) if str(n or '').strip()}
+        short = keep.split('@')[0]
         others = [dict(r) for r in self.db.execute(
             'SELECT name, dn, hash, disabled FROM users WHERE from_dir=1 AND name<>?', (keep,))
-            if str(r['dn'] or '').strip().casefold() == want and not (r['hash'] or '')]
+            if str(r['dn'] or '').strip().casefold() == want and not (r['hash'] or '')
+            and (str(r['name']).lower() in own if own
+                 else str(r['name']).lower().split('@')[0].split('\\')[-1] == short)]
         if not others:
             return []
         gone = [o['name'] for o in others]
@@ -55386,7 +55448,12 @@ class Daemon(object):
             'restricted': bool(comma_list(CONFIG.get('banfeed_from'))),
         }
         out['auth'] = str(CONFIG.get('banfeed_auth') or 'none')
-        out['user'] = str(CONFIG.get('banfeed_user') or '')
+        # The account the firewalls fetch with, and which firewalls those are,
+        # only to somebody who may change it (1.10.345): to a viewer the name
+        # was half of what keeps the list private.
+        out['user'] = str(CONFIG.get('banfeed_user') or '') if admin else ''
+        if not admin:
+            out['fetched'] = [{'at': one.get('at'), 'n': one.get('n')} for one in out['fetched']]
         out['password_set'] = bool(CONFIG.get('banfeed_password'))
         if admin and out['auth'] == 'key':
             # The key only to somebody who may change the settings: it is the
@@ -59304,7 +59371,13 @@ class Daemon(object):
         p = str(principal or '').strip()
         if '\\' in p:
             dom, user = p.split('\\', 1)
-            return user.strip().lower()
+            dom, user = dom.strip().lower(), user.strip().lower()
+            mine = self.directory_domain('directory')
+            # The directory's own domain by its short name; another one kept
+            # as name@domain (1.10.345), never the own domain's namesake.
+            if not dom or dom == mine.split('.')[0] or dom == mine:
+                return user
+            return '%s@%s' % (user, dom)
         user, _at, realm = p.rpartition('@') if '@' in p else (p, '', '')
         user, realm = user.strip().lower(), realm.strip().lower()
         mine = self.directory_domain('directory')
@@ -60250,6 +60323,36 @@ class Daemon(object):
                     good.pop(k, None)
             good[(name, where)] = now
 
+    def _login_whose(self, where, when, name):
+        whose = self.__dict__.setdefault('_login_names', {})
+        with self._login_watch:
+            if len(whose) > self.LOGIN_FAILS_MOST:
+                whose.clear()
+            got = whose.setdefault(where, [])
+            got.append((when, name))
+            del got[:-200]
+
+    def _login_forget_name(self, where, *names):
+        """The wrong passwords from an address for these names, let go -
+        somebody got in as them (1.10.345). Those for any other name stay:
+        signing in as yourself in between no longer wiped the count of
+        somebody guessing at the administrator from the same address."""
+        names = {str(n or '').strip().lower() for n in names}
+        whose = self.__dict__.setdefault('_login_names', {})
+        with self._login_watch:
+            mine = [t for t, n in whose.get(where, []) if n in names]
+            tries = self._login_fails.get(where)
+            if tries:
+                for t in mine:
+                    try:
+                        tries.remove(t)
+                    except ValueError:
+                        pass
+                if not tries:
+                    self._login_fails.pop(where, None)
+            if where in whose:
+                whose[where] = [(t, n) for t, n in whose[where] if n not in names]
+
     def _login_forget(self, where):
         """Every attempt from an address, let go: somebody got in."""
         with self._login_watch:
@@ -60280,6 +60383,9 @@ class Daemon(object):
         now = time.time()
         wait_s = max(1, int(CONFIG.get('login_wait_min') or 15)) * 60
         too_many, left = self._login_note(where, now, wait_s)
+        # ...and for which name (1.10.345): a sign-in that works lets go of its
+        # own name's wrong passwords from here, not of everybody's.
+        self._login_whose(where, now, name)
         # ...and against the NAME as well as the address. Counted by address
         # alone, one account could be worked at from a hundred addresses,
         # five guesses each, and a dashboard on an intranet has a hundred
@@ -60456,11 +60562,12 @@ class Daemon(object):
                 # same person put into this one (1.10.339).
                 try:
                     if said.get('canonical'):
-                        self.store.merge_directory_person(name, said.get('dn'))
+                        self.store.merge_directory_person(name, said.get('dn'),
+                                                       names=(said.get('aliases') or []) + [name])
                 except Exception as e:                  # noqa: BLE001
                     log('%s: the other accounts of the same person: %s' % (name, str(e)[:160]),
                         'warn')
-                self._login_forget(where)
+                self._login_forget_name(where, name, locals().get('typed') or name)
                 self._login_forget('user:' + name)
                 self._login_known(name, where, now)
                 second = self.second_owed(name)
@@ -60506,7 +60613,7 @@ class Daemon(object):
             # The same words whether the name exists or not: telling somebody
             # which half they got right is telling them half the answer.
             raise Refused('that name and password do not go together', why_dir)
-        self._login_forget(where)
+        self._login_forget_name(where, name)
         self._login_forget('user:' + name)
         self._login_known(name, where, now)
         second = self.second_owed(name)
@@ -60569,26 +60676,32 @@ class Daemon(object):
         if not kt or not kt.get('raw'):
             raise KrbError('no keytab is put in (Settings → Active Directory)')
         folder = self.kerberos_folder()
-        folder.mkdir(mode=0o700, parents=True, exist_ok=True)
-        (folder / 'rcache').mkdir(mode=0o700, exist_ok=True)
+        try:
+            folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+            (folder / 'rcache').mkdir(mode=0o700, exist_ok=True)
+        except OSError as e:
+            raise KrbError('the keytab could not be written out: %s' % e)
         path = folder / 'http.keytab'
         try:
             same = path.read_bytes() == kt['raw']
         except OSError:
             same = False
         if not same:
-            fd, tmp = tempfile.mkstemp(prefix='.keytab-', dir=str(folder))
+            try:
+                fd, tmp = tempfile.mkstemp(prefix='.keytab-', dir=str(folder))
+            except OSError as e:
+                raise KrbError('the keytab could not be written out: %s' % e)
             try:
                 os.fchmod(fd, 0o600)
                 with os.fdopen(fd, 'wb') as f:
                     f.write(kt['raw'])
                 os.replace(tmp, str(path))
-            except OSError:
+            except OSError as e:
                 try:
                     os.unlink(tmp)
                 except OSError:
                     pass
-                raise
+                raise KrbError('the keytab could not be written out: %s' % e)
         os.environ['KRB5_KTNAME'] = 'FILE:%s' % path
         os.environ['KRB5RCACHEDIR'] = str(folder / 'rcache')
         return kt
@@ -60699,6 +60812,12 @@ class Daemon(object):
                 raise KrbError('more than one entry of the directory answers to %s' % user)
             entry = found[0]
             attrs = entry.get('attrs', {})
+            # Of the ticket's realm, not a namesake of another domain under
+            # the same base (1.10.345): a forest's catalogue holds them all.
+            home = dn_domain((attrs.get('distinguishedName') or [entry.get('dn') or ''])[0])
+            if home and home != realm.lower():
+                raise KrbError('%s is a person of %s in the directory, not of the realm %s'
+                               % (user, home, realm))
             if self.directory_disabled(entry):
                 raise KrbError('the directory says %s is switched off' % user)
             if krb_filetime((attrs.get('lockoutTime') or [''])[0]):
@@ -60757,10 +60876,12 @@ class Daemon(object):
                                  'warn', who=name)
         self.store.remember_directory_user(said)
         try:
-            self.store.merge_directory_person(name, said.get('dn'))
+            self.store.merge_directory_person(name, said.get('dn'),
+                                                       names=(said.get('aliases') or []) + [name])
         except Exception as e:                          # noqa: BLE001
             log('%s: the other accounts of the same person: %s' % (name, str(e)[:160]), 'warn')
-        self._login_forget(where)
+        # Only this attempt was taken back above: an address's wrong passwords
+        # for other names stay counted (1.10.345).
         self._login_known(name, where, now)
         second = self.second_owed(name)
         token = self.store.new_session(name, said['role'], where, agent, second)
@@ -60852,15 +60973,18 @@ class Daemon(object):
         if not cas:
             raise CertLoginError('no authority is put in (Settings → Active Directory)')
         folder = self.certlogin_folder()
-        folder.mkdir(mode=0o700, parents=True, exist_ok=True)
         path = folder / 'cas.pem'
         text = ''.join(c['pem'].strip() + '\n' for c in cas)
         try:
-            same = path.read_text() == text
-        except OSError:
-            same = False
-        if not same:
-            write_replacing(path, text, 0o600)
+            folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+            try:
+                same = path.read_text() == text
+            except OSError:
+                same = False
+            if not same:
+                write_replacing(path, text, 0o600)
+        except OSError as e:
+            raise CertLoginError('the authorities could not be written out: %s' % e)
         return path
 
     def certlogin_put(self, data, by=''):
@@ -61007,10 +61131,12 @@ class Daemon(object):
                                  'warn', who=name)
         self.store.remember_directory_user(said)
         try:
-            self.store.merge_directory_person(name, said.get('dn'))
+            self.store.merge_directory_person(name, said.get('dn'),
+                                                       names=(said.get('aliases') or []) + [name])
         except Exception as e:                          # noqa: BLE001
             log('%s: the other accounts of the same person: %s' % (name, str(e)[:160]), 'warn')
-        self._login_forget(where)
+        # Only this attempt was taken back above: an address's wrong passwords
+        # for other names stay counted (1.10.345).
         self._login_known(name, where, now)
         second = self.second_owed(name)
         token = self.store.new_session(name, said['role'], where, agent, second)
@@ -69694,10 +69820,26 @@ def tls_fetch(url):
     import urllib.request
     if not re.match(r'^https?://[^\s/]+', str(url or ''), re.I):
         raise WebRootError('%s is not an http address' % str(url)[:120])
+    # Never a link-local address - a cloud's metadata - nor one that is no
+    # host at all (1.10.345): the address comes from a certificate.
+    bad = False
+    try:
+        import socket as _s
+        host = urllib.parse.urlsplit(url).hostname or ''
+        for fam, _t, _p, _c, sa in _s.getaddrinfo(host, None):
+            ip = ipaddress.ip_address(sa[0].split('%')[0])
+            bad = bad or ip.is_link_local or ip.is_multicast or ip.is_unspecified or \
+                ip.is_reserved
+    except (OSError, ValueError):
+        pass
+    if bad:
+        raise WebRootError('%s is not an address an authority is fetched from' % url[:120])
     req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
     try:
         # As the ACME CA is reached: Settings → Proxy where its switch is on.
         with _acme_open(req, timeout=10, purpose='acme') as r:
+            if not re.match(r'^https?://', str(r.geturl() or ''), re.I):
+                raise WebRootError('%s led elsewhere than http' % url[:120])
             data = r.read(TLS_AIA_BYTES + 1)
     except Exception as e:
         why = getattr(e, 'reason', None) or e
@@ -73377,7 +73519,9 @@ def push_install(daemon, body, box, kid):
     for one in want:
         one = str(one or '')
         if one == 'auto':
-            if all(push_name_holds(names, n) for n in slot['names']):
+            # ...and only to a dashboard that HAS a name (1.10.345): over none
+            # at all, `all()` let any certificate in.
+            if slot['names'] and all(push_name_holds(names, n) for n in slot['names']):
                 chosen.append(slot['id'])
             elif check:
                 raise PushRefused('names', 422, 'no slot here is held by this certificate: '
@@ -77584,7 +77728,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '944df69569e3ce6e618c8e2ab82eabf418fc35b87cb472819244584b6d36c529'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'ffa2ec572e0bccd7298ce4c7038495ecc8ba021e3bc3da616b31c87965eb4b46'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
@@ -79341,7 +79485,23 @@ def rb_targets(store):
         got = json.loads(store.get_meta('rbackup:targets') or '[]')
     except ValueError:
         got = []
-    return [t for t in got if isinstance(t, dict) and t.get('id')]
+    out = []
+    for t in got:
+        if not isinstance(t, dict) or not t.get('id'):
+            continue
+        # Checked again as it is used (1.10.345), not only as it was typed:
+        # a destination that came in with a backup put back, a copy of the
+        # database or by hand never went through the page's checks, and a
+        # folder with a newline or a ; in it was a command to sftp or
+        # smbclient.
+        try:
+            rb_checked(t, t)
+        except (ValueError, TypeError) as e:
+            log('a backup destination is left out, as it does not check out: %s'
+                % str(e)[:160], 'warn')
+            continue
+        out.append(t)
+    return out
 
 
 def rb_put_targets(store, targets):
@@ -82086,15 +82246,17 @@ def maintenance_host():
 
 def _maintenance_write(row):
     with MAINT_LOCK:
-        where = write_replacing(maintenance_file(), json.dumps(row, default=str), 0o640)
         # Written by root (isemon --maintenance with the daemon stopped):
-        # handed to whoever owns the folder, so the daemon can read it.
+        # handed to whoever owns the folder, so the daemon can read it - as
+        # the new file is made, never by its name afterwards (1.10.345).
+        owner = None
         if os.geteuid() == 0:
             try:
                 st = os.stat(str(Path(STATE_DIR)))
-                os.chown(str(where), st.st_uid, st.st_gid)
+                owner = (st.st_uid, st.st_gid)
             except OSError:
-                pass
+                owner = None
+        write_replacing(maintenance_file(), json.dumps(row, default=str), 0o640, owner=owner)
         MAINT_CACHE['at'] = 0.0
         MAINT_CACHE['row'] = None
     return row
@@ -85114,8 +85276,11 @@ class ApiHandler(BaseHTTPRequestHandler):
         # An account that has to change its password first may do that and
         # nothing else. The page already sends it there; this is what makes
         # that so for anything that is not the page.
+        # ...and not what a full admin does to OTHER accounts' passkeys
+        # (1.10.345): a temporary password set by somebody else was enough.
         if me.get('must_change') and not cli and \
-                not self.path.startswith(('/api/auth/', '/api/health')):
+                (not self.path.startswith(('/api/auth/', '/api/health')) or
+                 self.path.startswith('/api/auth/passkeys')):
             self.spare_body()
             self.fail('change the password first', 403)
             return None
@@ -86570,7 +86735,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             # counted over the whole table - every event ever kept, grouped,
             # on every page turn - while the list showed one week.
             at_from, at_to = number('from', 0, 0), number('to', 0, 0)
-            since = at_from or ((time.time() - hours_asked * 3600) if hours_asked else 0)
+            # From the same hour the rows are (1.10.345): the tab counts went up
+            # to an hour short of the list's total.
+            since = at_from or (store.roll_floor(time.time() - hours_asked * 3600)
+                                if hours_asked else 0)
             # ...and narrowed to the tab being looked at, which is part of
             # what is kept: the choices behind "Refusals and lockouts" are
             # not the choices behind "Everything".
@@ -87209,7 +87377,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             account = one('account')
 
             def blame():
-                rows = store.win_blame(account, since, until, 20)
+                rows = store.win_blame(store.win_account_forms([account], since) or account,
+                                       since, until, 20)
                 # ...and each of them read out: whether it is a program on a
                 # clock or somebody typing, whether the machine is a desk or
                 # a server signing in for something else, and where to go

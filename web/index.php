@@ -5687,7 +5687,7 @@ function srcText(el) {
         if (!x.ok || (x.d && x.d.ok === false)) {
           /* By itself, and this computer not in the domain: nothing said -
              the form is there. */
-          if (auto && x.d && x.d.code === 'no_ticket') {
+          if (auto && x.d && (x.d.code === 'no_ticket' || x.d.code === 'bad_ticket')) {
             /* This browser has no Windows ticket - a computer outside the
                domain, where the browser asked for a name and password in a
                window of its own (1.10.344). Not tried by itself again in
@@ -5726,7 +5726,10 @@ function srcText(el) {
   function certStart(auto) {
     if (!certGo) return;
     certGo.disabled = true;
-    try { sessionStorage.setItem('isemon.cert.tried', '1'); } catch (e) { }
+    try {
+      sessionStorage.setItem('isemon.cert.tried', '1');
+      sessionStorage.setItem('isemon.cert.went', '1');
+    } catch (e) { }
     fetch('?api=cert-nonce', {method: 'POST', credentials: 'same-origin',
       headers: {'Content-Type': 'application/json'}, body: '{}'})
       .then(function (r) { return r.json(); })
@@ -5742,27 +5745,37 @@ function srcText(el) {
       });
   }
   if (certGo) certGo.addEventListener('click', function () { certStart(false); });
+  var certWhy = '';
   try {
-    var certWhy = new URLSearchParams(location.search).get('certsaid');
-    if (certWhy) {
+    certWhy = new URLSearchParams(location.search).get('certsaid') || '';
+    if (certWhy) history.replaceState(null, '', location.pathname);
+    /* Said only to a tab that went to the certificate's port itself
+       (1.10.345): a link of somebody else's put any words it liked here. */
+    var went = sessionStorage.getItem('isemon.cert.went');
+    sessionStorage.removeItem('isemon.cert.went');
+    if (certWhy && went) {
       var into = certSaid || said;
       into.className = 'said bad';
       into.textContent = certWhy;          /* text, never HTML */
-      history.replaceState(null, '', location.pathname);
     }
   } catch (e) { }
-  var krbTried = false, certTried = false;
+  /* Without the browser's storage nothing is tried by itself (1.10.345): it
+     could not be remembered that it was, and a browser that also drops the
+     cookie went round and round. */
+  var krbTried = true, certTried = true;
   try {
     krbTried = !!(sessionStorage.getItem('isemon.krb.tried') || sessionStorage.getItem('isemon.krb.out'));
     /* ...nor in a browser that had no Windows ticket the last time, within
-       30 days - unless only Windows is offered (1.10.344). */
+       30 days - unless Windows is the only way in (1.10.344). */
     var none = Number(localStorage.getItem('isemon.krb.none') || 0);
-    if (none && Date.now() - none < 30 * 86400000 && !form.hidden) krbTried = true;
+    if (none && Date.now() - none < 30 * 86400000 && (!form.hidden || certGo)) krbTried = true;
     /* A certificate is not tried by itself after Sign out, after it was
        tried once in this tab, or right after a refusal (1.10.342). */
-    certTried = !!(sessionStorage.getItem('isemon.cert.tried') || sessionStorage.getItem('isemon.krb.out')
-                   || new URLSearchParams(location.search).get('certsaid') || certSaid && certSaid.textContent);
-  } catch (e) { }
+    certTried = !!(sessionStorage.getItem('isemon.cert.tried') || sessionStorage.getItem('isemon.krb.out'));
+  } catch (e) {
+    krbTried = certTried = true;
+  }
+  if (certWhy) certTried = true;
   var krbAuto = krbBox && krbBox.dataset.auto === '1' && !krbTried;
   var certAuto = krbBox && krbBox.dataset.certAuto === '1' && !certTried && !!certGo;
   if (SECOND) {
@@ -9995,7 +10008,7 @@ function placeCell(ip, tacacs) {
   var name = aliasFor(ip);
   if (name) {
     var tag = el('span', 'alias', name);
-    explain(tag, 'This address has a name in Settings: <b>' + name + '</b>.');
+    explain(tag, 'This address has a name in Settings: <b>' + wordsIn(name) + '</b>.');
     td.appendChild(tag);
     return td;
   }
@@ -11548,8 +11561,10 @@ function openHashSub(tab, sub) {
       var want = sub.split('-')[1];
       /* Its block may not be read yet on a reload: kept for it to take up. */
       window.A25_WANT = want || '';
-      if (want && typeof A25 !== 'undefined' && A25_PAGES.some(function (p) { return p[0] === want; })) {
-        A25.page = want;
+      if (typeof A25 !== 'undefined') {
+        /* #windows/ad2025 alone is its overview (1.10.345), not the page
+           last open. */
+        A25.page = want && A25_PAGES.some(function (p) { return p[0] === want; }) ? want : 'sum';
       }
       winShowPage('ad25');
     }
@@ -12048,7 +12063,7 @@ function logRow(l, inFolder) {
     var bad = el('span', 'tag warn', l.says && l.says.indexOf('may not read') >= 0
                  ? 'it may not read it' : (l.says || l.error));
     explain(bad, (l.says && l.says !== l.error ? l.says + '. ' : '')
-            + (l.fix ? '\nOne command puts it right:\n<code>' + l.fix + '</code>\n' : '')
+            + (l.fix ? '\nOne command puts it right:\n<code>' + wordsIn(l.fix) + '</code>\n' : '')
             + '\nThe message itself: <code>' + wordsIn(l.error) + '</code>');
     last.appendChild(bad);
   }
@@ -12761,6 +12776,8 @@ function ovDrawDomain(d) {
     });
     if (w) w.value = best || w.options[w.options.length - 1].value;
     showTab('windows');
+    /* ...on its overview, whichever page the Domain tab was left on (1.10.345). */
+    if (typeof winShowPage === 'function') winShowPage('over');
   };
   on.appendChild(go);
   host.appendChild(on);
@@ -15069,7 +15086,7 @@ function nameCell(name) {
   box.textContent = name;
   if (bogusName(name)) {
     box.style.color = 'var(--crit)';
-    explain(box, 'The name <b>' + name + '</b> is one of those under <b>a name that does not '
+    explain(box, 'The name <b>' + wordsIn(name) + '</b> is one of those under <b>a name that does not '
       + 'exist</b> in Settings. Nobody has ever had it, so an attempt offering it is '
       + 'somebody guessing rather than somebody mistyping — which is what this application '
       + 'bans hardest on.');
@@ -28037,7 +28054,7 @@ function fwSide(title, r, side) {
 function tFieldFinds(node, key, value) {
   if (value === undefined || value === null || value === '') return;
   var term = key + ':' + tQuote(value);
-  opensWith(node, 'Every line where <code>' + term + '</code> \u2014 press to '
+  opensWith(node, 'Every line where <code>' + wordsIn(term) + '</code> \u2014 press to '
     + 'search for it.', function () {
       tSearchFor(key, value, TPAGE === 'over' ? (/^(hostname|url|catdesc|category)$/.test(key)
         ? 'web' : 'list') : null);
@@ -30045,7 +30062,10 @@ function drawSignInPage() {
   if (!host || !SI.krb || !SI.cl) return;
   clear(host);
   var k = SI.krb, c = SI.cl;
-  var only = !!(k.only_windows || c.only);
+  /* As the sign-in page itself decides (1.10.345): no password only while one
+     of the two is on, and Windows then tried by itself whatever its switch. */
+  var only = !!((k.on || c.on) && (k.only_windows || c.only));
+  k = Object.assign({}, k, {auto: k.on && (k.auto || only)});
   var way = function (on, auto, wanted) {
     return on ? (auto ? 'tried by itself when the page opens' : 'a button under the form')
       : (wanted ? 'switched on, not ready yet' : 'off');
@@ -30129,7 +30149,11 @@ function drawCertLogin(d) {
         fetch('?api=cert-nonce', {method: 'POST', credentials: 'same-origin',
           headers: {'Content-Type': 'application/json'}, body: JSON.stringify({try: 1})})
           .then(function (rr) { return rr.json(); })
-          .then(function (x) { if (x && x.url) location.href = x.url; else { busy(tryb, false); toast((x && x.error) || 'that did not work', 'warn'); } },
+          .then(function (x) {
+            if (x && x.url) {
+              try { sessionStorage.setItem('isemon.cert.trywent', '1'); } catch (e) { }
+              location.href = x.url;
+            } else { busy(tryb, false); toast((x && x.error) || 'that did not work', 'warn'); } },
                 function (e) { busy(tryb, false); oops(e); });
       };
       tools.appendChild(tryb);
@@ -30803,10 +30827,10 @@ function networkRow(tr, r, kind, got) {
         explain(tag, matched
           ? 'This record named the VLAN but did not number it \u2014 ' + SYS + ' writes one or the '
             + 'other and not always both. The number is the one other records here carry for '
-            + '<b>' + named + '</b>, which is ' + SYS + '\u2019s own pairing and not a '
+            + '<b>' + wordsIn(named) + '</b>, which is ' + SYS + '\u2019s own pairing and not a '
             + 'guess. It is dimmed because it was not on this record.'
           : 'The VLAN this machine was put in, by number, as the switch was told it.'
-            + (named ? ' The site also names it <b>' + named + '</b>.' : ''));
+            + (named ? ' The site also names it <b>' + wordsIn(named) + '</b>.' : ''));
         vlan.appendChild(tag);
       }
       if (named) {
@@ -31179,7 +31203,7 @@ function eduroamRow(tr, r, got) {
        <b>Jan&amp;#39;s iPhone</b> in the tooltip. */
     explain(mac, seen.calls_itself
       ? 'The machine’s MAC address. Its own name for itself, which the controller '
-        + 'passed on, is <b>' + seen.calls_itself + '</b>.'
+        + 'passed on, is <b>' + wordsIn(seen.calls_itself) + '</b>.'
       : 'The machine’s MAC address, as the wireless controller reported it.');
     box.appendChild(mac);
     if (got && seen.calls_itself) {
@@ -40999,7 +41023,7 @@ function findNameCard(d) {
       var one = el('span', 'fdoor');
       var go = el('a', 'fgo mono', a.ip);
       var called = ((d.ptr || {})[a.ip] || {}).name || '';
-      explain(go, (called ? 'The reverse zone calls this address <b>' + called + '</b>.\n\n' : '')
+      explain(go, (called ? 'The reverse zone calls this address <b>' + wordsIn(called) + '</b>.\n\n' : '')
         + 'Everything this machine knows about ' + a.ip + ': whether it is kept out '
         + 'and why, what it has tried, and who has got in from it.');
       go.onclick = function (e) { e.preventDefault(); closeFind(); lookUp(a.ip); };
@@ -41154,7 +41178,7 @@ function findNameCard(d) {
         groups.appendChild(el('span', '', num(w.group_count)));
         explain(groups, 'The directory groups this account is in. Open the whole record to '
           + 'read them:\n\n'
-          + (w.groups || []).slice(0, 24).map(function (g) { return '<code>' + g.name + '</code>'; })
+          + (w.groups || []).slice(0, 24).map(function (g) { return '<code>' + wordsIn(g.name) + '</code>'; })
               .join('\n'));
         about.appendChild(groups);
       }
@@ -41984,7 +42008,10 @@ function qBoxesInstall() {
   /* Back from Try my certificate (1.10.341): what it said, and the card. */
   try {
     var certTry = new URLSearchParams(location.search).get('certtry');
-    if (certTry) {
+    var tryWent = sessionStorage.getItem('isemon.cert.trywent');
+    sessionStorage.removeItem('isemon.cert.trywent');
+    if (certTry && !tryWent) history.replaceState(null, '', location.pathname + location.hash);
+    if (certTry && tryWent) {
       history.replaceState(null, '', location.pathname + '#settings/dir');
       showTab('settings');
       showPane('dir');
@@ -46959,6 +46986,9 @@ function a25Go(page, issue, only) {
      a search or a controller typed on another list is not carried over
      into this one, where it would quietly empty it (1.10.334). */
   if (issue !== undefined) { A25.issue = issue; A25.q = ''; A25.dc = ''; A25.only = only || ''; }
+  /* ...and a list opened from the strip shows all of itself (1.10.345): the
+     top card's "accounts only" stuck, and Every row came out empty. */
+  else A25.only = '';
   (A25.st[page] = A25.st[page] || {sort: null, pg: 0}).pg = 0;
   drawAd25();
   /* Back to the top of the page: the strip is pinned, the list fills the rest. */
@@ -47357,7 +47387,7 @@ function a25Rows(keep) {
   });
   t.appendChild(body);
   box.appendChild(t);
-  if (!shown.length) box.appendChild(el('div', 'center muted a25-none', A25.q || A25.issue || A25.dc ? 'Nothing matches.' : 'Nothing seen in this window.'));
+  if (!shown.length) box.appendChild(el('div', 'center muted a25-none', A25.q || A25.issue || A25.dc || A25.only ? 'Nothing matches.' : 'Nothing seen in this window.'));
   box.scrollTop = at;
   /* The same pager as every other list on these pages. */
   pager('a25-pager', st.pg, A25.per, rows.length, function (n) { st.pg = n; a25Rows(); });
@@ -47451,7 +47481,8 @@ function a25Markdown(d, per, hideAcc, hideMach) {
     /* A computer's account names the computer: with the machines stood in,
        it is stood in by the same name (1.10.334). */
     if (name && !hideAcc && hideMach && /\$$|\$@/.test(name)) {
-      return M(String(name).replace(/\$.*$/, '')) + '$';
+      /* ...whatever domain or realm it is written with (1.10.345). */
+      return M(String(name).split('\\').pop().split('@')[0].replace(/\$$/, '')) + '$';
     }
     if (!name || !hideAcc) return name || '';
     /* One account one stand-in, however it was written: `X`, `DOMAIN\\X`,

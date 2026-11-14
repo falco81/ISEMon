@@ -165,9 +165,8 @@ progress() {        # progress N "words"
 root_helpers() {
     step "What the pages may ask of root"
     local k
-    not_a_link "$STATE_DIR" "$STATE_DIR/web" "$STATE_DIR/upgrade"
-    run install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" "$STATE_DIR/web"
-    run install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" "$STATE_DIR/upgrade"
+    not_a_link "$STATE_DIR"
+    user_dir "$STATE_DIR/web" "$STATE_DIR/upgrade"
     run install -D -m 0755 -o root -g root "$SOURCE_DIR/deploy/isemon_web.py" "$LIB_DIR/isemon_web.py"
     run install -D -m 0755 -o root -g root "$SOURCE_DIR/deploy/isemon_upgrade.py" "$LIB_DIR/isemon_upgrade.py"
     run install -d -m 0755 -o root -g root "$LIB_DIR/release-keys"
@@ -462,6 +461,27 @@ reload_units() {
     [[ -n "$UNITS_RELOADED" ]] && return 0
     run systemctl daemon-reload
     UNITS_RELOADED="yes"
+}
+
+# A folder of the service account's inside a folder it owns (1.10.345): made
+# BY the account, and given to it without following a link. As root, an
+# `install -d -o` on a name the account had swapped for a link between the
+# check and the call chowned whatever the link named - /etc/cron.d, say.
+user_dir() {        # user_dir PATH...
+    local d
+    for d in "$@"; do
+        not_a_link "$d"
+        if [[ -n "$DRY_RUN" ]]; then
+            note "[would make] $d"
+            continue
+        fi
+        if [[ -e "$d" ]]; then
+            chown -h "$SERVICE_USER:$SERVICE_USER" "$d"
+        else
+            runuser -u "$SERVICE_USER" -- mkdir "$d"
+        fi
+        runuser -u "$SERVICE_USER" -- chmod 0750 "$d"
+    done
 }
 
 not_a_link() {      # not_a_link PATH...
@@ -1259,7 +1279,10 @@ config_dir_writable() {
     run install -d -m 2770 -o root -g "$SERVICE_USER" "$CONFIG_DIR"
     if [[ -f "$CONFIG_FILE" && ! -L "$CONFIG_FILE" && -z "$DRY_RUN" ]]; then
         chgrp -h "$SERVICE_USER" "$CONFIG_FILE" 2>/dev/null || true
-        chmod 0640 "$CONFIG_FILE" 2>/dev/null || true
+        # By a descriptor opened without following a link (1.10.345): a plain
+        # chmod after the test above followed one renamed in between.
+        python3 -c 'import os,sys; fd=os.open(sys.argv[1], os.O_RDONLY|os.O_NOFOLLOW); os.fchmod(fd, 0o640)' \
+            "$CONFIG_FILE" 2>/dev/null || true
     fi
     command -v restorecon >/dev/null && run restorecon -R "$CONFIG_DIR" 2>/dev/null || true
 }
@@ -1834,16 +1857,12 @@ if [[ -n "$DO_UPGRADE" ]]; then
 
     # Added in 1.10.11, so an installation upgraded from before it has no
     # such folder and the first night would be the one to find that out.
-    not_a_link "$STATE_DIR" "$STATE_DIR/dumps"
-    run install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" "$STATE_DIR/dumps"
-
-    # The router's key, which 1.10.97 moved out of /run (emptied at every
-    # restart, and so at this one). Carried across now, before the restart
-    # empties it, so the router is not met as a stranger.
-    if [[ -f /run/isemon/known_hosts && ! -e "$STATE_DIR/known_hosts" ]]; then
-        run install -m 0600 -o "$SERVICE_USER" -g "$SERVICE_USER" \
-            /run/isemon/known_hosts "$STATE_DIR/known_hosts"
-    fi
+    not_a_link "$STATE_DIR"
+    user_dir "$STATE_DIR/dumps"
+    # (The router's key that 1.10.97 carried over from /run is not copied by
+    # root any more (1.10.345): /run/isemon is the account's, and a link there
+    # had root copy any file to it. An installation that old meets its router
+    # once more as a stranger, and is asked.)
 
     # What earlier installs did not do, or did only half: the web accounts in
     # a group for the token alone (see web_group_setup), and SELinux letting
@@ -2083,13 +2102,13 @@ python_pick "${WITH_DB:-sqlite}"
 python_link
 good "$BIN_LINK"
 
-not_a_link "$STATE_DIR" "$STATE_DIR/backups" "$STATE_DIR/dumps" "$LOG_DIR"
+not_a_link "$STATE_DIR" "$LOG_DIR"
 run install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" "$STATE_DIR"
-run install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" "$STATE_DIR/backups"
+user_dir "$STATE_DIR/backups"
 # The nightly dump, which is the engine's own: pg_dump's, mariadb-dump's, or
 # on the file SQLite's own backup. Kept apart from the copies because they go
 # back into different places.
-run install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" "$STATE_DIR/dumps"
+user_dir "$STATE_DIR/dumps"
 run install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" "$LOG_DIR"
 config_dir_writable
 # ...after the account and its folder: the rule names the one, and the file
