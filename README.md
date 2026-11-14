@@ -372,6 +372,32 @@ working.
 
 ## Version
 
+1.10.348
+
+- **OCSP for the sign-in with a certificate.**
+  - *Ask an OCSP responder*: `off` (default, the CRLs alone as before),
+    `first` (OCSP, and the CRL when the responder does not answer), `only`, or
+    `both`. The certificate and every authority above it but the root are
+    checked.
+  - The responder is the one the certificate names (AIA), or one set for all.
+  - The answer must be signed by the authority or a responder it named, as
+    `openssl ocsp` checks it against the authorities put in. *revoked* and
+    *unknown* refuse. A forged or out-of-date answer counts as no answer.
+  - Answers are kept ten minutes at most. While the responder does not answer,
+    the last good one is used until its next update.
+  - The same SSRF guards as a CRL.
+- **CRLs from the directory (LDAP)**, off by default: a CDP
+  `ldap:///...CN=CDP,CN=Public Key Services,...` is read with the directory
+  connection set above when no http address answers. Only CDP objects of the
+  configuration and their CRL attributes are read.
+- **The card**:
+  - how revocation is checked, as steps;
+  - a table *Online status (OCSP)*, with a row per answer, its details,
+    **Ask again** and **Clear all**;
+  - an **LDAP** tag on CRLs read from the directory.
+- `isemon --cert-login-ocsp [--json]`, `--cert-login-ocsp-fetch` and
+  `--cert-login-ocsp-clear`.
+
 1.10.347
 
 - **Revocation lists (CRL) for the sign-in with a certificate, as acme 1.0.104

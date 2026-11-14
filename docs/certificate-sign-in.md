@@ -64,6 +64,10 @@ certificate, and Windows asks for the card's PIN. Built after otp 1.0.275.
   a button "Sign in with a certificate" under the form.
 - **Check that a certificate is not revoked (CRL)**: on by default. See
   [Revocation lists (CRL)](#revocation-lists-crl) below.
+- **CRLs from the directory (LDAP) too**: off by default. See
+  [CRLs from the directory](#crls-from-the-directory-ldap).
+- **Ask an OCSP responder** (`off` by default) and **OCSP responder of its
+  own**. See [OCSP](#ocsp-online-status).
 
 The card **Signing in with a certificate** shows:
 
@@ -260,6 +264,92 @@ isemon --cert-login-crl-clear [URL]     Clear - one, or all (asks first; --yes)
 
 An unknown URL is refused: *no CRL at that address is known here*.
 
+## OCSP (online status)
+
+From 1.10.348. *Ask an OCSP responder* (`certlogin_ocsp`):
+
+| Mode | What happens |
+|---|---|
+| `off` (default) | the CRLs alone, as before |
+| `first` | the responder is asked; only when it gives no answer, the CRL decides |
+| `only` | the responder alone: no answer, no sign-in |
+| `both` | the responder **and** the CRL, both must say good |
+
+The card shows the order as steps, for example *OCSP → no answer → CRL →
+none to be had → no sign-in*.
+
+- **Which responder**: the one each certificate names (*Authority Information
+  Access*, OCSP), or one set for all (*OCSP responder of its own*,
+  `certlogin_ocsp_url`, an http address). The setting refuses https, a user or
+  password in the address, and loopback, link-local or metadata addresses.
+- **What is asked**: the certificate and every authority above it but the
+  root, each of its own issuer. With `first`, an authority whose certificate
+  names no responder is checked by its CRL. With `only`, it is refused.
+- **How**: the request is made by `openssl ocsp -reqout` (no nonce, as Windows
+  asks). It is POSTed by the same guarded http as a CRL: every address of the
+  name is checked, the connection goes to the address checked, no redirect is
+  followed, 1 MB and 15 s at most. The answer is checked by `openssl ocsp
+  -respin -CAfile <the authorities put in>`, never against the system's store.
+  It must be signed by the authority, or by a responder certificate the
+  authority issued with *OCSP Signing* (AD CS's Online Responder). It must be
+  within its this/next update.
+- **The answer**:
+  - *good* lets the person in;
+  - *revoked* refuses (*revoked* for the person; reason and time in Events);
+  - *unknown* refuses (*certificate not accepted*);
+  - a forged answer, no answer, or one out of date counts as *no answer*.
+- **Kept ten minutes at most**, or until its next update if that is sooner. A
+  responder that failed less than a minute ago is not asked again at every
+  sign-in. While it does not answer, a last *good* answer is used until its
+  next update.
+
+**The table "Online status (OCSP)"** has one row for each answer kept:
+
+- the certificate, its issuer, a status pill, the next update, the serial,
+  and when it was asked;
+- the pill reads *good*, *revoked*, *unknown*, *no answer*, *run out* or
+  *last answer kept*;
+- a row opens to the revocation time and reason, this and next update, the
+  responder that signed, the size, the last error, and the responder's
+  address with *Copy*;
+- **Ask again** and **Clear all** (also per row) are for a full administrator
+  and are written to Events. Clear all asks first.
+
+```
+isemon --cert-login-ocsp [--json]     the answers kept
+isemon --cert-login-ocsp-fetch        ask every responder again
+isemon --cert-login-ocsp-clear        forget them (asks first; --yes)
+```
+
+AD CS: install the *Online Responder* role, add a *Revocation Configuration*
+for the issuing authority (and one on the root's side for the authority above
+it), and put its URL in the authority's *Extensions* → *Authority Information
+Access* with *Include in the online certificate status protocol (OCSP)
+extension*. Certificates issued before that name no responder. For those, set
+*OCSP responder of its own*.
+
+## CRLs from the directory (LDAP)
+
+From 1.10.348. AD CS publishes its CRLs into the directory as well:
+`ldap:///CN=<CA>,CN=<server>,CN=CDP,CN=Public Key Services,CN=Services,CN=Configuration,DC=...?certificateRevocationList?base?objectClass=cRLDistributionPoint`.
+With *CRLs from the directory (LDAP) too* on:
+
+- such a CDP (and the delta's, `deltaRevocationList`) is read when no http
+  address of the certificate answers, or when it names none;
+- it is read with the **directory connection set above**, never with the host
+  written in the address;
+- only a `cRLDistributionPoint` object under `CN=CDP,CN=Public Key
+  Services,CN=Services,CN=Configuration,...` is read, base scope, and only its
+  `certificateRevocationList` or `deltaRevocationList`. Any other DN or
+  attribute in a certificate is ignored;
+- the same rules as an http CRL apply: ten minutes, the last good copy,
+  openssl's check, fail closed;
+- the table shows such a row with an **LDAP** tag and the CA's name, and in
+  its details *Read from: the directory (LDAP)*.
+
+The account the directory is read with needs read access to the
+configuration partition, which every domain account has by default.
+
 ## Testing without a domain
 
 `test/fixes341_certlogin.py` makes an AD CS of its own with openssl
@@ -283,3 +373,11 @@ ten-minute cache and the last good copy, a delta not to be had, the card's
 rows, Fetch now and Clear (refused to read-only), the events, what the person
 is told, and the command line. The test CRLs are on 127.0.0.1, which only the
 tests' switch `ISEMON_CDP_LOOPBACK_OK=1` allows. isemon never sets it.
+
+`test/fixes348_ocsp.py` makes a PKI with two OCSP responders (`test/pki_ocsp.sh`,
+`openssl ocsp` as the server). It checks `off`, `first`, `only` and `both`
+with alice (good), bob (revoked), dan (responder dead), eve (no AIA), hal
+(revoked in the CRL only), ida (unknown to the responder), the authority above,
+a forged answer, a responder of its own, the cache and the last good answer,
+the setting's guards, gina's CRL read from the directory (and nothing else read
+there), the card, Ask again and Clear, the events, and the command line.

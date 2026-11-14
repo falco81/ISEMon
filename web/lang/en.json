@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.347",
+  "version": "1.10.348",
   "made": "2026-11-14",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -575,6 +575,10 @@
   "s.a-country-is-only-ever-shown.30377178": {
    "source": "A country is only ever shown here, never judged: it is not something an address chooses, and a scanner in Rotterdam looks exactly like an employee in Rotterdam. The country list under Settings is the place to act on one, and it drops a whole country before anybody has failed anything.",
    "text": "A country is only ever shown here, never judged: it is not something an address chooses, and a scanner in Rotterdam looks exactly like an employee in Rotterdam. The country list under Settings is the place to act on one, and it drops a whole country before anybody has failed anything."
+  },
+  "s.a-crl-distribution-point-in-the.cfad6be0": {
+   "source": "A CRL Distribution Point in the directory is read too, with the directory’s connection above, when no http one answers.",
+   "text": "A CRL Distribution Point in the directory is read too, with the directory’s connection above, when no http one answers."
   },
   "s.a-database-from-somewhere-else-one.b0ca9d05": {
    "source": "A database from somewhere else — one downloaded from here, or a file copied off the backups folder. It replaces everything: every record, every ban, every setting and every account. Nothing happens until it has been read, checked and shown to you.",
@@ -3864,6 +3868,14 @@
    "source": "Ask Active Directory everything again, now: the domain's own rules, its controllers, its trusts, its sites, who is in the groups that run it — everything the Domain page weighs an alarm against and everything the watching compares. Read only. Nothing stored here is read again, so it is one round of searches rather than minutes of work. This is exactly what the clock above does once a day.",
    "text": "Ask Active Directory everything again, now: the domain's own rules, its controllers, its trusts, its sites, who is in the groups that run it — everything the Domain page weighs an alarm against and everything the watching compares. Read only. Nothing stored here is read again, so it is one round of searches rather than minutes of work. This is exactly what the clock above does once a day."
   },
+  "s.ask-again.3f094ed6": {
+   "source": "Ask again",
+   "text": "Ask again"
+  },
+  "s.ask-an-ocsp-responder.6ee7b016": {
+   "source": "Ask an OCSP responder",
+   "text": "Ask an OCSP responder"
+  },
   "s.ask-both-directories-about-one-name.98672ce6": {
    "source": "Ask both directories about one name, exactly as the pages do, and show which of them answered.",
    "text": "Ask both directories about one name, exactly as the pages do, and show which of them answered."
@@ -3871,6 +3883,14 @@
   "s.ask-every-name-server-in-turn.399962c0": {
    "source": "ask every name server in turn what one address is called, and show what each of them said",
    "text": "ask every name server in turn what one address is called, and show what each of them said"
+  },
+  "s.ask-every-ocsp-responder-again-now.a2e170d4": {
+   "source": "ask every OCSP responder again now, for every answer kept",
+   "text": "ask every OCSP responder again now, for every answer kept"
+  },
+  "s.ask-every-responder-again.0921f933": {
+   "source": "Ask every responder again",
+   "text": "Ask every responder again"
   },
   "s.ask-every-server-in-the-list.bb1f2db9": {
    "source": "Ask every server in the list about this one address and show what each of them said. Every server is asked, rather than stopping at the first that answers, because what is being set up is the list itself.",
@@ -3887,6 +3907,10 @@
   "s.ask-one-of-the-jobs-from.4008a3a3": {
    "source": "ask one of the jobs from --jobs to stop. It stops after the batch it is in and keeps what it has already done",
    "text": "ask one of the jobs from --jobs to stop. It stops after the batch it is in and keeps what it has already done"
+  },
+  "s.ask-one-responder-again.74fedc07": {
+   "source": "Ask one responder again",
+   "text": "Ask one responder again"
   },
   "s.ask-the-database-to-read-itself.f20ce87e": {
    "source": "Ask the database to read itself through and say whether anything in it is broken - SQLite's integrity check, MariaDB's CHECK TABLE, and on PostgreSQL every row of every table read through, with every index checked as well where the server has amcheck. It only reads; on a large one it takes a while.",
@@ -3912,6 +3936,10 @@
    "source": "Ask the library for signing and sealing (session security, GSSAPI with integrity), or LDAPS.",
    "text": "Ask the library for signing and sealing (session security, GSSAPI with integrity), or LDAPS."
   },
+  "s.ask-the-responder-again.25f6db41": {
+   "source": "Ask the responder again",
+   "text": "Ask the responder again"
+  },
   "s.ask-the-router-what-is-on.1ba49e18": {
    "source": "Ask the router what is on its address list right now and show it beside what is known here. It only reads.",
    "text": "Ask the router what is on its address list right now and show it beside what is known here. It only reads."
@@ -3931,6 +3959,10 @@
   "s.asked-again.c77d47a3": {
    "source": "asked again",
    "text": "asked again"
+  },
+  "s.asked-at-a-sign-in-at.464c20ee": {
+   "source": "Asked at a sign-in, at most every ten minutes; the answer is signed by the authority or a responder it named, and checked by openssl against the authorities put in.",
+   "text": "Asked at a sign-in, at most every ten minutes; the answer is signed by the authority or a responder it named, and checked by openssl against the authorities put in."
   },
   "s.asked-by.e867115a": {
    "source": "Asked by",
@@ -3964,6 +3996,10 @@
    "source": "asked: it is done within seconds",
    "text": "asked: it is done within seconds"
   },
+  "s.asked-not-every-responder-answered.9f958e1e": {
+   "source": "asked - not every responder answered",
+   "text": "asked - not every responder answered"
+  },
   "s.asked-root-reads-the-system-s.ab9d8b63": {
    "source": "asked: root reads the system's trusted roots again within seconds",
    "text": "asked: root reads the system's trusted roots again within seconds"
@@ -3975,6 +4011,10 @@
   "s.asked-the-server-changes-its-network.d156f59b": {
    "source": "asked: the server changes its network and restarts",
    "text": "asked: the server changes its network and restarts"
+  },
+  "s.asked.1bb7985f": {
+   "source": "Asked",
+   "text": "Asked"
   },
   "s.asked.9421a0b3": {
    "source": "asked…",
@@ -5696,10 +5736,6 @@
    "source": "Checked from here",
    "text": "Checked from here"
   },
-  "s.checked-the-crl-and-its-delta.3477eae3": {
-   "source": "checked - the CRL (and its delta) of the certificate and of every authority above it but the root; none to be had, no sign-in",
-   "text": "checked - the CRL (and its delta) of the certificate and of every authority above it but the root; none to be had, no sign-in"
-  },
   "s.checked-with-this-machine-s-dns.aa60ce4d": {
    "source": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees.",
    "text": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees."
@@ -5848,6 +5884,14 @@
    "source": "Clear every CRL",
    "text": "Clear every CRL"
   },
+  "s.clear-every-ocsp-answer.d8c88509": {
+   "source": "Clear every OCSP answer",
+   "text": "Clear every OCSP answer"
+  },
+  "s.clear-every-ocsp-answer.dadb5936": {
+   "source": "Clear every OCSP answer?",
+   "text": "Clear every OCSP answer?"
+  },
   "s.clear-it.cec806d9": {
    "source": "Clear it",
    "text": "Clear it"
@@ -5859,6 +5903,10 @@
   "s.clear-one-crl.06047abb": {
    "source": "Clear one CRL",
    "text": "Clear one CRL"
+  },
+  "s.clear-one-ocsp-answer.3589b2a7": {
+   "source": "Clear one OCSP answer",
+   "text": "Clear one OCSP answer"
   },
   "s.clear-the-list-of-backups-sent.f9f287e8": {
    "source": "Clear the list of backups sent?",
@@ -5883,6 +5931,10 @@
   "s.clear-then-close.0baa7f3b": {
    "source": "clear, then close",
    "text": "clear, then close"
+  },
+  "s.clear-this-answer-asked-again-at.65332eec": {
+   "source": "Clear this answer - asked again at the next sign-in",
+   "text": "Clear this answer - asked again at the next sign-in"
   },
   "s.clear-this-crl-fetched-again-at.bde3c50b": {
    "source": "Clear this CRL - fetched again at the next sign-in",
@@ -6568,9 +6620,21 @@
    "source": "CRL number",
    "text": "CRL number"
   },
+  "s.crl.e2afbbd1": {
+   "source": "crl",
+   "text": "crl"
+  },
+  "s.crl.fa3416b8": {
+   "source": "CRL",
+   "text": "CRL"
+  },
   "s.crlevel.2c8a4cb1": {
    "source": "crlevel",
    "text": "crlevel"
+  },
+  "s.crls-from-the-directory-ldap-too.1a81b479": {
+   "source": "CRLs from the directory (LDAP) too",
+   "text": "CRLs from the directory (LDAP) too"
   },
   "s.croatia.d7e0453b": {
    "source": "Croatia",
@@ -7720,6 +7784,10 @@
    "source": "Each card",
    "text": "Each card"
   },
+  "s.each-certificate-s-responder.798133d3": {
+   "source": "each certificate’s responder",
+   "text": "each certificate’s responder"
+  },
   "s.each-core.132d98ae": {
    "source": "Each core",
    "text": "Each core"
@@ -8011,6 +8079,10 @@
   "s.empty-the-password-of-the-backups.0ae72f9c": {
    "source": "empty: the password of the backups set here",
    "text": "empty: the password of the backups set here"
+  },
+  "s.empty-the-responder-each-certificate-names.991bc3ca": {
+   "source": "Empty: the responder each certificate names (Authority Information Access). Or an http address of a responder for all of them (http://pki.corp.example/ocsp).",
+   "text": "Empty: the responder each certificate names (Authority Information Access). Or an http address of a responder for all of them (http://pki.corp.example/ocsp)."
   },
   "s.empty-the-search-put-the-filters.4549d44f": {
    "source": "Empty the search, put the filters back and order the list by the time again, newest first. The window at the top stays as it is.",
@@ -8379,6 +8451,10 @@
   "s.every-answer-a-windows-nps-server.35a2cd33": {
    "source": "Every answer a Windows NPS server gave that this read — the machines and people it let on to the network or the VPN, and the ones it refused. None of it is judged and no address is ever banned for it. Erasing it also forgets where those files were read up to, so the newest two in each folder are read again from the beginning. Older months are not: `isemon --rescan --logs nps` reads every file that is still there.",
    "text": "Every answer a Windows NPS server gave that this read — the machines and people it let on to the network or the VPN, and the ones it refused. None of it is judged and no address is ever banned for it. Erasing it also forgets where those files were read up to, so the newest two in each folder are read again from the beginning. Older months are not: `isemon --rescan --logs nps` reads every file that is still there."
+  },
+  "s.every-answer-kept-is-forgotten-the.fdb33358": {
+   "source": "Every answer kept is forgotten; the next sign-in asks the responder again. While it does not answer then, its last good answer is gone too.",
+   "text": "Every answer kept is forgotten; the next sign-in asks the responder again. While it does not answer then, its last good answer is gone too."
   },
   "s.every-attempt-at-a-switch-or.0ed2a21d": {
    "source": "Every attempt at a switch or a router over TACACS+ that was refused, newest first — a wrong password on network equipment, or a command somebody was not allowed.",
@@ -8931,6 +9007,14 @@
   "s.every-request-the-dashboard-makes-of.42813ae5": {
    "source": "Every request the dashboard makes of the daemon, who made it and what was asked for.",
    "text": "Every request the dashboard makes of the daemon, who made it and what was asked for."
+  },
+  "s.every-responder-answered.17da503d": {
+   "source": "every responder answered",
+   "text": "every responder answered"
+  },
+  "s.every-responder-asked-again-now-for.c8f4d9b5": {
+   "source": "Every responder asked again now, for every certificate it answered for. One that does not answer changes nothing that lets anybody in.",
+   "text": "Every responder asked again now, for every certificate it answered for. One that does not answer changes nothing that lets anybody in."
   },
   "s.every-row-in-each-table.d37eb78b": {
    "source": "every row in each table",
@@ -10463,6 +10547,10 @@
   "s.forget-the-key.179e5a87": {
    "source": "Forget the key",
    "text": "Forget the key"
+  },
+  "s.forget-the-ocsp-answers-kept-the.1532169f": {
+   "source": "forget the OCSP answers kept - the next sign-in asks again. Asks first unless --yes",
+   "text": "forget the OCSP answers kept - the next sign-in asks again. Asks first unless --yes"
   },
   "s.forget-the-package.a89b2272": {
    "source": "Forget the package",
@@ -12248,9 +12336,17 @@
    "source": "HTTP basic authentication:",
    "text": "HTTP basic authentication:"
   },
+  "s.http-by-this-server.999284b4": {
+   "source": "http, by this server",
+   "text": "http, by this server"
+  },
   "s.http-proxy-example-cz-3128.b311936d": {
    "source": "http://proxy.example.cz:3128",
    "text": "http://proxy.example.cz:3128"
+  },
+  "s.http-then-the-directory-ldap.c3ebe127": {
+   "source": "http, then the directory (LDAP)",
+   "text": "http, then the directory (LDAP)"
   },
   "s.http.77b5f8e3": {
    "source": "http",
@@ -13912,6 +14008,10 @@
    "source": "Its networks",
    "text": "Its networks"
   },
+  "s.its-next-update-has-passed-asked.370ce1e9": {
+   "source": "its next update has passed: asked again at the next sign-in",
+   "text": "its next update has passed: asked again at the next sign-in"
+  },
   "s.its-operating-system.65a6b2ab": {
    "source": "its operating system",
    "text": "its operating system"
@@ -14599,6 +14699,10 @@
   "s.last-90-days.b8a5aeb4": {
    "source": "last 90 days",
    "text": "last 90 days"
+  },
+  "s.last-answer-kept.429d924c": {
+   "source": "last answer kept",
+   "text": "last answer kept"
   },
   "s.last-attempt.82aee111": {
    "source": "Last attempt",
@@ -17140,6 +17244,10 @@
    "source": "no answer in time (timed out)",
    "text": "no answer in time (timed out)"
   },
+  "s.no-answer-to-be-had-by.7f9d1dfc": {
+   "source": "no answer to be had: by its CRL instead when OCSP comes first, else nobody signs in with it",
+   "text": "no answer to be had: by its CRL instead when OCSP comes first, else nobody signs in with it"
+  },
   "s.no-answer.bfca15c2": {
    "source": "no answer",
    "text": "no answer"
@@ -17480,6 +17588,10 @@
    "source": "No session from that address in the lines kept.",
    "text": "No session from that address in the lines kept."
   },
+  "s.no-sign-in.23f2e4d0": {
+   "source": "no sign-in",
+   "text": "no sign-in"
+  },
   "s.no-source-chrony-has-none-or.f1129f3d": {
    "source": "No source - chrony has none, or is not installed.",
    "text": "No source - chrony has none, or is not installed."
@@ -17812,9 +17924,17 @@
    "source": "none - the detailed LDAP logging is off",
    "text": "none - the detailed LDAP logging is off"
   },
+  "s.none-to-be-had.41d2a03e": {
+   "source": "none to be had",
+   "text": "none to be had"
+  },
   "s.none-to-write.de9e7b11": {
    "source": "none to write",
    "text": "none to write"
+  },
+  "s.none-yet-a-responder-is-asked.662a0cd4": {
+   "source": "None yet: a responder is asked at the first sign-in, and its answer is used ten minutes at most.",
+   "text": "None yet: a responder is asked at the first sign-in, and its answer is used ten minutes at most."
   },
   "s.none-yet-isemon-s-own-rules.9d84291f": {
    "source": "None yet - isemon’s own rules below are enough for what it does.",
@@ -19088,6 +19208,18 @@
    "source": "Objects → Object Management → Security Intelligence → Network Lists and Feeds → Add Network Lists and Feeds",
    "text": "Objects → Object Management → Security Intelligence → Network Lists and Feeds → Add Network Lists and Feeds"
   },
+  "s.ocsp-responder-of-its-own.5af0df68": {
+   "source": "OCSP responder of its own",
+   "text": "OCSP responder of its own"
+  },
+  "s.ocsp.a0c3d03d": {
+   "source": "ocsp",
+   "text": "ocsp"
+  },
+  "s.ocsp.de199d42": {
+   "source": "OCSP",
+   "text": "OCSP"
+  },
   "s.odbc-legacy.f291f69e": {
    "source": "ODBC (Legacy)",
    "text": "ODBC (Legacy)"
@@ -19200,6 +19332,10 @@
    "source": "off switched off",
    "text": "off switched off"
   },
+  "s.off-the-crls-alone-first-the.48212c79": {
+   "source": "off: the CRLs alone. first: the OCSP responder (AD CS Online Responder) is asked, and the CRL only when it does not answer. only: the responder alone - no answer, no sign-in. both: the responder and the CRL, both must say good. The certificate and every authority above it but the root.",
+   "text": "off: the CRLs alone. first: the OCSP responder (AD CS Online Responder) is asked, and the CRL only when it does not answer. only: the responder alone - no answer, no sign-in. both: the responder and the CRL, both must say good. The certificate and every authority above it but the root."
+  },
   "s.off-the-machine-keeps-its-own.9ae5583a": {
    "source": "Off: the machine keeps its own /etc/chrony.conf (AlmaLinux’s pool, or what you set by hand) - shown and checked here, not changed. On: the servers below; the file’s own server and pool lines are commented out, and put back when switched off again.",
    "text": "Off: the machine keeps its own /etc/chrony.conf (AlmaLinux’s pool, or what you set by hand) - shown and checked here, not changed. On: the servers below; the file’s own server and pool lines are commented out, and put back when switched off again."
@@ -19275,6 +19411,10 @@
   "s.on-a-clock.d50e56db": {
    "source": "On a clock",
    "text": "On a clock"
+  },
+  "s.on-a-crl-distribution-point-in.e5c1abf4": {
+   "source": "On: a CRL Distribution Point in the directory (ldap:///CN=...,CN=CDP,CN=Public Key Services,...) is read with the directory's connection above when no http one answers - for an authority that publishes no http CDP. Only CDP objects of the configuration are read.",
+   "text": "On: a CRL Distribution Point in the directory (ldap:///CN=...,CN=CDP,CN=Public Key Services,...) is read with the directory's connection above when no http one answers - for an authority that publishes no http CDP. Only CDP objects of the configuration are read."
   },
   "s.on-a-destination-events-keeps-a.f44a420b": {
    "source": "on a destination. Events keeps a line saying who cleared it.",
@@ -19876,6 +20016,10 @@
    "source": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back.",
    "text": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back."
   },
+  "s.one-responder-for-all.98deda38": {
+   "source": "one responder for all",
+   "text": "one responder for all"
+  },
   "s.one-row-is-one-account-being.b06da43d": {
    "source": "One row is one account being refused from one machine through one program. That is the answer a lockout leaves behind and no single Windows event holds it: the refusal says which machine, the credential event beside it says which program went and used the password. A mapped drive, a scheduled task, a telephone or a phone’s mail app is the usual answer.",
    "text": "One row is one account being refused from one machine through one program. That is the answer a lockout leaves behind and no single Windows event holds it: the refusal says which machine, the credential event beside it says which program went and used the password. A mapped drive, a scheduled task, a telephone or a phone’s mail app is the usual answer."
@@ -19979,6 +20123,10 @@
   "s.ones.c7d08f6c": {
    "source": "ones",
    "text": "ones"
+  },
+  "s.online-status-ocsp.f114992a": {
+   "source": "Online status (OCSP)",
+   "text": "Online status (OCSP)"
   },
   "s.only-a-full-admin-changes-another.ec596e27": {
    "source": "only a full admin changes another account’s passkeys",
@@ -22500,6 +22648,10 @@
    "source": "Read from this machine, which the server runs on.",
    "text": "Read from this machine, which the server runs on."
   },
+  "s.read-from.5e83f1b6": {
+   "source": "Read from",
+   "text": "Read from"
+  },
   "s.read-here.a4e6f3b1": {
    "source": "Read here",
    "text": "Read here"
@@ -23111,6 +23263,10 @@
   "s.resource-limits-reached.3d40623b": {
    "source": "Resource limits reached",
    "text": "Resource limits reached"
+  },
+  "s.responder.20c9b558": {
+   "source": "Responder",
+   "text": "Responder"
   },
   "s.response.6e617e4f": {
    "source": "Response",
@@ -25792,6 +25948,10 @@
    "source": "Stop the update",
    "text": "Stop the update"
   },
+  "s.stop.1b480158": {
+   "source": "stop",
+   "text": "stop"
+  },
   "s.stop.9e253470": {
    "source": "Stop",
    "text": "Stop"
@@ -28312,6 +28472,10 @@
    "source": "The directory itself",
    "text": "The directory itself"
   },
+  "s.the-directory-ldap-with-its-connection.162d3dab": {
+   "source": "the directory (LDAP), with its connection above - never the host in the address",
+   "text": "the directory (LDAP), with its connection above - never the host in the address"
+  },
   "s.the-directory-of-another-acme-ca.28161121": {
    "source": "The directory of another ACME CA,",
    "text": "The directory of another ACME CA,"
@@ -29412,6 +29576,10 @@
    "source": "The last fill said",
    "text": "The last fill said"
   },
+  "s.the-last-good-answer-is-used.96ff8466": {
+   "source": "the last good answer is used until its next update; the latest asking failed",
+   "text": "the last good answer is used until its next update; the latest asking failed"
+  },
   "s.the-last-hour.defc779a": {
    "source": "the last hour",
    "text": "the last hour"
@@ -30083,6 +30251,10 @@
   "s.the-numbers-for-each-size-of.40be9d23": {
    "source": "The numbers for each size of machine:",
    "text": "The numbers for each size of machine:"
+  },
+  "s.the-ocsp-answers-of-the-sign.2f951701": {
+   "source": "the OCSP answers of the sign-in with a certificate: each certificate, its status, responder, this and next update (--json)",
+   "text": "the OCSP answers of the sign-in with a certificate: each certificate, its status, responder, this and next update (--json)"
   },
   "s.the-older-versions-at-upgrade-url.60f6796b": {
    "source": "the older versions at upgrade_url, and which of them it is safe to go back to",
@@ -30775,6 +30947,22 @@
   "s.the-request-was-copied.f202a05d": {
    "source": "the request was copied",
    "text": "the request was copied"
+  },
+  "s.the-responder-does-not-know-it.f571af13": {
+   "source": "the responder does not know it: nobody signs in with it",
+   "text": "the responder does not know it: nobody signs in with it"
+  },
+  "s.the-responder-says-it-is-not.2fec194b": {
+   "source": "the responder says it is not revoked",
+   "text": "the responder says it is not revoked"
+  },
+  "s.the-responder-says-it-is-revoked.1a6d321b": {
+   "source": "the responder says it is revoked: nobody signs in with it",
+   "text": "the responder says it is revoked: nobody signs in with it"
+  },
+  "s.the-responder-set-is-not-an.763ac2ff": {
+   "source": "The responder set is not an address isemon asks:",
+   "text": "The responder set is not an address isemon asks:"
   },
   "s.the-rest-acme.a9b7e749": {
    "source": "the rest (acme)",
@@ -36980,9 +37168,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "with --downgrade-check: what changed in each older version as well"
   },
-  "s.with-erase-reboot-poweroff-os-update.b7f7632d": {
-   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear or --otp-tls-remove: do not ask first",
-   "text": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear or --otp-tls-remove: do not ask first"
+  "s.with-erase-reboot-poweroff-os-update.f7a85257": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear, --cert-login-ocsp-clear or --otp-tls-remove: do not ask first",
+   "text": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear, --cert-login-ocsp-clear or --otp-tls-remove: do not ask first"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -39830,6 +40018,22 @@
    "source": "Nowhere known yet.{0}",
    "text": "Nowhere known yet.{0}"
   },
+  "p.ocsp-clear.b39c653c": {
+   "source": "ocsp-clear:{0}",
+   "text": "ocsp-clear:{0}"
+  },
+  "p.ocsp-copy.ae87b6b6": {
+   "source": "ocsp-copy:{0}",
+   "text": "ocsp-copy:{0}"
+  },
+  "p.ocsp-fetch.396aa692": {
+   "source": "ocsp-fetch:{0}",
+   "text": "ocsp-fetch:{0}"
+  },
+  "p.ocsp-more.39fd53f2": {
+   "source": "ocsp-more:{0}",
+   "text": "ocsp-more:{0}"
+  },
   "p.of-1-node-s-done.f86cc4a2": {
    "source": "{0} % · {1} of 1 node(s) done",
    "text": "{0} % · {1} of 1 node(s) done"
@@ -39841,6 +40045,10 @@
   "p.of-addresses-kept-out-already-the.41a6f3e8": {
    "source": "{0} of {1} addresses {2} kept out already. The Failed attempts page has every one of them, with its country.",
    "text": "{0} of {1} addresses {2} kept out already. The Failed attempts page has every one of them, with its country."
+  },
+  "p.of-answered.6826198c": {
+   "source": "{0} of {1} answered",
+   "text": "{0} of {1} answered"
   },
   "p.of-ban-s-carried.b8f00235": {
    "source": "{0} of {1} ban(s) carried",

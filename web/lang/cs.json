@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.347",
+  "version": "1.10.348",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -575,6 +575,10 @@
   "s.a-country-is-only-ever-shown.30377178": {
    "source": "A country is only ever shown here, never judged: it is not something an address chooses, and a scanner in Rotterdam looks exactly like an employee in Rotterdam. The country list under Settings is the place to act on one, and it drops a whole country before anybody has failed anything.",
    "text": "Země se zde pouze zobrazuje, nikdy se nevyhodnocuje: adresa si ji nevybírá a skener v Rotterdamu vypadá úplně stejně jako zaměstnanec v Rotterdamu. Pro zásah proti zemi slouží seznam zemí v Nastavení, který odřízne celou zemi dřív, než kdokoli cokoli zkusí neúspěšně."
+  },
+  "s.a-crl-distribution-point-in-the.cfad6be0": {
+   "source": "A CRL Distribution Point in the directory is read too, with the directory’s connection above, when no http one answers.",
+   "text": "Čte se i CRL Distribution Point v adresáři, přes připojení k adresáři výše, když žádná http adresa neodpoví."
   },
   "s.a-database-from-somewhere-else-one.b0ca9d05": {
    "source": "A database from somewhere else — one downloaded from here, or a file copied off the backups folder. It replaces everything: every record, every ban, every setting and every account. Nothing happens until it has been read, checked and shown to you.",
@@ -3864,6 +3868,14 @@
    "source": "Ask Active Directory everything again, now: the domain's own rules, its controllers, its trusts, its sites, who is in the groups that run it — everything the Domain page weighs an alarm against and everything the watching compares. Read only. Nothing stored here is read again, so it is one round of searches rather than minutes of work. This is exactly what the clock above does once a day.",
    "text": "Zeptat se Active Directory znovu na všechno, hned: na vlastní pravidla domény, její řadiče, trusty, lokality, na to, kdo je ve skupinách, které ji spravují – na všechno, podle čeho stránka Doména posuzuje poplach, a vše, co sledování porovnává. Jen čtení. Nic uloženého se znovu nečte, takže jde o jedno kolo dotazů, ne o minuty práce. Přesně tohle dělají hodiny výše jednou denně."
   },
+  "s.ask-again.3f094ed6": {
+   "source": "Ask again",
+   "text": "Zeptat se znovu"
+  },
+  "s.ask-an-ocsp-responder.6ee7b016": {
+   "source": "Ask an OCSP responder",
+   "text": "Ptát se OCSP responderu"
+  },
   "s.ask-both-directories-about-one-name.98672ce6": {
    "source": "Ask both directories about one name, exactly as the pages do, and show which of them answered.",
    "text": "Zeptat se obou adresářů na jedno jméno, přesně jako to dělají stránky, a ukázat, který z nich odpověděl."
@@ -3871,6 +3883,14 @@
   "s.ask-every-name-server-in-turn.399962c0": {
    "source": "ask every name server in turn what one address is called, and show what each of them said",
    "text": "postupně se zeptat každého DNS serveru, jaké jméno má jedna adresa, a ukázat, co odpověděl každý z nich"
+  },
+  "s.ask-every-ocsp-responder-again-now.a2e170d4": {
+   "source": "ask every OCSP responder again now, for every answer kept",
+   "text": "zeptat se hned znovu každého OCSP responderu, na každou uloženou odpověď"
+  },
+  "s.ask-every-responder-again.0921f933": {
+   "source": "Ask every responder again",
+   "text": "Zeptat se znovu všech responderů"
   },
   "s.ask-every-server-in-the-list.bb1f2db9": {
    "source": "Ask every server in the list about this one address and show what each of them said. Every server is asked, rather than stopping at the first that answers, because what is being set up is the list itself.",
@@ -3887,6 +3907,10 @@
   "s.ask-one-of-the-jobs-from.4008a3a3": {
    "source": "ask one of the jobs from --jobs to stop. It stops after the batch it is in and keeps what it has already done",
    "text": "požádat jednu z úloh z --jobs o zastavení. Zastaví se po dávce, ve které právě je, a ponechá si, co už udělala"
+  },
+  "s.ask-one-responder-again.74fedc07": {
+   "source": "Ask one responder again",
+   "text": "Zeptat se znovu jednoho responderu"
   },
   "s.ask-the-database-to-read-itself.f20ce87e": {
    "source": "Ask the database to read itself through and say whether anything in it is broken - SQLite's integrity check, MariaDB's CHECK TABLE, and on PostgreSQL every row of every table read through, with every index checked as well where the server has amcheck. It only reads; on a large one it takes a while.",
@@ -3912,6 +3936,10 @@
    "source": "Ask the library for signing and sealing (session security, GSSAPI with integrity), or LDAPS.",
    "text": "Zapnout v knihovně podepisování a šifrování (session security, GSSAPI s integritou), nebo LDAPS."
   },
+  "s.ask-the-responder-again.25f6db41": {
+   "source": "Ask the responder again",
+   "text": "Zeptat se responderu znovu"
+  },
   "s.ask-the-router-what-is-on.1ba49e18": {
    "source": "Ask the router what is on its address list right now and show it beside what is known here. It only reads.",
    "text": "Zeptat se routeru, co je právě teď na jeho address listu, a zobrazit to vedle toho, co je známo tady. Pouze čte."
@@ -3931,6 +3959,10 @@
   "s.asked-again.c77d47a3": {
    "source": "asked again",
    "text": "dotázáno znovu"
+  },
+  "s.asked-at-a-sign-in-at.464c20ee": {
+   "source": "Asked at a sign-in, at most every ten minutes; the answer is signed by the authority or a responder it named, and checked by openssl against the authorities put in.",
+   "text": "Ptá se při přihlášení, nejvýš každých deset minut; odpověď podepisuje autorita nebo responder, kterého jmenovala, a openssl ji ověřuje proti vloženým autoritám."
   },
   "s.asked-by.e867115a": {
    "source": "Asked by",
@@ -3964,6 +3996,10 @@
    "source": "asked: it is done within seconds",
    "text": "požádáno: hotovo během několika sekund"
   },
+  "s.asked-not-every-responder-answered.9f958e1e": {
+   "source": "asked - not every responder answered",
+   "text": "dotázáno - ne každý responder odpověděl"
+  },
   "s.asked-root-reads-the-system-s.ab9d8b63": {
    "source": "asked: root reads the system's trusted roots again within seconds",
    "text": "požádáno: root během několika sekund znovu přečte důvěryhodné kořeny systému"
@@ -3975,6 +4011,10 @@
   "s.asked-the-server-changes-its-network.d156f59b": {
    "source": "asked: the server changes its network and restarts",
    "text": "požádáno: server změní síť a restartuje se"
+  },
+  "s.asked.1bb7985f": {
+   "source": "Asked",
+   "text": "Dotázáno"
   },
   "s.asked.9421a0b3": {
    "source": "asked…",
@@ -5696,10 +5736,6 @@
    "source": "Checked from here",
    "text": "Ověřeno odsud"
   },
-  "s.checked-the-crl-and-its-delta.3477eae3": {
-   "source": "checked - the CRL (and its delta) of the certificate and of every authority above it but the root; none to be had, no sign-in",
-   "text": "kontroluje se - CRL (i jeho delta) certifikátu a každé autority nad ním kromě kořenové; když není k mání, žádné přihlášení"
-  },
   "s.checked-with-this-machine-s-dns.aa60ce4d": {
    "source": "Checked with this machine’s DNS servers - inside your network they may see what the internet does not. Set DNS servers for ACME (below) to public ones, 1.1.1.1, 9.9.9.9, to see what the CA sees.",
    "text": "Zkontrolováno přes DNS servery tohoto stroje – uvnitř vaší sítě mohou vidět, co internet nevidí. Nastavte DNS servery pro ACME (níže) na veřejné, 1.1.1.1, 9.9.9.9, abyste viděli, co vidí CA."
@@ -5848,6 +5884,14 @@
    "source": "Clear every CRL",
    "text": "Vymazat všechny CRL"
   },
+  "s.clear-every-ocsp-answer.d8c88509": {
+   "source": "Clear every OCSP answer",
+   "text": "Vymazat všechny odpovědi OCSP"
+  },
+  "s.clear-every-ocsp-answer.dadb5936": {
+   "source": "Clear every OCSP answer?",
+   "text": "Vymazat všechny odpovědi OCSP?"
+  },
   "s.clear-it.cec806d9": {
    "source": "Clear it",
    "text": "Vynulovat"
@@ -5859,6 +5903,10 @@
   "s.clear-one-crl.06047abb": {
    "source": "Clear one CRL",
    "text": "Vymazat jeden CRL"
+  },
+  "s.clear-one-ocsp-answer.3589b2a7": {
+   "source": "Clear one OCSP answer",
+   "text": "Vymazat jednu odpověď OCSP"
   },
   "s.clear-the-list-of-backups-sent.f9f287e8": {
    "source": "Clear the list of backups sent?",
@@ -5883,6 +5931,10 @@
   "s.clear-then-close.0baa7f3b": {
    "source": "clear, then close",
    "text": "vymazat a zavřít"
+  },
+  "s.clear-this-answer-asked-again-at.65332eec": {
+   "source": "Clear this answer - asked again at the next sign-in",
+   "text": "Vymazat tuto odpověď - při dalším přihlášení se zeptá znovu"
   },
   "s.clear-this-crl-fetched-again-at.bde3c50b": {
    "source": "Clear this CRL - fetched again at the next sign-in",
@@ -6568,9 +6620,21 @@
    "source": "CRL number",
    "text": "Číslo CRL"
   },
+  "s.crl.e2afbbd1": {
+   "source": "crl",
+   "text": "crl"
+  },
+  "s.crl.fa3416b8": {
+   "source": "CRL",
+   "text": "CRL"
+  },
   "s.crlevel.2c8a4cb1": {
    "source": "crlevel",
    "text": "crlevel"
+  },
+  "s.crls-from-the-directory-ldap-too.1a81b479": {
+   "source": "CRLs from the directory (LDAP) too",
+   "text": "CRL také z adresáře (LDAP)"
   },
   "s.croatia.d7e0453b": {
    "source": "Croatia",
@@ -7720,6 +7784,10 @@
    "source": "Each card",
    "text": "Jednotlivé karty"
   },
+  "s.each-certificate-s-responder.798133d3": {
+   "source": "each certificate’s responder",
+   "text": "responder každého certifikátu"
+  },
   "s.each-core.132d98ae": {
    "source": "Each core",
    "text": "Jednotlivá jádra"
@@ -8011,6 +8079,10 @@
   "s.empty-the-password-of-the-backups.0ae72f9c": {
    "source": "empty: the password of the backups set here",
    "text": "prázdné: heslo záloh nastavené zde"
+  },
+  "s.empty-the-responder-each-certificate-names.991bc3ca": {
+   "source": "Empty: the responder each certificate names (Authority Information Access). Or an http address of a responder for all of them (http://pki.corp.example/ocsp).",
+   "text": "Prázdné: responder, kterého jmenuje každý certifikát (Authority Information Access). Nebo http adresa jednoho responderu pro všechny (http://pki.corp.example/ocsp)."
   },
   "s.empty-the-search-put-the-filters.4549d44f": {
    "source": "Empty the search, put the filters back and order the list by the time again, newest first. The window at the top stays as it is.",
@@ -8379,6 +8451,10 @@
   "s.every-answer-a-windows-nps-server.35a2cd33": {
    "source": "Every answer a Windows NPS server gave that this read — the machines and people it let on to the network or the VPN, and the ones it refused. None of it is judged and no address is ever banned for it. Erasing it also forgets where those files were read up to, so the newest two in each folder are read again from the beginning. Older months are not: `isemon --rescan --logs nps` reads every file that is still there.",
    "text": "Každá odpověď serveru Windows NPS, kterou isemon přečetl — stroje a lidé, které pustil do sítě nebo do VPN, i ti, které odmítl. Nic z toho se nevyhodnocuje a žádná adresa za to nikdy není zablokována. Vymazáním se také zapomene, kam až byly tyto soubory přečteny, takže dva nejnovější soubory v každé složce se přečtou znovu od začátku. Starší měsíce ne: `isemon --rescan --logs nps` přečte všechny soubory, které tam ještě jsou."
+  },
+  "s.every-answer-kept-is-forgotten-the.fdb33358": {
+   "source": "Every answer kept is forgotten; the next sign-in asks the responder again. While it does not answer then, its last good answer is gone too.",
+   "text": "Všechny uložené odpovědi se zapomenou; další přihlášení se responderu zeptá znovu. Pokud tehdy neodpoví, je pryč i jeho poslední dobrá odpověď."
   },
   "s.every-attempt-at-a-switch-or.0ed2a21d": {
    "source": "Every attempt at a switch or a router over TACACS+ that was refused, newest first — a wrong password on network equipment, or a command somebody was not allowed.",
@@ -8931,6 +9007,14 @@
   "s.every-request-the-dashboard-makes-of.42813ae5": {
    "source": "Every request the dashboard makes of the daemon, who made it and what was asked for.",
    "text": "Každý požadavek, který dashboard posílá démonovi, kdo ho poslal a co požadoval."
+  },
+  "s.every-responder-answered.17da503d": {
+   "source": "every responder answered",
+   "text": "odpověděl každý responder"
+  },
+  "s.every-responder-asked-again-now-for.c8f4d9b5": {
+   "source": "Every responder asked again now, for every certificate it answered for. One that does not answer changes nothing that lets anybody in.",
+   "text": "Každý responder se hned zeptá znovu, na každý certifikát, na který odpověděl. Ten, který neodpoví, nepustí nikoho, kdo předtím neprošel."
   },
   "s.every-row-in-each-table.d37eb78b": {
    "source": "every row in each table",
@@ -10463,6 +10547,10 @@
   "s.forget-the-key.179e5a87": {
    "source": "Forget the key",
    "text": "Zapomenout klíč"
+  },
+  "s.forget-the-ocsp-answers-kept-the.1532169f": {
+   "source": "forget the OCSP answers kept - the next sign-in asks again. Asks first unless --yes",
+   "text": "zapomenout uložené odpovědi OCSP - další přihlášení se zeptá znovu. Nejdřív se zeptá, pokud není --yes"
   },
   "s.forget-the-package.a89b2272": {
    "source": "Forget the package",
@@ -12248,9 +12336,17 @@
    "source": "HTTP basic authentication:",
    "text": "HTTP basic autentizace:"
   },
+  "s.http-by-this-server.999284b4": {
+   "source": "http, by this server",
+   "text": "http, tímto serverem"
+  },
   "s.http-proxy-example-cz-3128.b311936d": {
    "source": "http://proxy.example.cz:3128",
    "text": "http://proxy.example.cz:3128"
+  },
+  "s.http-then-the-directory-ldap.c3ebe127": {
+   "source": "http, then the directory (LDAP)",
+   "text": "http, pak adresář (LDAP)"
   },
   "s.http.77b5f8e3": {
    "source": "http",
@@ -13912,6 +14008,10 @@
    "source": "Its networks",
    "text": "Jeho sítě"
   },
+  "s.its-next-update-has-passed-asked.370ce1e9": {
+   "source": "its next update has passed: asked again at the next sign-in",
+   "text": "její příští aktualizace už prošla: při dalším přihlášení se zeptá znovu"
+  },
   "s.its-operating-system.65a6b2ab": {
    "source": "its operating system",
    "text": "jeho operační systém"
@@ -14599,6 +14699,10 @@
   "s.last-90-days.b8a5aeb4": {
    "source": "last 90 days",
    "text": "posledních 90 dní"
+  },
+  "s.last-answer-kept.429d924c": {
+   "source": "last answer kept",
+   "text": "drží se poslední odpověď"
   },
   "s.last-attempt.82aee111": {
    "source": "Last attempt",
@@ -17140,6 +17244,10 @@
    "source": "no answer in time (timed out)",
    "text": "žádná odpověď včas (vypršel čas)"
   },
+  "s.no-answer-to-be-had-by.7f9d1dfc": {
+   "source": "no answer to be had: by its CRL instead when OCSP comes first, else nobody signs in with it",
+   "text": "odpověď není k mání: když je OCSP první, rozhodne jeho CRL, jinak se jím nikdo nepřihlásí"
+  },
   "s.no-answer.bfca15c2": {
    "source": "no answer",
    "text": "bez odpovědi"
@@ -17480,6 +17588,10 @@
    "source": "No session from that address in the lines kept.",
    "text": "V uchovaných řádcích není žádná relace z této adresy."
   },
+  "s.no-sign-in.23f2e4d0": {
+   "source": "no sign-in",
+   "text": "žádné přihlášení"
+  },
   "s.no-source-chrony-has-none-or.f1129f3d": {
    "source": "No source - chrony has none, or is not installed.",
    "text": "Žádný zdroj – chrony žádný nemá, nebo není nainstalované."
@@ -17812,9 +17924,17 @@
    "source": "none - the detailed LDAP logging is off",
    "text": "none - the detailed LDAP logging is off"
   },
+  "s.none-to-be-had.41d2a03e": {
+   "source": "none to be had",
+   "text": "nic k mání"
+  },
   "s.none-to-write.de9e7b11": {
    "source": "none to write",
    "text": "není co zapsat"
+  },
+  "s.none-yet-a-responder-is-asked.662a0cd4": {
+   "source": "None yet: a responder is asked at the first sign-in, and its answer is used ten minutes at most.",
+   "text": "Zatím žádná: responderu se zeptá při prvním přihlášení a jeho odpověď se používá nejvýš deset minut."
   },
   "s.none-yet-isemon-s-own-rules.9d84291f": {
    "source": "None yet - isemon’s own rules below are enough for what it does.",
@@ -19088,6 +19208,18 @@
    "source": "Objects → Object Management → Security Intelligence → Network Lists and Feeds → Add Network Lists and Feeds",
    "text": "Objects → Object Management → Security Intelligence → Network Lists and Feeds → Add Network Lists and Feeds"
   },
+  "s.ocsp-responder-of-its-own.5af0df68": {
+   "source": "OCSP responder of its own",
+   "text": "Vlastní OCSP responder"
+  },
+  "s.ocsp.a0c3d03d": {
+   "source": "ocsp",
+   "text": "ocsp"
+  },
+  "s.ocsp.de199d42": {
+   "source": "OCSP",
+   "text": "OCSP"
+  },
   "s.odbc-legacy.f291f69e": {
    "source": "ODBC (Legacy)",
    "text": "ODBC (Legacy)"
@@ -19200,6 +19332,10 @@
    "source": "off switched off",
    "text": "vyp. vypnuto"
   },
+  "s.off-the-crls-alone-first-the.48212c79": {
+   "source": "off: the CRLs alone. first: the OCSP responder (AD CS Online Responder) is asked, and the CRL only when it does not answer. only: the responder alone - no answer, no sign-in. both: the responder and the CRL, both must say good. The certificate and every authority above it but the root.",
+   "text": "off: jen CRL. first: zeptá se OCSP responderu (AD CS Online Responder) a CRL použije jen tehdy, když neodpoví. only: jen responder - bez odpovědi žádné přihlášení. both: responder i CRL, oba musí říct v pořádku. Certifikát i každá autorita nad ním kromě kořenové."
+  },
   "s.off-the-machine-keeps-its-own.9ae5583a": {
    "source": "Off: the machine keeps its own /etc/chrony.conf (AlmaLinux’s pool, or what you set by hand) - shown and checked here, not changed. On: the servers below; the file’s own server and pool lines are commented out, and put back when switched off again.",
    "text": "Vypnuto: stroj si nechá svůj /etc/chrony.conf (pool AlmaLinuxu, nebo co je nastaveno ručně) – zde se jen zobrazuje a kontroluje, nemění. Zapnuto: servery níže; vlastní řádky server a pool v souboru se zakomentují a po vypnutí se zase vrátí."
@@ -19275,6 +19411,10 @@
   "s.on-a-clock.d50e56db": {
    "source": "On a clock",
    "text": "S časovým limitem"
+  },
+  "s.on-a-crl-distribution-point-in.e5c1abf4": {
+   "source": "On: a CRL Distribution Point in the directory (ldap:///CN=...,CN=CDP,CN=Public Key Services,...) is read with the directory's connection above when no http one answers - for an authority that publishes no http CDP. Only CDP objects of the configuration are read.",
+   "text": "Zapnuto: CRL Distribution Point v adresáři (ldap:///CN=...,CN=CDP,CN=Public Key Services,...) se čte přes připojení k adresáři výše, když žádná http adresa neodpoví - pro autoritu, která http CDP nepublikuje. Čtou se jen objekty CDP konfigurace."
   },
   "s.on-a-destination-events-keeps-a.f44a420b": {
    "source": "on a destination. Events keeps a line saying who cleared it.",
@@ -19876,6 +20016,10 @@
    "source": "One put in here by hand takes the dashboard out of ACME’s care: it is kept as it is, not replaced at the next renewal. Settings → Automatic certificates → Look after it gives it back.",
    "text": "Certifikát vložený sem ručně vyjme dashboard z péče ACME: zůstane, jak je, při příštím obnovení se nenahradí. Nastavení → Automatické certifikáty → Starat se o něj ho vrátí."
   },
+  "s.one-responder-for-all.98deda38": {
+   "source": "one responder for all",
+   "text": "jeden responder pro všechny"
+  },
   "s.one-row-is-one-account-being.b06da43d": {
    "source": "One row is one account being refused from one machine through one program. That is the answer a lockout leaves behind and no single Windows event holds it: the refusal says which machine, the credential event beside it says which program went and used the password. A mapped drive, a scheduled task, a telephone or a phone’s mail app is the usual answer.",
    "text": "Jeden řádek je jeden účet odmítaný z jednoho stroje přes jeden program. To je odpověď, kterou po sobě zablokování účtu zanechá a kterou žádná jednotlivá událost Windows neobsahuje: odmítnutí říká, ze kterého stroje, a událost přihlašovacích údajů vedle něj říká, který program si heslo vzal a použil. Obvyklou odpovědí je namapovaná jednotka, naplánovaná úloha, telefon nebo poštovní aplikace v mobilu."
@@ -19979,6 +20123,10 @@
   "s.ones.c7d08f6c": {
    "source": "ones",
    "text": "jednotlivé"
+  },
+  "s.online-status-ocsp.f114992a": {
+   "source": "Online status (OCSP)",
+   "text": "Stav online (OCSP)"
   },
   "s.only-a-full-admin-changes-another.ec596e27": {
    "source": "only a full admin changes another account’s passkeys",
@@ -22500,6 +22648,10 @@
    "source": "Read from this machine, which the server runs on.",
    "text": "Přečteno z tohoto stroje, na kterém server běží."
   },
+  "s.read-from.5e83f1b6": {
+   "source": "Read from",
+   "text": "Čteno z"
+  },
   "s.read-here.a4e6f3b1": {
    "source": "Read here",
    "text": "Čte se zde"
@@ -23111,6 +23263,10 @@
   "s.resource-limits-reached.3d40623b": {
    "source": "Resource limits reached",
    "text": "Dosaženy limity prostředků"
+  },
+  "s.responder.20c9b558": {
+   "source": "Responder",
+   "text": "Responder"
   },
   "s.response.6e617e4f": {
    "source": "Response",
@@ -25792,6 +25948,10 @@
    "source": "Stop the update",
    "text": "Zastavit aktualizaci"
   },
+  "s.stop.1b480158": {
+   "source": "stop",
+   "text": "stop"
+  },
   "s.stop.9e253470": {
    "source": "Stop",
    "text": "Zastavit"
@@ -28312,6 +28472,10 @@
    "source": "The directory itself",
    "text": "Samotný adresář"
   },
+  "s.the-directory-ldap-with-its-connection.162d3dab": {
+   "source": "the directory (LDAP), with its connection above - never the host in the address",
+   "text": "adresář (LDAP), přes jeho připojení výše - nikdy ne hostitel z adresy"
+  },
   "s.the-directory-of-another-acme-ca.28161121": {
    "source": "The directory of another ACME CA,",
    "text": "Adresář jiné ACME CA,"
@@ -29412,6 +29576,10 @@
    "source": "The last fill said",
    "text": "Poslední plnění hlásilo"
   },
+  "s.the-last-good-answer-is-used.96ff8466": {
+   "source": "the last good answer is used until its next update; the latest asking failed",
+   "text": "poslední dobrá odpověď se používá do své příští aktualizace; poslední dotaz selhal"
+  },
   "s.the-last-hour.defc779a": {
    "source": "the last hour",
    "text": "poslední hodina"
@@ -30083,6 +30251,10 @@
   "s.the-numbers-for-each-size-of.40be9d23": {
    "source": "The numbers for each size of machine:",
    "text": "Hodnoty pro jednotlivé velikosti stroje:"
+  },
+  "s.the-ocsp-answers-of-the-sign.2f951701": {
+   "source": "the OCSP answers of the sign-in with a certificate: each certificate, its status, responder, this and next update (--json)",
+   "text": "odpovědi OCSP přihlášení certifikátem: každý certifikát, jeho stav, responder, tato a příští aktualizace (--json)"
   },
   "s.the-older-versions-at-upgrade-url.60f6796b": {
    "source": "the older versions at upgrade_url, and which of them it is safe to go back to",
@@ -30775,6 +30947,22 @@
   "s.the-request-was-copied.f202a05d": {
    "source": "the request was copied",
    "text": "žádost je zkopírovaná do schránky"
+  },
+  "s.the-responder-does-not-know-it.f571af13": {
+   "source": "the responder does not know it: nobody signs in with it",
+   "text": "responder jej nezná: nikdo se jím nepřihlásí"
+  },
+  "s.the-responder-says-it-is-not.2fec194b": {
+   "source": "the responder says it is not revoked",
+   "text": "responder říká, že není odvolán"
+  },
+  "s.the-responder-says-it-is-revoked.1a6d321b": {
+   "source": "the responder says it is revoked: nobody signs in with it",
+   "text": "responder říká, že je odvolán: nikdo se jím nepřihlásí"
+  },
+  "s.the-responder-set-is-not-an.763ac2ff": {
+   "source": "The responder set is not an address isemon asks:",
+   "text": "Nastavený responder není adresa, které se isemon ptá:"
   },
   "s.the-rest-acme.a9b7e749": {
    "source": "the rest (acme)",
@@ -36980,9 +37168,9 @@
    "source": "with --downgrade-check: what changed in each older version as well",
    "text": "s --downgrade-check: navíc co se změnilo v každé starší verzi"
   },
-  "s.with-erase-reboot-poweroff-os-update.b7f7632d": {
-   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear or --otp-tls-remove: do not ask first",
-   "text": "s --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear nebo --otp-tls-remove: neptat se předem"
+  "s.with-erase-reboot-poweroff-os-update.f7a85257": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear, --cert-login-ocsp-clear or --otp-tls-remove: do not ask first",
+   "text": "s --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear, --cert-login-ocsp-clear nebo --otp-tls-remove: neptat se předem"
   },
   "s.with-export-put-the-passwords-the.23ebaf4e": {
    "source": "with --export: put the passwords, the ssh key and the certificate in it too, which makes it enough to stand another machine up and also a file that reaches your firewall",
@@ -39830,6 +40018,22 @@
    "source": "Nowhere known yet.{0}",
    "text": "Zatím nikde známo.{0}"
   },
+  "p.ocsp-clear.b39c653c": {
+   "source": "ocsp-clear:{0}",
+   "text": "ocsp-clear:{0}"
+  },
+  "p.ocsp-copy.ae87b6b6": {
+   "source": "ocsp-copy:{0}",
+   "text": "ocsp-copy:{0}"
+  },
+  "p.ocsp-fetch.396aa692": {
+   "source": "ocsp-fetch:{0}",
+   "text": "ocsp-fetch:{0}"
+  },
+  "p.ocsp-more.39fd53f2": {
+   "source": "ocsp-more:{0}",
+   "text": "ocsp-more:{0}"
+  },
   "p.of-1-node-s-done.f86cc4a2": {
    "source": "{0} % · {1} of 1 node(s) done",
    "text": "{0} % · hotovo {1} z 1 uzlů"
@@ -39841,6 +40045,10 @@
   "p.of-addresses-kept-out-already-the.41a6f3e8": {
    "source": "{0} of {1} addresses {2} kept out already. The Failed attempts page has every one of them, with its country.",
    "text": "{0} z {1} adres {2} už zablokováno. Stránka Neúspěšné pokusy obsahuje všechny, i s jejich zemí."
+  },
+  "p.of-answered.6826198c": {
+   "source": "{0} of {1} answered",
+   "text": "{0} z {1} odpovědělo"
   },
   "p.of-ban-s-carried.b8f00235": {
    "source": "{0} of {1} ban(s) carried",
@@ -44502,6 +44710,10 @@
    "source": "Changing the setting moves nothing. The order is: fill the address in,",
    "text": "Změna nastavení nic nepřesune. Postup je: vyplňte adresu,"
   },
+  "s.checked-the-crl-and-its-delta.3477eae3": {
+   "source": "checked - the CRL (and its delta) of the certificate and of every authority above it but the root; none to be had, no sign-in",
+   "text": "kontroluje se - CRL (i jeho delta) certifikátu a každé autority nad ním kromě kořenové; když není k mání, žádné přihlášení"
+  },
   "s.checked-the-crl-at-the-certificate.f7a8c415": {
    "source": "checked - the CRL at the certificate’s CRL Distribution Point; none to be had, no sign-in",
    "text": "ověřuje se - CRL z CRL Distribution Point certifikátu; když není k mání, nikdo se nepřihlásí"
@@ -45753,6 +45965,10 @@
   "s.with-erase-reboot-poweroff-os-update.87b3cc92": {
    "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import or --otp-tls-off: do not ask first",
    "text": "s --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import nebo --otp-tls-off: neptat se předem"
+  },
+  "s.with-erase-reboot-poweroff-os-update.b7f7632d": {
+   "source": "with --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear or --otp-tls-remove: do not ask first",
+   "text": "s --erase, --reboot, --poweroff, --os-update, --root-key-drop, --otp-tls-import, --otp-tls-off, --cert-login-crl-clear nebo --otp-tls-remove: neptat se předem"
   },
   "s.with-rescan-only-these-logs-comma.958df847": {
    "source": "with --rescan: only these logs, comma separated - ise, otp, eduroam, winsec, tacplus, nps, fwlog. Everything, as it always did, when this is left out. Naming one is how the logs that are never judged - a token server, eduroam, a domain, a tac_plus - are read again at all",
