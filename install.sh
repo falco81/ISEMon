@@ -2127,7 +2127,7 @@ else
     else
         ISE_PATHS="$ISE_PATHS" WATCH_DEVICES="$WATCH_DEVICES" NEVER_BLOCK="$NEVER_BLOCK" \
         MIKROTIK_HOST="$MIKROTIK_HOST" MIKROTIK_USER="$MIKROTIK_USER" \
-        MIKROTIK_LIST="$MIKROTIK_LIST" SERVER_NAME="$SERVER_NAME" \
+        MIKROTIK_LIST="$MIKROTIK_LIST" SERVER_NAME="$SERVER_NAME" SERVICE_USER="$SERVICE_USER" \
         python3 - "$CONFIG_FILE" <<'PY'
 import json, os, sys
 out = {
@@ -2142,12 +2142,18 @@ if os.environ.get('MIKROTIK_HOST', '').strip():
     out['mikrotik_user'] = os.environ['MIKROTIK_USER'].strip()
     out['mikrotik_list'] = os.environ['MIKROTIK_LIST'].strip()
     out['mikrotik_sync'] = 1
-with open(sys.argv[1], 'w') as f:
+# Made new, never through a link, its owner and mode set on what was opened
+# (1.10.350): the folder is the service account's to write in, and a link it
+# put there between the write and a chown by name made any file it named its
+# own to read.
+import grp
+fd = os.open(sys.argv[1], os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+os.fchown(fd, 0, grp.getgrnam(os.environ['SERVICE_USER']).gr_gid)
+os.fchmod(fd, 0o640)
+with os.fdopen(fd, 'w') as f:
     json.dump(out, f, indent=2, sort_keys=True)
     f.write('\n')
 PY
-        chmod 0640 "$CONFIG_FILE"
-        chown root:"$SERVICE_USER" "$CONFIG_FILE"
     fi
     good "$CONFIG_FILE"
 fi

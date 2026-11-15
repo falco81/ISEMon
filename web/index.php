@@ -214,7 +214,9 @@ function isemon_lang_pack(string $code): ?array
 function sent_body(): array
 {
     $raw = file_get_contents('php://input');
-    $got = $raw === false || $raw === '' ? null : json_decode($raw, true);
+    /* Nested 64 deep at most (1.10.350): a body of `[[],[],...]` built
+       PHP's memory out of a few megabytes. */
+    $got = $raw === false || $raw === '' ? null : json_decode($raw, true, 64);
     return is_array($got) ? $got : [];
 }
 
@@ -397,6 +399,15 @@ if (isset($_GET['api'])) {
        sends it, says the same thing outright. */
     if ($post) {
         $told = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        /* What anybody may send before signing in is a few words (1.10.350):
+           32 MB of it held a php-fpm worker's whole memory each time. */
+        if ($told > 65536 && in_array($what, ['login', 'password', 'kerberos-login',
+                                              'kerberos-try', 'cert-nonce', 'logout'], true)) {
+            http_response_code(413);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'error' => 'that is too much to send here']);
+            exit;
+        }
         if ($told > 32 * 1024 * 1024 && $what !== 'db-restore'
             && !($what === 'upgrade-package' && $told <= 64 * 1024 * 1024)
             && !($what === 'rbackup-upload' && $told <= 4 * 1024 * 1024 * 1024)) {
@@ -9820,7 +9831,7 @@ function ptrSay(node, ip, ts) {
     ? '\n\nThe nearest name known for it, rather than the one it had at that moment \u2014 '
       + 'nobody had asked about this address yet when this happened.'
     : '';
-  var head = '<div class="host">' + richText(got.name) + '</div>';
+  var head = '<div class="host">' + htmlText(got.name) + '</div>';
   var said = 'What the reverse zone calls this address'
     + (ts ? ', as at the time of this record' : '') + '.' + when
     + '\n\nA lease moves, so this is what it was called then and not necessarily what it '
@@ -11586,7 +11597,12 @@ function explainWhatWasDrawn(where) {
       return;
     }
     if (one.closest && one.closest('.sethelp')) return;
-    explain(one, one.getAttribute('title'));
+    /* A title on data (a name, an address, a reason somebody typed) is that
+       data, never markup of its own (1.10.350): `<b>Why:</b>` in a user name
+       read like the page's own words in the panel. */
+    var t = one.getAttribute('title');
+    if (one.closest && one.closest('[data-no-i18n], .mono')) t = wordsIn(t);
+    explain(one, t);
   });
   explainTheNames(host);
   nameTheAddresses(host);
@@ -11679,7 +11695,8 @@ function openHashSub(tab, sub) {
        which on a fresh load is after this runs, so a link to the threats or
        to the VPN opened the overview instead. A page that exists is opened;
        showing it shows its button. (1.10.168) */
-    if (b && (!b.hidden || T_PAGES[sub] || sub === 'vpn' || sub === 'router')) tShowPage(sub);
+    if (b && (!b.hidden || Object.prototype.hasOwnProperty.call(T_PAGES, sub) || sub === 'vpn' ||
+              sub === 'router')) tShowPage(sub);
   } else if (tab === 'windows') {
     if (sub === 'events') winShowPage('events');
     /* Before the status has come, on its word (a reload): the page goes
@@ -11696,9 +11713,9 @@ function openHashSub(tab, sub) {
       winShowPage('ad25');
     }
   } else if (tab === 'failed') {
-    if (DOOR_SAYS[sub]) showFailedKind(sub);
+    if (Object.prototype.hasOwnProperty.call(DOOR_SAYS, sub)) showFailedKind(sub);
   } else if (tab === 'logins') {
-    if (DOOR_SAYS[sub]) passedTab(sub);
+    if (Object.prototype.hasOwnProperty.call(DOOR_SAYS, sub)) passedTab(sub);
   }
 }
 
@@ -13010,7 +13027,7 @@ function ovRowParts(view, row) {
 function ovRowSays(d, view, row) {
   var got = row.newest || {};
   var said = [];
-  said.push('<div class="maker">' + richText(String(row.said)) + '</div>');
+  said.push('<div class="maker">' + richText(wordsIn(String(row.said))) + '</div>');
   var pairs = [
     ['Refused', row.failed ? num(row.failed) + ' time(s)' : 'never'],
     ['Let through', row.passed ? num(row.passed) + ' time(s)' : 'never'],
@@ -13031,7 +13048,7 @@ function ovRowSays(d, view, row) {
   pairs.forEach(function (one) {
     if (!one[1]) return;
     said.push('<div class="k"><b>' + richText(one[0]) + ':</b> '
-              + richText(String(one[1])) + '</div>');
+              + richText(wordsIn(String(one[1]))) + '</div>');
   });
   return said.join('');
 }
@@ -23529,7 +23546,7 @@ function winViewCard(view) {
 
 function winRowSays(view, r) {
   var got = r.newest || {};
-  var said = ['<div class="maker">' + richText(String(r.said)) + '</div>'];
+  var said = ['<div class="maker">' + richText(wordsIn(String(r.said))) + '</div>'];
   /* The whole reading, above the facts it was made from: what this is, and
      where to go about it. */
   (r.reads || []).forEach(function (w) {
@@ -23554,7 +23571,7 @@ function winRowSays(view, r) {
   ].forEach(function (one) {
     if (!one[1]) return;
     said.push('<div class="k"><b>' + richText(one[0]) + ':</b> '
-              + richText(String(one[1])) + '</div>');
+              + richText(wordsIn(String(one[1]))) + '</div>');
   });
   return said.join('');
 }
@@ -32093,8 +32110,8 @@ function tokenTone(got, said) {
 }
 function tokenSays(got, said) {
   return TOKEN_SAYS[tokenKey(said)]
-    || (got ? 'The token server accepted this, in these words: ' + (said || '')
-            : 'The token server refused it, in these words: ' + (said || ''));
+    || (got ? 'The token server accepted this, in these words: ' + wordsIn(said || '')
+            : 'The token server refused it, in these words: ' + wordsIn(said || ''));
 }
 
 /* ==========================================================================
@@ -42541,6 +42558,9 @@ window.addEventListener('hashchange', function () {
   var hash = (location.hash || '').replace('#', '');
   var want = hash.split('/')[0];
   var pane = hash.split('/')[1];
+  /* A tab's name is letters only (1.10.350): `#x"]` in a link threw, and
+     one that matched by a second selector blanked the page. */
+  if (!/^[a-z0-9-]{1,40}$/.test(want)) { writeHash(); return; }
   var button = document.querySelector('.tabs button[data-tab="' + want + '"]');
   if (!button || button.hidden) { writeHash(); return; }
   if (want === 'settings' && pane && $('pane-' + pane) && pane !== PANE) showPane(pane);

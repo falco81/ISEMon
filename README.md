@@ -372,6 +372,57 @@ working.
 
 ## Version
 
+1.10.350
+
+- **Three more rounds of looking for bugs and security problems.**
+- **Bans**:
+  - A RouterOS login failure counts the address at the end of the line. A
+    user name of `x from 198.51.100.7 via y` made a failure of
+    198.51.100.7 and banned any address somebody named.
+  - The same for Windows (an address typed into an account name, and a 4776,
+    which has no address of its own) and FreeRADIUS (a name choosing the
+    calling station).
+  - An IPv6 zone is no address. An IPv4 network written the IPv6 way is that
+    IPv4 network, so the whitelist covers it.
+  - The country list is filled one writer at a time.
+- **Searches**:
+  - `*` in a search is matched in one pass. A run of stars took minutes on
+    one value and the whole daemon waited, even for a read-only user.
+  - A list of Windows event kinds is taken each once, few.
+  - Two log regexes no longer take the square of a run of blanks.
+- **Backups**:
+  - A "folder" destination is never written through a link put there.
+  - A database put back holds no trigger or view isemon never makes.
+  - One is put back at a time, and no remote backup runs meanwhile.
+  - A configuration restored from a remote backup opens the firewall
+    passwords it carries.
+- **Settings**:
+  - A leading dot no longer skips the checks of Automatic certificates.
+  - An imported configuration does not switch on Face ID, "no password" or an
+    odd certificate port.
+  - `--password` on the command line warns that `ps` shows it.
+- **Certificates**:
+  - An authority's address (AIA) is never this machine itself or a name that
+    does not resolve, and every redirect is checked.
+  - An ACME order does not put its certificate over one acme pushed
+    meanwhile.
+  - A push checks both certificates of a pair, and none against a dashboard
+    with no name.
+- **Upgrades**:
+  - Root puts back no version older than 1.10.345, which let the service
+    account reach root, and the pages offer none.
+  - `install.sh` makes `config.json` without following a link.
+  - The console checks a package's signature through root's helper.
+- **The pages**:
+  - nginx hands PHP a request's body as it comes, rather than storing up to
+    4 GB before PHP has said no.
+  - What may be sent before signing in is 64 KB.
+  - Data in help panels (a name, a reason somebody typed) is text, never bold
+    or a line of its own.
+  - A link's tab is a name and nothing else.
+- **Said plainly**: the OPNsense/pfSense alias must be isemon's own. An
+  address added to it by hand goes at the next sync.
+
 1.10.349
 
 - **A round of looking for bugs in the certificate sign-in.**

@@ -16,6 +16,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 import isemon                                        # noqa: E402
+isemon.DOWNGRADE_SECURITY_FLOOR = (1, 0, 0)      # made-up old versions (the floor: fixes350_hunt)
 
 PASS = FAIL = 0
 

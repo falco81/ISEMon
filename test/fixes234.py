@@ -64,6 +64,8 @@ def load(name, path):
     spec = importlib.util.spec_from_file_location(name, str(path))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    if hasattr(mod, 'SECURITY_FLOOR'):
+        mod.SECURITY_FLOOR = '1.0.0'     # made-up old versions here (the floor: fixes350_hunt)
     return mod
 
 

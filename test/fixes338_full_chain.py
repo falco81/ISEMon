@@ -28,6 +28,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 os.environ['ISEMON_WEB_HELPER'] = '1'
+os.environ['ISEMON_CDP_LOOPBACK_OK'] = '1'      # the authorities are served on 127.0.0.1 (1.10.350)
 import isemon                                        # noqa: E402
 
 PASS = FAIL = 0

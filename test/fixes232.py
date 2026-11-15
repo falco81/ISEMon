@@ -34,6 +34,7 @@ ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 os.environ['ISEMON_UPGRADE_HELPER'] = '1'
 import isemon                                        # noqa: E402
+isemon.DOWNGRADE_SECURITY_FLOOR = (1, 0, 0)      # made-up old versions (the floor: fixes350_hunt)
 
 PASS = FAIL = 0
 PORT = 19400 + random.randint(0, 90)
@@ -195,6 +196,7 @@ try:
                                                               'isemon_upgrade.py'))
     upg = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(upg)
+    upg.SECURITY_FLOOR = '1.0.0'     # made-up old versions here (the floor: fixes350_hunt)
     installed(HERE_V, FLOOR)
     ok('root reads the floor of the version installed', upg.installed_floor(), FLOOR)
     installed('1.10.231')

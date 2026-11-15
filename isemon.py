@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.349'
+__version__ = '1.10.350'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -56,6 +56,8 @@ __version__ = '1.10.349'
 # changes, so that it is never forgotten. Root reads it from its own copy of
 # the program (isemon_upgrade.py), never from what was asked.
 DOWNGRADE_FLOOR = '1.10.226'
+# ...and none from before the holes of 1.10.345 were closed (1.10.350).
+DOWNGRADE_SECURITY_FLOOR = (1, 10, 345)
 
 import argparse
 import traceback
@@ -1179,7 +1181,7 @@ def pf_entry(text):
     written here: `10.0.0.1/32` and `10.0.0.1` are one address. '' where it
     is not an address or a network at all."""
     said = str(text or '').strip().split()[0] if str(text or '').strip() else ''
-    if not said:
+    if not said or '%' in said:
         return ''
     try:
         if '/' in said:
@@ -2271,7 +2273,9 @@ def acme_setting_checked(key, got):
     one shape it may have - several go into a file root writes, or onto
     nsupdate's input."""
     v = str(got if got is not None else '').strip()
-    if not v or v.startswith('\u2022'):
+    # Dots stand for a kept secret, and only a secret (1.10.350): any value
+    # of these starting with one skipped every check.
+    if not v or (key in SECRET_KEYS and v.startswith('\u2022')):
         return
     if key == 'acme_email' and \
             not re.match(r'^[^@\s<>"]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,63}\Z', v):
@@ -3044,11 +3048,22 @@ _SAME_ADDRESS = {}
 
 def _same_address(addr):
     text = str(addr or '').strip()
+    if '%' in text:
+        # An IPv6 zone is no address a firewall or a feed can be given, and
+        # Python takes any characters in it - a new line too (1.10.350).
+        return text.lower()
     try:
         if '/' in text:
             net = ipaddress.ip_network(text, strict=False)
             if net.prefixlen == net.max_prefixlen:
                 return same_address(str(net.network_address))
+            # An IPv4 network written the IPv6 way (::ffff:10.0.0.0/104) is
+            # that IPv4 network (1.10.350): kept as written it passed by a
+            # whitelist of the IPv4 one.
+            if net.version == 6 and net.prefixlen >= 96 and \
+                    net.network_address in ipaddress.ip_network('::ffff:0:0/96'):
+                v4 = net.network_address.ipv4_mapped
+                return str(ipaddress.ip_network('%s/%d' % (v4, net.prefixlen - 96), strict=False))
             return str(net)
         one = ipaddress.ip_address(text)
         # An IPv4 address written the IPv6 way (::ffff:198.51.100.7) is the
@@ -4706,8 +4721,11 @@ def is_public_address(ip):
     """Whether an address is one on the internet: what a firewall in front
     of the network can be told to drop. Private, shared, loopback and the
     like are never banned by the sources that count any address."""
+    text = str(ip or '').split('/')[0].strip()
+    if '%' in text:
+        return False
     try:
-        one = ipaddress.ip_address(str(ip or '').split('/')[0].strip())
+        one = ipaddress.ip_address(text)
     except ValueError:
         return False
     one = getattr(one, 'ipv4_mapped', None) or one
@@ -6774,9 +6792,12 @@ EDU_SAID = re.compile(
     # gave the two `\s*` n+1 ways to divide it and each one retried the tail,
     # so the cost was the square of the run. A name typed at a prompt is what
     # goes between those brackets.
-    r'\[(?P<who>.*?)\]'
+    # The name to the LAST "(from client ...)" (1.10.350): taken to the first,
+    # a name of `bob] (from client vpn port 0 cli 203.0.113.66 x` chose the
+    # calling station - and the address a VPN refusal was counted against.
+    r'\[(?P<who>.*)\]'
     r'(?:\s*\(from\s+client\s+(?P<client>\S+)(?:\s+port\s+(?P<port>\d+))?'
-    r'(?:\s+cli\s+(?P<cli>[0-9A-Fa-f:.\-]+))?(?P<tail>[^)]*)\))?\s*$')
+    r'(?:\s+cli\s+(?P<cli>[0-9A-Fa-f:.\-]+))?(?P<tail>[^()]*)\))?\s*$')
 
 # What FreeRADIUS says, in the words the page shows. The log's own sentence
 # is kept beside them either way, which is what somebody greps their own
@@ -8293,9 +8314,13 @@ def win_address(fields):
                 said = last
                 break
     if not said:
+        # The section's own field only (1.10.350): the label alone, in any
+        # section, was the one an account name or a workstation - typed by
+        # the client - carried, and a 4776 (no address of its own at all)
+        # took whatever address its sender wrote into the name.
         said = win_said(fields, 'Network Information / Source Network Address',
                         'Network Information / Client Address',
-                        'Source Network Address', 'Client Address', 'Network Address')
+                        'Network Information / Network Address')
     said = str(said or '').strip()
     # Unwrapped FIRST, then judged. The other way round, a controller asking
     # itself for a ticket wrote `::ffff:127.0.0.1`, which is not in the list
@@ -11943,7 +11968,7 @@ FTD_PATTERNS = {
         r'^AAA (?:user )?(?P<what>authentication|authorization|accounting) '
         r'(?P<res>Rejected|Successful)'
         r'(?: : reason = (?P<reason>.*?))?(?: : server =\s*(?P<server>\S+))?(?: : local database)?'
-        r' : user = (?P<user>.*?)(?: : user IP = (?P<ip>\S+))?\s*$'),
+        r' : user = (?P<user>.*?)(?: : user IP = (?P<ip>\S+))?$'),
     'uauth': re.compile(r'[Uu]ser ?= ?(?P<user>[^,]+), Assigned IP=(?P<ip>[0-9A-Fa-f:.]+)'),
     'pool_given': re.compile(r'Client assigned (?P<ip>[0-9A-Fa-f:.]+) from local pool '
                              r'(?P<pool>\S+)'),
@@ -12573,7 +12598,9 @@ def ftd_record_from(line, now=None, seen=None):
             why = rm.group(1).rstrip()
             rest['reason'] = (why[:-1] if why.endswith('.') else why).rstrip()
     elif msgid in ('113004', '113005', '113008', '113012', '113015', '113021'):
-        m = P['aaa'].match(body) or P['aaa_status'].match(body)
+        # Matched on the body without its trailing blanks (1.10.350): `\s*$`
+        # after a lazy name was the square of a run of blanks in it.
+        m = P['aaa'].match(body.rstrip()) or P['aaa_status'].match(body)
         failed = msgid in FTD_FAILED_IDS
         vpn('fail' if failed else 'info', 'login-fail' if failed else (
             'accounting' if 'accounting' in body else 'login'))
@@ -13346,8 +13373,11 @@ def ftd_parse_lines(lines, hold=None, now=None):
 # a refusal, ACCEPT, ALLOW, PERMIT or PASS a pass, and anything else is said
 # as logged rather than guessed.
 ROS_SEVERITIES = ('info', 'warning', 'error', 'critical', 'debug')
+# The message without its trailing blanks by `.*\S`, not by `.*?\s*$` - that
+# was the square of a run of blanks in it: 11 s for one line of 64 KB
+# (1.10.350).
 ROS_LINE = re.compile(
-    r'^(?P<head>.*?\S)\s+(?P<topics>[a-z][a-z0-9-]*(?:,[a-z][a-z0-9-]*)+)\s+(?P<msg>.*?)\s*$')
+    r'^(?P<head>.*?\S)\s+(?P<topics>[a-z][a-z0-9-]*(?:,[a-z][a-z0-9-]*)+)\s+(?P<msg>(?:.*\S)?)\s*$')
 ROS_FW = re.compile(
     r'^(?P<prefix>.{0,400}?)\s{0,64}(?P<chain>[\w.-]+):\s+in:(?P<inif>\(unknown \d+\)|[^\s,]*)\s+'
     r'out:(?P<outif>\(unknown \d+\)|[^\s,]*),\s*(?P<rest>.*)$')
@@ -13375,9 +13405,13 @@ ROS_ONWARD = re.compile(r'(?i)(?:^|[^a-z])(add-(?:src|dst)-to-address-list|mark-
                         r'|routing)|change-(?:dscp|mss|ttl)|clear-df|set-priority|sniff-(?:tzsp|pc)'
                         r'|strip-ipv4-options|jump|return)(?=$|[^a-z])')
 ROS_LOGIN = re.compile(
-    r'^user (?P<user>.+?) logged (?P<inout>in|out) from (?P<ip>[0-9A-Fa-f:.]+) via (?P<via>\S+)')
+    r'^user (?P<user>.+) logged (?P<inout>in|out) from (?P<ip>[0-9A-Fa-f:.]+) via (?P<via>\S+)'
+    r'\s*$')
+# The user name is anything (1.10.350): taken to the LAST "from ... via ...",
+# the line's end. Taken to the first, a name of "x from 198.51.100.7 via y"
+# made a failure of 198.51.100.7 - and banned whatever address anybody named.
 ROS_LOGIN_FAIL = re.compile(
-    r'^login failure for user (?P<user>.+?) from (?P<ip>[0-9A-Fa-f:.]+) via (?P<via>\S+)')
+    r'^login failure for user (?P<user>.+) from (?P<ip>[0-9A-Fa-f:.]+) via (?P<via>\S+)\s*$')
 # `filter rule changed by winbox-3.43/tcp-msg(winbox):Admin@192.0.2.1 (...)`,
 # and the same done by a script somebody ran (`...@192.0.2.1/script:NAME/
 # action:966`) or with the step RouterOS 7 numbers (`...@192.0.2.1/action:42`),
@@ -16452,9 +16486,38 @@ def fw_number(text, kind):
         raise FwQueryError('%r is not a number' % text)
 
 
+class _Glob(object):
+    """`*` typed as a wildcard over a whole value, matched in one pass
+    (1.10.350): as a regular expression, `a*********b` took minutes to say no
+    to one value - and the whole daemon waited, a regex holding Python's lock
+    for as long as it runs."""
+    __slots__ = ('parts',)
+
+    def __init__(self, value):
+        self.parts = str(value).split('*')
+
+    def match(self, text):
+        parts, s = self.parts, str(text)
+        if len(parts) == 1:
+            return s == parts[0]
+        first, last = parts[0], parts[-1]
+        if not s.startswith(first) or not s.endswith(last) or \
+                len(s) < len(first) + len(last):
+            return False
+        at, end = len(first), len(s) - len(last)
+        for mid in parts[1:-1]:
+            if not mid:
+                continue
+            i = s.find(mid, at, end)
+            if i < 0:
+                return False
+            at = i + len(mid)
+        return True
+
+
 def fw_glob(value):
-    """`*` typed as a wildcard, as a regular expression over a whole value."""
-    return re.compile('^' + '.*'.join(re.escape(p) for p in value.split('*')) + '$', re.S)
+    """`*` typed as a wildcard over a whole value: an object with .match()."""
+    return _Glob(value)
 
 
 def fw_range_sql(columns, net):
@@ -17731,8 +17794,7 @@ class ListQuery(object):
             if op == '~' and '*' not in low:
                 low = '*' + low + '*'
             if '*' in low:
-                rx = re.compile('^' + '.*'.join(re.escape(p) for p in low.split('*')) + '$',
-                                re.S)
+                rx = fw_glob(low)
                 tests.append(lambda said, rx=rx: bool(rx.match(said)))
             else:
                 tests.append(lambda said, low=low: said == low)
@@ -33935,7 +33997,11 @@ class Storage(object):
             # the domain gave, and it is a filter here now. Called `said`,
             # this list quietly became the value of that filter and every
             # card that was pressed opened an empty list.
-            pick = [k.strip() for k in str(kind).split(',') if k.strip()]
+            # Each once, and few of them (1.10.350): one subquery each, and a
+            # list of a thousand "logon" made a query of millions of rows - or
+            # one SQLite refuses outright.
+            pick = list(dict.fromkeys(k.strip()[:40] for k in str(kind).split(',')
+                                      if k.strip()))[:48]
         else:
             pick = []
         if event:
@@ -47567,11 +47633,20 @@ class Storage(object):
                 return None, 'that is not a database file'
         other = None
         try:
-            other = sqlite3.connect('file:%s?mode=ro' % path, uri=True, timeout=10.0)
+            other = sqlite3.connect('file:%s?mode=ro' % quote_path(str(path)), uri=True,
+                                    timeout=10.0)
             other.row_factory = sqlite3.Row
             said = other.execute('PRAGMA quick_check').fetchone()
             if said and str(said[0]).lower() != 'ok':
                 return None, 'that database is damaged: %s' % str(said[0])[:120]
+            # isemon makes no trigger and no view (1.10.350): one in a file
+            # put back would have run at every write, for good, and gone on
+            # into every copy made after.
+            odd = other.execute("SELECT type, name FROM sqlite_master WHERE type IN "
+                                "('trigger', 'view')").fetchone()
+            if odd:
+                return None, ('that database holds a %s (%s) isemon never makes - it is not '
+                              'put back' % (odd['type'], str(odd['name'])[:60]))
             have = {r['name'] for r in other.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'")}
             missing = [t for t in self.MUST_HOLD if t not in have]
@@ -47630,7 +47705,7 @@ class Storage(object):
             # which is the same thing the other way round and is also how an
             # installation is moved from one engine to the other.
             spare = SqliteDialect({'path': str(Path(path))})
-            other = Db(sqlite3.connect('file:%s?mode=ro' % Path(path), uri=True,
+            other = Db(sqlite3.connect('file:%s?mode=ro' % quote_path(str(Path(path))), uri=True,
                                        timeout=30.0), spare)
             try:
                 with self.db_write() as db:
@@ -47726,7 +47801,8 @@ class Storage(object):
             return Storage._copy_from[key]
         said = ''
         try:
-            one = sqlite3.connect('file:%s?mode=ro' % where, uri=True, timeout=2.0)
+            one = sqlite3.connect('file:%s?mode=ro' % quote_path(str(where)), uri=True,
+                                  timeout=2.0)
             try:
                 row = one.execute("SELECT value FROM meta WHERE key='copy_made_on'").fetchone()
                 said = str(row[0]) if row and row[0] else ''
@@ -47970,12 +48046,19 @@ class Storage(object):
                     pass
         return gone
 
+    _RESTORE_LOCK = threading.Lock()
+
     def restore_dump(self, path, say=None):
         """`_restore_dump`, with this server in maintenance meanwhile
         (1.10.266, as otp's restore): the health check says 503 until it
-        is done."""
-        with maintenance_while('a backup is being put back'):
-            return self._restore_dump(path, say=say)
+        is done. One at a time (1.10.350)."""
+        if not self._RESTORE_LOCK.acquire(blocking=False):
+            raise ValueError('a database is being put back already: try again when it is done')
+        try:
+            with maintenance_while('a backup is being put back'):
+                return self._restore_dump(path, say=say)
+        finally:
+            self._RESTORE_LOCK.release()
 
     # Tables a dump made by an older version may not have (see _restore_dump).
     DUMP_MAY_LACK = ('acme_events', 'acme_jobs', 'load_samples', 'acme_sync', 'ad25_seen')
@@ -59654,7 +59737,10 @@ class Daemon(object):
                 progress(int((at + share) * 1000 / len(which)), 1000,
                          ('%s: %s' % (fw_words(fw), said)) if len(which) > 1 else said)
             try:
-                got = self.geolist_sync(why, onward, fw=fw) or {}
+                # One writer at a time (1.10.350): a purge of the country list
+                # or a second fill took entries away from under this one.
+                with self._mikrotik_lock:
+                    got = self.geolist_sync(why, onward, fw=fw) or {}
                 out['firewalls'][fw] = got
                 out['added'] += int(got.get('added') or 0)
             except Exception as e:
@@ -64090,7 +64176,10 @@ class Daemon(object):
         'pf_list': 'The alias (pf table) on an OPNsense or a pfSense that the banned addresses '
                    'are put in. Letters, digits and underscores only. Make it on the '
                    'firewall first and point a block rule at it; this fills it and touches '
-                   'nothing else. Both firewalls of a pair use the same name.',
+                   'no other alias. It has to be an alias of isemon\'s own: isemon keeps it '
+                   'exactly as the bans are, so an address added to it by hand goes at the next '
+                   'sync - keep those in an alias of their own. Both firewalls of a pair use '
+                   'the same name.',
         'pf_geolist': 'The alias (pf table) on an OPNsense or a pfSense that the chosen '
                       'countries are put in, when the country list is switched on. Letters, '
                       'digits and underscores only, and not the same name as the banned '
@@ -65196,6 +65285,26 @@ class Daemon(object):
             if len(carried) != len(given['settings']):
                 missing.append('which database to use, which is never carried: this '
                                'machine keeps its own')
+            # What only the page itself may switch on, where it can show it
+            # works (1.10.350): Face ID (from an https page of its own name),
+            # "no password" (from a Windows or certificate sign-in) - a file
+            # turning them on from a password session locked everybody out.
+            on = ('1', 'True', 'true', 1, True)
+            for k, now in (('passkeys', self.passkeys_on()),
+                           ('password_off', bool(int(CONFIG.get('password_off') or 0)))):
+                if k in carried and carried[k] in on and not now:
+                    carried.pop(k)
+                    missing.append('%s, which is switched on only on the page itself' % k)
+            if 'certlogin_port' in carried:
+                try:
+                    cp = int(carried['certlogin_port'])
+                except (TypeError, ValueError):
+                    cp = 0
+                if cp in CL_PORT_REFUSED or cp == int(CONFIG.get('api_port') or 0) or \
+                        not 1024 <= cp <= 65535:
+                    carried.pop('certlogin_port')
+                    missing.append('the certificate\'s port %s, one of its own or out of '
+                                   'range' % cp)
             given = dict(given, settings=carried)
             said = self.save_settings(given['settings'], by=by)
             # `save_settings` says what it did about a form somebody was
@@ -70808,36 +70917,61 @@ def tls_chain_state(cert, chain='', root=''):
     return out
 
 
+def _tls_fetch_where(url):
+    """Why an authority's address is not fetched from ('' when it is): not
+    http(s), a name that does not resolve, or any of its addresses loopback,
+    link-local (a cloud's metadata), multicast, unspecified or reserved
+    (1.10.345; 1.10.350: loopback, and a name that does not resolve, too)."""
+    import socket as _s
+    if not re.match(r'^https?://[^\s/]+', str(url or ''), re.I):
+        return 'not an http address'
+    try:
+        host = urllib.parse.urlsplit(url).hostname or ''
+        found = _s.getaddrinfo(host, None)
+    except (OSError, ValueError, UnicodeError):
+        return 'its name does not resolve'
+    for fam, _t, _p, _c, sa in found:
+        try:
+            ip = ipaddress.ip_address(str(sa[0]).split('%')[0])
+        except ValueError:
+            return 'an address that cannot be read'
+        ip = getattr(ip, 'ipv4_mapped', None) or ip
+        if (ip.is_loopback and os.environ.get('ISEMON_CDP_LOOPBACK_OK') != '1') or \
+                ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_reserved:
+            return 'not an address an authority is fetched from'
+    return ''
+
+
 def tls_fetch(url):
     """One CA Issuers address read, as a browser reads it: http(s), 128 KiB
-    at most, ten seconds."""
+    at most, ten seconds. Every step of a redirect checked as the first one
+    is, three at most (1.10.350): one to a cloud's metadata was followed."""
     import urllib.request
-    if not re.match(r'^https?://[^\s/]+', str(url or ''), re.I):
-        raise WebRootError('%s is not an http address' % str(url)[:120])
-    # Never a link-local address - a cloud's metadata - nor one that is no
-    # host at all (1.10.345): the address comes from a certificate.
-    bad = False
-    try:
-        import socket as _s
-        host = urllib.parse.urlsplit(url).hostname or ''
-        for fam, _t, _p, _c, sa in _s.getaddrinfo(host, None):
-            ip = ipaddress.ip_address(sa[0].split('%')[0])
-            bad = bad or ip.is_link_local or ip.is_multicast or ip.is_unspecified or \
-                ip.is_reserved
-    except (OSError, ValueError):
-        pass
-    if bad:
-        raise WebRootError('%s is not an address an authority is fetched from' % url[:120])
+    why = _tls_fetch_where(url)
+    if why:
+        raise WebRootError('%s: %s' % (str(url)[:120], why))
+
+    class Guarded(urllib.request.HTTPRedirectHandler):
+        max_redirections = 3
+
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            bad = _tls_fetch_where(newurl)
+            if bad:
+                raise WebRootError('%s leads to %s: %s' % (url[:120], str(newurl)[:120], bad))
+            return urllib.request.HTTPRedirectHandler.redirect_request(
+                self, req, fp, code, msg, headers, newurl)
     req = urllib.request.Request(url, headers={'User-Agent': 'isemon/%s' % __version__})
     try:
         # Through Settings → Proxy where its switch for ACME is on - but by
         # the machine's own DNS, never ACME's (1.10.346): those are public
         # servers, set for a CA on the internet, and an authority's address
         # in the domain (pki.firma.cz) is not known to them.
-        with url_open(req, 'acme', timeout=10) as r:
+        with url_open(req, 'acme', timeout=10, handlers=(Guarded(),)) as r:
             if not re.match(r'^https?://', str(r.geturl() or ''), re.I):
                 raise WebRootError('%s led elsewhere than http' % url[:120])
             data = r.read(TLS_AIA_BYTES + 1)
+    except WebRootError:
+        raise
     except Exception as e:
         why = getattr(e, 'reason', None) or e
         why = getattr(why, 'strerror', None) or str(why)
@@ -73744,6 +73878,12 @@ def acme_install(wr, chain_pem, key, by, second=None, name=''):
     with wr.lock:
         tls = wr.tls_conf()
         how = tls_how(tls)
+        # A certificate acme pushed while this order ran stays (1.10.350):
+        # put over it, the dashboard lost it, and - ACME no longer looking
+        # after the certificate - the one put in was never renewed.
+        if how.startswith('acme push') and not acme_care(wr):
+            raise WebRootError('acme pushed a certificate while this order ran: it is the one '
+                               'kept, and this one is not put in')
         if how and how != 'ACME':
             # The certificate it had - uploaded, from your own CA - kept to
             # go back to (otp 1.0.172), its key as sealed as it was.
@@ -74403,7 +74543,9 @@ def push_pair(daemon, kid, body, nonce, box):
                                ' - the code is gone' if gone else ''), 'warn', who='acme push')
             raise PushRefused('bad_code', 403, 'that is not the pairing code shown here')
         pub, comment = push_key_text(body.get('acme_key'))
-        name = str(body.get('acme_name') or comment or '')[:200]
+        # No control character in what goes into the log and events
+        # (1.10.350).
+        name = re.sub(r'[\x00-\x1f\x7f]+', ' ', str(body.get('acme_name') or comment or ''))[:200]
         push_key_take(store, pub, comment, name, pairing.get('by') or '', 'paired with a code')
         store.drop_meta('acme_push:pairing')
     store.add_event('control', 'acme push: paired with %s (key %s)' % (name or 'an acme', kid),
@@ -74522,7 +74664,7 @@ def push_install(daemon, body, box, kid):
                 chosen.append(slot['id'])
             elif check:
                 raise PushRefused('names', 422, 'no slot here is held by this certificate: '
-                                  'the dashboard is %s' % ', '.join(slot['names']) or '-')
+                                  'the dashboard is %s' % (', '.join(slot['names']) or '-'))
         elif one in (slot['id'], node, 'this', 'nodes'):
             chosen.append(slot['id'])
         else:
@@ -74534,9 +74676,21 @@ def push_install(daemon, body, box, kid):
     if not slot['installable']:
         raise PushRefused('not_installable', 409, slot['why_not'])
     if check:
-        lack = [n for n in slot['names'] if not push_name_holds(names, n)]
-        if lack:
-            raise PushRefused('names', 422, 'the certificate does not hold %s' % ', '.join(lack))
+        # A dashboard with no name at all takes no certificate by name either
+        # (1.10.350): named as a slot, any certificate went in.
+        if not slot['names']:
+            raise PushRefused('names', 422, 'the dashboard has no name yet to check a '
+                                            'certificate against - set it first')
+        # Both of a pair, not only the one sent as the certificate (1.10.350):
+        # the RSA one, served first, went in for names it did not hold.
+        for one in [main] + ([alt] if alt else []):
+            held = one['facts'].get('names') or []
+            if one['facts'].get('cn') and one['facts']['cn'] not in held:
+                held = held + [one['facts']['cn']]
+            lack = [n for n in slot['names'] if not push_name_holds(held, n)]
+            if lack:
+                raise PushRefused('names', 422, 'the certificate does not hold %s'
+                                  % ', '.join(lack))
     acme = next((k for k in push_keys(store) if k.get('key_id') == kid), {})
     acme_words = str(acme.get('name') or acme.get('comment') or kid)[:120]
     # RSA as the certificate, ECDSA beside it - as isemon keeps a dual one.
@@ -78725,8 +78879,8 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '79b1e1954d4edbdbe95233764d7be9f40ed7122cae370b7d12ae9bc640f9599e'),
-    ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '197e834c0d8008d9def801f27be14e5ed4c2fd6d9257ccc5cd23d5743f32c507'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'e3e9827bbb4c2ca7a87801486ce799264f3c4cca3f793394a8d81ebe93929176'),
+    ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '214b200ceedcbd4f848c5e2064c8c6b2331be9bffe64d60f84266b6329533742'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
     ('deploy/isemon-web.path', '/etc/systemd/system/isemon-web.path', 'd44682bfe6a3cdf58c8a9620bbc6a83f6c8f56a4348da5565bd93866d102db39'),
@@ -80867,8 +81021,18 @@ class RbFolder(object):
         name = rb_safe_name(name)
         part = os.path.join(self.dir, '.%s.part' % name)
         try:
-            shutil.copyfile(local, part)
-            os.chmod(part, 0o640)
+            # Never through a link somebody put there (1.10.350): a folder a
+            # mount lets others write to could hold one named as the next
+            # copy, pointing at the database or the key.
+            try:
+                os.unlink(part)
+            except FileNotFoundError:
+                pass
+            fd = os.open(part, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o640)
+            with os.fdopen(fd, 'wb') as out, open(local, 'rb') as src:
+                shutil.copyfileobj(src, out, 1 << 20)
+                out.flush()
+                os.fchmod(out.fileno(), 0o640)
             os.replace(part, os.path.join(self.dir, name))
         except OSError as e:
             if e.errno == errno.EROFS:
@@ -81961,6 +82125,8 @@ def rb_not_while(daemon, kind, words):
     """Refused while a job of the other kind runs (1.10.238): a backup made
     while one is put back copied a database half replaced, and wrote its
     history into the one coming back."""
+    if Storage._RESTORE_LOCK.locked():
+        raise ValueError('a database is being put back from the page: try again when it is done')
     going = rb_job_of(daemon, kind)
     if going and not going['done']:
         raise ValueError(words)
@@ -82501,8 +82667,14 @@ def rb_restore_config(store, top, m, by, daemon, say, path):
     # and nothing - no key, no file - was changed.
     if 'settings.key' in carried:
         carried_put({'settings.key': carried.pop('settings.key')}, by, what='configuration')
+    export = payload['export']
+    if theirs:
+        # What the backup's key sealed inside the settings too - a firewall's
+        # API password in its sources - opened and sealed with this machine's
+        # (1.10.350): only the meta values were, and these never opened here.
+        export = reseal_all(export, theirs)
     try:
-        said = d.import_config(payload['export'], by=by)
+        said = d.import_config(export, by=by)
     except ValueError as e:
         raise RbError('nothing was put back: %s' % e)
     put = carried_put(carried, by, what='configuration') if carried else []
@@ -83993,16 +84165,16 @@ class Upgrades(object):
         # Face ID (1.10.304): a version before it knows nothing of it - it
         # would ask nobody for it, and take a sign-in still owing it for a
         # whole one. Switched off first; and the sign-ins still owing it end.
+        # Versions before 1.10.345 let the service account reach root:
+        # root's helper puts none of them back (1.10.350), so none is offered.
+        if v < DOWNGRADE_SECURITY_FLOOR:
+            return ('isemon %s is older than 1.10.345: versions before it let the service '
+                    'account reach root, and are not put back from the pages' % version)
         if v < (1, 10, 303):
             if int(CONFIG.get('passkeys') or 0):
                 return ('Face ID is the second step of signing in here, and isemon %s knows '
                         'nothing of it: switch it off first (Settings - Accounts, or isemon '
                         '--set passkeys=0)' % version)
-            try:
-                with self.daemon.store.db_write() as db:
-                    db.execute("DELETE FROM sessions WHERE second IN ('enrol', 'verify')")
-            except Exception:                       # noqa: BLE001
-                pass
         busy = self.back_blocked()
         if busy:
             return 'not now: %s' % '; '.join(busy)
@@ -84053,6 +84225,14 @@ class Upgrades(object):
                 raise WebRootError(why)
             kept = self.online_fetch(version, by, back=True)
             self.start(by)
+            # The sign-ins still owing Face ID end only now it goes (1.10.350):
+            # a going back refused, or one that failed to fetch, ended them.
+            if self.ver_tuple(version) < (1, 10, 303):
+                try:
+                    with self.daemon.store.db_write() as db:
+                        db.execute("DELETE FROM sessions WHERE second IN ('enrol', 'verify')")
+                except Exception:                       # noqa: BLE001
+                    pass
             return kept
 
 
@@ -90053,7 +90233,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             made = None
             if name:
                 target = folder / name
-                if not name.startswith('isemon-') or not target.exists():
+                if not name.startswith('isemon-') or name.endswith('.part') or \
+                        not target.is_file():
                     return self.fail('no such %s' % ('dump' if dumped else 'copy'), 404)
             elif dumped:
                 made = tempfile.mkdtemp(prefix='isemon-send-', dir=scratch_dir())
@@ -90155,7 +90336,15 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if one('check') == '1':
                     return self.send_json({'ok': True, 'checked': True, 'says': said})
                 was = store.counts()
-                done = store.restore_dump(landed)
+                for kind in ('rbackup', 'rbackup-restore'):
+                    going = rb_job_of(daemon, kind)
+                    if going and not going['done']:
+                        return self.fail('a backup to another machine is being made or put back: '
+                                         'put this one back when it is done', 409)
+                try:
+                    done = store.restore_dump(landed)
+                except ValueError as e:
+                    return self.fail(str(e), 409)
                 store.add_event('backup', 'the database was restored from an uploaded file '
                                 '(%s); a copy of what it replaced is %s'
                                 % (human_size(said['bytes']), done['safety']),
@@ -90269,7 +90458,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 name = re.sub(r'[^A-Za-z0-9._-]', '', str(data.get('name') or ''))
                 dumped = data.get('kind') == 'dump'
                 target = (DUMP_DIR if dumped else BACKUP_DIR) / name
-                if not name.startswith('isemon-') or not target.exists():
+                if not name.startswith('isemon-') or name.endswith('.part') or \
+                        not target.is_file():
                     return self.fail('no such %s' % ('dump' if dumped else 'copy'), 404)
                 said, why = store.dump_peek(target)
                 if said is None:
@@ -90283,7 +90473,15 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if data.get('check'):
                     return self.send_json({'ok': True, 'checked': True, 'says': said})
                 was = store.counts()
-                done = store.restore_dump(target)
+                for kind in ('rbackup', 'rbackup-restore'):
+                    going = rb_job_of(daemon, kind)
+                    if going and not going['done']:
+                        return self.fail('a backup to another machine is being made or put back: '
+                                         'put this one back when it is done', 409)
+                try:
+                    done = store.restore_dump(target)
+                except ValueError as e:
+                    return self.fail(str(e), 409)
                 put = daemon.after_full_restore(carried, me['name'])
                 store.add_event('backup', 'the database was restored from the %s %s; a copy '
                                 'of what it replaced is %s'
@@ -90312,7 +90510,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 dumped = data.get('kind') == 'dump'
                 word = 'dump' if dumped else 'copy'
                 target = (DUMP_DIR if dumped else BACKUP_DIR) / name
-                if not name.startswith('isemon-') or not target.exists():
+                if not name.startswith('isemon-') or name.endswith('.part') or \
+                        not target.is_file():
                     return self.fail('no such %s' % word)
                 target.unlink()
                 store.add_event('backup', 'the %s %s was deleted' % (word, name),
@@ -91750,6 +91949,11 @@ def cmd_add_user(args, pal, store):
         pal.bad('there is already an account called %s - to give it a new password: '
                 'isemon --passwd %s' % (args.add_user, args.add_user))
         return 1
+    if args.password:
+        # Seen by `ps` and kept in the shell's history (1.10.350): said, and
+        # still taken, so nothing written for it before stops working.
+        pal.warn('--password shows the password to anybody on this machine (ps, the shell\'s '
+                 'history) - ISEMON_PASSWORD or being asked keeps it out of sight')
     password = args.password or os.environ.get('ISEMON_PASSWORD') or ask_password(pal)
     if not password:
         return 1
@@ -91776,6 +91980,11 @@ def cmd_passwd(args, pal, store):
     if not store.user(name):
         pal.bad('there is no account called %s' % name)
         return 1
+    if args.password:
+        # Seen by `ps` and kept in the shell's history (1.10.350): said, and
+        # still taken, so nothing written for it before stops working.
+        pal.warn('--password shows the password to anybody on this machine (ps, the shell\'s '
+                 'history) - ISEMON_PASSWORD or being asked keeps it out of sight')
     password = args.password or os.environ.get('ISEMON_PASSWORD') or ask_password(pal)
     if not password:
         return 1
@@ -98577,6 +98786,24 @@ class Console(object):
                                      'install.sh')
             if not path:
                 return
+            # A package goes through root's own helper (1.10.350): signed,
+            # every file checked, copied out of reach first - as from the
+            # pages. Only a folder, or a machine without the helper yet, runs
+            # its install.sh as it is, and is said to be unchecked.
+            helper = '/usr/local/lib/isemon/isemon_upgrade.py'
+            if path.endswith('.tar.gz') and os.path.isfile(helper) and \
+                    not os.path.islink(helper):
+                if self.confirm('Upgrade', 'This server is upgraded with %s - its signature '
+                                'and every file checked first.' % path, 'Upgrade'):
+                    def go_checked():
+                        self.clear_screen()
+                        try:
+                            subprocess.call(['python3', '-I', helper, '--run', path])
+                        except KeyboardInterrupt:
+                            print()
+                        self.pause()
+                    self.live(go_checked)
+                return
             folder = path
             made = None
             if path.endswith('.tar.gz'):
@@ -98589,8 +98816,9 @@ class Console(object):
                 if not os.path.isfile(script):
                     self.note('Upgrade', 'there is no install.sh in %s' % folder, 'bad')
                     return
-                if self.confirm('Upgrade', 'This server is upgraded with %s.' % script,
-                                'Upgrade'):
+                if self.confirm('Upgrade', 'This server is upgraded with %s. It is NOT '
+                                'checked: no signature is read here - only do this with a '
+                                'package you trust.' % script, 'Upgrade'):
                     def go():
                         self.clear_screen()
                         try:

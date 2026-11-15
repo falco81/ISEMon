@@ -1127,6 +1127,16 @@ def nginx_part(r, last):
                                                     main):
             new = set_directive(new, 'large_client_header_buffers', '4 32k')
             said.append('nginx: room for a Windows (Kerberos) ticket in the headers')
+        # The body handed to PHP as it comes (1.10.350): kept on disk first,
+        # 4 GB of it could be sent before PHP refused somebody signed out.
+        # Put in the dashboard's own `location = /index.php` when it is not
+        # there - never taken out, never changed.
+        if 'fastcgi_request_buffering' not in new:
+            m = re.search(r'(?m)^(\s*)location\s*=\s*/index\.php\s*\{[^\n]*\n', new)
+            if m:
+                pad = m.group(1).lstrip('\n') + '    '
+                new = new[:m.end()] + '%sfastcgi_request_buffering off;\n' % pad + new[m.end():]
+                said.append('nginx: what is sent to the pages goes to PHP as it comes')
         final = main[:where[0]] + new + main[where[1]:]
         if r.get('certlogin') is not None:
             cl = r['certlogin']

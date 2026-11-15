@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.349",
+  "version": "1.10.350",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -343,6 +343,10 @@
   "s.a-backup-of-everything-is-made.68cbde3d": {
    "source": "A backup of everything is made and sent to every destination switched on, at the time below. Without it, only Back up now sends one.",
    "text": "Záloha všeho se vytvoří a pošle do všech zapnutých cílů v čase níže. Bez toho ji pošle jen Zálohovat teď."
+  },
+  "s.a-backup-to-another-machine-is.634e02f4": {
+   "source": "a backup to another machine is being made or put back: put this one back when it is done",
+   "text": "záloha na jiný stroj se právě vytváří nebo obnovuje: tuto obnovte, až doběhne"
   },
   "s.a-backup-to-download.1b3d5287": {
    "source": "A backup to download",
@@ -27496,9 +27500,9 @@
    "source": "The alias (pf table) on an OPNsense or a pfSense that the chosen countries are put in, when the country list is switched on. Letters, digits and underscores only, and not the same name as the banned one.",
    "text": "Alias (pf tabulka) na OPNsense nebo pfSense, do kterého se vkládají zvolené země, když je seznam zemí zapnutý. Jen písmena, číslice a podtržítka a ne stejné jméno jako ten pro zablokované."
   },
-  "s.the-alias-pf-table-on-an.9fed7aba": {
-   "source": "The alias (pf table) on an OPNsense or a pfSense that the banned addresses are put in. Letters, digits and underscores only. Make it on the firewall first and point a block rule at it; this fills it and touches nothing else. Both firewalls of a pair use the same name.",
-   "text": "Alias (pf tabulka) na OPNsense nebo pfSense, do kterého se vkládají zablokované adresy. Jen písmena, číslice a podtržítka. Nejdřív jej vytvořte na firewallu a namiřte na něj blokovací pravidlo; toto jej plní a ničeho jiného se nedotkne. Oba firewally dvojice používají stejné jméno."
+  "s.the-alias-pf-table-on-an.c7074914": {
+   "source": "The alias (pf table) on an OPNsense or a pfSense that the banned addresses are put in. Letters, digits and underscores only. Make it on the firewall first and point a block rule at it; this fills it and touches no other alias. It has to be an alias of isemon's own: isemon keeps it exactly as the bans are, so an address added to it by hand goes at the next sync - keep those in an alias of their own. Both firewalls of a pair use the same name.",
+   "text": "Alias (pf tabulka) na OPNsense nebo pfSense, do kterého se dávají zabanované adresy. Jen písmena, číslice a podtržítka. Nejdřív ho vytvořte na firewallu a nasměrujte na něj blokovací pravidlo; isemon ho plní a jiného aliasu se nedotkne. Musí to být vlastní alias isemonu: isemon ho drží přesně podle banů, takže adresa přidaná ručně při další synchronizaci zmizí - ty držte ve vlastním aliasu. Oba firewally páru používají stejné jméno."
   },
   "s.the-alias-this-daemon-fills-with.d61c79e6": {
    "source": "The alias this daemon fills with the banned addresses. Every entry in it is this machine’s: anything else put in it is taken out again at the next sync.",
@@ -45581,6 +45585,10 @@
   "s.the-address-is-saved-nothing-has.760c3022": {
    "source": "The address is saved. Nothing has moved yet: carry everything across when you are ready.",
    "text": "Adresa je uložena. Zatím se nic nepřesunulo: až budete připraveni, přeneste všechno."
+  },
+  "s.the-alias-pf-table-on-an.9fed7aba": {
+   "source": "The alias (pf table) on an OPNsense or a pfSense that the banned addresses are put in. Letters, digits and underscores only. Make it on the firewall first and point a block rule at it; this fills it and touches nothing else. Both firewalls of a pair use the same name.",
+   "text": "Alias (pf tabulka) na OPNsense nebo pfSense, do kterého se vkládají zablokované adresy. Jen písmena, číslice a podtržítka. Nejdřív jej vytvořte na firewallu a namiřte na něj blokovací pravidlo; toto jej plní a ničeho jiného se nedotkne. Oba firewally dvojice používají stejné jméno."
   },
   "s.the-answer-the-domain-gave.b505e1c3": {
    "source": "the answer the domain gave",

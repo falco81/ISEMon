@@ -283,7 +283,7 @@ for what, bits in (
         ('a popup opened by a button is not closed by it',
          ['if (b.close && MODAL_GEN === was) closeModal();']),
         ('Escape and Tab inside the find box', ["$('findback').addEventListener('keydown'"]),
-        ('a link to a Traffic page opens it', ["T_PAGES[sub] || sub === 'vpn'"]),
+        ('a link to a Traffic page opens it', ["Object.prototype.hasOwnProperty.call(T_PAGES, sub) || sub === 'vpn'"]),
         ('only what was drawn is explained', ['NAMING_ROOTS.push(t);'])):
     ok(what, all(b in page for b in bits))
 

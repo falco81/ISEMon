@@ -444,6 +444,9 @@ def status(**fields):
     write_safely(os.path.join(UPGRADE_DIR, 'status.json'), json.dumps(fields))
 
 
+SECURITY_FLOOR = '1.10.345'
+
+
 def may_go_back(info, want_floor=''):
     """Refused unless going back to this package is safe: never below the
     floor root's own copy of the installed version names, nor below the one
@@ -462,6 +465,15 @@ def may_go_back(info, want_floor=''):
         raise Refused('isemon %s is older than %s, the oldest version that can run on this '
                       'database - going back that far would need the database put back too'
                       % (info['version'], floor))
+    # ...and never below the version that closed the holes a version
+    # before it left for the service account to reach root through (links
+    # install.sh followed, 1.10.345): signed or not, root does not put one
+    # of those back (1.10.350); somebody who must runs that version's install.sh
+    # --upgrade by hand.
+    if version_tuple(info['version']) < version_tuple(SECURITY_FLOOR):
+        raise Refused('isemon %s is older than %s: versions before it let the service account '
+                      'reach root, and are not put back from the pages'
+                      % (info['version'], SECURITY_FLOOR))
     return floor
 
 
