@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.353",
+  "version": "1.10.354",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -2780,6 +2780,10 @@
    "source": "Albania",
    "text": "Albánie"
   },
+  "s.alertdialog.8063d92c": {
+   "source": "alertdialog",
+   "text": "alertdialog"
+  },
   "s.algeria.bd6acc86": {
    "source": "Algeria",
    "text": "Alžírsko"
@@ -3539,10 +3543,6 @@
   "s.another-acme-ca-step-ca-an.c6ffb2ff": {
    "source": "another ACME CA (step-ca, an internal CA...)",
    "text": "jiná ACME CA (step-ca, interní CA…)"
-  },
-  "s.another-card.89ed25aa": {
-   "source": "another card",
-   "text": "jiná karta"
   },
   "s.another-certificate-or-a-wrong-answer.266eea15": {
    "source": "another certificate, or a wrong answer",
@@ -10592,6 +10592,10 @@
    "source": "FMC",
    "text": "FMC"
   },
+  "s.focus.78918dca": {
+   "source": "focus",
+   "text": "focus"
+  },
   "s.fold-addresses-into-subnets.01429ce8": {
    "source": "Fold addresses into subnets",
    "text": "Slučovat adresy do podsítí"
@@ -13680,6 +13684,10 @@
    "source": "isemon can only be pointed at a database that answers, may be written and has everything of isemon in it.",
    "text": "isemon lze nasměrovat jen na databázi, která odpovídá, smí se do ní zapisovat a je v ní všechno z isemonu."
   },
+  "s.isemon-card-check.98c8aea8": {
+   "source": "isemon.card.check",
+   "text": "isemon.card.check"
+  },
   "s.isemon-check.6086fbd1": {
    "source": "isemon --check",
    "text": "isemon --check"
@@ -15251,6 +15259,10 @@
   "s.lasted.9de28c0f": {
    "source": "lasted",
    "text": "lasted"
+  },
+  "s.late.5d6200f8": {
+   "source": "late",
+   "text": "late"
   },
   "s.later.3f14ecc8": {
    "source": "later",
@@ -19744,6 +19756,10 @@
    "source": "NTS",
    "text": "NTS"
   },
+  "s.null.2be88ca4": {
+   "source": "null",
+   "text": "null"
+  },
   "s.num-muted-small.544760ed": {
    "source": "num muted small",
    "text": "num muted small"
@@ -20736,6 +20752,10 @@
    "source": "Online status (OCSP)",
    "text": "Stav online (OCSP)"
   },
+  "s.online.2dbc2fd2": {
+   "source": "online",
+   "text": "online"
+  },
   "s.only-a-full-admin-changes-another.ec596e27": {
    "source": "only a full admin changes another account’s passkeys",
    "text": "passkeys jiného účtu mění jen plný administrátor"
@@ -20860,9 +20880,9 @@
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Jen pro server, který si o něj řekne. Vytvořený zde – jeho klíč nikdy neopustí tento stroj; server dostane"
   },
-  "s.only-for-a-sign-in-made.314a3384": {
-   "source": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the page stops asking.",
-   "text": "Jen pro přihlášení certifikátem. off: nic se nehlídá. signout: stránka každých pár sekund kontroluje kartu – nové spojení na port certifikátu, které karta musí podepsat – a když tam karta poprvé není, session skončí a ukáže se přihlašovací stránka. grace: stránka oznámí, že karta je venku, a čeká; session skončí, pokud se karta včas nevrátí. Jiná karta, než kterou se člověk přihlásil, ji ukončí hned. Hlídanou session ukončí i server, když se stránka přestane ptát."
+  "s.only-for-a-sign-in-made.2646d597": {
+   "source": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the card stays out; a page that stops asking (a tablet asleep) is held - nothing answered - until a check finds the card again.",
+   "text": "Jen pro přihlášení certifikátem. off: nic se nehlídá. signout: stránka každých pár sekund kontroluje kartu – nové spojení na port certifikátu, které karta musí podepsat – a když tam karta poprvé není, session skončí a ukáže se přihlašovací stránka. grace: stránka oznámí, že karta je venku, a čeká; session skončí, pokud se karta včas nevrátí. Jiná karta, než kterou se člověk přihlásil, ji ukončí hned. Server hlídanou session ukončí i tehdy, když karta zůstane venku; stránku, která se přestane ptát (uspaný tablet), pozdrží – nic se neodpovídá –, dokud kontrola kartu znovu nenajde."
   },
   "s.only-from-the-nodes.215f90c6": {
    "source": "Only from the nodes",
@@ -21799,6 +21819,10 @@
   "s.pages-and-settings.14dcc9ec": {
    "source": "Pages and settings",
    "text": "Stránky a nastavení"
+  },
+  "s.pageshow.706fc538": {
+   "source": "pageshow",
+   "text": "pageshow"
   },
   "s.pair-with-an-acme.30958176": {
    "source": "Pair with an acme",
@@ -22836,10 +22860,6 @@
    "source": "put back now what was there before a change on trial",
    "text": "vrátí hned to, co bylo před změnou na zkoušku"
   },
-  "s.put-back-the-card-you-signed.31b7c973": {
-   "source": "Put back the card you signed in with - this session ends unless it is back in time.",
-   "text": "Vraťte kartu, kterou jste se přihlásili – jinak tato session skončí."
-  },
   "s.put-back-within-seconds.44e1a055": {
    "source": "...put back within (seconds)",
    "text": "...vrátit do (sekund)"
@@ -22955,6 +22975,10 @@
   "s.put-sudo-in-front-of-pfctl.11369844": {
    "source": "Put sudo in front of pfctl, for an account that is not root but may run pfctl through sudo without a password.",
    "text": "Spouštět pfctl přes sudo, pro účet, který není root, ale smí pfctl spouštět přes sudo bez hesla."
+  },
+  "s.put-the-card-back.bfbbf6d7": {
+   "source": "Put the card back",
+   "text": "Vraťte kartu zpět"
   },
   "s.put-the-certificate-from-before-acme.ecca6fc9": {
    "source": "Put the certificate from before ACME back?",
@@ -25076,6 +25100,10 @@
    "source": "seconds to the next figures",
    "text": "sekund do dalších čísel"
   },
+  "s.seconds.7febce03": {
+   "source": "seconds",
+   "text": "sekund"
+  },
   "s.secure.73c048ec": {
    "source": "; Secure",
    "text": "; Secure"
@@ -25816,10 +25844,6 @@
    "source": "Sign me out",
    "text": "Odhlásit mě"
   },
-  "s.sign-out-now.1f04c8e0": {
-   "source": "Sign out now",
-   "text": "Odhlásit hned"
-  },
   "s.sign-out.dc1649a1": {
    "source": "Sign out",
    "text": "Odhlásit se"
@@ -25872,6 +25896,10 @@
    "source": "signed in",
    "text": "přihlášen"
   },
+  "s.signed-out-another-card-than-the.79fbd369": {
+   "source": "Signed out: another card than the one you signed in with was offered.",
+   "text": "Odhlášeno: byla nabídnuta jiná karta, než kterou jste se přihlásili."
+  },
   "s.signed-out-or-ended.abacac35": {
    "source": "signed out or ended",
    "text": "odhlášen nebo ukončeno"
@@ -25883,10 +25911,6 @@
   "s.signed-out-the-card-you-signed.f91b08d3": {
    "source": "Signed out: the card you signed in with was taken out.",
    "text": "Odhlášeno: karta, kterou jste se přihlásili, byla vytažena."
-  },
-  "s.signed-out.05d2a79c": {
-   "source": "Signed out.",
-   "text": "Odhlášeno."
   },
   "s.signed-out.a733a3de": {
    "source": "signed out",
@@ -28668,13 +28692,13 @@
    "source": "the Canary Islands",
    "text": "Kanárské ostrovy"
   },
-  "s.the-card-is-out.be931b88": {
-   "source": "The card is out",
-   "text": "Karta je vytažená"
+  "s.the-card-is-back.a947160c": {
+   "source": "The card is back.",
+   "text": "Karta je zpět."
   },
-  "s.the-card-out.7919d8cf": {
-   "source": "the card out",
-   "text": "karta vytažená"
+  "s.the-card-you-signed-in-with.12da94e3": {
+   "source": "The card you signed in with is watched from now on - save and reload the page.",
+   "text": "Karta, kterou jste se přihlásili, se od teď hlídá – uložte změny a načtěte stránku znovu."
   },
   "s.the-cayman-islands.62ec29ec": {
    "source": "the Cayman Islands",
@@ -32416,6 +32440,10 @@
    "source": "The slots, and how far behind each is:",
    "text": "Sloty a jak daleko je každý pozadu:"
   },
+  "s.the-smart-card-or-yubikey-was.676bfa0e": {
+   "source": "The smart card or YubiKey was taken out, so this sign-in is locked. Put it back - the page goes on where you left off.",
+   "text": "Čipová karta nebo YubiKey byla vytažena, proto je toto přihlášení zamčené. Vraťte ji zpět – stránka sama pokračuje tam, kde jste skončili."
+  },
   "s.the-socket-it-came-in-on.38a28c7a": {
    "source": "The socket it came in on, and the switch it is a socket ON: there is a GigabitEthernet1/0/16 on every switch in the building, so the port on its own is not a place. Point at it for the switch’s own address.",
    "text": "Zásuvka, kterou přišel, a switch, NA kterém tato zásuvka je: GigabitEthernet1/0/16 je na každém switchi v budově, takže samotný port ještě není místo. Najetím myší zobrazíte vlastní adresu switche."
@@ -35463,6 +35491,10 @@
   "s.violet.13818a56": {
    "source": "violet",
    "text": "fialová"
+  },
+  "s.visibilitychange.c7ff674d": {
+   "source": "visibilitychange",
+   "text": "visibilitychange"
   },
   "s.visitors-and-their-accounts.4763a586": {
    "source": "Visitors and their accounts",
@@ -42222,6 +42254,10 @@
    "source": "signed out at the next check (every {0} s)",
    "text": "odhlášení při další kontrole (každých {0} s)"
   },
+  "p.signed-out-in-s-unless-the.90f0a800": {
+   "source": "Signed out in {0} s unless the card is back",
+   "text": "Odhlášení za {0} s, pokud se karta nevrátí"
+  },
   "p.signing-in-to-refusal-s-from.14fa6698": {
    "source": "Signing in to {0}: {1} refusal(s), from {2}.",
    "text": "Přihlášení k {0}: {1} odmítnutí, z {2}."
@@ -46062,6 +46098,10 @@
    "source": ", and only then",
    "text": ", a teprve pak"
   },
+  "s.another-card.89ed25aa": {
+   "source": "another card",
+   "text": "jiná karta"
+  },
   "s.another-device-your-iphone-a-mac.a9783baf": {
    "source": "Another device - your iPhone, a Mac, a PC with Windows Hello: open this page there, or add this one here.",
    "text": "Další zařízení – váš iPhone, Mac, PC s Windows Hello: otevřete tuto stránku tam, nebo přidejte toto zde."
@@ -46826,6 +46866,10 @@
    "source": "One remembered value, written the way the page writes it.",
    "text": "Jedna zapamatovaná hodnota, zapsaná tak, jak ji zapisuje stránka."
   },
+  "s.only-for-a-sign-in-made.314a3384": {
+   "source": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the page stops asking.",
+   "text": "Jen pro přihlášení certifikátem. off: nic se nehlídá. signout: stránka každých pár sekund kontroluje kartu – nové spojení na port certifikátu, které karta musí podepsat – a když tam karta poprvé není, session skončí a ukáže se přihlašovací stránka. grace: stránka oznámí, že karta je venku, a čeká; session skončí, pokud se karta včas nevrátí. Jiná karta, než kterou se člověk přihlásil, ji ukončí hned. Hlídanou session ukončí i server, když se stránka přestane ptát."
+  },
   "s.only-from-acme-s-nodes.89667324": {
    "source": "Only from acme's nodes",
    "text": "Jen z uzlů acme"
@@ -46901,6 +46945,10 @@
   "s.put-a-key-into-root-s.6eb8df49": {
    "source": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)",
    "text": "vložit klíč do authorized_keys roota: řádek veřejného klíče, soubor .pub, nebo soubor soukromého klíče, z něhož jde dovnitř jen veřejná polovina (jeho heslo: --passphrase-file, ISEMON_KEY_PASSPHRASE, jinak se zeptá)"
+  },
+  "s.put-back-the-card-you-signed.31b7c973": {
+   "source": "Put back the card you signed in with - this session ends unless it is back in time.",
+   "text": "Vraťte kartu, kterou jste se přihlásili – jinak tato session skončí."
   },
   "s.put-in.fe9c90c2": {
    "source": "put in",
@@ -46997,6 +47045,14 @@
   "s.setup.80437a44": {
    "source": "setup",
    "text": "nastavení"
+  },
+  "s.sign-out-now.1f04c8e0": {
+   "source": "Sign out now",
+   "text": "Odhlásit hned"
+  },
+  "s.signed-out.05d2a79c": {
+   "source": "Signed out.",
+   "text": "Odhlášeno."
   },
   "s.signing-in-to-a-switch-has.6163dce2": {
    "source": "Signing in to a switch has never earned a ban here through ISE either, and the address on one of these lines is as often as not the jump host the whole of the network staff comes through. Switched off, not one file is opened and nothing anywhere behaves differently.",
@@ -47141,6 +47197,14 @@
   "s.the-browser-would-not-let-go.329904de": {
    "source": "the browser would not let go of the clipboard",
    "text": "prohlížeč neuvolnil schránku"
+  },
+  "s.the-card-is-out.be931b88": {
+   "source": "The card is out",
+   "text": "Karta je vytažená"
+  },
+  "s.the-card-out.7919d8cf": {
+   "source": "the card out",
+   "text": "karta vytažená"
   },
   "s.the-certificate-alone-binary-cer-windows.82ba0b52": {
    "source": "The certificate alone, binary (.cer) - Windows opens it with a double click.",

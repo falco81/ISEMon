@@ -372,6 +372,38 @@ working.
 
 ## Version
 
+1.10.354
+
+- **When the card is taken out - fixed for iPad**, as the kit
+  card-removal-watch merged it (otp 1.0.285)
+  ([docs/certificate-sign-in.md](docs/certificate-sign-in.md)):
+  - **A page that stopped checking is held, not ended.** iPadOS stops
+    Safari's pages while the screen is locked or another app is in front, and
+    the person was signed out after ~3.5 minutes with the card still in. Now
+    nothing of the session is answered (HTTP 423, `code: card`) until a check
+    finds the card. The page checks the moment it wakes.
+  - **The state is kept in the session's row** (`sessions.card`, `card_seen`,
+    `card_out`; new columns, added by themselves). A restart forgets nothing,
+    and two sign-ins at once no longer overwrite each other's fingerprint.
+  - **A failed handshake is told by the page** (`card-gone` on 443). Events
+    say why, and in `grace` the server holds the session (423) while the card
+    is out, not only the page.
+  - **Kinder to the card**: a failed picture is asked once more before it
+    counts; one check at a time; one for all the tabs of a browser; out,
+    every 5 s (10 s after a check that waited on a window of the card's);
+    the first check 1.5 s after the page loads.
+  - **The page catches up**: the countdown is drawn every second, and pages
+    open when the setting is switched on learn of it within a minute.
+  - **Address fixes**: an IPv6 address keeps its brackets as they are. The
+    reason for a sign-out is a word of the tab's own, never text from the
+    address.
+  - **The notice is design B**: the seconds in a ring that empties, *Put the
+    card back*, *Signed out in N s unless the card is back*, *Sign out* in
+    red. Nothing behind it can be reached.
+  - **A test** that the watched port resumes no TLS session (`openssl
+    s_client -reconnect` on TLS 1.2, `-sess_in` on TLS 1.3).
+- Off (the default) nothing changes.
+
 1.10.353
 
 - **Settings - Active Directory - Signing in with a certificate - When the

@@ -547,6 +547,23 @@ else:
            ((200, 2), True))
         ok('...back in time - 1 pixel', alive(ck, 'falco'), (200, 1))
         ok('no session at all - no picture', alive('', 'falco')[0], 403)
+        # No TLS session resumed on the watched port (1.10.354, the kit's
+        # finding 13): a resumed session would answer without the card.
+        rc = subprocess.run(['openssl', 's_client', '-connect', '127.0.0.1:%d' % PCERT,
+                             '-servername', 'isemon.corpnet.loc', '-tls1_2', '-reconnect',
+                             '-cert', str(pki / 'falco.pem'), '-key', str(pki / 'falco.key')],
+                            input='', capture_output=True, text=True, timeout=60)
+        ok('TLS 1.2: every reconnection a new handshake, none reused',
+           (rc.stdout.count('Reused,'), rc.stdout.count('New,') >= 5), (0, True))
+        sess = t / 'tls13.sess'
+        subprocess.run(['openssl', 's_client', '-connect', '127.0.0.1:%d' % PCERT, '-servername',
+                        'isemon.corpnet.loc', '-tls1_3', '-sess_out', str(sess), '-cert',
+                        str(pki / 'falco.pem'), '-key', str(pki / 'falco.key')],
+                       input='', capture_output=True, text=True, timeout=60)
+        r13 = subprocess.run(['openssl', 's_client', '-connect', '127.0.0.1:%d' % PCERT,
+                              '-servername', 'isemon.corpnet.loc', '-tls1_3', '-sess_in', str(sess)],
+                             input='', capture_output=True, text=True, timeout=60)
+        ok('TLS 1.3: no ticket to come back with', 'Reused, TLSv1.3' in r13.stdout, False)
         isemon.CONFIG['certlogin_watch'] = 'off'
     finally:
         ng.terminate()

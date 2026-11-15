@@ -791,6 +791,8 @@ if (isset($_GET['api'])) {
         'banfeed-preview' => '/api/banfeed-preview',
     ];
     $writes = [
+        /* The card watched (1.10.354): the page's picture got nothing at all. */
+        'card-gone'    => '/api/auth/card-gone',
         'web-firewall' => '/api/web/firewall',
         'web-tls'      => '/api/web/tls',
         /* Signing in with Windows (1.10.340): the card on Active Directory. */
@@ -4654,16 +4656,23 @@ function srcText(el) {
   .clp-v code{font-size:12.5px;overflow-wrap:anywhere;min-width:0}
   .clp-v .btn{flex:none}
   .clp-more{margin-top:14px}
-  .cw-layer{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
-    background:rgba(5,8,12,.72);backdrop-filter:blur(6px)}
-  .cw-box{width:min(420px,calc(100vw - 32px));padding:26px 26px 22px;border:1px solid var(--line);border-radius:14px;
-    background:var(--panel);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45)}
-  .cw-box h3{margin:10px 0 6px;font-size:18px;color:var(--tx)}
-  .cw-ic{width:52px;height:52px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background:var(--warn-bg);color:var(--warn)}
-  .cw-ic svg{width:24px;height:24px}
-  .cw-p{margin:0 0 12px;color:var(--tx-dim);font-size:13.5px;line-height:1.5}
-  .cw-n{font-size:34px;font-weight:700;color:var(--warn);margin:4px 0 14px;font-variant-numeric:tabular-nums}
+  /* The card's notice (1.10.354, design B: the seconds in a ring that empties). */
+  .cw-layer{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:rgba(5,8,12,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .cw-box{width:min(440px,calc(100vw - 32px));padding:30px 28px 26px;border:1px solid var(--line);border-radius:18px;
+    background:var(--panel);text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .cw-ring{position:relative;width:150px;height:150px;margin:0 auto;display:flex;align-items:center;justify-content:center}
+  .cw-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+  .cw-track{fill:none;stroke:var(--line);stroke-width:7}
+  .cw-arc{fill:none;stroke:var(--warn);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .9s linear}
+  .cw-mid{position:relative;display:flex;flex-direction:column;align-items:center}
+  .cw-n{font-size:46px;font-weight:800;line-height:1;color:var(--warn);font-variant-numeric:tabular-nums}
+  .cw-unit{font-size:13px;font-weight:600;color:var(--tx-dim);margin-top:3px}
+  .cw-box h3{margin:16px 0 8px;font-size:21px;color:var(--tx)}
+  .cw-p{margin:0 0 14px;color:var(--tx-dim);font-size:14px;line-height:1.55}
+  .cw-until{color:var(--warn);font-weight:600;font-size:13.5px;margin:0 0 18px}
+  @media (prefers-reduced-motion:reduce){.cw-arc{transition:none}}
+  .cw-box .btn.danger{color:var(--crit);border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
   .csr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 28px;margin:6px 0 10px}
   .csr-col{min-width:0}
   .csr-sh{margin:12px 0 8px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx-mut)}
@@ -6088,6 +6097,21 @@ function srcText(el) {
   /* Without the browser's storage nothing is tried by itself (1.10.345): it
      could not be remembered that it was, and a browser that also drops the
      cookie went round and round. */
+  /* Signed out because of the card (1.10.354): said once, by a word of this
+     tab's own - never a text of the address. */
+  try {
+    var cw = sessionStorage.getItem('isemon.card.out');
+    if (cw) {
+      sessionStorage.removeItem('isemon.card.out');
+      var cws = certSaid || said;
+      if (cws) {
+        cws.className = 'said bad';
+        cws.textContent = cw === 'late' ? 'Signed out: the card you signed in with was not put back in time.'
+          : cw === 'other' ? 'Signed out: another card than the one you signed in with was offered.'
+          : 'Signed out: the card you signed in with was taken out.';
+      }
+    }
+  } catch (e) { }
   var krbTried = true, certTried = true;
   try {
     krbTried = !!(sessionStorage.getItem('isemon.krb.tried') || sessionStorage.getItem('isemon.krb.out'));
@@ -9297,6 +9321,16 @@ function api(what, body, how) {
         var quietly = stoppedError();
         quietly.busy = true;              /* not stopped by anybody: nothing to say */
         throw quietly;
+      }
+      /* The card of a sign-in with a certificate is out, or this page slept
+         (1.10.354): nothing is answered until a check finds it - checked at
+         once, and nothing said in a box. */
+      if (r.status === 423 && data && data.code === 'card') {
+        if (typeof certWatchNow === 'function') certWatchNow();
+        var locked = stoppedError();
+        locked.busy = true;
+        locked.status = 423;
+        throw locked;
       }
       if (!r.ok || data.ok === false) {
         var err = new Error(data.error || ('HTTP ' + r.status));
@@ -12758,81 +12792,209 @@ if (!CAN_BAN) {
   });
 }
 
-/* The card watched (1.10.352): a sign-in made with a card, while the
-   setting asks for it. Every few seconds a picture from the certificate's
-   port - a new connection, so the card has to sign it: 1 pixel wide, the
-   card is there; 2, it is out and the session waits (grace); none, it is out
-   or the session is over. Out: signed out at once (signout), or a notice
-   counting down until it is back (grace). The server ends the session as
-   well - this only makes it be seen at once. */
-var CW = {conf: null, timer: null, out: 0, gen: 0, layer: null};
+/* The card watched (1.10.352; 1.10.354 as otp 1.0.285 merged the kit) --------
+   A sign-in made with a card, while "When the card is taken out" asks for it.
+   Every few seconds a picture from the certificate's port - a new connection,
+   so the card has to sign it: 1 pixel wide, the card is there; 2, it is out
+   and the session waits (grace); none, it is out or the session is over. Out:
+   signed out at once (signout), or a notice counting down until it is back
+   (grace). The server holds or ends the session as well - this only makes it
+   be seen at once. Kind to the card: one check at a time, one for all the
+   tabs of this browser (the others take its answer), a check that waited for
+   a window of the card's (its PIN, "insert the card") followed by a longer
+   pause. A page that slept (an iPad locked) checks the moment it wakes. */
+var CW = {conf: null, timer: null, out: 0, gen: 0, layer: null, busy: false, misses: 0, tick: null, n: null};
+var CW_SHARED = 'isemon.card.check';
 function certWatchStart(conf) {
   if (!conf || !conf.port || (conf.mode !== 'signout' && conf.mode !== 'grace')) return;
+  if (CW.conf) { CW.conf = conf; return; }
   CW.conf = conf; CW.gen++;
-  certWatchNext(Math.max(5, conf.every || 15) * 1000);
+  if (conf.out) { CW.out = Date.now(); certWatchLayer(true); }
+  /* The first check soon: a card taken out while the page loaded is seen at
+     once, and a session held while its page slept is let go at once. */
+  certWatchNext(conf.out || conf.stale ? 300 : 1500);
 }
+/* Switched on while the page was open: its policy does not let the picture in
+   yet - the page is loaded again (or asked to be, with changes not saved). */
+function certWatchLater(conf) {
+  if (!conf || CW.conf || !conf.port || (conf.mode !== 'signout' && conf.mode !== 'grace')) return;
+  if (ME && ME.certwatch) { certWatchStart(conf); return; }
+  var unsaved = (typeof DIRTY === 'object' && DIRTY && Object.keys(DIRTY).length) ||
+                (typeof EXTRA_SAVES === 'object' && EXTRA_SAVES && Object.keys(EXTRA_SAVES).length);
+  if (!unsaved) location.reload();
+  else if (!CW.said) { CW.said = true; toast('The card you signed in with is watched from now on - save and reload the page.', 'warn'); }
+}
+function certWatchNow() { if (CW.conf && !CW.busy) certWatchNext(0); }
 function certWatchNext(ms) {
   var g = CW.gen;
   if (CW.timer) clearTimeout(CW.timer);
   CW.timer = setTimeout(function () { if (g === CW.gen) certWatchCheck(); }, ms);
 }
+function certWatchShared() {
+  try { var v = JSON.parse(localStorage.getItem(CW_SHARED) || 'null'); return v && typeof v.t === 'number' ? v : null; } catch (e) { return null; }
+}
 function certWatchCheck() {
-  var c = CW.conf, g = CW.gen, done = false, img = new Image(), to = null;
-  if (!c) return;
+  var c = CW.conf, g = CW.gen;
+  if (!c || CW.busy) return;
+  /* Another tab of this browser checked a moment ago and the card was there. */
+  var sh = certWatchShared();
+  if (sh && sh.w === 1 && !CW.out && Date.now() - sh.t < c.every * 600) {
+    certWatchNext(c.every * 1000 - (Date.now() - sh.t) + 200 + Math.random() * 800);
+    return;
+  }
+  var done = false, img = new Image(), to = null, began = Date.now();
+  CW.busy = true;
   var fin = function (w) {
-    if (done || g !== CW.gen) return;
+    if (done) return;
     done = true;
     clearTimeout(to);
-    if (w === 1) {
-      CW.out = 0; certWatchLayer(false);
-      certWatchNext(c.every * 1000);
-      return;
-    }
-    if (c.mode === 'signout') { certWatchEnd('Signed out: the card you signed in with was taken out.'); return; }
-    if (!CW.out) CW.out = Date.now();
-    var left = c.grace - Math.floor((Date.now() - CW.out) / 1000);
-    if (left <= 0) { certWatchEnd('Signed out: the card you signed in with was not put back in time.'); return; }
-    certWatchLayer(true, left);
-    certWatchNext(3000);
+    CW.busy = false;
+    img.onload = img.onerror = null;
+    if (g !== CW.gen) return;
+    try { localStorage.setItem(CW_SHARED, JSON.stringify({t: Date.now(), w: w})); } catch (e) { }
+    var took = Date.now() - began;
+    if (w === 1) { CW.misses = 0; certWatchIn(); return; }
+    if (w === 2) { CW.misses = 0; certWatchOut(took); return; }
+    /* No picture at all: the handshake failed (nothing to sign it with), or
+       the session is over (403). Once more after a moment - one lost
+       connection is not a card taken out; then the pages are told. */
+    CW.misses += 1;
+    if (CW.misses < 2 && !CW.out) { certWatchNext(1500); return; }
+    api('card-gone', {}, {quiet: true}).then(function (d) {
+      if (g !== CW.gen) return;
+      if (!d || !d.watched) { certWatchNext(c.every * 1000); return; }
+      if (d.gone) { certWatchEnd(CW.out ? 'late' : 'out'); return; }
+      certWatchOut(took);
+    }, function () {
+      if (g !== CW.gen) return;
+      /* The pages do not answer either: the network, not the card. */
+      certWatchNext(Math.max(5000, c.every * 1000));
+    });
   };
+  /* Without an answer for 20 s: none (fail closed); no new check starts
+     until this one is over. */
   to = setTimeout(function () { fin(0); }, 20000);
   img.onload = function () { fin(img.naturalWidth === 2 ? 2 : 1); };
   img.onerror = function () { fin(0); };
-  var host = location.hostname.indexOf(':') >= 0 ? '[' + location.hostname + ']' : location.hostname;
-  img.src = 'https://' + host + ':' + c.port + '/index.php?api=cert-alive&r=' + Date.now().toString(36);
+  img.src = 'https://' + location.hostname + ':' + c.port + '/index.php?api=cert-alive&r=' + Date.now().toString(36);
 }
-function certWatchLayer(on, left) {
-  if (!on) { if (CW.layer) { CW.layer.remove(); CW.layer = null; } return; }
+function certWatchIn() {
+  var c = CW.conf;
+  if (CW.out) {
+    CW.out = 0;
+    certWatchLayer(false);
+    toast('The card is back.', 'good');
+  }
+  certWatchNext(c.every * 1000);
+}
+function certWatchOut(took) {
+  var c = CW.conf;
+  if (c.mode === 'signout') { certWatchEnd('out'); return; }
+  if (!CW.out) CW.out = Date.now();
+  var left = c.grace - Math.floor((Date.now() - CW.out) / 1000);
+  if (left <= 0) { certWatchEnd('late'); return; }
+  certWatchLayer(true);
+  /* Asked again every 5 s; after a check that waited on a window of the card's, 10 s. */
+  certWatchNext(took > 4000 ? 10000 : 5000);
+}
+function certWatchLayer(on) {
+  if (!on) {
+    if (CW.tick) { clearInterval(CW.tick); CW.tick = null; }
+    if (CW.layer) {
+      CW.layer.remove(); CW.layer = null;
+      (CW.held || []).forEach(function (e) { e.inert = false; });
+      CW.held = [];
+    }
+    return;
+  }
   if (!CW.layer) {
+    /* The notice (design B): the seconds left in a ring that empties. */
     var l = el('div', 'cw-layer');
+    l.id = 'cw-layer';
+    l.setAttribute('role', 'alertdialog');
+    l.setAttribute('aria-modal', 'true');
     var box = el('div', 'cw-box');
-    var ic = el('div', 'cw-ic');
-    ic.innerHTML = iconMarkup('key');
-    box.appendChild(ic);
-    box.appendChild(el('h3', '', 'The card is out'));
-    box.appendChild(el('p', 'cw-p', 'Put back the card you signed in with - this session ends unless it is back in time.'));
+    var ring = el('div', 'cw-ring');
+    var C = 2 * Math.PI * 60;
+    ring.innerHTML = '<svg viewBox="0 0 132 132" aria-hidden="true"><circle class="cw-track" cx="66" cy="66" r="60"/>'
+      + '<circle class="cw-arc" cx="66" cy="66" r="60" stroke-dasharray="' + C.toFixed(2) + '" stroke-dashoffset="0"/></svg>';
+    var mid = el('div', 'cw-mid');
     var n = noI18n(el('div', 'cw-n', ''));
-    box.appendChild(n);
-    var out = cmdButton('Sign out now', 'out', 'small');
-    out.onclick = function () { certWatchEnd('Signed out.'); };
+    n.id = 'cw-n';
+    mid.appendChild(n);
+    mid.appendChild(el('div', 'cw-unit', 'seconds'));
+    ring.appendChild(mid);
+    box.appendChild(ring);
+    box.appendChild(el('h3', '', 'Put the card back'));
+    box.appendChild(el('p', 'cw-p', 'The smart card or YubiKey was taken out, so this sign-in is locked. Put it back - the page goes on where you left off.'));
+    var until = el('div', 'cw-until', '');
+    until.id = 'cw-until';
+    box.appendChild(until);
+    var out = cmdButton('Sign out', 'out', 'danger');
+    out.id = 'cw-out';
+    out.onclick = function () { certWatchEnd('', true); };
     box.appendChild(out);
     l.appendChild(box);
+    /* Nothing behind it reachable - by the mouse or the keyboard. */
+    CW.held = [];
+    Array.prototype.forEach.call(document.body.children, function (e) {
+      if (!e.inert) { e.inert = true; CW.held.push(e); }
+    });
     document.body.appendChild(l);
-    CW.layer = l; CW.n = n;
+    CW.layer = l; CW.n = n; CW.arc = ring.querySelector('.cw-arc'); CW.arcC = C; CW.until = until;
+    setTimeout(function () { try { out.focus(); } catch (e) { } }, 50);
   }
-  CW.n.textContent = String(Math.max(0, left)) + ' s';
+  var draw = function () {
+    if (!CW.conf || !CW.out) return;
+    var left = Math.max(0, CW.conf.grace - Math.floor((Date.now() - CW.out) / 1000));
+    CW.n.textContent = String(left);
+    CW.arc.setAttribute('stroke-dashoffset', (CW.arcC * (1 - left / Math.max(1, CW.conf.grace))).toFixed(2));
+    CW.until.textContent = 'Signed out in ' + left + ' s unless the card is back';
+    if (left <= 0) certWatchEnd('late');
+  };
+  draw();
+  if (!CW.tick) CW.tick = setInterval(draw, 1000);
 }
 function certWatchEnd(why) {
+  if (!CW.conf) return;
   CW.gen++; CW.conf = null;
   if (CW.timer) clearTimeout(CW.timer);
+  if (CW.tick) { clearInterval(CW.tick); CW.tick = null; }
+  /* Why, as a word of this tab's own - never a text in the address - and
+     nothing tried by itself on the sign-in page after it. */
   try {
     sessionStorage.setItem('isemon.krb.out', '1');
-    sessionStorage.setItem('isemon.cert.went', String(Date.now()));
+    if (why) sessionStorage.setItem('isemon.card.out', why);
   } catch (e) { }
-  var go = function () { location.replace(location.pathname + '?certsaid=' + encodeURIComponent(why)); };
-  api('logout', {}).then(go).catch(go);
+  var go = function () { location.replace(location.pathname); };
+  api('logout', {}).then(go, go);
 }
+/* The page woken (a tablet unlocked, the browser brought back, the network
+   back): checked at once. */
+['visibilitychange', 'pageshow', 'focus', 'online'].forEach(function (ev) {
+  (ev === 'visibilitychange' ? document : window).addEventListener(ev, function () {
+    if (!document.hidden && CW.conf && !CW.busy) {
+      var sh = certWatchShared();
+      if (!sh || Date.now() - sh.t > 2000) certWatchNow();
+    }
+  });
+});
+/* Another tab saw the card out or the session over: this one checks at once. */
+window.addEventListener('storage', function (e) {
+  if (e.key !== CW_SHARED || !CW.conf) return;
+  var v = certWatchShared();
+  if (v && v.w !== 1) certWatchNow();
+});
 if (ME && ME.certwatch) certWatchStart(ME.certwatch);
+/* Switched on while these pages were open - learnt within a minute. */
+(function () {
+  var cwAsked = Date.now();
+  setInterval(function () {
+    if (CW.conf || Date.now() - cwAsked < 55000) return;
+    cwAsked = Date.now();
+    api('whoami', undefined, {quiet: true}).then(function (d) { certWatchLater(d && d.certwatch); }).catch(function () {});
+  }, 30000);
+}());
 
 $('signout').onclick = function () {
   /* Not signed straight back in with Windows by itself (1.10.340). */

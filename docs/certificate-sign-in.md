@@ -192,13 +192,49 @@ is a new handshake **the card has to sign**:
 - the page's policy (CSP) lets that one address in only for a watched
   session.
 
-**The server's half.** The page only makes it visible at once. The daemon
-also ends a watched session whose page stopped checking: three checks or
-150 seconds, the longer, plus the grace. A tab in the background is checked
-about once a minute (browsers slow its timers), and that is allowed for.
-Each end is written into Events (*was signed out: the card they signed in
-with was taken out*, *...another certificate*, *...their page stopped
-checking*).
+**The server's half (1.10.354).** The page only makes it visible at once.
+The state is kept in the session's own row in the database (`card`,
+`card_seen`, `card_out`), so a restart of the daemon forgets nothing.
+
+- **The card out within the grace**: the session is **held**. Every question
+  of it gets HTTP 423 (`code: card`) except whoami, sign out and the card's
+  own checks, until a check finds the card again.
+- **The card out longer than the grace + *late*** (three checks or 150 s,
+  whichever is longer): the session is ended.
+- **A page that stopped checking**, for *late* + grace + max(interval, 30 s),
+  is **held, not ended**. iPadOS stops Safari's pages entirely while the
+  screen is locked or another app is in front, so no timer runs. Before
+  1.10.354 the person was signed out after ~3.5 minutes although the card
+  never left. The page checks the moment it wakes (`visibilitychange`,
+  `pageshow`, `focus`, `online`): the card there, it goes on; not there, it
+  counts as a card taken out.
+- **A failed handshake** never reaches the daemon. The page then says so on
+  443 (`card-gone`), which can only end or hold its own session. Events say
+  why, and in `grace` the server holds the session.
+
+Events:
+
+- *was signed out: the card they signed in with was taken out*
+- *...was not put back in time*
+- *...another certificate than the one signed in with was offered*
+- *&lt;name&gt;: the card they signed in with is out - the session waits N s*
+- *...is back*
+
+**Kind to the card (1.10.354).** The page is careful not to make the card
+sign more than it has to:
+
+- one check at a time;
+- one check for all the tabs of a browser (`localStorage`);
+- a picture that failed is asked once more after 1.5 s before it counts;
+- while the card is out, a check every 5 s, or 10 s after a check that waited
+  on a window of the card's ("Insert a smart card", a PIN);
+- the first check 1.5 s after the page loads;
+- the countdown drawn every second;
+- switched on while pages are open, they learn of it within a minute and load
+  again.
+
+The reason for a sign-out is a word in the tab's own `sessionStorage`, never
+text from the address.
 
 **Things to know:**
 

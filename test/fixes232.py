@@ -59,8 +59,12 @@ PORT = 19400 + random.randint(0, 90)
 # which an older version never reads.
 # 1.10.335 added another (acme_sync, acme's first full sync), which an
 # older version never reads.
+# 1.10.354 gave sessions three columns (card, card_seen, card_out: the card
+# of a sign-in with a certificate watched), as 1.10.303 did: an older version
+# writes its sessions without them and never reads them - a session it made
+# is simply not watched.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '8ec92f060abcd2972fe5ffff53c1931e9a276c17f121e7e3751f4e9b5c13e5d5'}
+               'sha256': '2fab334e8b6e440566b5edfd7ba789b843f5d18a3a50165ad47f649316dc6420'}
 
 
 def ok(what, got, want=True):

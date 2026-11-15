@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.353",
+  "version": "1.10.354",
   "made": "2026-11-15",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -2780,6 +2780,10 @@
    "source": "Albania",
    "text": "Albania"
   },
+  "s.alertdialog.8063d92c": {
+   "source": "alertdialog",
+   "text": "alertdialog"
+  },
   "s.algeria.bd6acc86": {
    "source": "Algeria",
    "text": "Algeria"
@@ -3539,10 +3543,6 @@
   "s.another-acme-ca-step-ca-an.c6ffb2ff": {
    "source": "another ACME CA (step-ca, an internal CA...)",
    "text": "another ACME CA (step-ca, an internal CA...)"
-  },
-  "s.another-card.89ed25aa": {
-   "source": "another card",
-   "text": "another card"
   },
   "s.another-certificate-or-a-wrong-answer.266eea15": {
    "source": "another certificate, or a wrong answer",
@@ -10592,6 +10592,10 @@
    "source": "FMC",
    "text": "FMC"
   },
+  "s.focus.78918dca": {
+   "source": "focus",
+   "text": "focus"
+  },
   "s.fold-addresses-into-subnets.01429ce8": {
    "source": "Fold addresses into subnets",
    "text": "Fold addresses into subnets"
@@ -13680,6 +13684,10 @@
    "source": "isemon can only be pointed at a database that answers, may be written and has everything of isemon in it.",
    "text": "isemon can only be pointed at a database that answers, may be written and has everything of isemon in it."
   },
+  "s.isemon-card-check.98c8aea8": {
+   "source": "isemon.card.check",
+   "text": "isemon.card.check"
+  },
   "s.isemon-check.6086fbd1": {
    "source": "isemon --check",
    "text": "isemon --check"
@@ -15251,6 +15259,10 @@
   "s.lasted.9de28c0f": {
    "source": "lasted",
    "text": "lasted"
+  },
+  "s.late.5d6200f8": {
+   "source": "late",
+   "text": "late"
   },
   "s.later.3f14ecc8": {
    "source": "later",
@@ -19744,6 +19756,10 @@
    "source": "NTS",
    "text": "NTS"
   },
+  "s.null.2be88ca4": {
+   "source": "null",
+   "text": "null"
+  },
   "s.num-muted-small.544760ed": {
    "source": "num muted small",
    "text": "num muted small"
@@ -20736,6 +20752,10 @@
    "source": "Online status (OCSP)",
    "text": "Online status (OCSP)"
   },
+  "s.online.2dbc2fd2": {
+   "source": "online",
+   "text": "online"
+  },
   "s.only-a-full-admin-changes-another.ec596e27": {
    "source": "only a full admin changes another account’s passkeys",
    "text": "only a full admin changes another account’s passkeys"
@@ -20860,9 +20880,9 @@
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the"
   },
-  "s.only-for-a-sign-in-made.314a3384": {
-   "source": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the page stops asking.",
-   "text": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the page stops asking."
+  "s.only-for-a-sign-in-made.2646d597": {
+   "source": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the card stays out; a page that stops asking (a tablet asleep) is held - nothing answered - until a check finds the card again.",
+   "text": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the card stays out; a page that stops asking (a tablet asleep) is held - nothing answered - until a check finds the card again."
   },
   "s.only-from-the-nodes.215f90c6": {
    "source": "Only from the nodes",
@@ -21799,6 +21819,10 @@
   "s.pages-and-settings.14dcc9ec": {
    "source": "Pages and settings",
    "text": "Pages and settings"
+  },
+  "s.pageshow.706fc538": {
+   "source": "pageshow",
+   "text": "pageshow"
   },
   "s.pair-with-an-acme.30958176": {
    "source": "Pair with an acme",
@@ -22836,10 +22860,6 @@
    "source": "put back now what was there before a change on trial",
    "text": "put back now what was there before a change on trial"
   },
-  "s.put-back-the-card-you-signed.31b7c973": {
-   "source": "Put back the card you signed in with - this session ends unless it is back in time.",
-   "text": "Put back the card you signed in with - this session ends unless it is back in time."
-  },
   "s.put-back-within-seconds.44e1a055": {
    "source": "...put back within (seconds)",
    "text": "...put back within (seconds)"
@@ -22955,6 +22975,10 @@
   "s.put-sudo-in-front-of-pfctl.11369844": {
    "source": "Put sudo in front of pfctl, for an account that is not root but may run pfctl through sudo without a password.",
    "text": "Put sudo in front of pfctl, for an account that is not root but may run pfctl through sudo without a password."
+  },
+  "s.put-the-card-back.bfbbf6d7": {
+   "source": "Put the card back",
+   "text": "Put the card back"
   },
   "s.put-the-certificate-from-before-acme.ecca6fc9": {
    "source": "Put the certificate from before ACME back?",
@@ -25076,6 +25100,10 @@
    "source": "seconds to the next figures",
    "text": "seconds to the next figures"
   },
+  "s.seconds.7febce03": {
+   "source": "seconds",
+   "text": "seconds"
+  },
   "s.secure.73c048ec": {
    "source": "; Secure",
    "text": "; Secure"
@@ -25816,10 +25844,6 @@
    "source": "Sign me out",
    "text": "Sign me out"
   },
-  "s.sign-out-now.1f04c8e0": {
-   "source": "Sign out now",
-   "text": "Sign out now"
-  },
   "s.sign-out.dc1649a1": {
    "source": "Sign out",
    "text": "Sign out"
@@ -25872,6 +25896,10 @@
    "source": "signed in",
    "text": "signed in"
   },
+  "s.signed-out-another-card-than-the.79fbd369": {
+   "source": "Signed out: another card than the one you signed in with was offered.",
+   "text": "Signed out: another card than the one you signed in with was offered."
+  },
   "s.signed-out-or-ended.abacac35": {
    "source": "signed out or ended",
    "text": "signed out or ended"
@@ -25883,10 +25911,6 @@
   "s.signed-out-the-card-you-signed.f91b08d3": {
    "source": "Signed out: the card you signed in with was taken out.",
    "text": "Signed out: the card you signed in with was taken out."
-  },
-  "s.signed-out.05d2a79c": {
-   "source": "Signed out.",
-   "text": "Signed out."
   },
   "s.signed-out.a733a3de": {
    "source": "signed out",
@@ -28668,13 +28692,13 @@
    "source": "the Canary Islands",
    "text": "the Canary Islands"
   },
-  "s.the-card-is-out.be931b88": {
-   "source": "The card is out",
-   "text": "The card is out"
+  "s.the-card-is-back.a947160c": {
+   "source": "The card is back.",
+   "text": "The card is back."
   },
-  "s.the-card-out.7919d8cf": {
-   "source": "the card out",
-   "text": "the card out"
+  "s.the-card-you-signed-in-with.12da94e3": {
+   "source": "The card you signed in with is watched from now on - save and reload the page.",
+   "text": "The card you signed in with is watched from now on - save and reload the page."
   },
   "s.the-cayman-islands.62ec29ec": {
    "source": "the Cayman Islands",
@@ -32416,6 +32440,10 @@
    "source": "The slots, and how far behind each is:",
    "text": "The slots, and how far behind each is:"
   },
+  "s.the-smart-card-or-yubikey-was.676bfa0e": {
+   "source": "The smart card or YubiKey was taken out, so this sign-in is locked. Put it back - the page goes on where you left off.",
+   "text": "The smart card or YubiKey was taken out, so this sign-in is locked. Put it back - the page goes on where you left off."
+  },
   "s.the-socket-it-came-in-on.38a28c7a": {
    "source": "The socket it came in on, and the switch it is a socket ON: there is a GigabitEthernet1/0/16 on every switch in the building, so the port on its own is not a place. Point at it for the switch’s own address.",
    "text": "The socket it came in on, and the switch it is a socket ON: there is a GigabitEthernet1/0/16 on every switch in the building, so the port on its own is not a place. Point at it for the switch’s own address."
@@ -35463,6 +35491,10 @@
   "s.violet.13818a56": {
    "source": "violet",
    "text": "violet"
+  },
+  "s.visibilitychange.c7ff674d": {
+   "source": "visibilitychange",
+   "text": "visibilitychange"
   },
   "s.visitors-and-their-accounts.4763a586": {
    "source": "Visitors and their accounts",
@@ -42221,6 +42253,10 @@
   "p.signed-out-at-the-next-check.1d601a02": {
    "source": "signed out at the next check (every {0} s)",
    "text": "signed out at the next check (every {0} s)"
+  },
+  "p.signed-out-in-s-unless-the.90f0a800": {
+   "source": "Signed out in {0} s unless the card is back",
+   "text": "Signed out in {0} s unless the card is back"
   },
   "p.signing-in-to-refusal-s-from.14fa6698": {
    "source": "Signing in to {0}: {1} refusal(s), from {2}.",
