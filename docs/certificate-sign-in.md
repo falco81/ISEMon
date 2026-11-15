@@ -109,6 +109,59 @@ Run `./install.sh --upgrade` once, for the new root helper.
   passthrough). A balancer that ends TLS cannot hand on the browser's
   certificate.
 
+### A certificate for a person (1.10.352)
+
+*A certificate for a person* on the card finds a person in the directory and
+shows what their certificate must carry, each value with its own **Copy**:
+
+- **Subject CN**: the account's `cn`.
+- **SAN - UPN**: the `userPrincipalName`, as the other name *Principal name*
+  (1.3.6.1.4.1.311.20.2.3). isemon finds the person by it, so an account
+  without a UPN cannot sign in with a certificate.
+- **SAN - URL**: `tag:microsoft.com,2022-09-14:sid:<SID>`, the SID of the
+  account for strong mapping (KB5014754).
+- **SID** and the account as Windows writes it (`NETBIOS\name`, with the
+  domain's real NetBIOS name).
+
+Type the name as `jnovak`, `DOMAIN\jnovak`, the UPN or the mail. More than one
+match is refused rather than guessed. *The request as a file* gives the same
+values as a `certreq` INF (`certreq -new request.inf request.req`) and an
+openssl config (`openssl req -new -key key.pem -config req.cnf`).
+
+A certificate issued online by AD CS from a template gets the SID extension
+(1.3.6.1.4.1.311.25.2) by itself. One from an offline request, or one whose
+Subject is supplied in the request, carries the SID only as the URL. Put the
+URL in, or `strong` refuses the certificate.
+
+It is read only (nothing is written in AD or here) and is for a full admin.
+
+**Make a request (CSR)** in the same popup opens a form with these fields:
+
+- **The key**: ECC P-256 (YubiKey, iPad, Windows), P-384, RSA 2048, 3072 or
+  4096. An iPad does not sign with RSA 4096.
+- **Subject**: the CN (from the account), and O, OU and C if wanted.
+- **Subject Alternative Name**, each ticked or not: the UPN, the URL of the
+  SID, the mail.
+- **Key usage**: Client Authentication and Smart Card Logon. Digital
+  signature (and key encipherment for RSA) is always set, as critical.
+
+*Make and download* makes the key and the request **in the browser**
+(WebCrypto). Two files are saved: `<name>.csr` (PKCS#10) and `<name>.key`
+(PKCS#8, unencrypted). Nothing of the key is sent to isemon or kept anywhere;
+it is only in the file saved. The page must be open over https (WebCrypto
+needs a secure page). Then:
+
+```
+certreq -submit -attrib "CertificateTemplate:<template>" jnovak.csr jnovak.cer
+ykman piv keys import 9a jnovak.key
+ykman piv certificates import 9a jnovak.cer
+```
+
+To keep the key file encrypted:
+`openssl pkcs8 -topk8 -v2 aes-256-cbc -in jnovak.key -out jnovak-enc.key`.
+Where the template builds the Subject from AD, the authority replaces what the
+request asks with what AD has, and the SID comes as its own extension.
+
 ## How it works
 
 ```

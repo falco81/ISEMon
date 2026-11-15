@@ -110,6 +110,27 @@ older vhost, the root helper puts that line in when Windows sign-in is
 switched on, if the file does not set it anywhere already. It is never taken
 out or changed. PHP-FPM gets the header as `HTTP_AUTHORIZATION` by default.
 
+### The names in the commands, read from AD (1.10.352)
+
+The commands under *Making the keytab in AD* are written with the names AD
+itself has, read when the card is opened by a full admin (read only, nothing
+written):
+
+- **The NetBIOS name of the domain**: the `nETBIOSName` of the domain's
+  crossRef in `CN=Partitions,CN=Configuration,...`. It is often not the first
+  label of the DNS name. A domain `merit.cz` may be `MERIT_NT`, and
+  `MERIT\svc-...` is then an account that does not exist.
+- **The realm**: the domain's `dnsRoot` in capitals.
+- **The account each name's SPN is on**: a search for
+  `servicePrincipalName=HTTP/<name>`. When one is found, the commands use it
+  and say which SPNs are there already (no `setspn` for those). They also say
+  whether AES 256 is allowed for it (`msDS-SupportedEncryptionTypes`) and
+  whether it is switched off.
+
+A line above the commands says what was read. When the directory could not
+be asked, it says why and that the names are a guess. *Read from AD again*
+reads them at once; otherwise they are read again after a minute at most.
+
 ## How it works
 
 ```

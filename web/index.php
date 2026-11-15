@@ -4588,6 +4588,47 @@ function srcText(el) {
   .sso-h{font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--tx-dim);
     margin:22px 0 8px}
   .sso-card .note{max-width:1000px}
+  /* 1.10.352: AD's own names above the keytab commands; a person's certificate. */
+  .krb-ad{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:8px 0 2px;padding:9px 12px;
+    border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);font-size:13px}
+  .krb-ad.ok{border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+  .krb-ad.warn{border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+  .krb-ad-t{min-width:0;overflow-wrap:anywhere}
+  .krb-ad-t .tag{margin-left:8px}
+  .krb-ad .btn{flex:none}
+  .clp-row{display:flex;gap:10px;align-items:center;margin:8px 0 4px;max-width:640px}
+  .clp-row input{flex:1;min-width:0}
+  .clp-head{margin:0 0 14px}
+  .clp-who{font-size:16px;font-weight:600;color:var(--tx)}
+  .clp-dn{font-size:12px;color:var(--tx-mut);margin-top:2px;overflow-wrap:anywhere}
+  .clp-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .clp-grid{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:0;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .clp-grid>div{padding:9px 12px;border-top:1px solid var(--line)}
+  .clp-grid>div:nth-child(-n+2){border-top:0}
+  .clp-k{background:var(--bg-soft)}
+  .clp-l{font-weight:600;font-size:13px;color:var(--tx)}
+  .clp-h{font-size:11.5px;color:var(--tx-mut);margin-top:2px}
+  .clp-v{display:flex;align-items:center;gap:10px;justify-content:space-between;min-width:0}
+  .clp-v code{font-size:12.5px;overflow-wrap:anywhere;min-width:0}
+  .clp-v .btn{flex:none}
+  .clp-more{margin-top:14px}
+  .csr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 28px;margin:6px 0 10px}
+  .csr-col{min-width:0}
+  .csr-sh{margin:12px 0 8px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx-mut)}
+  .csr-col .csr-sh:first-child{margin-top:4px}
+  .csr-f{display:flex;flex-direction:column;gap:4px;margin:0 0 10px}
+  .csr-l{font-size:13px;font-weight:600;color:var(--tx)}
+  .csr-h{font-size:11.5px;color:var(--tx-mut);line-height:1.4}
+  .csr-t{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;margin:0 0 6px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+  .csr-t.off{opacity:.55;cursor:default}
+  .csr-t input{margin-top:3px}
+  .csr-tl{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:13px}
+  .csr-tl code{font-size:11.5px;color:var(--tx-dim);overflow-wrap:anywhere}
+  .csr-out:empty{display:none}
+  .csr-out{margin-top:8px}
+  @media (max-width:640px){.csr-grid{grid-template-columns:1fr}}
+  .clp-more summary{cursor:pointer;color:var(--tx-dim);font-size:13px}
+  @media (max-width:640px){.clp-grid{grid-template-columns:1fr}.clp-grid>div:nth-child(2){border-top:1px solid var(--line)}}
   .sso-cmdhead{display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px;color:var(--tx-mut);font-size:12.5px}
   .sso-code{margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);
     font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -30897,6 +30938,9 @@ function drawCertLogin(d, anchor) {
   drawSignInPage();
   ssoDots('cl-dots', d.on, d.wanted);
   if (!$('cl-body')) return;
+  /* A name being typed into the finder is not drawn away under the hand. */
+  var a = document.activeElement;
+  if (a && a.id === 'cl-who' && $('cl-body').contains(a)) return;
   redrawKeepingPlace($('cl-body'), function (host) { drawCertInto(host, d); }, anchor);
 }
 function drawCertInto(host, d) {
@@ -30961,6 +31005,7 @@ function drawCertInto(host, d) {
   }
   if (d.crl || (d.crls || []).length) certCrls(host, d);
   certOcsp(host, d);
+  certPersonFinder(host, d);
   ssoHead(host, 'In AD CS');
   var ul = el('ul', 'sso-list');
   ['A template from Smartcard Logon (or User): Subject Name built from AD with the User principal name (UPN) in the Subject Alternative Name; the key usages Client Authentication and Smart Card Logon; published on the issuing authority.',
@@ -30973,6 +31018,275 @@ function drawCertInto(host, d) {
     ul.appendChild(el('li', '', t));
   });
   host.appendChild(ul);
+}
+/* csr-begin: a certificate request made in this browser (1.10.352). The key
+   is made by WebCrypto here and never leaves the browser: nothing of it is
+   sent to isemon, and it is forgotten once it is saved. Pure functions - the
+   test runs them in node and has openssl check what they make. */
+function csrLen(n) {
+  if (n < 128) return [n];
+  var b = [];
+  while (n) { b.unshift(n & 255); n = Math.floor(n / 256); }
+  return [0x80 | b.length].concat(b);
+}
+function csrDer(tag, body) { body = Array.prototype.slice.call(body); return [tag].concat(csrLen(body.length), body); }
+function csrSeq(parts) { return csrDer(0x30, [].concat.apply([], parts)); }
+function csrOid(s) {
+  var p = s.split('.').map(Number), out = [40 * p[0] + p[1]];
+  p.slice(2).forEach(function (v) {
+    var b = [v & 127];
+    v = Math.floor(v / 128);
+    while (v) { b.unshift(128 | (v & 127)); v = Math.floor(v / 128); }
+    out = out.concat(b);
+  });
+  return csrDer(6, out);
+}
+function csrStr(s, tag) { return csrDer(tag, new TextEncoder().encode(s)); }
+function csrInt(bytes) {
+  bytes = Array.prototype.slice.call(bytes);
+  while (bytes.length > 1 && bytes[0] === 0 && !(bytes[1] & 128)) bytes.shift();
+  if (bytes[0] & 128) bytes.unshift(0);
+  return csrDer(2, bytes);
+}
+function csrPem(label, bytes) {
+  var bin = '', u = new Uint8Array(bytes);
+  for (var i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
+  return '-----BEGIN ' + label + '-----\n' + btoa(bin).replace(/(.{64})/g, '$1\n').replace(/\n$/, '')
+    + '\n-----END ' + label + '-----\n';
+}
+var CSR_KINDS = {
+  ec256: {gen: {name: 'ECDSA', namedCurve: 'P-256'}, sign: {name: 'ECDSA', hash: 'SHA-256'}, alg: '1.2.840.10045.4.3.2', ec: true},
+  ec384: {gen: {name: 'ECDSA', namedCurve: 'P-384'}, sign: {name: 'ECDSA', hash: 'SHA-384'}, alg: '1.2.840.10045.4.3.3', ec: true},
+  rsa2048: {gen: {name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256'},
+    sign: {name: 'RSASSA-PKCS1-v1_5'}, alg: '1.2.840.113549.1.1.11'},
+  rsa3072: {gen: {name: 'RSASSA-PKCS1-v1_5', modulusLength: 3072, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256'},
+    sign: {name: 'RSASSA-PKCS1-v1_5'}, alg: '1.2.840.113549.1.1.11'},
+  rsa4096: {gen: {name: 'RSASSA-PKCS1-v1_5', modulusLength: 4096, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256'},
+    sign: {name: 'RSASSA-PKCS1-v1_5'}, alg: '1.2.840.113549.1.1.11'}
+};
+/* o: {kind, cn, o, ou, c, upn, url, mail, client, smartcard} -> {csr, key} (PEM). */
+function csrMake(o, subtle) {
+  subtle = subtle || (typeof crypto !== 'undefined' && crypto.subtle);
+  var k = CSR_KINDS[o.kind];
+  if (!k) return Promise.reject(new Error('no such kind of key'));
+  if (!subtle) return Promise.reject(new Error('this browser makes no keys here - the page must be opened over https'));
+  var ascii = function (s) { return /^[\x20-\x7e]*$/.test(s); };
+  if (!o.cn) return Promise.reject(new Error('the CN is empty'));
+  if (o.c && !/^[A-Z]{2}$/.test(o.c)) return Promise.reject(new Error('the country is two capital letters (CZ)'));
+  if ((o.url && !ascii(o.url)) || (o.mail && !ascii(o.mail))) return Promise.reject(new Error('a URL and a mail are plain ASCII'));
+  var rdn = function (oid, value, tag) { return csrDer(0x31, csrSeq([csrOid(oid), csrStr(value, tag)])); };
+  var name = [];
+  if (o.c) name.push(rdn('2.5.4.6', o.c, 0x13));
+  if (o.o) name.push(rdn('2.5.4.10', o.o, 0x0c));
+  if (o.ou) name.push(rdn('2.5.4.11', o.ou, 0x0c));
+  name.push(rdn('2.5.4.3', o.cn, 0x0c));
+  var ext = function (oid, critical, value) {
+    return csrSeq([csrOid(oid), critical ? [1, 1, 255] : [], csrDer(4, value)]);
+  };
+  var exts = [ext('2.5.29.15', true, k.ec ? [3, 2, 7, 0x80] : [3, 2, 5, 0xa0])];
+  var eku = [];
+  if (o.client) eku.push(csrOid('1.3.6.1.5.5.7.3.2'));
+  if (o.smartcard) eku.push(csrOid('1.3.6.1.4.1.311.20.2.2'));
+  if (eku.length) exts.push(ext('2.5.29.37', false, csrSeq(eku)));
+  var san = [];
+  if (o.upn) san.push(csrDer(0xa0, csrOid('1.3.6.1.4.1.311.20.2.3').concat(csrDer(0xa0, csrStr(o.upn, 0x0c)))));
+  if (o.mail) san.push(csrStr(o.mail, 0x81));
+  if (o.url) san.push(csrStr(o.url, 0x86));
+  if (san.length) exts.push(ext('2.5.29.17', false, csrSeq(san)));
+  var attrs = csrDer(0xa0, csrSeq([csrOid('1.2.840.113549.1.9.14'), csrDer(0x31, csrSeq(exts))]));
+  var pair;
+  return subtle.generateKey(k.gen, true, ['sign', 'verify']).then(function (kp) {
+    pair = kp;
+    return subtle.exportKey('spki', kp.publicKey);
+  }).then(function (spki) {
+    var info = csrSeq([csrInt([0]), csrSeq(name), Array.prototype.slice.call(new Uint8Array(spki)), attrs]);
+    return subtle.sign(k.sign, pair.privateKey, new Uint8Array(info)).then(function (sig) {
+      sig = Array.prototype.slice.call(new Uint8Array(sig));
+      if (k.ec) {
+        var half = sig.length / 2;
+        sig = csrSeq([csrInt(sig.slice(0, half)), csrInt(sig.slice(half))]);
+      }
+      var alg = k.ec ? csrSeq([csrOid(k.alg)]) : csrSeq([csrOid(k.alg), [5, 0]]);
+      var csr = csrSeq([info, alg, csrDer(3, [0].concat(sig))]);
+      return subtle.exportKey('pkcs8', pair.privateKey).then(function (p8) {
+        return {csr: csrPem('CERTIFICATE REQUEST', csr), key: csrPem('PRIVATE KEY', p8)};
+      });
+    });
+  });
+}
+/* csr-end */
+/* A certificate for a person (1.10.352): typed name -> the directory ->
+   what their request must carry, each value with its own Copy. */
+var CLP = {typed: ''};
+function certPersonFinder(host, d) {
+  ssoHead(host, 'A certificate for a person');
+  host.appendChild(el('p', 'note', 'What a person’s certificate must carry to sign in here, read from the directory: the CN, '
+    + 'the UPN in the Subject Alternative Name and - for strong mapping (KB5014754) - the URL of their SID. '
+    + 'For a request made by hand (certreq, YubiKey Manager, openssl); one made from a template in AD CS has them filled in already.'));
+  var row = el('div', 'clp-row');
+  var input = el('input', 'mono');
+  input.id = 'cl-who'; input.type = 'text'; input.autocomplete = 'off'; input.spellcheck = false;
+  input.placeholder = 'jnovak, DOMAIN\\jnovak, jnovak@example.cz or their mail';
+  input.value = CLP.typed;
+  input.oninput = function () { CLP.typed = input.value; };
+  var find = cmdButton('Find in AD', 'search', 'small primary');
+  find.disabled = !d.directory;
+  var go = function () {
+    var name = input.value.trim();
+    if (!name) { toast('type a name first', 'warn'); input.focus(); return; }
+    busy(find, true);
+    api('certlogin', {action: 'person', name: name}).then(function (p) {
+      busy(find, false); certPersonShow(p);
+    }).catch(function (e) { busy(find, false); oops(e); });
+  };
+  find.onclick = go;
+  input.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+  row.appendChild(input); row.appendChild(find);
+  host.appendChild(row);
+  if (!d.directory) host.appendChild(el('p', 'note warn', 'Set the directory above first: the person is read from it.'));
+}
+function certPersonShow(p) {
+  var san = [];
+  if (p.upn) san.push('otherName:1.3.6.1.4.1.311.20.2.3;UTF8:' + p.upn);
+  if (p.url) san.push('URI:' + p.url);
+  var inf = '[NewRequest]\nSubject = "CN=' + (p.cn || p.sam) + '"\nKeyLength = 2048\nKeySpec = 1\nKeyUsage = 0xa0\n'
+    + 'MachineKeySet = FALSE\nProviderName = "Microsoft Software Key Storage Provider"\nRequestType = PKCS10\n\n'
+    + '[EnhancedKeyUsageExtension]\nOID = 1.3.6.1.5.5.7.3.2\nOID = 1.3.6.1.4.1.311.20.2.2\n\n'
+    + '[Extensions]\n2.5.29.17 = "{text}"\n'
+    + (p.upn ? '_continue_ = "upn=' + p.upn + (p.url ? '&"\n' : '"\n') : '')
+    + (p.url ? '_continue_ = "url=' + p.url + '"\n' : '');
+  var ssl = '[req]\ndistinguished_name = dn\nreq_extensions = ext\nprompt = no\n\n[dn]\nCN = ' + (p.cn || p.sam) + '\n\n'
+    + '[ext]\nkeyUsage = critical, digitalSignature, keyEncipherment\n'
+    + 'extendedKeyUsage = clientAuth, 1.3.6.1.4.1.311.20.2.2\n'
+    + (san.length ? 'subjectAltName = ' + san.join(', ') + '\n' : '');
+  modal('A certificate for ' + (p.display || p.sam), function (body) {
+    var head = el('div', 'clp-head');
+    head.appendChild(noI18n(el('div', 'clp-who', p.display || p.cn || p.sam)));
+    var sub = noI18n(el('div', 'clp-dn mono', p.dn));
+    head.appendChild(sub);
+    var tags = el('div', 'clp-tags');
+    tags.appendChild(p.disabled ? el('span', 'tag crit', 'switched off in AD') : el('span', 'tag ok', 'in AD'));
+    if (!p.upn) tags.appendChild(el('span', 'tag crit', 'no UPN'));
+    if (!p.sid) tags.appendChild(el('span', 'tag warn', 'no SID read'));
+    tags.appendChild(el('span', 'tag dim', 'matched here: ' + p.match));
+    head.appendChild(tags);
+    body.appendChild(head);
+    var grid = el('div', 'clp-grid');
+    var line = function (label, hint, value, key) {
+      var k = el('div', 'clp-k');
+      k.appendChild(el('div', 'clp-l', label));
+      if (hint) k.appendChild(el('div', 'clp-h', hint));
+      var v = el('div', 'clp-v');
+      var val = noI18n(el('code', 'mono', value || '–'));
+      v.appendChild(val);
+      var c = cmdButton('Copy', 'copy', 'small');
+      c.dataset.key = 'clp:' + key;
+      c.disabled = !value;
+      c.onclick = function () { copyText(value, label + ' copied'); };
+      v.appendChild(c);
+      grid.appendChild(k); grid.appendChild(v);
+    };
+    line('Subject CN', 'Subject Name: CN=…', p.cn || p.sam, 'cn');
+    line('SAN - UPN', 'Other name: Principal name (1.3.6.1.4.1.311.20.2.3)', p.upn, 'upn');
+    line('SAN - URL', 'URL: the SID for strong mapping (KB5014754)', p.url, 'url');
+    line('SID', 'objectSid of the account', p.sid, 'sid');
+    line('Account', 'sAMAccountName, as Windows writes it', p.down_level || p.sam, 'sam');
+    if (p.mail) line('Mail', 'only where the template asks for it', p.mail, 'mail');
+    body.appendChild(grid);
+    if (!p.upn) body.appendChild(el('p', 'note bad', 'This account has no UPN in AD: a certificate of it cannot sign in here - isemon finds the person by the UPN in the certificate. Give the account a UPN first.'));
+    if (p.match === 'strong' && !p.url) body.appendChild(el('p', 'note bad', 'Only certificates with the SID are taken here (strong), and no SID was read for this account.'));
+    body.appendChild(el('p', 'note', 'A certificate issued online by AD CS from a template gets the SID by itself (the extension 1.3.6.1.4.1.311.25.2). '
+      + 'One from an offline request, or one whose Subject is supplied in the request, carries it only as this URL - put it in, or strong mapping refuses it.'));
+    var more = el('details', 'clp-more');
+    more.appendChild(el('summary', '', 'The request as a file - certreq (Windows) and openssl'));
+    ssoCode(more, 'request.inf - certreq -new request.inf request.req', inf, [p.upn, p.url, p.cn || p.sam]);
+    ssoCode(more, 'req.cnf - openssl req -new -key key.pem -config req.cnf -out request.csr', ssl, [p.upn, p.url, p.cn || p.sam]);
+    body.appendChild(more);
+  }, [{words: 'Make a request (CSR)…', icon: 'key', go: function () { certCsrForm(p); }},
+      {spacer: true},
+      {words: 'Copy all', icon: 'copy', go: function () {
+    copyText(['CN=' + (p.cn || p.sam), 'UPN: ' + (p.upn || ''), 'URL: ' + (p.url || ''), 'SID: ' + (p.sid || '')].join('\n'), 'all of it copied');
+  }}, {words: 'Close', close: true, cls: 'primary'}], 'medium');
+}
+/* The request made here (1.10.352): what goes into it ticked, chosen and
+   filled in first; the key made in this browser, saved with the request. */
+function certCsrForm(p) {
+  var f = {};
+  var field = function (body, label, hint, input) {
+    var w = el('label', 'csr-f');
+    w.appendChild(el('span', 'csr-l', label));
+    w.appendChild(input);
+    if (hint) w.appendChild(el('span', 'csr-h', hint));
+    body.appendChild(w);
+    return input;
+  };
+  var text = function (value, ph) {
+    var i = el('input', 'mono'); i.type = 'text'; i.value = value || ''; i.spellcheck = false;
+    if (ph) i.placeholder = ph;
+    return i;
+  };
+  var tick = function (body, label, value, on, can) {
+    var w = el('label', 'csr-t' + (can === false ? ' off' : ''));
+    var c = el('input'); c.type = 'checkbox'; c.checked = !!on && can !== false; c.disabled = can === false;
+    w.appendChild(c);
+    var s = el('span', 'csr-tl');
+    s.appendChild(el('b', '', label));
+    if (value) s.appendChild(noI18n(el('code', 'mono', value)));
+    w.appendChild(s);
+    body.appendChild(w);
+    return c;
+  };
+  modal('A request for ' + (p.display || p.sam), function (body) {
+    body.appendChild(el('p', 'note', 'The key is made in this browser and saved here with the request: it is never sent to isemon and kept nowhere. Hand the request (.csr) to the authority - certreq -submit, or the AD CS web enrollment - and keep the key (.key) for the certificate it gives back.'));
+    var grid = el('div', 'csr-grid');
+    var c1 = el('div', 'csr-col'), c2 = el('div', 'csr-col');
+    c1.appendChild(el('h4', 'csr-sh', 'The key'));
+    var kind = el('select');
+    [['ec256', 'ECC P-256 - YubiKey, iPad, Windows'], ['ec384', 'ECC P-384'], ['rsa2048', 'RSA 2048 - the widest'],
+     ['rsa3072', 'RSA 3072'], ['rsa4096', 'RSA 4096 - not on an iPad or iPhone']].forEach(function (k) {
+      var op = el('option', '', k[1]); op.value = k[0]; kind.appendChild(op);
+    });
+    f.kind = field(c1, 'Kind of key', 'A YubiKey (PIV) takes P-256, P-384 and RSA 2048 in every version; an iPad signs with neither RSA 4096 nor P-384 on some cards.', kind);
+    c1.appendChild(el('h4', 'csr-sh', 'Subject'));
+    f.cn = field(c1, 'CN', 'Common name - from the account’s cn', text(p.cn || p.sam));
+    f.o = field(c1, 'O', 'Organisation - optional', text('', 'e.g. Example s.r.o.'));
+    f.ou = field(c1, 'OU', 'Organisational unit - optional', text(''));
+    f.c = field(c1, 'C', 'Country, two letters - optional', text('', 'CZ'));
+    f.c.maxLength = 2;
+    c2.appendChild(el('h4', 'csr-sh', 'Subject Alternative Name'));
+    f.upn = tick(c2, 'UPN - Principal name', p.upn, true, !!p.upn);
+    f.url = tick(c2, 'URL - the SID (strong mapping)', p.url, true, !!p.url);
+    f.mail = tick(c2, 'Mail (RFC 822 name)', p.mail, false, !!p.mail);
+    c2.appendChild(el('h4', 'csr-sh', 'Key usage'));
+    f.client = tick(c2, 'Client Authentication', '1.3.6.1.5.5.7.3.2', true);
+    f.smartcard = tick(c2, 'Smart Card Logon', '1.3.6.1.4.1.311.20.2.2', true);
+    c2.appendChild(el('p', 'csr-h', 'Digital signature' + ' - and key encipherment for RSA - as critical key usage.'));
+    grid.appendChild(c1); grid.appendChild(c2);
+    body.appendChild(grid);
+    if (!p.upn) body.appendChild(el('p', 'note bad', 'No UPN: a certificate made from this request cannot sign in here.'));
+    body.appendChild(el('p', 'note', 'Where the template in AD CS builds the Subject from AD, what is asked here is replaced by what AD has - the SID then comes as its own extension.'));
+    f.out = el('div', 'csr-out');
+    body.appendChild(f.out);
+  }, [{words: 'Make and download', cls: 'primary', icon: 'download', go: function (b) {
+    var o = {kind: f.kind.value, cn: f.cn.value.trim(), o: f.o.value.trim(), ou: f.ou.value.trim(),
+      c: f.c.value.trim().toUpperCase(), upn: f.upn.checked ? p.upn : '', url: f.url.checked ? p.url : '',
+      mail: f.mail.checked ? p.mail : '', client: f.client.checked, smartcard: f.smartcard.checked};
+    var base = String(p.sam || 'request').replace(/[^A-Za-z0-9._-]/g, '_');
+    busy(b, true);
+    csrMake(o).then(function (r) {
+      busy(b, false);
+      saveText(base + '.csr', r.csr);
+      setTimeout(function () { saveText(base + '.key', r.key); }, 300);
+      clear(f.out);
+      f.out.appendChild(el('p', 'note good', 'Saved: ' + base + '.csr and ' + base + '.key. The key was made here and is now only in that file - keep it, nobody can make it again.'));
+      ssoCode(f.out, base + '.csr', r.csr, []);
+      ssoCode(f.out, 'Next', 'certreq -submit -attrib "CertificateTemplate:<template>" ' + base + '.csr ' + base + '.cer\n'
+        + '# onto a YubiKey (slot 9a, PIV authentication):\n'
+        + 'ykman piv keys import 9a ' + base + '.key\n'
+        + 'ykman piv certificates import 9a ' + base + '.cer', [base]);
+      toast('the request and its key are saved', 'good');
+    }).catch(function (e) { busy(b, false); oops(e); });
+  }}, {words: 'Close', close: true}], 'medium');
 }
 function certLoginPut() {
   var area;
@@ -31071,6 +31385,62 @@ function ssoCode(host, caption, text, marks) {
     pre.appendChild(typeof p === 'string' ? document.createTextNode(p) : el('span', 'hl', p.hl));
   });
   host.appendChild(pre);
+}
+/* Making the keytab in AD with AD's own names (1.10.352): asked when the
+   card is drawn, once a minute at most, by an account that may change it. */
+var KAD = {got: null, at: 0, asking: false, key: ''};
+function krbAdAsk(d, names, force) {
+  if (!d.may || !d.directory || KAD.asking) return;
+  var key = names.join(',');
+  if (!force && KAD.key === key && Date.now() - KAD.at < 60000) return;
+  KAD.asking = true; KAD.key = key; KAD.at = Date.now();
+  api('kerberos', {action: 'ad', names: names}, {quiet: true}).then(function (x) {
+    KAD.got = x;
+  }).catch(function (e) {
+    KAD.got = {from_ad: false, said: (e && e.message) || String(e), accounts: []};
+  }).then(function () {
+    KAD.asking = false;
+    if (SI.krb && $('krb-body')) drawKerberos(SI.krb);
+  });
+}
+function krbAdLine(d, ad, nb, realmU, onAcc) {
+  var box = el('div', 'krb-ad ' + (ad ? 'ok' : 'warn'));
+  var txt = el('div', 'krb-ad-t');
+  if (ad) {
+    txt.appendChild(el('b', '', 'Read from AD: '));
+    txt.appendChild(noI18n(el('span', 'mono', nb)));
+    txt.appendChild(el('span', '', ' - the domain’s NetBIOS name, realm '));
+    txt.appendChild(noI18n(el('span', 'mono', realmU)));
+    if (onAcc.length) {
+      txt.appendChild(el('span', '', ', the SPN on '));
+      txt.appendChild(noI18n(el('span', 'mono', nb + '\\' + onAcc[0].sam)));
+      if (onAcc[0].disabled) txt.appendChild(el('span', 'tag crit', 'switched off'));
+      else if (!onAcc[0].aes) txt.appendChild(el('span', 'tag warn', 'AES 256 not allowed'));
+    } else {
+      txt.appendChild(el('span', '', '. No account has the SPN yet: the account’s name below is only an example.'));
+    }
+  } else if (!d.directory) {
+    txt.appendChild(el('span', '', 'No directory set: the names below are examples - set the directory above and they are read from AD.'));
+  } else if (!d.may) {
+    txt.appendChild(el('span', '', 'The names below are as last read from AD - a full admin reads them again.'));
+  } else if (KAD.got && KAD.got.said) {
+    txt.appendChild(el('b', '', 'Not read from AD: '));
+    txt.appendChild(noI18n(el('span', '', KAD.got.said)));
+    txt.appendChild(el('span', '', ' - the names below are a guess: check them before running it.'));
+  } else {
+    txt.appendChild(el('span', '', 'Reading the names from AD…'));
+  }
+  box.appendChild(txt);
+  if (d.may && d.directory) {
+    var again = cmdButton('Read from AD again', 'refresh', 'small');
+    again.onclick = function () {
+      var names = (KAD.key || '').split(',').filter(Boolean);
+      busy(again, true);
+      krbAdAsk(d, names.length ? names : [location.hostname], true);
+    };
+    box.appendChild(again);
+  }
+  return box;
 }
 function drawKerberos(d) {
   SI.krb = d;
@@ -31193,14 +31563,33 @@ function drawKerberos(d) {
 
   ssoHead(host, 'Making the keytab in AD');
   host.appendChild(el('p', 'note', 'On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, AES allowed), the SPN of each name, and the keytab of the first one - the others are served by the same key. Changing the account’s password later makes a new key version: make the keytab again.'));
-  var nb = d.netbios || 'CORP';
-  var acct = nb + '\\svc-isemon-http';
-  var realmU = d.realm || 'CORP.EXAMPLE';
-  var cmd = '# 1. the account (once): ' + acct + ', "This account supports Kerberos AES 256 bit encryption"\n'
-    + names.filter(function (n) { return !isAddr(n[0]); }).map(function (n) { return 'setspn -S HTTP/' + n[0] + ' ' + acct + '\n'; }).join('')
-    + 'ktpass -princ HTTP/' + names[0][0] + '@' + realmU + ' -mapuser ' + acct
-    + ' -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab';
-  ssoCode(host, 'cmd.exe on a domain controller', cmd, [acct, realmU]);
+  /* The names as AD itself has them (1.10.352): the NetBIOS name of the
+     domain's crossRef (MERIT_NT where the domain is merit.cz - never the
+     first label guessed), the realm, and the account each SPN is on. */
+  var byName = names.filter(function (n) { return !isAddr(n[0]); }).map(function (n) { return n[0]; });
+  krbAdAsk(d, byName);
+  var ad = KAD.got && KAD.got.from_ad ? KAD.got : null;
+  var kept = d.ad_names || {};
+  var nb = (ad && ad.netbios) || kept.netbios || d.netbios || 'CORP';
+  var realmU = (ad && ad.realm) || kept.realm || d.realm || 'CORP.EXAMPLE';
+  var accs = (ad && ad.accounts) || [];
+  var onAcc = accs.filter(function (a) { return a.sam; });
+  var sam = onAcc.length ? onAcc[0].sam : 'svc-isemon-http';
+  var acct = nb + '\\' + sam;
+  host.appendChild(krbAdLine(d, ad, nb, realmU, onAcc));
+  var lines = [];
+  if (onAcc.length) lines.push('# 1. the account is there: ' + acct + ' - "This account supports Kerberos AES 256 bit encryption"'
+    + (onAcc[0].aes ? ' is on' : ' must be on'));
+  else lines.push('# 1. the account (once): ' + acct + ', "This account supports Kerberos AES 256 bit encryption"');
+  byName.forEach(function (n) {
+    var a = accs.filter(function (x) { return x.name === n; })[0];
+    if (a && a.sam && a.sam.toLowerCase() === sam.toLowerCase()) lines.push('#    HTTP/' + n + ' is on ' + acct + ' already');
+    else if (a && a.sam) lines.push('#    HTTP/' + n + ' is on ' + nb + '\\' + a.sam + ' - another account: one key cannot serve both');
+    else lines.push('setspn -S HTTP/' + n + ' ' + acct);
+  });
+  lines.push('ktpass -princ HTTP/' + names[0][0] + '@' + realmU + ' -mapuser ' + acct
+    + ' -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab');
+  ssoCode(host, 'cmd.exe on a domain controller', lines.join('\n'), [acct, realmU]);
 
   ssoHead(host, 'Telling the browsers');
   var list = names.filter(function (n) { return !isAddr(n[0]); }).map(function (n) { return n[0]; });

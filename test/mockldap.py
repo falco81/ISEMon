@@ -52,6 +52,18 @@ PARTITIONS = {
 }
 
 
+# The domain's crossRef (1.10.352): its NetBIOS name is not the first label
+# of its DNS name - as at many a site (MERIT_NT for merit.cz).
+CROSSREFS = {
+    'CN=CORPNET_NT,CN=Partitions,CN=Configuration,DC=corpnet,DC=loc': {
+        'objectClass': ['top', 'crossRef'],
+        'nCName': ['DC=corpnet,DC=loc'],
+        'nETBIOSName': ['CORPNET_NT'],
+        'dnsRoot': ['corpnet.loc'],
+    },
+}
+
+
 # One small domain: two people, three groups, one of them inside another.
 BASE = 'DC=corpnet,DC=loc'
 PEOPLE = {
@@ -513,7 +525,13 @@ def serve(port=0, tls=None, stop=None):
             # Active Directory answers both, and what it says about its name
             # suffixes is how a program can know which names belong here
             # without anybody typing them in.
-            if not base or base.lower().startswith('cn=partitions,'):
+            # ...the container itself only (1.10.352): one level below it are
+            # the crossRefs, each domain's NetBIOS name, searched as such.
+            try:
+                _whole = isemon._ber_int_of(_scope) != 0
+            except Exception:
+                _whole = False
+            if not base or (base.lower().startswith('cn=partitions,') and not _whole):
                 one = ROOTDSE if not base else PARTITIONS
                 pairs = b''
                 for name, values in one.items():
@@ -532,6 +550,7 @@ def serve(port=0, tls=None, stop=None):
             everything.update(CONTROLLERS)
             everything.update(POLICIES)
             everything.update(SITES)
+            everything.update(CROSSREFS)
             # Every domain controller has a ceiling of its own on how many
             # entries it will hand back in one answer - a thousand on Active
             # Directory unless somebody has changed it - and says "there is

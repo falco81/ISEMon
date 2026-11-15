@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.351",
+  "version": "1.10.352",
   "made": "2026-11-15",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -127,6 +127,10 @@
   "s.1st.efc920c5": {
    "source": "1st",
    "text": "1st"
+  },
+  "s.2-5-29-17-text.6b67a7c2": {
+   "source": "2.5.29.17 = \"(text)\"",
+   "text": "2.5.29.17 = \"(text)\""
   },
   "s.2-in-nxlog-conf-beside-the.38dfa868": {
    "source": "2. In nxlog.conf, beside the Security input",
@@ -448,9 +452,17 @@
    "source": "a certificate expired or expiring",
    "text": "a certificate expired or expiring"
   },
+  "s.a-certificate-for-a-person.52b13d6e": {
+   "source": "A certificate for a person",
+   "text": "A certificate for a person"
+  },
   "s.a-certificate-for-the-dashboard.17d7d6d2": {
    "source": "A certificate for the dashboard",
    "text": "A certificate for the dashboard"
+  },
+  "s.a-certificate-issued-online-by-ad.faa4c236": {
+   "source": "A certificate issued online by AD CS from a template gets the SID by itself (the extension 1.3.6.1.4.1.311.25.2). One from an offline request, or one whose Subject is supplied in the request, carries it only as this URL - put it in, or strong mapping refuses it.",
+   "text": "A certificate issued online by AD CS from a template gets the SID by itself (the extension 1.3.6.1.4.1.311.25.2). One from an offline request, or one whose Subject is supplied in the request, carries it only as this URL - put it in, or strong mapping refuses it."
   },
   "s.a-certificate-of-the-domain-s.a1f3cdf3": {
    "source": "A certificate of the domain’s authority (AD CS) - on a smart card, a YubiKey or in the computer - signs its person in without a password. The browser goes to a port of its own, where nginx asks for a certificate (never on 443: nobody who opens the pages is asked for one), offers it - Windows asks for the card’s PIN - and comes back signed in. isemon checks it: the chain to the authorities below, the dates, a key usage for signing in, the CRL, the person in the directory above (by the UPN in the certificate, and its SID) and their groups. Face ID, when it is on, is asked after it just the same.",
@@ -1816,6 +1828,10 @@
    "source": "a tunnel through the proxy",
    "text": "a tunnel through the proxy"
   },
+  "s.a-url-and-a-mail-are.28eec608": {
+   "source": "a URL and a mail are plain ASCII",
+   "text": "a URL and a mail are plain ASCII"
+  },
   "s.a-user-name.505713c8": {
    "source": "a user name",
    "text": "a user name"
@@ -1907,6 +1923,10 @@
   "s.a-yubikey-piv-enrolled-from-windows.0da543c3": {
    "source": "A YubiKey (PIV): enrolled from Windows with the template, or with YubiKey Manager - a request from slot 9a signed by the authority, imported back to 9a.",
    "text": "A YubiKey (PIV): enrolled from Windows with the template, or with YubiKey Manager - a request from slot 9a signed by the authority, imported back to 9a."
+  },
+  "s.a-yubikey-piv-takes-p-256.f8d3bf2a": {
+   "source": "A YubiKey (PIV) takes P-256, P-384 and RSA 2048 in every version; an iPad signs with neither RSA 4096 nor P-384 on some cards.",
+   "text": "A YubiKey (PIV) takes P-256, P-384 and RSA 2048 in every version; an iPad signs with neither RSA 4096 nor P-384 on some cards."
   },
   "s.a-za-z.961e299f": {
    "source": "(?<![A-Za-z])",
@@ -2360,6 +2380,10 @@
    "source": "AD-User-Resolved-Identities",
    "text": "AD-User-Resolved-Identities"
   },
+  "s.ad.4aeb195c": {
+   "source": "ad",
+   "text": "ad"
+  },
   "s.ad25.f84dcdd1": {
    "source": "ad25",
    "text": "ad25"
@@ -2664,6 +2688,10 @@
    "source": "ADVPN shortcut",
    "text": "ADVPN shortcut"
   },
+  "s.aes-256-not-allowed.b471b9d5": {
+   "source": "AES 256 not allowed",
+   "text": "AES 256 not allowed"
+  },
   "s.afghanistan.c6915368": {
    "source": "Afghanistan",
    "text": "Afghanistan"
@@ -2767,6 +2795,10 @@
   "s.all-firewalls.6b8017ef": {
    "source": "All firewalls",
    "text": "All firewalls"
+  },
+  "s.all-of-it-copied.a3e4059c": {
+   "source": "all of it copied",
+   "text": "all of it copied"
   },
   "s.all-of-it.d5766f3f": {
    "source": "all of it",
@@ -5524,6 +5556,10 @@
    "source": "certificate pinned",
    "text": "certificate pinned"
   },
+  "s.certificate-request.e05b7263": {
+   "source": "CERTIFICATE REQUEST",
+   "text": "CERTIFICATE REQUEST"
+  },
   "s.certificate-system-authorities.a616eedf": {
    "source": "certificate: system authorities",
    "text": "certificate: system authorities"
@@ -5599,6 +5635,10 @@
   "s.certlogin.f29381d4": {
    "source": "certlogin",
    "text": "certlogin"
+  },
+  "s.certreq-submit-attrib-certificatetemplate.1579c8a7": {
+   "source": "certreq -submit -attrib \"CertificateTemplate:",
+   "text": "certreq -submit -attrib \"CertificateTemplate:"
   },
   "s.certs.c7eb5bbc": {
    "source": "certs",
@@ -6000,6 +6040,10 @@
    "source": "City",
    "text": "City"
   },
+  "s.cl.ef3ecccf": {
+   "source": "cl",
+   "text": "cl"
+  },
   "s.claude.f1dda22f": {
    "source": "claude",
    "text": "claude"
@@ -6124,6 +6168,10 @@
    "source": "Click to pause or resume the live updates",
    "text": "Click to pause or resume the live updates"
   },
+  "s.client-authentication.a9a4c5e0": {
+   "source": "Client Authentication",
+   "text": "Client Authentication"
+  },
   "s.client-certificate.4ef052a7": {
    "source": "Client certificate",
    "text": "Client certificate"
@@ -6187,6 +6235,14 @@
   "s.cn-ru.733cb76c": {
    "source": "CN,RU",
    "text": "CN,RU"
+  },
+  "s.cn.5065f368": {
+   "source": "CN",
+   "text": "CN"
+  },
+  "s.cn.b0bc9abd": {
+   "source": "cn",
+   "text": "cn"
   },
   "s.code.e6fb0621": {
    "source": "code",
@@ -6259,6 +6315,10 @@
   "s.comment.153d7a58": {
    "source": "Comment",
    "text": "Comment"
+  },
+  "s.common-name-from-the-account-s.cbfc2843": {
+   "source": "Common name - from the account’s cn",
+   "text": "Common name - from the account’s cn"
   },
   "s.comoros.e5bb59a2": {
    "source": "Comoros",
@@ -6528,6 +6588,10 @@
    "source": "Copies",
    "text": "Copies"
   },
+  "s.copy-all.9da9f044": {
+   "source": "Copy all",
+   "text": "Copy all"
+  },
   "s.copy-it.b56def7b": {
    "source": "Copy it",
    "text": "Copy it"
@@ -6683,6 +6747,10 @@
   "s.country-ranges.b7d5bdcd": {
    "source": "country ranges",
    "text": "country ranges"
+  },
+  "s.country-two-letters-optional.127c669f": {
+   "source": "Country, two letters - optional",
+   "text": "Country, two letters - optional"
   },
   "s.country.8e68b3e5": {
    "source": "country",
@@ -7328,6 +7396,10 @@
    "source": "digest",
    "text": "digest"
   },
+  "s.digital-signature-and-key-encipherment-for.c873ae40": {
+   "source": "Digital signature - and key encipherment for RSA - as critical key usage.",
+   "text": "Digital signature - and key encipherment for RSA - as critical key usage."
+  },
   "s.dim.4815cec8": {
    "source": "dim",
    "text": "dim"
@@ -7339,6 +7411,10 @@
   "s.dir.7ee737c8": {
    "source": "dir",
    "text": "dir"
+  },
+  "s.dir2.130c2beb": {
+   "source": "dir2",
+   "text": "dir2"
   },
   "s.direction.57077e98": {
    "source": "direction",
@@ -7407,6 +7483,10 @@
   "s.distance.42320809": {
    "source": "Distance",
    "text": "Distance"
+  },
+  "s.distinguished-name-dn.107be321": {
+   "source": "distinguished_name = dn",
+   "text": "distinguished_name = dn"
   },
   "s.djibouti.60a8b0c6": {
    "source": "Djibouti",
@@ -7900,6 +7980,10 @@
    "source": "e.g. 2001:db8::10/64",
    "text": "e.g. 2001:db8::10/64"
   },
+  "s.e-g-example-s-r-o.83ccb889": {
+   "source": "e.g. Example s.r.o.",
+   "text": "e.g. Example s.r.o."
+  },
   "s.e-g-hq.68ea2984": {
    "source": "e.g. hq",
    "text": "e.g. hq"
@@ -8012,6 +8096,14 @@
    "source": "ec384",
    "text": "ec384"
   },
+  "s.ecc-p-256-yubikey-ipad-windows.fa53fa08": {
+   "source": "ECC P-256 - YubiKey, iPad, Windows",
+   "text": "ECC P-256 - YubiKey, iPad, Windows"
+  },
+  "s.ecc-p-384.b3e56422": {
+   "source": "ECC P-384",
+   "text": "ECC P-384"
+  },
   "s.ecdhe-ecdsa-aes128-gcm-sha256-ecdhe.9d9f6e06": {
    "source": "ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256 ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-CHACHA20-POLY1305 ECDHE-RSA-CHACHA20-POLY1305",
    "text": "ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256 ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-CHACHA20-POLY1305 ECDHE-RSA-CHACHA20-POLY1305"
@@ -8059,6 +8151,10 @@
   "s.ecdsa-p-384.792268a1": {
    "source": "ECDSA P-384",
    "text": "ECDSA P-384"
+  },
+  "s.ecdsa.2ff063a2": {
+   "source": "ECDSA",
+   "text": "ECDSA"
   },
   "s.ecuador.09f199d2": {
    "source": "Ecuador",
@@ -9720,6 +9816,10 @@
    "source": "ext4",
    "text": "ext4"
   },
+  "s.extendedkeyusage-clientauth-1-3-6-1.06e57dc1": {
+   "source": "extendedKeyUsage = clientAuth, 1.3.6.1.4.1.311.20.2.2",
+   "text": "extendedKeyUsage = clientAuth, 1.3.6.1.4.1.311.20.2.2"
+  },
   "s.external-advanced-save-and.dd18f4c0": {
    "source": "External (advanced). Save and",
    "text": "External (advanced). Save and"
@@ -10291,6 +10391,10 @@
   "s.find-anything.afeaab66": {
    "source": "Find anything",
    "text": "Find anything"
+  },
+  "s.find-in-ad.e2e1a59e": {
+   "source": "Find in AD",
+   "text": "Find in AD"
   },
   "s.find-the-groups.6a9747b2": {
    "source": "Find the groups",
@@ -12768,6 +12872,10 @@
    "source": "In AD CS",
    "text": "In AD CS"
   },
+  "s.in-ad.f4eeafb0": {
+   "source": "in AD",
+   "text": "in AD"
+  },
   "s.in-an-ordinary-firewall-policy-from.3b4e9748": {
    "source": "In an ordinary firewall policy from the internet side, put",
    "text": "In an ordinary firewall policy from the internet side, put"
@@ -13331,6 +13439,10 @@
   "s.is-not-the-same-as-empty.4c7bf700": {
    "source": "is not the same as empty: nothing is known about what it is carrying, and the words behind it are whatever ssh said.",
    "text": "is not the same as empty: nothing is known about what it is carrying, and the words behind it are whatever ssh said."
+  },
+  "s.is-on.e465e98a": {
+   "source": "is on",
+   "text": "is on"
   },
   "s.is-one-of-those-under.602e3af7": {
    "source": "is one of those under",
@@ -14428,6 +14540,10 @@
    "source": "Jersey",
    "text": "Jersey"
   },
+  "s.jnovak-domain-jnovak-jnovak-example-cz.79197b46": {
+   "source": "jnovak, DOMAIN\\jnovak, jnovak@example.cz or their mail",
+   "text": "jnovak, DOMAIN\\jnovak, jnovak@example.cz or their mail"
+  },
   "s.jnovak-example-cz.8e752e43": {
    "source": "jnovak@example.cz",
    "text": "jnovak@example.cz"
@@ -14744,6 +14860,10 @@
    "source": "kernel",
    "text": "kernel"
   },
+  "s.key-usage.20187c04": {
+   "source": "Key usage",
+   "text": "Key usage"
+  },
   "s.key-value.dc30e0fa": {
    "source": "key=value",
    "text": "key=value"
@@ -14768,6 +14888,10 @@
    "source": "keygen",
    "text": "keygen"
   },
+  "s.keylength-2048.36256160": {
+   "source": "KeyLength = 2048",
+   "text": "KeyLength = 2048"
+  },
   "s.keynote.88d14500": {
    "source": "keynote",
    "text": "keynote"
@@ -14788,9 +14912,21 @@
    "source": "Keys",
    "text": "Keys"
   },
+  "s.keyspec-1.b59f6f9d": {
+   "source": "KeySpec = 1",
+   "text": "KeySpec = 1"
+  },
   "s.keytab.2713bf0a": {
    "source": "keytab",
    "text": "keytab"
+  },
+  "s.keyusage-0xa0.34d87ded": {
+   "source": "KeyUsage = 0xa0",
+   "text": "KeyUsage = 0xa0"
+  },
+  "s.keyusage-critical-digitalsignature-keyencipherment.7c4dd62c": {
+   "source": "keyUsage = critical, digitalSignature, keyEncipherment",
+   "text": "keyUsage = critical, digitalSignature, keyEncipherment"
   },
   "s.kind-dump.17159a62": {
    "source": "&kind=dump",
@@ -14851,6 +14987,10 @@
   "s.kr.6e046e1d": {
    "source": "KR",
    "text": "KR"
+  },
+  "s.krb.75e87f4a": {
+   "source": "krb",
+   "text": "krb"
   },
   "s.kuwait.93295b0c": {
    "source": "Kuwait",
@@ -16080,6 +16220,10 @@
    "source": "machine",
    "text": "machine"
   },
+  "s.machinekeyset-false.077665c8": {
+   "source": "MachineKeySet = FALSE",
+   "text": "MachineKeySet = FALSE"
+  },
   "s.machines-1.2dc516c8": {
    "source": "&machines=1",
    "text": "&machines=1"
@@ -16232,6 +16376,18 @@
    "source": "Mail of the account at the CA",
    "text": "Mail of the account at the CA"
   },
+  "s.mail-rfc-822-name.9c67ebdc": {
+   "source": "Mail (RFC 822 name)",
+   "text": "Mail (RFC 822 name)"
+  },
+  "s.mail.1d6e1cf7": {
+   "source": "mail",
+   "text": "mail"
+  },
+  "s.mail.92379cbb": {
+   "source": "Mail",
+   "text": "Mail"
+  },
   "s.main.b28b7af6": {
    "source": "main",
    "text": "main"
@@ -16288,6 +16444,10 @@
    "source": "Make a new key",
    "text": "Make a new key"
   },
+  "s.make-a-request-csr.a00c255c": {
+   "source": "Make a request (CSR)…",
+   "text": "Make a request (CSR)…"
+  },
   "s.make-a-strong-one.f704e44d": {
    "source": "Make a strong one",
    "text": "Make a strong one"
@@ -16307,6 +16467,10 @@
   "s.make-an-account.f35c4e63": {
    "source": "Make an account",
    "text": "Make an account"
+  },
+  "s.make-and-download.047a053b": {
+   "source": "Make and download",
+   "text": "Make and download"
   },
   "s.make-it-and-put-it-in.5af41155": {
    "source": "Make it and put it in",
@@ -16967,6 +17131,10 @@
   "s.mtu.c735835f": {
    "source": "MTU",
    "text": "MTU"
+  },
+  "s.must-be-on.8f93f2a0": {
+   "source": "must be on",
+   "text": "must be on"
   },
   "s.must-change.2dfeca97": {
    "source": "must change",
@@ -17644,6 +17812,10 @@
    "source": "No directory is set up, so there is nothing to ask. With one, this page can weigh an alarm by what the account actually is.",
    "text": "No directory is set up, so there is nothing to ask. With one, this page can weigh an alarm by what the account actually is."
   },
+  "s.no-directory-set-the-names-below.24cad2ca": {
+   "source": "No directory set: the names below are examples - set the directory above and they are read from AD.",
+   "text": "No directory set: the names below are examples - set the directory above and they are read from AD."
+  },
   "s.no-directory-set.2854547e": {
    "source": "No directory set",
    "text": "No directory set"
@@ -17912,6 +18084,10 @@
    "source": "no shell",
    "text": "no shell"
   },
+  "s.no-sid-read.3681b3b0": {
+   "source": "no SID read",
+   "text": "no SID read"
+  },
   "s.no-sign-in.23f2e4d0": {
    "source": "no sign-in",
    "text": "no sign-in"
@@ -17951,6 +18127,10 @@
   "s.no-such-job.de5d35bb": {
    "source": "no such job",
    "text": "no such job"
+  },
+  "s.no-such-kind-of-key.cfa73f42": {
+   "source": "no such kind of key",
+   "text": "no such kind of key"
   },
   "s.no-such-line.1b72fc33": {
    "source": "no such line",
@@ -18007,6 +18187,14 @@
   "s.no-tunnel-matches.0361881c": {
    "source": "No tunnel matches",
    "text": "No tunnel matches"
+  },
+  "s.no-upn-a-certificate-made-from.14ab975e": {
+   "source": "No UPN: a certificate made from this request cannot sign in here.",
+   "text": "No UPN: a certificate made from this request cannot sign in here."
+  },
+  "s.no-upn.043811f9": {
+   "source": "no UPN",
+   "text": "no UPN"
   },
   "s.no-user-name-and-password-or.5360dc02": {
    "source": "no user name and password, or wrong ones",
@@ -18647,6 +18835,10 @@
   "s.not-read-by-isemon.22c6a44a": {
    "source": "not read by isemon",
    "text": "not read by isemon"
+  },
+  "s.not-read-from-ad.7ff1d449": {
+   "source": "Not read from AD:",
+   "text": "Not read from AD:"
   },
   "s.not-read-root-s-half-is.1cbbe6ef": {
    "source": "Not read: root’s half is not installed yet.",
@@ -19580,6 +19772,10 @@
    "source": "Objects → Object Management → Security Intelligence → Network Lists and Feeds → Add Network Lists and Feeds",
    "text": "Objects → Object Management → Security Intelligence → Network Lists and Feeds → Add Network Lists and Feeds"
   },
+  "s.objectsid-of-the-account.3053d476": {
+   "source": "objectSid of the account",
+   "text": "objectSid of the account"
+  },
   "s.ocsp-responder-of-its-own.5af0df68": {
    "source": "OCSP responder of its own",
    "text": "OCSP responder of its own"
@@ -19739,6 +19935,14 @@
   "s.offset.ce667716": {
    "source": "Offset",
    "text": "Offset"
+  },
+  "s.oid-1-3-6-1-4.35e9780d": {
+   "source": "OID = 1.3.6.1.4.1.311.20.2.2",
+   "text": "OID = 1.3.6.1.4.1.311.20.2.2"
+  },
+  "s.oid-1-3-6-1-5.583f5beb": {
+   "source": "OID = 1.3.6.1.5.5.7.3.2",
+   "text": "OID = 1.3.6.1.5.5.7.3.2"
   },
   "s.ok-then-open-it-again-and.fd94c82a": {
    "source": "OK, then open it again and press",
@@ -20600,6 +20804,10 @@
    "source": "only by hand",
    "text": "only by hand"
   },
+  "s.only-certificates-with-the-sid-are.42f3fed1": {
+   "source": "Only certificates with the SID are taken here (strong), and no SID was read for this account.",
+   "text": "Only certificates with the SID are taken here (strong), and no SID was read for this account."
+  },
   "s.only-channel-binding-counted-so-far.064b3d6a": {
    "source": "only channel binding counted so far",
    "text": "only channel binding counted so far"
@@ -20960,6 +21168,10 @@
    "source": "Only when it was locked with another password than the one set here now.",
    "text": "Only when it was locked with another password than the one set here now."
   },
+  "s.only-where-the-template-asks-for.e1b0f8eb": {
+   "source": "only where the template asks for it",
+   "text": "only where the template asks for it"
+  },
   "s.only-windows-signs-in-here-no.fb51a145": {
    "source": "Only Windows signs in here: no password is set or changed on these pages. The way back is root’s, on the server: isemon --set password_off=0.",
    "text": "Only Windows signs in here: no password is set or changed on these pages. The way back is root’s, on the server: isemon --set password_off=0."
@@ -21284,9 +21496,17 @@
    "source": "Ordinary — it happened and nothing was wrong with it.",
    "text": "Ordinary — it happened and nothing was wrong with it."
   },
+  "s.organisation-optional.081991fa": {
+   "source": "Organisation - optional",
+   "text": "Organisation - optional"
+  },
   "s.organisation.6e99c1d3": {
    "source": "Organisation",
    "text": "Organisation"
+  },
+  "s.organisational-unit-optional.8ba8f971": {
+   "source": "Organisational unit - optional",
+   "text": "Organisational unit - optional"
   },
   "s.ospf.261255a6": {
    "source": "ospf",
@@ -21311,6 +21531,10 @@
   "s.other-domains-it-trusts.6115661c": {
    "source": "Other domains it trusts",
    "text": "Other domains it trusts"
+  },
+  "s.other-name-principal-name-1-3.4083cd4d": {
+   "source": "Other name: Principal name (1.3.6.1.4.1.311.20.2.3)",
+   "text": "Other name: Principal name (1.3.6.1.4.1.311.20.2.3)"
   },
   "s.other-names.b16b92d6": {
    "source": "Other names",
@@ -21367,6 +21591,10 @@
   "s.otp2-example-net.b24641c5": {
    "source": "otp2.example.net",
    "text": "otp2.example.net"
+  },
+  "s.ou.d29a663d": {
+   "source": "OU",
+   "text": "OU"
   },
   "s.our-country-ranges-come-off.51f00d96": {
    "source": "Our country ranges come off",
@@ -22040,6 +22268,10 @@
    "source": "PKCS#7",
    "text": "PKCS#7"
   },
+  "s.pkcs8.52e64397": {
+   "source": "pkcs8",
+   "text": "pkcs8"
+  },
   "s.pkg-static-add-https-github-com.e2ee4ebe": {
    "source": "pkg-static add https://github.com/jaredhendrickson13/pfsense-api/releases/latest/download/pfSense-2.8.1-pkg-RESTAPI.pkg",
    "text": "pkg-static add https://github.com/jaredhendrickson13/pfsense-api/releases/latest/download/pfSense-2.8.1-pkg-RESTAPI.pkg"
@@ -22360,6 +22592,10 @@
    "source": "Principal",
    "text": "Principal"
   },
+  "s.private-key.4e23b8a4": {
+   "source": "PRIVATE KEY",
+   "text": "PRIVATE KEY"
+  },
   "s.private-key.b3631886": {
    "source": "private key",
    "text": "private key"
@@ -22416,6 +22652,10 @@
    "source": "Program",
    "text": "Program"
   },
+  "s.prompt-no.23643b57": {
+   "source": "prompt = no",
+   "text": "prompt = no"
+  },
   "s.proto.dfe805b7": {
    "source": "proto",
    "text": "proto"
@@ -22455,6 +22695,10 @@
   "s.provider.7ceee3f3": {
    "source": "Provider",
    "text": "Provider"
+  },
+  "s.providername-microsoft-software-key-storage-provider.3570014e": {
+   "source": "ProviderName = \"Microsoft Software Key Storage Provider\"",
+   "text": "ProviderName = \"Microsoft Software Key Storage Provider\""
   },
   "s.proxy-policy-name.39df38dc": {
    "source": "Proxy-Policy-Name",
@@ -23064,6 +23308,14 @@
    "source": "Read from Active Directory, never written to it. None of this is a log: it is what the domain itself says it is, and it is what the patterns above are weighed against — a hundred refusals against one account means one thing where the domain locks after five and quite another where it never locks.",
    "text": "Read from Active Directory, never written to it. None of this is a log: it is what the domain itself says it is, and it is what the patterns above are weighed against — a hundred refusals against one account means one thing where the domain locks after five and quite another where it never locks."
   },
+  "s.read-from-ad-again.decfde8f": {
+   "source": "Read from AD again",
+   "text": "Read from AD again"
+  },
+  "s.read-from-ad.661c03c1": {
+   "source": "Read from AD:",
+   "text": "Read from AD:"
+  },
   "s.read-from-the-download-record-belonging.6b215fa1": {
    "source": "Read from the download record belonging to this very session — they are exactly the rules this session was given, as they were at that moment. Editing the ACL on ISE afterwards changes what the next login is handed and nothing about this one: every download is kept as it happened, so an old login goes on showing the old rules and a new login shows the new ones.",
    "text": "Read from the download record belonging to this very session — they are exactly the rules this session was given, as they were at that moment. Editing the ACL on ISE afterwards changes what the next login is handed and nothing about this one: every download is kept as it happened, so an old login goes on showing the old rules and a new login shows the new ones."
@@ -23247,6 +23499,10 @@
   "s.reading-the-keys.0dc2065c": {
    "source": "Reading the keys…",
    "text": "Reading the keys…"
+  },
+  "s.reading-the-names-from-ad.ae9ec628": {
+   "source": "Reading the names from AD…",
+   "text": "Reading the names from AD…"
   },
   "s.reading-the-users.3641d499": {
    "source": "Reading the users…",
@@ -23680,6 +23936,14 @@
    "source": "reports are different.",
    "text": "reports are different."
   },
+  "s.req-cnf-openssl-req-new-key.2deb6562": {
+   "source": "req.cnf - openssl req -new -key key.pem -config req.cnf -out request.csr",
+   "text": "req.cnf - openssl req -new -key key.pem -config req.cnf -out request.csr"
+  },
+  "s.req-extensions-ext.85031332": {
+   "source": "req_extensions = ext",
+   "text": "req_extensions = ext"
+  },
   "s.reqtype.5a9cffe9": {
    "source": "reqtype",
    "text": "reqtype"
@@ -23687,6 +23951,10 @@
   "s.request-csr.fe7f2077": {
    "source": "Request (CSR)",
    "text": "Request (CSR)"
+  },
+  "s.request-inf-certreq-new-request-inf.613b7165": {
+   "source": "request.inf - certreq -new request.inf request.req",
+   "text": "request.inf - certreq -new request.inf request.req"
   },
   "s.request.088e29b0": {
    "source": "request",
@@ -23703,6 +23971,10 @@
   "s.requests.f7194e6a": {
    "source": "Requests",
    "text": "Requests"
+  },
+  "s.requesttype-pkcs10.4504544a": {
+   "source": "RequestType = PKCS10",
+   "text": "RequestType = PKCS10"
   },
   "s.required.1a77d416": {
    "source": "required",
@@ -24204,6 +24476,10 @@
    "source": "RSA 2048 (RS256)",
    "text": "RSA 2048 (RS256)"
   },
+  "s.rsa-2048-the-widest.5f6eb05d": {
+   "source": "RSA 2048 - the widest",
+   "text": "RSA 2048 - the widest"
+  },
   "s.rsa-2048.ed1588c1": {
    "source": "RSA 2048",
    "text": "RSA 2048"
@@ -24215,6 +24491,10 @@
   "s.rsa-3072.e4512e73": {
    "source": "RSA 3072",
    "text": "RSA 3072"
+  },
+  "s.rsa-4096-not-on-an-ipad.88e0569d": {
+   "source": "RSA 4096 - not on an iPad or iPhone",
+   "text": "RSA 4096 - not on an iPad or iPhone"
   },
   "s.rsa-4096-rs256.742c55dd": {
    "source": "RSA 4096 (RS256)",
@@ -24239,6 +24519,10 @@
   "s.rsa4096.02021644": {
    "source": "rsa4096",
    "text": "rsa4096"
+  },
+  "s.rsassa-pkcs1-v1-5.80ce0328": {
+   "source": "RSASSA-PKCS1-v1_5",
+   "text": "RSASSA-PKCS1-v1_5"
   },
   "s.rsyslog-s-encrypted-input-for-otp.dfdb0ed1": {
    "source": "rsyslog's encrypted input for otp's logs, read afresh: on or off, its port, its mode and nodes, the certificate, whether rsyslog listens, the firewall, the plain input on 514 kept, the last change (Settings - The OTP logs - Encrypted receiving)",
@@ -24448,6 +24732,14 @@
    "source": "Saint Vincent and the Grenadines",
    "text": "Saint Vincent and the Grenadines"
   },
+  "s.sam.f16bed56": {
+   "source": "sam",
+   "text": "sam"
+  },
+  "s.samaccountname-as-windows-writes-it.a0433bcc": {
+   "source": "sAMAccountName, as Windows writes it",
+   "text": "sAMAccountName, as Windows writes it"
+  },
   "s.samaccountname.d9ac021a": {
    "source": "sAMAccountName",
    "text": "sAMAccountName"
@@ -24467,6 +24759,14 @@
   "s.san-marino.87fd3bef": {
    "source": "San Marino",
    "text": "San Marino"
+  },
+  "s.san-upn.c9f74d02": {
+   "source": "SAN - UPN",
+   "text": "SAN - UPN"
+  },
+  "s.san-url.55076378": {
+   "source": "SAN - URL",
+   "text": "SAN - URL"
   },
   "s.sandbox.9ed037b8": {
    "source": "sandbox",
@@ -25104,6 +25404,10 @@
    "source": "set srcaddr \"isemon-bans\"",
    "text": "set srcaddr \"isemon-bans\""
   },
+  "s.set-the-directory-above-first-the.7070dfa6": {
+   "source": "Set the directory above first: the person is read from it.",
+   "text": "Set the directory above first: the person is read from it."
+  },
   "s.set-the-password.924f39d4": {
    "source": "Set the password",
    "text": "Set the password"
@@ -25227,6 +25531,10 @@
   "s.sha-256.45792d6b": {
    "source": "SHA-256",
    "text": "SHA-256"
+  },
+  "s.sha-384.5eaccc46": {
+   "source": "SHA-384",
+   "text": "SHA-384"
   },
   "s.shape-base.537ba8e7": {
    "source": "shape/base",
@@ -25356,6 +25664,14 @@
    "source": "si",
    "text": "si"
   },
+  "s.sid.9c4876c8": {
+   "source": "SID",
+   "text": "SID"
+  },
+  "s.sid.da58b0c1": {
+   "source": "sid",
+   "text": "sid"
+  },
   "s.sids-filtered.c7baa17f": {
    "source": "SIDs filtered",
    "text": "SIDs filtered"
@@ -25480,6 +25796,10 @@
    "source": "Sign up at desec.io (free) and confirm the mail.",
    "text": "Sign up at desec.io (free) and confirm the mail."
   },
+  "s.sign.81e9209e": {
+   "source": "sign",
+   "text": "sign"
+  },
   "s.signature.2f32be1d": {
    "source": "Signature",
    "text": "Signature"
@@ -25527,6 +25847,10 @@
   "s.signed-out.a733a3de": {
    "source": "signed out",
    "text": "signed out"
+  },
+  "s.signin.e4569559": {
+   "source": "signin",
+   "text": "signin"
   },
   "s.signing-in-as.0527c749": {
    "source": "Signing in as",
@@ -25683,6 +26007,10 @@
   "s.small-letters-digits-and-32-at.5c3c215c": {
    "source": "Small letters, digits, _ . and -; 32 at most, starting with a letter.",
    "text": "Small letters, digits, _ . and -; 32 at most, starting with a letter."
+  },
+  "s.smart-card-logon.a147ea6e": {
+   "source": "Smart Card Logon",
+   "text": "Smart Card Logon"
   },
   "s.smart-card-required.ae7dbd99": {
    "source": "Smart card required",
@@ -26007,6 +26335,10 @@
   "s.spi.efee56d9": {
    "source": "spi",
    "text": "spi"
+  },
+  "s.spki.0dde1c68": {
+   "source": "spki",
+   "text": "spki"
   },
   "s.split-the-biggest-tables-by-day.c2c53519": {
    "source": "Split the biggest tables by day (PostgreSQL)",
@@ -26508,6 +26840,18 @@
    "source": "sub",
    "text": "sub"
   },
+  "s.subject-alternative-name.7a5e2e27": {
+   "source": "Subject Alternative Name",
+   "text": "Subject Alternative Name"
+  },
+  "s.subject-cn.5eee856f": {
+   "source": "Subject CN",
+   "text": "Subject CN"
+  },
+  "s.subject-name-cn.7d0d6e28": {
+   "source": "Subject Name: CN=…",
+   "text": "Subject Name: CN=…"
+  },
   "s.subject-not-found.20a5c90c": {
    "source": "Subject not found",
    "text": "Subject not found"
@@ -26719,6 +27063,10 @@
   "s.switched-off-above.32a9b1df": {
    "source": "· switched off above",
    "text": "· switched off above"
+  },
+  "s.switched-off-in-ad.52c1d39e": {
+   "source": "switched off in AD",
+   "text": "switched off in AD"
   },
   "s.switched-off-not-one-file-is.f106a681": {
    "source": "Switched off, not one file is opened and nothing anywhere behaves differently.",
@@ -28484,6 +28832,10 @@
    "source": "The Cloudflare API token",
    "text": "The Cloudflare API token"
   },
+  "s.the-cn-is-empty.3265e396": {
+   "source": "the CN is empty",
+   "text": "the CN is empty"
+  },
   "s.the-cocos-islands.5e9e2326": {
    "source": "the Cocos Islands",
    "text": "the Cocos Islands"
@@ -28631,6 +28983,10 @@
   "s.the-country-database.89a1b3a7": {
    "source": "The country database",
    "text": "The country database"
+  },
+  "s.the-country-is-two-capital-letters.a02aca12": {
+   "source": "the country is two capital letters (CZ)",
+   "text": "the country is two capital letters (CZ)"
   },
   "s.the-country-it-came-from-as.cc844587": {
    "source": "the country it came from, as FortiOS names it",
@@ -29139,6 +29495,10 @@
   "s.the-domain-refused-a-password.e45734fb": {
    "source": "the domain refused a password",
    "text": "the domain refused a password"
+  },
+  "s.the-domain-s-netbios-name-realm.618f5919": {
+   "source": "- the domain’s NetBIOS name, realm",
+   "text": "- the domain’s NetBIOS name, realm"
   },
   "s.the-domain-the-record-named.c460e1ec": {
    "source": "the domain the record named,",
@@ -29956,6 +30316,10 @@
    "source": "The key is made here and never leaves this machine except when you download it. Put the public half on the firewall — on RouterOS, /user ssh-keys import public-key-file=… user=… — and it will let this in without a password. Keep the private half safe: anybody holding it can sign in to the firewall as that account.",
    "text": "The key is made here and never leaves this machine except when you download it. Put the public half on the firewall — on RouterOS, /user ssh-keys import public-key-file=… user=… — and it will let this in without a password. Keep the private half safe: anybody holding it can sign in to the firewall as that account."
   },
+  "s.the-key-is-made-in-this.ad7e49cf": {
+   "source": "The key is made in this browser and saved here with the request: it is never sent to isemon and kept nowhere. Hand the request (.csr) to the authority - certreq -submit, or the AD CS web enrollment - and keep the key (.key) for the certificate it gives back.",
+   "text": "The key is made in this browser and saved here with the request: it is never sent to isemon and kept nowhere. Hand the request (.csr) to the authority - certreq -submit, or the AD CS web enrollment - and keep the key (.key) for the certificate it gives back."
+  },
   "s.the-key-kept-now-is-replaced.64ac91fd": {
    "source": "The key kept now is replaced",
    "text": "The key kept now is replaced"
@@ -30583,6 +30947,14 @@
   "s.the-names-behind-the-addresses-which.e90aa029": {
    "source": "The names behind the addresses: which name servers to ask for a reverse lookup, in what order, and how long an answer is believed. Off unless somebody switches it on, and nothing on any page ever waits for it.",
    "text": "The names behind the addresses: which name servers to ask for a reverse lookup, in what order, and how long an answer is believed. Off unless somebody switches it on, and nothing on any page ever waits for it."
+  },
+  "s.the-names-below-are-a-guess.b1aa0351": {
+   "source": "- the names below are a guess: check them before running it.",
+   "text": "- the names below are a guess: check them before running it."
+  },
+  "s.the-names-below-are-as-last.05999667": {
+   "source": "The names below are as last read from AD - a full admin reads them again.",
+   "text": "The names below are as last read from AD - a full admin reads them again."
   },
   "s.the-names-failing-at-the.5acf14db": {
    "source": "The names failing at the",
@@ -31480,9 +31852,17 @@
    "source": "the report did not come in five minutes",
    "text": "the report did not come in five minutes"
   },
+  "s.the-request-and-its-key-are.fc87fc6b": {
+   "source": "the request and its key are saved",
+   "text": "the request and its key are saved"
+  },
   "s.the-request-arrived-with-no-password.f6c9b8db": {
    "source": "The request arrived with no password in it at all. This is what the eduroam monitoring asks, on purpose, to see whether the server answers.",
    "text": "The request arrived with no password in it at all. This is what the eduroam monitoring asks, on purpose, to see whether the server answers."
+  },
+  "s.the-request-as-a-file-certreq.614a3aea": {
+   "source": "The request as a file - certreq (Windows) and openssl",
+   "text": "The request as a file - certreq (Windows) and openssl"
   },
   "s.the-request-for-the-dashboard.e53f1f7d": {
    "source": "The request for the dashboard",
@@ -32003,6 +32383,10 @@
   "s.the-span-those-failures-are-counted.eb209444": {
    "source": "The span those failures are counted over.",
    "text": "The span those failures are counted over."
+  },
+  "s.the-spn-on.58c0a9ef": {
+   "source": ", the SPN on",
+   "text": ", the SPN on"
   },
   "s.the-ssh-key-for-the-router.7d48fa4e": {
    "source": "the ssh key for the router and the domain’s certificate — Settings, the router and Active Directory",
@@ -33020,6 +33404,10 @@
    "source": "This account comes from the directory. Its password is the domain’s and is never kept here; what it may do comes from its groups there, and is worked out afresh every time it signs in. Neither can be set on this page — the domain is where they are decided, and anything set here would be overwritten the next time they signed in.",
    "text": "This account comes from the directory. Its password is the domain’s and is never kept here; what it may do comes from its groups there, and is worked out afresh every time it signs in. Neither can be set on this page — the domain is where they are decided, and anything set here would be overwritten the next time they signed in."
   },
+  "s.this-account-has-no-upn-in.1b07933f": {
+   "source": "This account has no UPN in AD: a certificate of it cannot sign in here - isemon finds the person by the UPN in the certificate. Give the account a UPN first.",
+   "text": "This account has no UPN in AD: a certificate of it cannot sign in here - isemon finds the person by the UPN in the certificate. Give the account a UPN first."
+  },
   "s.this-account-has-nothing-enrolled-here.d3f585f4": {
    "source": "this account has nothing enrolled here",
    "text": "this account has nothing enrolled here"
@@ -33123,6 +33511,10 @@
   "s.this-box-is-not-on-the.1d6b3ddf": {
    "source": "This box is not on the list under Settings → The OTP logs → Where OTP sign-ins come from. A new thing asking the token server is worth knowing about.",
    "text": "This box is not on the list under Settings → The OTP logs → Where OTP sign-ins come from. A new thing asking the token server is worth knowing about."
+  },
+  "s.this-browser-makes-no-keys-here.ea44f081": {
+   "source": "this browser makes no keys here - the page must be opened over https",
+   "text": "this browser makes no keys here - the page must be opened over https"
   },
   "s.this-certificate.7189644c": {
    "source": "This certificate",
@@ -34344,6 +34736,10 @@
    "source": "TXT",
    "text": "TXT"
   },
+  "s.type-a-name-first.c8960ade": {
+   "source": "type a name first",
+   "text": "type a name first"
+  },
   "s.type-a-whole-address-and-it.1e63b9b0": {
    "source": "Type a whole address and it answers the question this dashboard is asked most: whether it is banned, what it has been trying, and the buttons to ban it for good, let it back in, or put it beyond banning — without going to a page first. Type part of an address and it lists the ones that start that way; type a user name and it lists the names being tried; type anything else and it finds the page, the card or the setting of that name.",
    "text": "Type a whole address and it answers the question this dashboard is asked most: whether it is banned, what it has been trying, and the buttons to ban it for good, let it back in, or put it beyond banning — without going to a page first. Type part of an address and it lists the ones that start that way; type a user name and it lists the names being tried; type anything else and it finds the page, the card or the setting of that name."
@@ -34708,6 +35104,14 @@
    "source": "upload",
    "text": "upload"
   },
+  "s.upn-principal-name.0074a3df": {
+   "source": "UPN - Principal name",
+   "text": "UPN - Principal name"
+  },
+  "s.upn.e05adfb8": {
+   "source": "upn",
+   "text": "upn"
+  },
   "s.uri-of-external-resource.ea2bd51f": {
    "source": "URI of external resource:",
    "text": "URI of external resource:"
@@ -34715,6 +35119,14 @@
   "s.url-table-ips.6401e231": {
    "source": "URL Table (IPs)",
    "text": "URL Table (IPs)"
+  },
+  "s.url-the-sid-for-strong-mapping.5d969ba8": {
+   "source": "URL: the SID for strong mapping (KB5014754)",
+   "text": "URL: the SID for strong mapping (KB5014754)"
+  },
+  "s.url-the-sid-strong-mapping.92648a6f": {
+   "source": "URL - the SID (strong mapping)",
+   "text": "URL - the SID (strong mapping)"
   },
   "s.url.4274d554": {
    "source": "URL:",
@@ -35343,6 +35755,10 @@
   "s.what-a-name-looks-like-there.f113f717": {
    "source": "What a name looks like there",
    "text": "What a name looks like there"
+  },
+  "s.what-a-person-s-certificate-must.934e4fdf": {
+   "source": "What a person’s certificate must carry to sign in here, read from the directory: the CN, the UPN in the Subject Alternative Name and - for strong mapping (KB5014754) - the URL of their SID. For a request made by hand (certreq, YubiKey Manager, openssl); one made from a template in AD CS has them filled in already.",
+   "text": "What a person’s certificate must carry to sign in here, read from the directory: the CN, the UPN in the Subject Alternative Name and - for strong mapping (KB5014754) - the URL of their SID. For a request made by hand (certreq, YubiKey Manager, openssl); one made from a template in AD CS has them filled in already."
   },
   "s.what-a-person-types-as-their.9dcc7701": {
    "source": "What a person types as their name",
@@ -36719,6 +37135,10 @@
   "s.where-the-sessions-went-by-the.2542ce84": {
    "source": "Where the sessions went, by the firewall’s own country database.",
    "text": "Where the sessions went, by the firewall’s own country database."
+  },
+  "s.where-the-template-in-ad-cs.08d7ef6d": {
+   "source": "Where the template in AD CS builds the Subject from AD, what is asked here is replaced by what AD has - the SID then comes as its own extension.",
+   "text": "Where the template in AD CS builds the Subject from AD, what is asked here is replaced by what AD has - the SID then comes as its own extension."
   },
   "s.where-the-time-comes-from.d980065a": {
    "source": "Where the time comes from",
@@ -38350,6 +38770,10 @@
   }
  },
  "patterns": {
+  "p.a-certificate-for.4c9d2619": {
+   "source": "A certificate for {0}",
+   "text": "A certificate for {0}"
+  },
   "p.a-code-waits-until-wrong-so.f1071667": {
    "source": "A code waits until {0} ({1} wrong so far).",
    "text": "A code waits until {0} ({1} wrong so far)."
@@ -38429,6 +38853,10 @@
   "p.a-refused.ca1186e0": {
    "source": "A refused {0} · {1}",
    "text": "A refused {0} · {1}"
+  },
+  "p.a-request-for.ba52229b": {
+   "source": "A request for {0}",
+   "text": "A request for {0}"
   },
   "p.a-second-certificate-beside-it.6cbe798d": {
    "source": "+ {0} (a second certificate beside it)",
@@ -38810,6 +39238,14 @@
    "source": "-----BEGIN CERTIFICATE----- {0} -----END CERTIFICATE-----",
    "text": "-----BEGIN CERTIFICATE----- {0} -----END CERTIFICATE-----"
   },
+  "p.begin-end.ce2612ea": {
+   "source": "-----BEGIN {0}----- {1} -----END {2}-----",
+   "text": "-----BEGIN {0}----- {1} -----END {2}-----"
+  },
+  "p.begin.cda87e8f": {
+   "source": "-----BEGIN {0}-----",
+   "text": "-----BEGIN {0}-----"
+  },
   "p.behind-nps-the-address-is-in.7af87a45": {
    "source": "Behind NPS the address is in the accounting the device sends once the machine has one — if the {0} sends no RADIUS accounting to NPS, there is none to show. docs/nps-logs.md says how to switch it on.",
    "text": "Behind NPS the address is in the accounting the device sends once the machine has one — if the {0} sends no RADIUS accounting to NPS, there is none to show. docs/nps-logs.md says how to switch it on."
@@ -38982,9 +39418,21 @@
    "source": "· {0} connection(s) in its table",
    "text": "· {0} connection(s) in its table"
   },
+  "p.continue-upn.9770d452": {
+   "source": "_continue_ = \"upn={0}{1}",
+   "text": "_continue_ = \"upn={0}{1}"
+  },
+  "p.continue-url.2c12c195": {
+   "source": "_continue_ = \"url={0}\"",
+   "text": "_continue_ = \"url={0}\""
+  },
   "p.controllers-seen.21e1ab39": {
    "source": "- Controllers seen: {0}",
    "text": "- Controllers seen: {0}"
+  },
+  "p.copied.028046d5": {
+   "source": "{0} copied",
+   "text": "{0} copied"
   },
   "p.copied.38659fa9": {
    "source": "copied: {0}",
@@ -39049,6 +39497,14 @@
   "p.crl.cb207faa": {
    "source": "crl_{0}",
    "text": "crl_{0}"
+  },
+  "p.csr-cer.c415e57d": {
+   "source": "\" {0}.csr {1}.cer",
+   "text": "\" {0}.csr {1}.cer"
+  },
+  "p.csr.d15f1d29": {
+   "source": "{0}.csr",
+   "text": "{0}.csr"
   },
   "p.curl-fss-u-password.6b89dd51": {
    "source": "curl -fsS -u '{0}:PASSWORD'",
@@ -39193,6 +39649,10 @@
   "p.empty-the-engine-s-own.b8fe1164": {
    "source": "Empty: the engine’s own ({0}).",
    "text": "Empty: the engine’s own ({0})."
+  },
+  "p.end.2da88e03": {
+   "source": "-----END {0}-----",
+   "text": "-----END {0}-----"
   },
   "p.ended-in-the-lines-kept.41bac2e6": {
    "source": "· {0} ended in the lines kept",
@@ -40142,6 +40602,10 @@
    "source": "kept without what was let through, {0} day(s) for the rest",
    "text": "kept without what was let through, {0} day(s) for the rest"
   },
+  "p.key.8035aa6f": {
+   "source": "{0}.key",
+   "text": "{0}.key"
+  },
   "p.kind-event-vpn-msg.b8db15a0": {
    "source": "kind:event/vpn msg~{0}",
    "text": "kind:event/vpn msg~{0}"
@@ -40166,9 +40630,9 @@
    "source": "&kind={0}",
    "text": "&kind={0}"
   },
-  "p.ktpass-princ-http-mapuser-crypto-aes256.70d1b5c6": {
-   "source": "{0}ktpass -princ HTTP/{1}@{2} -mapuser {3} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab",
-   "text": "{0}ktpass -princ HTTP/{1}@{2} -mapuser {3} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab"
+  "p.ktpass-princ-http-mapuser-crypto-aes256.45635676": {
+   "source": "ktpass -princ HTTP/{0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab",
+   "text": "ktpass -princ HTTP/{0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab"
   },
   "p.last-answered.ae970e33": {
    "source": ", last answered {0}",
@@ -40429,6 +40893,10 @@
   "p.make-on-more-nodes.ad04c7a9": {
    "source": "Make {0} on more nodes",
    "text": "Make {0} on more nodes"
+  },
+  "p.matched-here.34dde4d6": {
+   "source": "matched here: {0}",
+   "text": "matched here: {0}"
   },
   "p.matching.4c24fab9": {
    "source": "{0} matching",
@@ -41078,6 +41546,10 @@
    "source": "{0}{1} other(s)",
    "text": "{0}{1} other(s)"
   },
+  "p.othername-1-3-6-1-4.677844b0": {
+   "source": "otherName:1.3.6.1.4.1.311.20.2.3;UTF8:{0}",
+   "text": "otherName:1.3.6.1.4.1.311.20.2.3;UTF8:{0}"
+  },
   "p.our-mark-is-somebody-else-s.98dc510a": {
    "source": "our mark is somebody else’s and is left alone, and no other list on the router is touched.{0}",
    "text": "our mark is somebody else’s and is left alone, and no other list on the router is touched.{0}"
@@ -41534,6 +42006,10 @@
    "source": "said{0}",
    "text": "said{0}"
   },
+  "p.saved-csr-and-key-the-key.d5fd80d2": {
+   "source": "Saved: {0}.csr and {1}.key. The key was made here and is now only in that file - keep it, nobody can make it again.",
+   "text": "Saved: {0}.csr and {1}.key. The key was made here and is now only in that file - keep it, nobody can make it again."
+  },
   "p.saved-kb.497fd000": {
    "source": "saved - {0} kB",
    "text": "saved - {0} kB"
@@ -41661,6 +42137,10 @@
   "p.shown.4017c46c": {
    "source": "{0} shown",
    "text": "{0} shown"
+  },
+  "p.sid.54ad4404": {
+   "source": "SID: {0}",
+   "text": "SID: {0}"
   },
   "p.signed-by-sent-by.5edd7026": {
    "source": "signed by {0} · {1} · sent by {2} · {3}",
@@ -41814,6 +42294,14 @@
    "source": "straight because {0}",
    "text": "straight because {0}"
   },
+  "p.subject-cn.f4538f58": {
+   "source": "Subject = \"CN={0}\"",
+   "text": "Subject = \"CN={0}\""
+  },
+  "p.subjectaltname.31bb8f85": {
+   "source": "subjectAltName = {0}",
+   "text": "subjectAltName = {0}"
+  },
   "p.subnet-s-the-list-goes-from.990ec701": {
    "source": "subnet(s). The list goes from {0} line(s) to {1}.",
    "text": "subnet(s). The list goes from {0} line(s) to {1}."
@@ -41825,10 +42313,6 @@
   "p.sudo-may-become-root-with-their.0d6e2956": {
    "source": "sudo: may become root with their own password (a member of {0}).",
    "text": "sudo: may become root with their own password (a member of {0})."
-  },
-  "p.svc-isemon-http.16ed5c42": {
-   "source": "{0}\\svc-isemon-http",
-   "text": "{0}\\svc-isemon-http"
   },
   "p.sw3word.520077fd": {
    "source": "sw3word {0}",
@@ -42786,6 +43270,18 @@
    "source": "Upgrade to {0} now",
    "text": "Upgrade to {0} now"
   },
+  "p.upn.1e22ccb4": {
+   "source": "UPN: {0}",
+   "text": "UPN: {0}"
+  },
+  "p.uri.7627539a": {
+   "source": "URI:{0}",
+   "text": "URI:{0}"
+  },
+  "p.url.39b17cb1": {
+   "source": "URL: {0}",
+   "text": "URL: {0}"
+  },
   "p.use-my-own-authority-for.f5d74b8f": {
    "source": "Use my own authority for {0}",
    "text": "Use my own authority for {0}"
@@ -43110,6 +43606,14 @@
    "source": "yes, {0} days before the end",
    "text": "yes, {0} days before the end"
   },
+  "p.ykman-piv-certificates-import-9a-cer.110f6dcf": {
+   "source": "ykman piv certificates import 9a {0}.cer",
+   "text": "ykman piv certificates import 9a {0}.cer"
+  },
+  "p.ykman-piv-keys-import-9a-key.fb387866": {
+   "source": "ykman piv keys import 9a {0}.key",
+   "text": "ykman piv keys import 9a {0}.key"
+  },
   "p.you-are-on-page-of.6ca172dc": {
    "source": "You are on page {0}{1} of {2}.",
    "text": "You are on page {0}{1} of {2}."
@@ -43336,6 +43840,10 @@
    "source": "-----BEGIN CERTIFICATE-----<br>…<br>-----END CERTIFICATE-----",
    "text": "-----BEGIN CERTIFICATE-----<br>…<br>-----END CERTIFICATE-----"
   },
+  "r.begin-end.880c0902": {
+   "source": "-----BEGIN {0}-----<br>{1}<br>-----END {2}-----<br>",
+   "text": "-----BEGIN {0}-----<br>{1}<br>-----END {2}-----<br>"
+  },
   "r.begin-private-key-end-private-key.f27dfcc5": {
    "source": "-----BEGIN PRIVATE KEY-----<br>…<br>-----END PRIVATE KEY-----",
    "text": "-----BEGIN PRIVATE KEY-----<br>…<br>-----END PRIVATE KEY-----"
@@ -43391,6 +43899,10 @@
   "r.config-vpn-ssl-settings-set-source.fa2e32d6": {
    "source": "config vpn ssl settings<br> set source-interface \"wan1\"<br> set source-address \"isemon-bans\"<br> set source-address-negate enable<br>end",
    "text": "config vpn ssl settings<br> set source-interface \"wan1\"<br> set source-address \"isemon-bans\"<br> set source-address-negate enable<br>end"
+  },
+  "r.continue-url.df345dfd": {
+   "source": "_continue_ = \"url={0}\"<br>",
+   "text": "_continue_ = \"url={0}\"<br>"
   },
   "r.deny-ip-host-203-0-113.42034f18": {
    "source": "deny ip host 203.0.113.9 any<br>",
@@ -44004,10 +44516,6 @@
    "source": "set username \"{0}\"<br> set password PASSWORD<br>",
    "text": "set username \"{0}\"<br> set password PASSWORD<br>"
   },
-  "r.setspn-s-http.72e07ffd": {
-   "source": "setspn -S HTTP/{0} {1}<br>",
-   "text": "setspn -S HTTP/{0} {1}<br>"
-  },
   "r.show-only-the-rows-from-one.32b735f8": {
    "source": "Show only the rows from one country. Search it by name or by its two letters; <b>ZZ</b> is what the country database says about an address that belongs to nobody in particular - a private range, a reserved block, something unallocated.",
    "text": "Show only the rows from one country. Search it by name or by its two letters; <b>ZZ</b> is what the country database says about an address that belongs to nobody in particular - a private range, a reserved block, something unallocated."
@@ -44019,6 +44527,10 @@
   "r.somebody-who-works-here-mistypes-their.e7f76eee": {
    "source": "Somebody who works here mistypes their own password. A scanner offers a name that does not exist at all, and ISE writes that attempt as <code>INVALID</code>. This many of those from one address inside the window and it is kept out for good, without climbing any ladder — there is nothing to be patient about. 0 is off, and they are counted like anything else.",
    "text": "Somebody who works here mistypes their own password. A scanner offers a name that does not exist at all, and ISE writes that attempt as <code>INVALID</code>. This many of those from one address inside the window and it is kept out for good, without climbing any ladder — there is nothing to be patient about. 0 is off, and they are counted like anything else."
+  },
+  "r.subjectaltname.3cc71a39": {
+   "source": "subjectAltName = {0}<br>",
+   "text": "subjectAltName = {0}<br>"
   },
   "r.sudo-is-the-sudo-package-on.ec13c9fa": {
    "source": "sudo is the <i>sudo</i> package on a pfSense.",

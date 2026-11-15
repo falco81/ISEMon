@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.351'
+__version__ = '1.10.352'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -61704,9 +61704,173 @@ class Daemon(object):
                            'entries': kt.get('entries') or [],
                            'readable': bool(kt.get('raw'))} if kt else None,
                 'netbios': (self.directory_domain('directory').split('.')[0] or '').upper(),
+                # As AD itself keeps it (1.10.352), where it was read: the
+                # first label of the domain is only a guess (MERIT_NT).
+                'ad_names': self._ad_names_kept(),
                 # The machine's own name, beside the one the page was opened by
                 # (1.10.341), and whether the keytab is written out here.
                 'fqdn': socket.getfqdn().lower(), 'written': self._keytab_written(kt)}
+
+    def _ad_names_kept(self):
+        kept = self.store.meta_json('directory_ad_names', None) or {}
+        if kept.get('base') != str(CONFIG.get('directory_base') or '').strip():
+            return None
+        return {k: kept.get(k) for k in ('netbios', 'dns', 'realm', 'at')}
+
+    # ---- the domain's names as AD keeps them (1.10.352) ----------------------
+    AD_NAMES_FOR_S = 600
+
+    def directory_root_dse(self, link):
+        got = link.search('', ldap_present('objectClass'),
+                          ('defaultNamingContext', 'configurationNamingContext'), scope=0, limit=1)
+        attrs = got[0]['attrs'] if got else {}
+        return ((attrs.get('defaultNamingContext') or [''])[0],
+                (attrs.get('configurationNamingContext') or [''])[0])
+
+    def directory_ad_names(self, link=None, force=False):
+        """The domain's names as AD itself keeps them: its NetBIOS name (the
+        nETBIOSName of its crossRef - which is MERIT_NT where the domain is
+        merit.cz, never guessed from the first label), its DNS name and so
+        the Kerberos realm. Read only; kept 10 minutes for the base it was
+        read for. {netbios, dns, realm, base, at} or ValueError."""
+        base = str(CONFIG.get('directory_base') or '').strip()
+        kept = self.store.meta_json('directory_ad_names', None) or {}
+        if (not force and kept.get('base') == base and kept.get('netbios')
+                and time.time() - float(kept.get('at') or 0) < self.AD_NAMES_FOR_S):
+            return kept
+        if not self.directory_on():
+            raise ValueError('no directory is set (Settings → Active Directory)')
+        mine = link
+        try:
+            link = link or self.directory_reader(timeout=self.LOOKUP_TIMEOUT)
+            nc, conf = self.directory_root_dse(link)
+            if not nc or not conf:
+                raise ValueError('the directory did not say where its domain and its '
+                                 'configuration are')
+            refs = link.search('CN=Partitions,%s' % conf,
+                               ldap_and(ldap_equal('objectClass', 'crossRef'),
+                                        ldap_equal('nCName', nc)),
+                               ('nETBIOSName', 'dnsRoot'), scope=1, limit=2)
+            attrs = refs[0]['attrs'] if refs else {}
+            netbios = str((attrs.get('nETBIOSName') or [''])[0] or '').strip().upper()
+            dns = str((attrs.get('dnsRoot') or [''])[0] or '').strip().lower() or dn_domain(nc)
+            if not netbios:
+                raise ValueError('the directory keeps no NetBIOS name for %s' % (dns or nc))
+        except LdapError as e:
+            raise ValueError('the directory could not be asked: %s' % str(e)[:200])
+        finally:
+            if link is not None and mine is None:
+                try:
+                    link.close()
+                except Exception:                       # noqa: BLE001
+                    pass
+        got = {'netbios': netbios, 'dns': dns, 'realm': dns.upper(), 'nc': nc,
+               'base': base, 'at': time.time()}
+        self.store.set_meta('directory_ad_names', json.dumps(got))
+        return got
+
+    @staticmethod
+    def _ad_flag(attrs, key):
+        try:
+            return int((attrs.get(key) or ['0'])[0] or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    def kerberos_ad(self, names):
+        """For Making the keytab in AD: the domain's own names, and for each
+        name the pages are opened by the account its SPN HTTP/<name> is on,
+        where one is - nothing written anywhere. {from_ad, said, netbios, dns,
+        realm, accounts: [{name, spn, sam, dn, aes, disabled, more}]}."""
+        clean = []
+        for n in names if isinstance(names, list) else []:
+            n = str(n or '').strip().lower().rstrip('.')
+            if n and len(n) <= 253 and re.fullmatch(r'[a-z0-9][a-z0-9.-]*', n) \
+                    and not re.fullmatch(r'[0-9.]+', n) and n not in clean:
+                clean.append(n)
+        clean = clean[:8]
+        try:
+            link = self.directory_reader(timeout=self.LOOKUP_TIMEOUT)
+        except LdapError as e:
+            return {'from_ad': False, 'said': 'the directory could not be asked: %s'
+                    % str(e)[:200], 'accounts': []}
+        try:
+            try:
+                ad = self.directory_ad_names(link, force=True)
+            except ValueError as e:
+                return {'from_ad': False, 'said': str(e)[:300], 'accounts': []}
+            accounts = []
+            for n in clean:
+                spn = 'HTTP/' + n
+                try:
+                    found = link.search(ad['nc'], ldap_equal('servicePrincipalName', spn),
+                                        ('sAMAccountName', 'distinguishedName',
+                                         'userAccountControl', 'msDS-SupportedEncryptionTypes'),
+                                        limit=3)
+                except LdapError as e:
+                    accounts.append({'name': n, 'spn': spn, 'sam': '', 'said': str(e)[:160]})
+                    continue
+                one = {'name': n, 'spn': spn, 'sam': '', 'more': len(found) > 1}
+                if found:
+                    attrs = found[0].get('attrs', {})
+                    one.update({
+                        'sam': str((attrs.get('sAMAccountName') or [''])[0] or ''),
+                        'dn': str((attrs.get('distinguishedName') or [found[0].get('dn') or ''])[0]),
+                        'disabled': bool(self._ad_flag(attrs, 'userAccountControl') & 2),
+                        'aes': bool(self._ad_flag(attrs, 'msDS-SupportedEncryptionTypes') & 0x10)})
+                accounts.append(one)
+        finally:
+            link.close()
+        return {'from_ad': True, 'said': '', 'netbios': ad['netbios'], 'dns': ad['dns'],
+                'realm': ad['realm'], 'accounts': accounts}
+
+    def certlogin_person(self, name):
+        """For a certificate request: a person of the directory by the name
+        typed (name, DOMAIN\\name or UPN) and what their certificate must
+        carry - CN, the UPN in the SAN, and the URL of their SID for strong
+        mapping (KB5014754). Read only, nothing written."""
+        typed = str(name or '').strip()
+        if not typed or len(typed) > 256 or any(ord(c) < 32 for c in typed):
+            raise ValueError('type the name of a person of the directory')
+        try:
+            link = self.directory_reader(timeout=self.LOOKUP_TIMEOUT)
+        except LdapError as e:
+            raise ValueError('the directory could not be asked: %s' % str(e)[:200])
+        try:
+            try:
+                ad = self.directory_ad_names(link)
+            except ValueError:
+                ad = {}
+            base = str(CONFIG.get('directory_base') or '').strip()
+            short = typed.split('\\', 1)[1].strip() if '\\' in typed else typed
+            try:
+                found = link.search(base, ldap_and(
+                    ldap_equal('objectClass', 'user'),
+                    ldap_or(ldap_equal('sAMAccountName', short),
+                            ldap_equal('userPrincipalName', short),
+                            ldap_equal('mail', short))),
+                    self.WANTED_ATTRS + ('cn', 'objectSid', 'givenName', 'sn'), limit=3)
+            except LdapError as e:
+                raise ValueError('the directory could not be searched: %s' % str(e)[:200])
+        finally:
+            link.close()
+        found = [f for f in found if not str((f.get('attrs', {}).get('sAMAccountName')
+                                              or [''])[0]).endswith('$')]
+        if not found:
+            raise ValueError('nobody in the directory answers to %s' % typed)
+        if len(found) > 1:
+            raise ValueError('more than one person in the directory answers to %s - type '
+                             'their sAMAccountName or UPN' % typed)
+        attrs = found[0].get('attrs', {})
+        first = lambda k: str((attrs.get(k) or [''])[0] or '').strip()      # noqa: E731
+        sid = cl_sid_text(((found[0].get('raw') or {}).get('objectSid') or [b''])[0])
+        sam = first('sAMAccountName')
+        return {'sam': sam, 'upn': first('userPrincipalName'), 'cn': first('cn'),
+                'display': first('displayName'), 'mail': first('mail'),
+                'dn': first('distinguishedName') or found[0].get('dn') or '',
+                'sid': sid, 'url': ('tag:microsoft.com,2022-09-14:sid:' + sid) if sid else '',
+                'down_level': ('%s\\%s' % (ad['netbios'], sam)) if ad.get('netbios') else '',
+                'disabled': self.directory_disabled(found[0]),
+                'match': str(CONFIG.get('certlogin_match') or 'compat')}
 
     def _keytab_written(self, kt):
         if not kt or not kt.get('raw'):
@@ -87518,6 +87682,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                      'ocsp_clear': 'the OCSP answers are cleared'}[act])))
             if act == 'result':
                 return self.send_json(dict(daemon.certlogin_crl_result(data.get('id')), ok=True))
+            if act == 'person':
+                # What a person's certificate must carry (1.10.352): read
+                # from the directory, nothing written.
+                try:
+                    return self.send_json(dict(daemon.certlogin_person(data.get('name')), ok=True))
+                except ValueError as e:
+                    return self.fail(str(e)[:300], 404)
             try:
                 if act == 'put':
                     raw = str(data.get('text') or '').encode('utf-8', 'replace')
@@ -87568,6 +87739,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                     daemon.kerberos_take_away(me['name'])
                     return self.send_json({'ok': True, 'message': 'the keytab is taken away',
                                            **daemon.kerberos_view(True)})
+                if act == 'ad':
+                    # The names of Making the keytab in AD as AD has them
+                    # (1.10.352): read only.
+                    return self.send_json(dict(daemon.kerberos_ad(data.get('names')), ok=True))
                 if act == 'try':
                     # Try my browser's ticket: who it would sign in, and as
                     # what - nobody signed in.

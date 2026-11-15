@@ -372,6 +372,42 @@ working.
 
 ## Version
 
+1.10.352
+
+- **Settings - Active Directory - Signing in with Windows (Kerberos)**
+  ([docs/windows-sign-in.md](docs/windows-sign-in.md)):
+  - The commands under *Making the keytab in AD* use the names AD itself
+    keeps: the NetBIOS name from the domain's crossRef, the realm from its
+    `dnsRoot`, and the account each `HTTP/<name>` SPN is on.
+  - Until now the NetBIOS name was guessed from the first label of the
+    domain, which gave `MERIT\...` where AD has `MERIT_NT\...`.
+  - A line above the commands says what was read from AD, or why nothing was
+    and that the names are a guess. *Read from AD again* reads them at once.
+  - SPNs that are there already get no `setspn`; an SPN on another account is
+    named.
+  - Read only.
+- **Settings - Active Directory - Signing in with a certificate**
+  ([docs/certificate-sign-in.md](docs/certificate-sign-in.md)):
+  - *A certificate for a person* finds a person in AD and shows in a popup
+    what their certificate request must carry, each value with its own Copy:
+    - the Subject CN;
+    - the UPN for the SAN;
+    - the SAN URL `tag:microsoft.com,2022-09-14:sid:<SID>` for strong mapping
+      (KB5014754);
+    - the SID;
+    - the account as Windows writes it.
+  - The same values as a certreq INF and an openssl config.
+  - An account without a UPN, switched off, or without a SID where only
+    strong mapping is taken, is said.
+  - Read only, for a full admin.
+  - *Make a request (CSR)* opens a form: the kind of key (ECC P-256/P-384,
+    RSA 2048/3072/4096), the CN, O, OU and C, the UPN, SID URL and mail ticked
+    into the SAN, and Client Authentication and Smart Card Logon.
+  - *Make and download* makes the key and the PKCS#10 request in the browser
+    (WebCrypto) and saves `<name>.csr` and `<name>.key`. The key is never sent
+    to isemon and kept nowhere.
+  - Then: the `certreq -submit` and `ykman piv` lines for slot 9a.
+
 1.10.351
 
 - **Settings - SSH keys** ([docs/ssh-keys.md](docs/ssh-keys.md)):
