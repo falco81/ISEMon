@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.350",
+  "version": "1.10.351",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -12,9 +12,29 @@
    "source": "0 0 auto",
    "text": "0 0 auto"
   },
+  "s.0-any-needs-pam-pwhistory.9c4876b1": {
+   "source": "0: any; needs pam_pwhistory",
+   "text": "0: jakékoli; vyžaduje pam_pwhistory"
+  },
+  "s.0-as-many-as-wanted.df48e8b7": {
+   "source": "0: as many as wanted",
+   "text": "0: kolikrát chce"
+  },
+  "s.0-changed-again-at-once.82df86fd": {
+   "source": "0: changed again at once",
+   "text": "0: lze změnit hned znovu"
+  },
+  "s.0-never-locked-root-never.fd10e909": {
+   "source": "0: never locked; root never",
+   "text": "0: nikdy nezamykat; root nikdy"
+  },
   "s.0-no-country-chosen.9a926ac7": {
    "source": "0 — no country chosen",
    "text": "0 — není zvolena žádná země"
+  },
+  "s.0-until-unlocked-by-root-faillock.468ebdad": {
+   "source": "0: until unlocked by root (faillock --reset)",
+   "text": "0: dokud ho root neodemkne (faillock --reset)"
   },
   "s.1-day.2d8a6f7c": {
    "source": "1 day",
@@ -315,6 +335,10 @@
   "s.90-days.170621ac": {
    "source": "90 days",
    "text": "90 dní"
+  },
+  "s.99999-no-end.0504f5b3": {
+   "source": "99999: no end",
+   "text": "99999: bez konce"
   },
   "s.9th.e62af88d": {
    "source": "9th",
@@ -852,9 +876,13 @@
    "source": "a key — but there is none yet",
    "text": "klíč — ale zatím žádný není"
   },
-  "s.a-key-for-root.46c67d83": {
-   "source": "A key for root",
-   "text": "Klíč pro roota"
+  "s.a-key-for-ssh-is-no.022b1e0d": {
+   "source": "A key for SSH is no password: it never counts as a wrong password for the lockout, and the lockout does not keep a key out - it keeps out the password (at the console, for sudo).",
+   "text": "Klíč pro SSH není heslo: nikdy se nepočítá jako špatné heslo pro zamčení a zamčení klíč nezastaví – zastaví heslo (na konzoli, pro sudo)."
+  },
+  "s.a-key-for.71e7e608": {
+   "source": "A key for",
+   "text": "Klíč pro"
   },
   "s.a-key-in-the-url-a.f1eebd6d": {
    "source": "A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and for a pfSense; it works for a FortiGate and an OPNsense too.",
@@ -896,9 +924,13 @@
    "source": "a key this machine holds",
    "text": "klíč uložený na tomto stroji"
   },
-  "s.a-key-you-have-already-its.b6a2074a": {
-   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root's authorized_keys.",
-   "text": "Klíč, který už máte - jeho veřejný řádek nebo soubor .pub, nebo soukromý klíč, z něhož se použije jen veřejná polovina - vložený do authorized_keys roota."
+  "s.a-key-you-have-already-its.bda26182": {
+   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into their authorized_keys.",
+   "text": "Klíč, který už máte – jeho veřejný řádek nebo soubor .pub, nebo privátní klíč, z něhož se použije jen veřejná polovina – vložený do jejich authorized_keys."
+  },
+  "s.a-key-you-have-already-its.c9815b4c": {
+   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put onto the nodes you choose.",
+   "text": "Klíč, který už máte – jeho veřejný řádek nebo soubor .pub, nebo soukromý klíč, ze kterého se použije jen veřejná část – nahraný na uzly, které zvolíte."
   },
   "s.a-keytab-is-a-few-kb.f2768791": {
    "source": "a keytab is a few kB, not that",
@@ -1084,6 +1116,10 @@
    "source": "a name is 2 to 32 letters, digits, dot, dash or underscore",
    "text": "název má 2 až 32 znaků: písmena, číslice, tečka, pomlčka nebo podtržítko"
   },
+  "s.a-name-is-small-letters-digits.65fe8e0b": {
+   "source": "a name is small letters, digits, _ . and -, starting with a letter",
+   "text": "jméno jsou malá písmena, číslice, _ . a -, na začátku písmeno"
+  },
   "s.a-name-it-holds.3b42887c": {
    "source": "a name it holds",
    "text": "jméno, které obsahuje"
@@ -1188,6 +1224,14 @@
    "source": "A new one, at least eight characters",
    "text": "Nové, alespoň osm znaků"
   },
+  "s.a-new-password-that-is-a.01c09d31": {
+   "source": "A new password that is a word of the dictionary (cracklib's), also turned around or with little changed, is refused (pam_pwquality: dictcheck).",
+   "text": "Nové heslo, které je slovem ze slovníku (cracklib), i pozpátku nebo jen málo změněné, se odmítne (pam_pwquality: dictcheck)."
+  },
+  "s.a-new-password-with-the-user.91af7561": {
+   "source": "A new password with the user's name in it, also turned around, is refused (pam_pwquality: usercheck).",
+   "text": "Nové heslo, které obsahuje jméno uživatele, i pozpátku, se odmítne (pam_pwquality: usercheck)."
+  },
   "s.a-new-token-was-confirmed-with.4f291b82": {
    "source": "A new token was confirmed with its first code — on otp’s enrolment page, or by an administrator. Not a sign-in.",
    "text": "Nový token byl potvrzen prvním kódem – na stránce otp pro zakládání tokenů, nebo správcem. Nejde o přihlášení."
@@ -1195,6 +1239,14 @@
   "s.a-new-token-was-confirmed.ac58f7e8": {
    "source": "a new token was confirmed",
    "text": "nový token byl potvrzen"
+  },
+  "s.a-new-user-of-the-system.f51f7715": {
+   "source": "A new user of the system, on every node or on the ones you choose - the same UID on each.",
+   "text": "Nový uživatel systému, na všech uzlech nebo na těch, které vyberete – na každém se stejným UID."
+  },
+  "s.a-new-user-of-this-server.5bf6b815": {
+   "source": "A new user of this server's system.",
+   "text": "Nový uživatel systému tohoto serveru."
   },
   "s.a-new-version-put-in-from.310890eb": {
    "source": "A new version, put in from here; this server in and out of service.",
@@ -1280,6 +1332,10 @@
    "source": "A password on the sign-in page",
    "text": "Heslo na přihlašovací stránce"
   },
+  "s.a-password-runs-out.16ea8793": {
+   "source": "A password runs out",
+   "text": "Heslo vyprší"
+  },
   "s.a-password-sent-in-the-clear.7e3fa6e4": {
    "source": "A password sent in the clear",
    "text": "Heslo poslané nešifrovaně"
@@ -1287,6 +1343,10 @@
   "s.a-password-sent-to-ldap-in.f47993e0": {
    "source": "A password sent to LDAP in the clear",
    "text": "Heslo poslané do LDAP nešifrovaně"
+  },
+  "s.a-password-that-runs-out-is.3609793c": {
+   "source": "A password that runs out is asked to be changed at the next sign-in - over SSH with a key too (sshd asks PAM's account step). A user with no password (a key only) is given no aging, so is never asked for one.",
+   "text": "Heslo, které vyprší, je třeba změnit při dalším přihlášení – i přes SSH s klíčem (sshd se ptá kroku account v PAM). Uživatel bez hesla (jen s klíčem) nedostane žádnou platnost, takže o heslo nikdy požádán není."
   },
   "s.a-password.7847eb99": {
    "source": "a password",
@@ -1759,6 +1819,14 @@
   "s.a-user-name.505713c8": {
    "source": "a user name",
    "text": "uživatelské jméno"
+  },
+  "s.a-user-of-the-system-not.85688e3c": {
+   "source": "A user of the system - not of these pages - with a home folder of its own. SSH keys for it are put on in SSH keys, once it is there.",
+   "text": "Uživatel systému – ne těchto stránek – s vlastní domovskou složkou. SSH klíče se mu přidávají v SSH klíčích, jakmile existuje."
+  },
+  "s.a-user-of-the-system-not.cd65d523": {
+   "source": "A user of the system - not of these pages. The same name and UID on each node chosen; a home folder of its own. SSH keys for it are put on in SSH keys, once it is there.",
+   "text": "Uživatel systému – ne těchto stránek. Na každém vybraném uzlu stejné jméno a UID; vlastní domovská složka. SSH klíče pro něj se přidávají v SSH klíčích, jakmile existuje."
   },
   "s.a-user.abfd47b4": {
    "source": ": a user",
@@ -2308,10 +2376,6 @@
    "source": "Add a firewall",
    "text": "Přidat firewall"
   },
-  "s.add-a-key-for-root.33c294da": {
-   "source": "Add a key for root",
-   "text": "Přidat klíč pro roota"
-  },
   "s.add-a-key.730531ca": {
    "source": "Add a key",
    "text": "Přidat klíč"
@@ -2339,6 +2403,10 @@
   "s.add-a-step.90d24ab4": {
    "source": "Add a step",
    "text": "Přidat krok"
+  },
+  "s.add-a-user.8f9e2b8c": {
+   "source": "Add a user",
+   "text": "Přidat uživatele"
   },
   "s.add-an-authority.da7ffa55": {
    "source": "Add an authority",
@@ -2371,6 +2439,10 @@
   "s.add-the-feed.b38e5f1a": {
    "source": "Add the feed",
    "text": "Přidejte feed"
+  },
+  "s.add-the-user.b02c3237": {
+   "source": "Add the user",
+   "text": "Přidat uživatele"
   },
   "s.add-them.254c14a3": {
    "source": "Add them",
@@ -2616,6 +2688,10 @@
    "source": "After Sign out",
    "text": "Po odhlášení"
   },
+  "s.after-so-many-wrong-passwords-counted.30088903": {
+   "source": "After so many wrong passwords - counted within the time set here - the user is locked (pam_faillock: deny). 0: never locked. root is never locked. A key for SSH never counts and is never kept out: the lock keeps out the password (at the console, for sudo). With authselect, its feature with-faillock is switched on for it.",
+   "text": "Po tolika špatných heslech – počítaných v nastaveném čase – je uživatel zamčen (pam_faillock: deny). 0: nikdy nezamčen. root není zamčen nikdy. Klíč pro SSH se nikdy nepočítá a nikdy není zastaven: zámek zastaví heslo (na konzoli, pro sudo). S authselect se pro to zapne jeho funkce with-faillock."
+  },
   "s.after-the-password-everybody-confirms-it.4837c412": {
    "source": "After the password, everybody confirms it is them with Face ID, Touch ID, Windows Hello or the PIN of their device (a passkey). The first sign-in after this is switched on sets it up; a full admin can set it up again for anybody under Accounts (a lost iPad), and their next sign-in makes a new one. Only on pages opened by name over https, with a certificate the browser trusts - and so switched on only from such a page. Those signed in already stay signed in. Locked out: isemon --set passkeys=0 on the server.",
    "text": "Po hesle každý potvrdí, že je to on, přes Face ID, Touch ID, Windows Hello nebo PIN svého zařízení (passkey). První přihlášení po zapnutí ho nastaví; plný administrátor ho může komukoli nastavit znovu v Účtech (ztracený iPad) a jeho další přihlášení vytvoří nový. Jen na stránkách otevřených přes jméno přes https s certifikátem, kterému prohlížeč věří – a proto se zapíná jen z takové stránky. Kdo je už přihlášený, zůstane přihlášený. Při zablokování: isemon --set passkeys=0 na serveru."
@@ -2660,6 +2736,10 @@
    "source": "agent",
    "text": "agent"
   },
+  "s.aging.cdaa6b89": {
+   "source": "aging",
+   "text": "aging"
+  },
   "s.ah.bd4b0194": {
    "source": "AH",
    "text": "AH"
@@ -2675,6 +2755,10 @@
   "s.algeria.bd6acc86": {
    "source": "Algeria",
    "text": "Alžírsko"
+  },
+  "s.all-4.261522d8": {
+   "source": "all 4",
+   "text": "všechny 4"
   },
   "s.all-allowed.a40b0380": {
    "source": "· all allowed",
@@ -2735,6 +2819,10 @@
   "s.already-signed-in.a0102206": {
    "source": "already signed in",
    "text": "už přihlášen"
+  },
+  "s.also-for-the-users-there-now.4c8a76ff": {
+   "source": "Also for the users there now",
+   "text": "I pro stávající uživatele"
   },
   "s.also-put-back-the-accounts.b022a992": {
    "source": "also put back the accounts",
@@ -3760,6 +3848,10 @@
    "source": "As it is now",
    "text": "Jak je to teď"
   },
+  "s.as-it-is-saved.f6419c71": {
+   "source": "As it is saved",
+   "text": "Jak je uloženo"
+  },
   "s.as-long-as-its-logrotate-file.408bbf19": {
    "source": "- as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone.",
    "text": "- tak dlouho, jak je jeho soubor logrotate chce držet - a zbytek starší než tři dny zabalí. Co z nich isemon přečetl, zůstává v databázi. Nelze to vrátit."
@@ -3767,6 +3859,10 @@
   "s.as-nginx-has-it.0bd9b744": {
    "source": "as nginx has it",
    "text": "tak, jak ho má nginx"
+  },
+  "s.as-set-here.eb3b3149": {
+   "source": "as set here",
+   "text": "jak je nastaveno tady"
   },
   "s.as-the-dashboard.6c35b880": {
    "source": "As the dashboard",
@@ -4292,6 +4388,10 @@
    "source": "Authorized keys",
    "text": "Authorized keys"
   },
+  "s.authselect.b8bbd54e": {
+   "source": "authselect",
+   "text": "authselect"
+  },
   "s.authserver.d7a9956e": {
    "source": "authserver",
    "text": "authserver"
@@ -4760,6 +4860,10 @@
    "source": "being changed…",
    "text": "mění se…"
   },
+  "s.being-done.f571564b": {
+   "source": "Being done…",
+   "text": "Provádí se…"
+  },
   "s.being-in-this-group-means-being.190138a0": {
    "source": "Being in this group means being able to look at every page as read only does, and also to ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall, no letting everybody in at once. Somebody in this group and the full admin group is a full admin. More than one, separated by semicolons.",
    "text": "Členství v této skupině znamená prohlížet všechny stránky jako jen pro čtení a navíc zablokovat adresu, pustit ji zpět a nahrát seznamy na firewall. Nic jiného: žádné nastavení, žádné účty, žádné odebírání našich položek z firewallu, žádné hromadné pouštění všech. Kdo je v této skupině i ve skupině plných správců, je plný správce. Více skupin oddělte středníkem."
@@ -4779,6 +4883,10 @@
   "s.being-packed-behind.9e515c65": {
    "source": "being packed behind",
    "text": "balí se na pozadí"
+  },
+  "s.being-put-in.1abc8bbd": {
+   "source": "being put in…",
+   "text": "nasazuje se…"
   },
   "s.being-put-in.cb48aa9f": {
    "source": "being put in",
@@ -5536,6 +5644,10 @@
    "source": "Challenge",
    "text": "Validace"
   },
+  "s.change-a-local-user-never-root.31ac3cc6": {
+   "source": "change a local user (never root): add, password, aging, lock, unlock, sudo-on, sudo-off, drop or drop-home - a password is asked at a terminal, never given on the command line; drop asks first unless --yes",
+   "text": "změnit lokálního uživatele (nikdy root): add, password, aging, lock, unlock, sudo-on, sudo-off, drop nebo drop-home – heslo se zadává v terminálu, nikdy na příkazové řádce; drop se nejdřív zeptá, pokud není --yes"
+  },
   "s.change-any-of-these-and-press.3e2b5503": {
    "source": "Change any of these and press Read again: the settings are worked out afresh for what is typed.",
    "text": "Kteroukoli hodnotu změňte a stiskněte Načíst znovu: nastavení se spočítá znovu podle zadaných hodnot."
@@ -5623,6 +5735,22 @@
   "s.changing-them-takes-an-account-that.c762809b": {
    "source": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log.",
    "text": "Ke změně je potřeba účet, který to smí: vlastní účet tohoto programu, pokud to právo má, jinak správce toho serveru. Na ten se zeptá okno, použije se jen pro ten jeden požadavek a nikam se neukládá – ani do nastavení, ani do databáze, ani do žádného logu."
+  },
+  "s.characters-at-least-it-goes-to.05989e21": {
+   "source": "characters at least. It goes to the nodes as its hash only and is kept nowhere.",
+   "text": "znaků nejméně. Na nody jde jen jeho hash a nikde se neuchovává."
+  },
+  "s.characters-at-least-it-goes-to.6e1e5cbc": {
+   "source": "characters at least. It goes to root's helper as its hash only and is kept nowhere.",
+   "text": "znaků nejméně. Rootovu pomocníkovi jde jen jeho hash a nikde se neuchovává."
+  },
+  "s.characters-at-least.d4b01438": {
+   "source": "Characters at least",
+   "text": "Znaků nejméně"
+  },
+  "s.characters-not-in-the-old-one.5bd8d259": {
+   "source": "Characters not in the old one",
+   "text": "Znaků, které nejsou ve starém"
   },
   "s.chart.b82b40b8": {
    "source": "chart",
@@ -7160,6 +7288,10 @@
    "source": "Diagnostics → Tables",
    "text": "Diagnostics → Tables"
   },
+  "s.dictcheck.e2d92f3b": {
+   "source": "dictcheck",
+   "text": "dictcheck"
+  },
   "s.did-not-answer-in-a-minute.dd45a27c": {
    "source": "did not answer in a minute - is isemon running?",
    "text": "neodpověděl do minuty - běží isemon?"
@@ -7187,6 +7319,10 @@
   "s.different-machines.0dc73df8": {
    "source": "Different machines",
    "text": "Různé stroje"
+  },
+  "s.difok.caa26942": {
+   "source": "difok",
+   "text": "difok"
   },
   "s.digest.2923f6fa": {
    "source": "digest",
@@ -7431,6 +7567,10 @@
   "s.done-by.e1ee8777": {
    "source": "Done by",
    "text": "Provedl"
+  },
+  "s.done-last.d6c2083c": {
+   "source": "Done last",
+   "text": "Naposledy provedeno"
   },
   "s.done-lately-cleared.f512ad81": {
    "source": "done lately cleared",
@@ -7764,6 +7904,14 @@
    "source": "e.g. hq",
    "text": "např. hq"
   },
+  "s.e-g-jan-nov-k.cf897ecc": {
+   "source": "e.g. Jan Novák",
+   "text": "např. Jan Novák"
+  },
+  "s.e-g-jnovak.d55fef71": {
+   "source": "e.g. jnovak",
+   "text": "např. jnovak"
+  },
   "s.each-address-when-it-last-fetched.82b84eb2": {
    "source": "- each address, when it last fetched and how many times - and the count of refusals start again from nothing.",
    "text": "- každá adresa, kdy naposledy stahovala a kolikrát - a počet odmítnutí začnou znovu od nuly."
@@ -7807,6 +7955,10 @@
   "s.each-name-a-ca-had-proved.1753ec71": {
    "source": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof.",
    "text": "Každé jméno, které CA ověřovala: kterým modulem (DNS poskytovatel, modul HTTP-01), jak často bylo přijato a jak dlouho CA trvalo důkaz uvidět."
+  },
+  "s.each-node-puts-it-in-within.546d9110": {
+   "source": "each node puts it in within a few seconds",
+   "text": "každý node ji nastaví během pár sekund"
   },
   "s.each-one-is-fetched-as-soon.bd18f295": {
    "source": "each one is fetched as soon as its own interval falls due",
@@ -9512,6 +9664,10 @@
    "source": "Executables, installers and scripts that crossed and that AMP’s cloud had no verdict on at all - by name and where they came from. Usually a new release of something ordinary; sometimes not.",
    "text": "Spustitelné soubory, instalátory a skripty, které prošly a o kterých cloud AMP neměl vůbec žádný verdikt - podle názvu a odkud přišly. Obvykle nové vydání něčeho běžného; někdy ne."
   },
+  "s.existing.637487c8": {
+   "source": "existing",
+   "text": "existing"
+  },
   "s.exists-and-is-not-readable-by.922db8ec": {
    "source": "exists and is not readable by",
    "text": "existuje a nelze jej číst uživatelem"
@@ -9527,6 +9683,10 @@
   "s.expires-in.0a49c3a3": {
    "source": "Expires in",
    "text": "Vyprší za"
+  },
+  "s.expires.a99be3da": {
+   "source": "Expires",
+   "text": "Platnost do"
   },
   "s.expiring.5c300411": {
    "source": "expiring",
@@ -10048,6 +10208,10 @@
    "source": "file",
    "text": "soubor"
   },
+  "s.file.b4915d3a": {
+   "source": "FILE",
+   "text": "FILE"
+  },
   "s.files-looked-at.d5a1ef8a": {
    "source": "Files looked at",
    "text": "Prověřené soubory"
@@ -10451,6 +10615,10 @@
   "s.for-ever.aeabb98d": {
    "source": "for ever",
    "text": "navždy"
+  },
+  "s.for-every-local-user-however-the.565b7810": {
+   "source": "For every local user, however the password is changed - passwd, a password run out at sign-in, these pages. Put into the server's own files: pam_pwquality, pam_pwhistory, pam_faillock and login.defs (with authselect, the features that put the modules in). Not set here, the server keeps what its system has, and nothing is written.",
+   "text": "Pro každého lokálního uživatele, ať se heslo mění jakkoli – passwd, vypršené heslo při přihlášení, tyto stránky. Zapisuje se do vlastních souborů serveru: pam_pwquality, pam_pwhistory, pam_faillock a login.defs (s authselect funkce, které moduly zapnou). Když není nastaveno zde, server si ponechá to, co má jeho systém, a nic se nezapisuje."
   },
   "s.for-good-every-time.d1a40776": {
    "source": "for good, every time",
@@ -10908,6 +11076,10 @@
    "source": "full backup",
    "text": "plná záloha"
   },
+  "s.full-name.eeb69208": {
+   "source": "Full name",
+   "text": "Celé jméno"
+  },
   "s.full.11a97f9c": {
    "source": "% full",
    "text": "% plno"
@@ -11027,6 +11199,10 @@
   "s.give-its-name-first-its-name.e817bf31": {
    "source": "Give its name first (Its name…).",
    "text": "Nejdřív zadejte jeho jméno (Jeho jméno…)."
+  },
+  "s.give-sudo.5a83b737": {
+   "source": "Give sudo",
+   "text": "Dát sudo"
   },
   "s.give-the-disk-back.eb52259c": {
    "source": "Give the disk back",
@@ -11208,6 +11384,10 @@
    "source": "good - checked by openssl against the authorities put in",
    "text": "dobrý - ověřen openssl proti vloženým autoritám"
   },
+  "s.good-for-days.327bc318": {
+   "source": "Good for (days)",
+   "text": "Platnost (dny)"
+  },
   "s.good-until.cd5037b6": {
    "source": "Good until",
    "text": "Platné do"
@@ -11332,10 +11512,6 @@
    "source": "half an hour",
    "text": "půl hodiny"
   },
-  "s.half-goes-into-root-s-authorized.add26887": {
-   "source": "half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
-   "text": "polovina jde do authorized_keys roota na tomto serveru. Klíč, který tam byl předtím, zůstane, dokud se v seznamu níže neodebere."
-  },
   "s.half-goes-into.70961d26": {
    "source": "half goes into",
    "text": "polovina jde do"
@@ -11428,6 +11604,10 @@
    "source": "here",
    "text": "zde"
   },
+  "s.here.ecbcb0e4": {
+   "source": "Here",
+   "text": "Tady"
+  },
   "s.hh-mm.a4c7ee9b": {
    "source": "HH:MM",
    "text": "HH:MM"
@@ -11495,6 +11675,10 @@
   "s.holds.b1c8168d": {
    "source": "Holds",
    "text": "Drží"
+  },
+  "s.home.70f8bb9a": {
+   "source": "Home",
+   "text": "Domovská složka"
   },
   "s.honduras.5aa58871": {
    "source": "Honduras",
@@ -11692,6 +11876,10 @@
    "source": "how long a job took, ms",
    "text": "jak dlouho úloha trvala, ms"
   },
+  "s.how-long-a-locked-user-stays.68c56093": {
+   "source": "How long a locked user stays locked, in seconds (pam_faillock: unlock_time). 0: until root unlocks them - faillock --user NAME --reset.",
+   "text": "Jak dlouho zůstane zamčený uživatel zamčený, v sekundách (pam_faillock: unlock_time). 0: dokud ho root neodemkne – faillock --user JMÉNO --reset."
+  },
   "s.how-long-a-machine-seen-on.57d95657": {
    "source": "How long a machine seen on eduroam is remembered. One row each, and it is only ever read beside a page about what is happening now - a machine that has not been back in a fortnight is a row nothing will ever ask for. A university’s eduroam is thousands of machines a day, so there is a ceiling of twenty thousand rows underneath this as well.",
    "text": "Jak dlouho se pamatuje stroj viděný na eduroamu. Každý má jeden řádek a čte se jen vedle stránky o tom, co se děje právě teď - stroj, který se dva týdny nevrátil, je řádek, na který se už nikdo nezeptá. Eduroam univerzity jsou tisíce strojů denně, takže pod tím je navíc strop dvacet tisíc řádků."
@@ -11763,6 +11951,10 @@
   "s.how-long-it-has-been-up.405d2583": {
    "source": "How long it has been up, and what its sensors say (temperature, voltage, fans), where it has them.",
    "text": "Jak dlouho běží a co říkají jeho čidla (teplota, napětí, ventilátory), pokud je má."
+  },
+  "s.how-long-it-is-good.a2b83009": {
+   "source": "How long it is good",
+   "text": "Jak dlouho platí"
   },
   "s.how-long-it-waits.cfec72c0": {
    "source": "How long it waits.",
@@ -11888,6 +12080,10 @@
    "source": "How many bans are sent to the router in one command. Every command is a round trip, and a round trip to a router across a site is most of the time a sync takes. Each one still carries its own error handling, so an address the router will not take cannot throw away the ones sent with it. 1 sends them one at a time, which is only worth doing while working out what a router is objecting to.",
    "text": "Kolik blokací se pošle routeru v jednom příkazu. Každý příkaz je jedna cesta tam a zpět a cesta tam a zpět k routeru na druhém konci areálu tvoří většinu doby synchronizace. Každá blokace má stále vlastní ošetření chyb, takže adresa, kterou router nepřijme, nemůže zahodit ty, které byly poslány s ní. 1 je posílá po jedné, což se vyplatí jen při zjišťování, proti čemu router protestuje."
   },
+  "s.how-many-characters-of-the-new.c7e94798": {
+   "source": "How many characters of the new password must not be in the old one (pam_pwquality: difok). Checked only where the old password is typed too - passwd by the user, a password run out at sign-in; not when root or these pages set it.",
+   "text": "Kolik znaků nového hesla nesmí být ve starém (pam_pwquality: difok). Kontroluje se jen tam, kde se zadává i staré heslo – passwd spuštěný uživatelem, heslo vypršelé při přihlášení; ne když heslo nastavuje root nebo tyto stránky."
+  },
   "s.how-many-connections-are-open.4167aa89": {
    "source": "how many connections are open",
    "text": "kolik spojení je otevřeno"
@@ -11895,6 +12091,18 @@
   "s.how-many-connections-each-unit-had.77022f8a": {
    "source": "How many connections each unit had open the last time it said (every few minutes), and the most it has ever had.",
    "text": "Kolik spojení měla každá jednotka otevřeno, když to naposledy hlásila (každých pár minut), a kolik jich kdy měla nejvíce."
+  },
+  "s.how-many-days-a-password-is.b3b38b82": {
+   "source": "How many days a password is good after it was set (login.defs: PASS_MAX_DAYS; chage -M). Then it must be changed at the next sign-in.",
+   "text": "Kolik dní heslo platí od nastavení (login.defs: PASS_MAX_DAYS; chage -M). Potom se musí při dalším přihlášení změnit."
+  },
+  "s.how-many-days-after-a-change.a18139b3": {
+   "source": "How many days after a change the password may not be changed again - so that the last passwords cannot be gone through at once to come back to the old one (login.defs: PASS_MIN_DAYS; chage -m). 0: changed again at once.",
+   "text": "Kolik dní po změně nejde heslo změnit znovu – aby se nedalo hned projít posledními hesly a vrátit se ke starému (login.defs: PASS_MIN_DAYS; chage -m). 0: lze změnit hned znovu."
+  },
+  "s.how-many-days-before-a-password.30765a8b": {
+   "source": "How many days before a password runs out the user is told so at sign-in (login.defs: PASS_WARN_AGE; chage -W).",
+   "text": "Kolik dní před vypršením hesla na to uživatel dostane upozornění při přihlášení (login.defs: PASS_WARN_AGE; chage -W)."
   },
   "s.how-many-different-addresses-have-offered.03cc3c62": {
    "source": "How many different addresses have offered this one name. Five or more is marked as a spray: one password tried against many places rather than many passwords against one.",
@@ -11947,6 +12155,14 @@
   "s.how-many-lines-the-firewall-wrote.12931871": {
    "source": "How many lines the firewall wrote in each hour of the window chosen above, split by what happened to them. Press a bar for the lines of that hour.",
    "text": "Kolik řádků firewall zapsal v každé hodině výše zvoleného okna, rozdělených podle toho, co se s nimi stalo. Kliknutím na sloupec zobrazíte řádky té hodiny."
+  },
+  "s.how-many-of-a-user-s.62c2cc6b": {
+   "source": "How many of a user's last passwords cannot be taken again (pam_pwhistory: remember; they are kept hashed in /etc/security/opasswd). 0: any. With authselect, its feature with-pwhistory is switched on for it.",
+   "text": "Kolik posledních hesel uživatele nejde použít znovu (pam_pwhistory: remember; uchovávají se jako hashe v /etc/security/opasswd). 0: libovolné. S authselect se pro to zapne funkce with-pwhistory."
+  },
+  "s.how-many-of-the-four-kinds.faa7122b": {
+   "source": "How many of the four kinds of characters a new password must have at least: small letters, capitals, digits, the others (pam_pwquality: minclass). Any: no kinds asked for.",
+   "text": "Kolik ze čtyř druhů znaků musí nové heslo mít nejméně: malá písmena, velká písmena, číslice, ostatní (pam_pwquality: minclass). Libovolně: žádné druhy se nevyžadují."
   },
   "s.how-many-of-this-group-to.23466e21": {
    "source": "How many of this group to show at a time.",
@@ -12559,6 +12775,14 @@
   "s.in-dns-now.fa11c2c0": {
    "source": "In DNS now",
    "text": "Teď v DNS"
+  },
+  "s.in-effect-here.d346acba": {
+   "source": "In effect here",
+   "text": "Platí zde"
+  },
+  "s.in-effect-on-the-nodes.d9210903": {
+   "source": "In effect on the nodes",
+   "text": "Platí na uzlech"
   },
   "s.in-force.377013e3": {
    "source": "In force",
@@ -13176,10 +13400,6 @@
    "source": "is the interface facing the internet; put yours.",
    "text": "je rozhraní směřující do internetu; uveďte své."
   },
-  "s.is-the-last-key-root-signs.a7f642aa": {
-   "source": "is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
-   "text": "je poslední klíč, kterým se root na tento server přihlašuje. Po jeho odebrání se na server přes SSH jako root s klíčem nikdo nedostane."
-  },
   "s.is-the-one-meant-for-it.bea0b21e": {
    "source": "is the one meant for it.",
    "text": "je k tomu určený."
@@ -13776,10 +13996,6 @@
    "source": "It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.",
    "text": "Je to ta polovina příběhu, kterou tato stránka nikdy neukazovala: prázdný seznam výše neříká nic o tom, zda se nic neděje, nebo zda se vše děje jeden pokus pod hranicí."
   },
-  "s.it-is-the-last-key-root.aac33a11": {
-   "source": "It is the last key root signs in with on this server.",
-   "text": "Je to poslední klíč, kterým se root na tento server přihlašuje."
-  },
   "s.it-is-used-only-while-the.cd613c27": {
    "source": "; it is used only while the directory is unreachable.",
    "text": "; používá se jen tehdy, když adresář není dostupný."
@@ -13932,6 +14148,10 @@
    "source": "its health check (healthz.php) says 503; the logs are read and banning goes on",
    "text": "jeho kontrola stavu (healthz.php) vrací 503; logy se čtou a blokuje se dál"
   },
+  "s.its-home-folder-too.130887ab": {
+   "source": "Its home folder too",
+   "text": "I jeho domovskou složku"
+  },
   "s.its-https-port.a9fcbca8": {
    "source": "Its HTTPS port",
    "text": "Jeho HTTPS port"
@@ -14079,6 +14299,10 @@
   "s.its-port.0355175d": {
    "source": "its port",
    "text": "jeho port"
+  },
+  "s.its-public-half-put-onto-the.cc0bbe1e": {
+   "source": "Its public half, put onto the nodes - click it to copy:",
+   "text": "Jeho veřejná část, nahraná na uzly – kliknutím zkopírujete:"
   },
   "s.its-public-half-put-onto-this.77d4840e": {
    "source": "Its public half, put onto this server - click it to copy:",
@@ -14556,6 +14780,10 @@
    "source": "Keys that may sign in as root",
    "text": "Klíče, kterými se lze přihlásit jako root"
   },
+  "s.keys-that-may-sign-in-as.879b42d5": {
+   "source": "Keys that may sign in as",
+   "text": "Klíče, kterými se lze přihlásit jako"
+  },
   "s.keys.e5651c68": {
    "source": "Keys",
    "text": "Klíče"
@@ -14591,6 +14819,10 @@
   "s.kind.e00ac23f": {
    "source": "Kind",
    "text": "Druh"
+  },
+  "s.kinds-of-characters-at-least.1099402f": {
+   "source": "Kinds of characters at least",
+   "text": "Druhů znaků nejméně"
   },
   "s.kinds-of-trouble-a-2025-controller.3c939025": {
    "source": "kinds of trouble a 2025 controller would refuse",
@@ -15384,6 +15616,10 @@
    "source": "local-in policy",
    "text": "politika local-in"
   },
+  "s.local-users.bdea5a5a": {
+   "source": "Local users",
+   "text": "Lokální uživatelé"
+  },
   "s.local.dc99d54d": {
    "source": "Local",
    "text": "Lokální"
@@ -15392,9 +15628,17 @@
    "source": "locip",
    "text": "locip"
   },
+  "s.lock.891ebccd": {
+   "source": "Lock",
+   "text": "Zamknout"
+  },
   "s.lock.e1177974": {
    "source": "lock",
    "text": "zámek"
+  },
+  "s.locked-after-so-many-wrong-faillock.26bbef0d": {
+   "source": "Locked after so many wrong (faillock)",
+   "text": "Zamknout po tolika špatných (faillock)"
   },
   "s.locked-at.ecf950b1": {
    "source": "Locked at",
@@ -15415,6 +15659,10 @@
   "s.locked.a798882f": {
    "source": "Locked",
    "text": "Zamčeno"
+  },
+  "s.locked.adec79fd": {
+   "source": "locked",
+   "text": "zamčeno"
   },
   "s.lockout.a995293c": {
    "source": "lockout",
@@ -15463,6 +15711,10 @@
   "s.logid.ef7116b2": {
    "source": "logid",
    "text": "logid"
+  },
+  "s.login-defs-holds-the-days-only.704ca93e": {
+   "source": "login.defs holds the days only for the users made after it. On: the days set here are put on every local user there now too (chage) - never on root, nor on a user with no password (a key only), who could never give a new one. Off: the users there now keep their own days; each user's are in their popup.",
+   "text": "login.defs drží dny jen pro uživatele vytvořené po něm. Zapnuto: zde nastavené dny se nastaví i všem lokálním uživatelům, kteří už existují (chage) – nikdy rootovi ani uživateli bez hesla (jen s klíčem), který by nové nikdy nemohl zadat. Vypnuto: stávající uživatelé si ponechají své dny; dny každého uživatele jsou v jeho okně."
   },
   "s.login-s-that-were-handed-them.db750811": {
    "source": "login(s) that were handed them show no rules. That is the device not needing to fetch what it already holds — it appears the next time it has to, which an edit to the ACL on ISE brings about at once.",
@@ -15936,10 +16188,6 @@
    "source": "made here, by isemon's own authority",
    "text": "vytvořený zde, vlastní autoritou isemonu"
   },
-  "s.made-here.827209b5": {
-   "source": "made here",
-   "text": "vytvořen zde"
-  },
   "s.made-here.cba81f98": {
    "source": "Made here",
    "text": "Vytvořit zde"
@@ -15952,6 +16200,10 @@
    "source": "Made if it is not there. Without / at the start: under the account’s home.",
    "text": "Vytvoří se, pokud tam není. Bez / na začátku: v domovské složce účtu."
   },
+  "s.made-keep-the-private-half-now.3165d433": {
+   "source": "made - keep the private half now, it is not shown again",
+   "text": "vytvořen – privátní polovinu si uložte hned, znovu se nezobrazí"
+  },
   "s.made-last.ba7fa69f": {
    "source": "Made last",
    "text": "Naposledy sestaven"
@@ -15959,6 +16211,10 @@
   "s.made-on-the-first-run.be24152c": {
    "source": "made on the first run",
    "text": "vytvořeno při prvním spuštění"
+  },
+  "s.made-on-the-nodes.4458cb41": {
+   "source": "Made on the nodes",
+   "text": "Vytvořit na uzlech"
   },
   "s.made-ready-waiting-for-a-restart.00864c23": {
    "source": "Made ready - waiting for a restart of the machine",
@@ -16020,18 +16276,6 @@
    "source": "Make a fresh key and certificate here, for this router’s address. It is pinned at once, so until the new one is on the router this will not reach it.",
    "text": "Vytvořit zde nový klíč a certifikát pro adresu tohoto routeru. Připne se hned, takže dokud nový nebude na routeru, nepřipojí se k němu."
   },
-  "s.make-a-fresh-pair-here-ed25519.63aac4c6": {
-   "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server.",
-   "text": "Vytvořit zde nový pár - Ed25519, nebo RSA 4096 tam, kde něco starého potřebuje RSA. Soukromá polovina se vám ukáže jednou; veřejná jde do authorized_keys roota na tomto serveru."
-  },
-  "s.make-a-key-for-root-its.84dd16b6": {
-   "source": "make a key for root: its public half goes into root's authorized_keys, its private half is written once to --out (or printed once) and kept nowhere else",
-   "text": "vytvořit klíč pro roota: jeho veřejná polovina jde do authorized_keys roota, soukromá se jednou zapíše do --out (nebo jednou vypíše) a nikde jinde se neuloží"
-  },
-  "s.make-a-key-for-this-server.4d5d544e": {
-   "source": "Make a key for this server",
-   "text": "Vytvořit klíč pro tento server"
-  },
   "s.make-a-key.fcb94d2b": {
    "source": "Make a key",
    "text": "Vytvořit klíč"
@@ -16075,6 +16319,10 @@
   "s.make-it-ready.a1d3d50c": {
    "source": "Make it ready",
    "text": "Připravit"
+  },
+  "s.make-it-there.79e6bed0": {
+   "source": "Make it there",
+   "text": "Vytvořit tam"
   },
   "s.make-it.da5fa11d": {
    "source": "Make it",
@@ -16168,6 +16416,10 @@
    "source": "Malware",
    "text": "Malware"
   },
+  "s.managed.9fdf36c7": {
+   "source": "managed",
+   "text": "managed"
+  },
   "s.manual.b363713a": {
    "source": "manual",
    "text": "manual"
@@ -16248,6 +16500,10 @@
    "source": "Mauritius",
    "text": "Mauricius"
   },
+  "s.maxrepeat.9d16f857": {
+   "source": "maxrepeat",
+   "text": "maxrepeat"
+  },
   "s.may-act-as-anybody-any-protocol.583b2d6a": {
    "source": "May act as anybody, any protocol",
    "text": "Smí vystupovat za kohokoli, libovolný protokol"
@@ -16259,6 +16515,10 @@
   "s.may-also-ban-let-back-in.846d8957": {
    "source": "may also ban, let back in and put the lists on the firewall;",
    "text": "smí navíc blokovat, pouštět zpět a nahrávat seznamy na firewall;"
+  },
+  "s.may-become-root-with-sudo.2f2fbbee": {
+   "source": "May become root with sudo",
+   "text": "Smí se stát rootem přes sudo"
   },
   "s.may-change-anything-a.c01aee15": {
    "source": "may change anything; a",
@@ -16284,6 +16544,26 @@
    "source": "may look at every page, ban an address, let one back in and put the lists on the firewall — and nothing else. A",
    "text": "smí prohlížet všechny stránky, zablokovat adresu, pustit ji zpět a nahrát seznamy na firewall — a nic jiného. Účet"
   },
+  "s.may-not-sign-in-at-all.3debfcf8": {
+   "source": "May not sign in at all - neither with the password nor with an SSH key - until unlocked. Nothing of theirs is taken away.",
+   "text": "Nesmí se přihlásit vůbec – ani heslem, ani SSH klíčem – dokud nebude odemčen. Nic z jeho věcí se neodebere."
+  },
+  "s.may-not-sign-in.4d052f41": {
+   "source": "may not sign in",
+   "text": "nesmí se přihlásit"
+  },
+  "s.may-sign-in-again-with-the.e7724d8f": {
+   "source": "May sign in again - with the password, or a key.",
+   "text": "Smí se znovu přihlásit – heslem nebo klíčem."
+  },
+  "s.may-sign-in-here.b6de6e7a": {
+   "source": "may sign in here",
+   "text": "se tu smí přihlásit"
+  },
+  "s.may-sign-in.ea88c79c": {
+   "source": "may sign in",
+   "text": "smí se přihlásit"
+  },
   "s.may-the-account-write.46a76be2": {
    "source": "May the account write",
    "text": "Smí účet zapisovat"
@@ -16291,6 +16571,10 @@
   "s.may-this-account-write.12a21188": {
    "source": "May this account write",
    "text": "Smí tento účet zapisovat"
+  },
+  "s.may-use-sudo-but-has-no.f5994120": {
+   "source": "May use sudo, but has no password: sudo asks for their own password, so they cannot use it (nor isemon --console through it) until they have one - set it above.",
+   "text": "Smí používat sudo, ale nemá heslo: sudo se ptá na jeho vlastní heslo, takže ho (ani isemon --console přes něj) nemůže použít, dokud heslo nemá – nastavte ho výše."
   },
   "s.mayotte.dcc64425": {
    "source": "Mayotte",
@@ -16468,9 +16752,17 @@
    "source": "mikrotik2",
    "text": "mikrotik2"
   },
+  "s.minclass.5a77c22f": {
+   "source": "minclass",
+   "text": "minclass"
+  },
   "s.mine.8034c43d": {
    "source": "mine",
    "text": "mine"
+  },
+  "s.minlen.d3c14ca9": {
+   "source": "minlen",
+   "text": "minlen"
   },
   "s.missing-in-the-chain.2d8565e0": {
    "source": "Missing in the chain:",
@@ -16747,6 +17039,10 @@
   "s.name-and-password.cc2e3a44": {
    "source": "Name and password",
    "text": "Jméno a heslo"
+  },
+  "s.name-and-shell.c3c373bb": {
+   "source": "Name and shell",
+   "text": "Jméno a shell"
   },
   "s.name-asked-for.49a67f5a": {
    "source": "Name asked for",
@@ -17360,6 +17656,10 @@
    "source": "no end an hour after its last line - acme runs it again",
    "text": "bez konce hodinu po posledním řádku - acme ji spustí znovu"
   },
+  "s.no-end.13ff3399": {
+   "source": "no end",
+   "text": "bez konce"
+  },
   "s.no-file-arrived.3d877c78": {
    "source": "no file arrived",
    "text": "nepřišel žádný soubor"
@@ -17411,6 +17711,10 @@
   "s.no-kerberos-library.27b2568e": {
    "source": "No Kerberos library",
    "text": "Chybí knihovna Kerberos"
+  },
+  "s.no-key-lets-root-in-over.031b5ef0": {
+   "source": "No key lets root in over SSH on",
+   "text": "Žádný klíč nepustí roota přes SSH na"
   },
   "s.no-key-lets-root-in-over.7a439df4": {
    "source": "No key lets root in over SSH on this server.",
@@ -17500,9 +17804,21 @@
    "source": "no node named yet",
    "text": "zatím žádný uzel"
   },
+  "s.no-not-in-allowusers.c0977ca5": {
+   "source": "no - not in AllowUsers",
+   "text": "ne – není v AllowUsers"
+  },
   "s.no-older-version-is-there.d18ec671": {
    "source": "No older version is there.",
    "text": "Žádná starší verze tam není."
+  },
+  "s.no-pam-faillock-not-in-pam.ef38dccc": {
+   "source": "no (pam_faillock not in PAM)",
+   "text": "ne (pam_faillock není v PAM)"
+  },
+  "s.no-pam-pwhistory-not-in-pam.f2c15fc9": {
+   "source": "no (pam_pwhistory not in PAM)",
+   "text": "ne (pam_pwhistory není v PAM)"
   },
   "s.no-password-at-all-is-switched.fd13a8ea": {
    "source": "No password at all is switched on only while Windows or a certificate is on, and only from a sign-in made that way.",
@@ -17592,6 +17908,10 @@
    "source": "No session from that address in the lines kept.",
    "text": "V uchovaných řádcích není žádná relace z této adresy."
   },
+  "s.no-shell.884326a0": {
+   "source": "no shell",
+   "text": "bez shellu"
+  },
   "s.no-sign-in.23f2e4d0": {
    "source": "no sign-in",
    "text": "žádné přihlášení"
@@ -17656,6 +17976,10 @@
    "source": "no such thing",
    "text": "nic takového"
   },
+  "s.no-such-user.1e4a6d3e": {
+   "source": "(no such user)",
+   "text": "(takový uživatel není)"
+  },
   "s.no-such-version.57ccc9ad": {
    "source": "no such version",
    "text": "taková verze neexistuje"
@@ -17703,6 +18027,10 @@
   "s.no-word-from-root-for-half.1f8f368d": {
    "source": "no word from root for half an hour",
    "text": "od roota půl hodiny žádná zpráva"
+  },
+  "s.no-word-of-the-dictionary.0501dd24": {
+   "source": "No word of the dictionary",
+   "text": "Žádné slovo ze slovníku"
   },
   "s.no-words-have-been-written-for.1cebd95a": {
    "source": "No words have been written for this one yet.",
@@ -18016,6 +18344,14 @@
    "source": "not an authority",
    "text": "není autorita"
   },
+  "s.not-answering.2d4fc38b": {
+   "source": "(not answering)",
+   "text": "(neodpovídá)"
+  },
+  "s.not-answering.9cade24c": {
+   "source": "not answering",
+   "text": "neodpovídá"
+  },
   "s.not-anything-of-ours.e27e6742": {
    "source": "not anything of ours",
    "text": "nic našeho"
@@ -18280,6 +18616,14 @@
    "source": "(not on this machine)",
    "text": "(na tomto stroji není)"
   },
+  "s.not-on-this-node.5ff1a470": {
+   "source": "not on this node",
+   "text": "na tomto uzlu není"
+  },
+  "s.not-on-this-server.ca29bcef": {
+   "source": "not on this server",
+   "text": "není na tomto serveru"
+  },
   "s.not-one-of-the-things-windows.fc594a8e": {
    "source": "Not one of the things Windows Server 2025 is known to refuse. But Digest is an old protocol, and the controllers keep a digest form of every password for it.",
    "text": "Nepatří k tomu, co Windows Server 2025 podle všeho odmítne. Digest je ale starý protokol a řadiče kvůli němu uchovávají digest podobu každého hesla."
@@ -18304,6 +18648,10 @@
    "source": "not read by isemon",
    "text": "isemon nečte"
   },
+  "s.not-read-root-s-half-is.1cbbe6ef": {
+   "source": "Not read: root’s half is not installed yet.",
+   "text": "Nenačteno: rootova část ještě není nainstalovaná."
+  },
   "s.not-read-yet.15c59711": {
    "source": "not read yet",
    "text": "zatím nenačteno"
@@ -18315,10 +18663,6 @@
   "s.not-read.65f453ff": {
    "source": "not read",
    "text": "nenačteno"
-  },
-  "s.not-read.d6b203a2": {
-   "source": "Not read.",
-   "text": "Nenačteno."
   },
   "s.not-ready-for-enforcing-yet.f3a0f2aa": {
    "source": "Not ready for enforcing yet",
@@ -18392,9 +18736,17 @@
    "source": ", not the name it has now.",
    "text": ", nikoli jméno, které má nyní."
   },
+  "s.not-the-user-s-name.7af320ca": {
+   "source": "Not the user's name",
+   "text": "Ne jméno uživatele"
+  },
   "s.not-there.1d3f2c11": {
    "source": "not there",
    "text": "není tam"
+  },
+  "s.not-there.e46409bb": {
+   "source": "(not there)",
+   "text": "(není tam)"
   },
   "s.not-this-folder.9c40e4fe": {
    "source": "Not this folder",
@@ -18472,9 +18824,21 @@
    "source": "note bad",
    "text": "note bad"
   },
+  "s.note-info.d184664c": {
+   "source": "note info",
+   "text": "note info"
+  },
+  "s.note-sku-confirm.ffefe39f": {
+   "source": "note sku-confirm",
+   "text": "note sku-confirm"
+  },
   "s.note.2c924e30": {
    "source": "Note",
    "text": "Poznámka"
+  },
+  "s.note.c51048b7": {
+   "source": "note",
+   "text": "poznámka"
   },
   "s.notes-not-rows.eec4fef8": {
    "source": "notes, not rows",
@@ -19268,10 +19632,6 @@
    "source": "of these have not been downloaded while these logs have been read, so the",
    "text": "z nich nebylo během čtení těchto logů staženo, takže"
   },
-  "s.of-this-server-the.d25192d1": {
-   "source": "of this server. The",
-   "text": "tohoto serveru. Jeho"
-  },
   "s.of-type.0c6f84bb": {
    "source": "of type",
    "text": "typu"
@@ -19287,6 +19647,10 @@
   "s.off-acme-still-checks-that-it.2f1c599d": {
    "source": "Off, acme still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.",
    "text": "Vypnuté: acme dál ověřuje, že odpovídá isemon, ale isemon přijímá řádky od kohokoli, kdo se k portu dostane."
+  },
+  "s.off-as-the-system-has-it.96bb2d3c": {
+   "source": "Off: as the system has it - what isemon wrote before is taken out again.",
+   "text": "Vypnuto: jak to má systém – co isemon dříve zapsal, se zase odebere."
   },
   "s.off-blocks-nobody-by-itself-temporary.f5d25f8a": {
    "source": "Off blocks nobody by itself. Temporary uses the ladder. Permanent keeps the first offender out until somebody takes them off.",
@@ -19440,6 +19804,10 @@
    "source": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, AES allowed), the SPN of each name, and the keytab of the first one - the others are served by the same key. Changing the account’s password later makes a new key version: make the keytab again.",
    "text": "Na řadiči domény, jako doménový administrátor: vlastní servisní účet (běžný uživatel, heslo nikdy nevyprší, povolené AES), SPN každého jména a keytab prvního z nich - ostatní obslouží stejný klíč. Pozdější změna hesla účtu vytvoří novou verzi klíče: keytab pak udělejte znovu."
   },
+  "s.on-a-password-is-good-for.677a0c89": {
+   "source": "On: a password is good for the days set here; after them the user must change it at the next sign-in - over SSH with a key too (login.defs: PASS_MAX_DAYS; chage -M). Off: a password never runs out.",
+   "text": "Zapnuto: heslo platí zde nastavený počet dní; po nich ho uživatel musí změnit při dalším přihlášení – i přes SSH s klíčem (login.defs: PASS_MAX_DAYS; chage -M). Vypnuto: heslo nikdy nevyprší."
+  },
   "s.on-a-pfsense-the-tables-are.98a01875": {
    "source": "On a pfSense the tables are filled again from the configuration whenever the filter is reloaded, and what this put in them goes with it: the sync here puts it back.",
    "text": "Na pfSense se tabulky při každém načtení filtru znovu naplní z konfigurace a co tam toto vložilo, zmizí: synchronizace odsud to vrátí."
@@ -19495,6 +19863,10 @@
   "s.on-isemon-s.cb04b780": {
    "source": "on - isemon's",
    "text": "zapnuto - isemonu"
+  },
+  "s.on-isemon-writes-the-values-below.aa997f96": {
+   "source": "On: isemon writes the values below into the files of this server - /etc/security/pwquality.conf.d/50-isemon.conf, its lines in pwhistory.conf and faillock.conf, the aging lines of /etc/login.defs - and puts them in again when they are found changed. With authselect, the features with-pwhistory and with-faillock are switched on only when they are needed. Off: what isemon wrote is taken out again, and the server has the policy its system has.",
+   "text": "Zapnuto: isemon zapíše hodnoty níže do souborů tohoto serveru – /etc/security/pwquality.conf.d/50-isemon.conf, své řádky v pwhistory.conf a faillock.conf, řádky platnosti v /etc/login.defs – a vrátí je zpět, když je najde změněné. S authselect se funkce with-pwhistory a with-faillock zapnou jen tehdy, když jsou potřeba. Vypnuto: co isemon zapsal, se odebere a server má politiku, kterou má jeho systém."
   },
   "s.on-it-a-server-answering-with.e6db1a4b": {
    "source": "on it); a server answering with any other is refused - somebody in between, or the server reinstalled.",
@@ -19648,6 +20020,10 @@
    "source": "On the node",
    "text": "Na uzlu"
   },
+  "s.on-the-nodes.95445cc3": {
+   "source": "On the nodes",
+   "text": "Na nodech"
+  },
   "s.on-the-nps-server-with-both.495d9cf8": {
    "source": "on the NPS server — with both",
    "text": "na serveru NPS — s oběma"
@@ -19735,6 +20111,10 @@
   "s.on-this-machine-s-clock.f3a5240b": {
    "source": "on this machine’s clock.",
    "text": "podle hodin tohoto stroje."
+  },
+  "s.on-this-server.d2481045": {
+   "source": "on this server.",
+   "text": "na tomto serveru."
   },
   "s.on-trial.d388d050": {
    "source": "On trial",
@@ -20300,6 +20680,10 @@
    "source": "Only machines put in one VLAN. A VLAN written as a number on some records and as a name on others is one VLAN here.",
    "text": "Jen stroje zařazené do jedné VLAN. VLAN zapsaná v některých záznamech číslem a v jiných jménem je zde jedna VLAN."
   },
+  "s.only-on.e8b91b2e": {
+   "source": "Only on",
+   "text": "Jen na"
+  },
   "s.only-one-access-service.80beb553": {
    "source": "Only one access service.",
    "text": "Jen jedna přístupová služba."
@@ -20363,6 +20747,18 @@
   "s.only-refusals-for-one-reason.2c5d91a8": {
    "source": "Only refusals for one reason.",
    "text": "Jen odmítnutí z jednoho důvodu."
+  },
+  "s.only-root-is-on-the-nodes.73fc3e60": {
+   "source": "Only root is on the nodes - Add a user makes one, on every node at once.",
+   "text": "Na nodech je jen root – Přidat uživatele ho vytvoří na všech nodech najednou."
+  },
+  "s.only-root-is-on-this-server.ef6311f0": {
+   "source": "Only root is on this server - Add a user makes one.",
+   "text": "Na tomto serveru je jen root – Přidat uživatele ho vytvoří."
+  },
+  "s.only-root-no-other-user-who.ae8d6f6e": {
+   "source": "Only root: no other user who may sign in (a login shell, UID 1000 and up) is on this server.",
+   "text": "Jen root: žádný jiný uživatel, který se smí přihlásit (přihlašovací shell, UID 1000 a výš), na tomto serveru není."
   },
   "s.only-rows-holding-this.37a25442": {
    "source": "only rows holding this",
@@ -20583,6 +20979,10 @@
   "s.only.f8969a18": {
    "source": "only",
    "text": "jen"
+  },
+  "s.onto-the-nodes.d46482ab": {
+   "source": "Onto the nodes",
+   "text": "Na uzly"
   },
   "s.opcache.b9aca39f": {
    "source": "OPcache",
@@ -20900,6 +21300,10 @@
    "source": "osup",
    "text": "osup"
   },
+  "s.osusers.437076a3": {
+   "source": "osusers",
+   "text": "osusers"
+  },
   "s.oth.5053112f": {
    "source": "oth",
    "text": "oth"
@@ -21180,6 +21584,10 @@
    "source": "Palestine",
    "text": "Palestina"
   },
+  "s.pam-pwquality-in-pam.13046d17": {
+   "source": "pam_pwquality in PAM",
+   "text": "pam_pwquality v PAM"
+  },
   "s.panama.1e36b31e": {
    "source": "Panama",
    "text": "Panama"
@@ -21276,6 +21684,10 @@
    "source": "passkeys",
    "text": "passkeys"
   },
+  "s.password-aging.41220124": {
+   "source": "Password aging",
+   "text": "Platnost hesla"
+  },
   "s.password-at-the-proxy.f48a6bae": {
    "source": "Password at the proxy",
    "text": "Heslo pro proxy"
@@ -21283,6 +21695,10 @@
   "s.password-checked.17ea1fd4": {
    "source": "password checked",
    "text": "heslo ověřeno"
+  },
+  "s.password-empty-none-the-user-signs.bc442612": {
+   "source": "Password (empty: none - the user signs in with a key only)",
+   "text": "Heslo (prázdné: žádné – uživatel se přihlašuje jen klíčem)"
   },
   "s.password-for-the-key.4c51c361": {
    "source": "Password for the key",
@@ -21307,6 +21723,10 @@
   "s.password-policies-for-some-accounts.d3f5b23c": {
    "source": "Password policies for some accounts",
    "text": "Zásady hesel pro některé účty"
+  },
+  "s.password-policy.5c4a176c": {
+   "source": "Password policy",
+   "text": "Politika hesel"
   },
   "s.password-refused.6238e6d1": {
    "source": "password refused",
@@ -21343,6 +21763,10 @@
   "s.paste-a-file-made-by-either.bfb2ae20": {
    "source": "Paste a file made by either of the download buttons, or choose it below. The settings in it are checked one by one exactly as if they had been typed here, and a single bad value stops the whole thing rather than leaving half of it applied. Afterwards you are told what the file carried, and what it could not.",
    "text": "Vložte soubor vytvořený kterýmkoli z tlačítek pro stažení, nebo jej vyberte níže. Nastavení v něm se kontrolují jedno po druhém přesně tak, jako by byla zadána zde, a jediná chybná hodnota zastaví celý import, místo aby zůstal použit napůl. Poté se dozvíte, co soubor obsahoval a co z něj použít nešlo."
+  },
+  "s.paste-a-key-first.e8e2e599": {
+   "source": "paste a key first",
+   "text": "nejdřív vložte klíč"
   },
   "s.paste-acme-s-key.8d6436c8": {
    "source": "Paste acme’s key",
@@ -21544,6 +21968,10 @@
    "source": "Pick a .crt or .pem file instead of pasting it.",
    "text": "Místo vkládání vyberte soubor .crt nebo .pem."
   },
+  "s.pick-a-node.6883c985": {
+   "source": "pick a node",
+   "text": "vyberte uzel"
+  },
   "s.pick-the-groups-out-of-the.ec1a9122": {
    "source": "Pick the groups out of the directory rather than typing a distinguished name by hand — that is how a role ends up pointing at a group that does not exist, and nobody finds out until the first person cannot sign in.",
    "text": "Vyberte skupiny z adresáře, místo abyste rozlišující jméno psali ručně — právě tak se stane, že role ukazuje na neexistující skupinu, a nikdo na to nepřijde, dokud se první člověk nemůže přihlásit."
@@ -21651,6 +22079,10 @@
   "s.plain-ldap.183eecb3": {
    "source": "plain LDAP",
    "text": "nešifrované LDAP"
+  },
+  "s.plain-osu-table.60445529": {
+   "source": "plain osu-table",
+   "text": "plain osu-table"
   },
   "s.plain-receiving.a3e9a0ab": {
    "source": "Plain receiving",
@@ -22107,10 +22539,6 @@
   "s.put-a-dump-back.168fd0b7": {
    "source": "Put a dump back",
    "text": "Obnovit dump"
-  },
-  "s.put-a-key-into-root-s.6eb8df49": {
-   "source": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)",
-   "text": "vložit klíč do authorized_keys roota: řádek veřejného klíče, soubor .pub, nebo soubor soukromého klíče, z něhož jde dovnitř jen veřejná polovina (jeho heslo: --passphrase-file, ISEMON_KEY_PASSPHRASE, jinak se zeptá)"
   },
   "s.put-account-names-by-stand-ins.2da46984": {
    "source": "Put account names by stand-ins (account-001…)",
@@ -22752,6 +23180,10 @@
    "source": "Read the ISE logs",
    "text": "Číst logy ISE"
   },
+  "s.read-the-keys-again-on-every.82875d29": {
+   "source": "Read the keys again on every node",
+   "text": "Načíst klíče znovu na všech uzlech"
+  },
   "s.read-the-keys-again.bcc61a0c": {
    "source": "Read the keys again",
    "text": "Načíst klíče znovu"
@@ -22771,6 +23203,14 @@
   "s.read-the-tail-of-the-daemon.e830c0c6": {
    "source": "Read the tail of the daemon’s own log file. Switch on debug in Settings to have it say everything.",
    "text": "Přečíst konec vlastního souboru logu démona. Zapněte v Nastavení ladění, aby vypisoval vše."
+  },
+  "s.read-the-users-again-on-every.13090415": {
+   "source": "Read the users again on every node",
+   "text": "Znovu načíst uživatele na všech uzlech"
+  },
+  "s.read-the-users-again.1fd86d10": {
+   "source": "Read the users again",
+   "text": "Načíst uživatele znovu"
   },
   "s.read-up-to.f4234841": {
    "source": "Read up to",
@@ -22807,6 +23247,10 @@
   "s.reading-the-keys.0dc2065c": {
    "source": "Reading the keys…",
    "text": "Načítají se klíče…"
+  },
+  "s.reading-the-users.3641d499": {
+   "source": "Reading the users…",
+   "text": "Načítají se uživatelé…"
   },
   "s.reading-what-the-machine-has-and.b305415b": {
    "source": "Reading what the machine has and what the server is set to, and timing a few small writes…",
@@ -23039,6 +23483,14 @@
   "s.refused-sign-ins-to-a-switch.1ac3347f": {
    "source": "Refused sign-ins to a switch or router over TACACS+. A different system and a different door: a burst here is somebody at the network kit, not at the VPN.",
    "text": "Odmítnutá přihlášení ke switchi nebo routeru přes TACACS+. Jiný systém a jiný vstup: nával zde znamená někoho u síťových prvků, ne u VPN."
+  },
+  "s.refused-since-1-10-351-root.5bfd2e05": {
+   "source": "refused since 1.10.351: root's SSH keys are only shown",
+   "text": "odmítnuto od 1.10.351: rootovy SSH klíče se jen zobrazují"
+  },
+  "s.refused-since-1-10-351-root.676a922b": {
+   "source": "refused since 1.10.351: root's SSH keys are only shown; a key for another user who may sign in is made in Settings - SSH keys",
+   "text": "odmítnuto od 1.10.351: rootovy SSH klíče se jen zobrazují; klíč pro jiného uživatele, který se smí přihlásit, se vytváří v Nastavení – SSH klíče"
   },
   "s.refused-the-domain.dbf4d607": {
    "source": "refused · the domain",
@@ -23572,17 +24024,25 @@
    "source": "root did not put it in",
    "text": "root to nenasadil"
   },
+  "s.root-is-never-locked-and-never.68e083e7": {
+   "source": "root is never locked, and never given aging here.",
+   "text": "root se nikdy nezamyká a platnost hesla mu tu nikdy nenastavíme."
+  },
   "s.root-is-putting-it-in-a.fb1a3ed8": {
    "source": "Root is putting it in - a few seconds, a minute when rsyslog-gnutls has to be installed first.",
    "text": "Root to zavádí - pár sekund, minutu, když se musí nejdřív nainstalovat rsyslog-gnutls."
   },
+  "s.root-is-shown-here-only-its.c89c4fc8": {
+   "source": "root is shown here only. Its password, its shell and whether it may sign in are changed on the machine itself - over SSH as root, or at its console - never from these pages. Its SSH keys are in SSH keys.",
+   "text": "root je zde jen zobrazen. Jeho heslo, shell a to, zda se smí přihlásit, se mění na samotném stroji – přes SSH jako root nebo na jeho konzoli – nikdy z těchto stránek. Jeho SSH klíče jsou v SSH klíčích."
+  },
+  "s.root-is-shown-only-it-is.fc74bd96": {
+   "source": "root is shown only - it is changed on the machine itself, never from these pages",
+   "text": "root je jen k nahlédnutí – mění se na stroji samotném, nikdy z těchto stránek"
+  },
   "s.root-may-sign-in.f4b2fb79": {
    "source": "Root may sign in",
    "text": "Root se smí přihlásit"
-  },
-  "s.root-no-longer-signs-in-with.934cf2b1": {
-   "source": "Root no longer signs in with",
-   "text": "Root se už nepřihlásí pomocí"
   },
   "s.root-puts-it-in-it-takes.4ae0dbc6": {
    "source": "root puts it in - it takes a few seconds, a minute when rsyslog-gnutls has to be installed first",
@@ -23600,9 +24060,9 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once. Until then SELinux is neither read nor changed here.",
    "text": "Rootova polovina tohoto ještě není na stroji nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.319 (nebo novějšího). Do té doby se tu SELinux nečte ani nemění."
   },
-  "s.root-s-half-of-this-is.54666464": {
-   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here.",
-   "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.239 (nebo novějšího). Do té doby se klíče zde nečtou ani nemění."
+  "s.root-s-half-of-this-is.8c9a7942": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from this package once. Until then the users are neither read nor changed here.",
+   "text": "Rootova část tohoto ještě není na tomto stroji nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z tohoto balíčku. Do té doby se uživatelé zde nenačítají ani nemění."
   },
   "s.root-s-half-of-this-is.b571e4cc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path, as 1.10.287 puts it in): run ./install.sh --upgrade from the 1.10.287 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
@@ -23616,6 +24076,10 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there.",
    "text": "Rootova část tohoto zatím na stroji není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.222 (nebo novějšího). Do té doby se to, co zde uložíte, uchová a nasadí se, jakmile tam bude."
   },
+  "s.root-s-half-of-this-is.d5de6dd2": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from this package once. Until then the keys are neither read nor changed here.",
+   "text": "Rootova část tohoto ještě není na tomto stroji nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z tohoto balíčku. Do té doby se klíče zde nenačítají ani nemění."
+  },
   "s.root-s-half-of-this-is.f0a52aae": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.245 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
    "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.245 (nebo novějšího). Do té doby se šifrovaný příjem zde nečte ani nemění."
@@ -23623,6 +24087,10 @@
   "s.root-s-half-of-this-server.2295f614": {
    "source": "Root's half of this server does not do updates of the system yet (install.sh --upgrade puts it in).",
    "text": "Rootova část tohoto serveru zatím aktualizace systému nedělá (vloží ji install.sh --upgrade)."
+  },
+  "s.root-s-keys-are-only-shown.707e63bf": {
+   "source": "Root's keys are only shown here - they are not made, added or taken away on these pages. Change them on the server itself, as root:",
+   "text": "Rootovy klíče se zde jen zobrazují – na těchto stránkách se nevytvářejí, nepřidávají ani neodebírají. Měňte je na samotném serveru jako root:"
   },
   "s.root-said.9873d2f0": {
    "source": "Root said:",
@@ -23880,6 +24348,10 @@
    "source": "Runs out",
    "text": "Vyprší"
   },
+  "s.runs.71b3f0bb": {
+   "source": "runs",
+   "text": "runs"
+  },
   "s.russia.6754fe3c": {
    "source": "Russia",
    "text": "Rusko"
@@ -23915,10 +24387,6 @@
   "s.safe.bf31c52c": {
    "source": "safe",
    "text": "bezpečné"
-  },
-  "s.said-again.343ef2b2": {
-   "source": "Said again:",
-   "text": "Řečeno znovu:"
   },
   "s.said-an-error.bff37a4f": {
    "source": "said an error",
@@ -24028,6 +24496,10 @@
    "source": "Save it as a file",
    "text": "Uložit jako soubor"
   },
+  "s.save-the-aging.4ed98250": {
+   "source": "Save the aging",
+   "text": "Uložit platnost"
+  },
   "s.save-the-changed-settings-into-the.fe0314a1": {
    "source": "Save the changed settings into the database. They take effect the moment they are saved — nothing restarts, and they are carried by every backup.",
    "text": "Uložit změněná nastavení do databáze. Projeví se v okamžiku uložení — nic se nerestartuje a jsou součástí každé zálohy."
@@ -24039,6 +24511,10 @@
   "s.save-the-fmc-fetches-it-at.f43fa42f": {
    "source": "Save. The FMC fetches it at once;",
    "text": "Uložte. FMC si jej stáhne okamžitě;"
+  },
+  "s.save-the-policy.57de15dd": {
+   "source": "Save the policy",
+   "text": "Uložit politiku"
   },
   "s.save-the-settings-and-the-url.03ad7500": {
    "source": "Save the settings, and the URL appears here.",
@@ -24552,6 +25028,10 @@
    "source": "set by hand",
    "text": "ručně"
   },
+  "s.set-by-isemon-on-this-server.0aabdfe9": {
+   "source": "Set by isemon on this server",
+   "text": "Nastavuje isemon na tomto serveru"
+  },
   "s.set-dstaddr-all.012dab40": {
    "source": "set dstaddr \"all\"",
    "text": "set dstaddr \"all\""
@@ -24623,6 +25103,10 @@
   "s.set-srcaddr-isemon-bans.da2adf22": {
    "source": "set srcaddr \"isemon-bans\"",
    "text": "set srcaddr \"isemon-bans\""
+  },
+  "s.set-the-password.924f39d4": {
+   "source": "Set the password",
+   "text": "Nastavit heslo"
   },
   "s.set-type-address.117ffb0c": {
    "source": "set type address",
@@ -24799,6 +25283,10 @@
   "s.shell-profile.8add2bf5": {
    "source": "Shell profile",
    "text": "Profil shellu"
+  },
+  "s.shell.bdc1fd5d": {
+   "source": "Shell",
+   "text": "Shell"
   },
   "s.shell.ec122f54": {
    "source": "shell",
@@ -25187,6 +25675,14 @@
   "s.slovenia.d1aa0503": {
    "source": "Slovenia",
    "text": "Slovinsko"
+  },
+  "s.small-letters-capitals-digits-the-others.8f9e3969": {
+   "source": "small letters, capitals, digits, the others",
+   "text": "malá písmena, velká písmena, číslice, ostatní"
+  },
+  "s.small-letters-digits-and-32-at.5c3c215c": {
+   "source": "Small letters, digits, _ . and -; 32 at most, starting with a letter.",
+   "text": "Malá písmena, číslice, _ . a -; nejvýš 32 znaků, na začátku písmeno."
   },
   "s.smart-card-required.ae7dbd99": {
    "source": "Smart card required",
@@ -25632,9 +26128,9 @@
    "source": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
    "text": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub"
   },
-  "s.ssh-keys-of-root.4b7cbf6b": {
-   "source": "SSH keys of root",
-   "text": "SSH klíče roota"
+  "s.ssh-keys.e91a644c": {
+   "source": "SSH keys",
+   "text": "SSH klíče"
   },
   "s.ssh-port.b17dc791": {
    "source": "SSH port",
@@ -25652,17 +26148,9 @@
    "source": "ssh",
    "text": "ssh"
   },
-  "s.sshd-does-not-let-root-sign.be438f60": {
-   "source": "sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does.",
-   "text": "sshd roota vůbec nepustí (PermitRootLogin no) - klíče níže se nepoužijí, dokud to nepovolí."
-  },
   "s.sshd-is-not-here.b8a873de": {
    "source": "sshd is not here",
    "text": "sshd tu není"
-  },
-  "s.sshd-takes-no-keys-pubkeyauthentication-no.febbe96a": {
-   "source": "sshd takes no keys (PubkeyAuthentication no).",
-   "text": "sshd nepřijímá klíče (PubkeyAuthentication no)."
   },
   "s.sshkeys.921bbf4e": {
    "source": "sshkeys",
@@ -26056,6 +26544,10 @@
    "source": "Sudan",
    "text": "Súdán"
   },
+  "s.sudo-asks-for-the-user-s.97f3a741": {
+   "source": "sudo asks for the user's own password - give them one, or they cannot use sudo",
+   "text": "sudo se ptá na vlastní heslo uživatele – dejte mu ho, jinak sudo nepoužije"
+  },
   "s.sudo-install-sh-db-rights.5a49aad8": {
    "source": "sudo ./install.sh --db-rights",
    "text": "sudo ./install.sh --db-rights"
@@ -26063,6 +26555,10 @@
   "s.sudo-is-the.3d232caa": {
    "source": "sudo is the",
    "text": "sudo je balíček"
+  },
+  "s.sudo-isemon-console-of-a-normal.db456bbc": {
+   "source": "sudo - isemon --console of a normal user too - asks for the user's own password: the policy is the one for it; a user locked by wrong passwords cannot use sudo until the lock ends.",
+   "text": "sudo – i isemon --console běžného uživatele – se ptá na vlastní heslo uživatele: platí pro něj tato politika; uživatel zamčený kvůli špatným heslům nemůže sudo použít, dokud zámek neskončí."
   },
   "s.sudo-u-postgres-psql-c-password.f2aeeb32": {
    "source": "sudo -u postgres psql -c \"\\password postgres\"",
@@ -26544,10 +27040,6 @@
    "source": "Take isemon’s rules away",
    "text": "Odebrat pravidla isemonu"
   },
-  "s.take-it-away-anyway.29e93be5": {
-   "source": "Take it away anyway",
-   "text": "Přesto odebrat"
-  },
   "s.take-it-away.07f68f99": {
    "source": "Take it away",
    "text": "Odebrat"
@@ -26596,6 +27088,10 @@
    "source": "Take ours off",
    "text": "Odebrat naše"
   },
+  "s.take-sudo-away.002baafe": {
+   "source": "Take sudo away",
+   "text": "Odebrat sudo"
+  },
   "s.take-that-certificate-authority-away.f6beb205": {
    "source": "Take that certificate authority away",
    "text": "Odebrat tuto certifikační autoritu"
@@ -26628,10 +27124,6 @@
    "source": "Take the key away",
    "text": "Odebrat klíč"
   },
-  "s.take-the-key-with-this-sha256.106afe23": {
-   "source": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again",
-   "text": "odebrat rootovi klíč s tímto otiskem SHA256; nejdřív se zeptá, pokud není --yes. Poslední klíč, kterým se root přihlašuje, jen s --last a po druhém dotazu"
-  },
   "s.take-the-keytab-away.0fd6a0f9": {
    "source": "Take the keytab away",
    "text": "Odebrat keytab"
@@ -26640,10 +27132,6 @@
    "source": "Take the ladder away; every block becomes the single length set above",
    "text": "Zrušit stupně blokace; každá blokace bude mít jedinou délku nastavenou výše"
   },
-  "s.take-the-last-key-away.d5860a0d": {
-   "source": "Take the last key away?",
-   "text": "Odebrat poslední klíč?"
-  },
   "s.take-the-stored-authority-away-the.2a98bbcc": {
    "source": "Take the stored authority away. The server's certificate then has to be signed by one this machine already trusts.",
    "text": "Odebrat uloženou autoritu. Certifikát serveru pak musí být podepsán autoritou, které tento počítač již důvěřuje."
@@ -26651,6 +27139,10 @@
   "s.take-the-stored-authority-away.b6f75301": {
    "source": "Take the stored authority away.",
    "text": "Odebrat uloženou autoritu."
+  },
+  "s.take-the-user-away.c566020f": {
+   "source": "Take the user away",
+   "text": "Odebrat uživatele"
   },
   "s.take-them-away.71cd6048": {
    "source": "Take them away",
@@ -28788,6 +29280,10 @@
    "source": "— the feed has a URL and an MD5 URL and nothing else. With",
    "text": "— feed má URL a MD5 URL a nic dalšího. S"
   },
+  "s.the-fewest-characters-a-new-password.d3e010f3": {
+   "source": "The fewest characters a new password may have (pam_pwquality: minlen). Only a new password is checked - one set before stays until it is changed.",
+   "text": "Nejmenší počet znaků nového hesla (pam_pwquality: minlen). Kontroluje se jen nové heslo – dříve nastavené platí, dokud se nezmění."
+  },
   "s.the-fields-of-this-page-or.6e6937ea": {
    "source": "The fields of this page — or type a word to find it anywhere, or a letter for every other field",
    "text": "Pole této stránky — nebo napište slovo a najde se kdekoli, případně písmeno pro všechna ostatní pole"
@@ -29252,6 +29748,14 @@
    "source": "the history was erased",
    "text": "historie byla vymazána"
   },
+  "s.the-home-folder-stays.cfdf5d95": {
+   "source": "; the home folder stays.",
+   "text": "; domovská složka zůstane."
+  },
+  "s.the-home-folder.7cc01a24": {
+   "source": "the home folder",
+   "text": "domovskou složku"
+  },
   "s.the-home-institution-refused-it.da6f811f": {
    "source": "the home institution refused it",
    "text": "domovská instituce odmítla"
@@ -29432,9 +29936,9 @@
    "source": "The key alone (.key, PEM), encrypted if a password is given.",
    "text": "Jen klíč (.key, PEM), šifrovaný, je-li zadáno heslo."
   },
-  "s.the-key-goes-into-root-s.8674b156": {
-   "source": "the key goes into root's authorized_keys again",
-   "text": "klíč jde znovu do authorized_keys roota"
+  "s.the-key-for.0c07d8db": {
+   "source": "The key for",
+   "text": "Klíč pro"
   },
   "s.the-key-half-of-an-api.7585aa6a": {
    "source": "The key half of an API key made on the OPNsense (System → Access → Users → the user → API keys). The user needs the privilege to edit firewall aliases and nothing more.",
@@ -29451,10 +29955,6 @@
   "s.the-key-is-made-here-and.4ee4408e": {
    "source": "The key is made here and never leaves this machine except when you download it. Put the public half on the firewall — on RouterOS, /user ssh-keys import public-key-file=… user=… — and it will let this in without a password. Keep the private half safe: anybody holding it can sign in to the firewall as that account.",
    "text": "Klíč se vytváří zde a tento stroj nikdy neopustí, leda když si ho stáhnete. Veřejnou část vložte na firewall — na RouterOS /user ssh-keys import public-key-file=… user=… — a firewall pak tento stroj pustí bez hesla. Soukromou část dobře chraňte: kdokoli ji má, se může k firewallu přihlásit jako tento účet."
-  },
-  "s.the-key-is-taken-away-within.bb3623d7": {
-   "source": "the key is taken away within a few seconds",
-   "text": "klíč se během několika sekund odebere"
   },
   "s.the-key-kept-now-is-replaced.64ac91fd": {
    "source": "The key kept now is replaced",
@@ -29488,13 +29988,17 @@
    "source": "The key",
    "text": "Klíč"
   },
-  "s.the-keys-that-may-sign-in.db24acff": {
-   "source": "The keys that may sign in to this server as root over SSH - the lines of /root/.ssh/authorized_keys. A key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events.",
-   "text": "Klíče, kterými se lze na tento server přihlásit jako root přes SSH - řádky /root/.ssh/authorized_keys. Klíč vytvořený zde se ukáže jednou, abyste si ho uložili, a na serveru se nikde neuchová; vlastní klíč se vloží svou veřejnou polovinou. Každá změna se zapíše do Událostí."
+  "s.the-keys-of-root.55e47264": {
+   "source": "The keys of root",
+   "text": "Klíče roota"
   },
-  "s.the-keys-that-may-sign-in.e26240fb": {
-   "source": "The keys that may sign in to this server as root over SSH: made here, added or taken away.",
-   "text": "Klíče, kterými se lze na tento server přihlásit jako root přes SSH: vytvořené zde, přidané nebo odebrané."
+  "s.the-keys-that-may-sign-in.49a3b157": {
+   "source": "The keys that may sign in to this server over SSH - root's shown, a user's who may sign in here made here, added or taken away.",
+   "text": "Klíče, které se smí přihlásit na tento server přes SSH – rootovy zobrazené, klíče uživatele, který se zde smí přihlásit, zde vytvořené, přidané nebo odebrané."
+  },
+  "s.the-keys-that-may-sign-in.7510692d": {
+   "source": "The keys that may sign in to this server over SSH - as root (the lines of /root/.ssh/authorized_keys, only shown here) or as any user who may sign in here (their own ~/.ssh/authorized_keys, written as they are). A user's key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events.",
+   "text": "Klíče, které se smí přihlásit na tento server přes SSH – jako root (řádky /root/.ssh/authorized_keys, zde jen zobrazené) nebo jako kterýkoli uživatel, který se zde smí přihlásit (jeho vlastní ~/.ssh/authorized_keys, zapsané jeho jménem). Klíč uživatele vytvořený zde se zobrazí jednou, uchováváte ho vy a na serveru se nikde neuchovává; váš vlastní klíč se přidá jeho veřejnou polovinou. Každá změna se zapisuje do Událostí."
   },
   "s.the-keytab-cannot-be-read-here.3b47e694": {
    "source": "The keytab cannot be read here",
@@ -29604,6 +30108,10 @@
    "source": "the last one went wrong",
    "text": "poslední se nezdařil"
   },
+  "s.the-last-passwords-not-taken-again.a8a649dd": {
+   "source": "The last passwords not taken again",
+   "text": "Posledních hesel, která nelze použít znovu"
+  },
   "s.the-last-refusal.490c32e7": {
    "source": "The last refusal",
    "text": "Poslední odmítnutí"
@@ -29639,6 +30147,10 @@
   "s.the-last.88a7e776": {
    "source": "The last",
    "text": "Posledních"
+  },
+  "s.the-least-days-between-two-changes.423743e0": {
+   "source": "The least days between two changes",
+   "text": "Nejméně dní mezi dvěma změnami"
   },
   "s.the-length-of-the-packet.1100be33": {
    "source": "the length of the packet",
@@ -29687,6 +30199,10 @@
   "s.the-load-of-the-server-in.13658078": {
    "source": "The load of the server in the header (CPU, RAM, the disks, the network)",
    "text": "Vytížení serveru v záhlaví (CPU, RAM, disky, síť)"
+  },
+  "s.the-local-users-of-this-machine.ea71a990": {
+   "source": "the local users of this machine's system (root and UID_MIN and up): who is there, sudo, locked, the password (Settings - Local users)",
+   "text": "lokální uživatelé systému tohoto stroje (root a UID_MIN a výš): kdo tam je, sudo, zamčení, heslo (Nastavení – Lokální uživatelé)"
   },
   "s.the-lock-itself-says-only-that.14cb465a": {
    "source": "The lock itself says only that it happened. What everybody actually asks — which machine, which program, which password — is in the refusals in the half hour before it, so they are here too, and so is who unlocked it. Press one for the whole story.",
@@ -29923,6 +30439,10 @@
   "s.the-most-the-tunnel-carries-bytes.81b8906e": {
    "source": "the most the tunnel carries (bytes)",
    "text": "nejvíce, co tunel přenese (bajty)"
+  },
+  "s.the-most-times-one-character-may.5a90930e": {
+   "source": "The most times one character may come in a row - with 3, \"aaa\" is taken and \"aaaa\" is not (pam_pwquality: maxrepeat). 0: as many as wanted.",
+   "text": "Kolikrát nejvýš smí jeden znak jít za sebou – při 3 projde „aaa“, ale „aaaa“ ne (pam_pwquality: maxrepeat). 0: libovolněkrát."
   },
   "s.the-name-asked-for.48e56a29": {
    "source": "the name asked for",
@@ -30171,6 +30691,10 @@
   "s.the-new-network-waits-to-be.7c3d93ac": {
    "source": "the new network waits to be kept",
    "text": "nová síť čeká na potvrzení"
+  },
+  "s.the-new-password.154c2d1e": {
+   "source": "The new password",
+   "text": "Nové heslo"
   },
   "s.the-new-versions-of-isemon-through.c77e686b": {
    "source": "The new versions of isemon through it",
@@ -30515,6 +31039,14 @@
   "s.the-password-of-the-key-or.84022709": {
    "source": "The password of the key or of the PFX, if it has one",
    "text": "Heslo klíče nebo PFX, pokud nějaké má"
+  },
+  "s.the-password-policy-of-the-local.fb219a11": {
+   "source": "the password policy of the local users: as set, and as in effect here",
+   "text": "politika hesel lokálních uživatelů: jak je nastavená a jak zde platí"
+  },
+  "s.the-password-ran-out-the-user.49fb50a0": {
+   "source": "The password ran out - the user must choose a new one at the next sign-in.",
+   "text": "Heslo vypršelo – uživatel si musí při dalším přihlášení zvolit nové."
   },
   "s.the-password-the-firewall-sends-with.90ef7766": {
    "source": "The password the firewall sends, with basic authentication: at least twelve characters. It is kept like the router’s password and is never shown again once saved.",
@@ -31076,6 +31608,10 @@
    "source": "the routing mark (MikroTik)",
    "text": "značka směrování (MikroTik)"
   },
+  "s.the-row-of-the-policy-in.de3f6457": {
+   "source": "The row of the policy in the database is not as isemon wrote it - root's helper refused it: the server keeps the policy it has put in, and changes nothing. Save the policy here again.",
+   "text": "Řádek politiky v databázi není takový, jak ho isemon zapsal – rootův pomocník ho odmítl: server si ponechá politiku, kterou nastavil, a nic nemění. Uložte politiku zde znovu."
+  },
   "s.the-rows-themselves.45ddd440": {
    "source": "The rows themselves",
    "text": "Samotné řádky"
@@ -31112,6 +31648,10 @@
    "source": "The same, by hand, as root:",
    "text": "Totéž ručně, jako root:"
   },
+  "s.the-same-character-in-a-row.a0b61851": {
+   "source": "The same character in a row at most",
+   "text": "Stejný znak za sebou nejvýš"
+  },
   "s.the-same-copy-with-the-keys.6ee3f9d8": {
    "source": "The same copy, with the keys kept beside the database in it: settings.key, which opens every password and private key in the database, banfeed.key and the routers’ host keys - and config.json to read. Put back on a new machine (Restore from this file), that machine is this one again, certificate, firewall and all, with nothing to type in. As secret as the key itself. From the shell: isemon --backup --full.",
    "text": "Stejná kopie, v níž jsou i klíče uložené vedle databáze: settings.key, který otevírá každé heslo a soukromý klíč v databázi, banfeed.key a klíče hostitelů routerů – a config.json ke čtení. Obnovená na novém stroji (Obnovit z tohoto souboru) z něj udělá zase tento, i s certifikátem a firewallem, bez jakéhokoli psaní. Stejně tajná jako samotný klíč. Z příkazové řádky: isemon --backup --full."
@@ -31147,6 +31687,10 @@
   "s.the-same-in-3des-sha-1.5fcac381": {
    "source": "The same in 3DES / SHA-1 - Windows Server 2016 and older, Java 8.",
    "text": "Totéž v 3DES / SHA-1 - Windows Server 2016 a starší, Java 8."
+  },
+  "s.the-same-key-on-every-node.50d0b3ca": {
+   "source": "The same key on every node",
+   "text": "Stejný klíč na všech uzlech"
   },
   "s.the-same-ntlm-as-above-said.a6ccd7e8": {
    "source": "The same NTLM as above, said by the NTLM audit (NTLM/Operational 8004) with the server it was for - nothing extra breaks.",
@@ -31528,6 +32072,10 @@
    "source": "The system's own list",
    "text": "Vlastní seznam systému"
   },
+  "s.the-system-s-own.c5d808c7": {
+   "source": "the system's own",
+   "text": "systémové"
+  },
   "s.the-system-time-was-changed.52b19c79": {
    "source": "the system time was changed",
    "text": "systémový čas byl změněn"
@@ -31756,6 +32304,10 @@
    "source": "The two passwords are not the same.",
    "text": "Hesla nejsou stejná."
   },
+  "s.the-two-passwords-are-not-the.aa3212ef": {
+   "source": "the two passwords are not the same",
+   "text": "hesla se neshodují"
+  },
   "s.the-two-to-paste-each-with.18ded4f9": {
    "source": "The two to paste, each with its own button:",
    "text": "Dvě věci k vložení, každá s vlastním tlačítkem:"
@@ -31892,6 +32444,10 @@
    "source": "the user, as the certificate names them",
    "text": "uživatel, jak jej uvádí certifikát"
   },
+  "s.the-user-chooses-their-own-at.6fd3f6ad": {
+   "source": "The user chooses their own at once.",
+   "text": "Uživatel si hned zvolí vlastní."
+  },
   "s.the-user-name-basic-authentication.f4010bce": {
    "source": "The user name (basic authentication)",
    "text": "Uživatelské jméno (basic autentizace)"
@@ -31907,6 +32463,18 @@
   "s.the-user-names-failing-and-from.28db5108": {
    "source": "The user names failing, and from how many different addresses each. One name from forty addresses is a password spray; forty names from one address is somebody working through a list.",
    "text": "Uživatelská jména, která selhávají, a z kolika různých adres každé. Jedno jméno ze čtyřiceti adres je password spray; čtyřicet jmen z jedné adresy je někdo, kdo prochází seznam."
+  },
+  "s.the-user.2ef01e26": {
+   "source": "The user",
+   "text": "Uživatel"
+  },
+  "s.the-users-of-this-server-s.45b8c4d9": {
+   "source": "The users of this server's own system: root shown, the others made, given a password or sudo, locked or taken away.",
+   "text": "Uživatelé vlastního systému tohoto serveru: root zobrazen, ostatní vytvořeni, s heslem nebo sudo, zamčeni nebo odebráni."
+  },
+  "s.the-users-of-this-server-s.591c5d5b": {
+   "source": "The users of this server's own system - who may sign in to the machine itself, over SSH or at its console; not the accounts of these pages. root is shown and never changed here; the others (UID 1000 and up) are made, given a password or sudo, locked or taken away by root's helper. A password typed here goes to it as its hash only and is kept nowhere. Every change is written into Events.",
+   "text": "Uživatelé vlastního systému tohoto serveru – kdo se smí přihlásit na samotný stroj, přes SSH nebo na jeho konzoli; ne účty těchto stránek. root je zobrazen a zde se nikdy nemění; ostatní (UID 1000 a výš) vytváří, nastavuje jim heslo nebo sudo, zamyká či odebírá rootův pomocník. Heslo zadané zde mu jde jen jako hash a nikde se neuchovává. Každá změna se zapisuje do Událostí."
   },
   "s.the-usual-causes-in-the-order.46f77bc7": {
    "source": "The usual causes, in the order they usually are: api-ssl (or api) is not switched on, or not for this machine’s address; the account or its password is wrong; the router answers with a certificate other than the one pinned; or the address or port is wrong.",
@@ -32716,10 +33284,6 @@
    "source": "this is the line that OPENS an access list, and that one is written for you - what goes here is the body, the permit and deny lines that sit inside it",
    "text": "toto je řádek, který access list OTEVÍRÁ, a ten se zapíše za vás - sem patří tělo, tedy řádky permit a deny uvnitř něj"
   },
-  "s.this-is-the-only-time-it.92827b46": {
-   "source": "This is the only time it is shown. Whoever holds it signs in to this server as root.",
-   "text": "Ukazuje se jen teď. Kdo ho má, přihlásí se na tento server jako root."
-  },
   "s.this-is-the-sign-in-you.4002ae91": {
    "source": "This is the sign-in you are using now: ending it signs you out of this page.",
    "text": "Toto je přihlášení, které právě používáte: jeho ukončením se z této stránky odhlásíte."
@@ -32947,6 +33511,10 @@
   "s.this-server.086b51a0": {
    "source": "this server",
    "text": "tento server"
+  },
+  "s.this-server.17f98495": {
+   "source": "this server.",
+   "text": "tento server."
   },
   "s.this-server.d75b2349": {
    "source": "This server",
@@ -33300,9 +33868,21 @@
    "source": "to a few minutes rather than only on a change.",
    "text": "na několik minut místo jen při změně."
   },
+  "s.to-be-changed-at-the-first.ae46f30b": {
+   "source": "To be changed at the first sign-in",
+   "text": "Změnit při prvním přihlášení"
+  },
+  "s.to-be-changed-at-the-next.bb0d19b3": {
+   "source": "To be changed at the next sign-in",
+   "text": "Změnit při příštím přihlášení"
+  },
   "s.to-be-done-by-hand.7b411f7a": {
    "source": "To be done by hand",
    "text": "Je potřeba udělat ručně"
+  },
+  "s.to-change-at-sign-in.65a879ab": {
+   "source": "to change at sign-in",
+   "text": "změnit při přihlášení"
   },
   "s.to-erase-but-ticking-it-still.69a61003": {
    "source": "to erase, but ticking it still forgets where those files were read up to, so what is in them is read again from the beginning with the clock as it is now.",
@@ -33824,6 +34404,10 @@
    "source": "ui",
    "text": "ui"
   },
+  "s.uid.d946adf5": {
+   "source": "UID",
+   "text": "UID"
+  },
   "s.ukraine.c951ec00": {
    "source": "Ukraine",
    "text": "Ukrajina"
@@ -33920,13 +34504,17 @@
    "source": "unless Logins at the firewall itself is switched on under Banning, and then only a sign-in refused from an address on the internet. Switched off, not one file is opened.",
    "text": ", dokud není v Banningu zapnuté Přihlášení přímo na firewallu, a pak jen odmítnuté přihlášení z adresy na internetu. Je-li vypnuto, neotevře se jediný soubor."
   },
-  "s.unless-root-may-sign-in-with.672e8506": {
-   "source": "Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
-   "text": "Pokud se root nesmí přihlásit heslem, nikdo se pak na server přes SSH jako root nedostane."
-  },
   "s.unless.42e18493": {
    "source": "unless",
    "text": ", dokud není"
+  },
+  "s.unlock.1526a17e": {
+   "source": "Unlock",
+   "text": "Odemknout"
+  },
+  "s.unlock.8ec49811": {
+   "source": "unlock",
+   "text": "unlock"
   },
   "s.unlocked.9bb5a73d": {
    "source": "unlocked",
@@ -34240,9 +34828,17 @@
    "source": "user",
    "text": "uživatel"
   },
+  "s.user.9f8a2389": {
+   "source": "User",
+   "text": "Uživatel"
+  },
   "s.useralt.8f969e87": {
    "source": "useralt",
    "text": "useralt"
+  },
+  "s.usercheck.acd28832": {
+   "source": "usercheck",
+   "text": "usercheck"
   },
   "s.username.249ba360": {
    "source": "username",
@@ -34259,6 +34855,14 @@
   "s.userprincipalname.5de41706": {
    "source": "userPrincipalName",
    "text": "userPrincipalName"
+  },
+  "s.users-of-the-nodes.a67e3bd7": {
+   "source": "Users of the nodes",
+   "text": "Uživatelé uzlů"
+  },
+  "s.users-of-this-server.b9e0d8cf": {
+   "source": "Users of this server",
+   "text": "Uživatelé tohoto serveru"
   },
   "s.users.5b7dcd14": {
    "source": "users",
@@ -34387,6 +34991,10 @@
   "s.view-entries.ce5e8f20": {
    "source": "View Entries",
    "text": "Zobrazit záznamy"
+  },
+  "s.view-only.00bc16f4": {
+   "source": "view only",
+   "text": "jen zobrazit"
   },
   "s.violet.13818a56": {
    "source": "violet",
@@ -34604,6 +35212,10 @@
    "source": "warn",
    "text": "warn"
   },
+  "s.warned-so-many-days-before.1be7d632": {
+   "source": "Warned so many days before",
+   "text": "Upozornit tolik dní předem"
+  },
   "s.warnings-and-worse.528cae40": {
    "source": "warnings and worse",
    "text": "varování a závažnější"
@@ -34775,6 +35387,10 @@
   "s.what-became-of-it-in-the.8c3694a4": {
    "source": "what became of it in the sandbox",
    "text": "co se s tím stalo v sandboxu"
+  },
+  "s.what-came-of-it.606ff87e": {
+   "source": "What came of it",
+   "text": "Výsledek"
   },
   "s.what-changed.7e4b9199": {
    "source": "What changed",
@@ -35588,6 +36204,10 @@
    "source": "what they asked to reach",
    "text": "kam se chtěli dostat"
   },
+  "s.what-they-may-do.69d9e9f9": {
+   "source": "What they may do",
+   "text": "Co smí"
+  },
   "s.what-this-account-may-do-a.97b56d49": {
    "source": "What this account may do. A",
    "text": "Co smí tento účet dělat. Účet"
@@ -35755,6 +36375,10 @@
   "s.whatever-the-keep-for-numbers-say.630791b5": {
    "source": "whatever the \"keep for\" numbers say",
    "text": "podle počtů v „uchovávat“"
+  },
+  "s.wheel.3a7195d9": {
+   "source": "wheel",
+   "text": "wheel"
   },
   "s.when-a-device-last-fetched-this.753a44ea": {
    "source": "When a device last fetched this ACL from ISE. A device fetches one only when it does not already hold it, so a widely used list may not have been fetched for months.",
@@ -37004,6 +37628,10 @@
    "source": "whose columns?",
    "text": "čí sloupce?"
   },
+  "s.whose-keys.07265b8a": {
+   "source": "Whose keys",
+   "text": "Čí klíče"
+  },
   "s.whose-searches.bb4d3ea3": {
    "source": "whose searches?",
    "text": "čí hledání?"
@@ -37196,6 +37824,26 @@
    "source": "with --fw-key: whose key - mikrotik, opnsense-ssh or pfsense-ssh",
    "text": "s --fw-key: čí klíč – mikrotik, opnsense-ssh nebo pfsense-ssh"
   },
+  "s.with-local-user-add-or-password.29dd4e6f": {
+   "source": "with --local-user add or password: to be changed at the next sign-in",
+   "text": "s --local-user add nebo password: změnit při dalším přihlášení"
+  },
+  "s.with-local-user-add-the-full.679c9d1d": {
+   "source": "with --local-user add: the full name",
+   "text": "s --local-user add: celé jméno"
+  },
+  "s.with-local-user-aging-days-the.9d19f3aa": {
+   "source": "with --local-user aging: days the password is good for (99999: no end)",
+   "text": "s --local-user aging: dny platnosti hesla (99999: bez konce)"
+  },
+  "s.with-local-user-aging-the-least.841ba0cc": {
+   "source": "with --local-user aging: the least days between two changes",
+   "text": "s --local-user aging: nejméně dní mezi dvěma změnami"
+  },
+  "s.with-local-user-aging-warned-so.39cff3de": {
+   "source": "with --local-user aging: warned so many days before it runs out",
+   "text": "s --local-user aging: varovat tolik dní před vypršením"
+  },
   "s.with-mikrotik-take-our-entries-off.73299c1a": {
    "source": "with --mikrotik: take OUR entries off the router and nothing else",
    "text": "s --mikrotik: odebrat z routeru NAŠE položky a nic jiného"
@@ -37284,13 +37932,17 @@
    "source": "with rings",
    "text": "s kroužky"
   },
-  "s.with-root-key-drop-it-may.89652220": {
-   "source": "with --root-key-drop: it may be the last key root signs in with",
-   "text": "s --root-key-drop: může jít o poslední klíč, kterým se root přihlašuje"
+  "s.with-root-key-drop-refused-since.1dfed3c0": {
+   "source": "with --root-key-drop (refused since 1.10.351)",
+   "text": "s --root-key-drop (odmítnuto od 1.10.351)"
   },
   "s.with-root-key-make-the-file.b7e3ea9e": {
    "source": "with --root-key-make: the file for the private half - made 0600, never written over; with --otp-tls-make: the file for this machine's authority, to paste into otp",
    "text": "s --root-key-make: soubor pro soukromou polovinu - vytvořený s 0600, nikdy se nepřepisuje; s --otp-tls-make: soubor pro autoritu tohoto stroje, k vložení do otp"
+  },
+  "s.with-ssh-keys-and-sudo.93f0d874": {
+   "source": "With SSH keys and sudo",
+   "text": "S SSH klíči a sudo"
   },
   "s.with-status-every-file-of-a.ace58746": {
    "source": "with --status: every file of a firewall's log on a line of its own, rather than one line for each folder of them",
@@ -37367,6 +38019,10 @@
   "s.without-an-fmc-cannot-use-a.aeb91c8e": {
    "source": "(without an FMC) cannot use a feed of its own; cdFMC in Security Cloud Control can.",
    "text": "(bez FMC) nemůže používat vlastní feed; cdFMC v Security Cloud Control může."
+  },
+  "s.without-it-the-days-are-for.f59ec807": {
+   "source": "Without it, the days are for users made from now on (login.defs); a user's own are in their popup.",
+   "text": "Bez toho platí dny jen pro nově vytvořené uživatele (login.defs); vlastní hodnoty uživatele jsou v jeho okně."
   },
   "s.without.0d4e654c": {
    "source": "without",
@@ -37532,6 +38188,10 @@
    "source": "written",
    "text": "zápis"
   },
+  "s.wrong-passwords-are-counted-within-so.134730dd": {
+   "source": "Wrong passwords are counted within so many seconds (pam_faillock: fail_interval) - those before do not count towards the lock.",
+   "text": "Špatná hesla se počítají v rámci tolika sekund (pam_faillock: fail_interval) – starší se do zámku nepočítají."
+  },
   "s.wrong-passwords-before-waiting.b0ba113b": {
    "source": "Wrong passwords before waiting",
    "text": "Špatná hesla před čekáním"
@@ -37539,6 +38199,10 @@
   "s.wrong-passwords-from-one-address-before.3e25aac6": {
    "source": "Wrong passwords from one address before it has to wait.",
    "text": "Počet špatných hesel z jedné adresy, než musí čekat."
+  },
+  "s.wrong-passwords.7b4b4b88": {
+   "source": "Wrong passwords",
+   "text": "Špatná hesla"
   },
   "s.www-example-cz.e4ec1cdc": {
    "source": "www, *.example.cz",
@@ -37734,6 +38398,10 @@
    "source": "A list somebody else keeps — {0} — already had this address on it. Nothing is banned for being on a list alone; this one was banned because it is on one AND it failed a login here.",
    "text": "Seznam, který vede někdo jiný — {0} — už tuto adresu obsahoval. Jen kvůli tomu, že je na seznamu, se nic neblokuje; tato byla zablokována, protože na jednom je A ZÁROVEŇ zde měla neúspěšné přihlášení."
   },
+  "p.a-member-of-with-their-own.ffbeef23": {
+   "source": "A member of {0} - with their own password.",
+   "text": "Člen {0} – s vlastním heslem."
+  },
   "p.a-new-destination.01b9a3df": {
    "source": "A new destination: {0}",
    "text": "Nové úložiště: {0}"
@@ -37826,6 +38494,10 @@
    "source": "accounts · {0}×",
    "text": "účtů · {0}×"
   },
+  "p.add-a-key-for.14832349": {
+   "source": "Add a key for {0}",
+   "text": "Přidat klíč pro {0}"
+  },
   "p.add-a.2f24a9e3": {
    "source": "Add a {0}",
    "text": "Přidat {0}"
@@ -37913,6 +38585,10 @@
   "p.ago.aa37c151": {
    "source": "{0} ago",
    "text": "před {0}"
+  },
+  "p.also-the-accounts-with-no-shell.e4436eca": {
+   "source": "Also the {0} accounts with no shell (they may not sign in)",
+   "text": "I {0} účtů bez shellu (nesmí se přihlásit)"
   },
   "p.am-dot.cf7e0738": {
    "source": "am-dot {0}",
@@ -38142,6 +38818,14 @@
    "source": "{0} behind ·",
    "text": "{0} pozadu ·"
   },
+  "p.being-done-on.4e2ab213": {
+   "source": "Being done on {0}…",
+   "text": "Provádí se na {0}…"
+  },
+  "p.being-written-on.6d398aeb": {
+   "source": "Being written on {0}…",
+   "text": "Zapisuje se na {0}…"
+  },
   "p.between-it-and-the-root.a3f0e955": {
    "source": "{0} between it and the root",
    "text": "{0} mezi ním a kořenem"
@@ -38217,6 +38901,10 @@
   "p.change-s-not-saved-yet.68a60bf7": {
    "source": "{0} change(s) not saved yet",
    "text": "{0} změn zatím neuloženo"
+  },
+  "p.change-the-password-sudo-locked-the.bc8bf896": {
+   "source": "Change {0}: the password, sudo, locked, the shell - or take the user away",
+   "text": "Změnit {0}: heslo, sudo, zamčení, shell – nebo uživatele odebrat"
   },
   "p.changed.e13d43a0": {
    "source": "{0} changed: {1}{2}",
@@ -38466,6 +39154,10 @@
    "source": "{0} done · {1} failed{2}",
    "text": "{0} hotovo · {1} selhalo{2}"
   },
+  "p.done-on-within-a-few-seconds.578ddae8": {
+   "source": "done on {0} within a few seconds",
+   "text": "provede se na {0} během pár sekund"
+  },
   "p.down-since.2249c0f6": {
    "source": "down since {0}",
    "text": "dole od {0}"
@@ -38581,6 +39273,10 @@
   "p.every-field-the-firewall-wrote.90122f47": {
    "source": "Every field the firewall wrote ({0})",
    "text": "Každé pole, které firewall zapsal ({0})"
+  },
+  "p.every-node-is-on.d22c84d8": {
+   "source": "every node {0} is on.",
+   "text": "každého nodu, na kterém je {0}."
   },
   "p.every-passkey-of-is-taken-away.bca5b5a5": {
    "source": "Every passkey of {0} is taken away and every sign-in of theirs ends. Their next sign-in asks them to set Face ID up again.",
@@ -38882,6 +39578,10 @@
    "source": "going through {0} stored event(s) with the settings as they stand now",
    "text": "prochází se {0} uložených událostí s nastavením, jak je nyní"
   },
+  "p.good-for-days-from-the-last.5df70159": {
+   "source": "Good for {0} days from the last change - {1} day(s) left.",
+   "text": "Platí {0} dní od poslední změny – zbývá {1} dní."
+  },
   "p.good-until.e7d3e56d": {
    "source": ", good until {0}",
    "text": ", platný do {0}"
@@ -38925,6 +39625,10 @@
   "p.had-a-name-went-wrong.41e7beb7": {
    "source": "{0} had a name · {1} went wrong",
    "text": "{0} mělo jméno · {1} selhalo"
+  },
+  "p.half-goes-into-s-authorized-keys.ddc16b43": {
+   "source": "half goes into {0}'s authorized_keys of {1}. A key there before stays until it is taken away in the list below.",
+   "text": "polovina jde do authorized_keys uživatele {0} na {1}. Klíč, který tam už byl, zůstane, dokud se neodebere v seznamu níže."
   },
   "p.half-of-them-9-of-10.705a4899": {
    "source": "half of them; 9 of 10 within {0}",
@@ -39210,6 +39914,14 @@
    "source": "\"{0}\" is not a protocol",
    "text": "„{0}“ není protokol"
   },
+  "p.is-not-a-user-who-may.262d36fa": {
+   "source": "{0} is not a user who may sign in on {1}.",
+   "text": "{0} není uživatel, který se smí přihlásit na {1}."
+  },
+  "p.is-not-answering-what-it-shows.7dcc3346": {
+   "source": "{0} is not answering: what it shows is what it said last, and a change asked of it waits until it is back.",
+   "text": "{0} neodpovídá: zobrazuje se, co řekl naposledy, a změna, o kterou je požádán, počká, dokud se nevrátí."
+  },
   "p.is-not-how-a-line-of.165d4380": {
    "source": "\"{0}\" is not how a line of an access list starts - it is permit, deny, remark or evaluate",
    "text": "„{0}“ není začátek řádku access listu - je to permit, deny, remark nebo evaluate"
@@ -39217,6 +39929,10 @@
   "p.is-not-on-this-machine.b7cb8b9d": {
    "source": "{0} is not on this machine: {1}",
    "text": "{0} není na tomto počítači: {1}"
+  },
+  "p.is-not-on.0e0af36b": {
+   "source": "{0} is not on {1}.",
+   "text": "{0} není na {1}."
   },
   "p.is-not-one-of.4373bc7f": {
    "source": "{0}: {1} is not one of {2}",
@@ -39238,9 +39954,17 @@
    "source": "{0} is on a clock. This takes the clock off and keeps it out until somebody says otherwise.",
    "text": "{0} je blokováno časově omezeně. Tímto se omezení zruší a blokace zůstane, dokud ji někdo nezruší."
   },
+  "p.is-taken-away.06859e05": {
+   "source": "{0} is taken away{1}{2}",
+   "text": "{0} se odebere{1}{2}"
+  },
   "p.is-the-other-family-s-word.048176e4": {
    "source": "\"{0}\" is the other family's word - an IPv{1} list says \"{2}\"",
    "text": "„{0}“ je slovo druhé rodiny - seznam IPv{1} používá „{2}“"
+  },
+  "p.is-there-already.f3d7dfb0": {
+   "source": "{0} is there already",
+   "text": "{0} už existuje"
   },
   "p.is-there-but-cannot-be-read.951a3394": {
    "source": "{0} is there but cannot be read ({1}); put it right first - nothing was written to it",
@@ -39274,6 +39998,10 @@
    "source": "isemon_lang={0}; max-age=31536000; path=/; SameSite=Strict{1}",
    "text": "isemon_lang={0}; max-age=31536000; path=/; SameSite=Strict{1}"
   },
+  "p.isemon-local-policy-set.aed81693": {
+   "source": "isemon --local-policy-set {0}=…",
+   "text": "isemon --local-policy-set {0}=…"
+  },
   "p.isemon-passwd.7534cd86": {
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
@@ -39301,6 +40029,10 @@
   "p.isemon.46479b91": {
    "source": "isemon {0}{1}",
    "text": "isemon {0}{1}"
+  },
+  "p.isemon.a168d69b": {
+   "source": "isemon-{0}",
+   "text": "isemon-{0}"
   },
   "p.it-carries-the-keys-are-put.2fb954e3": {
    "source": ": it carries {0}. The keys are put in place with it (the ones here now are kept beside them), so the passwords, the routers’ keys and the certificate in it open here; config.json is in it to read only and is not used.",
@@ -39674,9 +40406,29 @@
    "source": "Make a certificate for {0}",
    "text": "Vytvořit certifikát pro {0}"
   },
+  "p.make-a-fresh-pair-here-ed25519.58e1200d": {
+   "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into {0}'s authorized_keys of {1}",
+   "text": "Vytvořit zde nový pár – Ed25519, nebo RSA 4096, kde něco starého potřebuje RSA. Jeho privátní polovina se vám zobrazí jednou; veřejná polovina jde do authorized_keys uživatele {0} na {1}"
+  },
+  "p.make-a-key-for-on-every.1663d415": {
+   "source": "Make a key for {0} on every node",
+   "text": "Vytvořit klíč pro {0} na všech nodech"
+  },
+  "p.make-a-key-for-only-on.692fdf21": {
+   "source": "Make a key for {0} only on {1}",
+   "text": "Vytvořit klíč pro {0} jen na {1}"
+  },
   "p.make-a-key-for.cf550ac0": {
    "source": "Make a key for {0}",
    "text": "Vytvořit klíč pro {0}"
+  },
+  "p.make-it-on-too.712db95c": {
+   "source": "Make it on {0} too",
+   "text": "Vytvořit ho i na {0}"
+  },
+  "p.make-on-more-nodes.ad04c7a9": {
+   "source": "Make {0} on more nodes",
+   "text": "Vytvořit {0} na dalších nodech"
   },
   "p.matching.4c24fab9": {
    "source": "{0} matching",
@@ -39865,6 +40617,18 @@
   "p.no-key-could-be-made.b189ccc7": {
    "source": "no key could be made: {0}",
    "text": "klíč se nepodařilo vytvořit: {0}"
+  },
+  "p.no-key-lets-in-over-ssh.0acf8f9f": {
+   "source": "No key lets {0} in over SSH on",
+   "text": "Žádný klíč nepustí {0} přes SSH na"
+  },
+  "p.no-key-lets-in-over-ssh.4d622423": {
+   "source": "No key lets {0} in over SSH on this server.",
+   "text": "Žádný klíč nepustí {0} přes SSH na tento server."
+  },
+  "p.no-longer-signs-in-with.ee8d40fa": {
+   "source": "{0} no longer signs in with",
+   "text": "{0} se už nepřihlásí pomocí"
   },
   "p.no-server-in-the-list-has.d3287729": {
    "source": "no server in the list has a name for {0}",
@@ -40074,6 +40838,10 @@
    "source": "{0} of dumps on a disk with {1} free.",
    "text": "{0} dumpů na disku, kde je volných {1}."
   },
+  "p.of-every-node-the-same-key.1ea1f8fd": {
+   "source": "of every node - the same key{0}",
+   "text": "každého nodu – stejný klíč{0}"
+  },
   "p.of-fetched.01fe9be6": {
    "source": "{0} of {1} fetched",
    "text": "{0} z {1} staženo"
@@ -40130,6 +40898,10 @@
    "source": "{0} of the {1} machines refused here got on to the network anyway — a PC is refused by MAB and then authenticates with its certificate, which is the ordinary way one joins. The card below leaves those out.",
    "text": "{0} z {1} zde odmítnutých zařízení se přesto dostalo do sítě — PC je odmítnuto přes MAB a pak se autentizuje svým certifikátem, což je běžný způsob připojení. Karta níže je vynechává."
   },
+  "p.of-the-nodes-is-on-the.c2dc301f": {
+   "source": "of the nodes {0} is on: {1} - the same key{2}",
+   "text": "nodů, na kterých je {0}: {1} – stejný klíč{2}"
+  },
   "p.of-the-that-ended.251132c1": {
    "source": "of the {0} that ended",
    "text": "z {0}, které skončily"
@@ -40157,6 +40929,10 @@
   "p.of-these-refusal-s-are-in.0c831b45": {
    "source": "{0} of these {1} refusal(s) are in {2}’s own log, at the same moment and under the same name: {3} asked the domain about them.",
    "text": "{0} z těchto {1} odmítnutí je ve vlastním logu {2}, ve stejném okamžiku a pod stejným jménem: {3} se na ně ptal domény."
+  },
+  "p.of-this-server.6d5af9d5": {
+   "source": "of this server{0}",
+   "text": "tohoto serveru{0}"
   },
   "p.of-used-free.6cea0618": {
    "source": "{0} of {1} used · {2} free",
@@ -40214,10 +40990,6 @@
    "source": "· {0} on the VPN",
    "text": "· {0} na VPN"
   },
-  "p.on-this-server.28ccf243": {
-   "source": "{0} on this server.{1}",
-   "text": "{0} na tomto serveru.{1}"
-  },
   "p.once-in-the-zone-above-it.15345c1a": {
    "source": "once, in the zone above it: {0} at deSEC",
    "text": "jednou, v nadřazené zóně: {0} u deSEC"
@@ -40266,9 +41038,17 @@
    "source": "only what isemon wrote itself - remote-isemon, isemon-day-logs - for {0}; nobody’s own file is touched",
    "text": "jen to, co isemon napsal sám – remote-isemon, isemon-day-logs – pro {0}; žádný cizí soubor se nezmění"
   },
+  "p.only.8e648ba4": {
+   "source": "{0} only.",
+   "text": "Jen {0}."
+  },
   "p.only.98cbccbe": {
    "source": "only {0} – {1} ×",
    "text": "jen {0} – {1} ×"
+  },
+  "p.only.be8bd4ed": {
+   "source": "only{0}",
+   "text": "jen{0}"
   },
   "p.open-the-refusals-from-here.fbfc4d7d": {
    "source": "Open the {0} refusals from here. {1}",
@@ -40345,6 +41125,14 @@
   "p.page-of.bdeb5f10": {
    "source": "page {0}{1} of {2}",
    "text": "stránka {0}{1} z {2}"
+  },
+  "p.pam-faillock-is-not-in-its.88142594": {
+   "source": "{0}pam_faillock is not in its PAM, and authselect does not manage it - the lockout is not in use there.",
+   "text": "{0}pam_faillock není v jeho PAM a authselect ho nespravuje – zamykání se tam nepoužívá."
+  },
+  "p.pam-pwquality-is-not-in-its.39a59a3d": {
+   "source": "{0}pam_pwquality is not in its PAM - the rules of the password are not kept there by passwd.",
+   "text": "{0}pam_pwquality není v jeho PAM – pravidla hesla tam passwd nedodržuje."
   },
   "p.passed.f431c1ef": {
    "source": "passed_{0}",
@@ -40494,6 +41282,10 @@
    "source": "ran out {0} days ago",
    "text": "vypršel před {0} dny"
   },
+  "p.ran-out.d94055d1": {
+   "source": "ran out {0}",
+   "text": "vypršelo {0}"
+  },
   "p.range-s-countries-fetched.75c16e41": {
    "source": "{0} range(s) · {1} countries · fetched {2}",
    "text": "{0} {0:rozsah|rozsahy|rozsahů} · {1} zemí · staženo {2}"
@@ -40634,9 +41426,17 @@
    "source": "Root gzips the copies of logs older than three days that were never compressed, in {0} - behind, at the lowest priority.",
    "text": "Root zabalí gzipem kopie logů starší než tři dny, které nikdy nebyly zabaleny, v {0} – na pozadí, s nejnižší prioritou."
   },
+  "p.root-is-not-among-the-accounts.559acdd3": {
+   "source": "{0}root is not among the accounts that may sign in over SSH (AllowUsers) - the keys below are not used until it is.",
+   "text": "{0}root není mezi účty, které se smí přihlásit přes SSH (AllowUsers) – klíče níže se nepoužijí, dokud nebude."
+  },
   "p.root-or-an-account-allowed-to.a44d0358": {
    "source": "({0}). Root, or an account allowed to run",
    "text": "({0}). Root, nebo účet, který smí spouštět"
+  },
+  "p.root-or-one-of-the-users.eb86e21a": {
+   "source": "root, or one of the {0} users who may sign in here (a login shell, UID 1000 and up) - their own ~/.ssh/authorized_keys, written as they are.",
+   "text": "root, nebo jeden z {0} uživatelů, kteří se zde smí přihlásit (přihlašovací shell, UID 1000 a výš) – jejich vlastní ~/.ssh/authorized_keys, zapsané jejich jménem."
   },
   "p.root-wrote.ab87af9d": {
    "source": "root wrote {0}{1}{2}",
@@ -40790,6 +41590,10 @@
    "source": "Set on this machine{0}.",
    "text": "Nastaveno na tomto počítači{0}."
   },
+  "p.set-on.b300e846": {
+   "source": "set on {0}",
+   "text": "nastaveno {0}"
+  },
   "p.set-refresh-rate.cd920ca9": {
    "source": "{0} set refresh-rate {1}",
    "text": "{0} set refresh-rate {1}"
@@ -40938,9 +41742,21 @@
    "source": "srcip:{0} kind:event/vpn",
    "text": "srcip:{0} kind:event/vpn"
   },
+  "p.ssh-authorized-keys.e0a8c729": {
+   "source": "~{0}/.ssh/authorized_keys",
+   "text": "~{0}/.ssh/authorized_keys"
+  },
   "p.ssh-firewall-pfctl-t-t-show.af5239d2": {
    "source": "ssh {0}@FIREWALL pfctl -t {1} -T show",
    "text": "ssh {0}@FIREWALL pfctl -t {1} -T show"
+  },
+  "p.sshd-does-not-let-root-sign.5e841d3b": {
+   "source": "{0}sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does.",
+   "text": "{0}sshd roota vůbec nepustí (PermitRootLogin no) – klíče níže se nepoužijí, dokud nepustí."
+  },
+  "p.sshd-takes-no-keys-pubkeyauthentication-no.330122cc": {
+   "source": "{0}sshd takes no keys (PubkeyAuthentication no).",
+   "text": "{0}sshd nepřijímá klíče (PubkeyAuthentication no)."
   },
   "p.ssl.16071e1c": {
    "source": "SSL: {0}",
@@ -41005,6 +41821,10 @@
   "p.successful-login-s.b3661de3": {
    "source": "{0} successful login(s)",
    "text": "{0} úspěšných přihlášení"
+  },
+  "p.sudo-may-become-root-with-their.0d6e2956": {
+   "source": "sudo: may become root with their own password (a member of {0}).",
+   "text": "sudo: smí se stát rootem s vlastním heslem (člen {0})."
   },
   "p.svc-isemon-http.16ed5c42": {
    "source": "{0}\\svc-isemon-http",
@@ -41374,13 +42194,17 @@
    "source": "The first {0} of them. This domain has {1}, which is more than is carried for matching — the number above is the domain’s own.",
    "text": "Prvních {0} z nich. Tato doména jich má {1}, což je víc, než se uchovává pro porovnávání — číslo výše je číslo samotné domény."
   },
-  "p.the-key-goes-into-root-s.be660579": {
-   "source": "the key goes into root's authorized_keys within a few seconds{0}",
-   "text": "klíč půjde během několika sekund do authorized_keys roota{0}"
+  "p.the-key-goes-onto-within-a.27ccf042": {
+   "source": "the key goes onto {0} within a few seconds{1}",
+   "text": "klíč se na {0} přidá během pár sekund{1}"
   },
   "p.the-key-is-exported-as-pub.459b412b": {
    "source": "the key is exported as {0}.pub",
    "text": "klíč je exportován jako {0}.pub"
+  },
+  "p.the-key-is-taken-away-on.9fd014a8": {
+   "source": "the key is taken away on {0} within a few seconds",
+   "text": "klíč se na {0} odebere během pár sekund"
   },
   "p.the-keys-could-not-be-put.03fbc035": {
    "source": "the keys could not be put into the copy: {0}",
@@ -41538,6 +42362,14 @@
    "source": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\".",
    "text": "heslo uživatele {0} je uloženo v adresáři a jeho změna zde by vytvořila druhý vstup, o kterém doména nic neví. Změňte ho v doméně. Potřebujete-li vstup pro případ, kdy doména není dostupná, nastavte ho na serveru příkazem \"isemon --passwd {1}\"."
   },
+  "p.the-password-is-characters-at-least.c1572e95": {
+   "source": "the password is {0} characters at least",
+   "text": "heslo má nejméně {0} znaků"
+  },
+  "p.the-password-runs-out-on.142b7ecb": {
+   "source": "The password runs out on {0}.",
+   "text": "Heslo vyprší {0}."
+  },
   "p.the-processor-busy-over-the-last.f50f06d7": {
    "source": "The processor, busy over the last {0} s, all {1} core(s) together{2}",
    "text": "Procesor, vytížení za posledních {0} s, všech {1} jader dohromady{2}"
@@ -41642,9 +42474,9 @@
    "source": "The {0} worked out from the log folders and the servers that have written lately are marked; nothing else is.",
    "text": "Označeny jsou {0} odvozené ze složek s logy a servery, které v poslední době zapisovaly; nic jiného."
   },
-  "p.then-on-your-machine-ssh-i.85827aa3": {
-   "source": "Then, on your machine: ssh -i {0} root@…",
-   "text": "Pak na svém stroji: ssh -i {0} root@…"
+  "p.then-on-your-machine-ssh-i.ca9f50bd": {
+   "source": "Then, on your machine: ssh -i {0} {1}@…",
+   "text": "Pak na svém stroji: ssh -i {0} {1}@…"
   },
   "p.there-are-already-record-s-in.6be26df5": {
    "source": "there are already {0} record(s) in it. Moving into a database that is not empty would mix two installations; empty it first if it really is spare.",
@@ -41733,6 +42565,10 @@
   "p.this-firewall-is-missing-address-es.c9964693": {
    "source": "This firewall is missing {0} address(es) that this machine says should be on it{1}. A sync puts them on.",
    "text": "Na tomto firewallu chybí {0} adres, které na něm podle tohoto serveru mají být{1}. Synchronizace je doplní."
+  },
+  "p.this-is-the-only-time-it.dc5cf129": {
+   "source": "This is the only time it is shown. Whoever holds it signs in to {0} as {1}.",
+   "text": "Zobrazí se jen tentokrát. Kdo ho má, přihlásí se na {0} jako {1}."
   },
   "p.this-one-and-other-s.da89176c": {
    "source": "— this one and {0} other(s)",
@@ -41913,6 +42749,10 @@
   "p.u-password.8d5ff3f0": {
    "source": "-u '{0}:PASSWORD'",
    "text": "-u '{0}:PASSWORD'"
+  },
+  "p.uid.26a97148": {
+   "source": "UID {0}",
+   "text": "UID {0}"
   },
   "p.under-settings-banning-where-the-bans.835a0bde": {
    "source": ": {0} under Settings → Banning → Where the bans come from. It can still reach the VPN.",
@@ -42210,6 +43050,14 @@
    "source": "{0} with a remark",
    "text": "{0} s výhradou"
   },
+  "p.with-and-everything-in-it.d1b273b6": {
+   "source": "- with {0} and everything in it.",
+   "text": "– s {0} a vším v ní."
+  },
+  "p.with-everything-in-it-ssh-keys.898d024d": {
+   "source": "{0} - with everything in it, SSH keys among it.",
+   "text": "{0} – se vším, co v ní je, včetně SSH klíčů."
+  },
   "p.with-nothing-after-it.41b1b573": {
    "source": "\"{0}\" with nothing after it",
    "text": "\"{0}\" bez ničeho za tím"
@@ -42241,6 +43089,10 @@
   "p.writes-for-copies-kept-asks-logrotate.e586163b": {
    "source": "writes {0} for {1} ({2} copies kept), asks logrotate whether all is well and puts it back if not",
    "text": "zapíše {0} pro {1} (drží {2} kopií), zeptá se logrotate, zda je vše v pořádku, a když ne, vrátí to"
+  },
+  "p.written-as-so-that-the-folder.50e75e9a": {
+   "source": "- written as {0}, so that the folder and the file are theirs. The",
+   "text": "– zapsané jako {0}, aby složka i soubor patřily jemu. Jeho"
   },
   "p.written.acd887d3": {
    "source": "· written {0}",
@@ -42311,10 +43163,6 @@
   "r.a-fresh-ed25519-pair-is-made.3e16dfb8": {
    "source": "A fresh ed25519 pair is made here. The private half stays on this machine and the public half is shown for you to put on that router.<br><br><b>Any key already stored for it is replaced</b>, so until the new public half is on it this will not be able to sign in — which means bans stop reaching it until you do. The other firewall’s key is not touched.",
    "text": "Zde se vytvoří nový pár klíčů ed25519. Soukromá polovina zůstává na tomto serveru a veřejná se zobrazí, abyste ji vložili na daný router.<br><br><b>Jakýkoli klíč, který je pro něj už uložen, bude nahrazen</b>, takže dokud na něm nebude nová veřejná polovina, nebude se moci přihlásit — což znamená, že se na něj do té doby nedostanou blokace. Klíče druhého firewallu se to nedotkne."
-  },
-  "r.a-fresh-pair-is-made-here.a320b484": {
-   "source": "A fresh pair is made here. Its <b>private</b> half is shown to you once, to download or copy, and kept nowhere; its <b>public</b> half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
-   "text": "Vytvoří se zde nový pár. Jeho <b>soukromá</b> polovina se vám ukáže jednou, ke stažení nebo zkopírování, a nikde se neuloží; jeho <b>veřejná</b> polovina jde do authorized_keys roota na tomto serveru. Klíč, který tam byl předtím, zůstane, dokud se v seznamu níže neodebere."
   },
   "r.a-full-admin-may-change-anything.55cf7935": {
    "source": "A <b>full admin</b> may change anything here. A <b>read only</b> account may look at every page and change nothing — no ban, no setting, not even a fetch.",
@@ -42836,10 +43684,6 @@
    "source": "<br>It is one of the names under <b>a name that does not exist</b> in Settings: nobody has ever had it, so this is guessing rather than mistyping.",
    "text": "<br>Jde o jedno ze jmen v seznamu <b>neexistující jméno</b> v Nastavení: nikdo ho nikdy neměl, takže jde o hádání, ne o překlep."
   },
-  "r.it-is-the-last-key-root.289eca80": {
-   "source": "<br><br><b>It is the last key root signs in with on this server.</b> Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
-   "text": "<br><br><b>Je to poslední klíč, kterým se root na tento server přihlašuje.</b> Pokud se root nesmí přihlásit heslem, nikdo se pak na server přes SSH jako root nedostane."
-  },
   "r.it-says-what-it-would-do.28f93df9": {
    "source": "It says what it would do before it does anything, and a subnet is only made where two or more banned addresses fall inside it — never where it would swallow something under <i>never kept out</i>.",
    "text": "Nejdřív řekne, co by udělal, než cokoli udělá, a podsíť vytvoří jen tam, kde do ní padnou dvě či více zablokovaných adres — nikdy tam, kde by pohltila něco ze seznamu <i>nikdy neblokovat</i>."
@@ -42847,10 +43691,6 @@
   "r.its-attempt-s-stop-counting-towards.a90f472b": {
    "source": "Its <b>{0}</b> attempt(s) stop counting towards a ban, and it has to earn one from here.<br><br>Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page, and its ban history says who cleared it and when.",
    "text": "Jejích <b>{0}</b> pokusů přestane počítat k banu a ban si musí vysloužit znovu od teď.<br><br>Nic se nemaže a nikdo není vpuštěn: každý pokus zůstává na stránce Neúspěšné pokusy a v historii banů adresy je, kdo ji vynuloval a kdy."
-  },
-  "r.its-public-half-goes-into-root.81273509": {
-   "source": "Its <b>public</b> half goes into <code>/root/.ssh/authorized_keys</code> of this server. The <b>private</b> half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too.",
-   "text": "Jeho <b>veřejná</b> polovina jde do <code>/root/.ssh/authorized_keys</code> tohoto serveru. <b>Soukromá</b> polovina se zde nikdy neukládá: ukáže se vám jednou, ke stažení nebo zkopírování. Klíč je pak v seznamu níže - tam se exportuje nebo odebírá; tam se přidává i vlastní klíč."
   },
   "r.keep-out-for-good-now-without.07eaa15c": {
    "source": "Keep {0} out <b>for good</b>, now, without waiting for it to reach the bar. The router is told at once.",
@@ -43000,10 +43840,6 @@
    "source": "One input a log, so that a log a controller does not have does not stop the others; the same output, so everything lands in the same file isemon reads. Then restart NXLog (<code>Restart-Service nxlog</code>).",
    "text": "Jeden vstup na log, aby log, který řadič nemá, nezastavil ostatní; stejný výstup, aby vše skončilo ve stejném souboru, který isemon čte. Pak restartujte NXLog (<code>Restart-Service nxlog</code>)."
   },
-  "r.one-line-of-a-pub-file.5502bb80": {
-   "source": "One line of a <code>.pub</code> file: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA or RSA of 3072 bits and more; options before the key are not taken here. A private key is taken too: its public half is worked out here and the private half is not kept.",
-   "text": "Jeden řádek souboru <code>.pub</code>: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA nebo RSA s 3072 bity a více; volby před klíčem se zde nepřijímají. Přijme se i soukromý klíč: jeho veřejná polovina se zde spočítá a soukromá se neuloží."
-  },
   "r.only-a-vpn-refusal-from-an.e317f690": {
    "source": "Only a <b>VPN refusal</b> from an address on the internet can earn a ban - while <i>The VPN through a FreeRADIUS of your own</i> under Banning → Where the bans come from is on, which it is not until switched on. A socket or a radio never does. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "K banu může vést jen <b>odmítnutí do VPN</b> z adresy na internetu – dokud je <i>VPN přes vlastní FreeRADIUS</i> v Banningu → Odkud bany přicházejí zapnuto, což není, dokud se to nezapne. Zásuvka ani rádio nikdy. Je-li vypnuto, neotevře se ani jeden soubor a nic se nikde nechová jinak."
@@ -43132,10 +43968,6 @@
    "source": "Root <b>deletes</b> the copies of logs in {0} older than <b>{1} days</b> - as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone.",
    "text": "Root <b>smaže</b> kopie logů v {0} starší než <b>{1} dní</b> – tak dlouho, jak je jeho soubor logrotate chce držet – a zbytek starší než tři dny zabalí. Co z nich isemon přečetl, zůstává v databázi. Nelze to vrátit."
   },
-  "r.root-no-longer-signs-in-with.c3b654aa": {
-   "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
-   "text": "Root se už nepřihlásí pomocí <code>{0}</code>{1} na tomto serveru.{2}"
-  },
   "r.root-takes-out-of-its-own.2a1d1f3e": {
    "source": "Root takes <b>{0}</b> out of {1} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>{2}</b>: every day the day files and their copies older than two days packed, those older than <b>{3} days</b> deleted - and runs it once now, behind. What isemon read of them stays in the database.",
    "text": "Root vyjme <b>{0}</b> z {1} – jen její vlastní řádek – a zeptá se logrotate na všechny jeho soubory před i po; když hlásí něco nového špatně, nebo složku pořád něco bere, vrátí se všechno zpět. Pak zapíše <b>{2}</b>: každý den denní soubory a jejich kopie starší než dva dny zabalí, starší než <b>{3} dní</b> smaže – a hned ho jednou spustí na pozadí. Co z nich isemon přečetl, zůstává v databázi."
@@ -43163,10 +43995,6 @@
   "r.rsyslog-stops-taking-otp-s-lines.7c91c403": {
    "source": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again.",
    "text": "rsyslog přestane přijímat řádky otp přes TLS a certifikát isemonu, jeho klíč, autorita otp i autorita vytvořená zde se z tohoto stroje smažou. Nešifrovaný vstup na 514 zůstává, jak je.<br><br>Nejdřív přepněte uzly otp zpět na nešifrované posílání, jinak jejich řádky přestanou přicházet. Pro TLS znovu je nastavte od začátku - certifikát znovu vytvořený zde pochází z nové autority, kterou je třeba do otp vložit znovu."
-  },
-  "r.said-again-is-the-last-key.881cae52": {
-   "source": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
-   "text": "Řečeno znovu: <code>{0}</code> je poslední klíč, kterým se root na tento server přihlašuje. Po jeho odebrání se na server přes SSH jako root s klíčem nikdo nedostane."
   },
   "r.search-es-of-the-find-box.66d390c6": {
    "source": "• {0} search(es) of the find box<br>",
@@ -44150,6 +44978,10 @@
    "source": "Off: acme is told only that this is isemon {0}.",
    "text": "Vypnuto: acme se dozví jen to, že tu je isemon {0}."
   },
+  "p.on-this-server.28ccf243": {
+   "source": "{0} on this server.{1}",
+   "text": "{0} na tomto serveru.{1}"
+  },
   "p.pinned-forgotten-the-next-connection-pins.90f2be51": {
    "source": "Pinned: {0}. Forgotten, the next connection pins whatever the router answers with - for a certificate replaced on purpose.",
    "text": "Připnuto: {0}. Po zapomenutí si další připojení připne cokoli, čím router odpoví – pro certifikát vyměněný záměrně."
@@ -44250,6 +45082,10 @@
    "source": "The first {0} of {1} - the search box finds the rest.",
    "text": "Prvních {0} z {1} - zbytek najde vyhledávání."
   },
+  "p.the-key-goes-into-root-s.be660579": {
+   "source": "the key goes into root's authorized_keys within a few seconds{0}",
+   "text": "klíč půjde během několika sekund do authorized_keys roota{0}"
+  },
   "p.the-last-push-from-until.cf174325": {
    "source": "The last push: {0} from {1} - {2}, until {3}.",
    "text": "Poslední dodání: {0} z {1} – {2}, platný do {3}."
@@ -44261,6 +45097,10 @@
   "p.the-password-made-for.ebf753ab": {
    "source": "The password made for {0}",
    "text": "Heslo vytvořené pro {0}"
+  },
+  "p.then-on-your-machine-ssh-i.85827aa3": {
+   "source": "Then, on your machine: ssh -i {0} root@…",
+   "text": "Pak na svém stroji: ssh -i {0} root@…"
   },
   "p.this-page-s-own-guard-is.d6c207f6": {
    "source": "This page’s own guard is not in force either ({0}): see .user.ini beside index.php, and restart php-fpm.",
@@ -44318,6 +45158,10 @@
    "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only people of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Switched on above (<b>Sign in with Windows (Kerberos)</b>); off, nothing of it is offered.",
    "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele na tyto stránky bez hesla: pošle Kerberos ticket pro jméno, které otevřel, a ten se tady ověří proti keytabu toho jména. Dovnitř se dostanou jen lidé z adresáře výše, s rolí podle svých skupin - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Zapíná se výše (<b>Přihlašovat přes Windows (Kerberos)</b>); vypnuto, nic z toho se nenabízí."
   },
+  "r.a-fresh-pair-is-made-here.a320b484": {
+   "source": "A fresh pair is made here. Its <b>private</b> half is shown to you once, to download or copy, and kept nowhere; its <b>public</b> half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
+   "text": "Vytvoří se zde nový pár. Jeho <b>soukromá</b> polovina se vám ukáže jednou, ke stažení nebo zkopírování, a nikde se neuloží; jeho <b>veřejná</b> polovina jde do authorized_keys roota na tomto serveru. Klíč, který tam byl předtím, zůstane, dokud se v seznamu níže neodebere."
+  },
   "r.an-external-alias-is-empty-after.cc237b99": {
    "source": "<b>An External alias is empty after the OPNsense restarts.</b> Its content lives only in the pf table. The sync here puts it back: set <i>How often to look at the firewall</i> to a few minutes rather than only on a change.",
    "text": "<b>Alias typu External je po restartu OPNsense prázdný.</b> Jeho obsah žije jen v pf tabulce. Synchronizace odsud jej vrátí: nastavte <i>Jak často se dívat na firewall</i> na několik minut místo jen při změně."
@@ -44358,6 +45202,14 @@
    "source": "{0} has no ban of its own: it is kept out because <b>{1}</b> is. Letting it in lets every address in that range in.",
    "text": "{0} nemá vlastní ban: je blokována, protože <b>{1}</b> je. Vpuštěním se dovnitř pustí každá adresa v tom rozsahu."
   },
+  "r.it-is-the-last-key-root.289eca80": {
+   "source": "<br><br><b>It is the last key root signs in with on this server.</b> Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
+   "text": "<br><br><b>Je to poslední klíč, kterým se root na tento server přihlašuje.</b> Pokud se root nesmí přihlásit heslem, nikdo se pak na server přes SSH jako root nedostane."
+  },
+  "r.its-public-half-goes-into-root.81273509": {
+   "source": "Its <b>public</b> half goes into <code>/root/.ssh/authorized_keys</code> of this server. The <b>private</b> half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too.",
+   "text": "Jeho <b>veřejná</b> polovina jde do <code>/root/.ssh/authorized_keys</code> tohoto serveru. <b>Soukromá</b> polovina se zde nikdy neukládá: ukáže se vám jednou, ke stažení nebo zkopírování. Klíč je pak v seznamu níže - tam se exportuje nebo odebírá; tam se přidává i vlastní klíč."
+  },
   "r.nothing-here-is-ever-judged-and.10d1b2ee": {
    "source": "<b>Nothing here is ever judged</b> and nothing here can earn anybody a ban. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "<b>Nic zde se nikdy neposuzuje</b> a nic zde nemůže nikomu vysloužit blokaci. Je-li vypnuto, neotevře se jediný soubor a nic se nikde nechová jinak."
@@ -44381,6 +45233,18 @@
   "r.of.e9c808b3": {
    "source": "<b>{0}</b> of {1}",
    "text": "<b>{0}</b> z {1}"
+  },
+  "r.one-line-of-a-pub-file.5502bb80": {
+   "source": "One line of a <code>.pub</code> file: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA or RSA of 3072 bits and more; options before the key are not taken here. A private key is taken too: its public half is worked out here and the private half is not kept.",
+   "text": "Jeden řádek souboru <code>.pub</code>: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA nebo RSA s 3072 bity a více; volby před klíčem se zde nepřijímají. Přijme se i soukromý klíč: jeho veřejná polovina se zde spočítá a soukromá se neuloží."
+  },
+  "r.root-no-longer-signs-in-with.c3b654aa": {
+   "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
+   "text": "Root se už nepřihlásí pomocí <code>{0}</code>{1} na tomto serveru.{2}"
+  },
+  "r.said-again-is-the-last-key.881cae52": {
+   "source": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
+   "text": "Řečeno znovu: <code>{0}</code> je poslední klíč, kterým se root na tento server přihlašuje. Po jeho odebrání se na server přes SSH jako root s klíčem nikdo nedostane."
   },
   "r.switched-on-every-ban-made-while.69a22f93": {
    "source": "Switched on, every ban made while only watched and still running is carried at once — to the firewalls, into the published list and into the access list: {0}. They can be looked through first on the Banned page, under <i>Only watched</i>.",
@@ -44462,9 +45326,17 @@
    "source": "A key and a certificate for the router’s api-ssl, made here and pinned: from the first connection on this machine knows it is that router. You download both once and import them on the router; the key is not kept here.",
    "text": "Klíč a certifikát pro api-ssl routeru, vytvořené zde a připnuté: tento stroj od prvního připojení ví, že jde o ten router. Oba soubory jednou stáhnete a naimportujete na router; klíč se zde neuchovává."
   },
+  "s.a-key-for-root.46c67d83": {
+   "source": "A key for root",
+   "text": "Klíč pro roota"
+  },
   "s.a-key-in-the-url-a.dc8c3c8a": {
    "source": "A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and it works for a FortiGate too.",
    "text": "Klíč v URL: dlouhý náhodný klíč, který URL obsahuje a který tlačítko Nový klíč změní. Je to jediná možnost pro FMC, které nemá kam zadat heslo pro feed, a funguje i pro FortiGate."
+  },
+  "s.a-key-you-have-already-its.b6a2074a": {
+   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root's authorized_keys.",
+   "text": "Klíč, který už máte - jeho veřejný řádek nebo soubor .pub, nebo soukromý klíč, z něhož se použije jen veřejná polovina - vložený do authorized_keys roota."
   },
   "s.a-mariadb-or-mysql-server-here.ae28de33": {
    "source": "A MariaDB (or MySQL) server, here or on another machine.",
@@ -44553,6 +45425,10 @@
   "s.ad2025.ff4530a5": {
    "source": "ad2025",
    "text": "ad2025"
+  },
+  "s.add-a-key-for-root.33c294da": {
+   "source": "Add a key for root",
+   "text": "Přidat klíč pro roota"
   },
   "s.after-your-password-face-id-touch.119de544": {
    "source": "After your password, Face ID, Touch ID, Windows Hello or the PIN of your device confirms it is you. Each device that may do it keeps a passkey; the server only its public half. A passkey on an iPhone or a Mac in the iCloud Keychain is on your other Apple devices too. Take the last one away and your next sign-in sets Face ID up again.",
@@ -44910,6 +45786,10 @@
    "source": "Grows a day",
    "text": "Přibývá denně"
   },
+  "s.half-goes-into-root-s-authorized.add26887": {
+   "source": "half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
+   "text": "polovina jde do authorized_keys roota na tomto serveru. Klíč, který tam byl předtím, zůstane, dokud se v seznamu níže neodebere."
+  },
   "s.how-busy-the-server-is-the.655d4bb9": {
    "source": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all.",
    "text": "Jak je server vytížený – procesor, paměť, disky a síť – vedle stavu nahoře na stránce, každé 3 s, s jádry, teplotami, disky a procesy za každým číslem. Pro plné administrátory; každý si pod Vaším účtem volí, jak vypadá. Vypnutý se z něj nečte vůbec nic."
@@ -44990,6 +45870,10 @@
    "source": "is on",
    "text": "je zapnuto"
   },
+  "s.is-the-last-key-root-signs.a7f642aa": {
+   "source": "is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
+   "text": "je poslední klíč, kterým se root na tento server přihlašuje. Po jeho odebrání se na server přes SSH jako root s klíčem nikdo nedostane."
+  },
   "s.is-tried-as-well-so-somebody.b58d7279": {
    "source": "is tried as well, so somebody who types their whole address gets in too.",
    "text": "se zkouší také, takže se přihlásí i ten, kdo zadá celou svou adresu."
@@ -45049,6 +45933,10 @@
   "s.it-is-reachable-and-empty-of.74b2745d": {
    "source": "It is reachable and empty of ours, which is exactly what something to carry everything into should look like.",
    "text": "Je dostupný a neobsahuje nic našeho, což je přesně to, jak má vypadat místo, kam se má vše přenést."
+  },
+  "s.it-is-the-last-key-root.aac33a11": {
+   "source": "It is the last key root signs in with on this server.",
+   "text": "Je to poslední klíč, kterým se root na tento server přihlašuje."
   },
   "s.it-was-sealed-on-another-machine.330e56fc": {
    "source": "It was sealed on another machine and cannot be read here: put it in again.",
@@ -45118,9 +46006,25 @@
    "source": "(made for you)",
    "text": "(vytvoří se)"
   },
+  "s.made-here.827209b5": {
+   "source": "made here",
+   "text": "vytvořen zde"
+  },
   "s.made-there-if-it-is-not.11971c08": {
    "source": "Made there if it is not, with an administrator (next step).",
    "text": "Pokud tam není, vytvoří se – s administrátorem (další krok)."
+  },
+  "s.make-a-fresh-pair-here-ed25519.63aac4c6": {
+   "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server.",
+   "text": "Vytvořit zde nový pár - Ed25519, nebo RSA 4096 tam, kde něco starého potřebuje RSA. Soukromá polovina se vám ukáže jednou; veřejná jde do authorized_keys roota na tomto serveru."
+  },
+  "s.make-a-key-for-root-its.84dd16b6": {
+   "source": "make a key for root: its public half goes into root's authorized_keys, its private half is written once to --out (or printed once) and kept nowhere else",
+   "text": "vytvořit klíč pro roota: jeho veřejná polovina jde do authorized_keys roota, soukromá se jednou zapíše do --out (nebo jednou vypíše) a nikde jinde se neuloží"
+  },
+  "s.make-a-key-for-this-server.4d5d544e": {
+   "source": "Make a key for this server",
+   "text": "Vytvořit klíč pro tento server"
   },
   "s.make-full-admin.487dc74c": {
    "source": "Make full admin",
@@ -45218,6 +46122,10 @@
    "source": "· not keeping up",
    "text": "· nestíhá"
   },
+  "s.not-read.d6b203a2": {
+   "source": "Not read.",
+   "text": "Nenačteno."
+  },
   "s.not-there-isemon-leaves-the-firewall.6e21046f": {
    "source": "(not there: isemon leaves the firewall alone)",
    "text": "(není tam: isemon nechává firewall být)"
@@ -45289,6 +46197,10 @@
   "s.of-them-matched-to-say-anything.6e277d19": {
    "source": "of them matched to say anything.",
    "text": "shodovalo příliš málo, než aby se dalo něco říct."
+  },
+  "s.of-this-server-the.d25192d1": {
+   "source": "of this server. The",
+   "text": "tohoto serveru. Jeho"
   },
   "s.off-a-certificate-that-does-not.f4fb954f": {
    "source": "Off: a certificate that does not hold the dashboard’s name is refused, so none can take it over silently.",
@@ -45406,6 +46318,10 @@
    "source": "Press this again later and it does the other half of the job: if the account already gets in, nothing is made and no administrator is wanted — it opens the database and puts its tables right, adding whatever this version wants that an older one never made. Leave the two boxes empty for that.",
    "text": "Klikněte sem později znovu a provede se druhá polovina práce: pokud se účet už přihlásí, nic se nevytváří a správce není potřeba — otevře se databáze a upraví se její tabulky, přičemž se doplní vše, co tato verze potřebuje a starší verze nikdy nevytvořila. V takovém případě ponechte obě pole prázdná."
   },
+  "s.put-a-key-into-root-s.6eb8df49": {
+   "source": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)",
+   "text": "vložit klíč do authorized_keys roota: řádek veřejného klíče, soubor .pub, nebo soubor soukromého klíče, z něhož jde dovnitř jen veřejná polovina (jeho heslo: --passphrase-file, ISEMON_KEY_PASSPHRASE, jinak se zeptá)"
+  },
   "s.put-in.fe9c90c2": {
    "source": "put in",
    "text": "vložen"
@@ -45446,6 +46362,14 @@
    "source": "Root checks the package again and runs its install.sh --upgrade. isemon restarts once, for a few seconds: these pages stop answering for that moment and the logs are read on from where they were. The database, the settings and the accounts are kept.",
    "text": "Root balíček znovu zkontroluje a spustí jeho install.sh --upgrade. isemon se jednou restartuje, na pár sekund: tyto stránky na tu chvíli přestanou odpovídat a logy se pak čtou dál od místa, kde byly. Databáze, nastavení i účty zůstanou zachovány."
   },
+  "s.root-no-longer-signs-in-with.934cf2b1": {
+   "source": "Root no longer signs in with",
+   "text": "Root se už nepřihlásí pomocí"
+  },
+  "s.root-s-half-of-this-is.54666464": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here.",
+   "text": "Rootova část tohoto zde ještě není nainstalovaná (isemon-web.path): jednou spusťte ./install.sh --upgrade z balíčku 1.10.239 (nebo novějšího). Do té doby se klíče zde nečtou ani nemění."
+  },
   "s.root-s-half.eec0bc02": {
    "source": "Root’s half",
    "text": "Rootova část"
@@ -45465,6 +46389,10 @@
   "s.running-since.180dbfb4": {
    "source": "Running since",
    "text": "Běží od"
+  },
+  "s.said-again.343ef2b2": {
+   "source": "Said again:",
+   "text": "Řečeno znovu:"
   },
   "s.saved-restart-the-daemon-to-take.7658a913": {
    "source": "saved; restart the daemon to take it up: systemctl restart isemon",
@@ -45497,6 +46425,18 @@
   "s.so-far-usually-one-to-two.3460e29f": {
    "source": "so far, usually one to two minutes",
    "text": "zatím, obvykle jedna až dvě minuty"
+  },
+  "s.ssh-keys-of-root.4b7cbf6b": {
+   "source": "SSH keys of root",
+   "text": "SSH klíče roota"
+  },
+  "s.sshd-does-not-let-root-sign.be438f60": {
+   "source": "sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does.",
+   "text": "sshd roota vůbec nepustí (PermitRootLogin no) - klíče níže se nepoužijí, dokud to nepovolí."
+  },
+  "s.sshd-takes-no-keys-pubkeyauthentication-no.febbe96a": {
+   "source": "sshd takes no keys (PubkeyAuthentication no).",
+   "text": "sshd nepřijímá klíče (PubkeyAuthentication no)."
   },
   "s.start-using-it-this-writes-one.15a69b56": {
    "source": "Start using it. This writes one setting and restarts the daemon; nothing in either database is touched, and coming back is the same four steps the other way.",
@@ -45538,9 +46478,21 @@
    "source": "Take away everything this account may change. It keeps every page it can look at.",
    "text": "Odebrat vše, co tento účet smí měnit. Ponechá si všechny stránky, které si může prohlížet."
   },
+  "s.take-it-away-anyway.29e93be5": {
+   "source": "Take it away anyway",
+   "text": "Přesto odebrat"
+  },
   "s.take-no-more-certificates-from-acme.08676a50": {
    "source": "Take no more certificates from acme?",
    "text": "Už nepřijímat certifikáty z acme?"
+  },
+  "s.take-the-key-with-this-sha256.106afe23": {
+   "source": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again",
+   "text": "odebrat rootovi klíč s tímto otiskem SHA256; nejdřív se zeptá, pokud není --yes. Poslední klíč, kterým se root přihlašuje, jen s --last a po druhém dotazu"
+  },
+  "s.take-the-last-key-away.d5860a0d": {
+   "source": "Take the last key away?",
+   "text": "Odebrat poslední klíč?"
   },
   "s.taken-when-saved.f75fe279": {
    "source": "taken when saved",
@@ -45678,6 +46630,22 @@
    "source": "The Kerberos library",
    "text": "Knihovna Kerberos"
   },
+  "s.the-key-goes-into-root-s.8674b156": {
+   "source": "the key goes into root's authorized_keys again",
+   "text": "klíč jde znovu do authorized_keys roota"
+  },
+  "s.the-key-is-taken-away-within.bb3623d7": {
+   "source": "the key is taken away within a few seconds",
+   "text": "klíč se během několika sekund odebere"
+  },
+  "s.the-keys-that-may-sign-in.db24acff": {
+   "source": "The keys that may sign in to this server as root over SSH - the lines of /root/.ssh/authorized_keys. A key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events.",
+   "text": "Klíče, kterými se lze na tento server přihlásit jako root přes SSH - řádky /root/.ssh/authorized_keys. Klíč vytvořený zde se ukáže jednou, abyste si ho uložili, a na serveru se nikde neuchová; vlastní klíč se vloží svou veřejnou polovinou. Každá změna se zapíše do Událostí."
+  },
+  "s.the-keys-that-may-sign-in.e26240fb": {
+   "source": "The keys that may sign in to this server as root over SSH: made here, added or taken away.",
+   "text": "Klíče, kterými se lze na tento server přihlásit jako root přes SSH: vytvořené zde, přidané nebo odebrané."
+  },
   "s.the-ladder-as-written-a-list.256b4df9": {
    "source": "The ladder, as written: a list of minutes, and whether the last",
    "text": "Stupně blokace tak, jak jsou zapsány: seznam minut a údaj, zda poslední"
@@ -45782,6 +46750,10 @@
    "source": "This is copying the whole database. You can close this and it carries on; what it did ends up in Events either way.",
    "text": "Probíhá kopírování celé databáze. Toto okno můžete zavřít a operace poběží dál; co udělala, se v každém případě objeví v Událostech."
   },
+  "s.this-is-the-only-time-it.92827b46": {
+   "source": "This is the only time it is shown. Whoever holds it signs in to this server as root.",
+   "text": "Ukazuje se jen teď. Kdo ho má, přihlásí se na tento server jako root."
+  },
   "s.this-makes-the-database-and-the.6c84b7d6": {
    "source": "This makes the database and the account on that server, and gives the account rights on that one database and no other. The first time, it needs an administrator on the server to do it — root on MariaDB, postgres on PostgreSQL, or anyone who may create a database.",
    "text": "Tímto se na daném serveru vytvoří databáze a účet a účet dostane práva k této jedné databázi a žádné jiné. Poprvé to musí provést správce serveru — root u MariaDB, postgres u PostgreSQL nebo kdokoli, kdo smí vytvářet databáze."
@@ -45821,6 +46793,10 @@
   "s.two-roles-and-no-more-a.c0ce7ee8": {
    "source": "Two roles and no more. A",
    "text": "Dvě role a nic víc. Role"
+  },
+  "s.unless-root-may-sign-in-with.672e8506": {
+   "source": "Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
+   "text": "Pokud se root nesmí přihlásit heslem, nikdo se pak na server přes SSH jako root nedostane."
   },
   "s.upgrading.501d5804": {
    "source": "upgrading",
@@ -45997,6 +46973,10 @@
   "s.with-restore-bundle-the-password-of.4dfc5688": {
    "source": "with --restore-bundle: the password of the backups, one line (else ISEMON_BACKUP_PASSWORD, else asked); with --root-key-add: the passphrase of the private key",
    "text": "s --restore-bundle: heslo záloh, jeden řádek (jinak ISEMON_BACKUP_PASSWORD, jinak se zeptá); s --root-key-add: heslo soukromého klíče"
+  },
+  "s.with-root-key-drop-it-may.89652220": {
+   "source": "with --root-key-drop: it may be the last key root signs in with",
+   "text": "s --root-key-drop: může jít o poslední klíč, kterým se root přihlašuje"
   },
   "s.with-root-key-make-the-file.65805e88": {
    "source": "with --root-key-make: the file for the private half - made 0600, never written over",

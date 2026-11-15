@@ -35,9 +35,17 @@ The clock (1.10.228): asked in ntp.ask, answered in ntp.json - how chrony
 sees it, a step to the right time now, and the time servers and time zone
 put into /etc/chrony.conf when isemon is to set them (see ntp_part).
 
-Root's SSH keys (1.10.239): asked in sshkeys.ask, answered in sshkeys.json -
-the keys in /root/.ssh/authorized_keys, one added or taken away, and what
-sshd makes of root (see sshkeys_part).
+The SSH keys (1.10.239): asked in sshkeys.ask, answered in sshkeys.json -
+the keys in /root/.ssh/authorized_keys (only read since 1.10.351: no code
+here writes root's file), the keys of every other user who may sign in, read
+and written by a child that is that user, and what sshd makes of root (see
+sshkeys_part).
+
+The local users (1.10.351): asked in users.ask, answered in users.json - the
+users of the normal UID range made, given a password (its hash, on stdin to
+chpasswd -e), sudo or an aging, locked, unlocked or taken away, never root or
+a service; and the password policy put into /etc/security and login.defs
+between isemon's marks, or taken out again (see users_part).
 
 The updates of the operating system (1.10.239): asked in osup.ask, answered
 in osup.ans - a look for updates or the update itself, started as a unit of
@@ -47,8 +55,9 @@ into osup.json (see osup_part). dnf and apt through Settings → Proxy
 /run/isemon-osup-proxy.json (root's, 0600), read into the work's own
 environment and taken away - never on a command line.
 
-  isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask, logfix.ask,
-                           osup.ask, otptls.ask, acmetls.ask, selinux.ask and osroots.ask
+  isemon_web.py            serve request.json, look.ask, net.ask, ntp.ask, sshkeys.ask, users.ask,
+                           logfix.ask, osup.ask, otptls.ask, acmetls.ask, selinux.ask and
+                           osroots.ask
                            (as root, from systemd)
 The otp logs over TLS (1.10.245): asked in otptls.ask, answered in
 otptls.json - rsyslog's encrypted input for otp's nodes, its certificate and
@@ -59,6 +68,7 @@ plain input, which is never touched (see otptls_part).
                            a look for updates or the update (started by osup.ask)
   isemon_web.py --status   what is in place here (JSON)
 """
+import errno
 import ipaddress
 import json
 import math
@@ -1916,16 +1926,25 @@ def ntp_part():
     write_here(NTP_FILE, json.dumps(out))
 
 
-# ---- the SSH keys root signs in with (1.10.239; after otp's otp_web.py 1.0.158) ----
+# ---- the SSH keys that sign in here (1.10.239; root's only read since 1.10.351) ----
 # Asked in sshkeys.ask: the keys there now (list), one more (add), one taken
-# away (drop); answered in sshkeys.json with what is there after it and what
-# sshd makes of root. Only /root/.ssh/authorized_keys is ever written, whole:
-# a new file of root's, 0600, made beside it and renamed over it, in a folder
-# that is not a link (made 0700 when it is not there); the file itself never
-# read or written through a link. Every line it does not understand - a
-# comment, a key with options before it - is kept as it was. A key is added
-# only as one plain public key line (Ed25519, ECDSA, RSA of 3072 bits and
-# more), and the last key root signs in with goes only when said again.
+# away (drop); answered in sshkeys.json with what is there after it, what sshd
+# makes of root and of keys, and who else may sign in here.
+#
+# Root's keys are only read (1.10.351, after acme 1.0.108): the lines of
+# /root/.ssh/authorized_keys are listed, and nothing asked through this
+# folder - from the pages, the command line, a file laid here by itself -
+# adds or takes away one of them. With a key in root's file the isemon
+# account would be root outright; root changes its own file on the server
+# itself. No code is left here that writes it.
+#
+# Every other user who may sign in here (UID_MIN..UID_MAX of /etc/login.defs,
+# a login shell, a home folder of their own) has their own
+# ~/.ssh/authorized_keys read and written BY A CHILD THAT IS THAT USER - their
+# UID, GID and groups: ~/.ssh 0700 and the file 0600, theirs; a link put there
+# (to /etc/shadow, to /root/.ssh) is refused and never followed, so nothing in
+# a user's own home can make root write anywhere else. A key is added only as
+# one plain public key line (Ed25519, ECDSA, RSA of 3072 bits and more).
 SSHKEYS_ASK = 'sshkeys.ask'
 SSHKEYS_FILE = 'sshkeys.json'
 ROOT_AUTH = os.environ.get('ISEMON_ROOT_AUTHKEYS', '/root/.ssh/authorized_keys')
@@ -1933,6 +1952,8 @@ SSH_KEYGEN = os.environ.get('ISEMON_SSH_KEYGEN', 'ssh-keygen')
 SSHD = os.environ.get('ISEMON_SSHD', 'sshd')
 SSHKEYS_FRESH_S = 600              # an add or a drop asked longer ago is not done
 ASK_FRESH_S = 300                  # a change of the network, the clock or a restart (1.10.305)
+ROOT_KEYS_SHOWN_ONLY = ('root\'s SSH keys are only shown on the pages - change them on the '
+                        'server itself, in /root/.ssh/authorized_keys')
 
 
 def ask_stale(r):
@@ -1947,10 +1968,24 @@ def ask_stale(r):
     except (TypeError, ValueError):
         return True
     return not math.isfinite(at) or abs(time.time() - at) > ASK_FRESH_S
+
+
 KEY_TYPES = ('ssh-ed25519', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521',
              'ssh-rsa', 'sk-ssh-ed25519@openssh.com', 'sk-ecdsa-sha2-nistp256@openssh.com')
 KEY_LINE_RE = re.compile(r'^(?P<type>[a-z0-9@.-]+) (?P<blob>[A-Za-z0-9+/]{40,16000}={0,3})'
                          r'(?: (?P<comment>[^\x00-\x1f\x7f]{0,200}))?\Z')
+USER_NAME_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_.-]{0,31}\Z')
+LOGIN_DEFS = os.environ.get('ISEMON_LOGIN_DEFS', '/etc/login.defs')
+NO_SHELLS = ('nologin', 'false', 'sync', 'shutdown', 'halt')
+# The accounts of the system and of the services never touched here (1.10.351),
+# whatever their UID: isemon's own, the web server's and php-fpm's, the
+# database's, the time's, sshd's...
+KEEP_NAMES = ('root', 'isemon', 'isemon-web', SERVICE_GROUP, 'nginx', 'apache', 'www-data',
+              'php-fpm', 'postgres', 'mysql', 'mariadb', 'nobody', 'chrony', '_chrony', 'sshd',
+              'polkitd', 'dbus', 'messagebus', 'systemd-network', 'systemd-resolve',
+              'systemd-timesync', 'tss', 'keepalived', 'rsyslog', 'syslog', 'sssd', 'radiusd',
+              'freerad', 'unbound')
+AUTH_KEYS_MOST = 300     # lines looked at by ssh-keygen: a user's own file is theirs
 
 
 def key_facts(line):
@@ -1968,7 +2003,7 @@ def key_facts(line):
 
 def auth_lines():
     """The lines of root's authorized_keys - none where it is not there.
-    Never through a link."""
+    Only read, never through a link, a plain file only, 1 MB at most."""
     try:
         fd = os.open(ROOT_AUTH, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     except FileNotFoundError:
@@ -1987,7 +2022,9 @@ def auth_keys(lines):
         t = ln.strip()
         if not t or t.startswith('#'):
             continue
-        facts = key_facts(t)
+        # A file of 50 000 lines would have root run ssh-keygen 50 000 times,
+        # every other ask waiting (1.10.351).
+        facts = key_facts(t) if len(out) < AUTH_KEYS_MOST and len(t) <= 16500 else None
         m = KEY_LINE_RE.match(t)
         out.append({'line': i, 'fp': facts[1] if facts else '', 'bits': facts[0] if facts else 0,
                     'type': facts[2] if facts else '?',
@@ -1996,46 +2033,6 @@ def auth_keys(lines):
                     # The line itself, for the page's export: public halves only.
                     'text': t[:16500].encode('utf-8', 'replace').decode('utf-8', 'replace')})
     return out
-
-
-def auth_write(lines):
-    """root's authorized_keys written whole: its folder made 0700 when it is
-    not there, refused when it is a link; a new file of root's, 0600, renamed
-    in."""
-    folder = os.path.dirname(ROOT_AUTH)
-    try:
-        st = os.lstat(folder)
-        if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode):
-            raise Refused('%s is not a plain folder' % folder)
-    except FileNotFoundError:
-        os.makedirs(folder, mode=0o700)
-        os.chmod(folder, 0o700)
-    try:
-        if not stat.S_ISREG(os.lstat(ROOT_AUTH).st_mode):
-            raise Refused('%s is a link or not a plain file - put the file itself there'
-                          % ROOT_AUTH)
-    except FileNotFoundError:
-        pass
-    text = '\n'.join(lines).rstrip('\n') + '\n'
-    fd, tmp = tempfile.mkstemp(prefix='.authorized_keys.', dir=folder)
-    try:
-        os.fchmod(fd, 0o600)
-        if os.geteuid() == 0:
-            os.fchown(fd, 0, 0)
-        with os.fdopen(fd, 'w', encoding='utf-8', errors='surrogateescape') as f:
-            fd = None
-            f.write(text)
-        os.replace(tmp, ROOT_AUTH)
-    except BaseException:
-        if fd is not None:
-            os.close(fd)
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
-    if shutil.which('restorecon') and not NO_SERVICES:
-        subprocess.run(['restorecon', '-R', folder], capture_output=True)
 
 
 def sshd_says():
@@ -2053,13 +2050,228 @@ def sshd_says():
         k, _, v = ln.partition(' ')
         if k in ('permitrootlogin', 'pubkeyauthentication', 'passwordauthentication', 'port'):
             said.setdefault(k, re.sub(r'[^A-Za-z0-9-]', '', v.strip())[:40])
+        elif k == 'allowusers':             # one line each: root among them or not (1.10.351)
+            said[k] = (said.get(k, '') + ' ' + re.sub(r'[^A-Za-z0-9_.@*?!,/:%-]', '',
+                                                       v.strip())[:200]).strip()[:2000]
     return {'there': True, 'permit_root': said.get('permitrootlogin', ''),
+            'allow_users': said.get('allowusers', ''),
             'pubkey': said.get('pubkeyauthentication', ''),
             'password': said.get('passwordauthentication', ''), 'port': said.get('port', '')}
 
 
+# ---- the SSH keys of the other users who may sign in (1.10.351) -------------------
+def uid_range():
+    lo, hi = 1000, 60000
+    try:
+        with open(LOGIN_DEFS, encoding='utf-8', errors='replace') as f:
+            for ln in f:
+                w = ln.split()
+                if len(w) >= 2 and w[0] in ('UID_MIN', 'UID_MAX') and w[1].isdigit():
+                    if w[0] == 'UID_MIN':
+                        lo = int(w[1])
+                    else:
+                        hi = int(w[1])
+    except OSError:
+        pass
+    return lo, hi
+
+
+def normal_users():
+    """[{name, uid, home, shell}] of the users who may sign in here, by name -
+    500 at most. Never root, a service or an account of the system."""
+    import pwd
+    lo, hi = uid_range()
+    out = []
+    for p in pwd.getpwall():
+        if not lo <= p.pw_uid <= hi or p.pw_uid == 65534 or not USER_NAME_RE.match(p.pw_name):
+            continue
+        if p.pw_name in KEEP_NAMES:
+            continue
+        if not p.pw_shell or os.path.basename(p.pw_shell) in NO_SHELLS:
+            continue
+        if not p.pw_dir.startswith('/') or p.pw_dir == '/':
+            continue
+        out.append({'name': p.pw_name, 'uid': p.pw_uid, 'home': p.pw_dir, 'shell': p.pw_shell})
+    out.sort(key=lambda x: x['name'])
+    return out[:500]
+
+
+def ssh_user(name):
+    """The pwd entry of a user of normal_users() - refused for anybody else."""
+    import pwd
+    name = str(name or '')
+    if not USER_NAME_RE.match(name) or not any(u['name'] == name for u in normal_users()):
+        raise Refused('%s is not a user who may sign in on this machine' % name[:40])
+    return pwd.getpwnam(name)
+
+
+def as_user(pw, fn):
+    """fn() run by a child that is the user - its answer (JSON) back through a
+    pipe, 4 MB at most."""
+    rd, wr = os.pipe()
+    pid = os.fork()
+    if pid == 0:
+        code = 0
+        try:
+            os.close(rd)
+            os.setgroups(os.getgrouplist(pw.pw_name, pw.pw_gid))
+            os.setgid(pw.pw_gid)
+            os.setuid(pw.pw_uid)
+            if os.getuid() != pw.pw_uid or os.geteuid() != pw.pw_uid:
+                raise OSError('could not become %s' % pw.pw_name)
+            os.umask(0o077)
+            try:
+                got = {'ok': True, 'data': fn()}
+            except Refused as e:
+                got = {'ok': False, 'said': str(e)}
+            except OSError as e:
+                got = {'ok': False, 'said': '%s: %s' % (e.filename or pw.pw_name, e.strerror or e)}
+            data = json.dumps(got).encode()[:4 << 20]
+            while data:
+                data = data[os.write(wr, data):]
+        except BaseException as e:                      # noqa: BLE001
+            try:
+                os.write(wr, json.dumps({'ok': False, 'said': str(e)[:300]}).encode())
+            except BaseException:                       # noqa: BLE001
+                pass
+            code = 1
+        finally:
+            os._exit(code)
+    os.close(wr)
+    chunks = []
+    with os.fdopen(rd, 'rb') as f:
+        while True:
+            b = f.read(65536)
+            if not b:
+                break
+            chunks.append(b)
+    os.waitpid(pid, 0)
+    try:
+        got = json.loads(b''.join(chunks).decode('utf-8', 'replace') or '{}')
+    except ValueError:
+        got = {}
+    if not got.get('ok'):
+        raise Refused(got.get('said') or 'it went wrong as %s' % pw.pw_name)
+    return got.get('data')
+
+
+def user_auth_paths(pw):
+    return os.path.join(pw.pw_dir, '.ssh'), os.path.join(pw.pw_dir, '.ssh', 'authorized_keys')
+
+
+def user_auth_read(pw):
+    folder, path = user_auth_paths(pw)
+
+    def go():
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        except FileNotFoundError:
+            return ''
+        except OSError as e:
+            if e.errno == errno.ELOOP:
+                raise Refused('%s is a link - put the file itself there' % path)
+            raise
+        with os.fdopen(fd, 'r', encoding='utf-8', errors='replace') as f:
+            if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+                raise Refused('%s is not a plain file' % path)
+            return f.read(1 << 20)
+    return (as_user(pw, go) or '').split('\n')
+
+
+def user_auth_write(pw, lines):
+    """~/.ssh/authorized_keys of the user, written by the user: ~/.ssh made
+    0700 when it is not there, refused when it or the file is a link; a new
+    file, 0600, renamed in."""
+    folder, path = user_auth_paths(pw)
+    text = '\n'.join(lines).rstrip('\n') + '\n'
+
+    def go():
+        hs = os.lstat(pw.pw_dir)
+        if stat.S_ISLNK(hs.st_mode) or not stat.S_ISDIR(hs.st_mode) or hs.st_uid != pw.pw_uid:
+            raise Refused('%s is not a home folder of %s\'s own' % (pw.pw_dir, pw.pw_name))
+        try:
+            st = os.lstat(folder)
+            if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode):
+                raise Refused('%s is not a plain folder' % folder)
+        except FileNotFoundError:
+            os.mkdir(folder, 0o700)
+        try:
+            if stat.S_ISLNK(os.lstat(path).st_mode):
+                raise Refused('%s is a link - put the file itself there' % path)
+        except FileNotFoundError:
+            pass
+        fd, tmp = tempfile.mkstemp(prefix='.authorized_keys.', dir=folder)
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, 'w') as f:
+                fd = None
+                f.write(text)
+            os.replace(tmp, path)
+        except BaseException:
+            if fd is not None:
+                os.close(fd)
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+        return True
+    as_user(pw, go)
+    # The folder and the file by themselves, never -R: the user could put a
+    # link in place of ~/.ssh between the write and this. restorecon takes a
+    # link as the link itself.
+    if shutil.which('restorecon') and not NO_SERVICES:
+        subprocess.run(['restorecon', '--', folder, path], capture_output=True)
+
+
+def key_line_checked(line):
+    m = KEY_LINE_RE.match(line)
+    if not m or m.group('type') not in KEY_TYPES:
+        raise Refused('that is not one public key line (ssh-ed25519 AAAA... comment) - '
+                      'options before the key are not taken here')
+    facts = key_facts(line)
+    if not facts:
+        raise Refused('ssh-keygen does not read that key')
+    bits, fp, kind = facts
+    if kind == 'RSA' and bits < 3072:
+        raise Refused('an RSA key of %d bits is too weak: 3072 at least, or ed25519' % bits)
+    if kind == 'DSA':
+        raise Refused('DSA keys are not taken')
+    return fp
+
+
+def sshkeys_user_do(r, name):
+    """A user's own keys - no "last key" guard: a user's password stays."""
+    pw = ssh_user(name)
+    do = r.get('do')
+    lines = user_auth_read(pw)
+    if do == 'add':
+        fp = key_line_checked(str(r.get('line') or '').strip())
+        if not any(k['fp'] == fp for k in auth_keys(lines)):
+            user_auth_write(pw, [ln for ln in lines if ln.strip()] +
+                            [str(r.get('line') or '').strip()])
+    elif do == 'drop':
+        fp = str(r.get('fp') or '')
+        hit = [k for k in auth_keys(lines) if k['fp'] and k['fp'] == fp]
+        if not hit:
+            raise Refused('no key %s is there' % fp[:80])
+        gone = {k['line'] for k in hit}
+        user_auth_write(pw, [ln for i, ln in enumerate(lines) if i not in gone])
+    elif do != 'list':
+        raise Refused('list, add or drop')
+    lines = user_auth_read(pw)
+    return {'user': name, 'keys': [dict((k, v) for k, v in x.items() if k != 'line')
+                                   for x in auth_keys(lines)],
+            'file': user_auth_paths(pw)[1], 'users': normal_users(), 'sshd': sshd_says()}
+
+
 def sshkeys_do(r):
     do = r.get('do')
+    user = str(r.get('user') or 'root')
+    # root's keys only read (1.10.351): anything but a read refused, from
+    # whatever asks it - before anything else is looked at.
+    if user == 'root' and do != 'list':
+        raise Refused(ROOT_KEYS_SHOWN_ONLY)
     if do in ('add', 'drop'):
         # One left lying from before (an older helper, a run that never
         # came): never done long after it was asked.
@@ -2070,40 +2282,13 @@ def sshkeys_do(r):
         if not math.isfinite(at) or abs(time.time() - at) > SSHKEYS_FRESH_S:
             raise Refused('that was asked too long ago - ask again on the page if it is still '
                           'wanted')
-    lines = auth_lines()
-    if do == 'add':
-        line = str(r.get('line') or '').strip()
-        m = KEY_LINE_RE.match(line)
-        if not m or m.group('type') not in KEY_TYPES:
-            raise Refused('that is not one public key line (ssh-ed25519 AAAA... comment) - '
-                          'options before the key are not taken here')
-        facts = key_facts(line)
-        if not facts:
-            raise Refused('ssh-keygen does not read that key')
-        bits, fp, kind = facts
-        if kind == 'RSA' and bits < 3072:
-            raise Refused('an RSA key of %d bits is too weak: 3072 at least, or ed25519' % bits)
-        if kind == 'DSA':
-            raise Refused('DSA keys are not taken')
-        # There already is no fault: a key of root's handed over again.
-        if not any(k['fp'] == fp for k in auth_keys(lines)):
-            auth_write([ln for ln in lines if ln.strip()] + [line])
-    elif do == 'drop':
-        fp = str(r.get('fp') or '')
-        keys = auth_keys(lines)
-        hit = [k for k in keys if k['fp'] and k['fp'] == fp]
-        if not hit:
-            raise Refused('no key %s is there' % fp[:80])
-        if len(keys) == len(hit) and r.get('last_ok') is not True:
-            raise Refused('that is the last key root signs in with here - said again to take it '
-                          'away anyway')
-        gone = {k['line'] for k in hit}
-        auth_write([ln for i, ln in enumerate(lines) if i not in gone])
-    elif do != 'list':
-        raise Refused('list, add or drop')
+    if user != 'root':
+        return sshkeys_user_do(r, user)
     return {'keys': [dict((k, v) for k, v in x.items() if k != 'line')
                      for x in auth_keys(auth_lines())],
-            'file': ROOT_AUTH, 'sshd': sshd_says()}
+            'file': ROOT_AUTH, 'sshd': sshd_says(), 'user': 'root',
+            # Who else may sign in here (1.10.351): their keys on the pages too.
+            'users': normal_users()}
 
 
 def sshkeys_part():
@@ -5735,6 +5920,764 @@ def osroots_part():
     write_here(OSROOTS_FILE, json.dumps(out))
 
 
+# ---- the local users of this machine (1.10.351; after acme 1.0.243) ---------------
+# Asked in users.ask from Settings - Local users, answered in users.json: the
+# users of the normal range login.defs gives (UID_MIN..UID_MAX) made, given a
+# password or sudo, aged, locked, unlocked or taken away - never root, never an
+# account of the system or of a service (KEEP_NAMES). root is read, never
+# changed. A password comes as its hash only (made by the daemon with openssl
+# from standard input), checked for its shape before anything is done and
+# handed to chpasswd -e on its standard input - never on a command line, never
+# said back. Every tool runs from a list of words, never a shell. Each change
+# done is said back with the list.
+USERS_ASK, USERS_FILE = 'users.ask', 'users.json'
+SHADOW = os.environ.get('ISEMON_SHADOW', '/etc/shadow')
+SHELLS_FILE = os.environ.get('ISEMON_SHELLS', '/etc/shells')
+PW_HASH_RE = re.compile(r'^\$(?:6|5|y|gy|2b|2y)\$[./A-Za-z0-9$=]{16,300}\Z')
+GECOS_RE = re.compile(r'^[^:\n\x00-\x1f\x7f]{0,120}\Z')
+
+
+def lu_run(argv, data=None):
+    """A tool of shadow-utils, its error said back - never with a secret among
+    the words (a secret only ever goes on stdin)."""
+    got = subprocess.run(argv, input=data, capture_output=True, text=True, timeout=120)
+    if got.returncode != 0:
+        msg = ((got.stderr or got.stdout or '').strip().splitlines() or
+               ['exit %d' % got.returncode])[-1]
+        raise Refused('%s: %s' % (os.path.basename(argv[0]), msg[:300]))
+    return got.stdout
+
+
+def lu_admin_group():
+    """The group whose members may become root with sudo: wheel (RHEL) or
+    sudo (Debian)."""
+    import grp
+    for g in ('wheel', 'sudo'):
+        try:
+            grp.getgrnam(g)
+            return g
+        except KeyError:
+            continue
+    return ''
+
+
+def lu_shells():
+    out = []
+    try:
+        with open(SHELLS_FILE, encoding='utf-8', errors='replace') as f:
+            for ln in f:
+                ln = ln.strip()
+                if ln.startswith('/') and ' ' not in ln and ln not in out and \
+                        os.path.basename(ln) not in NO_SHELLS:
+                    out.append(ln)
+    except OSError:
+        pass
+    if not out and os.path.exists('/bin/bash'):
+        out.append('/bin/bash')
+    nl = '/usr/sbin/nologin' if os.path.exists('/usr/sbin/nologin') else '/sbin/nologin'
+    return out[:20] + [nl]
+
+
+def lu_shadow():
+    """{name: (hash field, last change, max days, expire day, min days, warn
+    days)} - read as root; the hash itself never leaves this."""
+    out = {}
+    try:
+        with open(SHADOW, encoding='utf-8', errors='replace') as f:
+            for ln in f:
+                p = ln.rstrip('\n').split(':')
+                if len(p) >= 8:
+                    out[p[0]] = (p[1], p[2], p[4], p[7], p[3], p[5])
+    except OSError:
+        pass
+    return out
+
+
+def _gid_ok(gid):
+    import grp
+    try:
+        grp.getgrgid(gid)
+        return True
+    except KeyError:
+        return False
+
+
+def lu_one(p, sh, admin, today):
+    import grp
+    h, last, mx, exp, mn, warn = (tuple(sh.get(p.pw_name, ())) + ('',) * 6)[:6]
+    groups = sorted({g.gr_name for g in grp.getgrall() if p.pw_name in g.gr_mem} |
+                    ({grp.getgrgid(p.pw_gid).gr_name} if _gid_ok(p.pw_gid) else set()))
+    plain = h.lstrip('!')
+    # Locked: a password put out of use (! before a real hash) or the account
+    # ended - a user with no password at all ('!' or '!!' alone) is not, a key
+    # lets them in.
+    locked = (h.startswith('!') and plain.startswith('$')) or (exp.isdigit() and int(exp) <= today)
+    return {'name': p.pw_name, 'uid': p.pw_uid, 'gecos': p.pw_gecos.split(',')[0][:120],
+            'home': p.pw_dir, 'shell': p.pw_shell,
+            'login': bool(p.pw_shell) and os.path.basename(p.pw_shell) not in NO_SHELLS,
+            'groups': groups[:40], 'sudo': bool(admin) and admin in groups,
+            'password': bool(plain) and plain not in ('*', '!', 'x') and plain.startswith('$'),
+            'locked': bool(locked), 'must_change': last == '0',
+            'changed': int(last) if last.isdigit() and last != '0' else None,
+            'expires': int(exp) if exp.isdigit() else None,
+            'max_days': int(mx) if mx.isdigit() and int(mx) < 99999 else None,
+            'min_days': int(mn) if mn.isdigit() else None,
+            'warn_days': int(warn) if warn.isdigit() else None,
+            'pw_ends': (int(last) + int(mx)) if (last.isdigit() and last != '0' and mx.isdigit()
+                                                 and int(mx) < 99999) else None,
+            'home_there': os.path.isdir(p.pw_dir)}
+
+
+def lu_list():
+    import pwd
+    lo, hi = uid_range()
+    sh, admin, today = lu_shadow(), lu_admin_group(), int(time.time() // 86400)
+    users, used = [], []
+    for p in pwd.getpwall():
+        if lo <= p.pw_uid <= hi:
+            used.append(p.pw_uid)
+        if p.pw_name == 'root' or (lo <= p.pw_uid <= hi and p.pw_uid != 65534 and
+                                   USER_NAME_RE.match(p.pw_name) and p.pw_name not in KEEP_NAMES):
+            u = lu_one(p, sh, admin, today)
+            u['root'] = p.pw_name == 'root'
+            users.append(u)
+    users.sort(key=lambda u: (not u['root'], u['name']))
+    return {'users': users[:500], 'uid_min': lo, 'uid_max': hi, 'used': sorted(set(used))[:5000],
+            'names': sorted(p.pw_name for p in pwd.getpwall())[:5000],
+            'admin_group': admin, 'shells': lu_shells(), 'today': today,
+            # The password policy as in effect here, read from the files.
+            'policy': pwp_read()}
+
+
+def lu_target(name):
+    """The pwd entry of a user this may change (None: not there) - refused for
+    root, the system and the services."""
+    import pwd
+    name = str(name or '')
+    if not USER_NAME_RE.match(name) or name in KEEP_NAMES:
+        raise Refused('%s is not a local user this may change' % name[:40])
+    try:
+        p = pwd.getpwnam(name)
+    except KeyError:
+        return None
+    lo, hi = uid_range()
+    if not lo <= p.pw_uid <= hi or p.pw_uid == 65534:
+        raise Refused('%s is an account of the system (UID %d) - not changed here'
+                      % (name, p.pw_uid))
+    return p
+
+
+def lu_hash_checked(h):
+    h = str(h or '')
+    if not PW_HASH_RE.match(h):
+        raise Refused('the password does not come as a hash this takes')
+    return h
+
+
+# ---- the password policy of the local users (1.10.351; after acme 1.0.43) ----------
+# Settings - Local users - Password policy, put in here into the system's own
+# files - so that it holds however a password is changed (passwd, a password
+# run out at sign-in, the pages): pam_pwquality's drop-in, pam_pwhistory's and
+# pam_faillock's files (isemon's lines between marks), login.defs' aging (the
+# values before kept in it to be put back), and with authselect the features
+# that put the modules in PAM. Not managed (the default): nothing is written,
+# and what was written is taken out again, byte for byte.
+SEC_DIR = os.environ.get('ISEMON_SECURITY_DIR', '/etc/security')
+PAM_DIR = os.environ.get('ISEMON_PAM_DIR', '/etc/pam.d')
+AUTHSELECT = os.environ.get('ISEMON_AUTHSELECT', shutil.which('authselect') or '')
+PWQ_DROPIN = 'pwquality.conf.d/50-isemon.conf'
+PWP_MARK_A = '# ---- isemon: Settings -> Local users -> Password policy (from here) ----\n'
+PWP_MARK_B = '# ---- isemon: (to here) ----\n'
+PWP_WAS = '# isemon-was: '
+# Root's own: which authselect features the policy switched on, so that only
+# those are switched off again.
+PWP_ORIG = os.environ.get('ISEMON_PWP_ORIG') or os.path.join(ROOT_STATE_DIR, 'pwpolicy-orig.json')
+PWP_FEATURES = ('with-pwhistory', 'with-faillock')
+PWQ_KEYS = ('minlen', 'minclass', 'maxrepeat', 'dictcheck', 'usercheck', 'enforce_for_root',
+            'difok', 'retry', 'dcredit', 'ucredit', 'lcredit', 'ocredit', 'maxclassrepeat')
+PWQ_DEFAULT = {'minlen': 8, 'minclass': 0, 'maxrepeat': 0, 'dictcheck': 1, 'usercheck': 1,
+               'enforce_for_root': 0, 'difok': 1, 'retry': 1}
+DEFS_KEYS = ('PASS_MAX_DAYS', 'PASS_MIN_DAYS', 'PASS_WARN_AGE')
+
+
+def pwp_conf_read(path, flags=('enforce_for_root', 'even_deny_root')):
+    """key = value lines (and lone flags) of a pam module's file, comments
+    left out."""
+    out = {}
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            for ln in f:
+                ln = ln.split('#', 1)[0].strip()
+                if not ln:
+                    continue
+                if '=' in ln:
+                    k, v = [x.strip() for x in ln.split('=', 1)]
+                    out[k] = v
+                elif ln in flags:
+                    out[ln] = '1'
+    except OSError:
+        pass
+    return out
+
+
+def pwp_int(v, default=None):
+    try:
+        return int(str(v).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def pwp_pam():
+    """Which of pwquality, pwhistory and faillock the PAM stack uses."""
+    files = ['system-auth', 'password-auth', 'common-password', 'common-auth', 'common-account']
+    text = ''
+    for f in files:
+        try:
+            with open(os.path.join(PAM_DIR, f), encoding='utf-8', errors='replace') as fh:
+                text += fh.read() + '\n'
+        except OSError:
+            continue
+    lines = [ln for ln in text.splitlines() if not ln.strip().startswith('#')]
+
+    def has(m):
+        return any(m in ln for ln in lines)
+    return {'pwquality': has('pam_pwquality'), 'pwhistory': has('pam_pwhistory'),
+            'faillock': has('pam_faillock'), 'read': bool(text.strip())}
+
+
+def pwp_authselect():
+    """{profile, features} of authselect, or None where it does not manage PAM."""
+    if not AUTHSELECT or not os.path.exists(AUTHSELECT):
+        return None
+    try:
+        got = subprocess.run([AUTHSELECT, 'current', '--raw'], capture_output=True, text=True,
+                             timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if got.returncode != 0 or not got.stdout.strip():
+        return None
+    words = got.stdout.split()
+    return {'profile': words[0], 'features': words[1:]}
+
+
+def pwp_read():
+    """The policy as in effect here, read from the files."""
+    pwq = dict(PWQ_DEFAULT)
+    raw = pwp_conf_read(os.path.join(SEC_DIR, 'pwquality.conf'))
+    d = os.path.join(SEC_DIR, 'pwquality.conf.d')
+    try:
+        for name in sorted(os.listdir(d)):
+            if name.endswith('.conf'):
+                raw.update(pwp_conf_read(os.path.join(d, name)))
+    except OSError:
+        pass
+    for k in PWQ_KEYS:
+        if k in raw:
+            pwq[k] = pwp_int(raw[k], raw[k])
+    hist = pwp_conf_read(os.path.join(SEC_DIR, 'pwhistory.conf'))
+    fl = pwp_conf_read(os.path.join(SEC_DIR, 'faillock.conf'),
+                       flags=('even_deny_root', 'silent', 'audit'))
+    defs = {}
+    try:
+        with open(LOGIN_DEFS, encoding='utf-8', errors='replace') as f:
+            for ln in f:
+                w = ln.split()
+                if len(w) >= 2 and w[0] in DEFS_KEYS:
+                    defs[w[0]] = pwp_int(w[1], w[1])
+    except OSError:
+        pass
+    pam = pwp_pam()
+    return {'pwquality': pwq,
+            'remember': pwp_int(hist.get('remember'), 10 if pam['pwhistory'] else 0),
+            'faillock': {'deny': pwp_int(fl.get('deny'), 3),
+                         'unlock_time': pwp_int(fl.get('unlock_time'), 600),
+                         'fail_interval': pwp_int(fl.get('fail_interval'), 900)},
+            'aging': {'max_days': defs.get('PASS_MAX_DAYS', 99999),
+                      'min_days': defs.get('PASS_MIN_DAYS', 0),
+                      'warn_days': defs.get('PASS_WARN_AGE', 7)},
+            'pam': pam, 'authselect': pwp_authselect(),
+            'managed': os.path.exists(os.path.join(SEC_DIR, PWQ_DROPIN)),
+            'pwscore': bool(shutil.which('pwscore'))}
+
+
+def pwp_block_put(path, lines):
+    """isemon's lines between the marks in a file of the system: put in,
+    replaced, or (None) taken out; the rest of the file as it is. A file that
+    is not there is made only to put lines in."""
+    try:
+        st = os.lstat(path)
+        if not stat.S_ISREG(st.st_mode):
+            raise Refused('%s is not a plain file - not written' % path)
+        with open(path, encoding='utf-8', errors='surrogateescape') as f:
+            text = f.read()
+        mode = stat.S_IMODE(st.st_mode)
+    except FileNotFoundError:
+        if lines is None:
+            return
+        text, mode = '', 0o644
+    a, b = text.find(PWP_MARK_A), text.find(PWP_MARK_B)
+    if lines is None and not (a >= 0 and b > a):
+        return                          # none of isemon's there: the file left as it is
+    was = text
+    if a >= 0 and b > a:
+        text = text[:a] + text[b + len(PWP_MARK_B):]
+    if lines is not None:
+        if text and not text.endswith('\n'):
+            text += '\n'
+        text += PWP_MARK_A + ''.join('%s\n' % ln for ln in lines) + PWP_MARK_B
+    if text != was:
+        if text == '' and lines is None:
+            # Made only for isemon's lines: taken away again, as it was not there.
+            os.unlink(path)
+            return
+        write_root(path, text, mode)
+
+
+def pwp_defs_put(values):
+    """login.defs' aging lines set (values) or put back as they were (None).
+    The lines as they were are kept in login.defs itself, commented between
+    isemon's marks - so whatever puts it back, it is what the machine had."""
+    st = os.lstat(LOGIN_DEFS)
+    if not stat.S_ISREG(st.st_mode):
+        raise Refused('%s is not a plain file - not written' % LOGIN_DEFS)
+    with open(LOGIN_DEFS, encoding='utf-8', errors='surrogateescape') as f:
+        text = f.read()
+    before = text
+    a, b = text.find(PWP_MARK_A), text.find(PWP_MARK_B)
+    was = {}
+    if a >= 0 and b > a:
+        for ln in text[a + len(PWP_MARK_A):b].split('\n'):
+            if ln.startswith(PWP_WAS):
+                k, _, line = ln[len(PWP_WAS):].partition(' ')
+                if k in DEFS_KEYS:
+                    was[k] = line                   # '' - there was no such line
+        text = text[:a] + text[b + len(PWP_MARK_B):]
+    lines = text.split('\n')
+    if values is not None and not was:
+        for k in DEFS_KEYS:
+            was[k] = next((ln for ln in lines if ln.split()[:1] == [k]), '')
+    out, seen = [], set()
+    for ln in lines:
+        w = ln.split()
+        if w and w[0] in DEFS_KEYS:
+            if values is not None:
+                if w[0] not in seen:
+                    out.append('%s\t%s' % (w[0], values[w[0]]))
+                seen.add(w[0])
+                continue
+            if w[0] in was:
+                if w[0] not in seen and was[w[0]]:
+                    out.append(was[w[0]])
+                seen.add(w[0])
+                continue
+        out.append(ln)
+    if values is not None:
+        for k in DEFS_KEYS:
+            if k not in seen:
+                out.append('%s\t%s' % (k, values[k]))
+        text = '\n'.join(out)
+        if not text.endswith('\n'):
+            text += '\n'
+        text += PWP_MARK_A + ''.join('%s%s %s\n' % (PWP_WAS, k, was.get(k, ''))
+                                     for k in DEFS_KEYS) + PWP_MARK_B
+    else:
+        for k in DEFS_KEYS:
+            if k in was and was[k] and k not in seen:
+                out.append(was[k])
+        text = '\n'.join(out)
+    if text != before:
+        write_root(LOGIN_DEFS, text, stat.S_IMODE(st.st_mode))
+
+
+def pwp_orig_read():
+    try:
+        fd = os.open(PWP_ORIG, os.O_RDONLY | os.O_NOFOLLOW)
+        st = os.fstat(fd)
+        with os.fdopen(fd) as f:
+            if (st.st_uid != 0 and not NO_SERVICES) or st.st_mode & 0o022 or \
+                    not stat.S_ISREG(st.st_mode):
+                return {}
+            got = json.load(f)
+        if not isinstance(got, dict):
+            return {}
+        got['features'] = [x for x in (got.get('features') or []) if x in PWP_FEATURES]
+        return got
+    except (OSError, ValueError):
+        return {}
+
+
+def pwp_orig_write(orig):
+    if orig:
+        os.makedirs(os.path.dirname(PWP_ORIG), mode=0o700, exist_ok=True)
+        write_root(PWP_ORIG, json.dumps(orig), 0o600)
+    else:
+        try:
+            os.unlink(PWP_ORIG)
+        except OSError:
+            pass
+
+
+def pwp_checked(c):
+    """The policy as asked, every value in its range - refused otherwise."""
+    if not isinstance(c, dict):
+        raise Refused('the policy is not an object')
+
+    def num(k, lo, hi, default):
+        v = c.get(k, default)
+        try:
+            v = int(v)
+        except (TypeError, ValueError):
+            raise Refused('%s is a number' % k)
+        if not lo <= v <= hi:
+            raise Refused('%s is %d to %d' % (k, lo, hi))
+        return v
+    return {'managed': bool(c.get('managed')),
+            'minlen': num('minlen', 6, 128, 12), 'minclass': num('minclass', 0, 4, 3),
+            'maxrepeat': num('maxrepeat', 0, 20, 3), 'dictcheck': 1 if c.get('dictcheck', 1) else 0,
+            'usercheck': 1 if c.get('usercheck', 1) else 0, 'difok': num('difok', 0, 20, 5),
+            'remember': num('remember', 0, 50, 5),
+            'max_days': num('max_days', 0, 99999, 99999), 'min_days': num('min_days', 0, 365, 0),
+            'warn_days': num('warn_days', 0, 365, 7),
+            'deny': num('deny', 0, 100, 0), 'unlock_time': num('unlock_time', 0, 86400, 900),
+            'fail_interval': num('fail_interval', 60, 86400, 900),
+            'existing': bool(c.get('existing'))}
+
+
+def pwp_apply(c, spare=None):
+    """Put the policy in (managed) or take isemon's out again (not managed)."""
+    import pwd
+    c = pwp_checked(c)
+    said = []
+    orig = pwp_orig_read()
+    sel = pwp_authselect()
+    added = list(orig.get('features') or [])
+    dropin = os.path.join(SEC_DIR, PWQ_DROPIN)
+    if not c['managed']:
+        try:
+            os.unlink(dropin)
+            said.append('pwquality: isemon\'s drop-in taken out')
+        except FileNotFoundError:
+            pass
+        for f in ('pwhistory.conf', 'faillock.conf'):
+            pwp_block_put(os.path.join(SEC_DIR, f), None)
+        try:
+            with open(LOGIN_DEFS, encoding='utf-8', errors='replace') as fh:
+                marked = PWP_MARK_A in fh.read()
+        except OSError:
+            marked = False
+        if marked:
+            pwp_defs_put(None)
+            said.append('login.defs: the aging as it was')
+        if sel:
+            for feat in added:
+                if feat in sel['features']:
+                    lu_run([AUTHSELECT, 'disable-feature', feat])
+                    said.append('authselect: %s taken out again' % feat)
+        orig.pop('features', None)
+        pwp_orig_write(orig)
+        return said or ['nothing of isemon\'s was there']
+    if os.path.islink(dropin) or (os.path.lexists(dropin) and not os.path.isfile(dropin)):
+        raise Refused('%s is not a plain file - not written' % dropin)
+    for f in ('pwhistory.conf', 'faillock.conf'):
+        p = os.path.join(SEC_DIR, f)
+        if os.path.islink(p):
+            raise Refused('%s is not a plain file - not written' % p)
+    if os.path.islink(LOGIN_DEFS):
+        raise Refused('%s is not a plain file - not written' % LOGIN_DEFS)
+    qd = os.path.dirname(dropin)
+    if os.path.islink(qd):
+        raise Refused('%s is a link - not written' % qd)
+    os.makedirs(qd, exist_ok=True)
+    text = ('# written by isemon - Settings -> Local users -> Password policy\n'
+            'minlen = %(minlen)d\nminclass = %(minclass)d\nmaxrepeat = %(maxrepeat)d\n'
+            'dictcheck = %(dictcheck)d\nusercheck = %(usercheck)d\ndifok = %(difok)d\n'
+            'retry = 3\n' % c)
+    try:
+        with open(dropin, encoding='utf-8') as fh:
+            same = fh.read() == text
+    except OSError:
+        same = False
+    if not same:
+        write_root(dropin, text, 0o644)
+    said.append('pwquality: at least %d characters, %d kinds' % (c['minlen'], c['minclass']))
+    pwp_block_put(os.path.join(SEC_DIR, 'pwhistory.conf'),
+                  ['remember = %d' % c['remember']] if c['remember'] else None)
+    # Never even_deny_root: root is never locked.
+    pwp_block_put(os.path.join(SEC_DIR, 'faillock.conf'),
+                  ['deny = %d' % c['deny'], 'unlock_time = %d' % c['unlock_time'],
+                   'fail_interval = %d' % c['fail_interval']] if c['deny'] else None)
+    pwp_defs_put({'PASS_MAX_DAYS': c['max_days'], 'PASS_MIN_DAYS': c['min_days'],
+                  'PASS_WARN_AGE': c['warn_days']})
+    said.append('login.defs: a password good for %s days'
+                % (c['max_days'] if c['max_days'] < 99999 else 'all'))
+    if sel:
+        want = (['with-pwhistory'] if c['remember'] else []) + \
+            (['with-faillock'] if c['deny'] else [])
+        # Written down whatever happens: a second feature that failed left the
+        # first one on and never known as isemon's - never taken out again.
+        try:
+            for feat in want:
+                if feat not in sel['features']:
+                    lu_run([AUTHSELECT, 'enable-feature', feat])
+                    added.append(feat)
+                    said.append('authselect: %s put in' % feat)
+            for feat in [f for f in added if f not in want]:
+                lu_run([AUTHSELECT, 'disable-feature', feat])
+                added = [f for f in added if f != feat]
+                said.append('authselect: %s taken out again' % feat)
+        finally:
+            orig['features'] = [f for f in added if f in PWP_FEATURES]
+            pwp_orig_write(orig)
+    if c['existing']:
+        lo, hi = uid_range()
+        n = skipped = 0
+        sh = lu_shadow()
+        for p in pwd.getpwall():
+            # Never root, never a service: root is never aged.
+            if lo <= p.pw_uid <= hi and p.pw_uid != 65534 and p.pw_name not in KEEP_NAMES and \
+                    USER_NAME_RE.match(p.pw_name):
+                if not sh.get(p.pw_name, ('',))[0].lstrip('!').startswith('$'):
+                    skipped += 1        # no password: a key only - never asked for a new one
+                    continue
+                if lu_coded(p.pw_name, spare, False):
+                    continue
+                lu_run(['chage', '-M', str(c['max_days']), '-m', str(c['min_days']),
+                        '-W', str(c['warn_days']), p.pw_name])
+                n += 1
+        said.append('the aging put on %d user(s) too%s' % (
+            n, ' (%d with no password - a key only - left without)' % skipped if skipped else ''))
+    return said
+
+
+def lu_coded(name, spare, sudo):
+    """Left out of the policy's aging: a user SSH asks a code of who may not
+    use sudo (isemon asks none - kept for the shape of the ask)."""
+    if sudo or not isinstance(spare, dict):
+        return False
+    return bool(spare.get('all')) or name in {str(n) for n in (spare.get('names') or [])[:500]}
+
+
+def lu_aging_put(name, a):
+    """A user's own aging (chage -M -m -W), every value in its range."""
+    if not isinstance(a, dict):
+        raise Refused('the aging is not an object')
+    try:
+        mx, mn, warn = int(a.get('max_days')), int(a.get('min_days')), int(a.get('warn_days'))
+    except (TypeError, ValueError):
+        raise Refused('the days of the aging are whole numbers')
+    if not (0 <= mx <= 99999 and 0 <= mn <= 365 and 0 <= warn <= 365):
+        raise Refused('the days of the aging are out of range')
+    lu_run(['chage', '-M', str(mx), '-m', str(mn), '-W', str(warn), name])
+
+
+LU_EXPIRY = os.environ.get('ISEMON_LU_EXPIRY') or os.path.join(ROOT_STATE_DIR, 'users-expiry.json')
+
+
+def lu_expiry_keep(name, day):
+    """The day an account ended before it was locked: kept (day), or taken back
+    (None) - root's own file."""
+    try:
+        fd = os.open(LU_EXPIRY, os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(fd) as f:
+            kept = json.load(f) if (os.fstat(f.fileno()).st_uid == 0 or NO_SERVICES) else {}
+    except (OSError, ValueError):
+        kept = {}
+    if not isinstance(kept, dict):
+        kept = {}
+    if day is None:
+        if name not in kept:
+            return None
+        was = kept.pop(name, None)
+    else:
+        kept[name] = str(day)
+        was = None
+    try:
+        os.makedirs(os.path.dirname(LU_EXPIRY), mode=0o700, exist_ok=True)
+        write_root(LU_EXPIRY, json.dumps(kept), 0o600)
+    except OSError:
+        pass
+    return was
+
+
+def lu_sudo(name, on):
+    g = lu_admin_group()
+    if not g:
+        raise Refused('this machine has no wheel or sudo group')
+    import grp
+    member = name in grp.getgrnam(g).gr_mem
+    if on and not member:
+        lu_run(['gpasswd', '-a', name, g])
+    elif not on and member:
+        lu_run(['gpasswd', '-d', name, g])
+
+
+LU_DOS = ('list', 'policy', 'add', 'password', 'aging', 'lock', 'unlock', 'sudo', 'set', 'drop')
+
+
+def lu_do(r):
+    do = str(r.get('do') or 'list')
+    name = str(r.get('name') or '')
+    said = ''
+    if do not in LU_DOS:
+        raise Refused('list, add, password, aging, lock, unlock, sudo, set or drop')
+    if do == 'list':
+        return dict(lu_list(), said='')
+    # A change asked longer ago than the window is never done (1.10.351):
+    # one the daemon gave up on - and one that says nothing of when.
+    if 'at' not in r or ask_stale(r):
+        raise Refused('that was asked too long ago - ask again on the page if it is still wanted')
+    if do == 'policy':
+        said = '; '.join(pwp_apply(r.get('conf'), r.get('spare')))
+        return dict(lu_list(), said=said)
+    if name == 'root':
+        raise Refused('root is shown here, never changed - on the machine itself only')
+    p = lu_target(name)
+    if r.get('hash') or do == 'password':
+        lu_hash_checked(r.get('hash'))          # before anything is done
+    if do == 'add':
+        import pwd
+        lo, hi = uid_range()
+        uid = r.get('uid')
+        gecos = str(r.get('gecos') or '')
+        shell = str(r.get('shell') or '/bin/bash')
+        if not GECOS_RE.match(gecos):
+            raise Refused('the full name has letters that cannot be in it (a colon, a line break)')
+        if shell not in lu_shells():
+            raise Refused('%s is not a shell of /etc/shells here' % shell[:60])
+        if p is not None:
+            # There already (asked again): the same UID is no fault; another is said.
+            if uid not in (None, '') and int(uid) != p.pw_uid:
+                raise Refused('%s is here already, with UID %d (not %s)' % (name, p.pw_uid, uid))
+            said = '%s was here already' % name
+        else:
+            argv = ['useradd', '-m', '-s', shell, '-c', gecos, '-U']
+            if uid not in (None, ''):
+                try:
+                    uid = int(uid)
+                except (TypeError, ValueError):
+                    raise Refused('a UID is a number')
+                if not lo <= uid <= hi:
+                    raise Refused('UID %d is not one of a normal user here (%d to %d)'
+                                  % (uid, lo, hi))
+                try:
+                    other = pwd.getpwuid(uid).pw_name
+                except KeyError:
+                    other = ''
+                if other:
+                    raise Refused('UID %d is %s\'s here' % (uid, other))
+                argv += ['-u', str(uid)]
+            lu_run(argv + ['--', name])
+            said = '%s made' % name
+        p = pwd.getpwnam(name)
+        if r.get('sudo') is not None:
+            lu_sudo(name, bool(r['sudo']))
+        if r.get('hash'):
+            lu_run(['chpasswd', '-e'], '%s:%s\n' % (name, lu_hash_checked(r['hash'])))
+            if r.get('policy_aging') and not lu_coded(name, r.get('spare'), bool(r.get('sudo'))):
+                lu_aging_put(name, r['policy_aging'])
+            elif r.get('policy_aging'):
+                lu_run(['chage', '-M', '-1', '-I', '-1', name])
+        elif said.endswith(' made'):
+            # No password (a key only): no aging - sshd's account step would ask
+            # a key's user for a new password they have no old one to give for.
+            lu_run(['chage', '-M', '-1', '-I', '-1', name])
+        if r.get('must_change') and r.get('hash'):
+            lu_run(['chage', '-d', '0', name])
+        return dict(lu_list(), said=said)
+    if p is None:
+        if do == 'drop':
+            return dict(lu_list(), said='%s was not here' % name)
+        raise Refused('there is no user %s here' % name)
+    if do == 'password':
+        lu_run(['chpasswd', '-e'], '%s:%s\n' % (name, lu_hash_checked(r.get('hash'))))
+        lu_run(['chage', '-d', '0' if r.get('must_change') else str(int(time.time() // 86400)),
+                name])
+        if r.get('policy_aging'):
+            u = next((x for x in lu_list()['users'] if x['name'] == name), {})
+            if not lu_coded(name, r.get('spare'), bool(u.get('sudo'))):
+                lu_aging_put(name, r['policy_aging'])
+        said = 'the password of %s set' % name
+    elif do == 'aging':
+        lu_aging_put(name, r.get('aging'))
+        said = 'the password aging of %s set' % name
+    elif do == 'lock':
+        # The password and the account: no key lets in either (sshd asks PAM's
+        # account step whether it has ended).
+        entry = lu_shadow().get(name, ('', '', '', ''))
+        sh = entry[0]
+        if sh and not sh.startswith('!'):
+            lu_run(['usermod', '-L', name])
+        # The day the account ends, as it was, kept to be put back by unlock.
+        if entry[3] and entry[3] != '0':
+            lu_expiry_keep(name, entry[3])
+        lu_run(['chage', '-E', '0', name])
+        said = '%s locked' % name
+    elif do == 'unlock':
+        sh = lu_shadow().get(name, ('',))[0]
+        if sh.startswith('!') and len(sh) > 2:
+            lu_run(['usermod', '-U', name])
+        was = lu_expiry_keep(name, None)
+        # The day kept only while it is still ahead: an account that had ended
+        # before the lock stays shut after Unlock.
+        ahead = bool(was and was.isdigit() and int(was) > int(time.time() // 86400))
+        lu_run(['chage', '-E', was if ahead else '-1', name])
+        said = '%s unlocked' % name
+    elif do == 'sudo':
+        lu_sudo(name, bool(r.get('on')))
+        said = '%s %s' % (name, 'may use sudo' if r.get('on') else 'no longer uses sudo')
+    elif do == 'set':
+        argv = ['usermod']
+        if 'gecos' in r:
+            g = str(r.get('gecos') or '')
+            if not GECOS_RE.match(g):
+                raise Refused('the full name has letters that cannot be in it (a colon, a line '
+                              'break)')
+            argv += ['-c', g]
+        if 'shell' in r:
+            s = str(r.get('shell') or '')
+            if s not in lu_shells():
+                raise Refused('%s is not a shell of /etc/shells here' % s[:60])
+            argv += ['-s', s]
+        if len(argv) > 1:
+            lu_run(argv + ['--', name])
+        said = '%s changed' % name
+    elif do == 'drop':
+        busy = subprocess.run(['pgrep', '-u', str(p.pw_uid)], capture_output=True, text=True)
+        if busy.stdout.strip():
+            raise Refused('%s is signed in or runs something here - sign them out first' % name)
+        lu_run(['userdel'] + (['-r'] if r.get('home') else []) + ['--', name])
+        said = '%s taken away%s' % (name, ' with the home folder' if r.get('home') else '')
+    return dict(lu_list(), said=said)
+
+
+def users_part():
+    try:
+        raw = read_req(USERS_ASK, 65536)
+    except FileNotFoundError:
+        return
+    except (Refused, OSError):
+        # A link or a folder in its place: taken away, never followed.
+        drop_entry(USERS_ASK)
+        return
+    # Taken away at once: it may hold a password's hash.
+    drop_entry(USERS_ASK)
+    out = {'at': time.time(), 'ok': False, 'id': ''}
+    try:
+        try:
+            r = json.loads(raw.decode('utf-8'))
+        except ValueError:
+            raise Refused('the request does not read')
+        if not isinstance(r, dict):
+            raise Refused('the request is not an object')
+        out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
+        out['data'] = lu_do(r)
+        out['ok'] = True
+    except Refused as e:
+        out['said'] = str(e)[:400]
+    except Exception as e:                              # noqa: BLE001 - said, never lost
+        out['said'] = 'it went wrong: %s' % str(e)[:300]
+    write_here(USERS_FILE, json.dumps(out))
+
 
 def serve():
     d = web_fd()
@@ -5753,7 +6696,11 @@ def serve():
     try:
         sshkeys_part()
     except Exception as e:                              # noqa: BLE001
-        print('isemon_web.py: root\'s SSH keys: %s' % e, file=sys.stderr)
+        print('isemon_web.py: the SSH keys: %s' % e, file=sys.stderr)
+    try:
+        users_part()
+    except Exception as e:                              # noqa: BLE001
+        print('isemon_web.py: the local users: %s' % e, file=sys.stderr)
     try:
         logfix_part()
     except Exception as e:                              # noqa: BLE001

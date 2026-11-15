@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """1.10.242: Settings - System updates and Settings - SSH keys of root from the
-command line and from `isemon --console`, as the pages have them.
+command line and from `isemon --console`, as the pages have them. Root's keys
+only shown since 1.10.351: --root-key-add, -drop and -make refused.
 
 A daemon and its API in a folder of the test's own, with root's half
 (isemon_web.py) run for real by a thread that plays isemon-web.path: the
@@ -21,7 +22,6 @@ import os
 import random
 import shutil
 import sqlite3
-import stat
 import subprocess
 import sys
 import tempfile
@@ -394,106 +394,37 @@ try:
        .rstrip().endswith('with options'))
     AUTH.write_text(A + '\n')
 
-    print('\nisemon --root-key-add')
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=B)
-    ok('a public line', (rc, B in AUTH.read_text(), B_FP in out), (0, True, True))
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=str(R_FILE) + '.pub')
-    ok('a .pub file', (rc, RSA3K in AUTH.read_text()), (0, True))
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=WEAK)
-    ok('a weak key: refused, said', (rc, 'too weak' in out, WEAK not in AUTH.read_text()),
-       (1, True, True))
-    rc, out = run(isemon.cmd_root_key_add, root_key_add='no-pty ' + B)
-    ok('options before the key: refused', (rc, 'not a public key line' in out), (1, True))
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=str(L_FILE))
-    ok('a locked private key with no passphrase: said (no terminal to ask on)',
-       (rc, 'passphrase' in out, LOCKED.split()[1] in AUTH.read_text()), (1, True, False))
+    # Root's keys only shown since 1.10.351: every change refused, with the
+    # API's own words, and nothing asked of the daemon.
+    print('\nisemon --root-key-add, --root-key-drop, --root-key-make: refused')
+    before = AUTH.read_text()
     pp = work / 'pp'
     pp.write_text('sesame-242\n')
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=str(L_FILE), passphrase_file=str(pp))
-    ok('...with --passphrase-file: only its public half goes in',
-       (rc, LOCKED.split()[1] in AUTH.read_text(), 'private half was not kept' in out,
-        'PRIVATE' in AUTH.read_text()), (0, True, True, False))
-    os.environ['ISEMON_KEY_PASSPHRASE'] = 'sesame-242'
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=str(L2_FILE))
-    os.environ.pop('ISEMON_KEY_PASSPHRASE')
-    ok('...with ISEMON_KEY_PASSPHRASE too', (rc, LOCKED2.split()[1] in AUTH.read_text()),
-       (0, True))
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=str(A_FILE))
-    ok('a private key file without a passphrase: its public half', (rc, 'PRIVATE' in
-                                                                    AUTH.read_text()), (0, False))
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=B, json=True)
-    ok('--json: the keys after it', (rc, B_FP in [k['fp'] for k in json.loads(out)['keys']]),
-       (0, True))
-
-    print('\nisemon --root-key-drop')
-    rc, out = run(isemon.cmd_root_key_drop, root_key_drop=RSA3K_FP, answers=['no'])
-    ok('asked first, no is no', (rc, 'Root no longer signs in with %s (rsa@box)' % RSA3K_FP
-                                 in out, RSA3K in AUTH.read_text()), (1, True, True))
-    rc, out = run(isemon.cmd_root_key_drop, root_key_drop=RSA3K_FP, answers=['yes'])
-    ok('yes: taken away', (rc, RSA3K not in AUTH.read_text(), len(run.asked)), (0, True, 1))
-    rc, out = run(isemon.cmd_root_key_drop, root_key_drop='SHA256:' + 'x' * 43, yes=True)
-    ok('a fingerprint of no key: said', (rc, 'no key of root has the fingerprint' in out),
-       (1, True))
-    for fp in (B_FP, LOCKED_FP, LOCKED2_FP):
-        rc, out = run(isemon.cmd_root_key_drop, root_key_drop=fp, yes=True)
-    ok('--yes: not asked', (rc, run.asked, [k for k in AUTH.read_text().split('\n') if k]),
-       (0, [], [A]))
-    rc, out = run(isemon.cmd_root_key_drop, root_key_drop=A_FP, yes=True)
-    ok('the last key without --last: refused here, said', (rc, 'is the last key root signs in '
-                                                           'with' in out, '--last' in out,
-                                                           A in AUTH.read_text()),
-       (1, True, True, True))
-    rc, out = run(isemon.cmd_root_key_drop, root_key_drop=A_FP, last=True, answers=['yes', 'no'])
-    ok('with --last: asked twice, as the page asks - no the second time is no',
-       (rc, len(run.asked), 'take the last key away anyway?' in run.asked[1],
-        'Said again:' in out, A in AUTH.read_text()), (1, 2, True, True, True))
-    rc, out = run(isemon.cmd_root_key_drop, root_key_drop=A_FP, last=True, answers=['yes', 'yes'])
-    ok('...yes twice: the last key goes', (rc, A in AUTH.read_text()), (0, False))
-
-    print('\nisemon --root-key-make')
-    AUTH.write_text(B + '\n')
     keyfile = work / 'out' / 'isemon-root'
     keyfile.parent.mkdir()
-    rc, out = run(isemon.cmd_root_key_make, root_key_make='ed25519', out=str(keyfile))
-    made = keyfile.read_text()
-    ok('made: the private half into --out, 0600', (rc, 'OPENSSH PRIVATE KEY' in made,
-                                                   stat.S_IMODE(keyfile.stat().st_mode)),
-       (0, True, 0o600))
-    ok('...not printed', 'PRIVATE KEY' in out, False)
-    pub = subprocess.run(['ssh-keygen', '-y', '-f', str(keyfile)], capture_output=True,
-                         text=True).stdout.split()[1]
-    ok('...its public half in root\'s authorized_keys, the old key kept',
-       (pub in AUTH.read_text(), B in AUTH.read_text()), (True, True))
-    ok('...its fingerprint said', 'fingerprint SHA256:' in sq(out) and
-       'its public half is in root\'s authorized_keys' in out)
-    rc, out2 = run(isemon.cmd_root_keys)
-    ok('--root-keys marks it made here', 'made here' in out2)
-    rc, out = run(isemon.cmd_root_key_make, root_key_make='ed25519', out=str(keyfile))
-    ok('--out a file that is there: refused, nothing made, the file as it was',
-       (rc, 'is there already' in out, keyfile.read_text() == made,
-        len([x for x in AUTH.read_text().split('\n') if x])), (1, True, True, 2))
-    link = work / 'out' / 'link'
-    link.symlink_to(work / 'out' / 'elsewhere')
-    rc, out = run(isemon.cmd_root_key_make, root_key_make='ed25519', out=str(link))
-    ok('...nor through a link', (rc, (work / 'out' / 'elsewhere').exists()), (1, False))
-    rc, out = run(isemon.cmd_root_key_make, root_key_make='rsa4096')
-    ok('without --out: printed once', (rc, 'BEGIN OPENSSH PRIVATE KEY' in out,
-                                       'it is not shown again' in out), (0, True, True))
-    rc, out = run(isemon.cmd_root_key_make, root_key_make='ed25519', json=True)
-    v = json.loads(out)
-    ok('--json without --out: the private half in it, once', (rc, 'PRIVATE KEY' in v['private'],
-                                                               v['fp'].startswith('SHA256:')),
-       (0, True, True))
-    keyfile2 = work / 'out' / 'second'
-    rc, out = run(isemon.cmd_root_key_make, root_key_make='ed25519', out=str(keyfile2),
-                  json=True)
-    v = json.loads(out)
-    ok('--json with --out: no private half in it', (rc, 'private' in v, v['out']),
-       (0, False, str(keyfile2)))
+    for what, fn, kw in (
+            ('a public line', isemon.cmd_root_key_add, {'root_key_add': B}),
+            ('a .pub file', isemon.cmd_root_key_add, {'root_key_add': str(R_FILE) + '.pub'}),
+            ('a private key with its passphrase', isemon.cmd_root_key_add,
+             {'root_key_add': str(L_FILE), 'passphrase_file': str(pp)}),
+            ('--json', isemon.cmd_root_key_add, {'root_key_add': B, 'json': True}),
+            ('a key taken away', isemon.cmd_root_key_drop, {'root_key_drop': A_FP, 'yes': True}),
+            ('the last key, --last', isemon.cmd_root_key_drop,
+             {'root_key_drop': A_FP, 'last': True, 'yes': True}),
+            ('a key made into --out', isemon.cmd_root_key_make,
+             {'root_key_make': 'ed25519', 'out': str(keyfile)}),
+            ('a key made, printed', isemon.cmd_root_key_make, {'root_key_make': 'rsa4096'})):
+        rc, out = run(fn, **kw)
+        ok('%s: refused with the words, nothing asked, nothing printed' % what,
+           (rc, isemon.ROOT_KEYS_SHOWN_ONLY in out, run.asked, 'PRIVATE' in out,
+            AUTH.read_text()), (1, True, [], False, before))
+    ok('...no file made for --out', keyfile.exists(), False)
+    rc, out = run(isemon.cmd_root_keys)
+    ok('--root-keys still lists, and says where they are changed',
+       (rc, A_FP in out, 'only shown here' in out), (0, True, True))
     blob = files_blob()
     ok('no private key, nor a passphrase, in the database, the log or any file of the '
-       'daemon\'s', (b'PRIVATE KEY' in blob, made.split('\n')[1].encode() in blob,
-                     b'sesame-242' in blob), (False, False, False))
+       'daemon\'s', (b'PRIVATE KEY' in blob, b'sesame-242' in blob), (False, False))
 
     # ------------------------------------------------------------------------
     print('\nOnly a full administrator')
@@ -520,8 +451,9 @@ try:
     db.execute("UPDATE users SET disabled=1 WHERE role='fulladmin'")
     db.commit()
     db.close()
-    rc, out = run(isemon.cmd_root_key_add, root_key_add=A)
-    ok('with no full administrator at all: refused', (rc, A in AUTH.read_text()), (1, False))
+    was = AUTH.read_text()
+    rc, out = run(isemon.cmd_root_key_add, root_key_add=B)
+    ok('with no full administrator at all: refused', (rc, AUTH.read_text()), (1, was))
     db = sqlite3.connect(str(isemon.DB_FILE))
     db.execute("UPDATE users SET disabled=0")
     db.commit()
@@ -534,7 +466,8 @@ try:
     rc, out = run(isemon.cmd_root_keys)
     ok('--root-keys says what to run', (rc, './install.sh --upgrade' in out), (1, True))
     rc, out = run(isemon.cmd_root_key_add, root_key_add=A)
-    ok('--root-key-add: the daemon\'s refusal', (rc, 'install.sh --upgrade' in out), (1, True))
+    ok('--root-key-add: refused, root\'s keys only shown', (rc, isemon.ROOT_KEYS_SHOWN_ONLY in
+                                                             out), (1, True))
     os.environ['ISEMON_WEB_HELPER'] = '1'
     api.stop() if hasattr(api, 'stop') else None
 
@@ -631,7 +564,7 @@ try:
     ok('System updates and SSH keys of root in it', ('System updates' in names,
                                                      'SSH keys of root' in names), (True, True))
     ok('...after what was there, numbered on', [it[0] for it in items],
-       ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'])  # 9: ACME (1.10.251), 10: Proxy (1.10.268)
+       ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'])  # 9: ACME (1.10.251), 10: Proxy (1.10.268), 13: Local users (1.10.351)
 
     def walk(item, picks=None, asks=None, keys=None):
         d.ran, d.said = [], []
@@ -654,42 +587,24 @@ try:
        [(('--os-update-stop',), None, 'act')])
     ok('SSH keys of root > list', walk('SSH keys of root', {'SSH keys of root': 'list'}),
        [(('--root-keys',), None, 'act')])
-    ok('...add a pasted line', walk('SSH keys of root', {'SSH keys of root': 'add'},
-                                    {'the key line or a file': B}),
-       [(('--root-key-add', B), None, 'act')])
-    got = walk('SSH keys of root', {'SSH keys of root': 'add'},
-               {'the key line or a file': str(L_FILE), 'the passphrase': 'sesame-242'})
-    ok('...add a private key file: its passphrase by the environment, never the command line',
-       got, [(('--root-key-add', str(L_FILE)), {'ISEMON_KEY_PASSPHRASE': 'sesame-242'},
-              'act')])
-    two = [{'fp': A_FP, 'type': 'ED25519', 'comment': 'alice'},
-           {'fp': B_FP, 'type': 'ED25519', 'comment': 'bob'}]
-    got = walk('SSH keys of root', {'SSH keys of root': 'drop', 'Take a key away': B_FP},
-               keys=two)
-    ok('...take a key away: confirmed once', (got, len(d.said)),
-       ([(('--root-key-drop', B_FP, '--yes'), None, 'act')], 1))
-    got = walk('SSH keys of root', {'SSH keys of root': 'drop', 'Take a key away': A_FP},
-               keys=two[:1])
-    ok('...the last one: confirmed twice, and --last', (got, [s[0] for s in d.said]),
-       ([(('--root-key-drop', A_FP, '--last', '--yes'), None, 'act')],
-        ['Take the key away', 'Take the last key away?']))
-    ok('...no key read: nothing run', walk('SSH keys of root', {'SSH keys of root': 'drop'}), [])
-    newfile = str(work / 'out' / 'console-key')
-    got = walk('SSH keys of root', {'SSH keys of root': 'make', 'Make a key for root': 'rsa4096'},
-               {'into the file': newfile})
-    ok('...make a key, its private half into the file asked for', got,
-       [(('--root-key-make', 'rsa4096', '--out', newfile), None, 'act')])
-    ok('...never over a file that is there', walk(
-        'SSH keys of root', {'SSH keys of root': 'make'}, {'into the file': str(keyfile)}), [])
+    # Only shown since 1.10.351: nothing else in the item.
+    for what in ('add', 'drop', 'make'):
+        ok('...%s: not there any more, nothing run' % what,
+           walk('SSH keys of root', {'SSH keys of root': what},
+                {'the key line or a file': B, 'into the file': str(work / 'out' / 'k')},
+                keys=[{'fp': A_FP, 'type': 'ED25519', 'comment': 'alice'}]), [])
+    ok('Local users > list', walk('Local users', {'Local users': 'list'}),
+       [(('--local-users',), None, 'act')])
+    ok('...the policy', walk('Local users', {'Local users': 'policy'}),
+       [(('--local-policy',), None, 'act')])
     all_args = []
     for item, picks, asks, keys in (
             ('System updates', {'System updates': 'show'}, {}, []),
             ('System updates', {'System updates': 'update', 'After the update': 'auto'}, {}, []),
             ('System updates', {'System updates': 'stop'}, {}, []),
-            ('SSH keys of root', {'SSH keys of root': 'add'}, {'the key line or a file': B}, []),
-            ('SSH keys of root', {'SSH keys of root': 'drop', 'Take a key away': A_FP}, {},
-             two[:1]),
-            ('SSH keys of root', {'SSH keys of root': 'make'}, {'into the file': newfile}, [])):
+            ('SSH keys of root', {'SSH keys of root': 'list'}, {}, []),
+            ('Local users', {'Local users': 'list'}, {}, []),
+            ('Local users', {'Local users': 'policy'}, {}, [])):
         all_args += [a for a, _e, _h in walk(item, picks, asks, keys)]
     ok('every command the items run is in this version and parses',
        [a for a in all_args if isemon.cli_missing(a, known)], [])

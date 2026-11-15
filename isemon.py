@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.350'
+__version__ = '1.10.351'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -68634,11 +68634,17 @@ class Daemon(object):
             ntp_tick(self.webroot)
         except Exception as e:
             log('the time: %s' % e, 'warn')
-        # What was asked of root about its SSH keys and waited (1.10.239).
+        # What was asked of root about the SSH keys and waited (1.10.239).
         try:
             sshkeys_tick(self.webroot)
         except Exception as e:
-            log('root\'s SSH keys: %s' % e, 'warn')
+            log('the SSH keys: %s' % e, 'warn')
+        # ... and about the local users, and their password policy put in
+        # again where it is not what root put in last (1.10.351).
+        try:
+            osu_tick(self.webroot)
+        except Exception as e:
+            log('the local users: %s' % e, 'warn')
         # ... and about the otp logs over TLS (1.10.245).
         try:
             otptls_tick(self.webroot)
@@ -76304,23 +76310,28 @@ def ntp_view(wr, may=False):
 
 
 # ---------------------------------------------------------------------------
-# Root's SSH keys (1.10.239; after otp's Settings → SSH keys of root, 1.0.158-161)
+# The SSH keys (1.10.239 root's; every user's who may sign in, 1.10.351 -
+# after otp's Settings → SSH keys of root, 1.0.158-161, and acme 1.0.108/240)
 # ---------------------------------------------------------------------------
-# The keys that may sign in to this server as root over SSH - the lines of
-# /root/.ssh/authorized_keys - read, added to and taken away from by root's
-# helper (isemon_web.py), asked in sshkeys.ask and answered in sshkeys.json
-# beside the web server's files, as the clock is. What is asked waits in
-# SSHKEYS_WORK and is done behind, one after another, within seconds; what
-# root said last is kept there too, never in the database. Nothing is read
-# until somebody opens the pane, and nothing is changed until somebody asks.
+# The keys that may sign in to this server over SSH: root's - the lines of
+# /root/.ssh/authorized_keys - and those of every other user who may sign in
+# here (their own ~/.ssh/authorized_keys). Read and written by root's helper
+# (isemon_web.py), asked in sshkeys.ask and answered in sshkeys.json beside the
+# web server's files, as the clock is. What is asked waits in SSHKEYS_WORK and
+# is done behind, one after another, within seconds; what root said last is
+# kept there too, never in the database. Nothing is read until somebody opens
+# the pane, and nothing is changed until somebody asks.
 #
-# A key made here is handed to the page once and kept nowhere: isemon never
-# signs in as root, so a private half in the database would only be one more
-# way to root. One given as a private key has its public half worked out and
-# the private half dropped. What is remembered of a key made here (meta
-# 'ssh_rootkey') is its public half and fingerprint, to mark it in the list.
+# Root's keys are only shown (1.10.351, as acme 1.0.108): with a key in root's
+# file the isemon account would be root outright - so the API refuses a change
+# of them (403), no ask for one is written here, and root's helper refuses one
+# that comes anyway. root changes its own file on the server itself.
+#
+# A key made here for a user is handed to the page once and kept nowhere -
+# not in the database, a log or an event. One given as a private key has its
+# public half worked out and the private half dropped.
 SSHKEYS_WORK = {'busy': False, 'since': 0.0, 'queue': [], 'doing': [], 'now': {}, 'error': '',
-                'change_err_at': 0.0}
+                'change_err_at': 0.0, 'keys_of': {}, 'users': []}
 SSHKEYS_LOCK = threading.Lock()
 SSHKEYS_STALE_S = 300
 SSH_KEY_KINDS = {'ed25519': ['-t', 'ed25519'], 'rsa4096': ['-t', 'rsa', '-b', '4096']}
@@ -76329,30 +76340,44 @@ SSH_KEY_TYPES = ('ssh-ed25519', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384',
                  'sk-ecdsa-sha2-nistp256@openssh.com')
 SSH_KEY_LINE_RE = re.compile(r'^(?P<type>[a-z0-9@.-]+) (?P<blob>[A-Za-z0-9+/]{40,16000}={0,3})'
                              r'(?: (?P<comment>[^\x00-\x1f\x7f]{0,200}))?\Z')
+SSH_USER_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_.-]{0,31}\Z')
+ROOT_KEYS_SHOWN_ONLY = ('root\'s SSH keys are only shown on the pages - change them on the '
+                        'server itself, in /root/.ssh/authorized_keys')
 
 
-def sshkeys_root_ask(wr, data, wait=60):
-    """One question for root's helper in sshkeys.ask, and its answer out of
-    sshkeys.json - the one with the same id. One not taken in time is taken
-    back, so it is never done long after."""
+class RootKeysShownOnly(ValueError):
+    """A change of root's keys asked from the pages or the command line
+    (1.10.351): refused, 403."""
+
+
+def helper_ask(wr, ask, answer, data, wait=60, what='this'):
+    """One question for root's helper in `ask`, and its answer out of
+    `answer` - the one with the same id. One not taken in time is taken back,
+    so it is never done long after (and a password's hash in it lies there no
+    longer)."""
     ask_id = secrets.token_hex(8)
-    wr.write('sshkeys.ask', dict(data, id=ask_id, at=time.time()))
+    wr.write(ask, dict(data, id=ask_id, at=time.time()))
+    data = None
     end = time.time() + wait
     while time.time() < end:
-        got = wr.read('sshkeys.json')
+        got = wr.read(answer)
         if isinstance(got, dict) and got.get('id') == ask_id:
             if not got.get('ok'):
                 raise WebRootError(got.get('said') or 'root\'s helper said no')
             return got.get('data') if isinstance(got.get('data'), dict) else {}
         time.sleep(0.4)
     try:
-        if (wr.read('sshkeys.ask') or {}).get('id') == ask_id:
-            os.unlink(str(wr.folder() / 'sshkeys.ask'))
+        if (wr.read(ask) or {}).get('id') == ask_id:
+            os.unlink(str(wr.folder() / ask))
     except OSError:
         pass
     raise WebRootError('root\'s helper did not answer in %d s - is isemon-web.path running? '
                        '(systemctl status isemon-web.path; ./install.sh --upgrade puts in the '
-                       'one that is asked about root\'s keys)' % wait)
+                       'one that is asked about %s)' % (wait, what))
+
+
+def sshkeys_root_ask(wr, data, wait=60):
+    return helper_ask(wr, 'sshkeys.ask', 'sshkeys.json', data, wait, 'the SSH keys')
 
 
 def ssh_key_facts(public):
@@ -76382,8 +76407,14 @@ def sshkey_line_checked(line):
     return line
 
 
-def sshkeys_ask(wr, do, by, line='', fp='', last_ok=False):
-    """A read, a key added or one taken away: done behind, within seconds."""
+def sshkeys_ask(wr, do, by, line='', fp='', last_ok=False, user='root'):
+    """A read, a key added or one taken away - root's keys only read
+    (1.10.351): done behind, within seconds."""
+    user = str(user or 'root')
+    if not SSH_USER_RE.match(user):
+        raise ValueError('that is not the name of a user')
+    if user == 'root' and do != 'list':
+        raise RootKeysShownOnly(ROOT_KEYS_SHOWN_ONLY)
     if not wr.helper_there():
         raise WebRootError('root\'s half is not installed on this machine yet: run '
                            './install.sh --upgrade (1.10.239 or later) once')
@@ -76395,7 +76426,7 @@ def sshkeys_ask(wr, do, by, line='', fp='', last_ok=False):
     if do == 'drop' and not re.match(r'^SHA256:[A-Za-z0-9+/=]{20,}$', fp):
         raise ValueError('which key? (its SHA256 fingerprint)')
     a = {'id': secrets.token_hex(6), 'do': do, 'line': line if do == 'add' else '',
-         'fp': fp if do == 'drop' else '', 'last_ok': bool(last_ok) and do == 'drop',
+         'fp': fp if do == 'drop' else '', 'user': user,
          'by': str(by or '')[:80], 'at': time.time()}
     with SSHKEYS_LOCK:
         SSHKEYS_WORK['queue'] = (SSHKEYS_WORK['queue'] + [a])[-20:]
@@ -76410,7 +76441,8 @@ def _sshkey_words(a):
 
 def sshkeys_tick(wr):
     """What is asked, done one after another by root behind - reads asked
-    again and again are one read. Every minute too, for what waited."""
+    again and again are one read, one for each user. Every minute too, for
+    what waited."""
     if SSHKEYS_WORK['busy'] and time.time() - SSHKEYS_WORK['since'] < 900:
         return
     if not wr.helper_there() or not wr.folder().is_dir():
@@ -76421,31 +76453,61 @@ def sshkeys_tick(wr):
         if not todo:
             return
         SSHKEYS_WORK.update(busy=True, since=time.time())
-        lists = [a for a in todo if a['do'] == 'list']
-        todo = [a for a in todo if a['do'] != 'list'] + lists[-1:]
+        last_list = {}
+        for a in todo:
+            if a['do'] == 'list':
+                last_list[a.get('user') or 'root'] = a
+        todo = [a for a in todo if a['do'] != 'list'] + sorted(last_list.values(),
+                                                               key=lambda a: a['at'])
         SSHKEYS_WORK['doing'] = [a['id'] for a in todo if a['do'] != 'list']
 
     def go():
         try:
             for a in todo:
                 err, got = '', None
+                user = a.get('user') or 'root'
                 try:
+                    if user == 'root' and a['do'] != 'list':
+                        # Never handed to root (1.10.351), however it came here.
+                        raise RootKeysShownOnly(ROOT_KEYS_SHOWN_ONLY)
                     got = sshkeys_root_ask(wr, {'do': a['do'], 'line': a['line'], 'fp': a['fp'],
-                                                'last_ok': a['last_ok']}, 60)
-                except (WebRootError, OSError) as e:
+                                                'user': user}, 60)
+                except (WebRootError, OSError, ValueError) as e:
                     err = str(e)[:300] or e.__class__.__name__
-                    log('root\'s SSH keys: %s' % err, 'warn')
+                    log('the SSH keys of %s: %s' % (user, err), 'warn')
                 who = a['by'] or 'somebody'
                 if a['do'] == 'add':
-                    wr.store.add_event('settings', '%s added the SSH key %s for root' % (
-                        who, _sshkey_words(a)) if not err else
-                        'the SSH key %s was not added for root (asked by %s): %s' % (
-                            _sshkey_words(a), who, err), 'warn', who=a['by'])
+                    wr.store.add_event('settings', '%s added the SSH key %s for %s' % (
+                        who, _sshkey_words(a), user) if not err else
+                        'the SSH key %s was not added for %s (asked by %s): %s' % (
+                            _sshkey_words(a), user, who, err), 'warn', who=a['by'])
                 elif a['do'] == 'drop':
-                    wr.store.add_event('settings', '%s took away the SSH key %s for root' % (
-                        who, a['fp']) if not err else
-                        'the SSH key %s was not taken away for root (asked by %s): %s' % (
-                            a['fp'], who, err), 'warn', who=a['by'])
+                    wr.store.add_event('settings', '%s took away the SSH key %s for %s' % (
+                        who, a['fp'], user) if not err else
+                        'the SSH key %s was not taken away for %s (asked by %s): %s' % (
+                            a['fp'], user, who, err), 'warn', who=a['by'])
+                if user != 'root':
+                    # A user's (1.10.351): kept apart from root's; the last 30 read.
+                    with SSHKEYS_LOCK:
+                        of = dict(SSHKEYS_WORK.get('keys_of') or {})
+                        mine = dict(of.get(user) or {})
+                        mine.update(at=time.time(), error=err)
+                        if got:
+                            mine.update(keys=got.get('keys') or [], file=got.get('file') or '')
+                        of[user] = mine
+                        if len(of) > 30:
+                            for k in sorted(of, key=lambda k: float(of[k].get('at') or 0))[
+                                    :len(of) - 30]:
+                                of.pop(k, None)
+                        SSHKEYS_WORK['keys_of'] = of
+                        if got:
+                            SSHKEYS_WORK['users'] = got.get('users') or []
+                            if got.get('sshd'):
+                                SSHKEYS_WORK['now'] = dict(SSHKEYS_WORK.get('now') or {},
+                                                           sshd=got['sshd'])
+                        SSHKEYS_WORK['doing'] = [x for x in SSHKEYS_WORK['doing']
+                                                 if x != a['id']]
+                    continue
                 # A change refused stays said over the reads after it - the
                 # page reads again as soon as it has asked - for two minutes.
                 if a['do'] != 'list':
@@ -76456,10 +76518,11 @@ def sshkeys_tick(wr):
                     SSHKEYS_WORK['now'] = {'keys': got.get('keys') or [],
                                            'sshd': got.get('sshd') or {},
                                            'file': got.get('file') or '', 'at': time.time()}
+                    SSHKEYS_WORK['users'] = got.get('users') or []
                 with SSHKEYS_LOCK:
                     SSHKEYS_WORK['doing'] = [x for x in SSHKEYS_WORK['doing'] if x != a['id']]
         except Exception as e:                          # noqa: BLE001
-            log('root\'s SSH keys: %s' % e, 'warn')
+            log('the SSH keys: %s' % e, 'warn')
         finally:
             with SSHKEYS_LOCK:
                 SSHKEYS_WORK.update(busy=False, doing=[])
@@ -76471,6 +76534,9 @@ def sshkeys_tick(wr):
 
 
 def sshkeys_view(wr):
+    """GET /api/sshkeys. The fields of before (keys, sshd, file...: root's)
+    and, as acme's pane reads it (1.10.351), `nodes` - this server, the one
+    node - with every user's keys read so far (`keys_of`)."""
     now = SSHKEYS_WORK.get('now') or {}
     helper = wr.helper_there()
     # Read when it was never read or not lately - reading changes nothing.
@@ -76483,15 +76549,22 @@ def sshkeys_view(wr):
     with SSHKEYS_LOCK:
         pending = len([a for a in SSHKEYS_WORK['queue'] if a['do'] != 'list']) + \
             len(SSHKEYS_WORK['doing'])
+        keys_of = {u: dict(v) for u, v in (SSHKEYS_WORK.get('keys_of') or {}).items()}
+        users = list(SSHKEYS_WORK.get('users') or [])
     keys = now.get('keys') or []
+    error = SSHKEYS_WORK.get('error') or ''
+    node = {'name': db_node_name(), 'me': True, 'alive': helper, 'at': now.get('at'),
+            'pending': pending, 'error': error, 'file': now.get('file') or '', 'keys': keys,
+            'sshd': now.get('sshd') or {}, 'users': users, 'keys_of': keys_of, 'before': []}
     return {'ok': True, 'helper': helper, 'keys': keys, 'sshd': now.get('sshd') or {},
             'file': now.get('file') or '', 'at': now.get('at'),
-            'error': SSHKEYS_WORK.get('error') or '', 'pending': pending,
+            'error': error, 'pending': pending,
             'busy': SSHKEYS_WORK['busy'], 'keygen': rb_has('ssh-keygen'),
-            'kept': rootkey_view(wr, keys), 't': time.time()}
+            'cluster': False, 'nodes': [node], 'kept': [], 'root_shown_only': True,
+            't': time.time()}
 
 
-# -- root's key, made or given here ---------------------------------------------------
+# -- a user's key, made or given here -----------------------------------------------
 def sshkey_pair(kind, comment):
     """A new key pair made by ssh-keygen in a folder of its own, taken away
     after: (private, public, fingerprint)."""
@@ -76499,7 +76572,7 @@ def sshkey_pair(kind, comment):
         raise ValueError('ed25519 or rsa4096')
     if not rb_has('ssh-keygen'):
         raise ValueError('ssh-keygen is not on this machine (dnf install openssh-clients)')
-    comment = re.sub(r'[^A-Za-z0-9@._ -]', '', str(comment or ''))[:80].strip() or 'root'
+    comment = re.sub(r'[^A-Za-z0-9@._ -]', '', str(comment or ''))[:80].strip() or 'isemon'
     with tempfile.TemporaryDirectory(prefix='.isemon-key-') as work:
         path = os.path.join(work, 'k')
         got = subprocess.run([rb_bin('ssh-keygen'), '-q'] + SSH_KEY_KINDS[kind] +
@@ -76514,23 +76587,17 @@ def sshkey_pair(kind, comment):
     return private, public, ssh_key_facts(public)[1]
 
 
-def rootkey_view(wr, keys):
-    r = wr._meta('ssh_rootkey', {})
-    return {'has': bool(r.get('pub')), 'pub': r.get('pub') or '', 'fp': r.get('fp') or '',
-            'kind': r.get('kind') or '', 'how': r.get('how') or '', 'by': r.get('by') or '',
-            'at': r.get('at'),
-            'on': bool(r.get('fp')) and any(k.get('fp') == r.get('fp') for k in keys)}
-
-
-def rootkey_put(wr, public, by, how):
-    """A public half into root's authorized_keys, remembered as the key made
-    or given here. The key put there before stays - it is taken away in the
-    list, if it should go."""
-    _, fp, kind = ssh_key_facts(public)
-    sshkeys_ask(wr, 'add', by, line=public)
-    wr._put('ssh_rootkey', {'pub': public, 'fp': fp, 'kind': kind, 'how': how, 'by': by,
-                            'at': time.time()})
-    return {'pub': public, 'fp': fp}
+def sshkeys_user_nodes(user, scope):
+    """The nodes a user's key made here goes onto: this server, the one node -
+    'all' or its name - where the user may sign in (as root's helper read it)."""
+    me = db_node_name()
+    scope = str(scope or 'all')
+    if scope not in ('all', me):
+        raise ValueError('for every node, or for one of them')
+    if not any(isinstance(u, dict) and u.get('name') == user
+               for u in SSHKEYS_WORK.get('users') or []):
+        raise ValueError('%s is not a user who may sign in on %s (as read there)' % (user, me))
+    return [me]
 
 
 def rootkey_public(text, passphrase=''):
@@ -76550,49 +76617,534 @@ def rootkey_public(text, passphrase=''):
 
 
 def sshkeys_api(wr, b, by):
-    """What the pane asks for (POST /api/sshkeys)."""
+    """What the pane asks for (POST /api/sshkeys). `nodes` may come and is
+    not needed: this server is the one node."""
     act = str(b.get('action') or '')
+    user = str(b.get('user') or 'root')
+    me = db_node_name()
+    # Root's only shown (1.10.351): made, added, taken away nowhere from here -
+    # rk_* were root's own (1.10.239) and are refused the same way.
+    if user == 'root' and act in ('add', 'drop', 'uk_make', 'rk_make', 'rk_given', 'rk_again'):
+        raise RootKeysShownOnly(ROOT_KEYS_SHOWN_ONLY)
+    if not SSH_USER_RE.match(user):
+        raise ValueError('that is not the name of a user')
     if act == 'refresh':
-        sshkeys_ask(wr, 'list', by)
+        sshkeys_ask(wr, 'list', by, user=user)
         return {'ok': True, 'message': 'asked again'}
     if act == 'add':
         # A public line, or a private key of which only the public half is
         # used and nothing else kept.
         line, was_private = rootkey_public(b.get('line'), str(b.get('passphrase') or ''))
-        sshkeys_ask(wr, 'add', by, line=line)
-        return {'ok': True, 'message': 'the key goes into root\'s authorized_keys within a few '
-                                       'seconds%s' % (' - the private half was not kept'
-                                                      if was_private else '')}
+        sshkeys_ask(wr, 'add', by, line=line, user=user)
+        return {'ok': True, 'message': 'the key goes onto %s within a few seconds%s' % (
+            me, ' - the private half was not kept' if was_private else '')}
     if act == 'drop':
-        sshkeys_ask(wr, 'drop', by, fp=str(b.get('fp') or ''), last_ok=b.get('last_ok') is True)
-        return {'ok': True, 'message': 'the key is taken away within a few seconds'}
-    if act == 'rk_make':
+        sshkeys_ask(wr, 'drop', by, fp=str(b.get('fp') or ''), user=user)
+        return {'ok': True, 'message': 'the key is taken away on %s within a few seconds' % me}
+    if act == 'uk_make':
+        # A key made for a user: its private half to the page once, its
+        # public half into their authorized_keys - remembered nowhere.
         kind = str(b.get('kind') or 'ed25519')
         if kind not in SSH_KEY_KINDS:
             raise ValueError('ed25519 or rsa4096')
         if not wr.helper_there():
             raise WebRootError('root\'s half is not installed on this machine yet: run '
                                './install.sh --upgrade (1.10.239 or later) once')
-        private, public, _ = sshkey_pair(kind, 'root@%s %s' % (rb_host(),
-                                                               time.strftime('%Y-%m-%d')))
-        x = rootkey_put(wr, public, by, 'made')
-        wr.store.add_event('settings', '%s made a new SSH key for root (%s) - its private half '
-                           'handed to the page once, kept nowhere' % (by or 'somebody', x['fp']),
-                           'warn', who=by)
-        return dict(x, ok=True, private=private, file='isemon-root-%s' % time.strftime('%Y%m%d'),
-                    message='made - keep the private half now, it is not shown again')
-    if act == 'rk_given':
-        public, was_private = rootkey_public(b.get('key'), str(b.get('passphrase') or ''))
-        x = rootkey_put(wr, public, by, 'given')
-        return dict(x, ok=True, message='the public half goes into root\'s authorized_keys%s' % (
-            ' - the private half was not kept' if was_private else ''))
-    if act == 'rk_again':
-        r = wr._meta('ssh_rootkey', {})
-        if not r.get('pub'):
-            raise ValueError('there is no key made or given here')
-        sshkeys_ask(wr, 'add', by, line=r['pub'])
-        return {'ok': True, 'message': 'the key goes into root\'s authorized_keys again'}
+        scope = str(b.get('scope') or 'all')
+        nodes = sshkeys_user_nodes(user, scope)
+        private, public, fp = sshkey_pair(kind, '%s@%s %s' % (user, me, time.strftime('%Y-%m-%d')))
+        sshkeys_ask(wr, 'add', by, line=public, user=user)
+        wr.store.add_event('settings', '%s made a new SSH key for %s on %s (%s) - its private '
+                           'half handed to the page once, kept nowhere' % (
+                               by or 'somebody', user, ', '.join(nodes), fp), 'warn', who=by)
+        return {'ok': True, 'private': private, 'pub': public, 'fp': fp, 'nodes': nodes,
+                'file': 'isemon-%s-%s' % (re.sub(r'[^A-Za-z0-9-]', '', user),
+                                          time.strftime('%Y%m%d')),
+                'message': 'made - keep the private half now, it is not shown again'}
     raise ValueError('no such thing to do')
+
+
+# ---------------------------------------------------------------------------
+# The local users of this machine (1.10.351; after acme's Settings → Local
+# users, 1.0.243, and its password policy, 1.0.43)
+# ---------------------------------------------------------------------------
+# The users of this server's own system - who may sign in to the machine
+# itself, over SSH or at its console; not the accounts of these pages. root is
+# shown and never changed; the others (UID_MIN..UID_MAX of login.defs, never a
+# service's own - OSU_KEEP) are made, given a password or sudo, aged, locked
+# or taken away by root's helper (isemon_web.py, users.ask / users.json), with
+# the system's own tools. A password typed here never leaves this daemon as
+# itself: its hash (SHA-512 crypt, by openssl from standard input) is what is
+# handed to root in the ask file - isemon's own folder, 0600, taken away by
+# root at once - and to chpasswd -e on its standard input. It is in no row,
+# no log and no event. What root said last is kept in OSU_WORK, as the SSH
+# keys are. The password policy is a setting (meta 'osu_pwpolicy'), off - the
+# system's own, nothing written - until somebody sets it.
+OSU_WORK = {'busy': False, 'since': 0.0, 'queue': [], 'doing': [], 'now': {}, 'seen': 0.0}
+OSU_LOCK = threading.Lock()
+OSU_STALE_S = 300
+OSU_KEEP = ('root', 'isemon', 'isemon-web', 'nginx', 'apache', 'www-data', 'php-fpm', 'postgres',
+            'mysql', 'mariadb', 'nobody', 'chrony', '_chrony', 'sshd', 'polkitd', 'dbus',
+            'messagebus', 'systemd-network', 'systemd-resolve', 'systemd-timesync', 'tss',
+            'keepalived', 'rsyslog', 'syslog', 'sssd', 'radiusd', 'freerad', 'unbound')
+OSU_DOS = ('list', 'add', 'password', 'aging', 'lock', 'unlock', 'sudo', 'set', 'drop')
+OSU_PW_MIN = 8
+PWP_DEFAULT = {'managed': False, 'minlen': 12, 'minclass': 3, 'maxrepeat': 3, 'dictcheck': 1,
+               'usercheck': 1, 'difok': 5, 'remember': 5, 'max_days': 99999, 'min_days': 0,
+               'warn_days': 7, 'deny': 0, 'unlock_time': 900, 'fail_interval': 900,
+               'existing': False}
+PWP_RANGES = {'minlen': (6, 128), 'minclass': (0, 4), 'maxrepeat': (0, 20), 'difok': (0, 20),
+              'remember': (0, 50), 'max_days': (0, 99999), 'min_days': (0, 365),
+              'warn_days': (0, 365), 'deny': (0, 100), 'unlock_time': (0, 86400),
+              'fail_interval': (60, 86400)}
+OSU_NO_CODES = {'all': False, 'names': []}      # isemon asks nobody an SSH code
+
+
+def osu_root_ask(wr, data, wait=120):
+    return helper_ask(wr, 'users.ask', 'users.json', data, wait, 'the local users')
+
+
+def pwp_conf(wr):
+    """The password policy of the local users as set here; not managed - the
+    system's own, untouched - until set."""
+    c = dict(PWP_DEFAULT)
+    c.update({k: v for k, v in wr._meta('osu_pwpolicy', {}).items() if k in PWP_DEFAULT})
+    return c
+
+
+def pwp_hash(c):
+    return hashlib.sha256(json.dumps({k: c.get(k) for k in sorted(PWP_DEFAULT)},
+                                     sort_keys=True).encode()).hexdigest()[:16]
+
+
+def pwp_checked_api(b):
+    c = dict(PWP_DEFAULT)
+    if not isinstance(b, dict):
+        raise ValueError('the policy is an object')
+    for k in PWP_DEFAULT:
+        if k not in b:
+            continue
+        if k in PWP_RANGES:
+            try:
+                v = int(b[k])
+            except (TypeError, ValueError):
+                raise ValueError('%s is a number' % k)
+            lo, hi = PWP_RANGES[k]
+            if not lo <= v <= hi:
+                raise ValueError('%s is %d to %d' % (k, lo, hi))
+            c[k] = v
+        else:
+            c[k] = bool(b[k]) if k in ('managed', 'existing') else (1 if b[k] else 0)
+    if c['min_days'] and c['max_days'] < 99999 and c['min_days'] > c['max_days']:
+        raise ValueError('the least days between two changes is more than the days a password '
+                         'is good')
+    return c
+
+
+def pwp_aging(c):
+    """The policy's aging for a user given a password (made with one, or a new one)."""
+    if not c.get('managed'):
+        return None
+    return {'max_days': c['max_days'], 'min_days': c['min_days'], 'warn_days': c['warn_days']}
+
+
+def pwp_password_check(wr, password, name):
+    """A password set from these pages kept to the policy: by pwscore (the
+    system's own rules and its dictionary) where it is there, by the rules set
+    here where it is not."""
+    c = pwp_conf(wr)
+    if not c['managed']:
+        return
+    exe = shutil.which('pwscore')
+    if exe:
+        got = subprocess.run([exe, name], input=password + '\n', capture_output=True, text=True,
+                             timeout=30)
+        if got.returncode != 0:
+            why = ((got.stderr or got.stdout or '').strip().splitlines() or ['refused'])[-1]
+            why = re.sub(r'^Password quality check failed:\s*', '', why)
+            raise ValueError('the password policy does not take it: %s' % why[:200])
+        return
+    if len(password) < c['minlen']:
+        raise ValueError('the password policy wants %d characters at least' % c['minlen'])
+    kinds = sum(1 for rx in (r'[a-z]', r'[A-Z]', r'[0-9]', r'[^A-Za-z0-9]')
+                if re.search(rx, password))
+    if kinds < c['minclass']:
+        raise ValueError('the password policy wants %d kinds of characters at least (small '
+                         'letters, capitals, digits, others) - it has %d' % (c['minclass'], kinds))
+    if c['maxrepeat'] and re.search(r'(.)\1{%d,}' % c['maxrepeat'], password):
+        raise ValueError('the password policy takes no character more than %d times in a row'
+                         % c['maxrepeat'])
+    if c['usercheck'] and name and len(name) >= 3 and name.lower() in password.lower():
+        raise ValueError('the password policy takes no password with the user\'s name in it')
+
+
+def osu_hash(password, name='', wr=None):
+    """The SHA-512 crypt hash of a password, by openssl from its standard
+    input - never a command line - kept to the password policy first."""
+    pw = str(password or '')
+    if len(pw) < OSU_PW_MIN:
+        raise ValueError('the password is %d characters at least' % OSU_PW_MIN)
+    if len(pw) > 256 or re.search(r'[\x00-\x1f\x7f]', pw):
+        raise ValueError('the password is 256 characters at most, with no line breaks')
+    if wr is not None:
+        pwp_password_check(wr, pw, name)
+    exe = shutil.which(rb_bin('openssl'))
+    if not exe:
+        raise ValueError('openssl is not on this machine - it makes the password\'s hash')
+    got = subprocess.run([exe, 'passwd', '-6', '-stdin'], input=pw + '\n', capture_output=True,
+                         text=True, timeout=30)
+    pw = None
+    h = (got.stdout or '').strip()
+    if got.returncode != 0 or not h.startswith('$6$'):
+        raise ValueError('openssl did not make the password\'s hash: %s'
+                         % ((got.stderr or '').strip()[:200] or 'no answer'))
+    return h
+
+
+def osu_now():
+    got = OSU_WORK.get('now')
+    return got if isinstance(got, dict) else {}
+
+
+def osu_free_uid(name, want=None):
+    """The UID of the new user: the one it has where it is there already, or
+    the lowest of the normal range nobody here uses."""
+    now = osu_now()
+    if not now.get('at'):
+        raise ValueError('%s has not said who its users are yet - wait a few seconds'
+                         % db_node_name())
+    lo = max(1, int(now.get('uid_min') or 1000))
+    hi = int(now.get('uid_max') or 60000)
+    used = {int(u) for u in now.get('used') or [] if str(u).isdigit()}
+    for u in now.get('users') or []:
+        if u.get('name') == name:
+            return int(u['uid'])
+    if want not in (None, ''):
+        try:
+            want = int(want)
+        except (TypeError, ValueError):
+            raise ValueError('a UID is a number')
+        if not lo <= want <= hi:
+            raise ValueError('UID %d is not one of a normal user (%d to %d)' % (want, lo, hi))
+        if want in used:
+            raise ValueError('UID %d is another user\'s on %s' % (want, db_node_name()))
+        return want
+    for uid in range(lo, hi + 1):
+        if uid not in used:
+            return uid
+    raise ValueError('no UID of the normal range is free on %s' % db_node_name())
+
+
+def _osu_words(a):
+    name, do = a.get('name') or '', a.get('do')
+    words = {'add': 'made the local user %s' % name,
+             'password': 'set a new password for the local user %s' % name,
+             'aging': 'set the password aging of the local user %s (%s days, %s before, %s '
+                      'between)' % (name, (a.get('aging') or {}).get('max_days'),
+                                    (a.get('aging') or {}).get('warn_days'),
+                                    (a.get('aging') or {}).get('min_days')),
+             'lock': 'locked the local user %s' % name,
+             'unlock': 'unlocked the local user %s' % name,
+             'sudo': '%s the local user %s sudo' % ('gave' if a.get('on') else 'took from', name),
+             'set': 'changed the local user %s' % name,
+             'drop': 'took away the local user %s%s' % (name, ' and the home folder'
+                                                         if a.get('home') else '')}.get(do, do)
+    if do == 'add':
+        words += ' (UID %s%s%s)' % (a.get('uid'), ', sudo' if a.get('sudo') else '',
+                                    ', a password set' if a.get('hash') or a.get('had_hash')
+                                    else ', no password')
+    return words
+
+
+def osu_ask(wr, do, by, **f):
+    """One change asked of root's helper - checked here first, done behind
+    within seconds. -> the nodes it goes to (this server, the one node)."""
+    if not wr.helper_there():
+        raise WebRootError('root\'s half is not installed on this machine yet: run '
+                           './install.sh --upgrade (1.10.351 or later) once')
+    if do not in OSU_DOS:
+        raise ValueError('no such thing to do with a user')
+    me = db_node_name()
+    name = str(f.get('name') or '')
+    ask = {'id': secrets.token_hex(6), 'do': do, 'by': str(by or '')[:80], 'at': time.time()}
+    if do != 'list':
+        if name == 'root':
+            raise ValueError('root is shown here, never changed - on the machine itself only')
+        if not SSH_USER_RE.match(name) or name in OSU_KEEP or name.lower() != name:
+            raise ValueError('a user\'s name is small letters, digits, _ . and -, 32 at most, '
+                             'starting with a letter - and not one of the system\'s')
+        ask['name'] = name
+        now = osu_now()
+        if do not in ('add', 'drop') and now.get('at') and not any(
+                u.get('name') == name and not u.get('root') for u in now.get('users') or []):
+            raise ValueError('%s has no user %s' % (me, name))
+    if do in ('add', 'set'):
+        if 'gecos' in f:
+            g = str(f.get('gecos') or '').strip()
+            if len(g) > 120 or re.search(r'[:\x00-\x1f\x7f]', g):
+                raise ValueError('the full name is 120 characters at most, without a colon')
+            ask['gecos'] = g
+        if 'shell' in f:
+            s = str(f.get('shell') or '')
+            if not re.match(r'^/[A-Za-z0-9_./-]{1,80}\Z', s):
+                raise ValueError('that is not a shell')
+            ask['shell'] = s
+    if do == 'add':
+        ask['sudo'] = bool(f.get('sudo'))
+        ask['must_change'] = bool(f.get('must_change'))
+        if ask['sudo'] and not f.get('password'):
+            # sudo asks for the user's own password.
+            raise ValueError('sudo asks for the user\'s own password - give them one, or they '
+                             'cannot use sudo')
+        ask['uid'] = osu_free_uid(name, want=f.get('uid'))
+        if f.get('password'):
+            ask['hash'] = osu_hash(f['password'], name, wr)
+            pa = pwp_aging(pwp_conf(wr))
+            if pa:
+                ask['policy_aging'] = pa
+                ask['spare'] = OSU_NO_CODES
+    elif do == 'password':
+        ask['hash'] = osu_hash(f.get('password'), name, wr)
+        ask['must_change'] = bool(f.get('must_change'))
+        pa = pwp_aging(pwp_conf(wr))
+        if pa:
+            ask['policy_aging'] = pa
+            ask['spare'] = OSU_NO_CODES
+    elif do == 'aging':
+        a = {}
+        for k, lo, hi in (('max_days', 0, 99999), ('min_days', 0, 365), ('warn_days', 0, 365)):
+            try:
+                v = int(f.get(k))
+            except (TypeError, ValueError):
+                raise ValueError('%s is a number' % k)
+            if not lo <= v <= hi:
+                raise ValueError('%s is %d to %d' % (k, lo, hi))
+            a[k] = v
+        if a['min_days'] and a['max_days'] < 99999 and a['min_days'] > a['max_days']:
+            raise ValueError('the least days between two changes is more than the days a '
+                             'password is good')
+        ask['aging'] = a
+    elif do == 'sudo':
+        ask['on'] = bool(f.get('on'))
+    elif do == 'drop':
+        ask['home'] = bool(f.get('home'))
+    with OSU_LOCK:
+        OSU_WORK['queue'] = (OSU_WORK['queue'] + [ask])[-20:]
+    osu_tick(wr)
+    return [me]
+
+
+def osu_keep(row, got):
+    if not isinstance(got, dict):
+        raise ValueError('the root helper said no list of users (%s)' % type(got).__name__)
+    row.update({k: got.get(k) for k in ('users', 'uid_min', 'uid_max', 'used', 'admin_group',
+                                        'shells', 'today', 'policy')})
+    row['at'] = time.time()
+
+
+def osu_one(wr, a):
+    """One change done by root's helper: its answer, or what went wrong
+    (words). The hash goes in the ask file only, and out of the queue's
+    item once it is handed over."""
+    q = {k: v for k, v in a.items() if k in ('do', 'name', 'uid', 'gecos', 'shell', 'sudo',
+                                              'must_change', 'on', 'home', 'aging',
+                                              'policy_aging', 'spare', 'conf', 'hash')}
+    if a.pop('hash', None):
+        a['had_hash'] = True
+    try:
+        return osu_root_ask(wr, q, 120)
+    except (WebRootError, OSError, ValueError) as e:
+        err = str(e)[:300] or e.__class__.__name__
+        log('the local user %s: %s' % (a.get('name') or '?', err), 'warn')
+        return err
+    finally:
+        q.clear()
+
+
+def osu_policy_due(wr, now):
+    """Whether the policy is to be put in (or taken out) now - and the hash of
+    what is to be in. Never set and nothing of isemon's on the machine:
+    nothing to ask (said as in effect)."""
+    pol = pwp_conf(wr)
+    want = pwp_hash(pol)
+    there = (now.get('policy') if isinstance(now.get('policy'), dict) else {}).get('managed')
+    if now.get('policy_hash') == want:
+        return pol, want, False
+    if not pol['managed'] and not there:
+        return pol, want, False
+    if not pol['managed'] and not now.get('at'):
+        return pol, want, False
+    tried = now.get('policy_tried') == want and \
+        time.time() - float(now.get('policy_at') or 0) < 600
+    return pol, want, not tried
+
+
+def osu_tick(wr):
+    """What is asked, done one after another by root behind; the password
+    policy put in when it is not what root last put in (tried again in ten
+    minutes when refused). Every minute too, for what waited."""
+    if OSU_WORK['busy'] and time.time() - OSU_WORK['since'] < 900:
+        return
+    if not wr.helper_there() or not wr.folder().is_dir():
+        return
+    with OSU_LOCK:
+        now = dict(osu_now())
+        pol, want, policy_due = osu_policy_due(wr, now)
+        if not pol['managed'] and not policy_due and now.get('at') and \
+                now.get('policy_hash') != want and \
+                not (now.get('policy') if isinstance(now.get('policy'), dict) else {}).get('managed'):
+            # Never set, nothing of isemon's there: in effect as set (the
+            # system's own) without asking root.
+            OSU_WORK['now'] = dict(now, policy_hash=want, policy_said='the system\'s own',
+                                   policy_error='')
+        todo = [a for a in OSU_WORK['queue'] if time.time() - a['at'] < 3600]
+        OSU_WORK['queue'] = []
+        if not todo and not policy_due:
+            return
+        OSU_WORK.update(busy=True, since=time.time())
+        OSU_WORK['doing'] = [a['id'] for a in todo if a['do'] != 'list']
+    changes = [a for a in todo if a['do'] != 'list']
+    lists = [a for a in todo if a['do'] == 'list']
+
+    def go():
+        row = dict(osu_now())
+        said = list(row.get('said') or [])[-10:]
+        done = list(row.get('done') or [])
+        fresh = False
+        try:
+            for a in changes:
+                err, got = osu_one(wr, a), None
+                if isinstance(err, dict):
+                    got, err = err, ''
+                done.append(a['id'])
+                said.append({'at': time.time(), 'id': a['id'], 'do': a.get('do'),
+                             'name': a.get('name') or '', 'by': a.get('by') or '',
+                             'ok': not err, 'said': err or (got or {}).get('said') or ''})
+                who = a.get('by') or 'somebody'
+                # Who, what, which user - never the password or its hash.
+                wr.store.add_event('settings', '%s %s on %s' % (
+                    who, _osu_words(a), db_node_name()) if not err else
+                    'the local user %s was not changed on %s (%s %s): %s' % (
+                        a.get('name') or '?', db_node_name(), who, _osu_words(a), err),
+                    'warn', who=a.get('by') or '')
+                if got:
+                    osu_keep(row, got)
+                    fresh = True
+                row.update(done=done[-300:], said=said[-10:])
+                with OSU_LOCK:
+                    OSU_WORK['now'] = dict(row)
+                    OSU_WORK['doing'] = [x for x in OSU_WORK['doing'] if x != a['id']]
+            if policy_due:
+                row.update(policy_tried=want, policy_at=time.time())
+                got = osu_one(wr, {'do': 'policy', 'conf': pol, 'spare': OSU_NO_CODES})
+                if isinstance(got, dict):
+                    osu_keep(row, got)
+                    fresh = True
+                    row.update(policy_hash=want, policy_said=got.get('said') or '',
+                               policy_error='')
+                    log('the password policy of the local users put in: %s'
+                        % (got.get('said') or 'done'))
+                else:
+                    row['policy_error'] = str(got)[:300]
+                    log('the password policy of the local users: %s' % row['policy_error'],
+                        'warn')
+                with OSU_LOCK:
+                    OSU_WORK['now'] = dict(row)
+            if lists or not fresh:
+                try:
+                    osu_keep(row, osu_root_ask(wr, {'do': 'list'}, 60))
+                    row['error'] = ''
+                except (WebRootError, OSError, ValueError) as e:
+                    row['error'] = 'its users could not be read: %s' % (
+                        str(e)[:300] or e.__class__.__name__)
+            else:
+                row['error'] = ''
+            row.update(done=done[-300:], said=said[-10:])
+            with OSU_LOCK:
+                OSU_WORK['now'] = dict(row)
+            OSU_WORK['seen'] = time.time()
+        except Exception as e:                          # noqa: BLE001
+            log('the local users: %s' % e, 'warn')
+        finally:
+            with OSU_LOCK:
+                OSU_WORK.update(busy=False, doing=[])
+                more = bool(OSU_WORK['queue'])
+        if more:
+            osu_tick(wr)
+    threading.Thread(target=go, name='isemon-osusers', daemon=True).start()
+
+
+def osu_view(wr):
+    """GET /api/osusers, as acme's pane reads it: this server, the one node."""
+    helper = wr.helper_there()
+    now = osu_now()
+    if helper and time.time() - float(now.get('at') or 0) > OSU_STALE_S and \
+            not OSU_WORK['busy'] and not OSU_WORK['queue']:
+        try:
+            osu_ask(wr, 'list', '')
+        except (WebRootError, ValueError, OSError):
+            pass
+        now = osu_now()
+    with OSU_LOCK:
+        pending = len([a for a in OSU_WORK['queue'] if a['do'] != 'list']) + \
+            len(OSU_WORK['doing'])
+    pol = pwp_conf(wr)
+    want = pwp_hash(pol)
+    there = now.get('policy') if isinstance(now.get('policy'), dict) else None
+    # Never set, nothing of isemon's on the machine: the system's own is what
+    # is in effect, as set - nothing asked of root for it.
+    own = not pol['managed'] and bool(now.get('at')) and there is not None and \
+        not there.get('managed') and not now.get('policy_error')
+    node = {'name': db_node_name(), 'me': True, 'alive': helper, 'at': now.get('at'),
+            'pending': pending, 'error': now.get('error') or '',
+            'admin_group': now.get('admin_group') or '', 'shells': now.get('shells') or [],
+            'uid_min': now.get('uid_min'), 'uid_max': now.get('uid_max'),
+            'today': now.get('today'), 'users': now.get('users') or [], 'before': [],
+            'said': now.get('said') or [],
+            'policy': there,
+            'policy_applied': now.get('policy_hash') == want or own,
+            'policy_said': now.get('policy_said') or ('the system\'s own' if own else ''),
+            'policy_error': now.get('policy_error') or ''}
+    return {'ok': True, 'helper': helper, 'cluster': False,
+            'pw_min': max(OSU_PW_MIN, pol['minlen'] if pol['managed'] else OSU_PW_MIN),
+            'openssl': bool(shutil.which(rb_bin('openssl'))), 'policy_refused': False,
+            'policy': pol, 'nodes': [node], 'busy': OSU_WORK['busy'], 't': time.time()}
+
+
+def osu_policy_set(wr, b, by):
+    """The password policy saved (meta 'osu_pwpolicy') and put in behind."""
+    c = pwp_checked_api(b if isinstance(b, dict) else {})
+    wr._put('osu_pwpolicy', dict(c, at=time.time(), by=str(by or '')[:80]))
+    wr.store.add_event('settings', '%s %s the password policy of the local users%s' % (
+        by or 'somebody', 'set' if c['managed'] else 'gave back to the system',
+        (': at least %d characters, %d kinds, %s, history %d, %s' % (
+            c['minlen'], c['minclass'], 'good for %d days' % c['max_days']
+            if c['max_days'] < 99999 else 'no end', c['remember'],
+            'locked after %d wrong' % c['deny'] if c['deny'] else 'no lockout'))
+        if c['managed'] else ''), 'warn', who=by)
+    osu_tick(wr)
+    return c
+
+
+def osusers_api(wr, b, by):
+    """What the pane asks for (POST /api/osusers). `nodes` may come and is
+    not needed: this server is the one node."""
+    act = str(b.get('action') or '')
+    if act == 'refresh':
+        act = 'list'
+    if act == 'policy':
+        c = osu_policy_set(wr, b.get('policy') or {}, by)
+        return {'ok': True, 'message': 'each node puts it in within a few seconds', 'policy': c}
+    if act not in OSU_DOS:
+        raise ValueError('no such thing to do with a user')
+    f = {k: b[k] for k in ('name', 'gecos', 'shell', 'sudo', 'must_change', 'password', 'on',
+                           'home', 'max_days', 'min_days', 'warn_days') if k in b}
+    done = osu_ask(wr, act, by, **f)
+    f = None
+    if act == 'list':
+        return {'ok': True, 'message': 'asked again', 'nodes': done}
+    return {'ok': True, 'message': 'done on %s within a few seconds' % ', '.join(done),
+            'nodes': done}
 
 
 # ---------------------------------------------------------------------------
@@ -78879,11 +79431,11 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'e3e9827bbb4c2ca7a87801486ce799264f3c4cca3f793394a8d81ebe93929176'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '93adc1c4a4c872c11b7691a1df87aeb6565b1b5c9c253047c8d4394b0c1226f6'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '214b200ceedcbd4f848c5e2064c8c6b2331be9bffe64d60f84266b6329533742'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
-    ('deploy/isemon-web.path', '/etc/systemd/system/isemon-web.path', 'd44682bfe6a3cdf58c8a9620bbc6a83f6c8f56a4348da5565bd93866d102db39'),
+    ('deploy/isemon-web.path', '/etc/systemd/system/isemon-web.path', '2031a8cfad5fe15c49064766c0bf12148d0dc6f5fd9a637441a6af859e3a6b21'),
     ('deploy/isemon-upgrade.service', '/etc/systemd/system/isemon-upgrade.service', '5d00f89ecff1cafb664f901450662414c97485955456f0221bd3c746255d5425'),
     ('deploy/isemon-upgrade.path', '/etc/systemd/system/isemon-upgrade.path', '029181225b378f9dbf03ea99ba5c1d0b280e166bb7aef3c06246a1dbabd239ec'),
     ('deploy/isemon.service', '/etc/systemd/system/isemon.service', 'f3d41034b806fe82510fc52bcbaaf39a3005f845a3ba57b3e3800c9f2b51180f'),
@@ -88171,8 +88723,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             except ValueError as e:
                 return self.fail(str(e))
             return self.send_json(dict(got, ok=True, reached=got['ok']))
-        # Root's SSH keys (1.10.239): looked at and changed by a full
-        # administrator only, put in by root (isemon_web.py).
+        # The SSH keys (1.10.239): looked at and changed by a full
+        # administrator only, put in by root (isemon_web.py). Root's only
+        # shown (1.10.351): a change of them is refused with 403.
         if path == '/api/sshkeys':
             me = self.need_admin()
             if not me:
@@ -88181,6 +88734,23 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.send_json(sshkeys_view(daemon.webroot))
             try:
                 return self.send_json(sshkeys_api(daemon.webroot, self.body(),
+                                                  me.get('name') or ''))
+            except RootKeysShownOnly as e:
+                return self.fail(str(e), 403)
+            except (WebRootError, ValueError, OSError) as e:
+                return self.fail(str(e))
+        # The local users of this machine and their password policy
+        # (1.10.351): a full administrator's only, done by root
+        # (isemon_web.py, users.ask). A password in the body is hashed here
+        # and goes nowhere as itself.
+        if path == '/api/osusers':
+            me = self.need_admin()
+            if not me:
+                return None
+            if method != 'POST':
+                return self.send_json(osu_view(daemon.webroot))
+            try:
+                return self.send_json(osusers_api(daemon.webroot, self.body(),
                                                   me.get('name') or ''))
             except (WebRootError, ValueError, OSError) as e:
                 return self.fail(str(e))
@@ -93842,8 +94412,9 @@ def cmd_os_update_stop(args, pal, store):
 
 # ---- Settings - SSH keys of root, from here (1.10.242) ----------------------------
 # Through the same /api/sshkeys, so a full administrator's rights and root's
-# helper decide here what they decide there. What is asked is done by root
-# behind, within seconds: each command waits for it and says what root said.
+# helper decide here what they decide there. Root's keys are only listed since
+# 1.10.351: --root-key-add, --root-key-drop and --root-key-make are refused
+# with the API's own words.
 def _sk_view(session):
     return api_call('/api/sshkeys', timeout=30, session=session)
 
@@ -93872,7 +94443,6 @@ def sk_kind_words(k):
 def sk_print(pal, v):
     keys = v.get('keys') or []
     sd = v.get('sshd') or {}
-    kept = v.get('kept') or {}
     pal.title('SSH keys of root on %s' % socket.gethostname())
     if not v.get('helper'):
         pal.warn('root\'s half of this is not installed on this machine yet (isemon-web.path): '
@@ -93892,8 +94462,6 @@ def sk_print(pal, v):
         rows = []
         for k in keys:
             marks = []
-            if kept.get('fp') and k.get('fp') == kept['fp']:
-                marks.append('made here' if kept.get('how') == 'made' else 'given here')
             if k.get('options'):
                 marks.append('with options')
             if k.get('readable') is False:
@@ -93913,6 +94481,9 @@ def sk_print(pal, v):
     pal.kv('read', human_age(time.time() - float(v['at'])) if v.get('at') else 'not yet')
     if v.get('pending'):
         pal.note('  being written...')
+    # Only shown (1.10.351): changed on the server itself, as root.
+    pal.note('  root\'s keys are only shown here - change them on the server itself, as root, '
+             'in /root/.ssh/authorized_keys')
     pal.blank()
 
 
@@ -93937,220 +94508,255 @@ def cmd_root_keys(args, pal, store):
     return 1 if v.get('error') or not v.get('helper') else 0
 
 
-def _sk_after(args, pal, session, words, blob=''):
-    """What root said of the change just asked: said, and the keys now."""
-    v = _sk_settle(pal, session)
-    if v is None:
-        return 1
-    if as_json(args, v):
-        return 1 if v.get('error') else 0
-    if v.get('pending') or v.get('busy'):
-        pal.warn('asked; root has not done it yet - isemon --root-keys in a minute')
-        return 1
-    if v.get('error'):
-        pal.bad('root said: %s' % v['error'])
-        return 1
-    pal.good(words)
-    for k in v.get('keys') or []:
-        if blob and blob in str(k.get('text') or ''):
-            pal.kv('fingerprint', k.get('fp') or '-')
-    pal.kv('root\'s keys now', str(len(v.get('keys') or [])))
-    return 0
-
-
-def _key_text(given):
-    """--root-key-add's LINE or FILE: what is in the file when it is one, a
-    private key whole, else its first line."""
-    p = Path(str(given)).expanduser()
-    text = str(given)
-    try:
-        if p.is_file():
-            if p.stat().st_size > 65536:
-                raise ValueError('that file is far bigger than a key')
-            text = p.read_text(errors='replace')
-    except OSError as e:
-        raise ValueError(str(e))
-    text = text.strip()
-    if 'PRIVATE KEY' in text:
-        return text, True
-    return (text.splitlines() or [''])[0].strip(), False
-
-
-def _key_passphrase(args):
-    """The passphrase of a private key: --passphrase-file, or
-    ISEMON_KEY_PASSPHRASE in the environment - never the command line."""
-    if getattr(args, 'passphrase_file', None):
-        return Path(args.passphrase_file).expanduser().read_text().split('\n')[0].rstrip('\r')
-    return os.environ.get('ISEMON_KEY_PASSPHRASE', '')
-
-
 def cmd_root_key_add(args, pal, store):
-    """--root-key-add LINE|FILE: a key put into root's authorized_keys - a
-    public line or .pub file, or a private key of which only the public half
-    goes in, as Add a key does."""
-    try:
-        text, private = _key_text(args.root_key_add)
-        passphrase = _key_passphrase(args) if private else ''
-    except (ValueError, OSError) as e:
-        pal.bad(str(e))
-        return 1
-    session = cli_session(store)
-    status, data = api_call('/api/sshkeys', 'POST', {'action': 'add', 'line': text,
-                                                     'passphrase': passphrase},
-                            session=session)
-    if status == 400 and private and not passphrase and 'passphrase' in str(
-            data.get('error') or '') and sys.stdin.isatty():
-        try:
-            passphrase = getpass.getpass('  the passphrase of the private key: ')
-        except (EOFError, KeyboardInterrupt):
-            passphrase = ''
-        if passphrase:
-            status, data = api_call('/api/sshkeys', 'POST', {'action': 'add', 'line': text,
-                                                             'passphrase': passphrase},
-                                    session=session)
-    passphrase = ''
-    if not need_daemon(pal, status, data):
-        return 1
-    if not getattr(args, 'json', False):
-        pal.note('  %s' % (data.get('message') or 'asked'))
-    blob = '' if private else (text.split() + ['', ''])[1]
-    return _sk_after(args, pal, session, 'the key is in root\'s authorized_keys' + (
-        ' - the private half was not kept' if private else ''), blob)
+    """--root-key-add: refused since 1.10.351 - root's keys are only shown."""
+    pal.bad(ROOT_KEYS_SHOWN_ONLY)
+    return 1
 
 
 def cmd_root_key_drop(args, pal, store):
-    """--root-key-drop FINGERPRINT: a key taken away, asked first unless
-    --yes; the last one root signs in with only with --last, and asked
-    again, as the page asks twice."""
-    fp = str(args.root_key_drop or '').strip()
-    session = cli_session(store)
-    status, v = _sk_view(session)
-    if not need_daemon(pal, status, v):
-        return 1
-    if v.get('helper'):
-        asked = time.time() - 1
-        status, data = api_call('/api/sshkeys', 'POST', {'action': 'refresh'}, session=session)
-        if not need_daemon(pal, status, data):
-            return 1
-        v = _sk_settle(pal, session, since=asked, wait=30)
-        if v is None:
-            return 1
-    keys = [k for k in v.get('keys') or [] if k.get('fp')]
-    k = ([x for x in keys if x['fp'] == fp] or [None])[0]
-    if not v.get('helper'):
-        pal.bad('root\'s half is not installed on this machine yet: run ./install.sh '
-                '--upgrade (1.10.239 or later) once')
-        return 1
-    if k is None:
-        pal.bad('no key of root has the fingerprint %s (isemon --root-keys lists them)' % fp)
-        return 1
-    last = len(keys) <= 1
-    who = fp + (' (%s)' % k['comment'] if k.get('comment') else '')
-    if last and not args.last:
-        pal.bad('%s is the last key root signs in with on this server. Unless root may sign '
-                'in with a password, nobody reaches it over SSH as root after this - '
-                '--last takes it away all the same' % who)
-        return 1
-    if not args.yes:
-        pal.say('  Root no longer signs in with %s on this server.' % who)
-        if last:
-            pal.warn('It is the last key root signs in with on this server. Unless root may '
-                     'sign in with a password, nobody reaches it over SSH as root after this.')
-        try:
-            said = input('  take the key away? type yes to go ahead: ').strip().lower()
-            if said == 'yes' and last:
-                pal.say('  Said again: %s is the last key root signs in with on this server. '
-                        'After it is gone, nobody reaches it over SSH as root with a key.' % fp)
-                said = input('  take the last key away anyway? type yes to go ahead: ') \
-                    .strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            said = ''
-        if said != 'yes':
-            pal.note('  nothing was done')
-            return 1
-    status, data = api_call('/api/sshkeys', 'POST', {'action': 'drop', 'fp': fp,
-                                                     'last_ok': bool(last and args.last)},
-                            session=session)
-    if not need_daemon(pal, status, data):
-        return 1
-    return _sk_after(args, pal, session, 'the key %s is taken away' % fp)
+    """--root-key-drop: refused since 1.10.351 - root's keys are only shown."""
+    pal.bad(ROOT_KEYS_SHOWN_ONLY)
+    return 1
 
 
 def cmd_root_key_make(args, pal, store):
-    """--root-key-make ed25519|rsa4096: a key made as Make a key makes it.
-    Its public half goes into root's authorized_keys; its private half is
-    written once to --out (0600, never over a file there) or printed once,
-    and kept nowhere else."""
-    kind = args.root_key_make
-    out = Path(args.out).expanduser() if args.out else None
-    fd = None
-    if out is not None:
-        if os.path.lexists(str(out)):
-            pal.bad('%s is there already: nothing was made (a file is never written over)'
-                    % out)
-            return 1
-        try:
-            # Made empty first, so that the key is not made for a file that
-            # cannot be written - and never through a link put there meanwhile.
-            fd = os.open(str(out), os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-            os.fchmod(fd, 0o600)
-        except OSError as e:
-            pal.bad('%s cannot be written: %s' % (out, e.strerror or e))
-            return 1
+    """--root-key-make: refused since 1.10.351 - root's keys are only shown;
+    a key for another user is made on the pages (Settings - SSH keys)."""
+    pal.bad(ROOT_KEYS_SHOWN_ONLY)
+    return 1
+
+
+# ---- Settings - Local users, from here (1.10.351; after acme's --local-users) ------
+# Through the same /api/osusers the pane asks, so a full administrator's rights
+# and root's helper decide here what they decide there. A password is asked at
+# a terminal only, twice - never an argument - and goes to the daemon the way
+# the page sends it, to be hashed there. Each change waits for root and says
+# what it said.
+def _osu_view(session):
+    return api_call('/api/osusers', timeout=60, session=session)
+
+
+def _osu_settle(pal, session, since=None, wait=60):
+    """The users once root has done what was asked (and, with `since`, read
+    them after that moment). None when the daemon does not answer."""
+    end = time.time() + wait
+    while True:
+        status, v = _osu_view(session)
+        if not need_daemon(pal, status, v):
+            return None
+        node = (v.get('nodes') or [{}])[0]
+        done = not node.get('pending') and not v.get('busy')
+        fresh = since is None or float(node.get('at') or 0) >= since or node.get('error')
+        if (done and fresh) or not v.get('helper') or time.time() > end:
+            return v
+        time.sleep(0.5)
+
+
+def _osu_read(pal, session):
+    """The users read afresh - None when the daemon does not answer."""
+    asked = time.time() - 1
+    status, data = api_call('/api/osusers', 'POST', {'action': 'refresh'}, session=session)
+    if not need_daemon(pal, status, data):
+        return None
+    return _osu_settle(pal, session, since=asked, wait=60)
+
+
+def _osu_sure(args, pal, words):
+    """Asked first unless --yes; refused without a terminal."""
+    if args.yes:
+        return True
+    if not sys.stdin.isatty():
+        pal.bad('%s: asked first, and there is no terminal to ask at - add --yes' % words)
+        return False
+    try:
+        said = input('  %s? type yes to go ahead: ' % words).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        said = ''
+    if said != 'yes':
+        pal.note('  nothing was done')
+        return False
+    return True
+
+
+def cmd_local_users(args, pal, store):
+    """--local-users, --local-user WHAT NAME: Settings - Local users."""
     session = cli_session(store)
-    status, data = api_call('/api/sshkeys', 'POST', {'action': 'rk_make', 'kind': kind},
-                            session=session, timeout=180)
-    if status != 200 or not data.get('private'):
-        if fd is not None:
-            os.close(fd)
-            try:
-                os.unlink(str(out))
-            except OSError:
-                pass
-        if need_daemon(pal, status, data):
-            pal.bad(data.get('error') or 'no key came back')
-        return 1
-    private = data.pop('private')
-    if fd is not None:
-        with os.fdopen(fd, 'w') as f:
-            f.write(private if private.endswith('\n') else private + '\n')
-            f.flush()
-            os.fsync(f.fileno())
-        data['out'] = str(out)
-    private_shown = None if out is not None else private
-    private = ''
-    if getattr(args, 'json', False):
-        v = _sk_settle(pal, session) or {}
-        print(json.dumps(dict(data, private=private_shown, error=v.get('error') or '')
-                         if private_shown else dict(data, error=v.get('error') or ''),
-                         indent=2, ensure_ascii=False))
-        return 1 if v.get('error') else 0
-    pal.title('A new %s key for root' % ('Ed25519' if kind == 'ed25519' else 'RSA 4096'))
-    if out is not None:
-        pal.good('made - its private half is in %s (0600), and kept nowhere else' % out)
-    else:
-        pal.warn('made - keep the private half now, it is not shown again. Whoever holds it '
-                 'signs in to this server as root:')
-        sys.stdout.write(private_shown if private_shown.endswith('\n') else private_shown + '\n')
-        sys.stdout.flush()
-        private_shown = None
-    pal.kv('fingerprint', data.get('fp') or '-')
-    pal.kv('public half', data.get('pub') or '-')
-    pal.note('  then, on your machine: ssh -i %s root@%s' % (
-        out if out is not None else data.get('file') or 'the-key', socket.gethostname()))
-    v = _sk_settle(pal, session)
+    if args.local_user:
+        return _cmd_local_user(args, pal, session)
+    v = _osu_read(pal, session)
     if v is None:
         return 1
-    if v.get('error'):
-        pal.bad('root said: %s - isemon --root-keys, and the public half again with '
-                'isemon --root-key-add' % v['error'])
+    if as_json(args, v):
+        return 0
+    node = (v.get('nodes') or [{}])[0]
+    pal.title('Local users of %s' % (node.get('name') or socket.gethostname()))
+    if not v.get('helper'):
+        pal.warn('root\'s half of this is not installed on this machine yet (isemon-web.path): '
+                 'run ./install.sh --upgrade from the 1.10.351 package (or later) once')
         return 1
-    if (v.get('kept') or {}).get('on'):
-        pal.good('its public half is in root\'s authorized_keys')
-    else:
-        pal.warn('its public half is not in root\'s authorized_keys yet - isemon --root-keys '
-                 'in a minute')
-    return 0
+    if node.get('error'):
+        pal.bad(node['error'])
+    if not node.get('at'):
+        pal.note('  not read yet')
+        return 1
+    rows, others = [], 0
+    for u in node.get('users') or []:
+        if not u.get('login') and not u.get('root'):
+            others += 1
+            continue
+        tags = []
+        if u.get('root'):
+            tags.append('view only')
+        if u.get('sudo') and not u.get('root'):
+            tags.append('sudo')
+        if u.get('locked'):
+            tags.append('locked')
+        tags.append('password: ' + ('none' if not u.get('password') else 'to change at sign-in'
+                                    if u.get('must_change') else 'set'))
+        rows.append([u.get('name') or '?', str(u.get('uid')), u.get('shell') or '-',
+                     ', '.join(tags), u.get('gecos') or ''])
+    print_table(pal, ['user', 'uid', 'shell', '', 'full name'], rows, indent=2)
+    if others:
+        pal.note('  and %d account(s) with no shell' % others)
+    return 1 if node.get('error') else 0
+
+
+def _cmd_local_user(args, pal, session):
+    what, name = args.local_user
+    do = {'add': 'add', 'password': 'password', 'aging': 'aging', 'lock': 'lock',
+          'unlock': 'unlock', 'sudo-on': 'sudo', 'sudo-off': 'sudo', 'drop': 'drop',
+          'drop-home': 'drop'}.get(what)
+    if not do:
+        pal.bad('add, password, aging, lock, unlock, sudo-on, sudo-off, drop or drop-home')
+        return 2
+    if name == 'root':
+        pal.bad('root is shown here, never changed - on the machine itself only')
+        return 1
+    v = _osu_read(pal, session)
+    if v is None:
+        return 1
+    node = (v.get('nodes') or [{}])[0]
+    b = {'action': do, 'name': name}
+    if do == 'aging':
+        # What is not given stays as it is.
+        u = next((x for x in node.get('users') or [] if x.get('name') == name), {})
+        b['max_days'] = args.local_max_days if args.local_max_days is not None else \
+            (u.get('max_days') if u.get('max_days') is not None else 99999)
+        b['min_days'] = args.local_min_days if args.local_min_days is not None else \
+            (u.get('min_days') or 0)
+        b['warn_days'] = args.local_warn_days if args.local_warn_days is not None else \
+            (u.get('warn_days') if u.get('warn_days') is not None else 7)
+    if do in ('add', 'password'):
+        if not sys.stdin.isatty():
+            pal.bad('the password is asked at a terminal only - never given on the command line')
+            return 2
+        try:
+            one = getpass.getpass('  the password for %s%s: ' % (
+                name, ' (empty: none - a key only)' if do == 'add' else ''))
+            if (one or do == 'password') and getpass.getpass('  again: ') != one:
+                pal.bad('the two passwords are not the same - nothing done')
+                return 1
+        except (EOFError, KeyboardInterrupt):
+            pal.note('  nothing was done')
+            return 1
+        b['password'] = one
+        one = ''
+        b['must_change'] = bool(args.local_must_change)
+    if do == 'add':
+        if args.local_full_name is not None:
+            b['gecos'] = args.local_full_name
+        b['shell'] = args.local_shell or '/bin/bash'
+    if do == 'sudo':
+        b['on'] = what == 'sudo-on'
+    if do == 'drop':
+        b['home'] = what == 'drop-home'
+        if not _osu_sure(args, pal, 'take %s away%s' % (name, ' with the home folder'
+                                                          if b['home'] else '')):
+            return 1
+    status, data = api_call('/api/osusers', 'POST', b, session=session)
+    b.pop('password', None)
+    if not need_daemon(pal, status, data):
+        return 1
+    pal.note('  %s - waiting for root...' % (data.get('message') or 'asked'))
+    v = _osu_settle(pal, session)
+    if v is None:
+        return 1
+    node = (v.get('nodes') or [{}])[0]
+    if as_json(args, v):
+        return 0
+    last = [x for x in node.get('said') or [] if x.get('name') == name][-1:]
+    if node.get('pending'):
+        pal.warn('  %s: not done yet (is isemon-web.path running?)' % node.get('name'))
+        return 1
+    if last and last[0].get('ok'):
+        pal.good('%s: done%s' % (node.get('name'), (' - ' + last[0]['said'])
+                                 if last[0].get('said') else ''))
+        return 0
+    pal.bad('%s: refused%s' % (node.get('name'), (' - ' + last[0]['said'])
+                               if last and last[0].get('said') else ''))
+    return 1
+
+
+def cmd_local_policy(args, pal, store):
+    """--local-policy, --local-policy-set KEY=VALUE...: the password policy of
+    the local users, as set and as in effect here."""
+    session = cli_session(store)
+    status, v = _osu_view(session)
+    if not need_daemon(pal, status, v):
+        return 1
+    if args.local_policy_set:
+        b = dict(v.get('policy') or {})
+        for kv in args.local_policy_set:
+            if '=' not in kv:
+                pal.bad('KEY=VALUE, e.g. managed=1 minlen=14')
+                return 2
+            k, val = kv.split('=', 1)
+            k, val = k.strip(), val.strip().lower()
+            if k not in PWP_DEFAULT:
+                pal.bad('no such rule: %s (the rules: %s)' % (k, ', '.join(sorted(PWP_DEFAULT))))
+                return 2
+            flags = ('managed', 'existing', 'dictcheck', 'usercheck')
+            if k in flags and val not in ('1', 'yes', 'on', 'true', '0', 'no', 'off', 'false'):
+                pal.bad('%s is on or off' % k)
+                return 2
+            b[k] = val in ('1', 'yes', 'on', 'true') if k in flags else val
+        status, data = api_call('/api/osusers', 'POST', {'action': 'policy', 'policy': b},
+                                session=session)
+        if not need_daemon(pal, status, data):
+            return 1
+        pal.good('saved - %s' % (data.get('message') or 'put in within a few seconds'))
+        v = _osu_settle(pal, session, wait=60) or v
+    if as_json(args, v):
+        return 0
+    c = v.get('policy') or {}
+    node = (v.get('nodes') or [{}])[0]
+    pal.title('The password policy of the local users')
+    pal.kv('set', 'by isemon' if c.get('managed') else 'the system\'s own')
+    if c.get('managed'):
+        pal.kv('the password', 'at least %s characters, %s kinds, at most %s alike in a row, %s '
+               'not in the old one; no word of the dictionary: %s; not the user\'s name: %s' % (
+                   c.get('minlen'), c.get('minclass'), c.get('maxrepeat'), c.get('difok'),
+                   'yes' if c.get('dictcheck') else 'no', 'yes' if c.get('usercheck') else 'no'))
+        pal.kv('how long', 'good for %s, warned %s days before, %s days between two changes, '
+               'the last %s not again' % (
+                   '%s days' % c['max_days'] if str(c.get('max_days') or 99999) != '99999'
+                   else 'ever', c.get('warn_days'), c.get('min_days'), c.get('remember')))
+        pal.kv('wrong passwords', 'locked after %s wrong for %s s (counted within %s s)' % (
+            c['deny'], c.get('unlock_time'), c.get('fail_interval')) if c.get('deny')
+            else 'never locked')
+    p = node.get('policy') or {}
+    q = p.get('pwquality') or {}
+    a = p.get('aging') or {}
+    state = ('not answering' if not node.get('alive') else
+             'refused: %s' % node['policy_error'] if node.get('policy_error') else
+             ('as set here' if c.get('managed') else 'the system\'s own')
+             if node.get('policy_applied') else 'being put in')
+    pal.kv(node.get('name') or 'here', '%s - in effect: %s characters, %s kinds, good for %s' % (
+        state, q.get('minlen', '?'), q.get('minclass', '?'),
+        'ever' if str(a.get('max_days') or 99999) in ('99999', '-1') else
+        '%s days' % a.get('max_days')))
+    return 1 if node.get('policy_error') else 0
 
 
 # ---- Settings - The OTP logs - Encrypted receiving, from here (1.10.245) ------------
@@ -98396,6 +99002,7 @@ class Console(object):
             ('10', 'The way out (proxy): try it', self.proxy_try_menu),
             ('11', 'SELinux', self.selinux_menu),
             ('12', 'Trusted roots of the system', self.os_roots_menu),
+            ('13', 'Local users', self.local_users_menu),
         ])
 
     # ---- 11 > SELinux (1.10.319) ----------------------------------------------------
@@ -98514,103 +99121,27 @@ class Console(object):
                             'finishes.', 'Stop it', danger=True):
                 self.act('--os-update-stop')
 
-    # ---- 9 > SSH keys of root (1.10.242) --------------------------------------------
+    # ---- 9 > SSH keys of root (1.10.242; only shown since 1.10.351) ---------------------
     def root_keys(self):
         what = self.choose('SSH keys of root', [
-            ('list', 'The keys that may sign in as root, and what sshd says'),
-            ('add', 'Add a key (a public line, a .pub file or a private key file)'),
-            ('drop', 'Take a key away'),
-            ('make', 'Make a key (its private half into a file)')],
-            'The lines of /root/.ssh/authorized_keys, read and changed by root. Only a full '
-            'administrator.')
+            ('list', 'The keys that may sign in as root, and what sshd says')],
+            'The lines of /root/.ssh/authorized_keys, read by root - only shown: root\'s SSH '
+            'keys are changed on the server itself, as root, in /root/.ssh/authorized_keys. '
+            'Only a full administrator.')
         if what == 'list':
             self.act('--root-keys')
-        elif what == 'add':
-            self.root_key_add()
-        elif what == 'drop':
-            self.root_key_drop()
-        elif what == 'make':
-            self.root_key_make()
 
-    def root_key_add(self):
-        given = self.ask_one('Add a key for root', 'the key line or a file', help_=(
-            'One line of a .pub file (ssh-ed25519 AAAA... you@laptop), or the path of a .pub '
-            'file or of a private key file - of a private key only the public half is used '
-            'and nothing of it kept. Ed25519, ECDSA or RSA of 3072 bits and more.'))
-        if not given:
-            return
-        env = None
-        try:
-            p = Path(given).expanduser()
-            private = p.is_file() and p.stat().st_size <= 65536 and \
-                'PRIVATE KEY' in p.read_text(errors='replace')
-        except OSError:
-            private = False
-        if private:
-            word = self.ask_one('Its passphrase', 'the passphrase', need=False, secret=True,
-                                help_='Empty when the private key has none. It is used once '
-                                      'to read the public half, and kept nowhere.')
-            if word is None:
-                return
-            # By the environment, never on the command line.
-            env = {'ISEMON_KEY_PASSPHRASE': word} if word else None
-        self.act('--root-key-add', given, env=env,
-                 title='$ isemon --root-key-add %s' % (self._quote(given) if private or
-                                                      len(given) < 60 else given[:50] + '...'))
-
-    def root_key_drop(self):
-        got = self.out('--root-keys')
-        keys = [k for k in (got.get('keys') or [] if isinstance(got, dict) else [])
-                if isinstance(k, dict) and k.get('fp')]
-        if not keys:
-            self.note('Take a key away', 'No key of root is read here (isemon --root-keys).',
-                      'warn')
-            return
-        fp = self.choose('Take a key away', [
-            (k['fp'], '%s  %s  %s' % (sk_kind_words(k), k['fp'], k.get('comment') or ''))
-            for k in keys])
-        if not fp:
-            return
-        k = [x for x in keys if x['fp'] == fp][0]
-        last = len(keys) <= 1
-        who = fp + (' (%s)' % k['comment'] if k.get('comment') else '')
-        if not self.confirm('Take the key away', 'Root no longer signs in with %s on this '
-                            'server.%s' % (who, ' It is the last key root signs in with on '
-                                           'this server. Unless root may sign in with a '
-                                           'password, nobody reaches it over SSH as root '
-                                           'after this.' if last else ''),
-                            'Take it away', danger=True):
-            return
-        if last:
-            if not self.confirm('Take the last key away?', 'Said again: %s is the last key '
-                                'root signs in with on this server. After it is gone, nobody '
-                                'reaches it over SSH as root with a key.' % fp,
-                                'Take it away anyway', danger=True):
-                return
-            self.act('--root-key-drop', fp, '--last', '--yes')
-        else:
-            self.act('--root-key-drop', fp, '--yes')
-
-    def root_key_make(self):
-        kind = self.choose('Make a key for root', [
-            ('ed25519', 'Ed25519 (the strongest, and short)'),
-            ('rsa4096', 'RSA 4096 (where something old needs RSA)')],
-            'Its public half goes into root\'s authorized_keys of this server; its private '
-            'half is written once into a file of yours (0600) and kept nowhere else.')
-        if not kind:
-            return
-        out = self.ask_one('The private half', 'into the file', '/root/isemon-root-%s' %
-                           time.strftime('%Y%m%d'),
-                           help_='A file that is not there yet; made 0600. Whoever holds it '
-                                 'signs in to this server as root.',
-                           check=lambda v, _: (
-                               'it is there already: a file is never written over'
-                               if os.path.lexists(os.path.expanduser(v)) else
-                               None if os.path.isdir(os.path.dirname(
-                                   os.path.abspath(os.path.expanduser(v)))) else
-                               'there is no such folder'))
-        if out:
-            self.act('--root-key-make', kind, '--out', out)
+    # ---- 9 > Local users (1.10.351) ---------------------------------------------------
+    def local_users_menu(self):
+        what = self.choose('Local users', [
+            ('list', 'The users of this machine: sudo, locked, the password'),
+            ('policy', 'The password policy of the local users: how it stands')],
+            'The users of this machine\'s own system (root only shown), changed by root. '
+            'Only a full administrator. A change: isemon --local-user WHAT NAME.')
+        if what == 'list':
+            self.act('--local-users')
+        elif what == 'policy':
+            self.act('--local-policy')
 
     # ---- 9 > The otp logs over TLS (1.10.245) -----------------------------------------
     def otp_tls(self):
@@ -99254,23 +99785,54 @@ def main(argv=None):
     act.add_argument('--root-keys', action='store_true', dest='root_keys',
                      help='the keys that may sign in to this server as root over SSH '
                           '(/root/.ssh/authorized_keys), read afresh, and what sshd makes of '
-                          'root (Settings - SSH keys of root)')
+                          'root (Settings - SSH keys) - only shown: root changes them on the '
+                          'server itself')
     act.add_argument('--root-key-add', metavar='LINE|FILE', dest='root_key_add',
-                     help='put a key into root\'s authorized_keys: a public key line, a .pub '
-                          'file, or a private key file of which only the public half goes in '
-                          '(its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else '
-                          'asked)')
+                     help='refused since 1.10.351: root\'s SSH keys are only shown - change '
+                          'them on the server itself, in /root/.ssh/authorized_keys')
     act.add_argument('--root-key-drop', metavar='FINGERPRINT', dest='root_key_drop',
-                     help='take the key with this SHA256 fingerprint away from root; asks '
-                          'first unless --yes. The last key root signs in with only with --last '
-                          'too, and then asked again')
+                     help='refused since 1.10.351: root\'s SSH keys are only shown')
     act.add_argument('--last', action='store_true',
-                     help='with --root-key-drop: it may be the last key root signs in with')
+                     help='with --root-key-drop (refused since 1.10.351)')
     act.add_argument('--root-key-make', metavar='ed25519|rsa4096',
                      choices=tuple(SSH_KEY_KINDS), dest='root_key_make',
-                     help='make a key for root: its public half goes into root\'s '
-                          'authorized_keys, its private half is written once to --out (or '
-                          'printed once) and kept nowhere else')
+                     help='refused since 1.10.351: root\'s SSH keys are only shown; a key for '
+                          'another user who may sign in is made in Settings - SSH keys')
+    # Settings - Local users, from here (1.10.351).
+    act.add_argument('--local-users', action='store_true', dest='local_users',
+                     help='the local users of this machine\'s system (root and UID_MIN and '
+                          'up): who is there, sudo, locked, the password (Settings - Local '
+                          'users)')
+    act.add_argument('--local-user', nargs=2, metavar=('WHAT', 'NAME'), dest='local_user',
+                     help='change a local user (never root): add, password, aging, lock, '
+                          'unlock, sudo-on, sudo-off, drop or drop-home - a password is asked '
+                          'at a terminal, never given on the command line; drop asks first '
+                          'unless --yes')
+    act.add_argument('--local-full-name', metavar='TEXT', default=None, dest='local_full_name',
+                     help='with --local-user add: the full name')
+    act.add_argument('--local-shell', metavar='PATH', default=None, dest='local_shell',
+                     help='with --local-user add: the shell (/bin/bash if not given)')
+    act.add_argument('--local-must-change', action='store_true', dest='local_must_change',
+                     help='with --local-user add or password: to be changed at the next sign-in')
+    act.add_argument('--local-max-days', metavar='N', type=int, default=None,
+                     dest='local_max_days',
+                     help='with --local-user aging: days the password is good for (99999: no '
+                          'end)')
+    act.add_argument('--local-min-days', metavar='N', type=int, default=None,
+                     dest='local_min_days',
+                     help='with --local-user aging: the least days between two changes')
+    act.add_argument('--local-warn-days', metavar='N', type=int, default=None,
+                     dest='local_warn_days',
+                     help='with --local-user aging: warned so many days before it runs out')
+    act.add_argument('--local-policy', action='store_true', dest='local_policy',
+                     help='the password policy of the local users: as set, and as in effect '
+                          'here')
+    act.add_argument('--local-policy-set', nargs='+', metavar='KEY=VALUE',
+                     dest='local_policy_set',
+                     help='set the password policy of the local users: managed=1 minlen=14 '
+                          'minclass=3 maxrepeat=3 difok=5 dictcheck=1 usercheck=1 remember=5 '
+                          'max_days=90 min_days=1 warn_days=7 deny=5 unlock_time=900 '
+                          'fail_interval=900 existing=1 - or managed=0 (as the system has it)')
     act.add_argument('--out', metavar='FILE',
                      help='with --root-key-make: the file for the private half - made 0600, '
                           'never written over; with --otp-tls-make: the file for this '
@@ -99532,6 +100094,8 @@ def main(argv=None):
         (args.root_keys, cmd_root_keys), (bool(args.root_key_add), cmd_root_key_add),
         (bool(args.root_key_drop), cmd_root_key_drop),
         (bool(args.root_key_make), cmd_root_key_make),
+        (args.local_users or bool(args.local_user), cmd_local_users),
+        (args.local_policy or bool(args.local_policy_set), cmd_local_policy),
         (args.otp_tls, cmd_otp_tls), (bool(args.otp_tls_import), cmd_otp_tls_import),
         (bool(args.otp_tls_make), cmd_otp_tls_make), (args.otp_tls_set, cmd_otp_tls_set),
         (args.otp_tls_off, cmd_otp_tls_off),

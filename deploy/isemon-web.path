@@ -8,7 +8,8 @@
 # or the update, which root starts as a unit of its own) or otptls.ask
 # (1.10.245: the otp logs received over TLS) or acmetls.ask (1.10.287: the
 # acme logs, the same way) or selinux.ask / osroots.ask (1.10.319: SELinux,
-# the system's trusted roots) - and this starts
+# the system's trusted roots) or users.ask (1.10.351: the local users and
+# their password policy) - and this starts
 # isemon-web.service, which checks it as root and puts it in. Nothing else
 # can be asked for this way.
 [Unit]
@@ -20,6 +21,7 @@ PathExists=/var/lib/isemon/web/look.ask
 PathExists=/var/lib/isemon/web/net.ask
 PathExists=/var/lib/isemon/web/ntp.ask
 PathExists=/var/lib/isemon/web/sshkeys.ask
+PathExists=/var/lib/isemon/web/users.ask
 PathExists=/var/lib/isemon/web/logfix.ask
 PathExists=/var/lib/isemon/web/osup.ask
 PathExists=/var/lib/isemon/web/otptls.ask

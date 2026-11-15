@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.350",
+  "version": "1.10.351",
   "made": "2026-11-15",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -12,9 +12,29 @@
    "source": "0 0 auto",
    "text": "0 0 auto"
   },
+  "s.0-any-needs-pam-pwhistory.9c4876b1": {
+   "source": "0: any; needs pam_pwhistory",
+   "text": "0: any; needs pam_pwhistory"
+  },
+  "s.0-as-many-as-wanted.df48e8b7": {
+   "source": "0: as many as wanted",
+   "text": "0: as many as wanted"
+  },
+  "s.0-changed-again-at-once.82df86fd": {
+   "source": "0: changed again at once",
+   "text": "0: changed again at once"
+  },
+  "s.0-never-locked-root-never.fd10e909": {
+   "source": "0: never locked; root never",
+   "text": "0: never locked; root never"
+  },
   "s.0-no-country-chosen.9a926ac7": {
    "source": "0 — no country chosen",
    "text": "0 — no country chosen"
+  },
+  "s.0-until-unlocked-by-root-faillock.468ebdad": {
+   "source": "0: until unlocked by root (faillock --reset)",
+   "text": "0: until unlocked by root (faillock --reset)"
   },
   "s.1-day.2d8a6f7c": {
    "source": "1 day",
@@ -315,6 +335,10 @@
   "s.90-days.170621ac": {
    "source": "90 days",
    "text": "90 days"
+  },
+  "s.99999-no-end.0504f5b3": {
+   "source": "99999: no end",
+   "text": "99999: no end"
   },
   "s.9th.e62af88d": {
    "source": "9th",
@@ -852,9 +876,13 @@
    "source": "a key — but there is none yet",
    "text": "a key — but there is none yet"
   },
-  "s.a-key-for-root.46c67d83": {
-   "source": "A key for root",
-   "text": "A key for root"
+  "s.a-key-for-ssh-is-no.022b1e0d": {
+   "source": "A key for SSH is no password: it never counts as a wrong password for the lockout, and the lockout does not keep a key out - it keeps out the password (at the console, for sudo).",
+   "text": "A key for SSH is no password: it never counts as a wrong password for the lockout, and the lockout does not keep a key out - it keeps out the password (at the console, for sudo)."
+  },
+  "s.a-key-for.71e7e608": {
+   "source": "A key for",
+   "text": "A key for"
   },
   "s.a-key-in-the-url-a.f1eebd6d": {
    "source": "A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and for a pfSense; it works for a FortiGate and an OPNsense too.",
@@ -896,9 +924,13 @@
    "source": "a key this machine holds",
    "text": "a key this machine holds"
   },
-  "s.a-key-you-have-already-its.b6a2074a": {
-   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root's authorized_keys.",
-   "text": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into root's authorized_keys."
+  "s.a-key-you-have-already-its.bda26182": {
+   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into their authorized_keys.",
+   "text": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put into their authorized_keys."
+  },
+  "s.a-key-you-have-already-its.c9815b4c": {
+   "source": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put onto the nodes you choose.",
+   "text": "A key you have already - its public line or .pub file, or the private key, of which only the public half is used - put onto the nodes you choose."
   },
   "s.a-keytab-is-a-few-kb.f2768791": {
    "source": "a keytab is a few kB, not that",
@@ -1084,6 +1116,10 @@
    "source": "a name is 2 to 32 letters, digits, dot, dash or underscore",
    "text": "a name is 2 to 32 letters, digits, dot, dash or underscore"
   },
+  "s.a-name-is-small-letters-digits.65fe8e0b": {
+   "source": "a name is small letters, digits, _ . and -, starting with a letter",
+   "text": "a name is small letters, digits, _ . and -, starting with a letter"
+  },
   "s.a-name-it-holds.3b42887c": {
    "source": "a name it holds",
    "text": "a name it holds"
@@ -1188,6 +1224,14 @@
    "source": "A new one, at least eight characters",
    "text": "A new one, at least eight characters"
   },
+  "s.a-new-password-that-is-a.01c09d31": {
+   "source": "A new password that is a word of the dictionary (cracklib's), also turned around or with little changed, is refused (pam_pwquality: dictcheck).",
+   "text": "A new password that is a word of the dictionary (cracklib's), also turned around or with little changed, is refused (pam_pwquality: dictcheck)."
+  },
+  "s.a-new-password-with-the-user.91af7561": {
+   "source": "A new password with the user's name in it, also turned around, is refused (pam_pwquality: usercheck).",
+   "text": "A new password with the user's name in it, also turned around, is refused (pam_pwquality: usercheck)."
+  },
   "s.a-new-token-was-confirmed-with.4f291b82": {
    "source": "A new token was confirmed with its first code — on otp’s enrolment page, or by an administrator. Not a sign-in.",
    "text": "A new token was confirmed with its first code — on otp’s enrolment page, or by an administrator. Not a sign-in."
@@ -1195,6 +1239,14 @@
   "s.a-new-token-was-confirmed.ac58f7e8": {
    "source": "a new token was confirmed",
    "text": "a new token was confirmed"
+  },
+  "s.a-new-user-of-the-system.f51f7715": {
+   "source": "A new user of the system, on every node or on the ones you choose - the same UID on each.",
+   "text": "A new user of the system, on every node or on the ones you choose - the same UID on each."
+  },
+  "s.a-new-user-of-this-server.5bf6b815": {
+   "source": "A new user of this server's system.",
+   "text": "A new user of this server's system."
   },
   "s.a-new-version-put-in-from.310890eb": {
    "source": "A new version, put in from here; this server in and out of service.",
@@ -1280,6 +1332,10 @@
    "source": "A password on the sign-in page",
    "text": "A password on the sign-in page"
   },
+  "s.a-password-runs-out.16ea8793": {
+   "source": "A password runs out",
+   "text": "A password runs out"
+  },
   "s.a-password-sent-in-the-clear.7e3fa6e4": {
    "source": "A password sent in the clear",
    "text": "A password sent in the clear"
@@ -1287,6 +1343,10 @@
   "s.a-password-sent-to-ldap-in.f47993e0": {
    "source": "A password sent to LDAP in the clear",
    "text": "A password sent to LDAP in the clear"
+  },
+  "s.a-password-that-runs-out-is.3609793c": {
+   "source": "A password that runs out is asked to be changed at the next sign-in - over SSH with a key too (sshd asks PAM's account step). A user with no password (a key only) is given no aging, so is never asked for one.",
+   "text": "A password that runs out is asked to be changed at the next sign-in - over SSH with a key too (sshd asks PAM's account step). A user with no password (a key only) is given no aging, so is never asked for one."
   },
   "s.a-password.7847eb99": {
    "source": "a password",
@@ -1759,6 +1819,14 @@
   "s.a-user-name.505713c8": {
    "source": "a user name",
    "text": "a user name"
+  },
+  "s.a-user-of-the-system-not.85688e3c": {
+   "source": "A user of the system - not of these pages - with a home folder of its own. SSH keys for it are put on in SSH keys, once it is there.",
+   "text": "A user of the system - not of these pages - with a home folder of its own. SSH keys for it are put on in SSH keys, once it is there."
+  },
+  "s.a-user-of-the-system-not.cd65d523": {
+   "source": "A user of the system - not of these pages. The same name and UID on each node chosen; a home folder of its own. SSH keys for it are put on in SSH keys, once it is there.",
+   "text": "A user of the system - not of these pages. The same name and UID on each node chosen; a home folder of its own. SSH keys for it are put on in SSH keys, once it is there."
   },
   "s.a-user.abfd47b4": {
    "source": ": a user",
@@ -2308,10 +2376,6 @@
    "source": "Add a firewall",
    "text": "Add a firewall"
   },
-  "s.add-a-key-for-root.33c294da": {
-   "source": "Add a key for root",
-   "text": "Add a key for root"
-  },
   "s.add-a-key.730531ca": {
    "source": "Add a key",
    "text": "Add a key"
@@ -2339,6 +2403,10 @@
   "s.add-a-step.90d24ab4": {
    "source": "Add a step",
    "text": "Add a step"
+  },
+  "s.add-a-user.8f9e2b8c": {
+   "source": "Add a user",
+   "text": "Add a user"
   },
   "s.add-an-authority.da7ffa55": {
    "source": "Add an authority",
@@ -2371,6 +2439,10 @@
   "s.add-the-feed.b38e5f1a": {
    "source": "Add the feed",
    "text": "Add the feed"
+  },
+  "s.add-the-user.b02c3237": {
+   "source": "Add the user",
+   "text": "Add the user"
   },
   "s.add-them.254c14a3": {
    "source": "Add them",
@@ -2616,6 +2688,10 @@
    "source": "After Sign out",
    "text": "After Sign out"
   },
+  "s.after-so-many-wrong-passwords-counted.30088903": {
+   "source": "After so many wrong passwords - counted within the time set here - the user is locked (pam_faillock: deny). 0: never locked. root is never locked. A key for SSH never counts and is never kept out: the lock keeps out the password (at the console, for sudo). With authselect, its feature with-faillock is switched on for it.",
+   "text": "After so many wrong passwords - counted within the time set here - the user is locked (pam_faillock: deny). 0: never locked. root is never locked. A key for SSH never counts and is never kept out: the lock keeps out the password (at the console, for sudo). With authselect, its feature with-faillock is switched on for it."
+  },
   "s.after-the-password-everybody-confirms-it.4837c412": {
    "source": "After the password, everybody confirms it is them with Face ID, Touch ID, Windows Hello or the PIN of their device (a passkey). The first sign-in after this is switched on sets it up; a full admin can set it up again for anybody under Accounts (a lost iPad), and their next sign-in makes a new one. Only on pages opened by name over https, with a certificate the browser trusts - and so switched on only from such a page. Those signed in already stay signed in. Locked out: isemon --set passkeys=0 on the server.",
    "text": "After the password, everybody confirms it is them with Face ID, Touch ID, Windows Hello or the PIN of their device (a passkey). The first sign-in after this is switched on sets it up; a full admin can set it up again for anybody under Accounts (a lost iPad), and their next sign-in makes a new one. Only on pages opened by name over https, with a certificate the browser trusts - and so switched on only from such a page. Those signed in already stay signed in. Locked out: isemon --set passkeys=0 on the server."
@@ -2660,6 +2736,10 @@
    "source": "agent",
    "text": "agent"
   },
+  "s.aging.cdaa6b89": {
+   "source": "aging",
+   "text": "aging"
+  },
   "s.ah.bd4b0194": {
    "source": "AH",
    "text": "AH"
@@ -2675,6 +2755,10 @@
   "s.algeria.bd6acc86": {
    "source": "Algeria",
    "text": "Algeria"
+  },
+  "s.all-4.261522d8": {
+   "source": "all 4",
+   "text": "all 4"
   },
   "s.all-allowed.a40b0380": {
    "source": "· all allowed",
@@ -2735,6 +2819,10 @@
   "s.already-signed-in.a0102206": {
    "source": "already signed in",
    "text": "already signed in"
+  },
+  "s.also-for-the-users-there-now.4c8a76ff": {
+   "source": "Also for the users there now",
+   "text": "Also for the users there now"
   },
   "s.also-put-back-the-accounts.b022a992": {
    "source": "also put back the accounts",
@@ -3760,6 +3848,10 @@
    "source": "As it is now",
    "text": "As it is now"
   },
+  "s.as-it-is-saved.f6419c71": {
+   "source": "As it is saved",
+   "text": "As it is saved"
+  },
   "s.as-long-as-its-logrotate-file.408bbf19": {
    "source": "- as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone.",
    "text": "- as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone."
@@ -3767,6 +3859,10 @@
   "s.as-nginx-has-it.0bd9b744": {
    "source": "as nginx has it",
    "text": "as nginx has it"
+  },
+  "s.as-set-here.eb3b3149": {
+   "source": "as set here",
+   "text": "as set here"
   },
   "s.as-the-dashboard.6c35b880": {
    "source": "As the dashboard",
@@ -4292,6 +4388,10 @@
    "source": "Authorized keys",
    "text": "Authorized keys"
   },
+  "s.authselect.b8bbd54e": {
+   "source": "authselect",
+   "text": "authselect"
+  },
   "s.authserver.d7a9956e": {
    "source": "authserver",
    "text": "authserver"
@@ -4760,6 +4860,10 @@
    "source": "being changed…",
    "text": "being changed…"
   },
+  "s.being-done.f571564b": {
+   "source": "Being done…",
+   "text": "Being done…"
+  },
   "s.being-in-this-group-means-being.190138a0": {
    "source": "Being in this group means being able to look at every page as read only does, and also to ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall, no letting everybody in at once. Somebody in this group and the full admin group is a full admin. More than one, separated by semicolons.",
    "text": "Being in this group means being able to look at every page as read only does, and also to ban an address, let one back in and put the lists on the firewall. Nothing else: no setting, no account, no taking ours off the firewall, no letting everybody in at once. Somebody in this group and the full admin group is a full admin. More than one, separated by semicolons."
@@ -4779,6 +4883,10 @@
   "s.being-packed-behind.9e515c65": {
    "source": "being packed behind",
    "text": "being packed behind"
+  },
+  "s.being-put-in.1abc8bbd": {
+   "source": "being put in…",
+   "text": "being put in…"
   },
   "s.being-put-in.cb48aa9f": {
    "source": "being put in",
@@ -5536,6 +5644,10 @@
    "source": "Challenge",
    "text": "Challenge"
   },
+  "s.change-a-local-user-never-root.31ac3cc6": {
+   "source": "change a local user (never root): add, password, aging, lock, unlock, sudo-on, sudo-off, drop or drop-home - a password is asked at a terminal, never given on the command line; drop asks first unless --yes",
+   "text": "change a local user (never root): add, password, aging, lock, unlock, sudo-on, sudo-off, drop or drop-home - a password is asked at a terminal, never given on the command line; drop asks first unless --yes"
+  },
   "s.change-any-of-these-and-press.3e2b5503": {
    "source": "Change any of these and press Read again: the settings are worked out afresh for what is typed.",
    "text": "Change any of these and press Read again: the settings are worked out afresh for what is typed."
@@ -5623,6 +5735,22 @@
   "s.changing-them-takes-an-account-that.c762809b": {
    "source": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log.",
    "text": "Changing them takes an account that may: this program’s own where it has that right, otherwise an administrator on that server, asked for in the popup, used for that one request and stored nowhere — not in the settings, not in the database, not in any log."
+  },
+  "s.characters-at-least-it-goes-to.05989e21": {
+   "source": "characters at least. It goes to the nodes as its hash only and is kept nowhere.",
+   "text": "characters at least. It goes to the nodes as its hash only and is kept nowhere."
+  },
+  "s.characters-at-least-it-goes-to.6e1e5cbc": {
+   "source": "characters at least. It goes to root's helper as its hash only and is kept nowhere.",
+   "text": "characters at least. It goes to root's helper as its hash only and is kept nowhere."
+  },
+  "s.characters-at-least.d4b01438": {
+   "source": "Characters at least",
+   "text": "Characters at least"
+  },
+  "s.characters-not-in-the-old-one.5bd8d259": {
+   "source": "Characters not in the old one",
+   "text": "Characters not in the old one"
   },
   "s.chart.b82b40b8": {
    "source": "chart",
@@ -7160,6 +7288,10 @@
    "source": "Diagnostics → Tables",
    "text": "Diagnostics → Tables"
   },
+  "s.dictcheck.e2d92f3b": {
+   "source": "dictcheck",
+   "text": "dictcheck"
+  },
   "s.did-not-answer-in-a-minute.dd45a27c": {
    "source": "did not answer in a minute - is isemon running?",
    "text": "did not answer in a minute - is isemon running?"
@@ -7187,6 +7319,10 @@
   "s.different-machines.0dc73df8": {
    "source": "Different machines",
    "text": "Different machines"
+  },
+  "s.difok.caa26942": {
+   "source": "difok",
+   "text": "difok"
   },
   "s.digest.2923f6fa": {
    "source": "digest",
@@ -7431,6 +7567,10 @@
   "s.done-by.e1ee8777": {
    "source": "Done by",
    "text": "Done by"
+  },
+  "s.done-last.d6c2083c": {
+   "source": "Done last",
+   "text": "Done last"
   },
   "s.done-lately-cleared.f512ad81": {
    "source": "done lately cleared",
@@ -7764,6 +7904,14 @@
    "source": "e.g. hq",
    "text": "e.g. hq"
   },
+  "s.e-g-jan-nov-k.cf897ecc": {
+   "source": "e.g. Jan Novák",
+   "text": "e.g. Jan Novák"
+  },
+  "s.e-g-jnovak.d55fef71": {
+   "source": "e.g. jnovak",
+   "text": "e.g. jnovak"
+  },
   "s.each-address-when-it-last-fetched.82b84eb2": {
    "source": "- each address, when it last fetched and how many times - and the count of refusals start again from nothing.",
    "text": "- each address, when it last fetched and how many times - and the count of refusals start again from nothing."
@@ -7807,6 +7955,10 @@
   "s.each-name-a-ca-had-proved.1753ec71": {
    "source": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof.",
    "text": "Each name a CA had proved: by which module (a DNS provider, the HTTP-01 module), how often it was accepted, and how long the CA took to see the proof."
+  },
+  "s.each-node-puts-it-in-within.546d9110": {
+   "source": "each node puts it in within a few seconds",
+   "text": "each node puts it in within a few seconds"
   },
   "s.each-one-is-fetched-as-soon.bd18f295": {
    "source": "each one is fetched as soon as its own interval falls due",
@@ -9512,6 +9664,10 @@
    "source": "Executables, installers and scripts that crossed and that AMP’s cloud had no verdict on at all - by name and where they came from. Usually a new release of something ordinary; sometimes not.",
    "text": "Executables, installers and scripts that crossed and that AMP’s cloud had no verdict on at all - by name and where they came from. Usually a new release of something ordinary; sometimes not."
   },
+  "s.existing.637487c8": {
+   "source": "existing",
+   "text": "existing"
+  },
   "s.exists-and-is-not-readable-by.922db8ec": {
    "source": "exists and is not readable by",
    "text": "exists and is not readable by"
@@ -9527,6 +9683,10 @@
   "s.expires-in.0a49c3a3": {
    "source": "Expires in",
    "text": "Expires in"
+  },
+  "s.expires.a99be3da": {
+   "source": "Expires",
+   "text": "Expires"
   },
   "s.expiring.5c300411": {
    "source": "expiring",
@@ -10048,6 +10208,10 @@
    "source": "file",
    "text": "file"
   },
+  "s.file.b4915d3a": {
+   "source": "FILE",
+   "text": "FILE"
+  },
   "s.files-looked-at.d5a1ef8a": {
    "source": "Files looked at",
    "text": "Files looked at"
@@ -10451,6 +10615,10 @@
   "s.for-ever.aeabb98d": {
    "source": "for ever",
    "text": "for ever"
+  },
+  "s.for-every-local-user-however-the.565b7810": {
+   "source": "For every local user, however the password is changed - passwd, a password run out at sign-in, these pages. Put into the server's own files: pam_pwquality, pam_pwhistory, pam_faillock and login.defs (with authselect, the features that put the modules in). Not set here, the server keeps what its system has, and nothing is written.",
+   "text": "For every local user, however the password is changed - passwd, a password run out at sign-in, these pages. Put into the server's own files: pam_pwquality, pam_pwhistory, pam_faillock and login.defs (with authselect, the features that put the modules in). Not set here, the server keeps what its system has, and nothing is written."
   },
   "s.for-good-every-time.d1a40776": {
    "source": "for good, every time",
@@ -10908,6 +11076,10 @@
    "source": "full backup",
    "text": "full backup"
   },
+  "s.full-name.eeb69208": {
+   "source": "Full name",
+   "text": "Full name"
+  },
   "s.full.11a97f9c": {
    "source": "% full",
    "text": "% full"
@@ -11027,6 +11199,10 @@
   "s.give-its-name-first-its-name.e817bf31": {
    "source": "Give its name first (Its name…).",
    "text": "Give its name first (Its name…)."
+  },
+  "s.give-sudo.5a83b737": {
+   "source": "Give sudo",
+   "text": "Give sudo"
   },
   "s.give-the-disk-back.eb52259c": {
    "source": "Give the disk back",
@@ -11208,6 +11384,10 @@
    "source": "good - checked by openssl against the authorities put in",
    "text": "good - checked by openssl against the authorities put in"
   },
+  "s.good-for-days.327bc318": {
+   "source": "Good for (days)",
+   "text": "Good for (days)"
+  },
   "s.good-until.cd5037b6": {
    "source": "Good until",
    "text": "Good until"
@@ -11332,10 +11512,6 @@
    "source": "half an hour",
    "text": "half an hour"
   },
-  "s.half-goes-into-root-s-authorized.add26887": {
-   "source": "half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
-   "text": "half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below."
-  },
   "s.half-goes-into.70961d26": {
    "source": "half goes into",
    "text": "half goes into"
@@ -11428,6 +11604,10 @@
    "source": "here",
    "text": "here"
   },
+  "s.here.ecbcb0e4": {
+   "source": "Here",
+   "text": "Here"
+  },
   "s.hh-mm.a4c7ee9b": {
    "source": "HH:MM",
    "text": "HH:MM"
@@ -11495,6 +11675,10 @@
   "s.holds.b1c8168d": {
    "source": "Holds",
    "text": "Holds"
+  },
+  "s.home.70f8bb9a": {
+   "source": "Home",
+   "text": "Home"
   },
   "s.honduras.5aa58871": {
    "source": "Honduras",
@@ -11692,6 +11876,10 @@
    "source": "how long a job took, ms",
    "text": "how long a job took, ms"
   },
+  "s.how-long-a-locked-user-stays.68c56093": {
+   "source": "How long a locked user stays locked, in seconds (pam_faillock: unlock_time). 0: until root unlocks them - faillock --user NAME --reset.",
+   "text": "How long a locked user stays locked, in seconds (pam_faillock: unlock_time). 0: until root unlocks them - faillock --user NAME --reset."
+  },
   "s.how-long-a-machine-seen-on.57d95657": {
    "source": "How long a machine seen on eduroam is remembered. One row each, and it is only ever read beside a page about what is happening now - a machine that has not been back in a fortnight is a row nothing will ever ask for. A university’s eduroam is thousands of machines a day, so there is a ceiling of twenty thousand rows underneath this as well.",
    "text": "How long a machine seen on eduroam is remembered. One row each, and it is only ever read beside a page about what is happening now - a machine that has not been back in a fortnight is a row nothing will ever ask for. A university’s eduroam is thousands of machines a day, so there is a ceiling of twenty thousand rows underneath this as well."
@@ -11763,6 +11951,10 @@
   "s.how-long-it-has-been-up.405d2583": {
    "source": "How long it has been up, and what its sensors say (temperature, voltage, fans), where it has them.",
    "text": "How long it has been up, and what its sensors say (temperature, voltage, fans), where it has them."
+  },
+  "s.how-long-it-is-good.a2b83009": {
+   "source": "How long it is good",
+   "text": "How long it is good"
   },
   "s.how-long-it-waits.cfec72c0": {
    "source": "How long it waits.",
@@ -11888,6 +12080,10 @@
    "source": "How many bans are sent to the router in one command. Every command is a round trip, and a round trip to a router across a site is most of the time a sync takes. Each one still carries its own error handling, so an address the router will not take cannot throw away the ones sent with it. 1 sends them one at a time, which is only worth doing while working out what a router is objecting to.",
    "text": "How many bans are sent to the router in one command. Every command is a round trip, and a round trip to a router across a site is most of the time a sync takes. Each one still carries its own error handling, so an address the router will not take cannot throw away the ones sent with it. 1 sends them one at a time, which is only worth doing while working out what a router is objecting to."
   },
+  "s.how-many-characters-of-the-new.c7e94798": {
+   "source": "How many characters of the new password must not be in the old one (pam_pwquality: difok). Checked only where the old password is typed too - passwd by the user, a password run out at sign-in; not when root or these pages set it.",
+   "text": "How many characters of the new password must not be in the old one (pam_pwquality: difok). Checked only where the old password is typed too - passwd by the user, a password run out at sign-in; not when root or these pages set it."
+  },
   "s.how-many-connections-are-open.4167aa89": {
    "source": "how many connections are open",
    "text": "how many connections are open"
@@ -11895,6 +12091,18 @@
   "s.how-many-connections-each-unit-had.77022f8a": {
    "source": "How many connections each unit had open the last time it said (every few minutes), and the most it has ever had.",
    "text": "How many connections each unit had open the last time it said (every few minutes), and the most it has ever had."
+  },
+  "s.how-many-days-a-password-is.b3b38b82": {
+   "source": "How many days a password is good after it was set (login.defs: PASS_MAX_DAYS; chage -M). Then it must be changed at the next sign-in.",
+   "text": "How many days a password is good after it was set (login.defs: PASS_MAX_DAYS; chage -M). Then it must be changed at the next sign-in."
+  },
+  "s.how-many-days-after-a-change.a18139b3": {
+   "source": "How many days after a change the password may not be changed again - so that the last passwords cannot be gone through at once to come back to the old one (login.defs: PASS_MIN_DAYS; chage -m). 0: changed again at once.",
+   "text": "How many days after a change the password may not be changed again - so that the last passwords cannot be gone through at once to come back to the old one (login.defs: PASS_MIN_DAYS; chage -m). 0: changed again at once."
+  },
+  "s.how-many-days-before-a-password.30765a8b": {
+   "source": "How many days before a password runs out the user is told so at sign-in (login.defs: PASS_WARN_AGE; chage -W).",
+   "text": "How many days before a password runs out the user is told so at sign-in (login.defs: PASS_WARN_AGE; chage -W)."
   },
   "s.how-many-different-addresses-have-offered.03cc3c62": {
    "source": "How many different addresses have offered this one name. Five or more is marked as a spray: one password tried against many places rather than many passwords against one.",
@@ -11947,6 +12155,14 @@
   "s.how-many-lines-the-firewall-wrote.12931871": {
    "source": "How many lines the firewall wrote in each hour of the window chosen above, split by what happened to them. Press a bar for the lines of that hour.",
    "text": "How many lines the firewall wrote in each hour of the window chosen above, split by what happened to them. Press a bar for the lines of that hour."
+  },
+  "s.how-many-of-a-user-s.62c2cc6b": {
+   "source": "How many of a user's last passwords cannot be taken again (pam_pwhistory: remember; they are kept hashed in /etc/security/opasswd). 0: any. With authselect, its feature with-pwhistory is switched on for it.",
+   "text": "How many of a user's last passwords cannot be taken again (pam_pwhistory: remember; they are kept hashed in /etc/security/opasswd). 0: any. With authselect, its feature with-pwhistory is switched on for it."
+  },
+  "s.how-many-of-the-four-kinds.faa7122b": {
+   "source": "How many of the four kinds of characters a new password must have at least: small letters, capitals, digits, the others (pam_pwquality: minclass). Any: no kinds asked for.",
+   "text": "How many of the four kinds of characters a new password must have at least: small letters, capitals, digits, the others (pam_pwquality: minclass). Any: no kinds asked for."
   },
   "s.how-many-of-this-group-to.23466e21": {
    "source": "How many of this group to show at a time.",
@@ -12559,6 +12775,14 @@
   "s.in-dns-now.fa11c2c0": {
    "source": "In DNS now",
    "text": "In DNS now"
+  },
+  "s.in-effect-here.d346acba": {
+   "source": "In effect here",
+   "text": "In effect here"
+  },
+  "s.in-effect-on-the-nodes.d9210903": {
+   "source": "In effect on the nodes",
+   "text": "In effect on the nodes"
   },
   "s.in-force.377013e3": {
    "source": "In force",
@@ -13176,10 +13400,6 @@
    "source": "is the interface facing the internet; put yours.",
    "text": "is the interface facing the internet; put yours."
   },
-  "s.is-the-last-key-root-signs.a7f642aa": {
-   "source": "is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
-   "text": "is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key."
-  },
   "s.is-the-one-meant-for-it.bea0b21e": {
    "source": "is the one meant for it.",
    "text": "is the one meant for it."
@@ -13776,10 +13996,6 @@
    "source": "It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line.",
    "text": "It is the half of the story this page never showed: an empty list above says nothing about whether nothing is happening or whether everything is happening one attempt below the line."
   },
-  "s.it-is-the-last-key-root.aac33a11": {
-   "source": "It is the last key root signs in with on this server.",
-   "text": "It is the last key root signs in with on this server."
-  },
   "s.it-is-used-only-while-the.cd613c27": {
    "source": "; it is used only while the directory is unreachable.",
    "text": "; it is used only while the directory is unreachable."
@@ -13932,6 +14148,10 @@
    "source": "its health check (healthz.php) says 503; the logs are read and banning goes on",
    "text": "its health check (healthz.php) says 503; the logs are read and banning goes on"
   },
+  "s.its-home-folder-too.130887ab": {
+   "source": "Its home folder too",
+   "text": "Its home folder too"
+  },
   "s.its-https-port.a9fcbca8": {
    "source": "Its HTTPS port",
    "text": "Its HTTPS port"
@@ -14079,6 +14299,10 @@
   "s.its-port.0355175d": {
    "source": "its port",
    "text": "its port"
+  },
+  "s.its-public-half-put-onto-the.cc0bbe1e": {
+   "source": "Its public half, put onto the nodes - click it to copy:",
+   "text": "Its public half, put onto the nodes - click it to copy:"
   },
   "s.its-public-half-put-onto-this.77d4840e": {
    "source": "Its public half, put onto this server - click it to copy:",
@@ -14556,6 +14780,10 @@
    "source": "Keys that may sign in as root",
    "text": "Keys that may sign in as root"
   },
+  "s.keys-that-may-sign-in-as.879b42d5": {
+   "source": "Keys that may sign in as",
+   "text": "Keys that may sign in as"
+  },
   "s.keys.e5651c68": {
    "source": "Keys",
    "text": "Keys"
@@ -14591,6 +14819,10 @@
   "s.kind.e00ac23f": {
    "source": "Kind",
    "text": "Kind"
+  },
+  "s.kinds-of-characters-at-least.1099402f": {
+   "source": "Kinds of characters at least",
+   "text": "Kinds of characters at least"
   },
   "s.kinds-of-trouble-a-2025-controller.3c939025": {
    "source": "kinds of trouble a 2025 controller would refuse",
@@ -15384,6 +15616,10 @@
    "source": "local-in policy",
    "text": "local-in policy"
   },
+  "s.local-users.bdea5a5a": {
+   "source": "Local users",
+   "text": "Local users"
+  },
   "s.local.dc99d54d": {
    "source": "Local",
    "text": "Local"
@@ -15392,9 +15628,17 @@
    "source": "locip",
    "text": "locip"
   },
+  "s.lock.891ebccd": {
+   "source": "Lock",
+   "text": "Lock"
+  },
   "s.lock.e1177974": {
    "source": "lock",
    "text": "lock"
+  },
+  "s.locked-after-so-many-wrong-faillock.26bbef0d": {
+   "source": "Locked after so many wrong (faillock)",
+   "text": "Locked after so many wrong (faillock)"
   },
   "s.locked-at.ecf950b1": {
    "source": "Locked at",
@@ -15415,6 +15659,10 @@
   "s.locked.a798882f": {
    "source": "Locked",
    "text": "Locked"
+  },
+  "s.locked.adec79fd": {
+   "source": "locked",
+   "text": "locked"
   },
   "s.lockout.a995293c": {
    "source": "lockout",
@@ -15463,6 +15711,10 @@
   "s.logid.ef7116b2": {
    "source": "logid",
    "text": "logid"
+  },
+  "s.login-defs-holds-the-days-only.704ca93e": {
+   "source": "login.defs holds the days only for the users made after it. On: the days set here are put on every local user there now too (chage) - never on root, nor on a user with no password (a key only), who could never give a new one. Off: the users there now keep their own days; each user's are in their popup.",
+   "text": "login.defs holds the days only for the users made after it. On: the days set here are put on every local user there now too (chage) - never on root, nor on a user with no password (a key only), who could never give a new one. Off: the users there now keep their own days; each user's are in their popup."
   },
   "s.login-s-that-were-handed-them.db750811": {
    "source": "login(s) that were handed them show no rules. That is the device not needing to fetch what it already holds — it appears the next time it has to, which an edit to the ACL on ISE brings about at once.",
@@ -15936,10 +16188,6 @@
    "source": "made here, by isemon's own authority",
    "text": "made here, by isemon's own authority"
   },
-  "s.made-here.827209b5": {
-   "source": "made here",
-   "text": "made here"
-  },
   "s.made-here.cba81f98": {
    "source": "Made here",
    "text": "Made here"
@@ -15952,6 +16200,10 @@
    "source": "Made if it is not there. Without / at the start: under the account’s home.",
    "text": "Made if it is not there. Without / at the start: under the account’s home."
   },
+  "s.made-keep-the-private-half-now.3165d433": {
+   "source": "made - keep the private half now, it is not shown again",
+   "text": "made - keep the private half now, it is not shown again"
+  },
   "s.made-last.ba7fa69f": {
    "source": "Made last",
    "text": "Made last"
@@ -15959,6 +16211,10 @@
   "s.made-on-the-first-run.be24152c": {
    "source": "made on the first run",
    "text": "made on the first run"
+  },
+  "s.made-on-the-nodes.4458cb41": {
+   "source": "Made on the nodes",
+   "text": "Made on the nodes"
   },
   "s.made-ready-waiting-for-a-restart.00864c23": {
    "source": "Made ready - waiting for a restart of the machine",
@@ -16020,18 +16276,6 @@
    "source": "Make a fresh key and certificate here, for this router’s address. It is pinned at once, so until the new one is on the router this will not reach it.",
    "text": "Make a fresh key and certificate here, for this router’s address. It is pinned at once, so until the new one is on the router this will not reach it."
   },
-  "s.make-a-fresh-pair-here-ed25519.63aac4c6": {
-   "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server.",
-   "text": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into root's authorized_keys of this server."
-  },
-  "s.make-a-key-for-root-its.84dd16b6": {
-   "source": "make a key for root: its public half goes into root's authorized_keys, its private half is written once to --out (or printed once) and kept nowhere else",
-   "text": "make a key for root: its public half goes into root's authorized_keys, its private half is written once to --out (or printed once) and kept nowhere else"
-  },
-  "s.make-a-key-for-this-server.4d5d544e": {
-   "source": "Make a key for this server",
-   "text": "Make a key for this server"
-  },
   "s.make-a-key.fcb94d2b": {
    "source": "Make a key",
    "text": "Make a key"
@@ -16075,6 +16319,10 @@
   "s.make-it-ready.a1d3d50c": {
    "source": "Make it ready",
    "text": "Make it ready"
+  },
+  "s.make-it-there.79e6bed0": {
+   "source": "Make it there",
+   "text": "Make it there"
   },
   "s.make-it.da5fa11d": {
    "source": "Make it",
@@ -16168,6 +16416,10 @@
    "source": "Malware",
    "text": "Malware"
   },
+  "s.managed.9fdf36c7": {
+   "source": "managed",
+   "text": "managed"
+  },
   "s.manual.b363713a": {
    "source": "manual",
    "text": "manual"
@@ -16248,6 +16500,10 @@
    "source": "Mauritius",
    "text": "Mauritius"
   },
+  "s.maxrepeat.9d16f857": {
+   "source": "maxrepeat",
+   "text": "maxrepeat"
+  },
   "s.may-act-as-anybody-any-protocol.583b2d6a": {
    "source": "May act as anybody, any protocol",
    "text": "May act as anybody, any protocol"
@@ -16259,6 +16515,10 @@
   "s.may-also-ban-let-back-in.846d8957": {
    "source": "may also ban, let back in and put the lists on the firewall;",
    "text": "may also ban, let back in and put the lists on the firewall;"
+  },
+  "s.may-become-root-with-sudo.2f2fbbee": {
+   "source": "May become root with sudo",
+   "text": "May become root with sudo"
   },
   "s.may-change-anything-a.c01aee15": {
    "source": "may change anything; a",
@@ -16284,6 +16544,26 @@
    "source": "may look at every page, ban an address, let one back in and put the lists on the firewall — and nothing else. A",
    "text": "may look at every page, ban an address, let one back in and put the lists on the firewall — and nothing else. A"
   },
+  "s.may-not-sign-in-at-all.3debfcf8": {
+   "source": "May not sign in at all - neither with the password nor with an SSH key - until unlocked. Nothing of theirs is taken away.",
+   "text": "May not sign in at all - neither with the password nor with an SSH key - until unlocked. Nothing of theirs is taken away."
+  },
+  "s.may-not-sign-in.4d052f41": {
+   "source": "may not sign in",
+   "text": "may not sign in"
+  },
+  "s.may-sign-in-again-with-the.e7724d8f": {
+   "source": "May sign in again - with the password, or a key.",
+   "text": "May sign in again - with the password, or a key."
+  },
+  "s.may-sign-in-here.b6de6e7a": {
+   "source": "may sign in here",
+   "text": "may sign in here"
+  },
+  "s.may-sign-in.ea88c79c": {
+   "source": "may sign in",
+   "text": "may sign in"
+  },
   "s.may-the-account-write.46a76be2": {
    "source": "May the account write",
    "text": "May the account write"
@@ -16291,6 +16571,10 @@
   "s.may-this-account-write.12a21188": {
    "source": "May this account write",
    "text": "May this account write"
+  },
+  "s.may-use-sudo-but-has-no.f5994120": {
+   "source": "May use sudo, but has no password: sudo asks for their own password, so they cannot use it (nor isemon --console through it) until they have one - set it above.",
+   "text": "May use sudo, but has no password: sudo asks for their own password, so they cannot use it (nor isemon --console through it) until they have one - set it above."
   },
   "s.mayotte.dcc64425": {
    "source": "Mayotte",
@@ -16468,9 +16752,17 @@
    "source": "mikrotik2",
    "text": "mikrotik2"
   },
+  "s.minclass.5a77c22f": {
+   "source": "minclass",
+   "text": "minclass"
+  },
   "s.mine.8034c43d": {
    "source": "mine",
    "text": "mine"
+  },
+  "s.minlen.d3c14ca9": {
+   "source": "minlen",
+   "text": "minlen"
   },
   "s.missing-in-the-chain.2d8565e0": {
    "source": "Missing in the chain:",
@@ -16747,6 +17039,10 @@
   "s.name-and-password.cc2e3a44": {
    "source": "Name and password",
    "text": "Name and password"
+  },
+  "s.name-and-shell.c3c373bb": {
+   "source": "Name and shell",
+   "text": "Name and shell"
   },
   "s.name-asked-for.49a67f5a": {
    "source": "Name asked for",
@@ -17360,6 +17656,10 @@
    "source": "no end an hour after its last line - acme runs it again",
    "text": "no end an hour after its last line - acme runs it again"
   },
+  "s.no-end.13ff3399": {
+   "source": "no end",
+   "text": "no end"
+  },
   "s.no-file-arrived.3d877c78": {
    "source": "no file arrived",
    "text": "no file arrived"
@@ -17411,6 +17711,10 @@
   "s.no-kerberos-library.27b2568e": {
    "source": "No Kerberos library",
    "text": "No Kerberos library"
+  },
+  "s.no-key-lets-root-in-over.031b5ef0": {
+   "source": "No key lets root in over SSH on",
+   "text": "No key lets root in over SSH on"
   },
   "s.no-key-lets-root-in-over.7a439df4": {
    "source": "No key lets root in over SSH on this server.",
@@ -17500,9 +17804,21 @@
    "source": "no node named yet",
    "text": "no node named yet"
   },
+  "s.no-not-in-allowusers.c0977ca5": {
+   "source": "no - not in AllowUsers",
+   "text": "no - not in AllowUsers"
+  },
   "s.no-older-version-is-there.d18ec671": {
    "source": "No older version is there.",
    "text": "No older version is there."
+  },
+  "s.no-pam-faillock-not-in-pam.ef38dccc": {
+   "source": "no (pam_faillock not in PAM)",
+   "text": "no (pam_faillock not in PAM)"
+  },
+  "s.no-pam-pwhistory-not-in-pam.f2c15fc9": {
+   "source": "no (pam_pwhistory not in PAM)",
+   "text": "no (pam_pwhistory not in PAM)"
   },
   "s.no-password-at-all-is-switched.fd13a8ea": {
    "source": "No password at all is switched on only while Windows or a certificate is on, and only from a sign-in made that way.",
@@ -17592,6 +17908,10 @@
    "source": "No session from that address in the lines kept.",
    "text": "No session from that address in the lines kept."
   },
+  "s.no-shell.884326a0": {
+   "source": "no shell",
+   "text": "no shell"
+  },
   "s.no-sign-in.23f2e4d0": {
    "source": "no sign-in",
    "text": "no sign-in"
@@ -17656,6 +17976,10 @@
    "source": "no such thing",
    "text": "no such thing"
   },
+  "s.no-such-user.1e4a6d3e": {
+   "source": "(no such user)",
+   "text": "(no such user)"
+  },
   "s.no-such-version.57ccc9ad": {
    "source": "no such version",
    "text": "no such version"
@@ -17703,6 +18027,10 @@
   "s.no-word-from-root-for-half.1f8f368d": {
    "source": "no word from root for half an hour",
    "text": "no word from root for half an hour"
+  },
+  "s.no-word-of-the-dictionary.0501dd24": {
+   "source": "No word of the dictionary",
+   "text": "No word of the dictionary"
   },
   "s.no-words-have-been-written-for.1cebd95a": {
    "source": "No words have been written for this one yet.",
@@ -18016,6 +18344,14 @@
    "source": "not an authority",
    "text": "not an authority"
   },
+  "s.not-answering.2d4fc38b": {
+   "source": "(not answering)",
+   "text": "(not answering)"
+  },
+  "s.not-answering.9cade24c": {
+   "source": "not answering",
+   "text": "not answering"
+  },
   "s.not-anything-of-ours.e27e6742": {
    "source": "not anything of ours",
    "text": "not anything of ours"
@@ -18280,6 +18616,14 @@
    "source": "(not on this machine)",
    "text": "(not on this machine)"
   },
+  "s.not-on-this-node.5ff1a470": {
+   "source": "not on this node",
+   "text": "not on this node"
+  },
+  "s.not-on-this-server.ca29bcef": {
+   "source": "not on this server",
+   "text": "not on this server"
+  },
   "s.not-one-of-the-things-windows.fc594a8e": {
    "source": "Not one of the things Windows Server 2025 is known to refuse. But Digest is an old protocol, and the controllers keep a digest form of every password for it.",
    "text": "Not one of the things Windows Server 2025 is known to refuse. But Digest is an old protocol, and the controllers keep a digest form of every password for it."
@@ -18304,6 +18648,10 @@
    "source": "not read by isemon",
    "text": "not read by isemon"
   },
+  "s.not-read-root-s-half-is.1cbbe6ef": {
+   "source": "Not read: root’s half is not installed yet.",
+   "text": "Not read: root’s half is not installed yet."
+  },
   "s.not-read-yet.15c59711": {
    "source": "not read yet",
    "text": "not read yet"
@@ -18315,10 +18663,6 @@
   "s.not-read.65f453ff": {
    "source": "not read",
    "text": "not read"
-  },
-  "s.not-read.d6b203a2": {
-   "source": "Not read.",
-   "text": "Not read."
   },
   "s.not-ready-for-enforcing-yet.f3a0f2aa": {
    "source": "Not ready for enforcing yet",
@@ -18392,9 +18736,17 @@
    "source": ", not the name it has now.",
    "text": ", not the name it has now."
   },
+  "s.not-the-user-s-name.7af320ca": {
+   "source": "Not the user's name",
+   "text": "Not the user's name"
+  },
   "s.not-there.1d3f2c11": {
    "source": "not there",
    "text": "not there"
+  },
+  "s.not-there.e46409bb": {
+   "source": "(not there)",
+   "text": "(not there)"
   },
   "s.not-this-folder.9c40e4fe": {
    "source": "Not this folder",
@@ -18472,9 +18824,21 @@
    "source": "note bad",
    "text": "note bad"
   },
+  "s.note-info.d184664c": {
+   "source": "note info",
+   "text": "note info"
+  },
+  "s.note-sku-confirm.ffefe39f": {
+   "source": "note sku-confirm",
+   "text": "note sku-confirm"
+  },
   "s.note.2c924e30": {
    "source": "Note",
    "text": "Note"
+  },
+  "s.note.c51048b7": {
+   "source": "note",
+   "text": "note"
   },
   "s.notes-not-rows.eec4fef8": {
    "source": "notes, not rows",
@@ -19268,10 +19632,6 @@
    "source": "of these have not been downloaded while these logs have been read, so the",
    "text": "of these have not been downloaded while these logs have been read, so the"
   },
-  "s.of-this-server-the.d25192d1": {
-   "source": "of this server. The",
-   "text": "of this server. The"
-  },
   "s.of-type.0c6f84bb": {
    "source": "of type",
    "text": "of type"
@@ -19287,6 +19647,10 @@
   "s.off-acme-still-checks-that-it.2f1c599d": {
    "source": "Off, acme still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port.",
    "text": "Off, acme still checks that it is isemon that answers, but isemon takes lines from anybody who reaches the port."
+  },
+  "s.off-as-the-system-has-it.96bb2d3c": {
+   "source": "Off: as the system has it - what isemon wrote before is taken out again.",
+   "text": "Off: as the system has it - what isemon wrote before is taken out again."
   },
   "s.off-blocks-nobody-by-itself-temporary.f5d25f8a": {
    "source": "Off blocks nobody by itself. Temporary uses the ladder. Permanent keeps the first offender out until somebody takes them off.",
@@ -19440,6 +19804,10 @@
    "source": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, AES allowed), the SPN of each name, and the keytab of the first one - the others are served by the same key. Changing the account’s password later makes a new key version: make the keytab again.",
    "text": "On a domain controller, as a domain administrator: a service account of its own (a normal user, password never expires, AES allowed), the SPN of each name, and the keytab of the first one - the others are served by the same key. Changing the account’s password later makes a new key version: make the keytab again."
   },
+  "s.on-a-password-is-good-for.677a0c89": {
+   "source": "On: a password is good for the days set here; after them the user must change it at the next sign-in - over SSH with a key too (login.defs: PASS_MAX_DAYS; chage -M). Off: a password never runs out.",
+   "text": "On: a password is good for the days set here; after them the user must change it at the next sign-in - over SSH with a key too (login.defs: PASS_MAX_DAYS; chage -M). Off: a password never runs out."
+  },
   "s.on-a-pfsense-the-tables-are.98a01875": {
    "source": "On a pfSense the tables are filled again from the configuration whenever the filter is reloaded, and what this put in them goes with it: the sync here puts it back.",
    "text": "On a pfSense the tables are filled again from the configuration whenever the filter is reloaded, and what this put in them goes with it: the sync here puts it back."
@@ -19495,6 +19863,10 @@
   "s.on-isemon-s.cb04b780": {
    "source": "on - isemon's",
    "text": "on - isemon's"
+  },
+  "s.on-isemon-writes-the-values-below.aa997f96": {
+   "source": "On: isemon writes the values below into the files of this server - /etc/security/pwquality.conf.d/50-isemon.conf, its lines in pwhistory.conf and faillock.conf, the aging lines of /etc/login.defs - and puts them in again when they are found changed. With authselect, the features with-pwhistory and with-faillock are switched on only when they are needed. Off: what isemon wrote is taken out again, and the server has the policy its system has.",
+   "text": "On: isemon writes the values below into the files of this server - /etc/security/pwquality.conf.d/50-isemon.conf, its lines in pwhistory.conf and faillock.conf, the aging lines of /etc/login.defs - and puts them in again when they are found changed. With authselect, the features with-pwhistory and with-faillock are switched on only when they are needed. Off: what isemon wrote is taken out again, and the server has the policy its system has."
   },
   "s.on-it-a-server-answering-with.e6db1a4b": {
    "source": "on it); a server answering with any other is refused - somebody in between, or the server reinstalled.",
@@ -19648,6 +20020,10 @@
    "source": "On the node",
    "text": "On the node"
   },
+  "s.on-the-nodes.95445cc3": {
+   "source": "On the nodes",
+   "text": "On the nodes"
+  },
   "s.on-the-nps-server-with-both.495d9cf8": {
    "source": "on the NPS server — with both",
    "text": "on the NPS server — with both"
@@ -19735,6 +20111,10 @@
   "s.on-this-machine-s-clock.f3a5240b": {
    "source": "on this machine’s clock.",
    "text": "on this machine’s clock."
+  },
+  "s.on-this-server.d2481045": {
+   "source": "on this server.",
+   "text": "on this server."
   },
   "s.on-trial.d388d050": {
    "source": "On trial",
@@ -20300,6 +20680,10 @@
    "source": "Only machines put in one VLAN. A VLAN written as a number on some records and as a name on others is one VLAN here.",
    "text": "Only machines put in one VLAN. A VLAN written as a number on some records and as a name on others is one VLAN here."
   },
+  "s.only-on.e8b91b2e": {
+   "source": "Only on",
+   "text": "Only on"
+  },
   "s.only-one-access-service.80beb553": {
    "source": "Only one access service.",
    "text": "Only one access service."
@@ -20363,6 +20747,18 @@
   "s.only-refusals-for-one-reason.2c5d91a8": {
    "source": "Only refusals for one reason.",
    "text": "Only refusals for one reason."
+  },
+  "s.only-root-is-on-the-nodes.73fc3e60": {
+   "source": "Only root is on the nodes - Add a user makes one, on every node at once.",
+   "text": "Only root is on the nodes - Add a user makes one, on every node at once."
+  },
+  "s.only-root-is-on-this-server.ef6311f0": {
+   "source": "Only root is on this server - Add a user makes one.",
+   "text": "Only root is on this server - Add a user makes one."
+  },
+  "s.only-root-no-other-user-who.ae8d6f6e": {
+   "source": "Only root: no other user who may sign in (a login shell, UID 1000 and up) is on this server.",
+   "text": "Only root: no other user who may sign in (a login shell, UID 1000 and up) is on this server."
   },
   "s.only-rows-holding-this.37a25442": {
    "source": "only rows holding this",
@@ -20583,6 +20979,10 @@
   "s.only.f8969a18": {
    "source": "only",
    "text": "only"
+  },
+  "s.onto-the-nodes.d46482ab": {
+   "source": "Onto the nodes",
+   "text": "Onto the nodes"
   },
   "s.opcache.b9aca39f": {
    "source": "OPcache",
@@ -20900,6 +21300,10 @@
    "source": "osup",
    "text": "osup"
   },
+  "s.osusers.437076a3": {
+   "source": "osusers",
+   "text": "osusers"
+  },
   "s.oth.5053112f": {
    "source": "oth",
    "text": "oth"
@@ -21180,6 +21584,10 @@
    "source": "Palestine",
    "text": "Palestine"
   },
+  "s.pam-pwquality-in-pam.13046d17": {
+   "source": "pam_pwquality in PAM",
+   "text": "pam_pwquality in PAM"
+  },
   "s.panama.1e36b31e": {
    "source": "Panama",
    "text": "Panama"
@@ -21276,6 +21684,10 @@
    "source": "passkeys",
    "text": "passkeys"
   },
+  "s.password-aging.41220124": {
+   "source": "Password aging",
+   "text": "Password aging"
+  },
   "s.password-at-the-proxy.f48a6bae": {
    "source": "Password at the proxy",
    "text": "Password at the proxy"
@@ -21283,6 +21695,10 @@
   "s.password-checked.17ea1fd4": {
    "source": "password checked",
    "text": "password checked"
+  },
+  "s.password-empty-none-the-user-signs.bc442612": {
+   "source": "Password (empty: none - the user signs in with a key only)",
+   "text": "Password (empty: none - the user signs in with a key only)"
   },
   "s.password-for-the-key.4c51c361": {
    "source": "Password for the key",
@@ -21307,6 +21723,10 @@
   "s.password-policies-for-some-accounts.d3f5b23c": {
    "source": "Password policies for some accounts",
    "text": "Password policies for some accounts"
+  },
+  "s.password-policy.5c4a176c": {
+   "source": "Password policy",
+   "text": "Password policy"
   },
   "s.password-refused.6238e6d1": {
    "source": "password refused",
@@ -21343,6 +21763,10 @@
   "s.paste-a-file-made-by-either.bfb2ae20": {
    "source": "Paste a file made by either of the download buttons, or choose it below. The settings in it are checked one by one exactly as if they had been typed here, and a single bad value stops the whole thing rather than leaving half of it applied. Afterwards you are told what the file carried, and what it could not.",
    "text": "Paste a file made by either of the download buttons, or choose it below. The settings in it are checked one by one exactly as if they had been typed here, and a single bad value stops the whole thing rather than leaving half of it applied. Afterwards you are told what the file carried, and what it could not."
+  },
+  "s.paste-a-key-first.e8e2e599": {
+   "source": "paste a key first",
+   "text": "paste a key first"
   },
   "s.paste-acme-s-key.8d6436c8": {
    "source": "Paste acme’s key",
@@ -21544,6 +21968,10 @@
    "source": "Pick a .crt or .pem file instead of pasting it.",
    "text": "Pick a .crt or .pem file instead of pasting it."
   },
+  "s.pick-a-node.6883c985": {
+   "source": "pick a node",
+   "text": "pick a node"
+  },
   "s.pick-the-groups-out-of-the.ec1a9122": {
    "source": "Pick the groups out of the directory rather than typing a distinguished name by hand — that is how a role ends up pointing at a group that does not exist, and nobody finds out until the first person cannot sign in.",
    "text": "Pick the groups out of the directory rather than typing a distinguished name by hand — that is how a role ends up pointing at a group that does not exist, and nobody finds out until the first person cannot sign in."
@@ -21651,6 +22079,10 @@
   "s.plain-ldap.183eecb3": {
    "source": "plain LDAP",
    "text": "plain LDAP"
+  },
+  "s.plain-osu-table.60445529": {
+   "source": "plain osu-table",
+   "text": "plain osu-table"
   },
   "s.plain-receiving.a3e9a0ab": {
    "source": "Plain receiving",
@@ -22107,10 +22539,6 @@
   "s.put-a-dump-back.168fd0b7": {
    "source": "Put a dump back",
    "text": "Put a dump back"
-  },
-  "s.put-a-key-into-root-s.6eb8df49": {
-   "source": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)",
-   "text": "put a key into root's authorized_keys: a public key line, a .pub file, or a private key file of which only the public half goes in (its passphrase: --passphrase-file, ISEMON_KEY_PASSPHRASE, else asked)"
   },
   "s.put-account-names-by-stand-ins.2da46984": {
    "source": "Put account names by stand-ins (account-001…)",
@@ -22752,6 +23180,10 @@
    "source": "Read the ISE logs",
    "text": "Read the ISE logs"
   },
+  "s.read-the-keys-again-on-every.82875d29": {
+   "source": "Read the keys again on every node",
+   "text": "Read the keys again on every node"
+  },
   "s.read-the-keys-again.bcc61a0c": {
    "source": "Read the keys again",
    "text": "Read the keys again"
@@ -22771,6 +23203,14 @@
   "s.read-the-tail-of-the-daemon.e830c0c6": {
    "source": "Read the tail of the daemon’s own log file. Switch on debug in Settings to have it say everything.",
    "text": "Read the tail of the daemon’s own log file. Switch on debug in Settings to have it say everything."
+  },
+  "s.read-the-users-again-on-every.13090415": {
+   "source": "Read the users again on every node",
+   "text": "Read the users again on every node"
+  },
+  "s.read-the-users-again.1fd86d10": {
+   "source": "Read the users again",
+   "text": "Read the users again"
   },
   "s.read-up-to.f4234841": {
    "source": "Read up to",
@@ -22807,6 +23247,10 @@
   "s.reading-the-keys.0dc2065c": {
    "source": "Reading the keys…",
    "text": "Reading the keys…"
+  },
+  "s.reading-the-users.3641d499": {
+   "source": "Reading the users…",
+   "text": "Reading the users…"
   },
   "s.reading-what-the-machine-has-and.b305415b": {
    "source": "Reading what the machine has and what the server is set to, and timing a few small writes…",
@@ -23039,6 +23483,14 @@
   "s.refused-sign-ins-to-a-switch.1ac3347f": {
    "source": "Refused sign-ins to a switch or router over TACACS+. A different system and a different door: a burst here is somebody at the network kit, not at the VPN.",
    "text": "Refused sign-ins to a switch or router over TACACS+. A different system and a different door: a burst here is somebody at the network kit, not at the VPN."
+  },
+  "s.refused-since-1-10-351-root.5bfd2e05": {
+   "source": "refused since 1.10.351: root's SSH keys are only shown",
+   "text": "refused since 1.10.351: root's SSH keys are only shown"
+  },
+  "s.refused-since-1-10-351-root.676a922b": {
+   "source": "refused since 1.10.351: root's SSH keys are only shown; a key for another user who may sign in is made in Settings - SSH keys",
+   "text": "refused since 1.10.351: root's SSH keys are only shown; a key for another user who may sign in is made in Settings - SSH keys"
   },
   "s.refused-the-domain.dbf4d607": {
    "source": "refused · the domain",
@@ -23572,17 +24024,25 @@
    "source": "root did not put it in",
    "text": "root did not put it in"
   },
+  "s.root-is-never-locked-and-never.68e083e7": {
+   "source": "root is never locked, and never given aging here.",
+   "text": "root is never locked, and never given aging here."
+  },
   "s.root-is-putting-it-in-a.fb1a3ed8": {
    "source": "Root is putting it in - a few seconds, a minute when rsyslog-gnutls has to be installed first.",
    "text": "Root is putting it in - a few seconds, a minute when rsyslog-gnutls has to be installed first."
   },
+  "s.root-is-shown-here-only-its.c89c4fc8": {
+   "source": "root is shown here only. Its password, its shell and whether it may sign in are changed on the machine itself - over SSH as root, or at its console - never from these pages. Its SSH keys are in SSH keys.",
+   "text": "root is shown here only. Its password, its shell and whether it may sign in are changed on the machine itself - over SSH as root, or at its console - never from these pages. Its SSH keys are in SSH keys."
+  },
+  "s.root-is-shown-only-it-is.fc74bd96": {
+   "source": "root is shown only - it is changed on the machine itself, never from these pages",
+   "text": "root is shown only - it is changed on the machine itself, never from these pages"
+  },
   "s.root-may-sign-in.f4b2fb79": {
    "source": "Root may sign in",
    "text": "Root may sign in"
-  },
-  "s.root-no-longer-signs-in-with.934cf2b1": {
-   "source": "Root no longer signs in with",
-   "text": "Root no longer signs in with"
   },
   "s.root-puts-it-in-it-takes.4ae0dbc6": {
    "source": "root puts it in - it takes a few seconds, a minute when rsyslog-gnutls has to be installed first",
@@ -23600,9 +24060,9 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once. Until then SELinux is neither read nor changed here.",
    "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.319 package (or later) once. Until then SELinux is neither read nor changed here."
   },
-  "s.root-s-half-of-this-is.54666464": {
-   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here.",
-   "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.239 package (or later) once. Until then the keys are neither read nor changed here."
+  "s.root-s-half-of-this-is.8c9a7942": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from this package once. Until then the users are neither read nor changed here.",
+   "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from this package once. Until then the users are neither read nor changed here."
   },
   "s.root-s-half-of-this-is.b571e4cc": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path, as 1.10.287 puts it in): run ./install.sh --upgrade from the 1.10.287 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
@@ -23616,6 +24076,10 @@
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there.",
    "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.222 package (or later) once. Until then what is saved here is kept, and put in as soon as it is there."
   },
+  "s.root-s-half-of-this-is.d5de6dd2": {
+   "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from this package once. Until then the keys are neither read nor changed here.",
+   "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from this package once. Until then the keys are neither read nor changed here."
+  },
   "s.root-s-half-of-this-is.f0a52aae": {
    "source": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.245 package (or later) once. Until then the encrypted receiving is neither read nor changed here.",
    "text": "Root’s half of this is not installed on this machine yet (isemon-web.path): run ./install.sh --upgrade from the 1.10.245 package (or later) once. Until then the encrypted receiving is neither read nor changed here."
@@ -23623,6 +24087,10 @@
   "s.root-s-half-of-this-server.2295f614": {
    "source": "Root's half of this server does not do updates of the system yet (install.sh --upgrade puts it in).",
    "text": "Root's half of this server does not do updates of the system yet (install.sh --upgrade puts it in)."
+  },
+  "s.root-s-keys-are-only-shown.707e63bf": {
+   "source": "Root's keys are only shown here - they are not made, added or taken away on these pages. Change them on the server itself, as root:",
+   "text": "Root's keys are only shown here - they are not made, added or taken away on these pages. Change them on the server itself, as root:"
   },
   "s.root-said.9873d2f0": {
    "source": "Root said:",
@@ -23880,6 +24348,10 @@
    "source": "Runs out",
    "text": "Runs out"
   },
+  "s.runs.71b3f0bb": {
+   "source": "runs",
+   "text": "runs"
+  },
   "s.russia.6754fe3c": {
    "source": "Russia",
    "text": "Russia"
@@ -23915,10 +24387,6 @@
   "s.safe.bf31c52c": {
    "source": "safe",
    "text": "safe"
-  },
-  "s.said-again.343ef2b2": {
-   "source": "Said again:",
-   "text": "Said again:"
   },
   "s.said-an-error.bff37a4f": {
    "source": "said an error",
@@ -24028,6 +24496,10 @@
    "source": "Save it as a file",
    "text": "Save it as a file"
   },
+  "s.save-the-aging.4ed98250": {
+   "source": "Save the aging",
+   "text": "Save the aging"
+  },
   "s.save-the-changed-settings-into-the.fe0314a1": {
    "source": "Save the changed settings into the database. They take effect the moment they are saved — nothing restarts, and they are carried by every backup.",
    "text": "Save the changed settings into the database. They take effect the moment they are saved — nothing restarts, and they are carried by every backup."
@@ -24039,6 +24511,10 @@
   "s.save-the-fmc-fetches-it-at.f43fa42f": {
    "source": "Save. The FMC fetches it at once;",
    "text": "Save. The FMC fetches it at once;"
+  },
+  "s.save-the-policy.57de15dd": {
+   "source": "Save the policy",
+   "text": "Save the policy"
   },
   "s.save-the-settings-and-the-url.03ad7500": {
    "source": "Save the settings, and the URL appears here.",
@@ -24552,6 +25028,10 @@
    "source": "set by hand",
    "text": "set by hand"
   },
+  "s.set-by-isemon-on-this-server.0aabdfe9": {
+   "source": "Set by isemon on this server",
+   "text": "Set by isemon on this server"
+  },
   "s.set-dstaddr-all.012dab40": {
    "source": "set dstaddr \"all\"",
    "text": "set dstaddr \"all\""
@@ -24623,6 +25103,10 @@
   "s.set-srcaddr-isemon-bans.da2adf22": {
    "source": "set srcaddr \"isemon-bans\"",
    "text": "set srcaddr \"isemon-bans\""
+  },
+  "s.set-the-password.924f39d4": {
+   "source": "Set the password",
+   "text": "Set the password"
   },
   "s.set-type-address.117ffb0c": {
    "source": "set type address",
@@ -24799,6 +25283,10 @@
   "s.shell-profile.8add2bf5": {
    "source": "Shell profile",
    "text": "Shell profile"
+  },
+  "s.shell.bdc1fd5d": {
+   "source": "Shell",
+   "text": "Shell"
   },
   "s.shell.ec122f54": {
    "source": "shell",
@@ -25187,6 +25675,14 @@
   "s.slovenia.d1aa0503": {
    "source": "Slovenia",
    "text": "Slovenia"
+  },
+  "s.small-letters-capitals-digits-the-others.8f9e3969": {
+   "source": "small letters, capitals, digits, the others",
+   "text": "small letters, capitals, digits, the others"
+  },
+  "s.small-letters-digits-and-32-at.5c3c215c": {
+   "source": "Small letters, digits, _ . and -; 32 at most, starting with a letter.",
+   "text": "Small letters, digits, _ . and -; 32 at most, starting with a letter."
   },
   "s.smart-card-required.ae7dbd99": {
    "source": "Smart card required",
@@ -25632,9 +26128,9 @@
    "source": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub",
    "text": "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub"
   },
-  "s.ssh-keys-of-root.4b7cbf6b": {
-   "source": "SSH keys of root",
-   "text": "SSH keys of root"
+  "s.ssh-keys.e91a644c": {
+   "source": "SSH keys",
+   "text": "SSH keys"
   },
   "s.ssh-port.b17dc791": {
    "source": "SSH port",
@@ -25652,17 +26148,9 @@
    "source": "ssh",
    "text": "ssh"
   },
-  "s.sshd-does-not-let-root-sign.be438f60": {
-   "source": "sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does.",
-   "text": "sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does."
-  },
   "s.sshd-is-not-here.b8a873de": {
    "source": "sshd is not here",
    "text": "sshd is not here"
-  },
-  "s.sshd-takes-no-keys-pubkeyauthentication-no.febbe96a": {
-   "source": "sshd takes no keys (PubkeyAuthentication no).",
-   "text": "sshd takes no keys (PubkeyAuthentication no)."
   },
   "s.sshkeys.921bbf4e": {
    "source": "sshkeys",
@@ -26056,6 +26544,10 @@
    "source": "Sudan",
    "text": "Sudan"
   },
+  "s.sudo-asks-for-the-user-s.97f3a741": {
+   "source": "sudo asks for the user's own password - give them one, or they cannot use sudo",
+   "text": "sudo asks for the user's own password - give them one, or they cannot use sudo"
+  },
   "s.sudo-install-sh-db-rights.5a49aad8": {
    "source": "sudo ./install.sh --db-rights",
    "text": "sudo ./install.sh --db-rights"
@@ -26063,6 +26555,10 @@
   "s.sudo-is-the.3d232caa": {
    "source": "sudo is the",
    "text": "sudo is the"
+  },
+  "s.sudo-isemon-console-of-a-normal.db456bbc": {
+   "source": "sudo - isemon --console of a normal user too - asks for the user's own password: the policy is the one for it; a user locked by wrong passwords cannot use sudo until the lock ends.",
+   "text": "sudo - isemon --console of a normal user too - asks for the user's own password: the policy is the one for it; a user locked by wrong passwords cannot use sudo until the lock ends."
   },
   "s.sudo-u-postgres-psql-c-password.f2aeeb32": {
    "source": "sudo -u postgres psql -c \"\\password postgres\"",
@@ -26544,10 +27040,6 @@
    "source": "Take isemon’s rules away",
    "text": "Take isemon’s rules away"
   },
-  "s.take-it-away-anyway.29e93be5": {
-   "source": "Take it away anyway",
-   "text": "Take it away anyway"
-  },
   "s.take-it-away.07f68f99": {
    "source": "Take it away",
    "text": "Take it away"
@@ -26596,6 +27088,10 @@
    "source": "Take ours off",
    "text": "Take ours off"
   },
+  "s.take-sudo-away.002baafe": {
+   "source": "Take sudo away",
+   "text": "Take sudo away"
+  },
   "s.take-that-certificate-authority-away.f6beb205": {
    "source": "Take that certificate authority away",
    "text": "Take that certificate authority away"
@@ -26628,10 +27124,6 @@
    "source": "Take the key away",
    "text": "Take the key away"
   },
-  "s.take-the-key-with-this-sha256.106afe23": {
-   "source": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again",
-   "text": "take the key with this SHA256 fingerprint away from root; asks first unless --yes. The last key root signs in with only with --last too, and then asked again"
-  },
   "s.take-the-keytab-away.0fd6a0f9": {
    "source": "Take the keytab away",
    "text": "Take the keytab away"
@@ -26640,10 +27132,6 @@
    "source": "Take the ladder away; every block becomes the single length set above",
    "text": "Take the ladder away; every block becomes the single length set above"
   },
-  "s.take-the-last-key-away.d5860a0d": {
-   "source": "Take the last key away?",
-   "text": "Take the last key away?"
-  },
   "s.take-the-stored-authority-away-the.2a98bbcc": {
    "source": "Take the stored authority away. The server's certificate then has to be signed by one this machine already trusts.",
    "text": "Take the stored authority away. The server's certificate then has to be signed by one this machine already trusts."
@@ -26651,6 +27139,10 @@
   "s.take-the-stored-authority-away.b6f75301": {
    "source": "Take the stored authority away.",
    "text": "Take the stored authority away."
+  },
+  "s.take-the-user-away.c566020f": {
+   "source": "Take the user away",
+   "text": "Take the user away"
   },
   "s.take-them-away.71cd6048": {
    "source": "Take them away",
@@ -28788,6 +29280,10 @@
    "source": "— the feed has a URL and an MD5 URL and nothing else. With",
    "text": "— the feed has a URL and an MD5 URL and nothing else. With"
   },
+  "s.the-fewest-characters-a-new-password.d3e010f3": {
+   "source": "The fewest characters a new password may have (pam_pwquality: minlen). Only a new password is checked - one set before stays until it is changed.",
+   "text": "The fewest characters a new password may have (pam_pwquality: minlen). Only a new password is checked - one set before stays until it is changed."
+  },
   "s.the-fields-of-this-page-or.6e6937ea": {
    "source": "The fields of this page — or type a word to find it anywhere, or a letter for every other field",
    "text": "The fields of this page — or type a word to find it anywhere, or a letter for every other field"
@@ -29252,6 +29748,14 @@
    "source": "the history was erased",
    "text": "the history was erased"
   },
+  "s.the-home-folder-stays.cfdf5d95": {
+   "source": "; the home folder stays.",
+   "text": "; the home folder stays."
+  },
+  "s.the-home-folder.7cc01a24": {
+   "source": "the home folder",
+   "text": "the home folder"
+  },
   "s.the-home-institution-refused-it.da6f811f": {
    "source": "the home institution refused it",
    "text": "the home institution refused it"
@@ -29432,9 +29936,9 @@
    "source": "The key alone (.key, PEM), encrypted if a password is given.",
    "text": "The key alone (.key, PEM), encrypted if a password is given."
   },
-  "s.the-key-goes-into-root-s.8674b156": {
-   "source": "the key goes into root's authorized_keys again",
-   "text": "the key goes into root's authorized_keys again"
+  "s.the-key-for.0c07d8db": {
+   "source": "The key for",
+   "text": "The key for"
   },
   "s.the-key-half-of-an-api.7585aa6a": {
    "source": "The key half of an API key made on the OPNsense (System → Access → Users → the user → API keys). The user needs the privilege to edit firewall aliases and nothing more.",
@@ -29451,10 +29955,6 @@
   "s.the-key-is-made-here-and.4ee4408e": {
    "source": "The key is made here and never leaves this machine except when you download it. Put the public half on the firewall — on RouterOS, /user ssh-keys import public-key-file=… user=… — and it will let this in without a password. Keep the private half safe: anybody holding it can sign in to the firewall as that account.",
    "text": "The key is made here and never leaves this machine except when you download it. Put the public half on the firewall — on RouterOS, /user ssh-keys import public-key-file=… user=… — and it will let this in without a password. Keep the private half safe: anybody holding it can sign in to the firewall as that account."
-  },
-  "s.the-key-is-taken-away-within.bb3623d7": {
-   "source": "the key is taken away within a few seconds",
-   "text": "the key is taken away within a few seconds"
   },
   "s.the-key-kept-now-is-replaced.64ac91fd": {
    "source": "The key kept now is replaced",
@@ -29488,13 +29988,17 @@
    "source": "The key",
    "text": "The key"
   },
-  "s.the-keys-that-may-sign-in.db24acff": {
-   "source": "The keys that may sign in to this server as root over SSH - the lines of /root/.ssh/authorized_keys. A key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events.",
-   "text": "The keys that may sign in to this server as root over SSH - the lines of /root/.ssh/authorized_keys. A key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events."
+  "s.the-keys-of-root.55e47264": {
+   "source": "The keys of root",
+   "text": "The keys of root"
   },
-  "s.the-keys-that-may-sign-in.e26240fb": {
-   "source": "The keys that may sign in to this server as root over SSH: made here, added or taken away.",
-   "text": "The keys that may sign in to this server as root over SSH: made here, added or taken away."
+  "s.the-keys-that-may-sign-in.49a3b157": {
+   "source": "The keys that may sign in to this server over SSH - root's shown, a user's who may sign in here made here, added or taken away.",
+   "text": "The keys that may sign in to this server over SSH - root's shown, a user's who may sign in here made here, added or taken away."
+  },
+  "s.the-keys-that-may-sign-in.7510692d": {
+   "source": "The keys that may sign in to this server over SSH - as root (the lines of /root/.ssh/authorized_keys, only shown here) or as any user who may sign in here (their own ~/.ssh/authorized_keys, written as they are). A user's key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events.",
+   "text": "The keys that may sign in to this server over SSH - as root (the lines of /root/.ssh/authorized_keys, only shown here) or as any user who may sign in here (their own ~/.ssh/authorized_keys, written as they are). A user's key made here is shown once, to be kept by you, and kept nowhere on the server; one of your own is put on by its public half. Every change is written into Events."
   },
   "s.the-keytab-cannot-be-read-here.3b47e694": {
    "source": "The keytab cannot be read here",
@@ -29604,6 +30108,10 @@
    "source": "the last one went wrong",
    "text": "the last one went wrong"
   },
+  "s.the-last-passwords-not-taken-again.a8a649dd": {
+   "source": "The last passwords not taken again",
+   "text": "The last passwords not taken again"
+  },
   "s.the-last-refusal.490c32e7": {
    "source": "The last refusal",
    "text": "The last refusal"
@@ -29639,6 +30147,10 @@
   "s.the-last.88a7e776": {
    "source": "The last",
    "text": "The last"
+  },
+  "s.the-least-days-between-two-changes.423743e0": {
+   "source": "The least days between two changes",
+   "text": "The least days between two changes"
   },
   "s.the-length-of-the-packet.1100be33": {
    "source": "the length of the packet",
@@ -29687,6 +30199,10 @@
   "s.the-load-of-the-server-in.13658078": {
    "source": "The load of the server in the header (CPU, RAM, the disks, the network)",
    "text": "The load of the server in the header (CPU, RAM, the disks, the network)"
+  },
+  "s.the-local-users-of-this-machine.ea71a990": {
+   "source": "the local users of this machine's system (root and UID_MIN and up): who is there, sudo, locked, the password (Settings - Local users)",
+   "text": "the local users of this machine's system (root and UID_MIN and up): who is there, sudo, locked, the password (Settings - Local users)"
   },
   "s.the-lock-itself-says-only-that.14cb465a": {
    "source": "The lock itself says only that it happened. What everybody actually asks — which machine, which program, which password — is in the refusals in the half hour before it, so they are here too, and so is who unlocked it. Press one for the whole story.",
@@ -29923,6 +30439,10 @@
   "s.the-most-the-tunnel-carries-bytes.81b8906e": {
    "source": "the most the tunnel carries (bytes)",
    "text": "the most the tunnel carries (bytes)"
+  },
+  "s.the-most-times-one-character-may.5a90930e": {
+   "source": "The most times one character may come in a row - with 3, \"aaa\" is taken and \"aaaa\" is not (pam_pwquality: maxrepeat). 0: as many as wanted.",
+   "text": "The most times one character may come in a row - with 3, \"aaa\" is taken and \"aaaa\" is not (pam_pwquality: maxrepeat). 0: as many as wanted."
   },
   "s.the-name-asked-for.48e56a29": {
    "source": "the name asked for",
@@ -30171,6 +30691,10 @@
   "s.the-new-network-waits-to-be.7c3d93ac": {
    "source": "the new network waits to be kept",
    "text": "the new network waits to be kept"
+  },
+  "s.the-new-password.154c2d1e": {
+   "source": "The new password",
+   "text": "The new password"
   },
   "s.the-new-versions-of-isemon-through.c77e686b": {
    "source": "The new versions of isemon through it",
@@ -30515,6 +31039,14 @@
   "s.the-password-of-the-key-or.84022709": {
    "source": "The password of the key or of the PFX, if it has one",
    "text": "The password of the key or of the PFX, if it has one"
+  },
+  "s.the-password-policy-of-the-local.fb219a11": {
+   "source": "the password policy of the local users: as set, and as in effect here",
+   "text": "the password policy of the local users: as set, and as in effect here"
+  },
+  "s.the-password-ran-out-the-user.49fb50a0": {
+   "source": "The password ran out - the user must choose a new one at the next sign-in.",
+   "text": "The password ran out - the user must choose a new one at the next sign-in."
   },
   "s.the-password-the-firewall-sends-with.90ef7766": {
    "source": "The password the firewall sends, with basic authentication: at least twelve characters. It is kept like the router’s password and is never shown again once saved.",
@@ -31076,6 +31608,10 @@
    "source": "the routing mark (MikroTik)",
    "text": "the routing mark (MikroTik)"
   },
+  "s.the-row-of-the-policy-in.de3f6457": {
+   "source": "The row of the policy in the database is not as isemon wrote it - root's helper refused it: the server keeps the policy it has put in, and changes nothing. Save the policy here again.",
+   "text": "The row of the policy in the database is not as isemon wrote it - root's helper refused it: the server keeps the policy it has put in, and changes nothing. Save the policy here again."
+  },
   "s.the-rows-themselves.45ddd440": {
    "source": "The rows themselves",
    "text": "The rows themselves"
@@ -31112,6 +31648,10 @@
    "source": "The same, by hand, as root:",
    "text": "The same, by hand, as root:"
   },
+  "s.the-same-character-in-a-row.a0b61851": {
+   "source": "The same character in a row at most",
+   "text": "The same character in a row at most"
+  },
   "s.the-same-copy-with-the-keys.6ee3f9d8": {
    "source": "The same copy, with the keys kept beside the database in it: settings.key, which opens every password and private key in the database, banfeed.key and the routers’ host keys - and config.json to read. Put back on a new machine (Restore from this file), that machine is this one again, certificate, firewall and all, with nothing to type in. As secret as the key itself. From the shell: isemon --backup --full.",
    "text": "The same copy, with the keys kept beside the database in it: settings.key, which opens every password and private key in the database, banfeed.key and the routers’ host keys - and config.json to read. Put back on a new machine (Restore from this file), that machine is this one again, certificate, firewall and all, with nothing to type in. As secret as the key itself. From the shell: isemon --backup --full."
@@ -31147,6 +31687,10 @@
   "s.the-same-in-3des-sha-1.5fcac381": {
    "source": "The same in 3DES / SHA-1 - Windows Server 2016 and older, Java 8.",
    "text": "The same in 3DES / SHA-1 - Windows Server 2016 and older, Java 8."
+  },
+  "s.the-same-key-on-every-node.50d0b3ca": {
+   "source": "The same key on every node",
+   "text": "The same key on every node"
   },
   "s.the-same-ntlm-as-above-said.a6ccd7e8": {
    "source": "The same NTLM as above, said by the NTLM audit (NTLM/Operational 8004) with the server it was for - nothing extra breaks.",
@@ -31528,6 +32072,10 @@
    "source": "The system's own list",
    "text": "The system's own list"
   },
+  "s.the-system-s-own.c5d808c7": {
+   "source": "the system's own",
+   "text": "the system's own"
+  },
   "s.the-system-time-was-changed.52b19c79": {
    "source": "the system time was changed",
    "text": "the system time was changed"
@@ -31756,6 +32304,10 @@
    "source": "The two passwords are not the same.",
    "text": "The two passwords are not the same."
   },
+  "s.the-two-passwords-are-not-the.aa3212ef": {
+   "source": "the two passwords are not the same",
+   "text": "the two passwords are not the same"
+  },
   "s.the-two-to-paste-each-with.18ded4f9": {
    "source": "The two to paste, each with its own button:",
    "text": "The two to paste, each with its own button:"
@@ -31892,6 +32444,10 @@
    "source": "the user, as the certificate names them",
    "text": "the user, as the certificate names them"
   },
+  "s.the-user-chooses-their-own-at.6fd3f6ad": {
+   "source": "The user chooses their own at once.",
+   "text": "The user chooses their own at once."
+  },
   "s.the-user-name-basic-authentication.f4010bce": {
    "source": "The user name (basic authentication)",
    "text": "The user name (basic authentication)"
@@ -31907,6 +32463,18 @@
   "s.the-user-names-failing-and-from.28db5108": {
    "source": "The user names failing, and from how many different addresses each. One name from forty addresses is a password spray; forty names from one address is somebody working through a list.",
    "text": "The user names failing, and from how many different addresses each. One name from forty addresses is a password spray; forty names from one address is somebody working through a list."
+  },
+  "s.the-user.2ef01e26": {
+   "source": "The user",
+   "text": "The user"
+  },
+  "s.the-users-of-this-server-s.45b8c4d9": {
+   "source": "The users of this server's own system: root shown, the others made, given a password or sudo, locked or taken away.",
+   "text": "The users of this server's own system: root shown, the others made, given a password or sudo, locked or taken away."
+  },
+  "s.the-users-of-this-server-s.591c5d5b": {
+   "source": "The users of this server's own system - who may sign in to the machine itself, over SSH or at its console; not the accounts of these pages. root is shown and never changed here; the others (UID 1000 and up) are made, given a password or sudo, locked or taken away by root's helper. A password typed here goes to it as its hash only and is kept nowhere. Every change is written into Events.",
+   "text": "The users of this server's own system - who may sign in to the machine itself, over SSH or at its console; not the accounts of these pages. root is shown and never changed here; the others (UID 1000 and up) are made, given a password or sudo, locked or taken away by root's helper. A password typed here goes to it as its hash only and is kept nowhere. Every change is written into Events."
   },
   "s.the-usual-causes-in-the-order.46f77bc7": {
    "source": "The usual causes, in the order they usually are: api-ssl (or api) is not switched on, or not for this machine’s address; the account or its password is wrong; the router answers with a certificate other than the one pinned; or the address or port is wrong.",
@@ -32716,10 +33284,6 @@
    "source": "this is the line that OPENS an access list, and that one is written for you - what goes here is the body, the permit and deny lines that sit inside it",
    "text": "this is the line that OPENS an access list, and that one is written for you - what goes here is the body, the permit and deny lines that sit inside it"
   },
-  "s.this-is-the-only-time-it.92827b46": {
-   "source": "This is the only time it is shown. Whoever holds it signs in to this server as root.",
-   "text": "This is the only time it is shown. Whoever holds it signs in to this server as root."
-  },
   "s.this-is-the-sign-in-you.4002ae91": {
    "source": "This is the sign-in you are using now: ending it signs you out of this page.",
    "text": "This is the sign-in you are using now: ending it signs you out of this page."
@@ -32947,6 +33511,10 @@
   "s.this-server.086b51a0": {
    "source": "this server",
    "text": "this server"
+  },
+  "s.this-server.17f98495": {
+   "source": "this server.",
+   "text": "this server."
   },
   "s.this-server.d75b2349": {
    "source": "This server",
@@ -33300,9 +33868,21 @@
    "source": "to a few minutes rather than only on a change.",
    "text": "to a few minutes rather than only on a change."
   },
+  "s.to-be-changed-at-the-first.ae46f30b": {
+   "source": "To be changed at the first sign-in",
+   "text": "To be changed at the first sign-in"
+  },
+  "s.to-be-changed-at-the-next.bb0d19b3": {
+   "source": "To be changed at the next sign-in",
+   "text": "To be changed at the next sign-in"
+  },
   "s.to-be-done-by-hand.7b411f7a": {
    "source": "To be done by hand",
    "text": "To be done by hand"
+  },
+  "s.to-change-at-sign-in.65a879ab": {
+   "source": "to change at sign-in",
+   "text": "to change at sign-in"
   },
   "s.to-erase-but-ticking-it-still.69a61003": {
    "source": "to erase, but ticking it still forgets where those files were read up to, so what is in them is read again from the beginning with the clock as it is now.",
@@ -33824,6 +34404,10 @@
    "source": "ui",
    "text": "ui"
   },
+  "s.uid.d946adf5": {
+   "source": "UID",
+   "text": "UID"
+  },
   "s.ukraine.c951ec00": {
    "source": "Ukraine",
    "text": "Ukraine"
@@ -33920,13 +34504,17 @@
    "source": "unless Logins at the firewall itself is switched on under Banning, and then only a sign-in refused from an address on the internet. Switched off, not one file is opened.",
    "text": "unless Logins at the firewall itself is switched on under Banning, and then only a sign-in refused from an address on the internet. Switched off, not one file is opened."
   },
-  "s.unless-root-may-sign-in-with.672e8506": {
-   "source": "Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
-   "text": "Unless root may sign in with a password, nobody reaches it over SSH as root after this."
-  },
   "s.unless.42e18493": {
    "source": "unless",
    "text": "unless"
+  },
+  "s.unlock.1526a17e": {
+   "source": "Unlock",
+   "text": "Unlock"
+  },
+  "s.unlock.8ec49811": {
+   "source": "unlock",
+   "text": "unlock"
   },
   "s.unlocked.9bb5a73d": {
    "source": "unlocked",
@@ -34240,9 +34828,17 @@
    "source": "user",
    "text": "user"
   },
+  "s.user.9f8a2389": {
+   "source": "User",
+   "text": "User"
+  },
   "s.useralt.8f969e87": {
    "source": "useralt",
    "text": "useralt"
+  },
+  "s.usercheck.acd28832": {
+   "source": "usercheck",
+   "text": "usercheck"
   },
   "s.username.249ba360": {
    "source": "username",
@@ -34259,6 +34855,14 @@
   "s.userprincipalname.5de41706": {
    "source": "userPrincipalName",
    "text": "userPrincipalName"
+  },
+  "s.users-of-the-nodes.a67e3bd7": {
+   "source": "Users of the nodes",
+   "text": "Users of the nodes"
+  },
+  "s.users-of-this-server.b9e0d8cf": {
+   "source": "Users of this server",
+   "text": "Users of this server"
   },
   "s.users.5b7dcd14": {
    "source": "users",
@@ -34387,6 +34991,10 @@
   "s.view-entries.ce5e8f20": {
    "source": "View Entries",
    "text": "View Entries"
+  },
+  "s.view-only.00bc16f4": {
+   "source": "view only",
+   "text": "view only"
   },
   "s.violet.13818a56": {
    "source": "violet",
@@ -34604,6 +35212,10 @@
    "source": "warn",
    "text": "warn"
   },
+  "s.warned-so-many-days-before.1be7d632": {
+   "source": "Warned so many days before",
+   "text": "Warned so many days before"
+  },
   "s.warnings-and-worse.528cae40": {
    "source": "warnings and worse",
    "text": "warnings and worse"
@@ -34775,6 +35387,10 @@
   "s.what-became-of-it-in-the.8c3694a4": {
    "source": "what became of it in the sandbox",
    "text": "what became of it in the sandbox"
+  },
+  "s.what-came-of-it.606ff87e": {
+   "source": "What came of it",
+   "text": "What came of it"
   },
   "s.what-changed.7e4b9199": {
    "source": "What changed",
@@ -35588,6 +36204,10 @@
    "source": "what they asked to reach",
    "text": "what they asked to reach"
   },
+  "s.what-they-may-do.69d9e9f9": {
+   "source": "What they may do",
+   "text": "What they may do"
+  },
   "s.what-this-account-may-do-a.97b56d49": {
    "source": "What this account may do. A",
    "text": "What this account may do. A"
@@ -35755,6 +36375,10 @@
   "s.whatever-the-keep-for-numbers-say.630791b5": {
    "source": "whatever the \"keep for\" numbers say",
    "text": "whatever the \"keep for\" numbers say"
+  },
+  "s.wheel.3a7195d9": {
+   "source": "wheel",
+   "text": "wheel"
   },
   "s.when-a-device-last-fetched-this.753a44ea": {
    "source": "When a device last fetched this ACL from ISE. A device fetches one only when it does not already hold it, so a widely used list may not have been fetched for months.",
@@ -37004,6 +37628,10 @@
    "source": "whose columns?",
    "text": "whose columns?"
   },
+  "s.whose-keys.07265b8a": {
+   "source": "Whose keys",
+   "text": "Whose keys"
+  },
   "s.whose-searches.bb4d3ea3": {
    "source": "whose searches?",
    "text": "whose searches?"
@@ -37196,6 +37824,26 @@
    "source": "with --fw-key: whose key - mikrotik, opnsense-ssh or pfsense-ssh",
    "text": "with --fw-key: whose key - mikrotik, opnsense-ssh or pfsense-ssh"
   },
+  "s.with-local-user-add-or-password.29dd4e6f": {
+   "source": "with --local-user add or password: to be changed at the next sign-in",
+   "text": "with --local-user add or password: to be changed at the next sign-in"
+  },
+  "s.with-local-user-add-the-full.679c9d1d": {
+   "source": "with --local-user add: the full name",
+   "text": "with --local-user add: the full name"
+  },
+  "s.with-local-user-aging-days-the.9d19f3aa": {
+   "source": "with --local-user aging: days the password is good for (99999: no end)",
+   "text": "with --local-user aging: days the password is good for (99999: no end)"
+  },
+  "s.with-local-user-aging-the-least.841ba0cc": {
+   "source": "with --local-user aging: the least days between two changes",
+   "text": "with --local-user aging: the least days between two changes"
+  },
+  "s.with-local-user-aging-warned-so.39cff3de": {
+   "source": "with --local-user aging: warned so many days before it runs out",
+   "text": "with --local-user aging: warned so many days before it runs out"
+  },
   "s.with-mikrotik-take-our-entries-off.73299c1a": {
    "source": "with --mikrotik: take OUR entries off the router and nothing else",
    "text": "with --mikrotik: take OUR entries off the router and nothing else"
@@ -37284,13 +37932,17 @@
    "source": "with rings",
    "text": "with rings"
   },
-  "s.with-root-key-drop-it-may.89652220": {
-   "source": "with --root-key-drop: it may be the last key root signs in with",
-   "text": "with --root-key-drop: it may be the last key root signs in with"
+  "s.with-root-key-drop-refused-since.1dfed3c0": {
+   "source": "with --root-key-drop (refused since 1.10.351)",
+   "text": "with --root-key-drop (refused since 1.10.351)"
   },
   "s.with-root-key-make-the-file.b7e3ea9e": {
    "source": "with --root-key-make: the file for the private half - made 0600, never written over; with --otp-tls-make: the file for this machine's authority, to paste into otp",
    "text": "with --root-key-make: the file for the private half - made 0600, never written over; with --otp-tls-make: the file for this machine's authority, to paste into otp"
+  },
+  "s.with-ssh-keys-and-sudo.93f0d874": {
+   "source": "With SSH keys and sudo",
+   "text": "With SSH keys and sudo"
   },
   "s.with-status-every-file-of-a.ace58746": {
    "source": "with --status: every file of a firewall's log on a line of its own, rather than one line for each folder of them",
@@ -37367,6 +38019,10 @@
   "s.without-an-fmc-cannot-use-a.aeb91c8e": {
    "source": "(without an FMC) cannot use a feed of its own; cdFMC in Security Cloud Control can.",
    "text": "(without an FMC) cannot use a feed of its own; cdFMC in Security Cloud Control can."
+  },
+  "s.without-it-the-days-are-for.f59ec807": {
+   "source": "Without it, the days are for users made from now on (login.defs); a user's own are in their popup.",
+   "text": "Without it, the days are for users made from now on (login.defs); a user's own are in their popup."
   },
   "s.without.0d4e654c": {
    "source": "without",
@@ -37532,6 +38188,10 @@
    "source": "written",
    "text": "written"
   },
+  "s.wrong-passwords-are-counted-within-so.134730dd": {
+   "source": "Wrong passwords are counted within so many seconds (pam_faillock: fail_interval) - those before do not count towards the lock.",
+   "text": "Wrong passwords are counted within so many seconds (pam_faillock: fail_interval) - those before do not count towards the lock."
+  },
   "s.wrong-passwords-before-waiting.b0ba113b": {
    "source": "Wrong passwords before waiting",
    "text": "Wrong passwords before waiting"
@@ -37539,6 +38199,10 @@
   "s.wrong-passwords-from-one-address-before.3e25aac6": {
    "source": "Wrong passwords from one address before it has to wait.",
    "text": "Wrong passwords from one address before it has to wait."
+  },
+  "s.wrong-passwords.7b4b4b88": {
+   "source": "Wrong passwords",
+   "text": "Wrong passwords"
   },
   "s.www-example-cz.e4ec1cdc": {
    "source": "www, *.example.cz",
@@ -37734,6 +38398,10 @@
    "source": "A list somebody else keeps — {0} — already had this address on it. Nothing is banned for being on a list alone; this one was banned because it is on one AND it failed a login here.",
    "text": "A list somebody else keeps — {0} — already had this address on it. Nothing is banned for being on a list alone; this one was banned because it is on one AND it failed a login here."
   },
+  "p.a-member-of-with-their-own.ffbeef23": {
+   "source": "A member of {0} - with their own password.",
+   "text": "A member of {0} - with their own password."
+  },
   "p.a-new-destination.01b9a3df": {
    "source": "A new destination: {0}",
    "text": "A new destination: {0}"
@@ -37826,6 +38494,10 @@
    "source": "accounts · {0}×",
    "text": "accounts · {0}×"
   },
+  "p.add-a-key-for.14832349": {
+   "source": "Add a key for {0}",
+   "text": "Add a key for {0}"
+  },
   "p.add-a.2f24a9e3": {
    "source": "Add a {0}",
    "text": "Add a {0}"
@@ -37913,6 +38585,10 @@
   "p.ago.aa37c151": {
    "source": "{0} ago",
    "text": "{0} ago"
+  },
+  "p.also-the-accounts-with-no-shell.e4436eca": {
+   "source": "Also the {0} accounts with no shell (they may not sign in)",
+   "text": "Also the {0} accounts with no shell (they may not sign in)"
   },
   "p.am-dot.cf7e0738": {
    "source": "am-dot {0}",
@@ -38142,6 +38818,14 @@
    "source": "{0} behind ·",
    "text": "{0} behind ·"
   },
+  "p.being-done-on.4e2ab213": {
+   "source": "Being done on {0}…",
+   "text": "Being done on {0}…"
+  },
+  "p.being-written-on.6d398aeb": {
+   "source": "Being written on {0}…",
+   "text": "Being written on {0}…"
+  },
   "p.between-it-and-the-root.a3f0e955": {
    "source": "{0} between it and the root",
    "text": "{0} between it and the root"
@@ -38217,6 +38901,10 @@
   "p.change-s-not-saved-yet.68a60bf7": {
    "source": "{0} change(s) not saved yet",
    "text": "{0} change(s) not saved yet"
+  },
+  "p.change-the-password-sudo-locked-the.bc8bf896": {
+   "source": "Change {0}: the password, sudo, locked, the shell - or take the user away",
+   "text": "Change {0}: the password, sudo, locked, the shell - or take the user away"
   },
   "p.changed.e13d43a0": {
    "source": "{0} changed: {1}{2}",
@@ -38466,6 +39154,10 @@
    "source": "{0} done · {1} failed{2}",
    "text": "{0} done · {1} failed{2}"
   },
+  "p.done-on-within-a-few-seconds.578ddae8": {
+   "source": "done on {0} within a few seconds",
+   "text": "done on {0} within a few seconds"
+  },
   "p.down-since.2249c0f6": {
    "source": "down since {0}",
    "text": "down since {0}"
@@ -38581,6 +39273,10 @@
   "p.every-field-the-firewall-wrote.90122f47": {
    "source": "Every field the firewall wrote ({0})",
    "text": "Every field the firewall wrote ({0})"
+  },
+  "p.every-node-is-on.d22c84d8": {
+   "source": "every node {0} is on.",
+   "text": "every node {0} is on."
   },
   "p.every-passkey-of-is-taken-away.bca5b5a5": {
    "source": "Every passkey of {0} is taken away and every sign-in of theirs ends. Their next sign-in asks them to set Face ID up again.",
@@ -38882,6 +39578,10 @@
    "source": "going through {0} stored event(s) with the settings as they stand now",
    "text": "going through {0} stored event(s) with the settings as they stand now"
   },
+  "p.good-for-days-from-the-last.5df70159": {
+   "source": "Good for {0} days from the last change - {1} day(s) left.",
+   "text": "Good for {0} days from the last change - {1} day(s) left."
+  },
   "p.good-until.e7d3e56d": {
    "source": ", good until {0}",
    "text": ", good until {0}"
@@ -38925,6 +39625,10 @@
   "p.had-a-name-went-wrong.41e7beb7": {
    "source": "{0} had a name · {1} went wrong",
    "text": "{0} had a name · {1} went wrong"
+  },
+  "p.half-goes-into-s-authorized-keys.ddc16b43": {
+   "source": "half goes into {0}'s authorized_keys of {1}. A key there before stays until it is taken away in the list below.",
+   "text": "half goes into {0}'s authorized_keys of {1}. A key there before stays until it is taken away in the list below."
   },
   "p.half-of-them-9-of-10.705a4899": {
    "source": "half of them; 9 of 10 within {0}",
@@ -39210,6 +39914,14 @@
    "source": "\"{0}\" is not a protocol",
    "text": "\"{0}\" is not a protocol"
   },
+  "p.is-not-a-user-who-may.262d36fa": {
+   "source": "{0} is not a user who may sign in on {1}.",
+   "text": "{0} is not a user who may sign in on {1}."
+  },
+  "p.is-not-answering-what-it-shows.7dcc3346": {
+   "source": "{0} is not answering: what it shows is what it said last, and a change asked of it waits until it is back.",
+   "text": "{0} is not answering: what it shows is what it said last, and a change asked of it waits until it is back."
+  },
   "p.is-not-how-a-line-of.165d4380": {
    "source": "\"{0}\" is not how a line of an access list starts - it is permit, deny, remark or evaluate",
    "text": "\"{0}\" is not how a line of an access list starts - it is permit, deny, remark or evaluate"
@@ -39217,6 +39929,10 @@
   "p.is-not-on-this-machine.b7cb8b9d": {
    "source": "{0} is not on this machine: {1}",
    "text": "{0} is not on this machine: {1}"
+  },
+  "p.is-not-on.0e0af36b": {
+   "source": "{0} is not on {1}.",
+   "text": "{0} is not on {1}."
   },
   "p.is-not-one-of.4373bc7f": {
    "source": "{0}: {1} is not one of {2}",
@@ -39238,9 +39954,17 @@
    "source": "{0} is on a clock. This takes the clock off and keeps it out until somebody says otherwise.",
    "text": "{0} is on a clock. This takes the clock off and keeps it out until somebody says otherwise."
   },
+  "p.is-taken-away.06859e05": {
+   "source": "{0} is taken away{1}{2}",
+   "text": "{0} is taken away{1}{2}"
+  },
   "p.is-the-other-family-s-word.048176e4": {
    "source": "\"{0}\" is the other family's word - an IPv{1} list says \"{2}\"",
    "text": "\"{0}\" is the other family's word - an IPv{1} list says \"{2}\""
+  },
+  "p.is-there-already.f3d7dfb0": {
+   "source": "{0} is there already",
+   "text": "{0} is there already"
   },
   "p.is-there-but-cannot-be-read.951a3394": {
    "source": "{0} is there but cannot be read ({1}); put it right first - nothing was written to it",
@@ -39274,6 +39998,10 @@
    "source": "isemon_lang={0}; max-age=31536000; path=/; SameSite=Strict{1}",
    "text": "isemon_lang={0}; max-age=31536000; path=/; SameSite=Strict{1}"
   },
+  "p.isemon-local-policy-set.aed81693": {
+   "source": "isemon --local-policy-set {0}=…",
+   "text": "isemon --local-policy-set {0}=…"
+  },
   "p.isemon-passwd.7534cd86": {
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
@@ -39301,6 +40029,10 @@
   "p.isemon.46479b91": {
    "source": "isemon {0}{1}",
    "text": "isemon {0}{1}"
+  },
+  "p.isemon.a168d69b": {
+   "source": "isemon-{0}",
+   "text": "isemon-{0}"
   },
   "p.it-carries-the-keys-are-put.2fb954e3": {
    "source": ": it carries {0}. The keys are put in place with it (the ones here now are kept beside them), so the passwords, the routers’ keys and the certificate in it open here; config.json is in it to read only and is not used.",
@@ -39674,9 +40406,29 @@
    "source": "Make a certificate for {0}",
    "text": "Make a certificate for {0}"
   },
+  "p.make-a-fresh-pair-here-ed25519.58e1200d": {
+   "source": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into {0}'s authorized_keys of {1}",
+   "text": "Make a fresh pair here - Ed25519, or RSA 4096 where something old needs RSA. Its private half is shown to you once; its public half goes into {0}'s authorized_keys of {1}"
+  },
+  "p.make-a-key-for-on-every.1663d415": {
+   "source": "Make a key for {0} on every node",
+   "text": "Make a key for {0} on every node"
+  },
+  "p.make-a-key-for-only-on.692fdf21": {
+   "source": "Make a key for {0} only on {1}",
+   "text": "Make a key for {0} only on {1}"
+  },
   "p.make-a-key-for.cf550ac0": {
    "source": "Make a key for {0}",
    "text": "Make a key for {0}"
+  },
+  "p.make-it-on-too.712db95c": {
+   "source": "Make it on {0} too",
+   "text": "Make it on {0} too"
+  },
+  "p.make-on-more-nodes.ad04c7a9": {
+   "source": "Make {0} on more nodes",
+   "text": "Make {0} on more nodes"
   },
   "p.matching.4c24fab9": {
    "source": "{0} matching",
@@ -39865,6 +40617,18 @@
   "p.no-key-could-be-made.b189ccc7": {
    "source": "no key could be made: {0}",
    "text": "no key could be made: {0}"
+  },
+  "p.no-key-lets-in-over-ssh.0acf8f9f": {
+   "source": "No key lets {0} in over SSH on",
+   "text": "No key lets {0} in over SSH on"
+  },
+  "p.no-key-lets-in-over-ssh.4d622423": {
+   "source": "No key lets {0} in over SSH on this server.",
+   "text": "No key lets {0} in over SSH on this server."
+  },
+  "p.no-longer-signs-in-with.ee8d40fa": {
+   "source": "{0} no longer signs in with",
+   "text": "{0} no longer signs in with"
   },
   "p.no-server-in-the-list-has.d3287729": {
    "source": "no server in the list has a name for {0}",
@@ -40074,6 +40838,10 @@
    "source": "{0} of dumps on a disk with {1} free.",
    "text": "{0} of dumps on a disk with {1} free."
   },
+  "p.of-every-node-the-same-key.1ea1f8fd": {
+   "source": "of every node - the same key{0}",
+   "text": "of every node - the same key{0}"
+  },
   "p.of-fetched.01fe9be6": {
    "source": "{0} of {1} fetched",
    "text": "{0} of {1} fetched"
@@ -40130,6 +40898,10 @@
    "source": "{0} of the {1} machines refused here got on to the network anyway — a PC is refused by MAB and then authenticates with its certificate, which is the ordinary way one joins. The card below leaves those out.",
    "text": "{0} of the {1} machines refused here got on to the network anyway — a PC is refused by MAB and then authenticates with its certificate, which is the ordinary way one joins. The card below leaves those out."
   },
+  "p.of-the-nodes-is-on-the.c2dc301f": {
+   "source": "of the nodes {0} is on: {1} - the same key{2}",
+   "text": "of the nodes {0} is on: {1} - the same key{2}"
+  },
   "p.of-the-that-ended.251132c1": {
    "source": "of the {0} that ended",
    "text": "of the {0} that ended"
@@ -40157,6 +40929,10 @@
   "p.of-these-refusal-s-are-in.0c831b45": {
    "source": "{0} of these {1} refusal(s) are in {2}’s own log, at the same moment and under the same name: {3} asked the domain about them.",
    "text": "{0} of these {1} refusal(s) are in {2}’s own log, at the same moment and under the same name: {3} asked the domain about them."
+  },
+  "p.of-this-server.6d5af9d5": {
+   "source": "of this server{0}",
+   "text": "of this server{0}"
   },
   "p.of-used-free.6cea0618": {
    "source": "{0} of {1} used · {2} free",
@@ -40214,10 +40990,6 @@
    "source": "· {0} on the VPN",
    "text": "· {0} on the VPN"
   },
-  "p.on-this-server.28ccf243": {
-   "source": "{0} on this server.{1}",
-   "text": "{0} on this server.{1}"
-  },
   "p.once-in-the-zone-above-it.15345c1a": {
    "source": "once, in the zone above it: {0} at deSEC",
    "text": "once, in the zone above it: {0} at deSEC"
@@ -40266,9 +41038,17 @@
    "source": "only what isemon wrote itself - remote-isemon, isemon-day-logs - for {0}; nobody’s own file is touched",
    "text": "only what isemon wrote itself - remote-isemon, isemon-day-logs - for {0}; nobody’s own file is touched"
   },
+  "p.only.8e648ba4": {
+   "source": "{0} only.",
+   "text": "{0} only."
+  },
   "p.only.98cbccbe": {
    "source": "only {0} – {1} ×",
    "text": "only {0} – {1} ×"
+  },
+  "p.only.be8bd4ed": {
+   "source": "only{0}",
+   "text": "only{0}"
   },
   "p.open-the-refusals-from-here.fbfc4d7d": {
    "source": "Open the {0} refusals from here. {1}",
@@ -40345,6 +41125,14 @@
   "p.page-of.bdeb5f10": {
    "source": "page {0}{1} of {2}",
    "text": "page {0}{1} of {2}"
+  },
+  "p.pam-faillock-is-not-in-its.88142594": {
+   "source": "{0}pam_faillock is not in its PAM, and authselect does not manage it - the lockout is not in use there.",
+   "text": "{0}pam_faillock is not in its PAM, and authselect does not manage it - the lockout is not in use there."
+  },
+  "p.pam-pwquality-is-not-in-its.39a59a3d": {
+   "source": "{0}pam_pwquality is not in its PAM - the rules of the password are not kept there by passwd.",
+   "text": "{0}pam_pwquality is not in its PAM - the rules of the password are not kept there by passwd."
   },
   "p.passed.f431c1ef": {
    "source": "passed_{0}",
@@ -40494,6 +41282,10 @@
    "source": "ran out {0} days ago",
    "text": "ran out {0} days ago"
   },
+  "p.ran-out.d94055d1": {
+   "source": "ran out {0}",
+   "text": "ran out {0}"
+  },
   "p.range-s-countries-fetched.75c16e41": {
    "source": "{0} range(s) · {1} countries · fetched {2}",
    "text": "{0} range(s) · {1} countries · fetched {2}"
@@ -40634,9 +41426,17 @@
    "source": "Root gzips the copies of logs older than three days that were never compressed, in {0} - behind, at the lowest priority.",
    "text": "Root gzips the copies of logs older than three days that were never compressed, in {0} - behind, at the lowest priority."
   },
+  "p.root-is-not-among-the-accounts.559acdd3": {
+   "source": "{0}root is not among the accounts that may sign in over SSH (AllowUsers) - the keys below are not used until it is.",
+   "text": "{0}root is not among the accounts that may sign in over SSH (AllowUsers) - the keys below are not used until it is."
+  },
   "p.root-or-an-account-allowed-to.a44d0358": {
    "source": "({0}). Root, or an account allowed to run",
    "text": "({0}). Root, or an account allowed to run"
+  },
+  "p.root-or-one-of-the-users.eb86e21a": {
+   "source": "root, or one of the {0} users who may sign in here (a login shell, UID 1000 and up) - their own ~/.ssh/authorized_keys, written as they are.",
+   "text": "root, or one of the {0} users who may sign in here (a login shell, UID 1000 and up) - their own ~/.ssh/authorized_keys, written as they are."
   },
   "p.root-wrote.ab87af9d": {
    "source": "root wrote {0}{1}{2}",
@@ -40790,6 +41590,10 @@
    "source": "Set on this machine{0}.",
    "text": "Set on this machine{0}."
   },
+  "p.set-on.b300e846": {
+   "source": "set on {0}",
+   "text": "set on {0}"
+  },
   "p.set-refresh-rate.cd920ca9": {
    "source": "{0} set refresh-rate {1}",
    "text": "{0} set refresh-rate {1}"
@@ -40938,9 +41742,21 @@
    "source": "srcip:{0} kind:event/vpn",
    "text": "srcip:{0} kind:event/vpn"
   },
+  "p.ssh-authorized-keys.e0a8c729": {
+   "source": "~{0}/.ssh/authorized_keys",
+   "text": "~{0}/.ssh/authorized_keys"
+  },
   "p.ssh-firewall-pfctl-t-t-show.af5239d2": {
    "source": "ssh {0}@FIREWALL pfctl -t {1} -T show",
    "text": "ssh {0}@FIREWALL pfctl -t {1} -T show"
+  },
+  "p.sshd-does-not-let-root-sign.5e841d3b": {
+   "source": "{0}sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does.",
+   "text": "{0}sshd does not let root sign in at all (PermitRootLogin no) - the keys below are not used until it does."
+  },
+  "p.sshd-takes-no-keys-pubkeyauthentication-no.330122cc": {
+   "source": "{0}sshd takes no keys (PubkeyAuthentication no).",
+   "text": "{0}sshd takes no keys (PubkeyAuthentication no)."
   },
   "p.ssl.16071e1c": {
    "source": "SSL: {0}",
@@ -41005,6 +41821,10 @@
   "p.successful-login-s.b3661de3": {
    "source": "{0} successful login(s)",
    "text": "{0} successful login(s)"
+  },
+  "p.sudo-may-become-root-with-their.0d6e2956": {
+   "source": "sudo: may become root with their own password (a member of {0}).",
+   "text": "sudo: may become root with their own password (a member of {0})."
   },
   "p.svc-isemon-http.16ed5c42": {
    "source": "{0}\\svc-isemon-http",
@@ -41374,13 +42194,17 @@
    "source": "The first {0} of them. This domain has {1}, which is more than is carried for matching — the number above is the domain’s own.",
    "text": "The first {0} of them. This domain has {1}, which is more than is carried for matching — the number above is the domain’s own."
   },
-  "p.the-key-goes-into-root-s.be660579": {
-   "source": "the key goes into root's authorized_keys within a few seconds{0}",
-   "text": "the key goes into root's authorized_keys within a few seconds{0}"
+  "p.the-key-goes-onto-within-a.27ccf042": {
+   "source": "the key goes onto {0} within a few seconds{1}",
+   "text": "the key goes onto {0} within a few seconds{1}"
   },
   "p.the-key-is-exported-as-pub.459b412b": {
    "source": "the key is exported as {0}.pub",
    "text": "the key is exported as {0}.pub"
+  },
+  "p.the-key-is-taken-away-on.9fd014a8": {
+   "source": "the key is taken away on {0} within a few seconds",
+   "text": "the key is taken away on {0} within a few seconds"
   },
   "p.the-keys-could-not-be-put.03fbc035": {
    "source": "the keys could not be put into the copy: {0}",
@@ -41538,6 +42362,14 @@
    "source": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\".",
    "text": "the password for {0} lives in the directory, and changing it here would make a second way in that the domain knows nothing about. Change it in the domain. If you need a way in for when the domain cannot be reached, set one on the server with \"isemon --passwd {1}\"."
   },
+  "p.the-password-is-characters-at-least.c1572e95": {
+   "source": "the password is {0} characters at least",
+   "text": "the password is {0} characters at least"
+  },
+  "p.the-password-runs-out-on.142b7ecb": {
+   "source": "The password runs out on {0}.",
+   "text": "The password runs out on {0}."
+  },
   "p.the-processor-busy-over-the-last.f50f06d7": {
    "source": "The processor, busy over the last {0} s, all {1} core(s) together{2}",
    "text": "The processor, busy over the last {0} s, all {1} core(s) together{2}"
@@ -41642,9 +42474,9 @@
    "source": "The {0} worked out from the log folders and the servers that have written lately are marked; nothing else is.",
    "text": "The {0} worked out from the log folders and the servers that have written lately are marked; nothing else is."
   },
-  "p.then-on-your-machine-ssh-i.85827aa3": {
-   "source": "Then, on your machine: ssh -i {0} root@…",
-   "text": "Then, on your machine: ssh -i {0} root@…"
+  "p.then-on-your-machine-ssh-i.ca9f50bd": {
+   "source": "Then, on your machine: ssh -i {0} {1}@…",
+   "text": "Then, on your machine: ssh -i {0} {1}@…"
   },
   "p.there-are-already-record-s-in.6be26df5": {
    "source": "there are already {0} record(s) in it. Moving into a database that is not empty would mix two installations; empty it first if it really is spare.",
@@ -41733,6 +42565,10 @@
   "p.this-firewall-is-missing-address-es.c9964693": {
    "source": "This firewall is missing {0} address(es) that this machine says should be on it{1}. A sync puts them on.",
    "text": "This firewall is missing {0} address(es) that this machine says should be on it{1}. A sync puts them on."
+  },
+  "p.this-is-the-only-time-it.dc5cf129": {
+   "source": "This is the only time it is shown. Whoever holds it signs in to {0} as {1}.",
+   "text": "This is the only time it is shown. Whoever holds it signs in to {0} as {1}."
   },
   "p.this-one-and-other-s.da89176c": {
    "source": "— this one and {0} other(s)",
@@ -41913,6 +42749,10 @@
   "p.u-password.8d5ff3f0": {
    "source": "-u '{0}:PASSWORD'",
    "text": "-u '{0}:PASSWORD'"
+  },
+  "p.uid.26a97148": {
+   "source": "UID {0}",
+   "text": "UID {0}"
   },
   "p.under-settings-banning-where-the-bans.835a0bde": {
    "source": ": {0} under Settings → Banning → Where the bans come from. It can still reach the VPN.",
@@ -42210,6 +43050,14 @@
    "source": "{0} with a remark",
    "text": "{0} with a remark"
   },
+  "p.with-and-everything-in-it.d1b273b6": {
+   "source": "- with {0} and everything in it.",
+   "text": "- with {0} and everything in it."
+  },
+  "p.with-everything-in-it-ssh-keys.898d024d": {
+   "source": "{0} - with everything in it, SSH keys among it.",
+   "text": "{0} - with everything in it, SSH keys among it."
+  },
   "p.with-nothing-after-it.41b1b573": {
    "source": "\"{0}\" with nothing after it",
    "text": "\"{0}\" with nothing after it"
@@ -42241,6 +43089,10 @@
   "p.writes-for-copies-kept-asks-logrotate.e586163b": {
    "source": "writes {0} for {1} ({2} copies kept), asks logrotate whether all is well and puts it back if not",
    "text": "writes {0} for {1} ({2} copies kept), asks logrotate whether all is well and puts it back if not"
+  },
+  "p.written-as-so-that-the-folder.50e75e9a": {
+   "source": "- written as {0}, so that the folder and the file are theirs. The",
+   "text": "- written as {0}, so that the folder and the file are theirs. The"
   },
   "p.written.acd887d3": {
    "source": "· written {0}",
@@ -42311,10 +43163,6 @@
   "r.a-fresh-ed25519-pair-is-made.3e16dfb8": {
    "source": "A fresh ed25519 pair is made here. The private half stays on this machine and the public half is shown for you to put on that router.<br><br><b>Any key already stored for it is replaced</b>, so until the new public half is on it this will not be able to sign in — which means bans stop reaching it until you do. The other firewall’s key is not touched.",
    "text": "A fresh ed25519 pair is made here. The private half stays on this machine and the public half is shown for you to put on that router.<br><br><b>Any key already stored for it is replaced</b>, so until the new public half is on it this will not be able to sign in — which means bans stop reaching it until you do. The other firewall’s key is not touched."
-  },
-  "r.a-fresh-pair-is-made-here.a320b484": {
-   "source": "A fresh pair is made here. Its <b>private</b> half is shown to you once, to download or copy, and kept nowhere; its <b>public</b> half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
-   "text": "A fresh pair is made here. Its <b>private</b> half is shown to you once, to download or copy, and kept nowhere; its <b>public</b> half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below."
   },
   "r.a-full-admin-may-change-anything.55cf7935": {
    "source": "A <b>full admin</b> may change anything here. A <b>read only</b> account may look at every page and change nothing — no ban, no setting, not even a fetch.",
@@ -42836,10 +43684,6 @@
    "source": "<br>It is one of the names under <b>a name that does not exist</b> in Settings: nobody has ever had it, so this is guessing rather than mistyping.",
    "text": "<br>It is one of the names under <b>a name that does not exist</b> in Settings: nobody has ever had it, so this is guessing rather than mistyping."
   },
-  "r.it-is-the-last-key-root.289eca80": {
-   "source": "<br><br><b>It is the last key root signs in with on this server.</b> Unless root may sign in with a password, nobody reaches it over SSH as root after this.",
-   "text": "<br><br><b>It is the last key root signs in with on this server.</b> Unless root may sign in with a password, nobody reaches it over SSH as root after this."
-  },
   "r.it-says-what-it-would-do.28f93df9": {
    "source": "It says what it would do before it does anything, and a subnet is only made where two or more banned addresses fall inside it — never where it would swallow something under <i>never kept out</i>.",
    "text": "It says what it would do before it does anything, and a subnet is only made where two or more banned addresses fall inside it — never where it would swallow something under <i>never kept out</i>."
@@ -42847,10 +43691,6 @@
   "r.its-attempt-s-stop-counting-towards.a90f472b": {
    "source": "Its <b>{0}</b> attempt(s) stop counting towards a ban, and it has to earn one from here.<br><br>Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page, and its ban history says who cleared it and when.",
    "text": "Its <b>{0}</b> attempt(s) stop counting towards a ban, and it has to earn one from here.<br><br>Nothing is deleted and nobody is let in: every attempt stays on the Failed attempts page, and its ban history says who cleared it and when."
-  },
-  "r.its-public-half-goes-into-root.81273509": {
-   "source": "Its <b>public</b> half goes into <code>/root/.ssh/authorized_keys</code> of this server. The <b>private</b> half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too.",
-   "text": "Its <b>public</b> half goes into <code>/root/.ssh/authorized_keys</code> of this server. The <b>private</b> half is never kept here: it is shown to you once, to download or copy. The key is then in the list below - exported or taken away there; a key of your own is added there too."
   },
   "r.keep-out-for-good-now-without.07eaa15c": {
    "source": "Keep {0} out <b>for good</b>, now, without waiting for it to reach the bar. The router is told at once.",
@@ -43000,10 +43840,6 @@
    "source": "One input a log, so that a log a controller does not have does not stop the others; the same output, so everything lands in the same file isemon reads. Then restart NXLog (<code>Restart-Service nxlog</code>).",
    "text": "One input a log, so that a log a controller does not have does not stop the others; the same output, so everything lands in the same file isemon reads. Then restart NXLog (<code>Restart-Service nxlog</code>)."
   },
-  "r.one-line-of-a-pub-file.5502bb80": {
-   "source": "One line of a <code>.pub</code> file: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA or RSA of 3072 bits and more; options before the key are not taken here. A private key is taken too: its public half is worked out here and the private half is not kept.",
-   "text": "One line of a <code>.pub</code> file: <code>ssh-ed25519 AAAA… you@laptop</code>. Ed25519, ECDSA or RSA of 3072 bits and more; options before the key are not taken here. A private key is taken too: its public half is worked out here and the private half is not kept."
-  },
   "r.only-a-vpn-refusal-from-an.e317f690": {
    "source": "Only a <b>VPN refusal</b> from an address on the internet can earn a ban - while <i>The VPN through a FreeRADIUS of your own</i> under Banning → Where the bans come from is on, which it is not until switched on. A socket or a radio never does. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "Only a <b>VPN refusal</b> from an address on the internet can earn a ban - while <i>The VPN through a FreeRADIUS of your own</i> under Banning → Where the bans come from is on, which it is not until switched on. A socket or a radio never does. Switched off, not one file is opened and nothing anywhere behaves differently."
@@ -43132,10 +43968,6 @@
    "source": "Root <b>deletes</b> the copies of logs in {0} older than <b>{1} days</b> - as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone.",
    "text": "Root <b>deletes</b> the copies of logs in {0} older than <b>{1} days</b> - as long as its logrotate file means them to be kept - and packs the rest older than three days. What isemon read of them stays in the database. It cannot be undone."
   },
-  "r.root-no-longer-signs-in-with.c3b654aa": {
-   "source": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}",
-   "text": "Root no longer signs in with <code>{0}</code>{1} on this server.{2}"
-  },
   "r.root-takes-out-of-its-own.2a1d1f3e": {
    "source": "Root takes <b>{0}</b> out of {1} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>{2}</b>: every day the day files and their copies older than two days packed, those older than <b>{3} days</b> deleted - and runs it once now, behind. What isemon read of them stays in the database.",
    "text": "Root takes <b>{0}</b> out of {1} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes <b>{2}</b>: every day the day files and their copies older than two days packed, those older than <b>{3} days</b> deleted - and runs it once now, behind. What isemon read of them stays in the database."
@@ -43163,10 +43995,6 @@
   "r.rsyslog-stops-taking-otp-s-lines.7c91c403": {
    "source": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again.",
    "text": "rsyslog stops taking otp's lines over TLS, and isemon's certificate, its key, otp's authority and the authority made here are deleted from this machine. The plain input on 514 stays as it is.<br><br>Switch otp's nodes back to plain sending first, or their lines stop arriving. To use TLS again, set it up anew - a certificate made here again comes from a new authority, which has to be pasted into otp again."
-  },
-  "r.said-again-is-the-last-key.881cae52": {
-   "source": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key.",
-   "text": "Said again: <code>{0}</code> is the last key root signs in with on this server. After it is gone, nobody reaches it over SSH as root with a key."
   },
   "r.search-es-of-the-find-box.66d390c6": {
    "source": "• {0} search(es) of the find box<br>",

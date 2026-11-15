@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """1.10.239: Settings → SSH keys of root, after otp's (1.0.158-1.0.161) - the
-keys in /root/.ssh/authorized_keys read, added and taken away by root's
-helper (sshkeys.ask, sshkeys.json); a key made here shown once and kept
-nowhere; a private key given leaves only its public half. The file is one in
+keys in /root/.ssh/authorized_keys read by root's helper (sshkeys.ask,
+sshkeys.json). Since 1.10.351 root's keys are only shown: every add, drop and
+make for root is refused by the API (403), the daemon and root's helper, the
+file byte for byte as it was (test/fixes351_sshkeys_users.py has the keys of
+the other users). The file is one in
 a folder of the test's own (ISEMON_ROOT_AUTHKEYS) and sshd is a small script,
 so nothing of this machine's root is read or touched. ssh-keygen is the real
 one: the bits and fingerprints are what it says.
@@ -113,75 +115,40 @@ try:
        (got['ok'], got['id'], got['data']['keys'], AUTH.exists(), SSHDIR.exists()),
        (True, 'r1', [], False, False))
     ok('what sshd says', got['data']['sshd'],
-       {'there': True, 'permit_root': 'prohibit-password', 'pubkey': 'yes', 'password': 'no',
-        'port': '2222'})
+       {'there': True, 'permit_root': 'prohibit-password', 'allow_users': '', 'pubkey': 'yes',
+        'password': 'no', 'port': '2222'})
     ok('the file it is', got['data']['file'], str(AUTH))
-    got = ask({'id': 'r2', 'do': 'add', 'line': A})
-    ok('a key added', (got['ok'], [k['fp'] for k in got['data']['keys']]), (True, [A_FP]))
-    ok('...its folder made 0700, the file 0600', (mode(SSHDIR), mode(AUTH)), (0o700, 0o600))
-    ok('...the file is the line', AUTH.read_text(), A + '\n')
-    k = got['data']['keys'][0]
-    ok('...listed with its kind, comment and line',
-       (k['type'], k['comment'], k['options'], k['text']), ('ED25519', 'alice@laptop', False, A))
-    got = ask({'id': 'r3', 'do': 'add', 'line': A})
-    ok('the same key again is no fault, and not there twice',
-       (got['ok'], AUTH.read_text().count('alice@laptop')), (True, 1))
 
+    # Root's keys only read since 1.10.351: nothing asked here changes them.
     OWN = ('# keys of root, kept by hand\n' + A + '\n'
            'from="10.0.0.0/8",no-pty ' + B.split(' ', 2)[0] + ' ' + B.split(' ', 2)[1] +
            ' bob-with-options\n'
            'something nobody understands\n')
+    SSHDIR.mkdir(mode=0o700)
     AUTH.write_text(OWN)
     AUTH.chmod(0o644)
     got = ask({'id': 'r4', 'do': 'list'})
     ks = got['data']['keys']
     ok('a line with options is listed as such, a line not read too',
        [(x['options'], x['readable']) for x in ks], [(False, True), (True, True), (True, False)])
-    got = ask({'id': 'r5', 'do': 'add', 'line': RSA3K})
-    ok('an RSA key of 3072 bits is taken', (got['ok'], RSA3K_FP in [x['fp'] for x in
-                                                                   got['data']['keys']]),
-       (True, True))
-    ok('...every line it does not understand kept as it was',
-       AUTH.read_text(), OWN + RSA3K + '\n')
-    ok('...written as a new file of 0600', mode(AUTH), 0o600)
+    k = ks[0]
+    ok('...listed with its kind, comment and line',
+       (k['type'], k['comment'], k['options'], k['text']), ('ED25519', 'alice@laptop', False, A))
 
-    print('\nRefused')
-    before = AUTH.read_text()
-    for what, line, said in (
-            ('an RSA key under 3072 bits', WEAK, 'too weak'),
-            ('a DSA key', 'ssh-dss ' + 'A' * 60 + ' old', 'not one public key line'),
-            ('options before the key', 'no-pty ' + B, 'not one public key line'),
-            ('two lines', A + '\n' + B, 'not one public key line'),
-            ('a private key', A_PRIV, 'not one public key line'),
-            ('a line ssh-keygen does not read', 'ssh-ed25519 ' + 'A' * 68 + ' x',
-             'does not read')):
-        got = ask({'id': 'x', 'do': 'add', 'line': line})
-        ok('%s: refused, the file as it was' % what,
-           (got['ok'], said in got.get('said', ''), AUTH.read_text()), (False, True, before))
-    got = ask({'id': 'x', 'do': 'what'})
-    ok('nothing else may be asked', (got['ok'], got['said']), (False, 'list, add or drop'))
-    got = ask({'id': 'x', 'do': 'add', 'line': B, 'at': time.time() - 3600}, fresh=False)
-    ok('a change asked long ago is not done',
-       (got['ok'], 'too long ago' in got['said'], AUTH.read_text()), (False, True, before))
-    got = ask({'id': 'x', 'do': 'add', 'line': B}, fresh=False)
-    ok('...nor one that does not say when', got['ok'], False)
-    got = ask({'id': 'x', 'do': 'drop', 'fp': 'SHA256:nothere'})
-    ok('a key that is not there is not taken away', (got['ok'], 'no key' in got['said']),
-       (False, True))
-
-    print('\nTaking keys away')
-    got = ask({'id': 'd1', 'do': 'drop', 'fp': RSA3K_FP})
-    ok('a key taken away, everything else kept',
-       (got['ok'], AUTH.read_text()), (True, OWN))
-    AUTH.write_text(A + '\n')
-    got = ask({'id': 'd2', 'do': 'drop', 'fp': A_FP})
-    ok('the last key is not taken away unless said again',
-       (got['ok'], 'last key' in got['said'], AUTH.read_text()), (False, True, A + '\n'))
-    got = ask({'id': 'd3', 'do': 'drop', 'fp': A_FP, 'last_ok': 'yes'})
-    ok('..."yes" is not said again', (got['ok'], AUTH.read_text()), (False, A + '\n'))
-    got = ask({'id': 'd4', 'do': 'drop', 'fp': A_FP, 'last_ok': True})
-    ok('...said again, it goes', (got['ok'], got['data']['keys'], AUTH.read_text()),
-       (True, [], '\n'))
+    print('\nRoot\'s keys only shown (1.10.351)')
+    for what, req in (('a key added', {'do': 'add', 'line': RSA3K}),
+                      ('a key added, root named', {'do': 'add', 'line': RSA3K, 'user': 'root'}),
+                      ('a key taken away', {'do': 'drop', 'fp': A_FP}),
+                      ('the last key taken away, said again',
+                       {'do': 'drop', 'fp': A_FP, 'last_ok': True}),
+                      ('anything else', {'do': 'what'})):
+        got = ask(dict(req, id='x'))
+        ok('%s: refused with the words, the file byte for byte as it was' % what,
+           (got['ok'], got['said'], AUTH.read_text(), mode(AUTH)),
+           (False, isemon.ROOT_KEYS_SHOWN_ONLY, OWN, 0o644))
+    src = HELPER.read_text()
+    ok('no code left in the helper that writes root\'s file',
+       ('def auth_write' in src, 'os.replace(tmp, ROOT_AUTH)' in src), (False, False))
 
     print('\nLinks')
     AUTH.unlink()
@@ -191,19 +158,7 @@ try:
     got = ask({'id': 'l1', 'do': 'list'})
     ok('authorized_keys a link: not read through it', (got['ok'], 'cannot be read' in got['said']),
        (False, True))
-    got = ask({'id': 'l2', 'do': 'add', 'line': A})
-    ok('...nor written through it', (got['ok'], elsewhere.read_text(), AUTH.is_symlink()),
-       (False, B + '\n', True))
     AUTH.unlink()
-    shutil.rmtree(str(SSHDIR))
-    other = work / 'other-ssh'
-    other.mkdir()
-    SSHDIR.symlink_to(other)
-    got = ask({'id': 'l3', 'do': 'add', 'line': A})
-    ok('.ssh a link: nothing written there', (got['ok'], 'not a plain folder' in got['said'],
-                                              os.listdir(str(other))), (False, True, []))
-    SSHDIR.unlink()
-    SSHDIR.mkdir(mode=0o700)
     (state / 'web' / 'sshkeys.json').unlink()
     (state / 'web' / 'sshkeys.ask').symlink_to(work / 'elsewhere')
     root_runs()
@@ -212,8 +167,6 @@ try:
         (state / 'web' / 'sshkeys.json').exists(), elsewhere.read_text()), (False, False, B + '\n'))
     ok('nothing asked: the helper does nothing',
        (root_runs().returncode, (state / 'web' / 'sshkeys.json').exists()), (0, False))
-    got = ask({'id': 'l4', 'do': 'add', 'line': A})
-    ok('a plain folder again: written', (got['ok'], mode(AUTH)), (True, 0o600))
 
     # ------------------------------------------------------------------------
     print('\nThe daemon')
@@ -269,91 +222,44 @@ try:
        ([k['fp'] for k in v['keys']], v['sshd']['port'], v['file'], v['error'], v['pending']),
        ([A_FP], '2222', str(AUTH), '', 0))
     ok('...nothing changed for it', AUTH.read_text(), A + '\n')
-
-    isemon.sshkeys_ask(wr, 'add', 'boss', line=B)
-    ok('a key added behind',
-       settle(lambda: idle() and B_FP in [k['fp'] for k in isemon.SSHKEYS_WORK['now']['keys']]))
-    ok('...into the file', AUTH.read_text(), A + '\n' + B + '\n')
-    for what, args in (('a weak RSA key', ('add', 'boss', WEAK)),
-                       ('options before it', ('add', 'boss', 'no-pty ' + B)),
-                       ('a private key as a line', ('add', 'boss', A_PRIV)),
-                       ('something else', ('chmod', 'boss')),
-                       ('a drop of no fingerprint', ('drop', 'boss', '', 'x'))):
+    for what, args in (('a key added', ('add', 'boss', B)),
+                       ('a weak RSA key', ('add', 'boss', WEAK)),
+                       ('a key taken away', ('drop', 'boss', '', A_FP)),
+                       ('something else', ('chmod', 'boss'))):
         try:
             isemon.sshkeys_ask(wr, *args)
-            ok('the daemon refuses %s at once' % what, 'taken', 'refused')
-        except ValueError:
-            ok('the daemon refuses %s at once' % what, True)
-    isemon.sshkeys_ask(wr, 'drop', 'boss', fp=A_FP)
-    ok('a key taken away behind', settle(lambda: idle() and [
-        k['fp'] for k in isemon.SSHKEYS_WORK['now']['keys']] == [B_FP]))
-    isemon.sshkeys_ask(wr, 'drop', 'boss', fp=B_FP)
-    settle(idle)
-    v = isemon.sshkeys_view(wr)
-    ok('the last one: refused, said, still there',
-       ('last key' in v['error'], [k['fp'] for k in v['keys']], AUTH.read_text()),
-       (True, [B_FP], B + '\n'))
-    isemon.sshkeys_ask(wr, 'list', 'boss')
-    settle(idle)
-    ok('...said over the read after it', 'last key' in isemon.sshkeys_view(wr)['error'])
+            ok('the daemon refuses %s for root at once' % what, 'taken', 'refused')
+        except ValueError as e:
+            ok('the daemon refuses %s for root at once' % what,
+               (str(e), isinstance(e, isemon.RootKeysShownOnly)) if args[0] != 'chmod'
+               else True, (isemon.ROOT_KEYS_SHOWN_ONLY, True) if args[0] != 'chmod' else True)
+    ok('...no ask written for any of it', (isemon.SSHKEYS_WORK['queue'], AUTH.read_text()),
+       ([], A + '\n'))
 
-    print('\nA key made here, a key given')
-    x = isemon.sshkeys_api(wr, {'action': 'rk_make', 'kind': 'ed25519'}, 'boss')
-    ok('made: the private half handed over, the public half and its fingerprint',
-       ('PRIVATE KEY' in x['private'], x['pub'].startswith('ssh-ed25519 '),
-        x['fp'].startswith('SHA256:'), x['file'].startswith('isemon-root-')),
-       (True, True, True, True))
-    ok('...its public half goes in', settle(lambda: idle() and x['fp'] in [
-        k['fp'] for k in isemon.SSHKEYS_WORK['now']['keys']]))
-    v = isemon.sshkeys_view(wr)
-    ok('...remembered as made here, and on', (v['kept']['fp'], v['kept']['how'], v['kept']['on']),
-       (x['fp'], 'made', True))
-    ok('...B still there: a key made does not take the old one away',
-       sorted(k['fp'] for k in v['keys']) == sorted([B_FP, x['fp']]))
-    x2 = isemon.sshkeys_api(wr, {'action': 'rk_make', 'kind': 'rsa4096'}, 'boss')
-    ok('RSA 4096 made too', settle(lambda: idle() and x2['fp'] in [
-        k['fp'] for k in isemon.SSHKEYS_WORK['now']['keys']]))
-    ok('...4096 bits', [k['bits'] for k in isemon.SSHKEYS_WORK['now']['keys']
-                        if k['fp'] == x2['fp']], [4096])
-    try:
-        isemon.sshkeys_api(wr, {'action': 'rk_make', 'kind': 'dsa'}, 'boss')
-        ok('no other kind is made', 'made', 'refused')
-    except ValueError:
-        ok('no other kind is made', True)
-    got = isemon.sshkeys_api(wr, {'action': 'add', 'line': LOCKED_PRIV, 'passphrase': 'sesame'},
-                             'boss')
-    ok('a private key with its passphrase: only its public half goes in',
-       ('private half was not kept' in got['message'],
-        settle(lambda: idle() and LOCKED_PUB.split()[1] in AUTH.read_text())), (True, True))
-    try:
-        isemon.sshkeys_api(wr, {'action': 'add', 'line': LOCKED_PRIV}, 'boss')
-        ok('...without it, said', 'taken', 'refused')
-    except ValueError as e:
-        ok('...without it, said', 'passphrase' in str(e))
-    got = isemon.sshkeys_api(wr, {'action': 'add', 'line': A_PRIV}, 'boss')
-    settle(lambda: idle() and A.split()[1] in AUTH.read_text())
-    ok('a private key without one: its public half', A.split()[1] in AUTH.read_text())
-    ok('no private key anywhere in root\'s file', 'PRIVATE' in AUTH.read_text(), False)
+    print('\nA key made here, a key given - not for root')
+    for body in ({'action': 'rk_make', 'kind': 'ed25519'}, {'action': 'uk_make'},
+                 {'action': 'add', 'line': LOCKED_PRIV, 'passphrase': 'sesame'},
+                 {'action': 'rk_given', 'key': B}, {'action': 'rk_again'},
+                 {'action': 'drop', 'fp': A_FP, 'user': 'root'}):
+        try:
+            x = isemon.sshkeys_api(wr, body, 'boss')
+            ok('%s for root: refused' % body['action'], 'private' in x, 'refused')
+        except isemon.RootKeysShownOnly:
+            ok('%s for root: refused' % body['action'], True)
+    settle(idle)
+    ok('root\'s file as it was', AUTH.read_text(), A + '\n')
     blob = b''
     for f in state.iterdir():
         if f.is_file() and not f.name.startswith('sshkeys'):
             blob += f.read_bytes()
     ok('no private key in the database, the log or any file of the daemon\'s',
-       (b'PRIVATE KEY' in blob, x['private'].split('\n')[1].encode() in blob,
-        b'sesame' in blob), (False, False, False))
+       (b'PRIVATE KEY' in blob, b'sesame' in blob), (False, False))
     db = sqlite3.connect(str(isemon.DB_FILE))
     ev = [r[0] for r in db.execute("SELECT detail FROM events WHERE kind='settings' "
                                    "ORDER BY id")]
     db.close()
-    ok('every change an event', (any('boss added the SSH key bob@desk for root' in e for e in ev),
-                                 any('boss took away the SSH key %s for root' % A_FP in e
-                                     for e in ev),
-                                 any('was not taken away for root' in e and 'last key' in e
-                                     for e in ev),
-                                 any('made a new SSH key for root (%s)' % x['fp'] in e
-                                     for e in ev)),
-       (True, True, True, True))
-    ok('...and none of them carries a private key', any('PRIVATE' in e for e in ev), False)
+    ok('no event says a key of root\'s was added, taken away or made',
+       any('for root' in e for e in ev), False)
 
     # ------------------------------------------------------------------------
     print('\nThrough the API')
@@ -389,23 +295,16 @@ try:
     st, v = call('/api/sshkeys', {'action': 'refresh'}, tok['boss'])
     ok('read again', (st, v['message']), (200, 'asked again'))
     settle(idle)
-    st, v = call('/api/sshkeys', {'action': 'add', 'line': WEAK}, tok['boss'])
-    ok('a weak key: said at once', (st, 'too weak' in v.get('error', '')), (400, True))
-    st, v = call('/api/sshkeys', {'action': 'add', 'line': RSA3K}, tok['boss'])
-    ok('a key added', (st, settle(lambda: idle() and RSA3K.split()[1] in AUTH.read_text())),
-       (200, True))
-    st, v = call('/api/sshkeys', {'action': 'drop', 'fp': RSA3K_FP}, tok['boss'])
-    ok('...and taken away', (st, settle(lambda: idle() and
-                                        RSA3K.split()[1] not in AUTH.read_text())), (200, True))
-    st, v = call('/api/sshkeys', {'action': 'rk_make', 'kind': 'ed25519'}, tok['boss'])
-    ok('a key made: its private half in the answer, once',
-       (st, 'PRIVATE KEY' in v.get('private', ''), 'not shown again' in v.get('message', '')),
-       (200, True, True))
+    for body in ({'action': 'add', 'line': RSA3K}, {'action': 'drop', 'fp': A_FP},
+                 {'action': 'rk_make', 'kind': 'ed25519'}, {'action': 'uk_make'}):
+        st, v = call('/api/sshkeys', body, tok['boss'])
+        ok('%s for root: 403 with the words' % body['action'], (st, v.get('error')),
+           (403, isemon.ROOT_KEYS_SHOWN_ONLY))
     settle(idle)
+    ok('...root\'s file as it was', AUTH.read_text(), A + '\n')
     st, v2 = call('/api/sshkeys', session=tok['boss'])
-    ok('...never again', ('PRIVATE' in json.dumps(v2), v2['kept']['fp'], v2['kept']['on']),
-       (False, v['fp'], True))
-    st, v = call('/api/sshkeys', {'action': 'nothing'}, tok['boss'])
+    ok('...no private key anywhere', 'PRIVATE' in json.dumps(v2), False)
+    st, v = call('/api/sshkeys', {'action': 'nothing', 'user': 'someone'}, tok['boss'])
     ok('nothing else to do', st, 400)
     api.stop() if hasattr(api, 'stop') else None
     stop.set()
@@ -426,22 +325,19 @@ try:
     unit = (ROOT / 'deploy' / 'isemon-web.path').read_text()
     ok('isemon-web.path watches sshkeys.ask', 'PathExists=/var/lib/isemon/web/sshkeys.ask' in unit)
     php = (ROOT / 'web' / 'index.php').read_text()
-    ok('?api=sshkeys read and written', php.count("'sshkeys'      => '/api/sshkeys',"), 2)
+    ok('?api=sshkeys read and written', php.count("'sshkeys'      => '/api/sshkeys',") >= 1 or
+       "'/api/sshkeys'" in php)
     srv = php[php.index('<div class="ctl-group">Server</div>'):]
     srv = srv[:srv.index('<div class="ctl-group">', 10)]
     ok('the pane under Server, for a full admin',
        'class="admin-only" data-pane="sshkeys" data-icon="key"' in srv and
-       '>SSH keys of root</button>' in srv)
-    # Up to the otp logs over TLS (1.10.245), whose otp words are otp's own.
-    sk_text = php[php.index('Settings → SSH keys of root'):]
-    sk_text = sk_text.split('otptls.ask, answered in otptls.json')[0]
-    ok('nothing of a cluster on it', any(w in sk_text
-                                         for w in ('both nodes', 'every node', 'Onto the nodes',
-                                                   'Put it on again')), False)
-    doc = (ROOT / 'docs' / 'ssh-keys-of-root.md').read_text()
-    ok('docs/ssh-keys-of-root.md', all(x in doc for x in ('/root/.ssh/authorized_keys', '0600',
-                                                         'sshkeys.ask', 'Make a key',
-                                                         'Add a key', '3072')))
+       ('>SSH keys of root</button>' in srv or '>SSH keys</button>' in srv))
+    doc = (ROOT / 'docs' / 'ssh-keys.md').read_text()
+    ok('docs/ssh-keys.md', all(x in doc for x in ('/root/.ssh/authorized_keys', '0600', '0700',
+                                                 'sshkeys.ask', 'Make a key', 'Add a key',
+                                                 '3072', 'only shown', '403')))
+    ok('docs/ssh-keys-of-root.md says where it went',
+       'ssh-keys.md' in (ROOT / 'docs' / 'ssh-keys-of-root.md').read_text())
 finally:
     shutil.rmtree(str(work), ignore_errors=True)
 

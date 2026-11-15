@@ -1,107 +1,15 @@
 # SSH keys of root
 
-*Settings → SSH keys of root* shows the keys that may sign in to this server
-as root over SSH - the lines of `/root/.ssh/authorized_keys` - and lets a full
-administrator make a new key, add one of their own, export one or take one
-away. (After otp's page of the same name, 1.0.158-1.0.161, without its cluster
-parts: isemon is one server, so there is no node to choose and nothing to put
-"on again where it is missing".)
+Since 1.10.351 this page is **[SSH keys](ssh-keys.md)**: root's keys are only
+shown there, and the keys of every other user who may sign in are made, added
+and taken away there.
 
-Nothing is changed until somebody asks for it on the page. Opening the pane
-only reads the file; the keys are not read at all until the pane is opened.
+Root's keys - the lines of `/root/.ssh/authorized_keys` - are no longer made,
+added or taken away from isemon: not on the page, not with `--root-key-add`,
+`--root-key-drop` or `--root-key-make`, not through `/api/sshkeys` (403).
+Change them on the server itself, as root. With a key in root's file the
+`isemon` account would be root outright; root's helper has no code left that
+writes it. `isemon --root-keys` still lists them, and what sshd makes of root.
 
-## What the page shows
-
-- **A key for root** - drawn as the key of a router is. *Make a key* makes a
-  fresh pair here: **Ed25519** (the strongest, and short) or **RSA 4096**
-  (where something old needs RSA). Its public half goes into root's
-  `authorized_keys`; its **private half is shown once**, to download or copy,
-  and kept nowhere - not in the database, not in a log, not in an event, not
-  in a file on the server. Close the window without keeping it and it is gone;
-  take the key away in the list and make another. A key put there before
-  stays until it is taken away in the list.
-- **Keys that may sign in as root** - one row a key: its kind (ED25519,
-  ECDSA, RSA with its bits), its SHA256 fingerprint and its comment. A key made
-  here is marked *made here*; a line with options before the key (`from=…`,
-  `command=…`) is marked *with options*. Beside each key:
-  - *Export* saves its public half as a `.pub` file named by its comment;
-  - *Take it away* removes its line, after you confirm it. When it is the
-    last key root signs in with, it is asked again, and only then taken away.
-- *Add a key* takes a key you have already: one line of a `.pub` file
-  (`ssh-ed25519 AAAA… you@laptop`), typed, pasted or read from the file - or
-  the **private key** itself, with its passphrase if it has one: its public
-  half is worked out here (`ssh-keygen -y`) and only that is used. The private
-  half and the passphrase are not kept.
-- **This server's card** - how many keys there are, what sshd makes of root
-  (`PermitRootLogin`), whether it takes passwords (`PasswordAuthentication`),
-  the SSH port, the file and when it was read. When sshd does not let root
-  sign in at all (`PermitRootLogin no`), or takes no keys
-  (`PubkeyAuthentication no`), the pane says so above the list: the keys are
-  not used until it does.
-
-## What is taken
-
-- Ed25519, ECDSA (256, 384, 521), the FIDO kinds (`sk-ssh-ed25519@openssh.com`,
-  `sk-ecdsa-sha2-nistp256@openssh.com`) and RSA of **3072 bits and more**.
-- Refused: RSA under 3072 bits, DSA, a line with options before the key, more
-  than one line, anything ssh-keygen does not read.
-- A key that is there already is no fault: it is not written twice.
-
-## How it is written
-
-The daemon runs as `isemon` and may not touch root's files. What the page asks
-is laid down in `/var/lib/isemon/web/sshkeys.ask`; `isemon-web.path` starts
-root's helper (`isemon_web.py`, `isemon-web.service`), which checks every
-value again, does it and answers in `sshkeys.json`:
-
-- only `/root/.ssh/authorized_keys` is written, and only whole: a new file,
-  **0600 root:root**, made beside it and renamed over it;
-- the folder `/root/.ssh` is made **0700** when it is not there; when it is a
-  link, or the file is a link, nothing is read or written through it;
-- every line it does not understand - comments, keys with options, anything
-  else - is kept as it was;
-- the last key root signs in with is taken away only when said again;
-- an add or a take-away asked more than ten minutes before root's helper
-  comes to it is not done (one left lying, for example, while the helper was
-  not installed yet).
-
-Every change - a key added, taken away, made, or one root refused - is
-written into **Events**, with who asked for it.
-
-Only a full administrator sees the pane and may use it; a read-only account
-does not see it and is refused by the daemon.
-
-## On the command line
-
-The same, from a terminal (1.10.242), through the daemon - a full
-administrator's rights, root's helper and every check as on the page:
-
-    isemon --root-keys                   # the keys, read afresh, and what sshd says
-    isemon --root-keys --json
-    isemon --root-key-add 'ssh-ed25519 AAAA... you@laptop'
-    isemon --root-key-add ~/.ssh/id_ed25519.pub
-    isemon --root-key-add ~/.ssh/id_ed25519  # a private key: only its public half goes in
-    isemon --root-key-drop SHA256:...    # asks first; --yes does not
-    isemon --root-key-drop SHA256:... --last   # the last key: asked twice
-    isemon --root-key-make ed25519 --out /root/isemon-root
-    isemon --root-key-make rsa4096       # the private half printed, once
-
-The passphrase of a private key is read from `--passphrase-file FILE`, or
-`ISEMON_KEY_PASSPHRASE` in the environment, or asked on the terminal - never
-from the command line. `--root-key-make --out FILE` writes the private half
-into a new file, **0600**, and never over a file (or a link) that is there;
-without `--out` it is printed once. Either way it is kept nowhere else. The
-last key root signs in with is taken away only with `--last`, and asked again
-unless `--yes`. In `isemon --console` it is under *Network, time and power →
-SSH keys of root*; a private key's passphrase goes from there by the
-environment.
-
-## Installing
-
-`./install.sh --upgrade` puts in the new helper and the line
-`PathExists=/var/lib/isemon/web/sshkeys.ask` of `isemon-web.path`; nothing else
-on the machine changes. Until it is run, the pane says root's half is not
-installed and neither reads nor changes anything.
-
-Making or reading a key needs `ssh-keygen` (`dnf install openssh-clients`); the
-facts of sshd need `sshd -T`.
+The keys made for root here before stay where they are, as lines of root's
+file like any other.

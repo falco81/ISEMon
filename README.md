@@ -372,6 +372,41 @@ working.
 
 ## Version
 
+1.10.351
+
+- **Settings - SSH keys** ([docs/ssh-keys.md](docs/ssh-keys.md)):
+  - The keys of root and of every user who may sign in here (a login shell,
+    UID 1000 and up), picked in *Whose keys*.
+  - root's keys are only shown. They are no longer made, added or taken away
+    from these pages: a full admin of the pages was a way to root's shell. The
+    API answers 403, the daemon asks nothing for root, and root's helper
+    refuses anything but reading for root. `--root-key-add`, `--root-key-drop`
+    and `--root-key-make` refuse; `--root-keys` still lists them.
+  - A user's key can be made here (Ed25519 or RSA 4096). Its private half is
+    shown once and kept nowhere. A key of their own can be added (its public
+    half), exported as a .pub file, or taken away.
+  - Each user's keys are written into their own `~/.ssh/authorized_keys` as
+    that user, never through a link. Every change goes into Events.
+- **Settings - Local users** ([docs/local-users.md](docs/local-users.md)):
+  - The users of this server's own system. root is shown and never changed;
+    the others are made, given a password, aging or sudo, locked, unlocked or
+    taken away (with or without their home folder) by root's helper.
+  - A password goes to the helper as its SHA-512 hash only (`openssl passwd
+    -6`, set with `chpasswd -e`) and is kept nowhere. It can be marked to be
+    changed at the next sign-in.
+  - *Password policy*, off by default: pam_pwquality, pam_pwhistory,
+    pam_faillock and the aging lines of login.defs, written between isemon's
+    marks (with authselect, its features), put back when found changed, and
+    taken out again when switched off.
+  - Service accounts are never touched.
+  - `isemon --local-users`, `--local-user`, `--local-policy`,
+    `--local-policy-set`; the console has *13 Local users* (view only).
+- **Settings - Active Directory**: the cards *Signing in with Windows
+  (Kerberos)*, *Signing in with a certificate* and *The sign-in page* are
+  drawn again right after their settings are saved. Until now what was saved
+  showed there only after the page was loaded again. The certificate's card
+  also follows the port until root has put it into nginx.
+
 1.10.350
 
 - **Three more rounds of looking for bugs and security problems.**
@@ -2582,7 +2617,7 @@ working.
   (the last one only when said again). RSA under 3072 bits, DSA and lines with
   options before the key are refused. Written by root as 0600 in a 0700
   folder, never through a link; what sshd makes of root is shown beside it.
-  See [docs/ssh-keys-of-root.md](docs/ssh-keys-of-root.md).
+  See [docs/ssh-keys-of-root.md](docs/ssh-keys-of-root.md) (since 1.10.351 [docs/ssh-keys.md](docs/ssh-keys.md)).
 
 1.10.238
 
