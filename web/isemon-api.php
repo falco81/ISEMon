@@ -295,6 +295,12 @@ function isemon_whoami(): ?array
            no password field anywhere then. */
         $who['kerberos'] = !empty($got['kerberos']);
         $who['only_windows'] = !empty($got['only_windows']);
+        /* The card watched (1.10.352): numbers and a word only. */
+        $cw = $got['certwatch'] ?? null;
+        $who['certwatch'] = is_array($cw) && in_array($cw['mode'] ?? '', ['signout', 'grace'], true)
+            ? ['mode' => (string) $cw['mode'], 'every' => (int) ($cw['every'] ?? 15),
+               'grace' => (int) ($cw['grace'] ?? 30), 'port' => (int) ($cw['port'] ?? 0)]
+            : null;
     }
     return $who;
 }

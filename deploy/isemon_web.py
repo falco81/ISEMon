@@ -350,7 +350,8 @@ def certlogin_checked(c):
                       cas)
     if not pems or len(cas) > 262144:
         raise Refused('the authorities of the certificate sign-in are PEM certificates')
-    return {'on': True, 'port': port, 'cas': ''.join(p + '\n' for p in pems)}
+    return {'on': True, 'port': port, 'cas': ''.join(p + '\n' for p in pems),
+            'watch': c.get('watch') is True}
 
 
 def certlogin_strip(text):
@@ -436,12 +437,13 @@ def certlogin_block(main, c):
             '    ssl_session_tickets       off;\n'
             '    ssl_session_cache         off;\n'
             '%s'
+            '%s'
             '    add_header X-Frame-Options "DENY" always;\n'
             '    add_header Referrer-Policy "no-referrer" always;\n'
             '    error_page 495 = @certfail;\n'
             '    location = /index.php {\n'
             '%s'
-            '        if ($arg_api !~ "^cert-(login|check)$") { return 404; }\n'
+            '        if ($arg_api !~ "^cert-(%s)$") { return 404; }\n'
             '%s'
             '%s'
             '        fastcgi_param  SSL_CLIENT_CERT $ssl_client_escaped_cert;\n'
@@ -457,7 +459,12 @@ def certlogin_block(main, c):
             '    location / { return 404; }\n'
             '}\n'
             '%s\n' % (CERTLOGIN_MARK, c['port'], c['port'], name, root, pairs, CERTLOGIN_CA,
-                       hsts, acc, guard, fcgi, acc, guard, fcgi, CERTLOGIN_END))
+                       # The card watched (1.10.353), only while it is on: no
+                       # connection kept open - every check is a new handshake
+                       # the card has to sign - and its check let through.
+                       '    keepalive_timeout         0;\n' if c.get('watch') else '',
+                       hsts, acc, 'login|check|alive' if c.get('watch') else 'login|check',
+                       guard, fcgi, acc, guard, fcgi, CERTLOGIN_END))
 
 
 def port_listening(port):

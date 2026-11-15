@@ -372,6 +372,34 @@ working.
 
 ## Version
 
+1.10.353
+
+- **Settings - Active Directory - Signing in with a certificate - When the
+  card is taken out** ([docs/certificate-sign-in.md](docs/certificate-sign-in.md)),
+  off by default, for a sign-in made with a certificate only:
+  - `signout`: the session ends at the first check without the card, and the
+    sign-in page says why.
+  - `grace`: a notice counts down, and the session ends unless the card is
+    back in time (*...put back within (seconds)*, default 30).
+  - Another card than the one signed in with ends the session at once.
+- **How the card is checked:**
+  - Every *Checked every (seconds)* (default 15) the page loads a tiny
+    picture from the certificate's port.
+  - nginx there keeps no TLS session and, while it is on, no connection
+    (`keepalive_timeout 0`), so every check is a handshake the card has to
+    sign.
+  - The page's CSP lets that address in only for a watched session.
+  - Only the certificate's SHA-256 is kept.
+- **The server ends a watched session too** when its page stops checking:
+  three checks or 150 s, the longer, plus the grace. Each end goes into
+  Events.
+- **Off (the default), everything stays as before**: nothing is checked,
+  nothing new is asked of root, and the port's nginx server is not touched.
+  root's helper adds the two lines (`keepalive_timeout 0`, the check let
+  through) only when it is switched on, and takes them out again when it is
+  switched off.
+- The card's line on the Signing in with a certificate card says what is set.
+
 1.10.352
 
 - **Settings - Active Directory - Signing in with Windows (Kerberos)**

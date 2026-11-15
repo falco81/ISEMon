@@ -284,6 +284,7 @@ for what, there in (('listen      8443 ssl;', True), ('ssl_verify_client        
                     ('fastcgi_param  SSL_CLIENT_CERT $ssl_client_escaped_cert;', True),
                     ('fastcgi_param  ISEMON_CERT_PORT 1;', True),
                     ('if ($arg_api !~ "^cert-(login|check)$") { return 404; }', True),
+                    ('keepalive_timeout', False),
                     ('allow 10.0.0.0/8;', True), ('deny  all;', True),
                     ('ssl_certificate           /etc/nginx/certs/isemon.pem;', True),
                     ('location / { return 404; }', True)):
@@ -294,6 +295,17 @@ for what in ('if ($request_method !~ ^(GET|HEAD)$) { return 405; }',
              'limit_req zone=isemon_all burst=20 nodelay;',
              'add_header Strict-Transport-Security "max-age=63072000" always;'):
     ok('...%s (as the dashboard)' % what, what in blk, True)
+# The card watched (1.10.353): only while it is on - off, the server is as before.
+clw = isemon_web.certlogin_checked({'on': True, 'port': 8443, 'cas': (pki / 'cas.pem').read_text(),
+                                    'watch': True})
+bw = isemon_web.certlogin_into(vhost, clw)[0]
+bw = bw[bw.index(isemon_web.CERTLOGIN_MARK):]
+ok('the card watched: no connection kept open, its check let through',
+   ('keepalive_timeout         0;' in bw, 'cert-(login|check|alive)$' in bw), (True, True))
+ok('...and nothing else of the server changed', bw.replace('    keepalive_timeout         0;\n', '')
+   .replace('login|check|alive', 'login|check'), blk)
+ok('a request without it: off', isemon_web.certlogin_checked(
+    {'on': True, 'port': 8443, 'cas': (pki / 'cas.pem').read_text()})['watch'], False)
 nohsts = vhost.replace('    add_header Strict-Transport-Security "max-age=63072000" always;\n', '')
 b2 = isemon_web.certlogin_into(nohsts, cl)[0]
 ok('the dashboard without HSTS: none on the port either',
@@ -380,7 +392,8 @@ else:
     v = '\n'.join(x for x in v.split('\n') if 'listen      [::]:' not in x)
     isemon_web.CERTLOGIN_CA = str(t / 'certs' / 'isemon-client-ca.pem')
     (t / 'certs' / 'isemon-client-ca.pem').write_text((pki / 'cas.pem').read_text())
-    v, _w = isemon_web.certlogin_into(v, {'on': True, 'port': PCERT,
+    # As root writes it with the card watched (1.10.353) - its checks below.
+    v, _w = isemon_web.certlogin_into(v, {'on': True, 'port': PCERT, 'watch': True,
                                           'cas': (pki / 'cas.pem').read_text()})
     v = v.replace('listen      %d ssl;' % PCERT, 'listen      127.0.0.1:%d ssl;' % PCERT)
     v = '\n'.join(x for x in v.split('\n') if 'listen      [::]:' not in x)
@@ -481,6 +494,60 @@ else:
         ok('nothing else served on the port', https(PCERT, '/index.php?api=status',
                                                     cert='falco')[0], 404)
         ok('...not the pages either', https(PCERT, '/', cert='falco')[0], 404)
+
+        # The card watched (1.10.352), through nginx and PHP: a picture of
+        # the port, 1 pixel wide with the card, 2 while it is out (grace),
+        # none once the session is over.
+        print('the card watched (1.10.352)')
+
+        def sign_in():
+            code, h, b = https(P443, '/index.php?api=cert-nonce', method='POST', body={})
+            nn = re.search(r'isemon_certn=([0-9a-f]{32})', h).group(1)
+            code, h, b = https(PCERT, '/index.php?api=cert-login&n=%s' % nn, cert='falco',
+                               cookie='isemon_certn=%s' % nn)
+            m = re.search(r'(?mi)^Set-Cookie: ((__Host-)?isemon_session=[^;]+)', h)
+            return m.group(1) if m else ''
+
+        def alive(cookie, cert=None):
+            code, h, b = https(PCERT, '/index.php?api=cert-alive&r=1', cert=cert, cookie=cookie)
+            wide = None
+            if code == 200 and 'image/gif' in h.lower():
+                raw = b.encode('latin-1', 'replace')
+                wide = raw[6] if len(raw) > 7 else None
+            return code, wide
+
+        def signed(cookie):
+            return '"name":"falco"' in https(P443, '/index.php?api=whoami',
+                                             cookie=cookie)[2].replace(' ', '')
+        ok('nginx: no connection kept open on the port, the check let through',
+           ('keepalive_timeout         0;' in (t / 'isemon.conf').read_text(),
+            'cert-(login|check|alive)' in (t / 'isemon.conf').read_text()), (True, True))
+        isemon.CONFIG['certlogin_watch'] = 'off'
+        ck = sign_in()
+        ok('off: the page is told nothing', '"certwatch":null' in https(
+            P443, '/index.php?api=whoami', cookie=ck)[2].replace(' ', '') or
+           'certwatch' not in https(P443, '/index.php?api=whoami', cookie=ck)[2], True)
+        ok('off: no card, still signed in', (alive(ck)[0], signed(ck)), (200, True))
+        isemon.CONFIG['certlogin_watch'] = 'signout'
+        ck = sign_in()
+        ok('signout: the card there - 1 pixel', alive(ck, 'falco'), (200, 1))
+        ok('...still signed in', signed(ck), True)
+        ok('signout: the card out - no picture', alive(ck)[0], 403)
+        ok('...and signed out', signed(ck), False)
+        ok('...said in Events', store.db.execute(
+            "SELECT COUNT(*) FROM events WHERE detail LIKE '%was taken out%'").fetchone()[0] >= 1,
+           True)
+        ck = sign_in()
+        ok('another card than the one signed in with - no picture', alive(ck, 'outsider')[0], 403)
+        ok('...and signed out', signed(ck), False)
+        isemon.CONFIG['certlogin_watch'] = 'grace'
+        isemon.CONFIG['certlogin_watch_grace_s'] = 30
+        ck = sign_in()
+        ok('grace: the card out - 2 pixels, still signed in', (alive(ck), signed(ck)),
+           ((200, 2), True))
+        ok('...back in time - 1 pixel', alive(ck, 'falco'), (200, 1))
+        ok('no session at all - no picture', alive('', 'falco')[0], 403)
+        isemon.CONFIG['certlogin_watch'] = 'off'
     finally:
         ng.terminate()
         fpm.terminate()

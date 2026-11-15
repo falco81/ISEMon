@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.352'
+__version__ = '1.10.353'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -884,6 +884,14 @@ DEFAULTS = {
     'certlogin_ocsp': 'off',
     'certlogin_ocsp_url': '',
     'certlogin_crl_ldap': 0,
+    # The card watched while signed in with it (1.10.352): off, signout (the
+    # session ends at the first check the card is not there) or grace (ended
+    # unless it is back within certlogin_watch_grace_s); checked every
+    # certlogin_watch_s seconds. Another card than the one signed in with
+    # ends it at once in both.
+    'certlogin_watch': 'off',
+    'certlogin_watch_s': 15,
+    'certlogin_watch_grace_s': 30,
     # Changes that could cut this server off, taken back unless kept
     # (1.10.228, after otp 1.0.137): a new network (Settings - Network) and
     # a change of the firewall or of who may reach which page go back to what
@@ -62085,6 +62093,7 @@ class Daemon(object):
         second = self.second_owed(name)
         token = self.store.new_session(name, said['role'], where, agent, second)
         self.kerberos_mark(token)
+        self.certlogin_watch_mark(token, pem)
         self.store.note_login(name, where)
         f = got['facts']
         self.store.add_event('login', '%s signed in from %s with a certificate (%s, %s) as %s%s'
@@ -62093,6 +62102,135 @@ class Daemon(object):
         return {'token': token, 'name': name, 'role': said['role'], 'must_change': False,
                 'from_dir': True, 'second': second, 'display': said.get('display') or '',
                 'how': 'certificate'}
+
+    # ---- the card watched while signed in with it (1.10.352) ----
+    CL_WATCH_MODES = ('off', 'signout', 'grace')
+    _CL_WATCH = {}                       # session key -> {'seen': t, 'gone': t}
+    _CL_WATCH_LOCK = threading.Lock()
+
+    def certlogin_watch_mode(self):
+        m = str(CONFIG.get('certlogin_watch') or 'off')
+        return m if m in self.CL_WATCH_MODES and self.certlogin_wanted() else 'off'
+
+    @staticmethod
+    def _cl_int(key, low, high, dflt):
+        try:
+            return min(high, max(low, int(CONFIG.get(key) or dflt)))
+        except (TypeError, ValueError):
+            return dflt
+
+    def certlogin_watch_every(self):
+        return self._cl_int('certlogin_watch_s', 5, 300, 15)
+
+    def certlogin_watch_grace(self):
+        return self._cl_int('certlogin_watch_grace_s', 5, 600, 30)
+
+    @staticmethod
+    def certlogin_fp(pem):
+        """The SHA-256 of a certificate's DER, or ''."""
+        try:
+            text = str(pem or '')
+            m = re.search(r'-----BEGIN CERTIFICATE-----(.+?)-----END CERTIFICATE-----', text, re.S)
+            if not m:
+                return ''
+            der = base64.b64decode(re.sub(r'\s+', '', m.group(1)), validate=True)
+            return hashlib.sha256(der).hexdigest()
+        except (ValueError, TypeError):
+            return ''
+
+    def certlogin_watch_mark(self, token, pem):
+        """Which certificate a session was opened with: its fingerprint,
+        kept as long as a session lasts (never the certificate itself)."""
+        fp = self.certlogin_fp(pem)
+        if not token or not fp:
+            return
+        kept = self.store.meta_json('certlogin_sessions', {}) or {}
+        now = time.time()
+        most = max(1, int(CONFIG.get('session_hours') or 12)) * 3600 + 3600
+        kept = {k: v for k, v in kept.items()
+                if isinstance(v, dict) and now - float(v.get('at') or 0) < most}
+        kept[self._cols_key(token)] = {'at': now, 'fp': fp}
+        self.store.set_meta('certlogin_sessions', json.dumps(kept))
+        with self._CL_WATCH_LOCK:
+            self._CL_WATCH[self._cols_key(token)] = {'seen': now, 'gone': 0}
+
+    def _cl_watched(self, token):
+        if not token:
+            return None
+        kept = self.store.meta_json('certlogin_sessions', {}) or {}
+        got = kept.get(self._cols_key(token))
+        return got if isinstance(got, dict) and got.get('fp') else None
+
+    def certlogin_watch_for(self, token):
+        """What the page of a session signed in with a certificate is to do:
+        None, or {mode, every, grace, port}."""
+        mode = self.certlogin_watch_mode()
+        if mode == 'off' or not self._cl_watched(token):
+            return None
+        return {'mode': mode, 'every': self.certlogin_watch_every(),
+                'grace': self.certlogin_watch_grace(), 'port': self.certlogin_port()}
+
+    def _cl_watch_end(self, token, name, why):
+        if not name:
+            try:
+                name = (self.store.session(token) or {}).get('name') or ''
+            except Exception:                           # noqa: BLE001
+                name = ''
+        self.store.drop_session(token=token)
+        with self._CL_WATCH_LOCK:
+            self._CL_WATCH.pop(self._cols_key(token), None)
+        self.store.add_event('login', '%s was signed out: %s' % (name or 'somebody', why),
+                             who=name or '')
+
+    def certlogin_alive(self, token, pem, name=''):
+        """One check of the card, from its port: {alive, gone, watched, grace_left}.
+        No certificate - the card out - ends the session (signout), or counts
+        the time it is out (grace); another certificate ends it at once."""
+        mode = self.certlogin_watch_mode()
+        mark = self._cl_watched(token)
+        if mode == 'off' or not mark:
+            return {'alive': True, 'gone': False, 'watched': False}
+        key, now = self._cols_key(token), time.time()
+        fp = self.certlogin_fp(pem) if pem else ''
+        if fp and fp != mark['fp']:
+            self._cl_watch_end(token, name, 'another certificate than the one signed in with '
+                                            'was offered (the card was changed)')
+            return {'alive': False, 'gone': True, 'watched': True, 'why': 'another card'}
+        with self._CL_WATCH_LOCK:
+            st = self._CL_WATCH.setdefault(key, {'seen': now, 'gone': 0})
+            if fp:
+                st['seen'], st['gone'] = now, 0
+                return {'alive': True, 'gone': False, 'watched': True}
+            st['gone'] = st['gone'] or now
+            out_for = now - st['gone']
+        if mode == 'signout' or out_for >= self.certlogin_watch_grace():
+            self._cl_watch_end(token, name, 'the card they signed in with was taken out')
+            return {'alive': False, 'gone': True, 'watched': True, 'why': 'the card out'}
+        return {'alive': False, 'gone': False, 'watched': True,
+                'grace_left': int(self.certlogin_watch_grace() - out_for)}
+
+    def certlogin_watch_due(self, token, name=''):
+        """The server's half: a watched session whose page has stopped
+        checking - or whose card has been out longer than allowed - ends here
+        too, whatever the page does. A tab in the background is checked about
+        once a minute, so three checks or 150 seconds, the longer."""
+        mode = self.certlogin_watch_mode()
+        if mode == 'off' or not self._cl_watched(token):
+            return False
+        key, now = self._cols_key(token), time.time()
+        late = max(3 * self.certlogin_watch_every(), 150)
+        with self._CL_WATCH_LOCK:
+            st = self._CL_WATCH.setdefault(key, {'seen': now, 'gone': 0})
+            seen, gone = st['seen'], st['gone']
+        grace = self.certlogin_watch_grace() if mode == 'grace' else 0
+        if gone and now - gone >= grace + late:
+            why = 'the card they signed in with was taken out'
+        elif now - seen >= late + grace + max(self.certlogin_watch_every(), 30):
+            why = 'their page stopped checking the card they signed in with'
+        else:
+            return False
+        self._cl_watch_end(token, name, why)
+        return True
 
     # ---- OCSP and CRLs from the directory (1.10.348) ----
     def certlogin_ocsp_mode(self):
@@ -62393,6 +62531,9 @@ class Daemon(object):
                 'ocsp_url_ok': not str(CONFIG.get('certlogin_ocsp_url') or '').strip() or
                 bool(self.certlogin_ocsp_url()),
                 'crl_ldap': bool(int(CONFIG.get('certlogin_crl_ldap') or 0)),
+                # The card watched (1.10.353).
+                'watch': str(CONFIG.get('certlogin_watch') or 'off'),
+                'watch_s': self.certlogin_watch_every(), 'watch_grace_s': self.certlogin_watch_grace(),
                 'root': (self.webroot.read('look.json') or {}).get('certlogin') or {}}
 
     def second_owed(self, name):
@@ -62473,6 +62614,10 @@ class Daemon(object):
         # what it must not offer - a password that lives in the directory
         # cannot be changed here - and it can only hide it if it is told.
         second = row.get('second') or ''
+        # The card watched (1.10.352): a session signed in with a card that
+        # has not been seen for too long ends here as well.
+        if self.certlogin_watch_due(token, row['name']):
+            return None
         if second in ('enrol', 'verify') and not self.passkeys_on():
             # Face ID switched off with half a sign-in open (1.10.303): it
             # ends, rather than becoming a whole one nobody finished.
@@ -62985,6 +63130,8 @@ class Daemon(object):
         'certlogin_match': ('compat', 'strong', 'upn'), 'certlogin_crl': (0, 1), 'certlogin_auto': (0, 1),
         'certlogin_ocsp': ('off', 'first', 'only', 'both'), 'certlogin_ocsp_url': 'str',
         'certlogin_crl_ldap': (0, 1),
+        'certlogin_watch': ('off', 'signout', 'grace'), 'certlogin_watch_s': (5, 300),
+        'certlogin_watch_grace_s': (5, 600),
         'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
         'retain_failed_days': (0, 3650), 'retain_passed_days': (0, 3650),
         'retain_events_days': (0, 3650),
@@ -63287,6 +63434,9 @@ class Daemon(object):
         'certlogin_ocsp': 'Ask an OCSP responder',
         'certlogin_ocsp_url': 'OCSP responder of its own',
         'certlogin_crl_ldap': 'CRLs from the directory (LDAP) too',
+        'certlogin_watch': 'When the card is taken out',
+        'certlogin_watch_s': 'Checked every (seconds)',
+        'certlogin_watch_grace_s': '...put back within (seconds)',
         'certlogin_auto': '...by itself when the sign-in page opens',
         'net_confirm_min': 'A new network goes back unless kept within (min)',
         'fw_confirm_min': 'A firewall change goes back unless kept within (min)',
@@ -64461,6 +64611,20 @@ class Daemon(object):
         'certlogin_ocsp_url': 'Empty: the responder each certificate names (Authority '
                               'Information Access). Or an http address of a responder for all '
                               'of them (http://pki.corp.example/ocsp).',
+        'certlogin_watch': 'Only for a sign-in made with a certificate. off: nothing is '
+                           'watched. signout: the page checks the card every few seconds - a '
+                           'new connection to the certificate\'s port the card has to sign - '
+                           'and the first time it is not there the session ends and the '
+                           'sign-in page comes. grace: the page says the card is out and '
+                           'waits; the session ends unless it is back in time. Another card '
+                           'than the one signed in with ends it at once. The server ends a '
+                           'watched session too when the page stops asking.',
+        'certlogin_watch_s': 'How often the card is checked. Each check is a signature by the '
+                             'card (no PIN while it stays in; a YubiKey with touch or PIN '
+                             'policy "always" asks every time - leave this off for one). A tab '
+                             'in the background is checked about once a minute.',
+        'certlogin_watch_grace_s': 'With grace: how long the card may be out before the '
+                                   'session ends.',
         'certlogin_crl_ldap': 'On: a CRL Distribution Point in the directory '
                               '(ldap:///CN=...,CN=CDP,CN=Public Key Services,...) is read with '
                               'the directory\'s connection above when no http one answers - '
@@ -71860,6 +72024,10 @@ class WebRoot(object):
                 out['certlogin'] = {'on': True, 'port': self.daemon.certlogin_port(),
                                     'cas': ''.join(c['pem'].strip() + '\n'
                                                    for c in self.daemon.certlogin_cas())}
+                # The card watched (1.10.353): only while it is switched on,
+                # so that off the request - and nginx - stay as they were.
+                if self.daemon.certlogin_watch_mode() != 'off':
+                    out['certlogin']['watch'] = True
                 if self.store.get_meta('certlogin_pushed') != '1':
                     self.store.set_meta('certlogin_pushed', '1')
             elif self.store.get_meta('certlogin_pushed') == '1':
@@ -79595,7 +79763,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '93adc1c4a4c872c11b7691a1df87aeb6565b1b5c9c253047c8d4394b0c1226f6'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '90e4ba9a4868a71bcefcb85c1e0d9b7a365ad312703f5dbb325ded2c781eb416'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '214b200ceedcbd4f848c5e2064c8c6b2331be9bffe64d60f84266b6329533742'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
@@ -87622,6 +87790,18 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.fail('Windows did not sign you in - the ticket was not taken', 401)
             return self.send_json({'ok': True, **got})
 
+        # The card watched (1.10.352): one check from the certificate's port,
+        # with the session's cookie and whatever certificate came (none: the
+        # card is out).
+        if path == '/api/auth/cert-alive' and method == 'POST':
+            data = self.body()
+            token = self.headers.get('X-Isemon-Session') or ''
+            me = self.who()
+            if not me:
+                return self.send_json({'ok': True, 'alive': False, 'gone': True, 'watched': False})
+            return self.send_json(dict(daemon.certlogin_alive(token, str(data.get('cert') or ''),
+                                                              me['name']), ok=True))
+
         # Signing in with a certificate (1.10.341): the certificate nginx took
         # on its own port, handed on by the page there.
         if path == '/api/auth/cert' and method == 'POST':
@@ -87777,6 +87957,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                                    'kerberos': bool(me) and daemon.kerberos_session(
                                        self.headers.get('X-Isemon-Session') or ''),
                                    'only_windows': daemon.password_off(),
+                                   # The card watched (1.10.352).
+                                   'certwatch': daemon.certlogin_watch_for(
+                                       self.headers.get('X-Isemon-Session') or '') if me else None,
                                    'anybody': store.user_count() > 0})
 
         if path == '/api/auth/settings':

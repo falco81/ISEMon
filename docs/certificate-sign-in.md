@@ -162,6 +162,61 @@ To keep the key file encrypted:
 Where the template builds the Subject from AD, the authority replaces what the
 request asks with what AD has, and the SID comes as its own extension.
 
+### When the card is taken out (1.10.353)
+
+A browser has no way of telling a page that a smart card or a YubiKey was
+taken out. isemon finds out by asking the card. *When the card is taken out*
+(Settings → Active Directory → Signing in with a certificate) chooses what
+happens. It is off by default and only applies to a sign-in made with a
+certificate (a password or Windows sign-in is never watched):
+
+| Setting | What happens |
+|---|---|
+| `off` | Nothing: the session goes on until it runs out, as before. |
+| `signout` | At the first check without the card the session ends and the sign-in page says why. |
+| `grace` | A notice with a countdown; the session ends unless the card is back within *...put back within (seconds)* (default 30). |
+
+In both modes, **another card** than the one the person signed in with ends
+the session at once (the certificate's SHA-256 is compared; only that
+fingerprint is kept, never the certificate).
+
+**How it is checked.** Every *Checked every (seconds)* (default 15, 5-300)
+the page loads a tiny picture from the certificate's port. That port asks for
+a certificate and keeps no TLS session - and, while this is on, no
+connection - open, so every check
+is a new handshake **the card has to sign**:
+
+- the card is there: answered, nothing happens;
+- the card is out: the browser has no certificate to offer, or cannot sign;
+  the check fails and the session ends (or the countdown starts);
+- the page's policy (CSP) lets that one address in only for a watched
+  session.
+
+**The server's half.** The page only makes it visible at once. The daemon
+also ends a watched session whose page stopped checking: three checks or
+150 seconds, the longer, plus the grace. A tab in the background is checked
+about once a minute (browsers slow its timers), and that is allowed for.
+Each end is written into Events (*was signed out: the card they signed in
+with was taken out*, *...another certificate*, *...their page stopped
+checking*).
+
+**Things to know:**
+
+- **No PIN while the card stays in.** Windows and the card's minidriver keep
+  the PIN for the browser; a YubiKey's slot 9a asks it once (PIN policy
+  `once`, the default).
+- **Touch or PIN every time.** A YubiKey with *touch policy* or *PIN policy*
+  `always` would ask at every check. Leave the setting off for one.
+- **Windows may ask for the card.** Depending on the driver, Windows may show
+  "Insert a smart card" when the card is out. Cancelling it ends the session
+  as well.
+- **Off, nothing changes.** Switched on, root's helper adds two lines to the
+  port's nginx server (`keepalive_timeout 0`, the check let through) within
+  a few seconds. Switched off, it takes them out again.
+- **With it**, set Windows' own *Interactive logon: Smart card removal
+  behavior* = **Lock Workstation** by group policy. It locks the computer at
+  once, and isemon ends the session.
+
 ## How it works
 
 ```

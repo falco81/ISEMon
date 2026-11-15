@@ -260,6 +260,34 @@ function isemon_cert_back(string $said = '', string $key = 'certsaid'): void
 }
 if ((string) ($_SERVER['ISEMON_CERT_PORT'] ?? '') === '1') {
     header('Cache-Control: no-store');
+    /* The card watched (1.10.352): the page loads a picture from here every
+       few seconds - a new connection the card has to sign. Whatever came
+       (nothing: the card is out) goes to the daemon with the session's
+       cookie; the answer is a picture 1 pixel wide (the card is there), 2
+       wide (it is out, the session waits) or none (the session is over). */
+    if ((string) ($_GET['api'] ?? '') === 'cert-alive') {
+        $pem = (string) ($_SERVER['ISEMON_CERT_FAIL'] ?? '') === '1' ? ''
+            : rawurldecode((string) ($_SERVER['SSL_CLIENT_CERT'] ?? ''));
+        if (strlen($pem) > 20000) {
+            $pem = '';
+        }
+        $d = null;
+        if (isemon_session() !== '') {
+            [$status, $body] = isemon_call('/api/auth/cert-alive', 'POST', ['cert' => $pem], 10.0);
+            $d = json_decode((string) $body, true);
+        }
+        if (is_array($d) && empty($d['gone'])) {
+            $wide = !empty($d['alive']) ? 1 : 2;
+            header('Content-Type: image/gif');
+            /* A transparent GIF $wide pixels wide, 1 high. */
+            echo base64_decode($wide === 1
+                ? 'R0lGODlhAQABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAABAAEAAAgEAAEEBAA7'
+                : 'R0lGODlhAgABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAACAAEAAAgFAAEACAgAOw==');
+            exit;
+        }
+        http_response_code(403);
+        exit;
+    }
     $try = (string) ($_GET['api'] ?? '') === 'cert-check';
     if ((string) ($_SERVER['ISEMON_CERT_FAIL'] ?? '') === '1') {
         isemon_cert_back('the certificate is not taken: '
@@ -1077,6 +1105,20 @@ if (isset($_GET['api'])) {
 
 /* ---- the page ------------------------------------------------------------ */
 $me      = isemon_whoami();
+/* The card watched (1.10.352): its check is a picture from the certificate's
+   port, which this page's policy lets in by that one address - only for a
+   session that is watched, and before anything of the page is sent. */
+if (is_array($me) && is_array($me['certwatch'] ?? null) && empty($me['second'])) {
+    $cwp = (int) ($me['certwatch']['port'] ?? 0);
+    if ($cwp >= 1024 && $cwp <= 65535) {
+        $cwh = isemon_cert_host();
+        header("Content-Security-Policy: default-src 'self'; "
+             . "script-src 'self' 'nonce-$nonce'; "
+             . "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'nonce-$nonce'; "
+             . "img-src 'self' data: https://$cwh:$cwp; connect-src 'self'; font-src 'self'; "
+             . "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'", true);
+    }
+}
 /* Half a sign-in - the password right, Face ID still owed (1.10.303) - is
    the door still: the page shows the second step and nothing behind it. */
 $second  = ($me && !empty($me['second'])) ? (string) $me['second'] : '';
@@ -4612,6 +4654,16 @@ function srcText(el) {
   .clp-v code{font-size:12.5px;overflow-wrap:anywhere;min-width:0}
   .clp-v .btn{flex:none}
   .clp-more{margin-top:14px}
+  .cw-layer{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
+    background:rgba(5,8,12,.72);backdrop-filter:blur(6px)}
+  .cw-box{width:min(420px,calc(100vw - 32px));padding:26px 26px 22px;border:1px solid var(--line);border-radius:14px;
+    background:var(--panel);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .cw-box h3{margin:10px 0 6px;font-size:18px;color:var(--tx)}
+  .cw-ic{width:52px;height:52px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:var(--warn-bg);color:var(--warn)}
+  .cw-ic svg{width:24px;height:24px}
+  .cw-p{margin:0 0 12px;color:var(--tx-dim);font-size:13.5px;line-height:1.5}
+  .cw-n{font-size:34px;font-weight:700;color:var(--warn);margin:4px 0 14px;font-variant-numeric:tabular-nums}
   .csr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 28px;margin:6px 0 10px}
   .csr-col{min-width:0}
   .csr-sh{margin:12px 0 8px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx-mut)}
@@ -12705,6 +12757,82 @@ if (!CAN_BAN) {
     node.hidden = true;
   });
 }
+
+/* The card watched (1.10.352): a sign-in made with a card, while the
+   setting asks for it. Every few seconds a picture from the certificate's
+   port - a new connection, so the card has to sign it: 1 pixel wide, the
+   card is there; 2, it is out and the session waits (grace); none, it is out
+   or the session is over. Out: signed out at once (signout), or a notice
+   counting down until it is back (grace). The server ends the session as
+   well - this only makes it be seen at once. */
+var CW = {conf: null, timer: null, out: 0, gen: 0, layer: null};
+function certWatchStart(conf) {
+  if (!conf || !conf.port || (conf.mode !== 'signout' && conf.mode !== 'grace')) return;
+  CW.conf = conf; CW.gen++;
+  certWatchNext(Math.max(5, conf.every || 15) * 1000);
+}
+function certWatchNext(ms) {
+  var g = CW.gen;
+  if (CW.timer) clearTimeout(CW.timer);
+  CW.timer = setTimeout(function () { if (g === CW.gen) certWatchCheck(); }, ms);
+}
+function certWatchCheck() {
+  var c = CW.conf, g = CW.gen, done = false, img = new Image(), to = null;
+  if (!c) return;
+  var fin = function (w) {
+    if (done || g !== CW.gen) return;
+    done = true;
+    clearTimeout(to);
+    if (w === 1) {
+      CW.out = 0; certWatchLayer(false);
+      certWatchNext(c.every * 1000);
+      return;
+    }
+    if (c.mode === 'signout') { certWatchEnd('Signed out: the card you signed in with was taken out.'); return; }
+    if (!CW.out) CW.out = Date.now();
+    var left = c.grace - Math.floor((Date.now() - CW.out) / 1000);
+    if (left <= 0) { certWatchEnd('Signed out: the card you signed in with was not put back in time.'); return; }
+    certWatchLayer(true, left);
+    certWatchNext(3000);
+  };
+  to = setTimeout(function () { fin(0); }, 20000);
+  img.onload = function () { fin(img.naturalWidth === 2 ? 2 : 1); };
+  img.onerror = function () { fin(0); };
+  var host = location.hostname.indexOf(':') >= 0 ? '[' + location.hostname + ']' : location.hostname;
+  img.src = 'https://' + host + ':' + c.port + '/index.php?api=cert-alive&r=' + Date.now().toString(36);
+}
+function certWatchLayer(on, left) {
+  if (!on) { if (CW.layer) { CW.layer.remove(); CW.layer = null; } return; }
+  if (!CW.layer) {
+    var l = el('div', 'cw-layer');
+    var box = el('div', 'cw-box');
+    var ic = el('div', 'cw-ic');
+    ic.innerHTML = iconMarkup('key');
+    box.appendChild(ic);
+    box.appendChild(el('h3', '', 'The card is out'));
+    box.appendChild(el('p', 'cw-p', 'Put back the card you signed in with - this session ends unless it is back in time.'));
+    var n = noI18n(el('div', 'cw-n', ''));
+    box.appendChild(n);
+    var out = cmdButton('Sign out now', 'out', 'small');
+    out.onclick = function () { certWatchEnd('Signed out.'); };
+    box.appendChild(out);
+    l.appendChild(box);
+    document.body.appendChild(l);
+    CW.layer = l; CW.n = n;
+  }
+  CW.n.textContent = String(Math.max(0, left)) + ' s';
+}
+function certWatchEnd(why) {
+  CW.gen++; CW.conf = null;
+  if (CW.timer) clearTimeout(CW.timer);
+  try {
+    sessionStorage.setItem('isemon.krb.out', '1');
+    sessionStorage.setItem('isemon.cert.went', String(Date.now()));
+  } catch (e) { }
+  var go = function () { location.replace(location.pathname + '?certsaid=' + encodeURIComponent(why)); };
+  api('logout', {}).then(go).catch(go);
+}
+if (ME && ME.certwatch) certWatchStart(ME.certwatch);
 
 $('signout').onclick = function () {
   /* Not signed straight back in with Windows by itself (1.10.340). */
@@ -28679,7 +28807,8 @@ var PANES = {
   krb:     ['kerberos', 'kerberos_auto', 'kerberos_realm'],
   /* Signing in with a certificate (1.10.341), the same way. */
   cl:      ['certlogin', 'certlogin_auto', 'certlogin_port', 'certlogin_match', 'certlogin_crl',
-            'certlogin_crl_ldap', 'certlogin_ocsp', 'certlogin_ocsp_url'],
+            'certlogin_crl_ldap', 'certlogin_ocsp', 'certlogin_ocsp_url',
+            'certlogin_watch', 'certlogin_watch_s', 'certlogin_watch_grace_s'],
   /* The sign-in page as a whole (1.10.342): what both of them share. */
   signin:  ['password_off'],
   dir2:    ['directory2', 'directory2_host', 'directory2_port', 'directory2_tls',
@@ -30957,6 +31086,9 @@ function drawCertInto(host, d) {
       strong: 'the UPN and the SID (KB5014754) - a certificate without one is refused',
       upn: 'the UPN alone'}[d.match] || d.match],
     ['Revocation', certRevFlow(d)],
+    ['When the card is taken out', d.watch === 'signout' ? 'signed out at the next check (every ' + d.watch_s + ' s)'
+      : d.watch === 'grace' ? 'a notice, then signed out unless it is back within ' + d.watch_grace_s + ' s (checked every ' + d.watch_s + ' s)'
+      : 'nothing - the session goes on'],
     ['Second step after it', d.second ? 'Face ID, as after a password' : 'off'],
     ['By itself on the sign-in page', d.auto ? 'yes - the form only when it did not work' : 'no - a button under the form'],
     ['A password on the sign-in page', d.only ? 'none - only Windows or a certificate' : 'offered beside it']]);

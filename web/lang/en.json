@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.352",
+  "version": "1.10.353",
   "made": "2026-11-15",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -3540,6 +3540,10 @@
    "source": "another ACME CA (step-ca, an internal CA...)",
    "text": "another ACME CA (step-ca, an internal CA...)"
   },
+  "s.another-card.89ed25aa": {
+   "source": "another card",
+   "text": "another card"
+  },
   "s.another-certificate-or-a-wrong-answer.266eea15": {
    "source": "another certificate, or a wrong answer",
    "text": "another certificate, or a wrong answer"
@@ -5903,6 +5907,10 @@
   "s.checked-by.14a628e6": {
    "source": "Checked by",
    "text": "Checked by"
+  },
+  "s.checked-every-seconds.1261ae7b": {
+   "source": "Checked every (seconds)",
+   "text": "Checked every (seconds)"
   },
   "s.checked-from-here.5671457d": {
    "source": "Checked from here",
@@ -12447,6 +12455,10 @@
   "s.how-often-it-folds-h.cf6c7116": {
    "source": "How often it folds (h)",
    "text": "How often it folds (h)"
+  },
+  "s.how-often-the-card-is-checked.3f8dd21b": {
+   "source": "How often the card is checked. Each check is a signature by the card (no PIN while it stays in; a YubiKey with touch or PIN policy \"always\" asks every time - leave this off for one). A tab in the background is checked about once a minute.",
+   "text": "How often the card is checked. Each check is a signature by the card (no PIN while it stays in; a YubiKey with touch or PIN policy \"always\" asks every time - leave this off for one). A tab in the background is checked about once a minute."
   },
   "s.how-often-the-connections-are-read.5be0e73b": {
    "source": "How often the connections are read: the ones gone since the last look are the sessions that ended. Shorter catches more of the short ones; longer is less work for the router. The VPN and the interfaces are read about once a minute, how the router is every five. 10 to 600.",
@@ -19428,6 +19440,10 @@
    "source": "nothing - the person chooses",
    "text": "nothing - the person chooses"
   },
+  "s.nothing-the-session-goes-on.158be6b1": {
+   "source": "nothing - the session goes on",
+   "text": "nothing - the session goes on"
+  },
   "s.nothing-the-url-is-open-and.29a80308": {
    "source": "Nothing: the URL is open, and who may fetch it is the web server’s allow list and the addresses above. It is what a firewall fetching a list expects, and it is the default. A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and for a pfSense; it works for a FortiGate and an OPNsense too. User name and password: HTTP basic authentication. A FortiGate sends them (the external threat feed’s own user name and password), and so does a recent OPNsense (the URL alias’s Basic authentication); an FMC and a pfSense cannot, so they need one of the other two.",
    "text": "Nothing: the URL is open, and who may fetch it is the web server’s allow list and the addresses above. It is what a firewall fetching a list expects, and it is the default. A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and for a pfSense; it works for a FortiGate and an OPNsense too. User name and password: HTTP basic authentication. A FortiGate sends them (the external threat feed’s own user name and password), and so does a recent OPNsense (the URL alias’s Basic authentication); an FMC and a pfSense cannot, so they need one of the other two."
@@ -20843,6 +20859,10 @@
   "s.only-for-a-server-that-asks.e8448a5c": {
    "source": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the",
    "text": "Only for a server that asks for one. Made here, its key never leaves this machine; the server gets the"
+  },
+  "s.only-for-a-sign-in-made.314a3384": {
+   "source": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the page stops asking.",
+   "text": "Only for a sign-in made with a certificate. off: nothing is watched. signout: the page checks the card every few seconds - a new connection to the certificate's port the card has to sign - and the first time it is not there the session ends and the sign-in page comes. grace: the page says the card is out and waits; the session ends unless it is back in time. Another card than the one signed in with ends it at once. The server ends a watched session too when the page stops asking."
   },
   "s.only-from-the-nodes.215f90c6": {
    "source": "Only from the nodes",
@@ -22815,6 +22835,14 @@
   "s.put-back-now-what-was-there.9826b040": {
    "source": "put back now what was there before a change on trial",
    "text": "put back now what was there before a change on trial"
+  },
+  "s.put-back-the-card-you-signed.31b7c973": {
+   "source": "Put back the card you signed in with - this session ends unless it is back in time.",
+   "text": "Put back the card you signed in with - this session ends unless it is back in time."
+  },
+  "s.put-back-within-seconds.44e1a055": {
+   "source": "...put back within (seconds)",
+   "text": "...put back within (seconds)"
   },
   "s.put-back.e6ccf2f2": {
    "source": "Put back.",
@@ -25788,6 +25816,10 @@
    "source": "Sign me out",
    "text": "Sign me out"
   },
+  "s.sign-out-now.1f04c8e0": {
+   "source": "Sign out now",
+   "text": "Sign out now"
+  },
   "s.sign-out.dc1649a1": {
    "source": "Sign out",
    "text": "Sign out"
@@ -25843,6 +25875,18 @@
   "s.signed-out-or-ended.abacac35": {
    "source": "signed out or ended",
    "text": "signed out or ended"
+  },
+  "s.signed-out-the-card-you-signed.b5123527": {
+   "source": "Signed out: the card you signed in with was not put back in time.",
+   "text": "Signed out: the card you signed in with was not put back in time."
+  },
+  "s.signed-out-the-card-you-signed.f91b08d3": {
+   "source": "Signed out: the card you signed in with was taken out.",
+   "text": "Signed out: the card you signed in with was taken out."
+  },
+  "s.signed-out.05d2a79c": {
+   "source": "Signed out.",
+   "text": "Signed out."
   },
   "s.signed-out.a733a3de": {
    "source": "signed out",
@@ -28623,6 +28667,14 @@
   "s.the-canary-islands.0c2ad3fc": {
    "source": "the Canary Islands",
    "text": "the Canary Islands"
+  },
+  "s.the-card-is-out.be931b88": {
+   "source": "The card is out",
+   "text": "The card is out"
+  },
+  "s.the-card-out.7919d8cf": {
+   "source": "the card out",
+   "text": "the card out"
   },
   "s.the-cayman-islands.62ec29ec": {
    "source": "the Cayman Islands",
@@ -36856,6 +36908,10 @@
    "source": "When the ban stopped. A ban that is still on has nothing here; one that ran out shows the moment it did, and one somebody lifted shows when they lifted it.",
    "text": "When the ban stopped. A ban that is still on has nothing here; one that ran out shows the moment it did, and one somebody lifted shows when they lifted it."
   },
+  "s.when-the-card-is-taken-out.aeb51c0d": {
+   "source": "When the card is taken out",
+   "text": "When the card is taken out"
+  },
   "s.when-the-old-rows-are-thrown.0f392df4": {
    "source": "When the old rows are thrown away",
    "text": "When the old rows are thrown away"
@@ -38244,6 +38300,10 @@
    "source": "with --fw-key: whose key - mikrotik, opnsense-ssh or pfsense-ssh",
    "text": "with --fw-key: whose key - mikrotik, opnsense-ssh or pfsense-ssh"
   },
+  "s.with-grace-how-long-the-card.0e76bea1": {
+   "source": "With grace: how long the card may be out before the session ends.",
+   "text": "With grace: how long the card may be out before the session ends."
+  },
   "s.with-local-user-add-or-password.29dd4e6f": {
    "source": "with --local-user add or password: to be changed at the next sign-in",
    "text": "with --local-user add or password: to be changed at the next sign-in"
@@ -38833,6 +38893,10 @@
   "p.a-new-key-was-made-put.f3a014f1": {
    "source": "a new key was made — put the public half on {0}",
    "text": "a new key was made — put the public half on {0}"
+  },
+  "p.a-notice-then-signed-out-unless.2c97af3e": {
+   "source": "a notice, then signed out unless it is back within {0} s (checked every {1} s)",
+   "text": "a notice, then signed out unless it is back within {0} s (checked every {1} s)"
   },
   "p.a-page-of-its-own-on.eae43dd0": {
    "source": "A page of its own on the Domain tab, Before Windows Server 2025 : what a domain controller of Windows Server 2025 refuses that one of 2016 lets through, and which machines, programs and accounts here still do it - LDAP binds in the clear or unsigned, LDAP channel binding failing, NTLMv1, Kerberos with RC4 or DES, accounts with no AES keys, SMB1 - and NTLM as a whole. Read off the lines as they arrive, before anything switched off above is dropped, and counted a day at a time for {0} days; nothing is judged and nobody is banned for it. The Security log alone gives Kerberos, NTLMv1 and NTLM. The LDAP half is in the Directory Service log, the SMB1 half in SMBServer/Audit, the KDC’s own warnings in the System log: the page says which of them are arriving, and what to add to NXLog and switch on on the controllers for the rest. Off unless switched on.",
@@ -42153,6 +42217,10 @@
   "p.signed-in.d32adb32": {
    "source": "{0} signed in",
    "text": "{0} signed in"
+  },
+  "p.signed-out-at-the-next-check.1d601a02": {
+   "source": "signed out at the next check (every {0} s)",
+   "text": "signed out at the next check (every {0} s)"
   },
   "p.signing-in-to-refusal-s-from.14fa6698": {
    "source": "Signing in to {0}: {1} refusal(s), from {2}.",
