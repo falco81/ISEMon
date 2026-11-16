@@ -372,6 +372,26 @@ working.
 
 ## Version
 
+1.10.359
+
+- **Questions that read far more than they needed** - looked for across the
+  whole program against a PostgreSQL database of millions of made-up
+  events, with the plans written down:
+  - *What holds an old password* (Domain - Worth looking at) asked, for each
+    of up to twelve rows, the newest event of that account with a service,
+    newest first and one row. PostgreSQL walked the account's index
+    backwards through every event it had: for a service account with
+    millions of tickets a day, 26 s a row, twice a row, and the Domain page
+    came minutes late. One look for all the rows now, cut by the refusals'
+    kinds and the window (on a million tickets: 0.9 s a row before, 0.2 s
+    for all of them now). The answers are the same.
+  - *Machine accounts refused for a wrong password*: one look for the five,
+    not every event of each (a server's machine account has millions).
+- **The Domain page's progress card** ("Counting the domain events ahead of
+  time") is kept up by the status every 5 s. It stood at 13 % after the
+  counting was done, because the page's own answer can be minutes apart; when
+  the counting is gone the page is asked again.
+
 1.10.358
 
 - **When the card is taken out - Windows and the browser's own windows**

@@ -12219,6 +12219,7 @@ function tick() {
        while the dump button down there is waiting, a copy is drawn there
        too rather than in the card above it. */
     drawGoing('db-going', data.going, 'db-', 'db-dump');
+    if (typeof winCountingFromStatus === 'function') winCountingFromStatus(data.going);
     if (!drawGoing('db-dump-going', data.going, 'db-dump') && DUMP_ASKED) {
       drawGoing('db-dump-going', data.going, 'db-copy');
       if ($('db-going')) $('db-going').hidden = true;
@@ -22861,10 +22862,7 @@ var WIN_SOON = null;
     overview is worked out (1.10.154). Returns whether it is drawn. */
 function drawWinCounting(d) {
   var c = d.counting || {};
-  var job = null;
-  Object.keys(d.going || {}).forEach(function (k) {
-    if (k.indexOf('db-roll') === 0) job = job || d.going[k];
-  });
+  var job = winRollJob(d.going);
   if (!job && !c.busy) { bgCard('w-counting', 'w-working', null); return false; }
   var lines = [];
   if (job && job.total) {
@@ -22886,6 +22884,32 @@ function drawWinCounting(d) {
   /* ...and the page keeps asking while it goes, as it does for any job. */
   WIN_GOING = true;
   return true;
+}
+
+/* The counting card kept up by the status every 5 s (1.10.359): the Domain
+   page's own answer can come minutes apart on a big domain, and the card
+   stood at 13 % long after the counting was done. Only a job of this
+   daemon's own (db-roll); when it is gone the page is asked again. */
+function winCountingFromStatus(going) {
+  if (TAB !== 'windows' || !WIN) return;
+  var had = !!winRollJob(WIN.going || {});
+  var now = winRollJob(going || {});
+  if (!had && !now) return;
+  WIN.going = going || {};
+  if (had && !now) {
+    WIN.counting = Object.assign({}, WIN.counting || {}, {busy: ''});
+    drawWinGoing(WIN.going, drawWinCounting(WIN));
+    if (!document.hidden) loadWindows(true);
+    return;
+  }
+  drawWinCounting(WIN);
+}
+function winRollJob(going) {
+  var job = null;
+  Object.keys(going || {}).forEach(function (k) {
+    if (k.indexOf('db-roll') === 0) job = job || going[k];
+  });
+  return job;
 }
 
 function drawWinGoing(going, counting) {

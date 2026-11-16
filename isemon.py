@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.358'
+__version__ = '1.10.359'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -35820,43 +35820,50 @@ class Storage(object):
                         'newest': {'account': one['account'], 'machine': one['machine'],
                                    'ip': one['ip'], 'process': one['process'],
                                    'service': '', 'kind': 'logon-failed'}})
-        # ...and what each of them was actually asking for. A ticket-granting
+        # ...and what each of them was actually asking for (a ticket-granting
         # ticket means a whole sign-in with a password every time, which is a
-        # different problem from a ticket being renewed, and it is the field
-        # that says which.
-        for one in out:
-            got = one['newest']
+        # different problem from a ticket being renewed), and what the domain
+        # kept answering it. ONE look for all the rows (1.10.359): asked a row
+        # at a time, `ORDER BY ts DESC LIMIT 1` by the account, PostgreSQL
+        # walked the account's index backwards through every event it had -
+        # a service account with millions of tickets a day took 26 s, twice
+        # for each of twelve rows, and the Domain page came minutes late.
+        # This one is cut by the refusals' kinds and the window, as the count
+        # above was, and has no LIMIT to trap the planner.
+        if out:
+            names = sorted({one['ask'].get('account') or one['said'] for one in out})
             try:
-                row = self.db.execute(
-                    "SELECT service, kind FROM win_events WHERE ts >= ? "
-                    'AND LOWER(account) = ? AND kind IN (%s) '
-                    "AND COALESCE(machine,'') = ? AND COALESCE(ip,'') = ? "
-                    "AND COALESCE(process,'') = ? AND COALESCE(service,'') <> '' "
-                    'ORDER BY ts DESC LIMIT 1' % ','.join('?' * len(self.BAD_KINDS)),
-                    [float(since), str(one['said']).lower()] + list(self.BAD_KINDS)
-                    + [got['machine'], got['ip'], got['process']]).fetchone()
+                rows = self.db.execute(
+                    "SELECT account, COALESCE(machine,'') AS machine, COALESCE(ip,'') AS ip, "
+                    "COALESCE(process,'') AS process, COALESCE(service,'') AS service, "
+                    "COALESCE(said,'') AS said, kind, COUNT(*) AS n, MAX(ts) AS last "
+                    'FROM win_events WHERE ts >= ? AND account IN (%s) AND kind IN (%s) '
+                    "GROUP BY account, COALESCE(machine,''), COALESCE(ip,''), "
+                    "COALESCE(process,''), COALESCE(service,''), COALESCE(said,''), kind"
+                    % (','.join('?' * len(names)), ','.join('?' * len(self.BAD_KINDS))),
+                    [float(since)] + names + list(self.BAD_KINDS)).fetchall()
             except sqlite3.Error:
-                row = None
-            if row:
-                got['service'] = str(row['service'] or '')
-                got['kind'] = str(row['kind'] or got['kind'])
-        # ...and what the domain kept answering each of them.
-        for one in out:
-            got = one['newest']
-            try:
-                row = self.db.execute(
-                    "SELECT said, COUNT(*) AS n FROM win_events WHERE ts >= ? "
-                    'AND LOWER(account) = ? AND kind IN (%s) '
-                    "AND COALESCE(machine,'') = ? AND COALESCE(ip,'') = ? "
-                    "AND COALESCE(process,'') = ? AND COALESCE(said,'') <> '' "
-                    'GROUP BY said ORDER BY n DESC LIMIT 1'
-                    % ','.join('?' * len(self.BAD_KINDS)),
-                    [float(since), str(one['said']).lower()] + list(self.BAD_KINDS)
-                    + [got['machine'], got['ip'], got['process']]).fetchone()
-            except sqlite3.Error:
-                row = None
-            if row:
-                got['said'] = str(row['said'] or '')
+                rows = []
+            by = {}
+            for row in rows:
+                key = (str(row['account'] or '').lower(), str(row['machine']),
+                       str(row['ip']), str(row['process']))
+                by.setdefault(key, []).append(row)
+            for one in out:
+                got = one['newest']
+                mine = by.get((str(one['said']).lower(), str(got['machine'] or ''),
+                               str(got['ip'] or ''), str(got['process'] or ''))) or []
+                asked = [r for r in mine if r['service']]
+                if asked:
+                    best = max(asked, key=lambda r: float(r['last'] or 0))
+                    got['service'] = str(best['service'])
+                    got['kind'] = str(best['kind'] or got['kind'])
+                told = {}
+                for r in mine:
+                    if r['said']:
+                        told[str(r['said'])] = told.get(str(r['said']), 0) + int(r['n'] or 0)
+                if told:
+                    got['said'] = max(sorted(told), key=lambda w: told[w])
         self.name_the_machines([one['newest'] for one in out], since)
         return out
 
@@ -36259,20 +36266,29 @@ class Storage(object):
         except sqlite3.Error:
             return []
         out = []
+        # Where each was refused from - ONE look for the five (1.10.359). A
+        # look per account read every event of it in the window to keep the
+        # refusals: for a server's machine account, millions of tickets.
+        names = sorted({str(row['account'] or '') for row in rows} - {''})
+        where = {}
+        if names:
+            try:
+                for r in self.db.execute(
+                        'SELECT account, ip, COUNT(*) AS n FROM win_events WHERE account IN (%s) '
+                        "AND ts >= ? AND kind IN ('logon-failed','kerberos-failed','ntlm-failed') "
+                        "AND COALESCE(ip,'') <> ''%s GROUP BY account, ip"
+                        % (','.join('?' * len(names)), skip),
+                        names + [float(since)] + more).fetchall():
+                    where.setdefault(str(r['account'] or ''), []).append(r)
+            except sqlite3.Error:
+                where = {}
         for row in rows:
             account = str(row['account'] or '')
-            try:
-                where = self.db.execute(
-                    'SELECT ip, COUNT(*) AS n FROM win_events WHERE account = ? AND ts >= ? '
-                    "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed') "
-                    "AND COALESCE(ip,'') <> ''" + skip + ' GROUP BY ip ORDER BY n DESC',
-                    [account, float(since)] + more).fetchall()
-            except sqlite3.Error:
-                where = []
+            mine = sorted(where.get(account, []), key=lambda r: -int(r['n'] or 0))
             out.append({'account': account, 'name': account.rstrip('$'),
                         'n': int(row['n'] or 0), 'first': float(row['first'] or 0),
                         'last': float(row['last'] or 0),
-                        'ips': [(str(r['ip']), int(r['n'] or 0)) for r in where
+                        'ips': [(str(r['ip']), int(r['n'] or 0)) for r in mine
                                 if self.win_real_address(r['ip'])][:4]})
         return out
 
