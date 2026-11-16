@@ -543,10 +543,25 @@ else:
         isemon.CONFIG['certlogin_watch'] = 'grace'
         isemon.CONFIG['certlogin_watch_grace_s'] = 30
         ck = sign_in()
+        ok('grace: the card found once', alive(ck, 'falco'), (200, 1))
         ok('grace: the card out - 2 pixels, still signed in', (alive(ck), signed(ck)),
            ((200, 2), True))
         ok('...back in time - 1 pixel', alive(ck, 'falco'), (200, 1))
-        ok('no session at all - no picture', alive('', 'falco')[0], 403)
+        ok('no cookie came with the check - 3 pixels (the page says so on 443)', alive('', 'falco'),
+           (200, 3))
+        # A browser whose checks never once found the card (1.10.355): an
+        # iPad's Safari signs nothing in the background - not watched.
+        isemon.CONFIG['certlogin_watch'] = 'signout'
+        ck = sign_in()
+        ok('never found: 4 pixels - not watched, still signed in', (alive(ck), signed(ck)),
+           ((200, 4), True))
+        ok('...and from then on not watched', (alive(ck), signed(ck)), ((200, 1), True))
+        isemon.CONFIG['certlogin_watch_unable'] = 'signout'
+        time.sleep(3)                     # the dashboard's own rate (limit_req) let go
+        ck = sign_in()
+        ok('...unless it is asked for: signed out', (alive(ck)[0], signed(ck)), (403, False))
+        isemon.CONFIG['certlogin_watch_unable'] = 'allow'
+        isemon.CONFIG['certlogin_watch'] = 'grace'
         # No TLS session resumed on the watched port (1.10.354, the kit's
         # finding 13): a resumed session would answer without the card.
         rc = subprocess.run(['openssl', 's_client', '-connect', '127.0.0.1:%d' % PCERT,

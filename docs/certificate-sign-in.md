@@ -220,6 +220,25 @@ Events:
 - *&lt;name&gt;: the card they signed in with is out - the session waits N s*
 - *...is back*
 
+**A browser that cannot be checked (1.10.355).** On an iPad the card is in,
+yet the check in the background never finds it: Safari signs nothing for a
+page in the background. A session therefore remembers whether a check in the
+background has ever found its card in this browser (`sessions.card_ok`).
+
+- Until one has, a check without the card does not count as the card taken
+  out.
+- With *A browser that cannot be checked* = `allow` (the default), that
+  sign-in is simply **not watched**, and Events say so and why:
+  - *no certificate came with the check*;
+  - *the browser sent no cookie with the check*;
+  - *the check got no answer at all*.
+- With `signout`, it is signed out as if the card were out: such a browser
+  cannot stay signed in while watching is on.
+- Once a check has found the card, a later one without it is a card taken
+  out, whatever the setting says.
+- The picture's answer tells the page which case it is: 3 px wide means no
+  cookie came, 4 px wide means this browser cannot be checked.
+
 **Kind to the card (1.10.354).** The page is careful not to make the card
 sign more than it has to:
 

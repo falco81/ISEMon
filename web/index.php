@@ -271,18 +271,27 @@ if ((string) ($_SERVER['ISEMON_CERT_PORT'] ?? '') === '1') {
         if (strlen($pem) > 20000) {
             $pem = '';
         }
+        /* 1.10.355: 3 wide - no cookie came with the check (the page then says
+           so on 443, where its cookie does come); 4 wide - this browser cannot
+           be checked (its checks never once found the card): not watched. */
+        $gifs = [1 => 'R0lGODlhAQABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAABAAEAAAgEAAEEBAA7',
+                 2 => 'R0lGODlhAgABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAACAAEAAAgFAAEACAgAOw==',
+                 3 => 'R0lGODlhAwABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAADAAEAAAgFAAEIDAgAOw==',
+                 4 => 'R0lGODlhBAABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAAEAAEAAAgGAAEIBBAQADs='];
         $d = null;
+        $wide = 0;
         if (isemon_session() !== '') {
             [$status, $body] = isemon_call('/api/auth/cert-alive', 'POST', ['cert' => $pem], 10.0);
             $d = json_decode((string) $body, true);
+            if (is_array($d) && empty($d['gone'])) {
+                $wide = !empty($d['unable']) ? 4 : (!empty($d['alive']) ? 1 : 2);
+            }
+        } else {
+            $wide = 3;
         }
-        if (is_array($d) && empty($d['gone'])) {
-            $wide = !empty($d['alive']) ? 1 : 2;
+        if ($wide > 0) {
             header('Content-Type: image/gif');
-            /* A transparent GIF $wide pixels wide, 1 high. */
-            echo base64_decode($wide === 1
-                ? 'R0lGODlhAQABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAABAAEAAAgEAAEEBAA7'
-                : 'R0lGODlhAgABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAACAAEAAAgFAAEACAgAOw==');
+            echo base64_decode($gifs[$wide]);
             exit;
         }
         http_response_code(403);
@@ -12855,13 +12864,18 @@ function certWatchCheck() {
     var took = Date.now() - began;
     if (w === 1) { CW.misses = 0; certWatchIn(); return; }
     if (w === 2) { CW.misses = 0; certWatchOut(took); return; }
+    /* This browser cannot be checked (1.10.355): its checks never once found
+       the card - an iPad's Safari signs nothing in the background. */
+    if (w === 4) { certWatchUnable(); return; }
     /* No picture at all: the handshake failed (nothing to sign it with), or
        the session is over (403). Once more after a moment - one lost
        connection is not a card taken out; then the pages are told. */
     CW.misses += 1;
-    if (CW.misses < 2 && !CW.out) { certWatchNext(1500); return; }
-    api('card-gone', {}, {quiet: true}).then(function (d) {
+    if (w !== 3 && CW.misses < 2 && !CW.out) { certWatchNext(1500); return; }
+    /* w 3: the picture came, but no cookie came with it - said as such. */
+    api('card-gone', {why: w === 3 ? 'nocookie' : 'nopicture'}, {quiet: true}).then(function (d) {
       if (g !== CW.gen) return;
+      if (d && d.unable) { certWatchUnable(); return; }
       if (!d || !d.watched) { certWatchNext(c.every * 1000); return; }
       if (d.gone) { certWatchEnd(CW.out ? 'late' : 'out'); return; }
       certWatchOut(took);
@@ -12874,9 +12888,15 @@ function certWatchCheck() {
   /* Without an answer for 20 s: none (fail closed); no new check starts
      until this one is over. */
   to = setTimeout(function () { fin(0); }, 20000);
-  img.onload = function () { fin(img.naturalWidth === 2 ? 2 : 1); };
+  img.onload = function () { var nw = img.naturalWidth; fin(nw >= 2 && nw <= 4 ? nw : 1); };
   img.onerror = function () { fin(0); };
   img.src = 'https://' + location.hostname + ':' + c.port + '/index.php?api=cert-alive&r=' + Date.now().toString(36);
+}
+function certWatchUnable() {
+  CW.gen++; CW.conf = null; CW.out = 0;
+  if (CW.timer) clearTimeout(CW.timer);
+  certWatchLayer(false);
+  toast('This browser cannot have the card checked (as an iPad cannot): this sign-in is not watched.', 'warn');
 }
 function certWatchIn() {
   var c = CW.conf;
@@ -28970,7 +28990,7 @@ var PANES = {
   /* Signing in with a certificate (1.10.341), the same way. */
   cl:      ['certlogin', 'certlogin_auto', 'certlogin_port', 'certlogin_match', 'certlogin_crl',
             'certlogin_crl_ldap', 'certlogin_ocsp', 'certlogin_ocsp_url',
-            'certlogin_watch', 'certlogin_watch_s', 'certlogin_watch_grace_s'],
+            'certlogin_watch', 'certlogin_watch_s', 'certlogin_watch_grace_s', 'certlogin_watch_unable'],
   /* The sign-in page as a whole (1.10.342): what both of them share. */
   signin:  ['password_off'],
   dir2:    ['directory2', 'directory2_host', 'directory2_port', 'directory2_tls',

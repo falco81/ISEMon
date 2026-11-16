@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.354",
-  "made": "2026-11-15",
+  "version": "1.10.355",
+  "made": "2026-11-16",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -420,9 +420,17 @@
    "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only accounts of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off, nothing of it is offered.",
    "text": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only accounts of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off, nothing of it is offered."
   },
+  "s.a-browser-that-cannot-be-checked.d486b61d": {
+   "source": "A browser that cannot be checked",
+   "text": "A browser that cannot be checked"
+  },
   "s.a-browser-that-saw-it-comes.577de8c5": {
    "source": "A browser that saw it comes back only over HTTPS for that long. install.sh sets two years.",
    "text": "A browser that saw it comes back only over HTTPS for that long. install.sh sets two years."
+  },
+  "s.a-browser-whose-very-first-check.46be84ee": {
+   "source": "A browser whose very first check in the background does not find the card cannot be checked at all - an iPad's Safari signs nothing for a page in the background, though the card is in. allow: that sign-in is simply not watched, and Events say so and why. signout: it is signed out as if the card were out - such a browser cannot stay signed in with this on. Once a check has found the card, a later one that does not is a card taken out, whatever this says.",
+   "text": "A browser whose very first check in the background does not find the card cannot be checked at all - an iPad's Safari signs nothing for a page in the background, though the card is in. allow: that sign-in is simply not watched, and Events say so and why. signout: it is signed out as if the card were out - such a browser cannot stay signed in with this on. Once a check has found the card, a later one that does not is a card taken out, whatever this says."
   },
   "s.a-burst-this-big-goes-out.720d7864": {
    "source": "A burst this big goes out for good",
@@ -18348,6 +18356,10 @@
    "source": "nobody yet",
    "text": "nobody yet"
   },
+  "s.nocookie.284cb229": {
+   "source": "nocookie",
+   "text": "nocookie"
+  },
   "s.node.260f7a8c": {
    "source": "Node",
    "text": "Node"
@@ -18507,6 +18519,10 @@
   "s.none.71f8e797": {
    "source": "none",
    "text": "none"
+  },
+  "s.nopicture.0922eace": {
+   "source": "nopicture",
+   "text": "nopicture"
   },
   "s.nopreauth.e49242c8": {
    "source": "nopreauth",
@@ -33591,6 +33607,10 @@
   "s.this-box-is-not-on-the.1d6b3ddf": {
    "source": "This box is not on the list under Settings → The OTP logs → Where OTP sign-ins come from. A new thing asking the token server is worth knowing about.",
    "text": "This box is not on the list under Settings → The OTP logs → Where OTP sign-ins come from. A new thing asking the token server is worth knowing about."
+  },
+  "s.this-browser-cannot-have-the-card.fdb4cd76": {
+   "source": "This browser cannot have the card checked (as an iPad cannot): this sign-in is not watched.",
+   "text": "This browser cannot have the card checked (as an iPad cannot): this sign-in is not watched."
   },
   "s.this-browser-makes-no-keys-here.ea44f081": {
    "source": "this browser makes no keys here - the page must be opened over https",

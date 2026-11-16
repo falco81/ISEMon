@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.354",
+  "version": "1.10.355",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -420,9 +420,17 @@
    "source": "A browser on a computer in the domain signs its person in to these pages without a password: it sends a Kerberos ticket for the name it opened, checked here against the keytab of that name. Only accounts of the directory above get in, with the role of their groups - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off, nothing of it is offered.",
    "text": "Prohlížeč na počítači v doméně přihlásí svého uživatele na tyto stránky bez hesla: pošle Kerberos ticket pro jméno, které otevřel, a ten se tady ověří proti keytabu toho jména. Dovnitř se dostanou jen účty z adresáře výše, s rolí podle svých skupin - a Face ID, je-li zapnuté, se po něm vyžaduje stejně. NTLM se nikdy nepřijímá. Vypnuto: nic z toho se nenabízí."
   },
+  "s.a-browser-that-cannot-be-checked.d486b61d": {
+   "source": "A browser that cannot be checked",
+   "text": "Prohlížeč, který kontrolovat nejde"
+  },
   "s.a-browser-that-saw-it-comes.577de8c5": {
    "source": "A browser that saw it comes back only over HTTPS for that long. install.sh sets two years.",
    "text": "Prohlížeč, který ho jednou uvidí, se po tuto dobu vrací jen přes HTTPS. install.sh nastavuje dva roky."
+  },
+  "s.a-browser-whose-very-first-check.46be84ee": {
+   "source": "A browser whose very first check in the background does not find the card cannot be checked at all - an iPad's Safari signs nothing for a page in the background, though the card is in. allow: that sign-in is simply not watched, and Events say so and why. signout: it is signed out as if the card were out - such a browser cannot stay signed in with this on. Once a check has found the card, a later one that does not is a card taken out, whatever this says.",
+   "text": "Prohlížeč, jehož úplně první kontrola na pozadí kartu nenajde, kontrolovat vůbec nejde – Safari na iPadu na pozadí nic nepodepíše, i když je karta zasunutá. allow: takové přihlášení se prostě nehlídá a Events řeknou, že tomu tak je a proč. signout: odhlásí se, jako by karta byla vytažená – takový prohlížeč pak s tímto zapnutým přihlášený zůstat nemůže. Jakmile kontrola kartu jednou najde, další kontrola bez ní znamená vytaženou kartu bez ohledu na toto nastavení."
   },
   "s.a-burst-this-big-goes-out.720d7864": {
    "source": "A burst this big goes out for good",
@@ -18348,6 +18356,10 @@
    "source": "nobody yet",
    "text": "zatím nikdo"
   },
+  "s.nocookie.284cb229": {
+   "source": "nocookie",
+   "text": "nocookie"
+  },
   "s.node.260f7a8c": {
    "source": "Node",
    "text": "Uzel"
@@ -18507,6 +18519,10 @@
   "s.none.71f8e797": {
    "source": "none",
    "text": "žádné"
+  },
+  "s.nopicture.0922eace": {
+   "source": "nopicture",
+   "text": "nopicture"
   },
   "s.nopreauth.e49242c8": {
    "source": "nopreauth",
@@ -33591,6 +33607,10 @@
   "s.this-box-is-not-on-the.1d6b3ddf": {
    "source": "This box is not on the list under Settings → The OTP logs → Where OTP sign-ins come from. A new thing asking the token server is worth knowing about.",
    "text": "Tento stroj není v seznamu v Nastavení → Logy OTP → Odkud přicházejí OTP přihlášení. Nový stroj dotazující se tokenového serveru stojí za pozornost."
+  },
+  "s.this-browser-cannot-have-the-card.fdb4cd76": {
+   "source": "This browser cannot have the card checked (as an iPad cannot): this sign-in is not watched.",
+   "text": "V tomto prohlížeči kartu kontrolovat nejde (stejně jako na iPadu): toto přihlášení se nehlídá."
   },
   "s.this-browser-makes-no-keys-here.ea44f081": {
    "source": "this browser makes no keys here - the page must be opened over https",

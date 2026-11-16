@@ -83,10 +83,12 @@ try:
     api.start()
     time.sleep(0.4)
 
-    def session(with_card=True):
+    def session(with_card=True, proven=False):
         tok = store.new_session('falco', 'fulladmin', '192.0.2.1', 'test', '')
         if with_card:
             d.certlogin_watch_mark(tok, card)
+            if proven:
+                store.session_card(tok, card_ok=time.time())
         return tok
 
     def row(tok):
@@ -99,7 +101,7 @@ try:
     print('off by default')
     ok('defaults', (isemon.DEFAULTS['certlogin_watch'], isemon.DEFAULTS['certlogin_watch_s'],
                     isemon.DEFAULTS['certlogin_watch_grace_s']), ('off', 15, 30))
-    tok = session()
+    tok = session(proven=True)
     ok('off: the page is told nothing', d.certlogin_watch_for(tok), None)
     ok('off: no card, nothing happens', (d.certlogin_alive(tok, '')['watched'],
                                          bool(d.who(tok))), (False, True))
@@ -118,10 +120,10 @@ try:
     ok('the card out: the session ends', (d.certlogin_alive(tok, '')['gone'], d.who(tok)),
        (True, None))
     ok('...said in Events', events('falco was signed out: the card they signed in with was taken out'), 1)
-    tok = session()
+    tok = session(proven=True)
     ok('another card: ends at once', (d.certlogin_alive(tok, other)['gone'], d.who(tok)),
        (True, None))
-    tok = session()
+    tok = session(proven=True)
     ok('the page: the handshake failed (card-gone) - ends', call('/api/auth/card-gone', 'POST', {},
                                                                 session=tok)[1].get('gone'), True)
     ok('...signed out', d.who(tok), None)
@@ -135,7 +137,7 @@ try:
     print('grace')
     isemon.CONFIG['certlogin_watch'] = 'grace'
     isemon.CONFIG['certlogin_watch_grace_s'] = 20
-    tok = session()
+    tok = session(proven=True)
     got = d.certlogin_alive(tok, '')
     ok('the card out: waits, the time left said', (got['gone'], got['alive'], 18 <= got['grace_left'] <= 20),
        (False, False, True))
@@ -155,18 +157,18 @@ try:
     store.session_card(tok, card_out=time.time() - 25)
     ok('out longer than the grace: ends', (d.certlogin_alive(tok, '')['gone'], d.who(tok)),
        (True, None))
-    tok = session()
+    tok = session(proven=True)
     ok('card-gone in grace: holds', (call('/api/auth/card-gone', 'POST', {}, session=tok)[1].get('gone'),
                                      d.who(tok).get('card')), (False, 'out'))
     store.session_card(tok, card_out=time.time() - 3600)
     ok('the card out for long, nobody checking: ended by the server', d.who(tok), None)
-    tok = session()
+    tok = session(proven=True)
     ok('another card in grace: ends at once too', d.certlogin_alive(tok, other)['gone'], True)
 
     print('a page asleep (an iPad locked) - held, not ended')
     for mode in ('signout', 'grace'):
         isemon.CONFIG['certlogin_watch'] = mode
-        tok = session()
+        tok = session(proven=True)
         store.session_card(tok, card_seen=time.time() - 3600)
         me = d.who(tok)
         ok('%s: no check for an hour - still there, held' % mode, (bool(me), me and me.get('card')),
@@ -177,14 +179,49 @@ try:
         ok('...the card found: goes on', (d.certlogin_alive(tok, card)['alive'], d.who(tok).get('card'),
                                           call('/api/status', session=tok)[0]), (True, '', 200))
     isemon.CONFIG['certlogin_watch'] = 'signout'
-    tok = session()
+    tok = session(proven=True)
     store.session_card(tok, card_seen=time.time() - 3600)
     ok('asleep, then the card not there: a card taken out', (d.certlogin_alive(tok, '')['gone'],
                                                               d.who(tok)), (True, None))
-    tok = session()
+    tok = session(proven=True)
     store.session_card(tok, card_seen=None)
     ok('switched on after the sign-in: watched from now', (d.who(tok).get('card'),
                                                            bool(row(tok).get('card_seen'))), ('', True))
+
+    print('a browser that cannot be checked (1.10.355: an iPad)')
+    isemon.CONFIG['certlogin_watch'] = 'signout'
+    ok('default: allow', isemon.DEFAULTS['certlogin_watch_unable'], 'allow')
+    tok = session()
+    got = d.certlogin_alive(tok, '')
+    ok('the first check without the card: not watched, not signed out',
+       (got.get('unable'), got['gone'], bool(d.who(tok))), (True, False, True))
+    ok('...said in Events, with why', events("cannot be checked in this browser - no certificate came"), 1)
+    ok('...the page told nothing to watch', (d.certlogin_watch_for(tok),
+                                             call('/api/auth/whoami', session=tok)[1].get('certwatch')),
+       (None, None))
+    ok('...never held either', (d.certlogin_alive(tok, '')['watched'], call('/api/status', session=tok)[0]),
+       (False, 200))
+    store.session_card(tok, card_seen=time.time() - 3600)
+    ok('...nor when its page sleeps', d.who(tok).get('card'), '')
+    tok = session()
+    ok('no cookie came with the check, never found: not watched, why said',
+       (call('/api/auth/card-gone', 'POST', {'why': 'nocookie'}, session=tok)[1].get('unable'),
+        events('the browser sent no cookie with the check')), (True, 1))
+    tok = session()
+    ok('no answer at all, never found: not watched',
+       call('/api/auth/card-gone', 'POST', {}, session=tok)[1].get('unable'), True)
+    ok('...why said', events('the check got no answer at all'), 1)
+    tok = session()
+    ok('once found, the card proven in this browser', (d.certlogin_alive(tok, card)['alive'],
+                                                        float(row(tok).get('card_ok') or 0) > 0),
+       (True, True))
+    ok('...then without it: a card taken out, as before', (d.certlogin_alive(tok, '')['gone'], d.who(tok)),
+       (True, None))
+    isemon.CONFIG['certlogin_watch_unable'] = 'signout'
+    tok = session()
+    ok('signout: never found - signed out as a card out', (d.certlogin_alive(tok, '')['gone'], d.who(tok)),
+       (True, None))
+    isemon.CONFIG['certlogin_watch_unable'] = 'allow'
 
     print('switched off')
     isemon.CONFIG['certlogin_watch'] = 'grace'
@@ -227,8 +264,10 @@ try:
     for what, there in (
             ('one check for all the tabs', "var CW_SHARED = 'isemon.card.check';"),
             ('one check at a time', 'if (!c || CW.busy) return;'),
-            ('a failed picture asked once more', 'if (CW.misses < 2 && !CW.out) { certWatchNext(1500); return; }'),
-            ('the pages told when the handshake failed', "api('card-gone', {}, {quiet: true})"),
+            ('a failed picture asked once more', 'if (w !== 3 && CW.misses < 2 && !CW.out) { certWatchNext(1500); return; }'),
+            ('the pages told when the handshake failed, or no cookie came',
+             "api('card-gone', {why: w === 3 ? 'nocookie' : 'nopicture'}, {quiet: true})"),
+            ('a browser that cannot be checked: left alone', 'if (w === 4) { certWatchUnable(); return; }'),
             ('checked when the page wakes', "['visibilitychange', 'pageshow', 'focus', 'online']"),
             ('the first check soon', 'certWatchNext(conf.out || conf.stale ? 300 : 1500);'),
             ('the countdown every second', 'CW.tick = setInterval(draw, 1000);'),

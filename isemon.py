@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.354'
+__version__ = '1.10.355'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -892,6 +892,10 @@ DEFAULTS = {
     'certlogin_watch': 'off',
     'certlogin_watch_s': 15,
     'certlogin_watch_grace_s': 30,
+    # A browser whose checks have never once found the card (1.10.355): an
+    # iPad's Safari signs nothing in the background - allow: that session is
+    # not watched (said in Events); signout: it is signed out like a card out.
+    'certlogin_watch_unable': 'allow',
     # Changes that could cut this server off, taken back unless kept
     # (1.10.228, after otp 1.0.137): a new network (Settings - Network) and
     # a change of the firewall or of who may reach which page go back to what
@@ -21629,7 +21633,9 @@ CREATE TABLE IF NOT EXISTS sessions (
     second TEXT,               -- the second step still owed: enrol, verify (1.10.303)
     card TEXT,                 -- the SHA-256 of the certificate it was opened with (1.10.354)
     card_seen REAL,            -- the last check that found that card
-    card_out REAL              -- when it was first found out (grace)
+    card_out REAL,             -- when it was first found out (grace)
+    card_ok REAL               -- the first check in the background that found it; -1: this
+                               -- browser cannot be checked (1.10.355)
 );
 CREATE INDEX IF NOT EXISTS sessions_name ON sessions (name);
 
@@ -28127,7 +28133,7 @@ class Storage(object):
         'blocked_log': [('country', 'TEXT'), ('src', 'TEXT')],
         # The second step a sign-in still owes, Face ID (1.10.303).
         'sessions': [('second', 'TEXT'), ('card', 'TEXT'), ('card_seen', 'REAL'),
-                     ('card_out', 'REAL')],
+                     ('card_out', 'REAL'), ('card_ok', 'REAL')],
         # Where each ban came from (1.10.193): see `BAN_SOURCES`.
         'blocked': [('src', 'TEXT')],
         # `rid` came after the table it is in, so an installation upgraded
@@ -46384,7 +46390,7 @@ class Storage(object):
         """The card of a session signed in with a certificate (1.10.354):
         card (its fingerprint), card_seen, card_out - kept in its own row, so
         a restart of the daemon forgets nothing."""
-        cols = [k for k in ch if k in ('card', 'card_seen', 'card_out')]
+        cols = [k for k in ch if k in ('card', 'card_seen', 'card_out', 'card_ok')]
         if not cols:
             return
         with self.db_write() as db:
@@ -62172,7 +62178,45 @@ class Daemon(object):
         the session's own row (never the certificate itself)."""
         fp = self.certlogin_fp(pem)
         if token and fp:
-            self.store.session_card(token, card=fp, card_seen=time.time(), card_out=None)
+            self.store.session_card(token, card=fp, card_seen=time.time(), card_out=None,
+                                    card_ok=None)
+
+    CL_UNABLE_WHY = {
+        'nocert': 'no certificate came with the check (the browser does not sign it in the '
+                  'background)',
+        'nocookie': 'the browser sent no cookie with the check',
+        'nopicture': 'the check got no answer at all (the browser did not sign the connection)'}
+
+    @staticmethod
+    def _cl_proven(row):
+        try:
+            return float(row.get('card_ok') or 0) > 0
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _cl_unable_now(row):
+        try:
+            return float(row.get('card_ok') or 0) < 0
+        except (TypeError, ValueError):
+            return False
+
+    def _cl_unable(self, token, row, why):
+        """A browser whose checks have never once found the card (1.10.355):
+        it cannot be checked - an iPad's Safari signs nothing in the
+        background. With certlogin_watch_unable = allow that session is not
+        watched from now on (said in Events); True when it was so marked."""
+        if self._cl_proven(row) or str(CONFIG.get('certlogin_watch_unable') or 'allow') != 'allow':
+            return False
+        if not self._cl_unable_now(row):
+            row['card_ok'], row['card_out'] = -1, None
+            self.store.session_card(token, card_ok=-1, card_out=None)
+            name = row.get('name') or '?'
+            self.store.add_event('login', 'the card of %s\'s sign-in cannot be checked in this '
+                                          'browser - %s: it is not watched (Settings - Active '
+                                          'Directory - A browser that cannot be checked)'
+                                 % (name, self.CL_UNABLE_WHY.get(why, why)), 'warn', who=name)
+        return True
 
     def _cl_watch_end(self, token, name, why):
         if not name:
@@ -62207,7 +62251,8 @@ class Daemon(object):
         watched), 'in', 'out' (grace), 'stale' (its page stopped checking -
         held, nothing answered until a check finds the card) or 'gone'
         (ended just now)."""
-        if not row or not row.get('card') or self.certlogin_watch_mode() == 'off':
+        if not row or not row.get('card') or self.certlogin_watch_mode() == 'off' \
+                or self._cl_unable_now(row):
             return None
         now = time.time()
         seen = float(row.get('card_seen') or 0)
@@ -62239,7 +62284,7 @@ class Daemon(object):
         if mode == 'off':
             return None
         row = self.store.session(token) if token else None
-        if not row or not row.get('card'):
+        if not row or not row.get('card') or self._cl_unable_now(row):
             return None
         if state is None:
             state = 'out' if row.get('card_out') else 'in'
@@ -62254,7 +62299,8 @@ class Daemon(object):
         row = self.store.session(token) if token else None
         if not row:
             return {'alive': False, 'gone': True, 'watched': False}
-        if self.certlogin_watch_mode() == 'off' or not row.get('card'):
+        if self.certlogin_watch_mode() == 'off' or not row.get('card') \
+                or self._cl_unable_now(row):
             return {'alive': True, 'gone': False, 'watched': False}
         fp = self.certlogin_fp(pem) if pem else ''
         if fp and fp != row['card']:
@@ -62262,6 +62308,8 @@ class Daemon(object):
                                                        'with was offered (the card was changed)')
             return {'alive': False, 'gone': True, 'watched': True}
         if not fp:
+            if self._cl_unable(token, row, 'nocert'):
+                return {'alive': True, 'gone': False, 'watched': False, 'unable': True}
             st = self._cl_out(token, row, 'the card they signed in with was taken out')
             if st == 'gone':
                 return {'alive': False, 'gone': True, 'watched': True}
@@ -62271,6 +62319,8 @@ class Daemon(object):
         if self.certlogin_watch_due(token, row) == 'gone':
             return {'alive': False, 'gone': True, 'watched': True}
         now, ch = time.time(), {}
+        if not self._cl_proven(row):
+            ch['card_ok'] = now          # this browser can be checked: proven
         if row.get('card_out'):
             ch['card_out'] = None
             self.store.add_event('login', '%s: the card they signed in with is back'
@@ -62281,13 +62331,19 @@ class Daemon(object):
             self.store.session_card(token, **ch)
         return {'alive': True, 'gone': False, 'watched': True}
 
-    def certlogin_card_gone(self, token):
+    def certlogin_card_gone(self, token, why='nopicture'):
         """The page's picture got no answer at all, twice, while these pages
-        answer: the handshake failed - nothing to sign it with. It only ever
-        ends or holds its own session."""
+        answer: the handshake failed - nothing to sign it with; or it came
+        back saying no cookie came with it (why). It only ever ends or holds
+        its own session - or, never once found in this browser, leaves it
+        unwatched (1.10.355)."""
         row = self.store.session(token) if token else None
-        if not row or not row.get('card') or self.certlogin_watch_mode() == 'off':
+        if not row or not row.get('card') or self.certlogin_watch_mode() == 'off' \
+                or self._cl_unable_now(row):
             return {'watched': False, 'gone': False}
+        why = why if why in self.CL_UNABLE_WHY else 'nopicture'
+        if self._cl_unable(token, row, why):
+            return {'watched': False, 'gone': False, 'unable': True}
         st = self._cl_out(token, row, 'the card they signed in with was taken out')
         return {'watched': True, 'gone': st == 'gone',
                 'grace_left': 0 if st == 'gone' else max(0, int(
@@ -63195,7 +63251,7 @@ class Daemon(object):
         'certlogin_ocsp': ('off', 'first', 'only', 'both'), 'certlogin_ocsp_url': 'str',
         'certlogin_crl_ldap': (0, 1),
         'certlogin_watch': ('off', 'signout', 'grace'), 'certlogin_watch_s': (5, 300),
-        'certlogin_watch_grace_s': (5, 600),
+        'certlogin_watch_grace_s': (5, 600), 'certlogin_watch_unable': ('allow', 'signout'),
         'net_confirm_min': (0, 120), 'fw_confirm_min': (0, 120),
         'retain_failed_days': (0, 3650), 'retain_passed_days': (0, 3650),
         'retain_events_days': (0, 3650),
@@ -63501,6 +63557,7 @@ class Daemon(object):
         'certlogin_watch': 'When the card is taken out',
         'certlogin_watch_s': 'Checked every (seconds)',
         'certlogin_watch_grace_s': '...put back within (seconds)',
+        'certlogin_watch_unable': 'A browser that cannot be checked',
         'certlogin_auto': '...by itself when the sign-in page opens',
         'net_confirm_min': 'A new network goes back unless kept within (min)',
         'fw_confirm_min': 'A firewall change goes back unless kept within (min)',
@@ -64691,6 +64748,14 @@ class Daemon(object):
                              'in the background is checked about once a minute.',
         'certlogin_watch_grace_s': 'With grace: how long the card may be out before the '
                                    'session ends.',
+        'certlogin_watch_unable': 'A browser whose very first check in the background does not '
+                                  'find the card cannot be checked at all - an iPad\'s Safari '
+                                  'signs nothing for a page in the background, though the card is '
+                                  'in. allow: that sign-in is simply not watched, and Events say '
+                                  'so and why. signout: it is signed out as if the card were out '
+                                  '- such a browser cannot stay signed in with this on. Once a '
+                                  'check has found the card, a later one that does not is a card '
+                                  'taken out, whatever this says.',
         'certlogin_crl_ldap': 'On: a CRL Distribution Point in the directory '
                               '(ldap:///CN=...,CN=CDP,CN=Public Key Services,...) is read with '
                               'the directory\'s connection above when no http one answers - '
@@ -87879,12 +87944,12 @@ class ApiHandler(BaseHTTPRequestHandler):
         # The page's picture got nothing at all, twice (1.10.354): the
         # handshake failed. Only ever ends or holds the caller's own session.
         if path == '/api/auth/card-gone' and method == 'POST':
-            self.spare_body()
+            data = self.body()
             me = self.who()
             if not me:
                 return self.fail('sign in first', 401)
             return self.send_json(dict(daemon.certlogin_card_gone(
-                self.headers.get('X-Isemon-Session') or ''), ok=True))
+                self.headers.get('X-Isemon-Session') or '', str(data.get('why') or '')), ok=True))
 
         # Signing in with a certificate (1.10.341): the certificate nginx took
         # on its own port, handed on by the page there.

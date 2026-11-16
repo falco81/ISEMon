@@ -372,6 +372,24 @@ working.
 
 ## Version
 
+1.10.355
+
+- **When the card is taken out - a browser that cannot be checked**
+  ([docs/certificate-sign-in.md](docs/certificate-sign-in.md)):
+  - On an iPad the check signed the person out although the card was in:
+    Safari signs nothing for a page in the background.
+  - A session now remembers whether a check in the background has ever found
+    its card in this browser (`sessions.card_ok`). Until one has, a check
+    without the card is not a card taken out.
+  - New setting *A browser that cannot be checked*:
+    - `allow` (default): that sign-in is not watched, and Events say why: no
+      certificate came, no cookie came, or no answer at all;
+    - `signout`: signed out as before.
+  - Once the card has been found, a check without it is a card taken out, as
+    before.
+  - The page says so in a notice and stops checking.
+- Off (the default) nothing changes.
+
 1.10.354
 
 - **When the card is taken out - fixed for iPad**, as the kit

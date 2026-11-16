@@ -62,9 +62,10 @@ PORT = 19400 + random.randint(0, 90)
 # 1.10.354 gave sessions three columns (card, card_seen, card_out: the card
 # of a sign-in with a certificate watched), as 1.10.303 did: an older version
 # writes its sessions without them and never reads them - a session it made
-# is simply not watched.
+# is simply not watched. 1.10.355 one more the same way (card_ok: whether
+# the browser's checks ever found the card).
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '2fab334e8b6e440566b5edfd7ba789b843f5d18a3a50165ad47f649316dc6420'}
+               'sha256': 'fb2c4eaf5c927695a47ff9858cc4bb7636088f01adfbc1f6374a99a5b16e3d1f'}
 
 
 def ok(what, got, want=True):
