@@ -378,8 +378,10 @@ def _inspect(path, extract_to=None):
             if extract_to:
                 for one in members:
                     target = os.path.join(extract_to, one.name)
+                    # Folders only from the signed files' own paths (1.10.356):
+                    # a folder entry is not signed, and one named like a file
+                    # (web/lang/zz.json/) stopped install.sh half way.
                     if one.isdir():
-                        os.makedirs(target, mode=0o755, exist_ok=True)
                         continue
                     os.makedirs(os.path.dirname(target), mode=0o755, exist_ok=True)
                     with tar.extractfile(one) as src, \
@@ -523,7 +525,7 @@ def put_in(package, ident='', want_sha='', by='the command line', log_to=None,
                                                          info['files']))
         src = os.path.join(unpacked, info['top'])
         try:
-            note_floor(installed_floor())
+            note_floor(installed_floor(), SECURITY_FLOOR)
         except OSError as e:
             say('the floor could not be kept in %s: %s' % (FLOOR_FILE, e))
         console_away = False

@@ -204,7 +204,7 @@ old = conf.replace('        fastcgi_request_buffering off;\n', '')
 m = __import__('re').search(r'(?m)^(\s*)location\s*=\s*/index\.php\s*\{[^\n]*\n', old)
 ok('...the root helper finds where an older file needs it', bool(m))
 page = (ROOT / 'web' / 'index.php').read_text()
-ok('before signing in, 64 KB at most', "if ($told > 65536 && in_array($what, ['login'," in page)
+ok('before signing in, 64 KB at most', "if ($told > 65536 && (isemon_session() === '' || in_array($what, ['login', 'password'," in page)
 ok('JSON nested 64 deep at most', 'json_decode($raw, true, 64)' in page)
 ok('data in help panels is text', "richText(wordsIn(String(one[1])))" in page and
    "if (one.closest && one.closest('[data-no-i18n], .mono')) t = wordsIn(t);" in page)

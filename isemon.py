@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.355'
+__version__ = '1.10.356'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2354,11 +2354,27 @@ def proxy_setting_checked(key, got):
     return v
 
 
+def _cl_ports_problem(values):
+    """The certificate's port is never the daemon's own (1.10.356): checked
+    both ways, on every road a setting comes in by."""
+    try:
+        on = int(values.get('certlogin') or 0)
+        cp = int(values.get('certlogin_port') or 8443)
+        ap = int(values.get('api_port') or 0)
+    except (TypeError, ValueError):
+        return ''
+    if on and ap and cp == ap:
+        return 'the certificate\'s port and the daemon\'s own (api_port) must not be the same'
+    return ''
+
+
 def settings_problems(values):
     """Every rule about two settings rather than one that these break, in
     words - all of them, not the first (1.10.336): a save that broke a second
     rule beside one broken before went through unchecked."""
     out = []
+    if _cl_ports_problem(values):
+        out.append(_cl_ports_problem(values))
     if int(values.get('banfeed') or 0) and \
             str(values.get('banfeed_auth') or 'none') == 'basic':
         user = str(values.get('banfeed_user') or '')
@@ -2397,6 +2413,16 @@ def settings_problems(values):
             str(values.get('pf_geolist')).strip() == str(values.get('pf_list') or '').strip():
         out.append('the country list and the blocked list must not share a name (pfSense)')
     return out
+
+
+def setting_is(key, value, want):
+    """Whether a value given for a 0/1 setting is `want` once read as the
+    setting reads it (1.10.356): '01', ' 1', 1.0 are 1 - a guard comparing
+    words let them past."""
+    try:
+        return int(check_setting(key, value)) == want
+    except (ValueError, TypeError):
+        return False
 
 
 def check_settings_together(values):
@@ -2614,6 +2640,15 @@ def reseal_all(value, their_key):
                     return seal_secret(plain)
                 except OSError:
                     return value
+        # ...and those inside a value kept as JSON text (1.10.356): the
+        # keytab of Sign in with Windows ({"sealed": ...}) was carried as it
+        # was and never opened on the machine it was put back on.
+        elif SEALED in value and value[:1] in '{[':
+            try:
+                inner = json.loads(value)
+            except ValueError:
+                return value
+            return json.dumps(reseal_all(inner, their_key), sort_keys=True)
         return value
     if isinstance(value, list):
         return [reseal_all(x, their_key) for x in value]
@@ -8299,7 +8334,13 @@ def win_machine_from(fields, event, server=''):
     return said
 
 
-def win_address(fields):
+# Events that carry no address of their own (1.10.356): whatever address one
+# has came from a name its sender typed - a 4776's Source Workstation written
+# as "X Network Information: Source Network Address: 8.8.8.8" banned 8.8.8.8.
+WIN_NO_ADDRESS = (4776,)
+
+
+def win_address(fields, event=None):
     """Where from, as an address this program can use elsewhere.
 
     Kerberos writes an IPv4 address as `::ffff:1.2.3.4`, which is the same
@@ -8315,8 +8356,25 @@ def win_address(fields):
     # the client's to choose, so `X Source Network Address: 10.9.9.9` typed
     # as a name made the first field of that name, and the real address was
     # the second.
-    for whole in ('Network Information / Source Network Address',
-                  'Network Information / Client Address'):
+    # The section's own field only (1.10.350), and of it the LAST - never
+    # the first again when the last is "-" (1.10.356): a 4625 with no address
+    # of its own took the one a workstation name typed before it.
+    if event in WIN_NO_ADDRESS:
+        return ''
+    # ...and the label the event itself uses (1.10.356): a Kerberos event's
+    # account name typed with "Network Information: Source Network Address:
+    # 8.8.8.8" in it made a label of another kind that won over its own.
+    if event in (4768, 4769, 4770, 4771, 4772, 4773):
+        labels = ('Network Information / Client Address',)
+    elif event == 4648:
+        labels = ('Network Information / Network Address',)
+    elif event is None:
+        labels = ('Network Information / Source Network Address',
+                  'Network Information / Client Address',
+                  'Network Information / Network Address')
+    else:
+        labels = ('Network Information / Source Network Address',)
+    for whole in labels:
         if hasattr(fields, 'get') and fields.get(whole) is not None:
             more, last = 2, fields.get(whole)
             while fields.get('%s (%d)' % (whole, more)) is not None:
@@ -8324,15 +8382,7 @@ def win_address(fields):
                 more += 1
             if last and str(last).strip() not in ('-', '--'):
                 said = last
-                break
-    if not said:
-        # The section's own field only (1.10.350): the label alone, in any
-        # section, was the one an account name or a workstation - typed by
-        # the client - carried, and a 4776 (no address of its own at all)
-        # took whatever address its sender wrote into the name.
-        said = win_said(fields, 'Network Information / Source Network Address',
-                        'Network Information / Client Address',
-                        'Network Information / Network Address')
+            break
     said = str(said or '').strip()
     # Unwrapped FIRST, then judged. The other way round, a controller asking
     # itself for a ticket wrote `::ffff:127.0.0.1`, which is not in the list
@@ -8882,7 +8932,7 @@ def win_record_from(line, now=None, zone=None):
         'by': win_by(fields, event)[:180],
         'by_logon': win_logon_id(fields, event),
         'machine': win_machine_from(fields, event, m.group('host'))[:120],
-        'ip': win_address(fields),
+        'ip': win_address(fields, event),
         'logon_type': str(win_said(fields, 'Logon Type') or '')[:4],
         'process': win_said(fields, 'Process Name', 'Caller Process Name')[:200],
         'service': win_said(fields, 'Service Name')[:180],
@@ -12619,6 +12669,8 @@ def ftd_record_from(line, now=None, seen=None):
         if m:
             f['user'] = '' if (m.group('user') or '').strip('*') == '' else m.group('user')
             gd = m.groupdict()
+            # The LAST "user IP" is the device's own (the pattern takes it):
+            # a name with the words in it does not move it.
             if gd.get('ip'):
                 f['srcip'] = gd['ip']
             if gd.get('server'):
@@ -13805,8 +13857,11 @@ def ros_record_from(line, now=None, seen=None, hold=None):
                 if inner:
                     rest['assigned'] = inner
             else:
+                # Only after the words of the failure itself (1.10.356): a
+                # PPP name is the client's to type, and "user from 9.9.9.9 user
+                # bob authentication failed" banned 9.9.9.9.
                 ipm = re.search(r'\bfrom ([0-9]{1,3}(?:\.[0-9]{1,3}){3}|[0-9A-Fa-f]*:[0-9A-Fa-f:]+)',
-                                msg)
+                                msg[af.end():])
                 f.update({'action': 'login', 'verdict': 'fail',
                           'user': (af.group('user') or af.group('user2') or '')[:120],
                           'srcip': (ipm.group(1) if ipm else '')[:64]})
@@ -18072,6 +18127,11 @@ def acme_fields(text):
         if key not in out:
             out[key] = acme_unquote(value)
             last = (key, m.start(2))
+        else:
+            # A key said twice is not the value before's to carry on
+            # (1.10.356): every one sent the line from the first again
+            # through the unquoting - 26 s for one line of 64 KB.
+            last = None
         at = m.end()
     return out, truncated
 
@@ -24598,6 +24658,12 @@ class MariaDialect(ServerDialect):
                         if got:
                             tables.add(got.group(1))
                         continue
+                    # Code put back with the rows (1.10.356): a trigger, a
+                    # routine, an event or a view runs on every write after -
+                    # this program makes none, and a dump of its own has none.
+                    if MARIA_CODE_RE.match(line):
+                        return None, ('that dump holds a trigger, a routine, an event or a view - '
+                                      'not something this program makes; it is not put back')
                     # One INSERT can be one line of ten megabytes or ten
                     # thousand lines of one row, depending on how the dump
                     # was written; only `users` is read, and both shapes of
@@ -24623,6 +24689,16 @@ class MariaDialect(ServerDialect):
             return None, ('that dump is not one of ours - it has no %s table' % missing[0])
         return {'counts': {'users': users}, 'admins': admins, 'tables': len(tables),
                 'bytes': Path(path).stat().st_size, 'kind': 'mariadb'}, ''
+
+
+# What a dump of this program's own never holds (1.10.356).
+PG_CODE_RE = re.compile(r'^\s*\d+;\s+\d+\s+\d+\s+(TRIGGER|FUNCTION|PROCEDURE|AGGREGATE|RULE|'
+                        r'MATERIALIZED VIEW|VIEW|EVENT TRIGGER|EXTENSION|POLICY|PUBLICATION|'
+                        r'SUBSCRIPTION|FOREIGN TABLE|FOREIGN DATA WRAPPER|SERVER|USER MAPPING|'
+                        r'PROCEDURAL LANGUAGE|OPERATOR|CAST|TRANSFORM)\b')
+MARIA_CODE_RE = re.compile(r'(?i)^\s*(?:/\*!\d+\s+)?(?:CREATE|ALTER)\b(?!\s+TABLE\b)(?!\s+DATABASE\b)'
+                           r'.*\b(?:TRIGGER|FUNCTION|PROCEDURE|EVENT|VIEW)\b'
+                           r'|^\s*/\*!\d+\s+(?:VIEW|TRIGGER|EVENT|DEFINER)\b')
 
 
 class PostgresDialect(ServerDialect):
@@ -25627,6 +25703,14 @@ class PostgresDialect(ServerDialect):
             got = re.search(r'TABLE DATA\s+\S+\s+(\S+)', line)
             if got:
                 tables.add(got.group(1))
+            # Code put back with the rows (1.10.356): triggers, functions,
+            # rules, views - run on every write after. This program makes
+            # none but the extension pg_trgm.
+            bad = PG_CODE_RE.match(line)
+            if bad and not (bad.group(1) == 'EXTENSION' and
+                            re.search(r'\b(pg_trgm|plpgsql)\b', line)):
+                return None, ('that dump holds a %s - not something this program makes; it is '
+                              'not put back' % bad.group(1).lower())
         missing = [t for t in store.MUST_HOLD if t not in tables]
         if missing:
             return None, 'that dump is not one of ours - it has no %s table' % missing[0]
@@ -39505,6 +39589,10 @@ class Storage(object):
                     end_ts = at + float(f.get('took_ms') or 0) / 1000.0
                 except (TypeError, ValueError):
                     end_ts = at
+            # A time that is no time (1e400, inf) or days off the line's own
+            # (1.10.356): it broke the page's JSON and was never let go.
+            if not math.isfinite(end_ts) or abs(end_ts - at) > 30 * 86400:
+                end_ts = at
             end = dict(common, event='end', state=state)
             for k in ('ok', 'took_ms', 'steps'):
                 if f.get(k) not in (None, ''):
@@ -39590,6 +39678,14 @@ class Storage(object):
             gone = self.tidy_older('acme_events', time.time() - days * 86400)
         except sqlite3.Error:
             return 0
+        # ...and what a sync said was gone, as long ago (1.10.356): kept for
+        # ever, and read whole on every look at acme.
+        try:
+            with self.db_write() as db:
+                db.execute('DELETE FROM acme_sync WHERE removed=1 AND COALESCE(at, ts, 0) < ?',
+                           (time.time() - days * 86400,))
+        except sqlite3.Error:
+            pass
         if gone:
             self.acme_lines_came()
         return 1
@@ -39849,7 +39945,11 @@ class Storage(object):
                 db.execute('INSERT INTO events (ts, kind, level, detail, who) '
                            'VALUES (?,?,?,?,?)',
                            (time.time(), kind, level,
-                            str(detail).replace('\x00', '')[:2000], who or ''))
+                            # No control character of anybody's (1.10.356): a
+                            # name typed at the sign-in with escapes in it was
+                            # printed as it was to root's terminal.
+                            EVENT_CTL_RE.sub('', str(detail))[:2000],
+                            EVENT_CTL_RE.sub('', str(who or ''))[:200]))
         except (sqlite3.Error, DbError) as e:
             log('an event could not be written down (%s): %s'
                 % (str(e)[:120], str(detail)[:200]), 'warn')
@@ -48574,6 +48674,21 @@ class Daemon(object):
         self.upgrades = Upgrades(self)
         # How far back is safe from here, written into the database it runs on.
         self.upgrades.note_floor()
+        # The sessions watched by 1.10.352/353 (meta certlogin_sessions) into
+        # their own rows (1.10.356): open across the upgrade, they were left
+        # unwatched for the rest of their life.
+        try:
+            kept = self.store.meta_json('certlogin_sessions', None)
+            if isinstance(kept, dict):
+                for k, v in kept.items():
+                    if isinstance(v, dict) and re.fullmatch(r'[0-9a-f]{64}', str(k)) and \
+                            re.fullmatch(r'[0-9a-f]{64}', str(v.get('fp') or '')):
+                        with self.store.db_write() as db:
+                            db.execute('UPDATE sessions SET card=?, card_seen=? WHERE token=? '
+                                       'AND card IS NULL', (v['fp'], time.time(), 'h1:' + k))
+                self.store.set_meta('certlogin_sessions', '')
+        except Exception as e:                          # noqa: BLE001
+            log('the watched sessions of 1.10.353: %s' % str(e)[:160], 'warn')
         # ...and this server's network, a restart, and changes on trial
         # (1.10.228).
         self.netpower = NetPower(self)
@@ -49091,6 +49206,12 @@ class Daemon(object):
                 net = ipaddress.ip_network(written, strict=False)
             except ValueError:
                 net = None
+            # An IPv4 address or network written the IPv6 way (::ffff:...)
+            # as the IPv4 it is (1.10.356): it spared nothing.
+            if net is not None and net.version == 6 and net.network_address.ipv4_mapped \
+                    and net.prefixlen >= 96:
+                net = ipaddress.ip_network('%s/%d' % (net.network_address.ipv4_mapped,
+                                                      net.prefixlen - 96), strict=False)
             ready.append((written, net))
         # The list first and the key second, never the other way round. Stored
         # the other way, a reader that matched the new key in the moment
@@ -61176,6 +61297,10 @@ class Daemon(object):
         # No account name is longer than this, and one that is is not kept
         # a megabyte at a time in the counts below.
         name = str(name or '').strip().lower()[:128]
+        # Counted as the directory reads the name (1.10.356): DOMAIN\\ in front
+        # is thrown away there, and a new one each time was a new allowance
+        # of tries at the same account.
+        count_name = name.split('\\', 1)[1] if '\\' in name else name
         where = str(ip or '')[:64]
         if self.password_off():
             # Only Windows (1.10.340): no password signs in, a local
@@ -61208,7 +61333,7 @@ class Daemon(object):
         good = getattr(self, '_login_good', {})
         known = bool(name) and now - good.get((name, where), 0) < 30 * 86400
         if not too_many and name and not known:
-            too_many, left = self._login_note('user:' + name, now, wait_s,
+            too_many, left = self._login_note('user:' + count_name, now, wait_s,
                                               times=self.LOGIN_NAME_TIMES)
         if too_many:
             raise Refused('too many wrong passwords; try again in %s' % human_span(left),
@@ -61224,9 +61349,11 @@ class Daemon(object):
         # answered by it and by nothing else; a name that is not falls
         # through to the local accounts below, which is what keeps a way in
         # on the morning the directory is down.
+        dir_answered = False
         if self.directory_on():
             try:
                 said = self.directory_sign_in(name, password)
+                dir_answered = True
             except LdapUnreachable as e:
                 # The directory could not be asked. That is not an answer
                 # about this person, so it must not lock everybody out of
@@ -61248,7 +61375,7 @@ class Daemon(object):
                     # to try again in a moment, who does, was being locked
                     # out for it.
                     self._login_forget_one(where, now)
-                    self._login_forget_one('user:' + name, now)
+                    self._login_forget_one('user:' + count_name, now)
                     raise Refused('the sign-in could not be checked just now: the directory '
                                   'is not answering. Try again in a moment',
                                   e.whole()[:400])
@@ -61290,10 +61417,14 @@ class Daemon(object):
                     # it gives nothing away: they are who they say, and are
                     # not on the list. Not a wrong password, either.
                     self._login_forget_one(where, now)
-                    self._login_forget_one('user:' + name, now)
+                    self._login_forget_one('user:' + count_name, now)
                     raise Refused('this account is in none of the groups that may use this',
                                   str(e)[:300])
                 else:
+                    # As long as a refusal of the local accounts takes
+                    # (1.10.356): a name the directory knows answered sooner,
+                    # and said which names it knows.
+                    self.store.check_password(password, self.store.NOBODY_HASH)
                     raise Refused('that name and password do not go together',
                                   'the directory refused this sign-in. Why is in the events, '
                                   'for an administrator to read.')
@@ -61340,7 +61471,7 @@ class Daemon(object):
                     # (1.10.198): taken back from the count, or five tries
                     # with the right password locked the address out.
                     self._login_forget_one(where, now)
-                    self._login_forget_one('user:' + name, now)
+                    self._login_forget_one('user:' + count_name, now)
                     # Switched off here. The directory says yes and this says
                     # no, and this wins: it is the only lock an administrator
                     # here can turn without a domain administrator.
@@ -61375,7 +61506,7 @@ class Daemon(object):
                     log('%s: the other accounts of the same person: %s' % (name, str(e)[:160]),
                         'warn')
                 self._login_forget_name(where, name, locals().get('typed') or name)
-                self._login_forget('user:' + name)
+                self._login_forget('user:' + count_name)
                 self._login_known(name, where, now)
                 second = self.second_owed(name)
                 token = self.store.new_session(name, said['role'], where, agent, second)
@@ -61396,6 +61527,14 @@ class Daemon(object):
                                           or self.store.NOBODY_HASH)
         if not user:
             right = False
+        # An account of the directory that the directory no longer has
+        # (1.10.356): its emergency password here is no way in for somebody
+        # who has left - only while the directory cannot be asked.
+        if right and dir_answered and user.get('from_dir'):
+            self.store.add_event('login', '%s is no longer in the directory: its password here '
+                                          'was not taken (from %s)' % (name, where or 'somewhere'),
+                                 'warn')
+            right = False
         if right and user.get('disabled'):
             # The password was right. Saying "that name and password do not
             # go together" here sends somebody who has done nothing wrong off
@@ -61405,7 +61544,7 @@ class Daemon(object):
             # The attempt was written down before the password was checked, so
             # here is where it is taken back.
             self._login_forget_one(where, now)
-            self._login_forget_one('user:' + name, now)
+            self._login_forget_one('user:' + count_name, now)
             self.store.add_event('login', '%s tried to sign in from %s, but the account is '
                                           'switched off' % (name, where or 'somewhere'),
                                  'warn', who=name)
@@ -61421,7 +61560,7 @@ class Daemon(object):
             # which half they got right is telling them half the answer.
             raise Refused('that name and password do not go together', why_dir)
         self._login_forget_name(where, name)
-        self._login_forget('user:' + name)
+        self._login_forget('user:' + count_name)
         self._login_known(name, where, now)
         second = self.second_owed(name)
         token = self.store.new_session(name, user['role'], where, agent, second)
@@ -62306,7 +62445,7 @@ class Daemon(object):
         if fp and fp != row['card']:
             self._cl_watch_end(token, row.get('name'), 'another certificate than the one signed in '
                                                        'with was offered (the card was changed)')
-            return {'alive': False, 'gone': True, 'watched': True}
+            return {'alive': False, 'gone': True, 'watched': True, 'why': 'other'}
         if not fp:
             if self._cl_unable(token, row, 'nocert'):
                 return {'alive': True, 'gone': False, 'watched': False, 'unable': True}
@@ -62342,6 +62481,14 @@ class Daemon(object):
                 or self._cl_unable_now(row):
             return {'watched': False, 'gone': False}
         why = why if why in self.CL_UNABLE_WHY else 'nopicture'
+        # Root still putting the watched port in (1.10.356): no picture is no
+        # word about this browser yet - asked again later.
+        if not self._cl_proven(row):
+            try:
+                if self.webroot.pending():
+                    return {'watched': False, 'gone': False}
+            except Exception:                           # noqa: BLE001
+                pass
         if self._cl_unable(token, row, why):
             return {'watched': False, 'gone': False, 'unable': True}
         st = self._cl_out(token, row, 'the card they signed in with was taken out')
@@ -65266,6 +65413,18 @@ class Daemon(object):
         # on the firewall that says otherwise is two answers to one question.
         if 'never_block' in changed or 'never_block_countries' in changed:
             self.free_the_spared(by=by)
+        # The card watched switched on, off or to another mode (1.10.356):
+        # every watched session counted from now (an old "out" or a sign-in
+        # made while it was off held at once as asleep), and root asked for
+        # nginx's two lines now rather than within the minute.
+        if 'certlogin_watch' in changed or 'certlogin' in changed:
+            try:
+                with self.store.db_write() as db:
+                    db.execute('UPDATE sessions SET card_seen=NULL, card_out=NULL '
+                               'WHERE card IS NOT NULL')
+                self.webroot.push('the card watched', by)
+            except Exception as e:                      # noqa: BLE001
+                log('the card watched after a change: %s' % str(e)[:160], 'warn')
         log('settings changed by %s: %s' % (by or 'somebody', ', '.join(sorted(changed))))
         # Automatic certificates (1.10.251): looked at again at the next
         # minute's pass rather than within the hour, and port 80's location
@@ -65689,7 +65848,7 @@ class Daemon(object):
                            for name in ('mikrotik_key', 'mikrotik_public',
                                         'mikrotik2_key', 'mikrotik2_public',
                                         'directory_ca', 'directory2_ca', 'passkeys',
-                                        'kerberos_keytab')
+                                        'kerberos_keytab', 'certlogin_cas')
                            + FW_OTHER_KEYS}
             # The key in the published ban list's URL. It lives in a file
             # beside the database rather than in it, and was left behind: a
@@ -65748,10 +65907,9 @@ class Daemon(object):
             # works (1.10.350): Face ID (from an https page of its own name),
             # "no password" (from a Windows or certificate sign-in) - a file
             # turning them on from a password session locked everybody out.
-            on = ('1', 'True', 'true', 1, True)
             for k, now in (('passkeys', self.passkeys_on()),
                            ('password_off', bool(int(CONFIG.get('password_off') or 0)))):
-                if k in carried and carried[k] in on and not now:
+                if k in carried and setting_is(k, carried[k], 1) and not now:
                     carried.pop(k)
                     missing.append('%s, which is switched on only on the page itself' % k)
             if 'certlogin_port' in carried:
@@ -65891,11 +66049,29 @@ class Daemon(object):
             # password first made it.
             for name in ('mikrotik_key', 'mikrotik_public',
                          'mikrotik2_key', 'mikrotik2_public', 'directory_ca',
-                         'directory2_ca', 'passkeys', 'kerberos_keytab') + FW_OTHER_KEYS:
+                         'directory2_ca', 'passkeys', 'kerberos_keytab',
+                         'certlogin_cas') + FW_OTHER_KEYS:
                 value = given['keys'].get(name)
                 if value:
+                    # A keytab sealed with another machine's key never put over
+                    # one that opens here (1.10.356).
+                    if name == 'kerberos_keytab' and (self.kerberos_keytab() or {}).get('raw'):
+                        was = self.store.get_meta(name)
+                        self.store.set_meta(name, str(value))
+                        if not (self.kerberos_keytab() or {}).get('raw'):
+                            self.store.set_meta(name, was)
+                            missing.append('the keytab of Sign in with Windows in the file (sealed '
+                                           'with the other machine\'s key): the one here was kept')
+                            continue
                     self.store.set_meta(name, str(value))
                     put += 1
+            # The keytab sealed with another machine's key (1.10.356): put
+            # in, and it does not open here - said, not counted as back.
+            if given['keys'].get('kerberos_keytab') and \
+                    not (self.kerberos_keytab() or {}).get('raw'):
+                put -= 1
+                missing.append('the keytab of Sign in with Windows (sealed with the other '
+                               'machine\'s key): put it in again on the page')
             feed = str(given['keys'].get('banfeed_key') or '').strip()
             if re.fullmatch(r'[A-Za-z0-9_-]{32,128}', feed):
                 if feed != self.banfeed_key():
@@ -74353,6 +74529,11 @@ def acme_install(wr, chain_pem, key, by, second=None, name=''):
         if how.startswith('acme push') and not acme_care(wr):
             raise WebRootError('acme pushed a certificate while this order ran: it is the one '
                                'kept, and this one is not put in')
+        # ...and one put in by hand while it ran (1.10.356): uploaded, then
+        # put over and - ACME no longer looking after it - never renewed.
+        if how and how != 'ACME' and not how.startswith('self-signed') and not acme_care(wr):
+            raise WebRootError('a certificate was put in by hand while this order ran: it is the '
+                               'one kept, and this one is not put in')
         if how and how != 'ACME':
             # The certificate it had - uploaded, from your own CA - kept to
             # go back to (otp 1.0.172), its key as sealed as it was.
@@ -74922,7 +75103,7 @@ def _push_json(raw):
         raise ValueError('%s is not JSON' % word)
     try:
         got = json.loads(raw.decode('utf-8'), parse_constant=no_constant)
-    except (ValueError, UnicodeDecodeError):
+    except (ValueError, UnicodeDecodeError, RecursionError):
         raise PushRefused('bad_request', 400, 'the body is not a JSON object')
     if not isinstance(got, dict):
         raise PushRefused('bad_request', 400, 'the body is not a JSON object')
@@ -75001,8 +75182,14 @@ def push_pair(daemon, kid, body, nonce, box):
         import hmac as _hmac
         want = push_hmac(code, 'pair', box['app_id'], kid, nonce)
         if not _hmac.compare_digest(want.encode(), str(body.get('proof') or '').encode()):
+            # Counted for each key that tries (1.10.356): five requests signed
+            # with keys anybody makes took the code away from the real acme.
+            # All of them together get ten times as many.
+            per = pairing.get('by_key') if isinstance(pairing.get('by_key'), dict) else {}
+            per[kid] = int(per.get(kid) or 0) + 1
+            pairing['by_key'] = dict(list(per.items())[-200:])
             pairing['tries'] = int(pairing.get('tries') or 0) + 1
-            gone = pairing['tries'] >= PUSH_CODE_TRIES
+            gone = per[kid] >= PUSH_CODE_TRIES or pairing['tries'] >= PUSH_CODE_TRIES * 10
             if gone:
                 store.drop_meta('acme_push:pairing')
             else:
@@ -75017,6 +75204,15 @@ def push_pair(daemon, kid, body, nonce, box):
         name = re.sub(r'[\x00-\x1f\x7f]+', ' ', str(body.get('acme_name') or comment or ''))[:200]
         push_key_take(store, pub, comment, name, pairing.get('by') or '', 'paired with a code')
         store.drop_meta('acme_push:pairing')
+        # The dashboard's name kept as it is now (1.10.356): left to follow
+        # the certificate, a push with another CN moved the slot to that name.
+        try:
+            if not str(CONFIG.get('acme_name') or '').strip():
+                now_name = acme_name(daemon.webroot)
+                if now_name:
+                    daemon.save_settings({'acme_name': now_name}, by='acme push')
+        except Exception as e:                          # noqa: BLE001
+            log('acme push: the dashboard\'s name not kept: %s' % str(e)[:160], 'warn')
     store.add_event('control', 'acme push: paired with %s (key %s)' % (name or 'an acme', kid),
                     who=pairing.get('by') or 'acme push')
     log('acme push: paired with %s, key %s' % (name or 'an acme', kid))
@@ -77157,7 +77353,7 @@ PWP_DEFAULT = {'managed': False, 'minlen': 12, 'minclass': 3, 'maxrepeat': 3, 'd
                'warn_days': 7, 'deny': 0, 'unlock_time': 900, 'fail_interval': 900,
                'existing': False}
 PWP_RANGES = {'minlen': (6, 128), 'minclass': (0, 4), 'maxrepeat': (0, 20), 'difok': (0, 20),
-              'remember': (0, 50), 'max_days': (0, 99999), 'min_days': (0, 365),
+              'remember': (0, 50), 'max_days': (1, 99999), 'min_days': (0, 365),
               'warn_days': (0, 365), 'deny': (0, 100), 'unlock_time': (0, 86400),
               'fail_interval': (60, 86400)}
 OSU_NO_CODES = {'all': False, 'names': []}      # isemon asks nobody an SSH code
@@ -77487,7 +77683,9 @@ def osu_tick(wr):
                 # Who, what, which user - never the password or its hash.
                 wr.store.add_event('settings', '%s %s on %s' % (
                     who, _osu_words(a), db_node_name()) if not err else
-                    'the local user %s was not changed on %s (%s %s): %s' % (
+                    ('the change of the local user %s on %s (%s %s) is not confirmed - root '
+                     'may still be doing it; read the users again: %s' if 'did not answer' in err
+                     else 'the local user %s was not changed on %s (%s %s): %s') % (
                         a.get('name') or '?', db_node_name(), who, _osu_words(a), err),
                     'warn', who=a.get('by') or '')
                 if got:
@@ -79300,7 +79498,10 @@ RB_INSIDE = ('about.json', 'RESTORE.md', RB_DB, RB_CONF, 'manifest.json')
 # the pages' certificate, firewall and lists, the destinations of the
 # backups, the names of the VLANs and the routers' API keys. Never where a
 # log was read up to, nor anything counted or fetched.
-RB_CONF_META = ('web_tls', 'web_fw', 'web_access', 'rbackup:targets', 'vlan_names', 'passkeys')
+RB_CONF_META = ('web_tls', 'web_fw', 'web_access', 'rbackup:targets', 'vlan_names', 'passkeys',
+                # ...the authorities of the certificate sign-in, the keytab and
+                # the local users' password policy (1.10.356).
+                'certlogin_cas', 'kerberos_keytab', 'osu_pwpolicy')
 RB_CONF_META_RE = re.compile(r'^rosapi_(ca|cert|certkey|pin|sshkey|sshpub)_[A-Za-z0-9_]{1,40}\Z')
 
 
@@ -79894,8 +80095,8 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '90e4ba9a4868a71bcefcb85c1e0d9b7a365ad312703f5dbb325ded2c781eb416'),
-    ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '214b200ceedcbd4f848c5e2064c8c6b2331be9bffe64d60f84266b6329533742'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'f24ea5687bee08df4207de8276cd2be714f307c832620e98942e92dbe0375f16'),
+    ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '509103426424b54a05febbb32ac56b6ec09f9682f17942708b180738cbe00c1e'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
     ('deploy/isemon-web.path', '/etc/systemd/system/isemon-web.path', '2031a8cfad5fe15c49064766c0bf12148d0dc6f5fd9a637441a6af859e3a6b21'),
@@ -83532,9 +83733,14 @@ def _rb_peek(o):
         if name != 'about.json' or mb.size > 1 << 20:
             raise RbError('there is no about.json at the start of it: not a backup of isemon')
         try:
-            return json.loads(o.tf.extractfile(mb).read().decode('utf-8'))
+            about = json.loads(o.tf.extractfile(mb).read().decode('utf-8'))
         except ValueError:
             raise RbError('its about.json is not readable')
+        # A set of named values, or no backup of ours (1.10.356): a list here
+        # broke the restore with a traceback.
+        if not isinstance(about, dict):
+            raise RbError('its about.json is not one of ours')
+        return about
     raise o.wrong()
 
 
@@ -83580,8 +83786,9 @@ def rb_open(path, password, work, room_for=0, progress=None):
         raise RbError('the file is damaged or cut short: %s' % e)
     finally:
         o.close()
-    if not isinstance(manifest, dict):
-        raise RbError('there is no manifest in it')
+    if not isinstance(manifest, dict) or not isinstance(manifest.get('files') or {}, dict) or \
+            not all(isinstance(v, dict) for v in (manifest.get('files') or {}).values()):
+        raise RbError('there is no manifest of ours in it')
     for name in ('about.json', 'RESTORE.md',
                  RB_CONF if manifest.get('what') == 'config' else RB_DB):
         want = ((manifest.get('files') or {}).get(name) or {}).get('sha256')
@@ -88095,10 +88302,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                                        'prefs': {}, 'cols_edit': False, 'anybody': True})
             # The page is drawn with the person's own layout of the tables
             # from the first frame, rather than as it comes and then again.
+            # ...and nothing of what the person keeps while the session is
+            # held for its card (1.10.356).
+            mine = bool(me) and not me.get('card')
             return self.send_json({'ok': True, 'who': me,
-                                   'cols': store.user_cols(me['name']) if me else {},
-                                   'finds': store.user_finds(me['name']) if me else [],
-                                   'prefs': store.user_prefs(me['name']) if me else {},
+                                   'cols': store.user_cols(me['name']) if mine else {},
+                                   'finds': store.user_finds(me['name']) if mine else [],
+                                   'prefs': store.user_prefs(me['name']) if mine else {},
                                    'cols_edit': bool(me) and daemon.cols_editing(
                                        self.headers.get('X-Isemon-Session') or ''),
                                    # Signed in with Windows, and whether only
@@ -88254,6 +88464,13 @@ class ApiHandler(BaseHTTPRequestHandler):
             me = self.who()
             if not me:
                 return self.fail('sign in first', 401)
+            # A session held for its card (1.10.356): no passkey added to the
+            # account from a browser left with the card taken out.
+            if me.get('card'):
+                self.spare_body()
+                return self.send_json({'ok': False, 'error': 'the card is out - put back the '
+                                                             'card you signed in with',
+                                       'code': 'card'}, 423)
             if not daemon.passkeys_on():
                 return self.fail('Face ID is switched off on this server', 403)
             data = self.body()
@@ -90936,7 +91153,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             # Face ID switched on only from a page that can use it (1.10.303):
             # from one opened by an address, or over plain http, nobody -
             # whoever switched it on first - could sign in again.
-            if str(given.get('passkeys', '')) in ('1', 'True', 'true') and \
+            if 'passkeys' in given and setting_is('passkeys', given['passkeys'], 1) and \
                     not daemon.passkeys_on():
                 try:
                     pk_rp(self.headers.get('X-Isemon-Host'),
@@ -90947,15 +91164,16 @@ class ApiHandler(BaseHTTPRequestHandler):
             # Only Windows (1.10.340): switched on only from a sign-in with
             # Windows - whoever does has shown it works for them - and only
             # with it on and a keytab in.
-            if str(given.get('password_off', '')) in ('1', 'True', 'true') and \
-                    not int(CONFIG.get('password_off') or 0):
+            if 'password_off' in given and setting_is('password_off', given['password_off'], 1) \
+                    and not int(CONFIG.get('password_off') or 0):
                 if not daemon.kerberos_session(self.headers.get('X-Isemon-Session') or ''):
                     return self.fail('"No password" is switched on only from a sign-in with '
                                      'Windows or a certificate: sign out, sign in that way, and '
                                      'switch it on then', 409)
-                off = ('0', 'False', 'false')
-                if not ((daemon.kerberos_on() and str(given.get('kerberos', '1')) not in off) or
-                        (daemon.certlogin_on() and str(given.get('certlogin', '1')) not in off)):
+                if not ((daemon.kerberos_on() and not ('kerberos' in given and
+                                                       setting_is('kerberos', given['kerberos'], 0))) or
+                        (daemon.certlogin_on() and not ('certlogin' in given and
+                                                        setting_is('certlogin', given['certlogin'], 0)))):
                     return self.fail('"No password" needs Sign in with Windows (with a keytab) or '
                                      'Sign in with a certificate (with its authorities) on', 409)
             # The certificate's port (1.10.341): never one of these pages' own,
@@ -91875,6 +92093,9 @@ class Palette(object):
 
     # ---- whole lines ------------------------------------------------------
     def _write(self, text=''):
+        # Never a title, a clipboard or a cleared screen from anything printed
+        # (1.10.356): every escape but colours taken out of every line.
+        text = '\n'.join(Console._term_safe(x, sgr=True) for x in str(text).split('\n'))
         try:
             self.out.write(text + '\n')
         except (OSError, ValueError):
@@ -91922,8 +92143,9 @@ class Palette(object):
 
     def kv(self, key, value, width=22, indent='  '):
         """A name and a value, lined up down the page."""
+        # The value's own colours kept, any other escape taken out (1.10.356).
         self._write('%s%s  %s' % (indent, plain_pad(self.paint(key, self.c_key), width),
-                                  value))
+                                  Console._term_safe(value, sgr=True)))
 
     def bullet(self, text, indent='  '):
         self._write('%s%s %s' % (indent, self.paint('•', self.dim), text))
@@ -92013,6 +92235,9 @@ def print_table(pal, headers, rows, right=(), indent=0, paint=None):
             if isinstance(cell, tuple) and len(cell) == 2:
                 cell, hue = cell
             cell = '' if cell is None else str(cell)
+            # Out of the data: never an escape of its own on root's terminal
+            # (1.10.356) - only the colours this program puts round it.
+            cell = Console._term_safe(cell)
             if hue is None and paint is not None and cell:
                 hue = paint(n, i, cell)
             cells.append(cell)
@@ -95191,9 +95416,10 @@ def _cmd_local_user(args, pal, session):
     if v is None:
         return 1
     node = (v.get('nodes') or [{}])[0]
-    if as_json(args, v):
-        return 0
     last = [x for x in node.get('said') or [] if x.get('name') == name][-1:]
+    # ...with --json the same exit code as without (1.10.356): a refusal was 0.
+    if as_json(args, v):
+        return 0 if not node.get('pending') and last and last[0].get('ok') else 1
     if node.get('pending'):
         pal.warn('  %s: not done yet (is isemon-web.path running?)' % node.get('name'))
         return 1
@@ -95236,7 +95462,7 @@ def cmd_local_policy(args, pal, store):
         pal.good('saved - %s' % (data.get('message') or 'put in within a few seconds'))
         v = _osu_settle(pal, session, wait=60) or v
     if as_json(args, v):
-        return 0
+        return 1 if ((v.get('nodes') or [{}])[0]).get('policy_error') else 0
     c = v.get('policy') or {}
     node = (v.get('nodes') or [{}])[0]
     pal.title('The password policy of the local users')
@@ -97011,6 +97237,9 @@ def cli_missing(args, known):
 
 class ConsoleBack(Exception):
     """Back to the menu."""
+
+
+EVENT_CTL_RE = re.compile(r'[\x00-\x08\x0b-\x1f\x7f-\x9f]')
 
 
 class Console(object):

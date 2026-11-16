@@ -238,7 +238,8 @@ function isemon_cert_host(): string
     /* The name the browser asked for, without its port: a name, or an IPv6
        address in brackets (1.10.349) - anything else is localhost. */
     $host = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? ''));
-    if (!preg_match('/^([A-Za-z0-9.-]{1,253}|\[[0-9A-Fa-f:.]{2,45}\])\z/', (string) $host)) {
+    /* ...an underscore too (1.10.356): a name such as my_srv.corp went to localhost. */
+    if (!preg_match('/^([A-Za-z0-9._-]{1,253}|\[[0-9A-Fa-f:.]{2,45}\])\z/', (string) $host)) {
         $host = 'localhost';
     }
     return (string) $host;
@@ -277,7 +278,12 @@ if ((string) ($_SERVER['ISEMON_CERT_PORT'] ?? '') === '1') {
         $gifs = [1 => 'R0lGODlhAQABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAABAAEAAAgEAAEEBAA7',
                  2 => 'R0lGODlhAgABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAACAAEAAAgFAAEACAgAOw==',
                  3 => 'R0lGODlhAwABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAADAAEAAAgFAAEIDAgAOw==',
-                 4 => 'R0lGODlhBAABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAAEAAEAAAgGAAEIBBAQADs='];
+                 4 => 'R0lGODlhBAABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAAEAAEAAAgGAAEIBBAQADs=',
+                 /* 1.10.356: 5 wide - the session ended just now for its card,
+                    6 - for another card: the page says why and tries nothing
+                    by itself (a 403 reloaded it without a word). */
+                 5 => 'R0lGODlhBQABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAAFAAEAAAgGAAEIFBgQADs=',
+                 6 => 'R0lGODlhBgABAIEAAAAAAP///wAAAAAAACH5BAEAAAAALAAAAAAGAAEAAAgGAAEIHBgQADs='];
         $d = null;
         $wide = 0;
         if (isemon_session() !== '') {
@@ -285,6 +291,8 @@ if ((string) ($_SERVER['ISEMON_CERT_PORT'] ?? '') === '1') {
             $d = json_decode((string) $body, true);
             if (is_array($d) && empty($d['gone'])) {
                 $wide = !empty($d['unable']) ? 4 : (!empty($d['alive']) ? 1 : 2);
+            } elseif (is_array($d) && !empty($d['watched'])) {
+                $wide = ($d['why'] ?? '') === 'other' ? 6 : 5;
             }
         } else {
             $wide = 3;
@@ -438,8 +446,12 @@ if (isset($_GET['api'])) {
         $told = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
         /* What anybody may send before signing in is a few words (1.10.350):
            32 MB of it held a php-fpm worker's whole memory each time. */
-        if ($told > 65536 && in_array($what, ['login', 'password', 'kerberos-login',
-                                              'kerberos-try', 'cert-nonce', 'logout'], true)) {
+        /* ...and so is anything at all from somebody not signed in (1.10.356):
+           every other relay read 32 MB and decoded it before the daemon asked
+           who was sending. */
+        if ($told > 65536 && (isemon_session() === '' || in_array($what, ['login', 'password',
+                                              'kerberos-login', 'kerberos-try', 'cert-nonce',
+                                              'logout'], true))) {
             http_response_code(413);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['ok' => false, 'error' => 'that is too much to send here']);
@@ -636,7 +648,9 @@ if (isset($_GET['api'])) {
                   'secure' => isemon_https(), 'httponly' => true, 'samesite' => 'Strict']);
         $host = isemon_cert_host();
         $p = preg_match('/:(\d{1,5})\z/', (string) ($_SERVER['HTTP_HOST'] ?? ''), $pm) ? $pm[1] : '';
-        setcookie('isemon_certp', $p, ['expires' => time() + 300, 'path' => '/',
+        /* An hour (1.10.356): longer than the nonce, so the way back keeps its port
+           for somebody who took more than five minutes at the chooser or the PIN. */
+        setcookie('isemon_certp', $p, ['expires' => time() + 3600, 'path' => '/',
                   'secure' => isemon_https(), 'httponly' => true, 'samesite' => 'Strict']);
         $sent = sent_body();
         echo json_encode(['ok' => true, 'url' => 'https://' . $host . ':' . (int) $k['cert_port']
@@ -1123,10 +1137,14 @@ if (is_array($me) && is_array($me['certwatch'] ?? null) && empty($me['second']))
     $cwp = (int) ($me['certwatch']['port'] ?? 0);
     if ($cwp >= 1024 && $cwp <= 65535) {
         $cwh = isemon_cert_host();
+        /* A page opened by an IPv6 address (1.10.356): CSP takes no address
+           in brackets as a host - images over https only, then. */
+        /* ...nor a name CSP's grammar does not take (an underscore). */
+        $cwsrc = preg_match('/^[A-Za-z0-9.-]+$/', $cwh) ? "https://$cwh:$cwp" : 'https:';
         header("Content-Security-Policy: default-src 'self'; "
              . "script-src 'self' 'nonce-$nonce'; "
              . "style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'nonce-$nonce'; "
-             . "img-src 'self' data: https://$cwh:$cwp; connect-src 'self'; font-src 'self'; "
+             . "img-src 'self' data: $cwsrc; connect-src 'self'; font-src 'self'; "
              . "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'", true);
     }
 }
@@ -9303,6 +9321,11 @@ function api(what, body, how) {
        somebody clicking at a page that silently does nothing. */
     if (r.status === 401) {
       waitDone(waiting);
+      /* Signed out while the card was watched (1.10.356): the sign-in page
+         tries nothing by itself (no chooser coming up on its own). */
+      if (typeof CW === 'object' && CW && CW.conf) {
+        try { sessionStorage.setItem('isemon.krb.out', '1'); } catch (e) { }
+      }
       location.reload();
       throw new Error('signed out');
     }
@@ -9336,6 +9359,12 @@ function api(what, body, how) {
          once, and nothing said in a box. */
       if (r.status === 423 && data && data.code === 'card') {
         if (typeof certWatchNow === 'function') certWatchNow();
+        /* Held, and this page not watching yet (1.10.356): said once, so a
+           Save does not fail without a word. */
+        if (typeof CW === 'object' && CW && !CW.conf && !CW.saidHeld) {
+          CW.saidHeld = true;
+          toast('The card you signed in with is checked now - reload the page (save what you changed first).', 'warn');
+        }
         var locked = stoppedError();
         locked.busy = true;
         locked.status = 423;
@@ -9538,7 +9567,9 @@ function modal(title, build, buttons, narrow) {
   if (!$('modal').hidden) {
     var again = MODAL_REDRAW === MODAL_GEN;
     MODAL_REDRAW = -1;
-    if (again || $('modal-title').textContent === title) {
+    /* The English title compared (1.10.356): translated, it never matched, and
+       a popup drawing itself again piled up copies of itself under it. */
+    if (again || $('modal-title').dataset.src === title) {
       /* Drawn again in its own place: the same popup going on, so what is
          to be done when it closes stays for when it does (1.10.272). Run
          here, it was run while the popup was still being drawn - Tuning
@@ -9550,6 +9581,7 @@ function modal(title, build, buttons, narrow) {
   }
   MODAL_GEN = ++MODAL_SEQ;
   $('modal-title').textContent = title;
+  $('modal-title').dataset.src = title;
   /* `narrow` is true for the small popup, or the name of another size. */
   $('modal-box').className = 'box' + (typeof narrow === 'string' ? ' ' + narrow
     : (narrow ? ' narrow' : ''));
@@ -12867,6 +12899,8 @@ function certWatchCheck() {
     /* This browser cannot be checked (1.10.355): its checks never once found
        the card - an iPad's Safari signs nothing in the background. */
     if (w === 4) { certWatchUnable(); return; }
+    /* The server ended the session just now (1.10.356): said why, here. */
+    if (w === 5 || w === 6) { certWatchEnd(w === 6 ? 'other' : (CW.out ? 'late' : 'out')); return; }
     /* No picture at all: the handshake failed (nothing to sign it with), or
        the session is over (403). Once more after a moment - one lost
        connection is not a card taken out; then the pages are told. */
@@ -12888,7 +12922,7 @@ function certWatchCheck() {
   /* Without an answer for 20 s: none (fail closed); no new check starts
      until this one is over. */
   to = setTimeout(function () { fin(0); }, 20000);
-  img.onload = function () { var nw = img.naturalWidth; fin(nw >= 2 && nw <= 4 ? nw : 1); };
+  img.onload = function () { var nw = img.naturalWidth; fin(nw >= 2 && nw <= 6 ? nw : 1); };
   img.onerror = function () { fin(0); };
   img.src = 'https://' + location.hostname + ':' + c.port + '/index.php?api=cert-alive&r=' + Date.now().toString(36);
 }
@@ -14196,7 +14230,8 @@ function peekFailedRows(rows, key) {
           var tr = el('tr');
           tr.appendChild(stampCell(r.ts, 'dim'));
           addrPlaceCountry(tr, r.ip, r.country, false, r.ts);
-          tr.appendChild(el('td', '', r.username || '–'));
+          /* A name is data, never translated (1.10.356): INVALID became NEPLATNÉ. */
+          tr.appendChild(noI18n(el('td', '', r.username || '–')));
           tr.appendChild(el('td', 'dim', (r.reason || '').slice(0, 70)));
           banOnto(tr, r.ip, 'banned from the overview');
           opensWith(tr, '', function () { lookUp(r.ip); });
@@ -14220,12 +14255,12 @@ function peekPassedRows(rows, key) {
         function (r) {
           var tr = el('tr');
           tr.appendChild(stampCell(r.ts, 'dim'));
-          tr.appendChild(el('td', '', r.username || '–'));
+          tr.appendChild(noI18n(el('td', '', r.username || '–')));
           /* Only a sign-in to a switch is judged against where TACACS
              sign-ins come from. This list holds both kinds at once, so it
              is asked of each row rather than of the list. */
           addrPlaceCountry(tr, r.ip, r.country, (r.kind || 'vpn') === 'tacacs', r.ts);
-          tr.appendChild(el('td', '', r.profile || '–'));
+          tr.appendChild(noI18n(el('td', '', r.profile || '–')));
           tr.appendChild(deviceCell(r));
           opensWith(tr, '', function () { lookUp(r.ip); });
           return tr;
@@ -31731,7 +31766,8 @@ function krbAdLine(d, ad, nb, realmU, onAcc) {
       if (onAcc[0].disabled) txt.appendChild(el('span', 'tag crit', 'switched off'));
       else if (!onAcc[0].aes) txt.appendChild(el('span', 'tag warn', 'AES 256 not allowed'));
     } else {
-      txt.appendChild(el('span', '', '. No account has the SPN yet: the account’s name below is only an example.'));
+      txt.appendChild(noI18n(el('span', '', '. ')));
+      txt.appendChild(el('span', '', 'No account has the SPN yet: the account’s name below is only an example.'));
     }
   } else if (!d.directory) {
     txt.appendChild(el('span', '', 'No directory set: the names below are examples - set the directory above and they are read from AD.'));
@@ -33245,7 +33281,7 @@ function drawDirGroups(groups) {
         tr.dataset.dn = g.dn;
         tr.dataset.name = g.name;
         var n = el('td');
-        n.appendChild(el('span', '', g.name));
+        n.appendChild(noI18n(el('span', '', g.name)));
         n.appendChild(el('span', 'd mono', g.dn));
         tr.appendChild(n);
         tr.appendChild(el('td', 'dim', g.says || ''));
@@ -43486,8 +43522,8 @@ function qBoxesInstall() {
   var mustFirst = !!(ME && ME.must_change && !ME.from_dir);
   if (mustFirst) {
     /* the popup below is all there is until the password is changed */
-  } else if (['overview', 'bans', 'failed', 'logins', 'traffic', 'windows', 'router', 'events',
-       'logs', 'settings'].indexOf(want) >= 0) {
+  } else if (['overview', 'bans', 'failed', 'logins', 'traffic', 'windows', 'acmelog', 'router',
+       'events', 'logs', 'settings'].indexOf(want) >= 0) {
     showTab(want);
     if (want !== 'settings') openHashSub(want, pane);
   } else {
@@ -48492,6 +48528,10 @@ function skUserCard(d, user) {
     }, [{words: 'Close', close: true}, {words: 'Make one', cls: 'primary', icon: 'key', go: function (b) {
       busy(b, true);
       api('sshkeys', {action: 'uk_make', user: user, kind: kind, scope: sc, nodes: nodes}).then(function (x) {
+        /* This popup done with (1.10.356): it came back under the key's with
+           its button still busy. */
+        busy(b, false);
+        closeModal();
         skShowMade(x, user);
         return api('sshkeys');
       }).then(function (d2) { SK.d = d2; drawSshKeys(); skPoll(true); })
@@ -48571,10 +48611,14 @@ function skAdd() {
     body.appendChild(ppf);
     pick = skNodePicker(body);
     setTimeout(function () { area.focus(); }, 60);
-  }, [{words: 'Close', close: true}, {words: 'Add it', cls: 'primary', icon: 'add', close: true, go: function () {
+  }, [{words: 'Close', close: true}, {words: 'Add it', cls: 'primary', icon: 'add', go: function (b) {
     var line = area.value.trim(), pass = pp.value, nodes = pick();
+    /* Closed only once it is taken (1.10.356): an empty box closed it too. */
     if (!line) { toast('paste a key first', 'warn'); return; }
-    api('sshkeys', {action: 'add', line: line, passphrase: pass, nodes: nodes, user: user}).then(function (x) { toast(x.message, 'good'); skPoll(true); }).catch(oops);
+    busy(b, true);
+    api('sshkeys', {action: 'add', line: line, passphrase: pass, nodes: nodes, user: user}).then(function (x) {
+      busy(b, false); closeModal(); toast(x.message, 'good'); skPoll(true);
+    }).catch(function (e) { busy(b, false); oops(e); });
   }}], 'sk-add');
   /* A private key pasted is gone from the page when the popup closes. */
   MODAL_CLOSE = function () { if (area) area.value = ''; if (pp) pp.value = ''; };
@@ -48746,7 +48790,9 @@ function pwpCard(d) {
   if (e.managed) {
     var grid = el('div', 'pwp-grid');
     var col = function (title) { var c1 = el('div', 'pwp-col'); c1.appendChild(el('h3', '', title)); grid.appendChild(c1); return c1; };
-    var bind = function (input, key) { input.onchange = input.oninput = function () { e[key] = parseInt(input.value, 10) || 0; }; return input; };
+    /* An emptied box keeps the value it had (1.10.356): it was 0 - every
+       password run out at once for "Good for (days)". */
+    var bind = function (input, key) { input.onchange = input.oninput = function () { var v = parseInt(input.value, 10); if (isFinite(v)) e[key] = v; }; return input; };
     var flag = function (box, words, key, says) {
       var s1 = osuCheck(words, !!e[key], says);
       s1.input.onchange = function () { e[key] = s1.input.checked ? 1 : 0; };
@@ -48807,6 +48853,8 @@ function pwpCard(d) {
       ['The least days between two changes', function (p) { return p.aging.min_days; }],
       ['Locked after so many wrong (faillock)', function (p) { return !p.pam.faillock ? 'no (pam_faillock not in PAM)' : p.faillock.deny ? p.faillock.deny + ' / ' + p.faillock.unlock_time + ' s' : '–'; }],
       ['pam_pwquality in PAM', function (p) { return yes(p.pam.pwquality); }],
+      /* Set by hand in pwquality.conf, which wins over isemon's (1.10.356). */
+      ['Set by hand over isemon\'s (pwquality.conf)', function (p) { return (p.pwq_over || []).length ? p.pwq_over.join(', ') : 'nothing'; }],
       ['authselect', function (p) { return p.authselect ? p.authselect.profile + (p.authselect.features.length ? ' + ' + p.authselect.features.join(', ') : '') : 'not used'; }]
     ];
     det.appendChild(listTable(['Rule'].concat(one ? ['Here'] : nodes.map(function (n) { return n.name; })), rows, function (r) {

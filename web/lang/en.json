@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.355",
+  "version": "1.10.356",
   "made": "2026-11-16",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -17724,6 +17724,10 @@
    "source": "no - a button under the form",
    "text": "no - a button under the form"
   },
+  "s.no-account-has-the-spn-yet.0dee90bd": {
+   "source": "No account has the SPN yet: the account’s name below is only an example.",
+   "text": "No account has the SPN yet: the account’s name below is only an example."
+  },
   "s.no-accounts.f34b92a4": {
    "source": "No accounts",
    "text": "No accounts"
@@ -25396,6 +25400,10 @@
    "source": "set action deny",
    "text": "set action deny"
   },
+  "s.set-by-hand-over-isemon-s.16613e3c": {
+   "source": "Set by hand over isemon's (pwquality.conf)",
+   "text": "Set by hand over isemon's (pwquality.conf)"
+  },
   "s.set-by-hand.a1590edf": {
    "source": "set by hand",
    "text": "set by hand"
@@ -28711,6 +28719,10 @@
   "s.the-card-is-back.a947160c": {
    "source": "The card is back.",
    "text": "The card is back."
+  },
+  "s.the-card-you-signed-in-with.08501604": {
+   "source": "The card you signed in with is checked now - reload the page (save what you changed first).",
+   "text": "The card you signed in with is checked now - reload the page (save what you changed first)."
   },
   "s.the-card-you-signed-in-with.12da94e3": {
    "source": "The card you signed in with is watched from now on - save and reload the page.",

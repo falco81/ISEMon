@@ -372,6 +372,81 @@ working.
 
 ## Version
 
+1.10.356
+
+- **Three more rounds of looking for bugs and security problems.**
+- **Bans - an address never taken from a name somebody typed:**
+  - Windows: a 4776 has no address of its own, and a 4625 whose own address is
+    `-` no longer takes one typed into the workstation name. Kerberos events
+    read only their Client Address, and a 4648 only its Network Address.
+  - RouterOS PPP/L2TP/SSTP: the address only after the failure's own words.
+  - `never_block` written the IPv6 way (`::ffff:203.0.113.0/120`) spares the
+    IPv4 addresses.
+- **Signing in:**
+  - A directory account that the directory no longer has cannot sign in with
+    a password kept here; that password works only while the directory cannot
+    be asked.
+  - `DOMAIN\` in front of a name no longer gives a new allowance of tries.
+  - A refusal by the directory takes as long as one by the local accounts.
+  - `passkeys`, `password_off` and the other switches are read as the setting
+    reads them, so `01` or `1.0` no longer gets past the guards.
+  - The certificate's port can never be the daemon's own `api_port`.
+- **The card watched:**
+  - Switching it on, off or to another mode starts every watched session's
+    count afresh, and root is asked for nginx's lines at once.
+  - No browser is judged "cannot be checked" while root is still putting the
+    port in.
+  - A held session adds no passkey, and whoami gives it nothing of the person.
+  - When the server ends a session, the page says why (another card or the
+    card out), and tries nothing by itself after.
+  - CSP is right for a name with `_` and for an IPv6 address.
+  - The sessions watched by 1.10.353 are carried into their rows.
+- **Local users and SSH keys (root's helper):**
+  - *Add* of a user already there changes nothing; it took their sudo and set
+    their password.
+  - Sudo given by the primary group is refused, never shown as taken away.
+  - *Unlock* puts back the end day as it was, and a dropped user's day goes
+    with them.
+  - A user's side that never answers is given 20 s.
+  - `authorized_keys` keeps bytes that are not UTF-8.
+  - pwquality is read as libpwquality reads it, and keys set by hand over
+    isemon's are shown.
+- **Backups, restores, upgrades:**
+  - The keytab, the certificate sign-in's authorities and the local password
+    policy are carried by a complete export and a configuration backup. A
+    keytab sealed by another machine is opened again or said.
+  - A PostgreSQL or MariaDB dump holding triggers, functions, views or events
+    is not put back.
+  - A crafted backup is refused rather than crashing the restore.
+  - The security floor (1.10.345) is kept by root for every older helper, so
+    going back in two steps no longer gets past it.
+  - A package's folder entries (not signed) are never made.
+- **acme:**
+  - Automatic certificates never put a certificate over one uploaded while
+    the order ran.
+  - A line with one key said again and again is read in linear time (one of
+    64 KB took 26 s).
+  - A job's time of `inf` is not kept.
+  - Wrong pairing codes are counted for each key.
+  - The dashboard's name is kept at pairing.
+  - Removed sync rows are let go with the logs.
+  - Deeply nested JSON is refused.
+- **nginx, the firewall, SELinux:**
+  - ACME on port 80 leaves a server alone that has a `location /` of its own
+    (a second one stopped every change).
+  - The INPUT jump is placed right in a file saved with counters.
+  - The SELinux report carries no command lines of other programs.
+- **The page and the command line:**
+  - Nothing printed on root's terminal carries an escape out of the data.
+    Events keep no control character.
+  - Before signing in, at most 64 KB may be sent to any relay.
+  - Popups that draw themselves again no longer pile up in Czech.
+  - User and group names are never translated.
+  - The acme tab stays after F5.
+  - *Make a key* and *Add a key* close as they should.
+  - An emptied *Good for (days)* box keeps its value.
+  - `--local-user --json` gives the right exit code.
+
 1.10.355
 
 - **When the card is taken out - a browser that cannot be checked**

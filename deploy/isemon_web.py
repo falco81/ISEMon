@@ -272,7 +272,7 @@ def tls_checked(t):
     out['dh'] = dh
     try:
         out['hsts'] = int(t.get('hsts') or 0)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise Refused('HSTS is a number of seconds')
     if not 0 <= out['hsts'] <= 63072000:
         raise Refused('HSTS is 0 to 63072000 seconds')
@@ -340,7 +340,7 @@ def certlogin_checked(c):
         return {'on': False}
     try:
         port = int(c.get('port'))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise Refused('the certificate\'s port is a number')
     if not 1024 <= port <= 65535 or port in CERTLOGIN_REFUSED:
         raise Refused('the certificate\'s port is 1024-65535 and none of the others: not %d'
@@ -1040,6 +1040,11 @@ def acme_location(https_block, main):
     return lines
 
 
+def se_no_cmdlines(text):
+    return '\n'.join(ln for ln in str(text or '').split('\n')
+                     if not re.match(r'^type=(PROCTITLE|EXECVE)\b', ln))
+
+
 def acme_into(main, names):
     """The port-80 server given the location for the CA and the names in its
     server_name. The file as it was when there is no port-80 server."""
@@ -1055,7 +1060,22 @@ def acme_into(main, names):
     end = [n for n, l in enumerate(lines) if l.strip() == '# isemon-acme-end']
     if begin and end and begin[0] < end[-1]:
         del lines[begin[0]:end[-1] + 1]
-    # A `return` of the server's own (the redirect to HTTPS) into location /.
+    # A `return` of the server's own (the redirect to HTTPS) into location /
+    # - not when the server has a location / of its own already (1.10.356):
+    # a second one, nginx -t refused it and every later change with it.
+    depth, own_root, top_ret = 0, False, False
+    for l in lines:
+        if depth == 1 and re.match(r'^\s*location\s+/\s*\{', l):
+            own_root = True
+        if depth == 1 and re.match(r'^\s*return\s+[^;]+;', l):
+            top_ret = True
+        depth += l.count('{') - l.count('}')
+    # ...a return of the server's own level only: the one put into location /
+    # here before is no reason to refuse the next time.
+    if own_root and top_ret:
+        return main, ('nginx: the port-80 server has a return and a location / of its own - '
+                      'put the return inside that location to have the ACME CA answered there '
+                      '(or use DNS-01); nothing was changed on port 80')
     depth, out = 0, []
     for l in lines:
         if depth == 1 and re.match(r'^\s*return\s+[^;]+;\s*(#.*)?$', l):
@@ -1227,7 +1247,7 @@ def fw_rule_checked(x):
         raise Refused('a firewall rule is not an object')
     try:
         fam = int(x.get('family') or 0)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         fam = 0
     if fam not in (4, 6):
         raise Refused('a firewall rule is for IPv4 or IPv6')
@@ -1310,7 +1330,10 @@ def fw_into(text, lines, on):
     end = next((i for i in range(start + 1, len(rows)) if rows[i].strip() == 'COMMIT'), None)
     if end is None:
         raise Refused('the saved firewall has a *filter table without COMMIT')
-    first_input = next((i for i in range(start, end) if rows[i].startswith('-A INPUT')), end)
+    # ...saved with counters too (1.10.356): [12:3456] -A INPUT ...
+    first_input = next((i for i in range(start, end)
+                        if re.sub(r'^\[\d+:\d+\]\s+', '', rows[i].strip()).startswith('-A INPUT')),
+                       end)
     # The last declaration BEFORE the first rule of INPUT (1.10.238): one of
     # a hand-written file that came after it had the rows between written
     # twice.
@@ -2025,6 +2048,9 @@ def auth_lines():
 
 def auth_keys(lines):
     out = []
+    # Read as words (1.10.356): bytes that are not UTF-8, kept in the file, as
+    # U+FFFD here - ssh-keygen was handed them and every add and drop failed.
+    lines = [ln.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace') for ln in lines]
     for i, ln in enumerate(lines):
         t = ln.strip()
         if not t or t.startswith('#'):
@@ -2112,6 +2138,9 @@ def ssh_user(name):
     return pwd.getpwnam(name)
 
 
+AS_USER_S = 20
+
+
 def as_user(pw, fn):
     """fn() run by a child that is the user - its answer (JSON) back through a
     pipe, 4 MB at most."""
@@ -2146,12 +2175,37 @@ def as_user(pw, fn):
             os._exit(code)
     os.close(wr)
     chunks = []
+    # A deadline (1.10.356): the child is the user's - stopped by them
+    # (SIGSTOP), or held on a home that never answers, it held root's helper
+    # and every other ask behind it for half an hour.
+    import select
+    ends = time.time() + AS_USER_S
+    late = False
     with os.fdopen(rd, 'rb') as f:
         while True:
-            b = f.read(65536)
+            left = ends - time.time()
+            if left <= 0 or not select.select([f], [], [], left)[0]:
+                late = True
+                break
+            b = os.read(f.fileno(), 65536)
             if not b:
                 break
             chunks.append(b)
+    if late:
+        try:
+            os.kill(pid, 9)
+        except OSError:
+            pass
+        # ...and not waited on for ever (1.10.356): a child stuck on a home
+        # that never answers does not die of SIGKILL either.
+        for _ in range(20):
+            try:
+                if os.waitpid(pid, os.WNOHANG)[0]:
+                    break
+            except ChildProcessError:
+                break
+            time.sleep(0.1)
+        raise Refused('%s\'s files did not answer within %d s' % (pw.pw_name, AS_USER_S))
     os.waitpid(pid, 0)
     try:
         got = json.loads(b''.join(chunks).decode('utf-8', 'replace') or '{}')
@@ -2178,10 +2232,15 @@ def user_auth_read(pw):
             if e.errno == errno.ELOOP:
                 raise Refused('%s is a link - put the file itself there' % path)
             raise
-        with os.fdopen(fd, 'r', encoding='utf-8', errors='replace') as f:
+        # Bytes that are not UTF-8 kept as they are, and a file larger than
+        # what is read never written back cut (1.10.356).
+        with os.fdopen(fd, 'r', encoding='utf-8', errors='surrogateescape') as f:
             if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
                 raise Refused('%s is not a plain file' % path)
-            return f.read(1 << 20)
+            text = f.read((1 << 20) + 1)
+            if len(text) > (1 << 20):
+                raise Refused('%s is larger than 1 MB - change it on the machine' % path)
+            return text
     return (as_user(pw, go) or '').split('\n')
 
 
@@ -2210,7 +2269,7 @@ def user_auth_write(pw, lines):
         fd, tmp = tempfile.mkstemp(prefix='.authorized_keys.', dir=folder)
         try:
             os.fchmod(fd, 0o600)
-            with os.fdopen(fd, 'w') as f:
+            with os.fdopen(fd, 'w', encoding='utf-8', errors='surrogateescape') as f:
                 fd = None
                 f.write(text)
             os.replace(tmp, path)
@@ -2255,8 +2314,11 @@ def sshkeys_user_do(r, name):
     if do == 'add':
         fp = key_line_checked(str(r.get('line') or '').strip())
         if not any(k['fp'] == fp for k in auth_keys(lines)):
-            user_auth_write(pw, [ln for ln in lines if ln.strip()] +
-                            [str(r.get('line') or '').strip()])
+            # The lines there kept as they are (1.10.356) - blank ones too.
+            keep = list(lines)
+            while keep and not keep[-1].strip():
+                keep.pop()
+            user_auth_write(pw, keep + [str(r.get('line') or '').strip()])
     elif do == 'drop':
         fp = str(r.get('fp') or '')
         hit = [k for k in auth_keys(lines) if k['fp'] and k['fp'] == fp]
@@ -2267,8 +2329,10 @@ def sshkeys_user_do(r, name):
     elif do != 'list':
         raise Refused('list, add or drop')
     lines = user_auth_read(pw)
+    # Shown as words: bytes that are not UTF-8 (kept in the file) as U+FFFD.
+    shown = [ln.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace') for ln in lines]
     return {'user': name, 'keys': [dict((k, v) for k, v in x.items() if k != 'line')
-                                   for x in auth_keys(lines)],
+                                   for x in auth_keys(shown)],
             'file': user_auth_paths(pw)[1], 'users': normal_users(), 'sshd': sshd_says()}
 
 
@@ -5374,9 +5438,11 @@ def se_report_parts(r):
                                                 'ports': r.get('ports') or []}},
                                       indent=1, sort_keys=True)[:65536]
     kinds = 'AVC,USER_AVC,SELINUX_ERR,USER_SELINUX_ERR'
-    raw = _se_out(['ausearch', '-m', kinds, '-ts', 'boot'], 300)
+    # Without other programs' command lines (1.10.356): the PROCTITLE and
+    # EXECVE records ausearch adds carry them, and the report is the daemon's.
+    raw = se_no_cmdlines(_se_out(['ausearch', '-m', kinds, '-ts', 'boot'], 300))
     parts['avc-raw.txt'] = raw
-    parts['avc.txt'] = _se_out(['ausearch', '-m', kinds, '-ts', 'boot', '-i'], 300)
+    parts['avc.txt'] = se_no_cmdlines(_se_out(['ausearch', '-m', kinds, '-ts', 'boot', '-i'], 300))
     if raw.startswith('('):
         parts['audit2why.txt'] = parts['audit2allow.te'] = raw
     else:
@@ -6170,7 +6236,9 @@ def pwp_authselect():
 def pwp_read():
     """The policy as in effect here, read from the files."""
     pwq = dict(PWQ_DEFAULT)
-    raw = pwp_conf_read(os.path.join(SEC_DIR, 'pwquality.conf'))
+    # As libpwquality reads them (1.10.356): pwquality.conf.d/*.conf first, then
+    # pwquality.conf over them - a key set by hand there wins over isemon's.
+    raw = {}
     d = os.path.join(SEC_DIR, 'pwquality.conf.d')
     try:
         for name in sorted(os.listdir(d)):
@@ -6178,6 +6246,8 @@ def pwp_read():
                 raw.update(pwp_conf_read(os.path.join(d, name)))
     except OSError:
         pass
+    main = pwp_conf_read(os.path.join(SEC_DIR, 'pwquality.conf'))
+    raw.update(main)
     for k in PWQ_KEYS:
         if k in raw:
             pwq[k] = pwp_int(raw[k], raw[k])
@@ -6204,6 +6274,8 @@ def pwp_read():
                       'warn_days': defs.get('PASS_WARN_AGE', 7)},
             'pam': pam, 'authselect': pwp_authselect(),
             'managed': os.path.exists(os.path.join(SEC_DIR, PWQ_DROPIN)),
+            # The keys pwquality.conf sets by hand over isemon's (1.10.356).
+            'pwq_over': sorted(k for k in PWQ_KEYS if k in main),
             'pwscore': bool(shutil.which('pwscore'))}
 
 
@@ -6511,7 +6583,13 @@ def lu_sudo(name, on):
     if not g:
         raise Refused('this machine has no wheel or sudo group')
     import grp
-    member = name in grp.getgrnam(g).gr_mem
+    import pwd
+    gr = grp.getgrnam(g)
+    member = name in gr.gr_mem
+    # The admin group as the user's own primary group (1.10.356): sudo it
+    # gives is not taken away by gpasswd - said, never shown as done.
+    if not on and pwd.getpwnam(name).pw_gid == gr.gr_gid:
+        raise Refused('%s\'s own primary group is %s - change it on the machine itself' % (name, g))
     if on and not member:
         lu_run(['gpasswd', '-a', name, g])
     elif not on and member:
@@ -6555,7 +6633,9 @@ def lu_do(r):
             # There already (asked again): the same UID is no fault; another is said.
             if uid not in (None, '') and int(uid) != p.pw_uid:
                 raise Refused('%s is here already, with UID %d (not %s)' % (name, p.pw_uid, uid))
-            said = '%s was here already' % name
+            # ...and nothing of them changed (1.10.356): their sudo was taken
+            # and their password set over by an Add of a name already here.
+            return dict(lu_list(), said='%s was here already - nothing was changed' % name)
         else:
             argv = ['useradd', '-m', '-s', shell, '-c', gecos, '-U']
             if uid not in (None, ''):
@@ -6617,6 +6697,10 @@ def lu_do(r):
         # The day the account ends, as it was, kept to be put back by unlock.
         if entry[3] and entry[3] != '0':
             lu_expiry_keep(name, entry[3])
+        elif not entry[3]:
+            # No day at all: nothing of an earlier one left. (Locked already -
+            # 0 - the day kept stays: a second Lock lost it.)
+            lu_expiry_keep(name, None)
         lu_run(['chage', '-E', '0', name])
         said = '%s locked' % name
     elif do == 'unlock':
@@ -6624,10 +6708,9 @@ def lu_do(r):
         if sh.startswith('!') and len(sh) > 2:
             lu_run(['usermod', '-U', name])
         was = lu_expiry_keep(name, None)
-        # The day kept only while it is still ahead: an account that had ended
-        # before the lock stays shut after Unlock.
-        ahead = bool(was and was.isdigit() and int(was) > int(time.time() // 86400))
-        lu_run(['chage', '-E', was if ahead else '-1', name])
+        # The day kept put back as it was (1.10.356): an account that had
+        # ended before the lock stays shut after Unlock - it was reopened.
+        lu_run(['chage', '-E', was if was and re.fullmatch(r'-?\d+', was) else '-1', name])
         said = '%s unlocked' % name
     elif do == 'sudo':
         lu_sudo(name, bool(r.get('on')))
@@ -6653,6 +6736,7 @@ def lu_do(r):
         if busy.stdout.strip():
             raise Refused('%s is signed in or runs something here - sign them out first' % name)
         lu_run(['userdel'] + (['-r'] if r.get('home') else []) + ['--', name])
+        lu_expiry_keep(name, None)              # a later user of the name starts clean
         said = '%s taken away%s' % (name, ' with the home folder' if r.get('home') else '')
     return dict(lu_list(), said=said)
 

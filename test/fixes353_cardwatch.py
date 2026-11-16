@@ -252,7 +252,7 @@ try:
     ok('the check before the nonce of the sign-in', page.index("=== 'cert-alive'") <
        page.index("$try = (string) ($_GET['api'] ?? '') === 'cert-check';"))
     ok('the policy lets in the port only for a watched session',
-       "img-src 'self' data: https://$cwh:$cwp;" in page and
+       "$cwsrc = preg_match('/^[A-Za-z0-9.-]+$/', $cwh) ? \"https://$cwh:$cwp\" : 'https:';" in page and
        "is_array($me['certwatch'] ?? null)" in page)
     ok('whoami hands on numbers and words only', ("(int) ($cw['port'] ?? 0)" in papi,
                                                    "'stale' => !empty($cw['stale'])" in papi),
