@@ -220,6 +220,16 @@ Events:
 - *&lt;name&gt;: the card they signed in with is out - the session waits N s*
 - *...is back*
 
+**Windows and the browser's windows (1.10.358).** With the card out, the
+check's handshake makes Windows ask for the smart card, and then Chrome or
+Edge show their certificate chooser. A check that waits longer than 4 s counts
+as the card out: the countdown shows behind that window, and the server is
+told. Put the card back and press **OK** in the window, and the check answers.
+**Cancel** there makes the browser remember "no certificate" for this server
+until it is closed and opened again: the card put back is then not seen, and
+the countdown runs out. A page loaded again (F5) goes on counting from when
+the server saw the card out.
+
 **The dashboard's own policy (1.10.357).** nginx-isemon.conf sends a
 Content-Security-Policy of its own beside the page's, with `img-src 'self'
 data:`. A browser holds to both, so before 1.10.357 the check's picture was

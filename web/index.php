@@ -4698,6 +4698,7 @@ function srcText(el) {
   .cw-box h3{margin:16px 0 8px;font-size:21px;color:var(--tx)}
   .cw-p{margin:0 0 14px;color:var(--tx-dim);font-size:14px;line-height:1.55}
   .cw-until{color:var(--warn);font-weight:600;font-size:13.5px;margin:0 0 18px}
+  .cw-hint{margin:-4px 0 14px;color:var(--tx-dim);font-size:12.5px;line-height:1.5;opacity:.85}
   @media (prefers-reduced-motion:reduce){.cw-arc{transition:none}}
   .cw-box .btn.danger{color:var(--crit);border-color:rgba(248,81,73,.45);background:var(--crit-bg)}
   .csr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 28px;margin:6px 0 10px}
@@ -12850,7 +12851,9 @@ function certWatchStart(conf) {
   if (!conf || !conf.port || (conf.mode !== 'signout' && conf.mode !== 'grace')) return;
   if (CW.conf) { CW.conf = conf; return; }
   CW.conf = conf; CW.gen++;
-  if (conf.out) { CW.out = Date.now(); certWatchLayer(true); }
+  /* Out already: counted from when the server saw it (1.10.358) - F5 started
+     the countdown afresh, every time. */
+  if (conf.out) { CW.out = Date.now() - Math.max(0, conf.out_for || 0) * 1000; certWatchLayer(true); }
   /* The first check soon: a card taken out while the page loaded is seen at
      once, and a session held while its page slept is let go at once. */
   certWatchNext(conf.out || conf.stale ? 300 : 1500);
@@ -12922,6 +12925,20 @@ function certWatchCheck() {
   /* Without an answer for 20 s: none (fail closed); no new check starts
      until this one is over. */
   to = setTimeout(function () { fin(0); }, 20000);
+  /* Waiting on a window of the card's after 4 s (1.10.358) - Windows' "insert
+     the smart card", the browser's chooser: the card is out. The countdown
+     shows at once, behind that window, and the server is told; put the card
+     back while the window is up and the check answers. */
+  setTimeout(function () {
+    if (done || g !== CW.gen || CW.out) return;
+    if (c.mode === 'grace') {
+      CW.out = began;
+      certWatchLayer(true);
+    }
+    api('card-gone', {why: 'waiting'}, {quiet: true}).then(function (d) {
+      if (g === CW.gen && d && d.gone) certWatchEnd('out');
+    }, function () {});
+  }, 4000);
   img.onload = function () { var nw = img.naturalWidth; fin(nw >= 2 && nw <= 6 ? nw : 1); };
   img.onerror = function () { fin(0); };
   img.src = 'https://' + location.hostname + ':' + c.port + '/index.php?api=cert-alive&r=' + Date.now().toString(36);
@@ -12981,6 +12998,9 @@ function certWatchLayer(on) {
     box.appendChild(ring);
     box.appendChild(el('h3', '', 'Put the card back'));
     box.appendChild(el('p', 'cw-p', 'The smart card or YubiKey was taken out, so this sign-in is locked. Put it back - the page goes on where you left off.'));
+    /* Windows' window "insert the smart card" (1.10.358): Cancel there and the
+       browser offers no card to this server again until it is restarted. */
+    box.appendChild(el('p', 'cw-hint', 'A window asking for the smart card: put the card back and press OK there - not Cancel. After Cancel the browser offers no card here until it is closed and opened again.'));
     var until = el('div', 'cw-until', '');
     until.id = 'cw-until';
     box.appendChild(until);

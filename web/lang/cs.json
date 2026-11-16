@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.357",
+  "version": "1.10.358",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -1895,6 +1895,10 @@
   "s.a-whole-path-on-this-machine.db75d7c6": {
    "source": "A whole path on this machine; the isemon account must be able to write into it, and isemon.service must be let write there (systemctl edit isemon: ReadWritePaths=).",
    "text": "Celá cesta na tomto stroji; účet isemon do ní musí umět zapisovat a isemon.service tam musí mít povolený zápis (systemctl edit isemon: ReadWritePaths=)."
+  },
+  "s.a-window-asking-for-the-smart.565f9e04": {
+   "source": "A window asking for the smart card: put the card back and press OK there - not Cancel. After Cancel the browser offers no card here until it is closed and opened again.",
+   "text": "Okno žádající čipovou kartu: vraťte kartu a v něm stiskněte OK – ne Storno. Po Storno prohlížeč kartu tomuto serveru nenabídne, dokud ho nezavřete a znovu neotevřete."
   },
   "s.a-windows-nps-server-let-this.71bed570": {
    "source": "A Windows NPS server let this one through — not ISE. It is written down and shown, and never judged.",

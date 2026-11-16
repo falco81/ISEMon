@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.357",
+  "version": "1.10.358",
   "made": "2026-11-16",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -1895,6 +1895,10 @@
   "s.a-whole-path-on-this-machine.db75d7c6": {
    "source": "A whole path on this machine; the isemon account must be able to write into it, and isemon.service must be let write there (systemctl edit isemon: ReadWritePaths=).",
    "text": "A whole path on this machine; the isemon account must be able to write into it, and isemon.service must be let write there (systemctl edit isemon: ReadWritePaths=)."
+  },
+  "s.a-window-asking-for-the-smart.565f9e04": {
+   "source": "A window asking for the smart card: put the card back and press OK there - not Cancel. After Cancel the browser offers no card here until it is closed and opened again.",
+   "text": "A window asking for the smart card: put the card back and press OK there - not Cancel. After Cancel the browser offers no card here until it is closed and opened again."
   },
   "s.a-windows-nps-server-let-this.71bed570": {
    "source": "A Windows NPS server let this one through — not ISE. It is written down and shown, and never judged.",

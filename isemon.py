@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.357'
+__version__ = '1.10.358'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -62427,9 +62427,14 @@ class Daemon(object):
             return None
         if state is None:
             state = 'out' if row.get('card_out') else 'in'
+        # How long it has been out, by the server's clock (1.10.358): the page
+        # loaded again (F5) went on counting rather than starting afresh.
+        out_for = 0
+        if state == 'out' and row.get('card_out'):
+            out_for = max(0, int(time.time() - float(row['card_out'])))
         return {'mode': mode, 'every': self.certlogin_watch_every(),
                 'grace': self.certlogin_watch_grace(), 'port': self.certlogin_port(),
-                'out': state == 'out', 'stale': state == 'stale'}
+                'out': state == 'out', 'stale': state == 'stale', 'out_for': out_for}
 
     def certlogin_alive(self, token, pem, name=''):
         """One check of the card, from its port: {alive, gone, watched, grace_left}.
@@ -62480,6 +62485,16 @@ class Daemon(object):
         if not row or not row.get('card') or self.certlogin_watch_mode() == 'off' \
                 or self._cl_unable_now(row):
             return {'watched': False, 'gone': False}
+        # A check still waiting on a window of the card's (1.10.358) - Windows'
+        # "insert the card", the browser's chooser: the card out, but never a
+        # word about whether this browser can be checked.
+        if why == 'waiting' and not self._cl_proven(row):
+            return {'watched': False, 'gone': False}
+        if why == 'waiting':
+            st = self._cl_out(token, row, 'the card they signed in with was taken out')
+            return {'watched': True, 'gone': st == 'gone',
+                    'grace_left': 0 if st == 'gone' else max(0, int(
+                        self.certlogin_watch_grace() - (time.time() - float(row['card_out'] or 0))))}
         why = why if why in self.CL_UNABLE_WHY else 'nopicture'
         # Root still putting the watched port in (1.10.356): no picture is no
         # word about this browser yet - asked again later.

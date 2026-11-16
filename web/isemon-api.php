@@ -301,7 +301,9 @@ function isemon_whoami(): ?array
             ? ['mode' => (string) $cw['mode'], 'every' => (int) ($cw['every'] ?? 15),
                'grace' => (int) ($cw['grace'] ?? 30), 'port' => (int) ($cw['port'] ?? 0),
                /* out: the card out (grace); stale: the page slept - held (1.10.354) */
-               'out' => !empty($cw['out']), 'stale' => !empty($cw['stale'])]
+               'out' => !empty($cw['out']), 'stale' => !empty($cw['stale']),
+               /* seconds out by the server's clock (1.10.358): F5 goes on counting */
+               'out_for' => (int) ($cw['out_for'] ?? 0)]
             : null;
     }
     return $who;

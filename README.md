@@ -372,6 +372,24 @@ working.
 
 ## Version
 
+1.10.358
+
+- **When the card is taken out - Windows and the browser's own windows**
+  ([docs/certificate-sign-in.md](docs/certificate-sign-in.md)):
+  - With the card out, a check makes Windows ask for the smart card ("insert
+    the smart card"), and then the browser show its certificate chooser. The
+    check waited behind those windows, so the countdown came only after
+    Cancel.
+  - A check waiting longer than 4 s now counts as the card out: the countdown
+    shows at once, behind the window, and the server is told.
+  - Put the card back and press OK there: the check answers and the page goes
+    on.
+  - The notice says so, and says that after Cancel the browser offers no card
+    to the server again until it is closed and opened again - a choice
+    Chrome keeps, not one the page can change.
+  - Loaded again (F5), the page goes on counting from when the server saw the
+    card out, rather than starting afresh.
+
 1.10.357
 
 - **When the card is taken out - the check was blocked by the dashboard's own
