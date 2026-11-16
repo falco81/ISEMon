@@ -483,6 +483,30 @@ def port_listening(port):
     return False
 
 
+# The dashboard's policy as nginx-isemon.conf writes it, and the same with any
+# https picture let in: the page's own policy, beside it, names the one
+# address - the certificate's port - and a browser holds to both (1.10.357).
+CSP_IMG_ISEMON = "img-src 'self' data:; connect-src 'self';"
+CSP_IMG_WATCH = "img-src 'self' data: https:; connect-src 'self';"
+
+
+def csp_for_watch(text, on):
+    """isemon's own Content-Security-Policy line of the dashboard with the
+    card watched, or as it was - nothing else touched. (new text, words)"""
+    old, new = (CSP_IMG_ISEMON, CSP_IMG_WATCH) if on else (CSP_IMG_WATCH, CSP_IMG_ISEMON)
+    out, hit = [], False
+    for line in text.split('\n'):
+        s = line.strip()
+        if s.startswith('add_header Content-Security-Policy "default-src \'self\';') and old in line:
+            line = line.replace(old, new)
+            hit = True
+        out.append(line)
+    if not hit:
+        return text, ''
+    return '\n'.join(out), ('nginx: the dashboard\'s policy lets the card\'s check through'
+                             if on else 'nginx: the dashboard\'s policy as it was')
+
+
 def certlogin_into(main, c, was=None):
     """The dashboard's file with isemon's certificate server as asked: put
     in (or written again) when on, taken away when off. (new text, words)"""
@@ -1191,6 +1215,13 @@ def nginx_part(r, last):
                 changed = True
             final, words = certlogin_into(final, cl, on_disk)
             if words and final != on_disk:
+                said.append(words)
+            # The card watched (1.10.357): the dashboard's own policy (nginx's
+            # header, beside the page's) let no picture of the port in, and
+            # the browser holds to both - every check was blocked before it
+            # was sent. Only isemon's own line of it, as the package wrote it.
+            final, words = csp_for_watch(final, bool(cl.get('on') and cl.get('watch')))
+            if words:
                 said.append(words)
         if final != on_disk:
             write_root(NGINX_MAIN, final, 0o644)

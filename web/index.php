@@ -12930,7 +12930,7 @@ function certWatchUnable() {
   CW.gen++; CW.conf = null; CW.out = 0;
   if (CW.timer) clearTimeout(CW.timer);
   certWatchLayer(false);
-  toast('This browser cannot have the card checked (as an iPad cannot): this sign-in is not watched.', 'warn');
+  toast('This browser cannot have the card checked: this sign-in is not watched.', 'warn');
 }
 function certWatchIn() {
   var c = CW.conf;

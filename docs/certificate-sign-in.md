@@ -220,6 +220,17 @@ Events:
 - *&lt;name&gt;: the card they signed in with is out - the session waits N s*
 - *...is back*
 
+**The dashboard's own policy (1.10.357).** nginx-isemon.conf sends a
+Content-Security-Policy of its own beside the page's, with `img-src 'self'
+data:`. A browser holds to both, so before 1.10.357 the check's picture was
+blocked before it was sent - in Chrome on Windows as on an iPad - and every
+browser looked like one that "cannot be checked". While the card is watched,
+root's helper now lets any https picture through on that one line of isemon's
+own (`img-src 'self' data: https:`); the page's policy still names the one
+address, the certificate's port. When it is not watched, the line is as it
+was. A policy changed by hand is never touched: let the port's address in
+there yourself.
+
 **A browser that cannot be checked (1.10.355).** On an iPad the card is in,
 yet the check in the background never finds it: Safari signs nothing for a
 page in the background. A session therefore remembers whether a check in the

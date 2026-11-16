@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.356'
+__version__ = '1.10.357'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -64896,7 +64896,7 @@ class Daemon(object):
         'certlogin_watch_grace_s': 'With grace: how long the card may be out before the '
                                    'session ends.',
         'certlogin_watch_unable': 'A browser whose very first check in the background does not '
-                                  'find the card cannot be checked at all - an iPad\'s Safari '
+                                  'find the card cannot be checked at all - a browser that '
                                   'signs nothing for a page in the background, though the card is '
                                   'in. allow: that sign-in is simply not watched, and Events say '
                                   'so and why. signout: it is signed out as if the card were out '
@@ -72335,6 +72335,9 @@ class WebRoot(object):
                 # so that off the request - and nginx - stay as they were.
                 if self.daemon.certlogin_watch_mode() != 'off':
                     out['certlogin']['watch'] = True
+                    # ...and the dashboard's own policy let the check through
+                    # (1.10.357): asked once more of a server already watched.
+                    out['certlogin']['csp'] = 1
                 if self.store.get_meta('certlogin_pushed') != '1':
                     self.store.set_meta('certlogin_pushed', '1')
             elif self.store.get_meta('certlogin_pushed') == '1':
@@ -80095,7 +80098,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'f24ea5687bee08df4207de8276cd2be714f307c832620e98942e92dbe0375f16'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '245211febc8f86738f3adb74c9f08c5427ed9bd2a3a26e6e5c9714cd77e338f6'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', '509103426424b54a05febbb32ac56b6ec09f9682f17942708b180738cbe00c1e'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),

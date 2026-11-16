@@ -372,6 +372,23 @@ working.
 
 ## Version
 
+1.10.357
+
+- **When the card is taken out - the check was blocked by the dashboard's own
+  policy** ([docs/certificate-sign-in.md](docs/certificate-sign-in.md)):
+  - nginx-isemon.conf sends a Content-Security-Policy of its own (`img-src
+    'self' data:`) beside the page's, and a browser holds to both. The
+    check's picture of the certificate's port was blocked before it was sent,
+    in Chrome on Windows as on an iPad. Every browser was "one that cannot be
+    checked" (*the check got no answer at all*).
+  - While the card is watched, root's helper lets any https picture through
+    on that one line of isemon's own. The page's own policy still names the
+    one address.
+  - Switched off, the line is as it was. A line changed by hand is never
+    touched.
+  - Asked once more of a server where the card is already watched.
+- The words no longer say an iPad cannot be checked.
+
 1.10.356
 
 - **Three more rounds of looking for bugs and security problems.**
