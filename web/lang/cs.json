@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.359",
+  "version": "1.10.360",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -643,6 +643,10 @@
   "s.a-day.6744c157": {
    "source": "a day",
    "text": "den"
+  },
+  "s.a-dedicated-game-server.bdb123e5": {
+   "source": "a dedicated game server",
+   "text": "vyhrazený herní server"
   },
   "s.a-device-downloads-an-acl-only.f7c29aec": {
    "source": "A device downloads an ACL only when it does not already hold it, and the name carries ISE’s own hash of the contents — so the one your busiest group uses all day may have been fetched once, months ago, and never since, while a rarely used one is fetched afresh every few hours as it falls out of the device’s cache. The logins name it either way.",
@@ -1419,6 +1423,18 @@
   "s.a-pool-several-addresses.cae2aaad": {
    "source": "a pool (several addresses)",
    "text": "pool (víc adres)"
+  },
+  "s.a-port-1-65535-a-range.5c5483bc": {
+   "source": "a port 1-65535, a range of at most 1000",
+   "text": "port 1-65535, rozsah nejvýš 1000"
+  },
+  "s.a-port-or-3478-3480.08cc84f7": {
+   "source": "a port or 3478-3480",
+   "text": "port nebo 3478-3480"
+  },
+  "s.a-port-or-two-joined-by.c84d1df1": {
+   "source": "a port, or two joined by -",
+   "text": "port, nebo dva spojené pomlčkou"
   },
   "s.a-portable-copy.d81916a4": {
    "source": "a portable copy",
@@ -2428,6 +2444,10 @@
    "source": "Add a place",
    "text": "Přidat místo"
   },
+  "s.add-a-port.d1063526": {
+   "source": "Add a port",
+   "text": "Přidat port"
+  },
   "s.add-a-rule.d119887b": {
    "source": "Add a rule",
    "text": "Přidat pravidlo"
@@ -2628,6 +2648,10 @@
    "source": "addresses in the pool",
    "text": "adresy ve fondu"
   },
+  "s.addresses-it-talks-to.c357f061": {
+   "source": "addresses it talks to",
+   "text": "adres, se kterými mluví"
+  },
   "s.addresses-machines-were-given.1f5b4afb": {
    "source": "Addresses machines were given",
    "text": "Adresy přidělené strojům"
@@ -2787,6 +2811,10 @@
   "s.ah.fd0aa934": {
    "source": "ah",
    "text": "ah"
+  },
+  "s.aim-nat-type-open-in-the.2de76fcc": {
+   "source": "Aim: NAT type Open in the console’s network settings.",
+   "text": "Cíl: typ NAT Otevřený v síťovém nastavení konzole."
   },
   "s.albania.79b9d273": {
    "source": "Albania",
@@ -3348,6 +3376,10 @@
    "source": "Analysis → Connections → Security Intelligence Events",
    "text": "Analysis → Connections → Security Intelligence Events"
   },
+  "s.analyze.0e524de0": {
+   "source": "Analyze",
+   "text": "Analyzovat"
+  },
   "s.and-a-token-that-was.80ecb603": {
    "source": "and a token that was",
    "text": "a token, který byl"
@@ -3852,6 +3884,10 @@
    "source": "arp",
    "text": "arp"
   },
+  "s.arrived-through-a-translation-asked-at.12330ee1": {
+   "source": "Arrived through a translation, asked at a public address.",
+   "text": "Přišlo přes překlad, směrované na veřejnou adresu."
+  },
   "s.arrow.39a531d9": {
    "source": "arrow",
    "text": "šipka"
@@ -3979,6 +4015,10 @@
   "s.as.9d31985f": {
    "source": "As",
    "text": "Jako"
+  },
+  "s.asa-syntax-on-an-ftd-the.4b137d7a": {
+   "source": "! ASA syntax; on an FTD the same as a manual NAT rule and an access rule in FMC.",
+   "text": "! ASA syntax; on an FTD the same as a manual NAT rule and an access rule in FMC."
   },
   "s.asc.43f0af34": {
    "source": "asc",
@@ -5048,6 +5088,10 @@
    "source": "BLOCK",
    "text": "BLOCK"
   },
+  "s.blocked-by-the-filter.e9c15956": {
+   "source": "blocked by the filter",
+   "text": "blokuje filtr"
+  },
   "s.blocked-by-the-web-filter-or.31416eef": {
    "source": "blocked by the web filter or another inspection",
    "text": "zablokováno webovým filtrem nebo jinou inspekcí"
@@ -5167,6 +5211,10 @@
   "s.brazil.37497aa5": {
    "source": "Brazil",
    "text": "Brazílie"
+  },
+  "s.bridge.2fa1981b": {
+   "source": "bridge",
+   "text": "bridge"
   },
   "s.broom.ba669755": {
    "source": "broom",
@@ -5399,6 +5447,10 @@
   "s.cache-given-back-when-needed.0008ccab": {
    "source": "Cache (given back when needed)",
    "text": "Cache (vrací se, když je potřeba)"
+  },
+  "s.call-of-duty-and-other-peer.95d7e5b9": {
+   "source": "Call of Duty and other peer-to-peer games",
+   "text": "Call of Duty a další peer-to-peer hry"
   },
   "s.called-station-id.e6ced3bb": {
    "source": "Called-Station-ID",
@@ -6052,9 +6104,17 @@
    "source": "circle",
    "text": "circle"
   },
+  "s.cisco-asa-ftd.f61ea222": {
+   "source": "Cisco ASA / FTD",
+   "text": "Cisco ASA / FTD"
+  },
   "s.cisco-ftd-and-asa.0e0d475c": {
    "source": "Cisco FTD and ASA",
    "text": "Cisco FTD a ASA"
+  },
+  "s.cisco.7af78c91": {
+   "source": "cisco",
+   "text": "cisco"
   },
   "s.city.4271627f": {
    "source": "City",
@@ -6223,6 +6283,10 @@
   "s.clients-other-than-browsers-python-curl.1ca242c3": {
    "source": "Clients other than browsers - Python, curl, openssl, Java, acme, monitoring agents - trust only the roots of their system: the web server must send the certificate followed by every intermediate authority up to such a root. Browsers fetch a missing one themselves, so they show nothing wrong.",
    "text": "Klienti jiní než prohlížeče - Python, curl, openssl, Java, acme, monitorovací agenti - věří jen kořenům svého systému: web server musí poslat certifikát a za ním všechny mezilehlé autority až k takovému kořeni. Prohlížeče si chybějící stáhnou samy, proto u nich nic nevadí."
+  },
+  "s.clients.28e22fe3": {
+   "source": "Clients",
+   "text": "Klienti"
   },
   "s.clipperton-island.58bb1c41": {
    "source": "Clipperton Island",
@@ -6403,6 +6467,14 @@
   "s.config-firewall-local-in-policy.35b44ee0": {
    "source": "config firewall local-in-policy",
    "text": "config firewall local-in-policy"
+  },
+  "s.config-firewall-policy.257dec84": {
+   "source": "config firewall policy",
+   "text": "config firewall policy"
+  },
+  "s.config-firewall-vip.c7e9845d": {
+   "source": "config firewall vip",
+   "text": "config firewall vip"
   },
   "s.config-log-syslogd-setting.3a7b494d": {
    "source": "config log syslogd setting",
@@ -6711,6 +6783,10 @@
   "s.counted-by-the-domain-itself-rather.a330fac4": {
    "source": "Counted by the domain itself rather than by anything here. Press any of these to read the names behind it.",
    "text": "Spočítáno samotnou doménou, ne ničím tady. Stiskněte kterékoli z nich pro zobrazení jmen, která za tím stojí."
+  },
+  "s.counted-by-the-router.6a33c932": {
+   "source": "counted by the router",
+   "text": "router ho počítá"
   },
   "s.counted-over-a-span-of-min.9cee801b": {
    "source": "Counted over a span of (min)",
@@ -7512,6 +7588,10 @@
    "source": "Djibouti",
    "text": "Džibutsko"
   },
+  "s.dnat-analyzer.5d8f3a7d": {
+   "source": "DNAT analyzer",
+   "text": "DNAT analyzátor"
+  },
   "s.dnf-or-apt-fetch-the-updates.94f1b943": {
    "source": "dnf or apt fetch the updates of System updates through it - by hand and on a schedule.",
    "text": "dnf nebo apt přes ni stahují aktualizace z Aktualizací systému – ručně i podle plánu."
@@ -8015,6 +8095,14 @@
   "s.e-g-jnovak.d55fef71": {
    "source": "e.g. jnovak",
    "text": "např. jnovak"
+  },
+  "s.ea-sports-fc-matches.a878bfaa": {
+   "source": "EA SPORTS FC matches",
+   "text": "zápasy EA SPORTS FC"
+  },
+  "s.ea-sports-fc.7a0f0cbf": {
+   "source": "EA SPORTS FC",
+   "text": "EA SPORTS FC"
   },
   "s.each-address-when-it-last-fetched.82b84eb2": {
    "source": "- each address, when it last fetched and how many times - and the count of refusals start again from nothing.",
@@ -8579,6 +8667,10 @@
   "s.eswatini.16cc7f84": {
    "source": "Eswatini",
    "text": "Eswatini"
+  },
+  "s.ether1.ab0219e2": {
+   "source": "ether1",
+   "text": "ether1"
   },
   "s.ethernet.991755b7": {
    "source": "ethernet",
@@ -10052,6 +10144,10 @@
    "source": "Failures",
    "text": "Selhání"
   },
+  "s.fairly-sure.fd06b3fe": {
+   "source": "fairly sure",
+   "text": "docela jistě"
+  },
   "s.false-ticker.1954c9f8": {
    "source": "false ticker",
    "text": "chybný"
@@ -10924,6 +11020,30 @@
    "source": "forward, local, webfilter, ssl, vpn, system",
    "text": "forward, local, webfilter, ssl, vpn, system"
   },
+  "s.forwarded-and-the-filter-let-what.a3f631c1": {
+   "source": "Forwarded, and the filter let what was forwarded through.",
+   "text": "Přesměrováno a filtr přesměrované pustil dál."
+  },
+  "s.forwarded-but-the-filter-dropped-what.2073b15c": {
+   "source": "Forwarded, but the filter dropped what was forwarded: allow it in the forward chain.",
+   "text": "Přesměrováno, ale filtr přesměrované zahodil: povolte to v řetězci forward."
+  },
+  "s.forwarded-gets-through.eeac686f": {
+   "source": "✓ forwarded, gets through",
+   "text": "✓ přesměrováno, prochází"
+  },
+  "s.forwarded-to-it.711d70b5": {
+   "source": "Forwarded to it",
+   "text": "Přesměrováno na něj"
+  },
+  "s.forwarded-to-it.a64800f6": {
+   "source": "forwarded to it",
+   "text": "přesměrováno na něj"
+  },
+  "s.forwarded.7d97528e": {
+   "source": "✓ forwarded",
+   "text": "✓ přesměrováno"
+  },
   "s.found.2739bb26": {
    "source": "found",
    "text": "nalezeno"
@@ -11040,6 +11160,10 @@
    "source": "from AD",
    "text": "z AD"
   },
+  "s.from-addresses-it-never-talks-to.a6b0ceab": {
+   "source": "From addresses it never talks to, at ports it does not use: the internet trying doors. Left closed - tick one only if you know it is its.",
+   "text": "Z adres, se kterými nikdy nemluví, na porty, které nepoužívá: internet zkouší dveře. Zůstávají zavřené - zaškrtněte jen ten, o kterém víte, že je jeho."
+  },
   "s.from-an-address-on-the-internet.f7e54d25": {
    "source": "from an address on the internet can earn a ban - while",
    "text": "z adresy na internetu může vést k banu – dokud je"
@@ -11131,6 +11255,10 @@
   "s.from-the-never-block-setting.c5e8f755": {
    "source": "from the never_block setting",
    "text": "z nastavení never_block"
+  },
+  "s.from-the-ports-it-talks-to.fbbc0c9a": {
+   "source": "From the ports it talks to",
+   "text": "Podle portů, na které mluví"
   },
   "s.from-the-registration-at-acme-dns.da025403": {
    "source": "From the registration at acme-dns. Kept sealed.",
@@ -11312,6 +11440,10 @@
    "source": "Germany",
    "text": "Německo"
   },
+  "s.gets-through.98c19609": {
+   "source": "gets through",
+   "text": "prochází"
+  },
   "s.ghana.317dbac9": {
    "source": "Ghana",
    "text": "Ghana"
@@ -11331,6 +11463,10 @@
   "s.give-sudo.5a83b737": {
    "source": "Give sudo",
    "text": "Dát sudo"
+  },
+  "s.give-the-address-of-a-device.8913518c": {
+   "source": "Give the address of a device inside - a game console, a server, a camera. What reaches it from outside is read out of the firewall’s log: what is forwarded to it and gets through, what knocks on its public address with no rule to forward it, and the rules that would. Nothing is changed: the rules are for you to copy.",
+   "text": "Zadejte adresu zařízení uvnitř - herní konzole, serveru, kamery. Co se k němu dostává zvenku, se vyčte z logu firewallu: co se na něj přesměrovává a prochází, co klepe na jeho veřejnou adresu, aniž by to nějaké pravidlo přesměrovalo, a pravidla, která by to udělala. Nic se nemění: pravidla jsou pro vás ke zkopírování."
   },
   "s.give-the-disk-back.eb52259c": {
    "source": "Give the disk back",
@@ -11768,6 +11904,10 @@
    "source": "Hide this",
    "text": "Skrýt"
   },
+  "s.hide.34d8b60f": {
+   "source": "Hide",
+   "text": "Skrýt"
+  },
   "s.hide.93c8c96b": {
    "source": "hide",
    "text": "skrýt"
@@ -11843,6 +11983,10 @@
   "s.host.86dd1cf4": {
    "source": "host",
    "text": "host"
+  },
+  "s.hosting-a-game-peer-to-peer.44b9417a": {
+   "source": "hosting a game, peer-to-peer",
+   "text": "hostování hry, peer-to-peer"
   },
   "s.hostname.709381e9": {
    "source": "hostname",
@@ -11943,6 +12087,10 @@
   "s.how-far-back-to-weigh-everything.8745fcef": {
    "source": "How far back to weigh. Everything is still read and written down; this only limits what may earn a ban.",
    "text": "Jak daleko do minulosti posuzovat. Vše se stále čte a zapisuje; toto jen omezuje, co může vést k blokaci."
+  },
+  "s.how-far-back.89553001": {
+   "source": "How far back",
+   "text": "Jak daleko zpět"
   },
   "s.how-far.d122c848": {
    "source": "How far",
@@ -12524,6 +12672,10 @@
    "source": "How sessions ended",
    "text": "Jak relace skončily"
   },
+  "s.how-sure.efd1ceea": {
+   "source": "How sure",
+   "text": "Jistota"
+  },
   "s.how-the-address-was-translated.2b0303f4": {
    "source": "how the address was translated",
    "text": "jak byla adresa přeložena"
@@ -12812,6 +12964,10 @@
    "source": "If the file from the popup was put on the server, take it away too, or MariaDB puts the settings back at its next start:",
    "text": "Pokud jste na server uložili soubor z okna, odstraňte ho také, jinak MariaDB při příštím startu nastavení obnoví:"
   },
+  "s.if-wanted.0587fe74": {
+   "source": "if wanted",
+   "text": "podle potřeby"
+  },
   "s.if-you-need-a-way-into.53fc2978": {
    "source": "If you need a way into this dashboard for when the domain cannot be reached, set a password on the server with",
    "text": "Pokud potřebujete přístup do tohoto dashboardu pro případ, že doména není dostupná, nastavte heslo na serveru příkazem"
@@ -12835,6 +12991,10 @@
   "s.ikev2.68b7a6c6": {
    "source": "IKEv2",
    "text": "IKEv2"
+  },
+  "s.imaps.f0354987": {
+   "source": "IMAPS",
+   "text": "IMAPS"
   },
   "s.img.978ea7af": {
    "source": "img",
@@ -12923,6 +13083,10 @@
   "s.in-force.377013e3": {
    "source": "In force",
    "text": "Platí"
+  },
+  "s.in-interface-list-wan.f810d9c5": {
+   "source": "in-interface-list=WAN",
+   "text": "in-interface-list=WAN"
   },
   "s.in-it-falls-back-to-the.e482b8ee": {
    "source": "in it falls back to the local accounts, which is what keeps a way in on the morning the directory is down.",
@@ -13144,6 +13308,14 @@
    "source": "Inside the VPN",
    "text": "Uvnitř VPN"
   },
+  "s.inside.8deed4ef": {
+   "source": "Inside",
+   "text": "Uvnitř"
+  },
+  "s.inside.fcc53788": {
+   "source": "inside",
+   "text": "uvnitř"
+  },
   "s.inspected-and-blocked.92e8b972": {
    "source": "Inspected and blocked",
    "text": "Zkontrolováno a zablokováno"
@@ -13191,6 +13363,10 @@
   "s.intermediate.ce03a801": {
    "source": "intermediate",
    "text": "intermediate"
+  },
+  "s.internal.9f33a7c7": {
+   "source": "internal",
+   "text": "internal"
   },
   "s.interrupted.50be3afc": {
    "source": "Interrupted",
@@ -13259,6 +13435,10 @@
   "s.ips.dbee5f3e": {
    "source": "ips",
    "text": "ips"
+  },
+  "s.ipsec-nat-t.d2e8c33e": {
+   "source": "IPsec NAT-T",
+   "text": "IPsec NAT-T"
   },
   "s.ipsec-peers.9da899ad": {
    "source": "IPsec peers",
@@ -14212,6 +14392,22 @@
    "source": "It sent back:",
    "text": "Vrátil:"
   },
+  "s.it-talks-to-ea-s-game.11c738c2": {
+   "source": "It talks to EA’s game port (UDP 3659).",
+   "text": "Mluví na herní port EA (UDP 3659)."
+  },
+  "s.it-talks-to-psn-s-stun.6bf48ba1": {
+   "source": "It talks to PSN’s STUN ports (TCP and UDP 3478-3480).",
+   "text": "Mluví na STUN porty PSN (TCP a UDP 3478-3480)."
+  },
+  "s.it-talks-to-steam-s-game.0c35a078": {
+   "source": "It talks to Steam’s game servers (UDP 27000-27100).",
+   "text": "Mluví s herními servery Steamu (UDP 27000-27100)."
+  },
+  "s.it-talks-to-xbox-live-udp.8e611c39": {
+   "source": "It talks to Xbox Live (UDP 3074, 3544 Teredo, 88).",
+   "text": "Mluví s Xbox Live (UDP 3074, 3544 Teredo, 88)."
+  },
   "s.it-was-not-sent-with-the.01c8ccb2": {
    "source": "- it was not sent with the certificate)",
    "text": "- nepřišla s certifikátem)"
@@ -14396,6 +14592,14 @@
    "source": "Its own connection, its own account that may only read, and its own settings: nothing here is the banning’s, and nothing is ever written to the router from here.",
    "text": "Vlastní spojení, vlastní účet, který smí jen číst, a vlastní nastavení: nic z toho nepatří banování a na router se odsud nikdy nic nezapisuje."
   },
+  "s.its-own-connections-leave-by-this.c9a7174d": {
+   "source": "its own connections leave by this port",
+   "text": "jeho vlastní spojení odcházejí tímto portem"
+  },
+  "s.its-own-connections-leave-from-this.cf8493eb": {
+   "source": "its own connections leave from this port",
+   "text": "jeho vlastní spojení odcházejí z tohoto portu"
+  },
   "s.its-own-etc-chrony-conf.bd83f64b": {
    "source": "Its own /etc/chrony.conf:",
    "text": "Jeho vlastní /etc/chrony.conf:"
@@ -14443,6 +14647,14 @@
   "s.its-port.0355175d": {
    "source": "its port",
    "text": "jeho port"
+  },
+  "s.its-public-address-is-not-known.1a5d66be": {
+   "source": "Its public address is not known, so what knocks on it cannot be read.",
+   "text": "Jeho veřejná adresa není známá, takže nejde vyčíst, co na ni klepe."
+  },
+  "s.its-public-address.1403b579": {
+   "source": "its public address",
+   "text": "jeho veřejnou adresu"
   },
   "s.its-public-half-put-onto-the.cc0bbe1e": {
    "source": "Its public half, put onto the nodes - click it to copy:",
@@ -15008,6 +15220,18 @@
    "source": "Kiribati",
    "text": "Kiribati"
   },
+  "s.knocking-not-forwarded.c1d7f1cf": {
+   "source": "knocking, not forwarded",
+   "text": "klepe, nepřesměrováno"
+  },
+  "s.knocking-on-its-public-address-not.3d50b659": {
+   "source": "Knocking on its public address - not forwarded",
+   "text": "Klepe na jeho veřejnou adresu - nepřesměrováno"
+  },
+  "s.knocks.cf77f5c6": {
+   "source": "Knocks",
+   "text": "Klepání"
+  },
   "s.know-when-it-has-changed.f8931df3": {
    "source": "Know when it has changed",
    "text": "Vědět, kdy se změnil"
@@ -15091,6 +15315,10 @@
   "s.last-30-days.6a725a2b": {
    "source": "last 30 days",
    "text": "posledních 30 dní"
+  },
+  "s.last-31-days.cc36a5ef": {
+   "source": "last 31 days",
+   "text": "posledních 31 dní"
   },
   "s.last-6-hours.11b70e0d": {
    "source": "last 6 hours",
@@ -15360,6 +15588,10 @@
    "source": "Leave it alone",
    "text": "Nechat být"
   },
+  "s.leave-out.145a9fc8": {
+   "source": "Leave out",
+   "text": "Vynechat"
+  },
   "s.leave-this-machine-as-one-file.ad3591a3": {
    "source": "leave this machine as one file,",
    "text": "opustí tento stroj jako jeden soubor,"
@@ -15371,6 +15603,10 @@
   "s.lebanon.5caa7f81": {
    "source": "Lebanon",
    "text": "Libanon"
+  },
+  "s.left-closed.31233c6e": {
+   "source": "left closed",
+   "text": "zůstávají zavřené"
   },
   "s.left-forgetting-old-records-under.7ce5dfa7": {
    "source": "left. Forgetting old records, under",
@@ -15715,6 +15951,10 @@
   "s.link.4f0aa52d": {
    "source": "link",
    "text": "linka"
+  },
+  "s.linux-iptables.25f9bfee": {
+   "source": "Linux iptables",
+   "text": "Linux iptables"
   },
   "s.list.38b62be4": {
    "source": "list",
@@ -16776,6 +17016,10 @@
    "source": "May use sudo, but has no password: sudo asks for their own password, so they cannot use it (nor isemon --console through it) until they have one - set it above.",
    "text": "Smí používat sudo, ale nemá heslo: sudo se ptá na jeho vlastní heslo, takže ho (ani isemon --console přes něj) nemůže použít, dokud heslo nemá – nastavte ho výše."
   },
+  "s.maybe.f1b58e1d": {
+   "source": "maybe",
+   "text": "možná"
+  },
   "s.mayotte.dcc64425": {
    "source": "Mayotte",
    "text": "Mayotte"
@@ -16960,6 +17204,10 @@
    "source": "mine",
    "text": "mine"
   },
+  "s.minecraft.f1416844": {
+   "source": "Minecraft",
+   "text": "Minecraft"
+  },
   "s.minlen.d3c14ca9": {
    "source": "minlen",
    "text": "minlen"
@@ -17075,6 +17323,10 @@
   "s.more-than-10-mb.85af6359": {
    "source": "more than 10 MB",
    "text": "více než 10 MB"
+  },
+  "s.more-than-40-ports-a-range.9ef474b0": {
+   "source": "! ...more than 40 ports: a range is one rule a port here.",
+   "text": "! ...more than 40 ports: a range is one rule a port here."
   },
   "s.more-than-less-than-with-k.7c8f99d4": {
    "source": "more than, less than - with k, M, G for bytes and s, m, h for time",
@@ -17452,6 +17704,10 @@
    "source": "Needed with mutual TLS: otp → High availability → the cluster's authority, or ca.pem from the file otp made.",
    "text": "Potřebná se vzájemným TLS: otp → High availability → autorita clusteru, nebo ca.pem ze souboru, který vytvořil otp."
   },
+  "s.needed.9def514b": {
+   "source": "needed",
+   "text": "nutný"
+  },
   "s.needs-a-look.408c528f": {
    "source": "needs a look",
    "text": "chce se podívat"
@@ -17615,6 +17871,10 @@
   "s.never-unlocked-the-account-was-deleted.6648f35b": {
    "source": "never unlocked — the account was deleted",
    "text": "nikdy neodemčeno — účet byl smazán"
+  },
+  "s.never-used.50a39641": {
+   "source": "never used",
+   "text": "nikdy nepoužito"
   },
   "s.never-written.14a2a547": {
    "source": "· never written",
@@ -17848,6 +18108,10 @@
    "source": "No device has fetched this ACL while these logs have been read, so its rules cannot be shown. A device fetches an ACL only when it does not already hold it — this one it has held throughout. It appears after a reload of the device, after its cache drops it, or as soon as the ACL is edited on ISE.",
    "text": "Během čtení těchto logů si žádné zařízení tento ACL nestáhlo, takže jeho pravidla nelze zobrazit. Zařízení si ACL stahuje, jen když ho ještě nemá — tento mělo celou dobu. Objeví se po restartu zařízení, poté co ho zařízení vyřadí z mezipaměti, nebo jakmile se ACL upraví na ISE."
   },
+  "s.no-device-inside-was-seen-connecting.7663de4a": {
+   "source": "No device inside was seen connecting to it.",
+   "text": "Žádné zařízení uvnitř se k němu nepřipojovalo."
+  },
   "s.no-directory-is-set-up-so.6782efe5": {
    "source": "No directory is set up, so there is nothing to ask. With one, this page can weigh an alarm by what the account actually is.",
    "text": "Není nastaven žádný adresář, takže není koho se zeptat. S adresářem by tato stránka mohla posoudit poplach podle toho, čím účet skutečně je."
@@ -17967,6 +18231,10 @@
   "s.no-leave-the-router-alone.f3bb5588": {
    "source": "No, leave the router alone",
    "text": "Ne, router nechat být"
+  },
+  "s.no-line-says-how-its-connections.46b4bbe9": {
+   "source": "No line says how its connections out were translated. On a MikroTik, give the srcnat and dstnat rules log=yes with a prefix (e.g. nat-masquerade, nat-dst-nat) - or read it through its API - and the public address and the forwards are known exactly.",
+   "text": "Žádný řádek neříká, jak se jeho odchozí spojení překládala. Na MikroTiku dejte pravidlům srcnat a dstnat log=yes s prefixem (např. nat-masquerade, nat-dst-nat) - nebo ho čtěte přes API - a veřejná adresa i přesměrování budou známé přesně."
   },
   "s.no-live-file.28b52c6c": {
    "source": "no live file",
@@ -18452,6 +18720,10 @@
    "source": "none said",
    "text": "neuvedeno"
   },
+  "s.none-seen-getting-through.6105d00c": {
+   "source": "none seen getting through",
+   "text": "žádné neprochází"
+  },
   "s.none-seen-yet.12f39596": {
    "source": "None seen yet.",
    "text": "Zatím nic nezaznamenáno."
@@ -18700,6 +18972,10 @@
    "source": "not fetched",
    "text": "nestaženo"
   },
+  "s.not-forwarded-nothing-knocked.83609e8a": {
+   "source": "not forwarded, nothing knocked",
+   "text": "nepřesměrováno, nic neklepalo"
+  },
   "s.not-from-the-ca.754c7346": {
    "source": "not from the CA",
    "text": "ne od CA"
@@ -18943,6 +19219,10 @@
   "s.not-saved-yet.a87e5cee": {
    "source": "not saved yet",
    "text": "zatím neuloženo"
+  },
+  "s.not-seen.55804000": {
+   "source": "not seen",
+   "text": "neviděno"
   },
   "s.not-set-up-means-the-switch.c529ca7b": {
    "source": "Not set up means the switch is on but there is no address yet; not saved yet, that what is typed here has not been saved. Connected means the session is open and being read. Trouble means the last time this tried to reach it, it could not - the words beside it are what the router or the network said.",
@@ -19332,6 +19612,10 @@
    "source": "Nothing is filling up that should not be",
    "text": "Nic se nezaplňuje, co by nemělo"
   },
+  "s.nothing-is-forwarded-to-it-in.502ad80d": {
+   "source": "Nothing is forwarded to it in this window.",
+   "text": "V tomto okně se na něj nic nepřesměrovává."
+  },
   "s.nothing-is-imported-so-the-server.afb92a45": {
    "source": "Nothing is imported, so the server’s certificate has to be signed by an authority this machine already trusts.",
    "text": "Nic se neimportuje, takže certifikát serveru musí být podepsán autoritou, které tento počítač už důvěřuje."
@@ -19379,6 +19663,10 @@
   "s.nothing-kept.1baf119d": {
    "source": "Nothing kept.",
    "text": "Nic uchováno."
+  },
+  "s.nothing-knocks-for-it-that-is.1947ff21": {
+   "source": "✓ Nothing knocks for it that is not forwarded.",
+   "text": "✓ Nic pro něj neklepe, co by nebylo přesměrované."
   },
   "s.nothing-matches.17e7aebf": {
    "source": "Nothing matches",
@@ -19432,6 +19720,10 @@
    "source": "(nothing - or not known yet)",
    "text": "(nic – nebo zatím neznámé)"
   },
+  "s.nothing-out-seen.08db48b3": {
+   "source": "Nothing out seen.",
+   "text": "Žádný odchozí provoz."
+  },
   "s.nothing-read-here-earns-a-ban.41fc2351": {
    "source": "Nothing read here earns a ban",
    "text": "Nic zde načteného nevede k banu"
@@ -19472,6 +19764,10 @@
    "source": "nothing sent here yet",
    "text": "sem se zatím nic neposlalo"
   },
+  "s.nothing-sure.2ca21669": {
+   "source": "nothing sure",
+   "text": "nic jistého"
+  },
   "s.nothing-the-person-chooses.212475aa": {
    "source": "nothing - the person chooses",
    "text": "nic - vybere si uživatel"
@@ -19491,6 +19787,10 @@
   "s.nothing-the-url-is-open.892985f4": {
    "source": "Nothing - the URL is open",
    "text": "Nic - URL je otevřená"
+  },
+  "s.nothing-ticked-yet.4973ddd1": {
+   "source": "Nothing ticked yet.",
+   "text": "Zatím nic nezaškrtnuto."
   },
   "s.nothing-to-change-every-setting-is.01232ced": {
    "source": "Nothing to change: every setting is right for this machine",
@@ -20824,6 +21124,10 @@
    "source": "Only a machine authenticates at a socket or on the wireless with 802.1X or MAB, and this name has been seen at nothing else. Nothing in a log says which a name is — the door it came through is the sign.",
    "text": "Přes 802.1X nebo MAB na zásuvce či na bezdrátové síti se ověřuje jen stroj a toto jméno nebylo viděno nikde jinde. Žádný log neříká, čím jméno je — vodítkem je vstup, kterým přišlo."
   },
+  "s.only-a-pc-that-hosts-games.6bcaac60": {
+   "source": "Only a PC that hosts games needs these; playing on others’ servers needs none.",
+   "text": "Potřebuje je jen PC, které hry hostuje; hraní na cizích serverech nepotřebuje žádný."
+  },
   "s.only-a.40a99b72": {
    "source": "Only a",
    "text": "Jen"
@@ -21368,6 +21672,10 @@
    "source": "openssl",
    "text": "openssl"
   },
+  "s.openvpn.fadece22": {
+   "source": "OpenVPN",
+   "text": "OpenVPN"
+  },
   "s.opn.4cf12e45": {
    "source": "opn",
    "text": "opn"
@@ -21900,6 +22208,14 @@
    "source": "part of one",
    "text": "část jedné"
   },
+  "s.partly-forwarded.e70f34de": {
+   "source": "partly forwarded",
+   "text": "přesměrováno zčásti"
+  },
+  "s.party-chat-and-peer-to-peer.fb632d67": {
+   "source": "Party chat and peer-to-peer games also use high UDP ports chosen as they go: no fixed rule covers them. UPnP limited to this address, or endpoint-independent NAT for it, does. Aim: NAT Type 2 in the console’s connection test.",
+   "text": "Party chat a peer-to-peer hry používají i vysoké UDP porty volené za běhu: žádné pevné pravidlo je nepokryje. Pokryje je UPnP omezené na tuto adresu, nebo endpoint-independent NAT pro ni. Cíl: NAT typ 2 v testu připojení konzole."
+  },
   "s.passed-802-1x-mab.341aaeee": {
    "source": "passed · 802.1X / MAB",
    "text": "úspěšné · 802.1X / MAB"
@@ -22123,6 +22439,10 @@
   "s.peer.3c99a1a0": {
    "source": "Peer",
    "text": "Protistrana"
+  },
+  "s.peers.4a94579b": {
+   "source": "Peers",
+   "text": "Protistrany"
   },
   "s.pem-with-the-key.9225df8e": {
    "source": "PEM with the key",
@@ -22408,6 +22728,10 @@
    "source": "play",
    "text": "play"
   },
+  "s.plex.67759589": {
+   "source": "Plex",
+   "text": "Plex"
+  },
   "s.plug.68560150": {
    "source": "plug",
    "text": "zástrčka"
@@ -22512,9 +22836,17 @@
    "source": "Port and mode",
    "text": "Port a režim"
   },
+  "s.port-kept-not-said.7c803908": {
+   "source": "port kept: not said",
+   "text": "zachování portu: neuvedeno"
+  },
   "s.port-kind.6cbfefc7": {
    "source": "Port kind",
    "text": "Druh portu"
+  },
+  "s.port-or-range.9540deb9": {
+   "source": "Port or range",
+   "text": "Port nebo rozsah"
   },
   "s.port.062d8a9d": {
    "source": "port",
@@ -22784,6 +23116,14 @@
    "source": "prune",
    "text": "prune"
   },
+  "s.psn-party-chat-peer-to-peer.d27bafa4": {
+   "source": "PSN, party chat, peer-to-peer games",
+   "text": "PSN, party chat, peer-to-peer hry"
+  },
+  "s.psn.6facc333": {
+   "source": "PSN",
+   "text": "PSN"
+  },
   "s.psycopg2-postgresql.226c3657": {
    "source": "psycopg2 (PostgreSQL)",
    "text": "psycopg2 (PostgreSQL)"
@@ -22795,6 +23135,14 @@
   "s.ptr.daf4a923": {
    "source": "ptr",
    "text": "ptr"
+  },
+  "s.pub.3f0ec57c": {
+   "source": "pub",
+   "text": "pub"
+  },
+  "s.public-address.9b4d36e3": {
+   "source": "public address",
+   "text": "veřejná adresa"
   },
   "s.public-blacklists-fetched-on-a-timer.9f21be45": {
    "source": "Public blacklists, fetched on a timer. Nothing is banned for being on one alone — most of those addresses will never come near this VPN — but the first one that does fail here goes on the list for good.",
@@ -22820,6 +23168,10 @@
    "source": "Public lists",
    "text": "Veřejné seznamy"
   },
+  "s.public-port.8a9adda4": {
+   "source": "Public port",
+   "text": "Veřejný port"
+  },
   "s.public.61c9b2b1": {
    "source": "public",
    "text": "veřejná"
@@ -22839,6 +23191,10 @@
   "s.pulse.8439fc48": {
    "source": "pulse",
    "text": "puls"
+  },
+  "s.push-notifications.0a3d2d21": {
+   "source": "push notifications",
+   "text": "push notifikace"
   },
   "s.put-a-copy-back.855c8c2c": {
    "source": "Put a copy back",
@@ -23148,6 +23504,10 @@
    "source": "qtypeval",
    "text": "qtypeval"
   },
+  "s.quic.a603a34e": {
+   "source": "QUIC",
+   "text": "QUIC"
+  },
   "s.quick.d41fceeb": {
    "source": "Quick:",
    "text": "Rychle:"
@@ -23159,6 +23519,10 @@
   "s.quiet.fe73d79f": {
    "source": "Quiet",
    "text": "Tiché"
+  },
+  "s.quite-sure.8fce967c": {
+   "source": "quite sure",
+   "text": "velmi jistě"
   },
   "s.r-union.8e7e261a": {
    "source": "Réunion",
@@ -23900,6 +24264,10 @@
    "source": "remip",
    "text": "remip"
   },
+  "s.remote-play.60919e6a": {
+   "source": "Remote Play",
+   "text": "Remote Play"
+  },
   "s.remote.41ffe545": {
    "source": "remote",
    "text": "remote"
@@ -24504,6 +24872,10 @@
    "source": "RouterOS does not write what became of a packet, only the log prefix of the rule that logged it. A prefix with DROP, REJECT, DENY, BLOCK, BAN or TARPIT in it is a refusal and one with ACCEPT, ALLOW, PERMIT or PASS a pass whatever this says; a NAT rule and one whose action goes on to the next rule (add-src-to-address-list, mark-connection, jump) are only said. Every other line - no prefix, LOG-FORWARD, OVPN - is a rule that only logs or lets through with log=yes: allow takes it as let through (a packet a logging DROP rule then refused in the same second is counted once, as that refusal), info only says it. A packet the router found invalid is only said either way. Choose info if a rule that refuses without logging stands behind a rule that only logs.",
    "text": "RouterOS nezapisuje, co se s paketem stalo, jen log prefix pravidla, které ho zalogovalo. Prefix obsahující DROP, REJECT, DENY, BLOCK, BAN nebo TARPIT je odmítnutí a prefix s ACCEPT, ALLOW, PERMIT nebo PASS propuštění, ať je zde nastaveno cokoli; NAT pravidlo a pravidlo, jehož akce pokračuje na další pravidlo (add-src-to-address-list, mark-connection, jump), jsou jen uvedeny. Každý jiný řádek – bez prefixu, LOG-FORWARD, OVPN – je pravidlo, které jen loguje nebo propouští s log=yes: allow ho bere jako propuštěný (paket, který pak ve stejné sekundě odmítlo logující pravidlo DROP, se počítá jednou, jako to odmítnutí), info ho jen uvede. Paket, který router označil jako invalid, je v obou případech jen uveden. Zvolte info, pokud za pravidlem, které jen loguje, stojí pravidlo, které odmítá bez logování."
   },
+  "s.routeros.4ed24a3e": {
+   "source": "routeros",
+   "text": "routeros"
+  },
   "s.routes-changed.2e44fb82": {
    "source": "Routes changed",
    "text": "Změny tras"
@@ -24624,6 +24996,10 @@
    "source": "rsyslog",
    "text": "rsyslog"
   },
+  "s.rtmp.cf8e6f14": {
+   "source": "RTMP",
+   "text": "RTMP"
+  },
   "s.ru.a3eceec4": {
    "source": "RU",
    "text": "RU"
@@ -24635,6 +25011,10 @@
   "s.rules-of-your-own.4119cb92": {
    "source": "Rules of your own",
    "text": "Vlastní pravidla"
+  },
+  "s.rules-to-add.9a081892": {
+   "source": "Rules to add",
+   "text": "Pravidla k přidání"
   },
   "s.rules.bb11a8e3": {
    "source": "Rules",
@@ -24992,6 +25372,14 @@
    "source": "says who got in and who did not, and is where the rows come from. The",
    "text": "uvádí, kdo se přihlásil a kdo ne, a odtud pocházejí řádky."
   },
+  "s.scanned-everywhere.206a3d1c": {
+   "source": "scanned everywhere",
+   "text": "skenuje se všude"
+  },
+  "s.scans-of-the-public-address.e4d62796": {
+   "source": "scans of the public address",
+   "text": "skenů veřejné adresy"
+  },
   "s.scc.3cc86324": {
    "source": "scc",
    "text": "scc"
@@ -25176,6 +25564,14 @@
    "source": "Seen from",
    "text": "Viděno z"
   },
+  "s.seen-in-the-filter-s-lines.2f03d641": {
+   "source": "seen in the filter’s lines",
+   "text": "viděno v řádcích filtru"
+  },
+  "s.seen.229670d5": {
+   "source": "seen",
+   "text": "viděno"
+  },
   "s.selectedaccessservice.a15a5d7f": {
    "source": "SelectedAccessService",
    "text": "SelectedAccessService"
@@ -25320,6 +25716,10 @@
    "source": "Serves another certificate",
    "text": "Podává jiný certifikát"
   },
+  "s.serves-inside.e4455e18": {
+   "source": "Serves inside",
+   "text": "Obsluhuje uvnitř"
+  },
   "s.serves-it-with-a-remark.1353484c": {
    "source": "Serves it, with a remark",
    "text": "Podává ho, s výhradou"
@@ -25400,6 +25800,10 @@
    "source": "set above",
    "text": "nastavený výše"
   },
+  "s.set-action-accept.02f88bbf": {
+   "source": "set action accept",
+   "text": "set action accept"
+  },
   "s.set-action-deny.86c0293f": {
    "source": "set action deny",
    "text": "set action deny"
@@ -25460,6 +25864,10 @@
    "source": "set password PASSWORD",
    "text": "set password PASSWORD"
   },
+  "s.set-portforward-enable.825c338b": {
+   "source": "set portforward enable",
+   "text": "set portforward enable"
+  },
   "s.set-schedule-always.140f4eb0": {
    "source": "set schedule \"always\"",
    "text": "set schedule \"always\""
@@ -25483,6 +25891,10 @@
   "s.set-source-interface-wan1.5a32a53c": {
    "source": "set source-interface \"wan1\"",
    "text": "set source-interface \"wan1\""
+  },
+  "s.set-srcaddr-all.d6d41f69": {
+   "source": "set srcaddr \"all\"",
+   "text": "set srcaddr \"all\""
   },
   "s.set-srcaddr-isemon-bans.da2adf22": {
    "source": "set srcaddr \"isemon-bans\"",
@@ -25704,6 +26116,10 @@
    "source": "Show it",
    "text": "Zobrazit"
   },
+  "s.show-its-lines.0fbafd19": {
+   "source": "Show its lines",
+   "text": "Ukázat jeho řádky"
+  },
   "s.show-only-the-rows-from-one.b3b60bf1": {
    "source": "Show only the rows from one country. Search it by name or by its two letters;",
    "text": "Zobrazit jen řádky z jedné země. Hledejte ji podle názvu nebo podle dvoupísmenného kódu;"
@@ -25719,6 +26135,10 @@
   "s.show-what-the-machine-accounts-did.9226ba18": {
    "source": "Show what the machine accounts did as well",
    "text": "Zobrazit i činnost účtů počítačů"
+  },
+  "s.show.d97d1ee3": {
+   "source": "Show",
+   "text": "Ukázat"
   },
   "s.shown-back-by-its-last-two.8777dbfb": {
    "source": "Shown back by its last two letters only. Leave it alone to keep the one that is set; type a new one to replace it.",
@@ -26172,9 +26592,17 @@
    "source": "smooth",
    "text": "vyhlazené"
   },
+  "s.smtp-submission.7801e25e": {
+   "source": "SMTP submission",
+   "text": "SMTP submission"
+  },
   "s.smtp.efff9cca": {
    "source": "SMTP",
    "text": "SMTP"
+  },
+  "s.smtps.a8ac20cc": {
+   "source": "SMTPS",
+   "text": "SMTPS"
   },
   "s.sni.a06246be": {
    "source": "sni",
@@ -26359,6 +26787,10 @@
   "s.source-or-target.6e87c1c6": {
    "source": "Source or target",
    "text": "Zdroj nebo cíl"
+  },
+  "s.source-port-kept.9ab6a991": {
+   "source": "Source port kept",
+   "text": "Zdrojový port zachován"
   },
   "s.source-port.aa61f4f1": {
    "source": "Source port",
@@ -26748,6 +27180,10 @@
    "source": "stays",
    "text": "zůstává"
   },
+  "s.steam.4ebc1824": {
+   "source": "Steam",
+   "text": "Steam"
+  },
   "s.step-1-of-3-where-isemon.7c684ee2": {
    "source": "Step 1 of 3 - where isemon's certificate comes from. acme checks it every time a node sends.",
    "text": "Krok 1 ze 3 - odkud pochází certifikát isemonu. acme ho ověřuje pokaždé, když uzel posílá."
@@ -26932,6 +27368,10 @@
    "source": "Stratum",
    "text": "Stratum"
   },
+  "s.stun-psn.56fe08cc": {
+   "source": "STUN / PSN",
+   "text": "STUN / PSN"
+  },
   "s.sub.5d85613a": {
    "source": "sub",
    "text": "sub"
@@ -27011,6 +27451,10 @@
   "s.sum.e9dff355": {
    "source": "sum",
    "text": "sum"
+  },
+  "s.surely.e058f812": {
+   "source": "surely",
+   "text": "jistě"
   },
   "s.suriname.b17fc6f0": {
    "source": "Suriname",
@@ -27712,6 +28156,10 @@
    "source": "Taking our entries off the list of the old name",
    "text": "Odebírání našich záznamů ze seznamu se starým názvem"
   },
+  "s.talks-to-out.ff209391": {
+   "source": "Talks to (out)",
+   "text": "Mluví s (ven)"
+  },
   "s.tanzania.7e380be8": {
    "source": "Tanzania",
    "text": "Tanzanie"
@@ -27771,6 +28219,10 @@
   "s.ten-minutes.6fbb060d": {
    "source": "ten minutes",
    "text": "deset minut"
+  },
+  "s.teredo.39f6aebe": {
+   "source": "Teredo",
+   "text": "Teredo"
   },
   "s.term.2a4c3b84": {
    "source": "term",
@@ -28303,6 +28755,10 @@
   "s.the-address-object.07ef40fc": {
    "source": "the address object",
    "text": "adresní objekt"
+  },
+  "s.the-address-of-the-device-inside.0c8ef6d3": {
+   "source": "The address of the device inside",
+   "text": "Adresa zařízení uvnitř"
   },
   "s.the-address-on-one-of-these.b37933d7": {
    "source": "The address on one of these records is the machine that asked the token server, which on every installation seen so far is the token server itself; banning on it would ban the server. Switched off, not one file is opened and nothing anywhere behaves differently.",
@@ -29644,6 +30100,10 @@
    "source": "the driver is installed",
    "text": "ovladač je nainstalován"
   },
+  "s.the-dst-nat-rule-logged-it.77b0960c": {
+   "source": "The dst-nat rule logged it; the filter logs nothing about what then went through.",
+   "text": "Pravidlo dst-nat ho zalogovalo; filtr o tom, co pak prošlo, nic neloguje."
+  },
   "s.the-dump-is-being-made-the.36089065": {
    "source": "the dump is being made; the download starts when it is ready",
    "text": "výpis se vytváří; stahování začne, jakmile bude hotový"
@@ -30295,6 +30755,10 @@
   "s.the-interface-it-came-in-on.5b14bed0": {
    "source": "the interface it came in on",
    "text": "rozhraní, kterým přišlo"
+  },
+  "s.the-interface-it-is-on.cff68b1b": {
+   "source": "The interface it is on",
+   "text": "Rozhraní, na kterém je"
   },
   "s.the-interface-it-left-by.a75b2c67": {
    "source": "the interface it left by",
@@ -31192,6 +31656,10 @@
    "source": "the newest backup tried: fetched back from the first destination, opened, every file checked - nothing put back",
    "text": "vyzkoušet nejnovější zálohu: stáhne se zpět z prvního cíle, otevře, zkontroluje se každý soubor – nic se nevrací"
   },
+  "s.the-newest-of-them-only.5b7a8d67": {
+   "source": "- the newest of them only",
+   "text": "- jen ty nejnovější"
+  },
   "s.the-newest-of-them-was.520efbef": {
    "source": "The newest of them was",
    "text": "Nejnovější z nich byl"
@@ -32024,9 +32492,21 @@
    "source": "The Route",
    "text": "Route"
   },
+  "s.the-router-answers-it-itself.820b3c88": {
+   "source": "the router answers it itself",
+   "text": "router na něj odpovídá sám"
+  },
+  "s.the-router-answers-itself.80f000af": {
+   "source": "The router answers itself",
+   "text": "Router odpovídá sám"
+  },
   "s.the-router-has-not-been-read.e4535bc5": {
    "source": "The router has not been read yet.",
    "text": "Router ještě nebyl načten."
+  },
+  "s.the-router-has-this-rule-and.eda12469": {
+   "source": "The router has this rule, and nothing has matched it yet.",
+   "text": "Router toto pravidlo má, ale zatím mu nic neodpovídalo."
   },
   "s.the-router-is-carrying-this-with.59195dc6": {
    "source": "The router is carrying this with our mark on it, but nothing here knows about it. The next sync takes it off.",
@@ -32072,6 +32552,10 @@
    "source": "The router’s certificate is checked as a browser checks a site: by the",
    "text": "Certifikát routeru se ověřuje jako web v prohlížeči: podle"
   },
+  "s.the-router-s-counter-says-it.d14ea081": {
+   "source": "The router’s counter says it is used; nothing in the log in this window.",
+   "text": "Počítadlo routeru říká, že se používá; v logu v tomto okně nic."
+  },
   "s.the-router-s-country-list-is.9096cc7b": {
    "source": "The router’s country list is filled again from it straight afterwards, because a new database is the one moment that list is certainly out of date.",
    "text": "Seznam zemí na routeru se z ní hned poté naplní znovu, protože nová databáze je jediný okamžik, kdy je tento seznam s jistotou zastaralý."
@@ -32104,6 +32588,10 @@
    "source": "The rows themselves",
    "text": "Samotné řádky"
   },
+  "s.the-rule-is-there-and-switched.e57da3b2": {
+   "source": "The rule is there and switched off.",
+   "text": "Pravidlo existuje a je vypnuté."
+  },
   "s.the-rule-it-weighs-by.412ff0ea": {
    "source": "The rule it weighs by",
    "text": "Pravidlo, podle kterého se vyhodnocuje"
@@ -32111,6 +32599,10 @@
   "s.the-rule-that-matched-the-access.2cbbe612": {
    "source": "the rule that matched (the access-control entry’s hash)",
    "text": "pravidlo, které se shodovalo (hash položky řízení přístupu)"
+  },
+  "s.the-rules-are-copied.23b54f5b": {
+   "source": "the rules are copied",
+   "text": "pravidla jsou zkopírovaná"
   },
   "s.the-rules-are-on-the-clipboard.50bcda63": {
    "source": "the rules are on the clipboard",
@@ -32627,6 +33119,10 @@
   "s.the-threat-score-action-as-a.277bf8cc": {
    "source": "the threat-score action, as a number",
    "text": "akce podle skóre hrozby, jako číslo"
+  },
+  "s.the-ticked-ports-merged-into-ranges.60cb11f2": {
+   "source": "The ticked ports, merged into ranges, as rules for the firewall. Check them before pasting: they forward from the whole internet.",
+   "text": "Zaškrtnuté porty sloučené do rozsahů jako pravidla pro firewall. Před vložením je zkontrolujte: přesměrovávají z celého internetu."
   },
   "s.the-time-servers.6a982913": {
    "source": "The time servers",
@@ -34552,6 +35048,10 @@
    "source": "transip",
    "text": "transip"
   },
+  "s.translated-on-the-way-out-most.2200751a": {
+   "source": "Translated on the way out most:",
+   "text": "Nejvíc překládané na cestě ven:"
+  },
   "s.translated-port-destination.09e2688b": {
    "source": "translated port (destination)",
    "text": "přeložený port (cíl)"
@@ -34567,6 +35067,14 @@
   "s.translated.c86099d2": {
    "source": "Translated",
    "text": "Přeloženo"
+  },
+  "s.translated.ed872647": {
+   "source": "translated",
+   "text": "přeloženo"
+  },
+  "s.translation-on-the-way-out.c24f784d": {
+   "source": "Translation on the way out",
+   "text": "Překlad na cestě ven"
   },
   "s.translation.ac26a7a9": {
    "source": "Translation",
@@ -35552,6 +36060,10 @@
    "source": "VN",
    "text": "VN"
   },
+  "s.vnc.8a77613b": {
+   "source": "VNC",
+   "text": "VNC"
+  },
   "s.vpn-accounting.9622a0d4": {
    "source": "VPN accounting",
    "text": "VPN accounting"
@@ -35732,6 +36244,10 @@
    "source": "wan1",
    "text": "wan1"
   },
+  "s.wanted.b568b10a": {
+   "source": "Wanted",
+   "text": "Potřeba"
+  },
   "s.wants-looking-at.0a3b5b79": {
    "source": "Wants looking at",
    "text": "Chce pozornost"
@@ -35796,6 +36312,10 @@
    "source": "watching",
    "text": "sledováno"
   },
+  "s.way-out.eb21abcd": {
+   "source": "way out",
+   "text": "cesta ven"
+  },
   "s.wdc-wd40efrx.73195baf": {
    "source": "WDC WD40EFRX",
    "text": "WDC WD40EFRX"
@@ -35855,6 +36375,10 @@
   "s.western-sahara.fab1a523": {
    "source": "Western Sahara",
    "text": "Západní Sahara"
+  },
+  "s.what-a-device-of-this-kind.1f347819": {
+   "source": "What a device of this kind wants forwarded, against what was seen:",
+   "text": "Co takové zařízení potřebuje přesměrovat, proti tomu, co bylo vidět:"
   },
   "s.what-a-disk-that-spins-can.b7b8d14e": {
    "source": "what a disk that spins can write in a second, at most",
@@ -35999,6 +36523,10 @@
   "s.what-fills-the-disks-of-this.6635535a": {
    "source": "What fills the disks of this server, measured rather than guessed: each disk and what is on it, the logs that arrive over syslog folder by folder - and whether a logrotate file takes every one of them - and inside the database each table and index. What looks wrong is said first, with the steps that put it right.",
    "text": "Co zaplňuje disky tohoto serveru, změřené, ne odhadnuté: každý disk a co na něm je, logy přicházející přes syslog složku po složce – a zda je některý soubor logrotate bere všechny – a uvnitř databáze každá tabulka a index. Co vypadá špatně, je řečeno první, s kroky, které to napraví."
+  },
+  "s.what-for.6a6904d7": {
+   "source": "What for",
+   "text": "K čemu"
   },
   "s.what-freeradius-said-to-the-machines.df6c5e69": {
    "source": "What FreeRADIUS said to the machines that were refused and did NOT get on afterwards.",
@@ -36180,6 +36708,10 @@
    "source": "What it let on and what it refused — sockets, radios and the VPN. Erase them under “Erase collected data” below — they have a group of their own there.",
    "text": "Co pustil dovnitř a co odmítl — zásuvky, rádia a VPN. Smažte je v „Smazat nasbíraná data“ níže — mají tam vlastní skupinu."
   },
+  "s.what-it-looks-like.eb8eeefe": {
+   "source": "What it looks like",
+   "text": "Na co vypadá"
+  },
   "s.what-it-matches.04d8a77f": {
    "source": "What it matches",
    "text": "Na co se vztahuje"
@@ -36303,6 +36835,10 @@
   "s.what-nps-said-to-the-machines.0511d3f6": {
    "source": "What NPS said to the machines that were refused and did NOT get on afterwards. The ordinary MAB-then-802.1X refusals are left out, as they are on the cards beside it.",
    "text": "Co NPS sdělilo strojům, které byly odmítnuty a poté se NEPŘIPOJILY. Běžná odmítnutí typu MAB a poté 802.1X jsou vynechána, stejně jako na kartách vedle."
+  },
+  "s.what-one-device-inside-needs-forwarded.27017dc3": {
+   "source": "What one device inside needs forwarded to it from outside, and the rules that would",
+   "text": "Co jedno zařízení uvnitř potřebuje přesměrovat zvenku, a pravidla, která by to udělala"
   },
   "s.what-otp-chose-is-filled-in.3c6a0263": {
    "source": "What otp chose is filled in on the next step; it can be changed there.",
@@ -37111,6 +37647,10 @@
   "s.where-it-looks.9a540f42": {
    "source": "Where it looks",
    "text": "Kde hledá"
+  },
+  "s.where-it-went-from-the-router.32ba6a74": {
+   "source": "where it went: from the router’s other lines",
+   "text": "kam šlo: z jiných řádků routeru"
   },
   "s.where-it-went.20d27b13": {
    "source": "Where it went",
@@ -38192,6 +38732,10 @@
    "source": "Why it failed",
    "text": "Proč to selhalo"
   },
+  "s.why-it-is-for-this-device.e444642b": {
+   "source": "Why it is for this device",
+   "text": "Proč je to pro toto zařízení"
+  },
   "s.why-it-is-there.73947a68": {
    "source": "Why it is there",
    "text": "Proč tam je"
@@ -38303,6 +38847,10 @@
   "s.wireguard-peers.7edacfc7": {
    "source": "WireGuard peers",
    "text": "WireGuard protějšky"
+  },
+  "s.wireguard.5edc9fed": {
+   "source": "WireGuard",
+   "text": "WireGuard"
   },
   "s.with-a-graph-of-the-last.d3f23cea": {
    "source": "with a graph of the last two minutes",
@@ -38768,6 +39316,30 @@
    "source": "xauthuser",
    "text": "xauthuser"
   },
+  "s.xbox-live-call-of-duty.0c9ef65d": {
+   "source": "Xbox Live / Call of Duty",
+   "text": "Xbox Live / Call of Duty"
+  },
+  "s.xbox-live-ipsec-nat-t.3592ef4e": {
+   "source": "Xbox Live (IPsec NAT-T)",
+   "text": "Xbox Live (IPsec NAT-T)"
+  },
+  "s.xbox-live-ipsec.7ef7f14e": {
+   "source": "Xbox Live (IPsec)",
+   "text": "Xbox Live (IPsec)"
+  },
+  "s.xbox-live-peer-to-peer-games.6c7cef47": {
+   "source": "Xbox Live, peer-to-peer games",
+   "text": "Xbox Live, peer-to-peer hry"
+  },
+  "s.xbox-live.28ceadda": {
+   "source": "Xbox Live",
+   "text": "Xbox Live"
+  },
+  "s.xbox-network.3abd2008": {
+   "source": "Xbox network",
+   "text": "Xbox network"
+  },
   "s.xfs.db4f0edf": {
    "source": "xfs",
    "text": "xfs"
@@ -39038,6 +39610,10 @@
    "source": "About {0} left.",
    "text": "Zbývá asi {0}."
   },
+  "p.access-list-outside-access-in-extended.01671447": {
+   "source": "access-list outside_access_in extended permit {0} any object {1} eq {2}",
+   "text": "access-list outside_access_in extended permit {0} any object {1} eq {2}"
+  },
   "p.account-s.1eebebf8": {
    "source": "{0} account(s)",
    "text": "{0} {0:účet|účty|účtů}"
@@ -39065,6 +39641,10 @@
   "p.add-an.bbdd7018": {
    "source": "Add an {0}",
    "text": "Přidat {0}"
+  },
+  "p.add-chain-dstnat-action-dst-nat.f402e628": {
+   "source": "add chain=dstnat action=dst-nat protocol={0}{1}{2} dst-port={3} to-addresses={4} comment=\"isemon DNAT {5} {6} {7}\"",
+   "text": "add chain=dstnat action=dst-nat protocol={0}{1}{2} dst-port={3} to-addresses={4} comment=\"isemon DNAT {5} {6} {7}\""
   },
   "p.added-root-puts-into-the-system.80e1be6f": {
    "source": "added {0} - root puts {1} into the system's trust within seconds",
@@ -39145,6 +39725,10 @@
   "p.ago.aa37c151": {
    "source": "{0} ago",
    "text": "před {0}"
+  },
+  "p.already-forwarded-to.db93ecce": {
+   "source": "already forwarded to {0}",
+   "text": "už přesměrováno na {0}"
   },
   "p.also-the-accounts-with-no-shell.e4436eca": {
    "source": "Also the {0} accounts with no shell (they may not sign in)",
@@ -39550,6 +40134,10 @@
    "source": "· {0} connection(s) in its table",
    "text": "· {0} spojení v jeho tabulce"
   },
+  "p.connections-from-outside-to-that-no.a119149f": {
+   "source": "Connections from outside to {0} that no rule forwarded, with why each is thought to be for this device. Ticked ones go into the rules below.",
+   "text": "Spojení zvenku na {0}, která žádné pravidlo nepřesměrovalo, a u každého proč se zdá, že patří tomuto zařízení. Zaškrtnutá jdou do pravidel níže."
+  },
   "p.continue-upn.9770d452": {
    "source": "_continue_ = \"upn={0}{1}",
    "text": "_continue_ = \"upn={0}{1}"
@@ -39730,6 +40318,10 @@
    "source": "disabled=no address={0}",
    "text": "disabled=no address={0}"
   },
+  "p.dnat-to-written-by-isemon-s.dfdfc0ba": {
+   "source": "! DNAT to {0} ({1}) - written by isemon’s DNAT analyzer",
+   "text": "! DNAT to {0} ({1}) - written by isemon’s DNAT analyzer"
+  },
   "p.does-not-send-a-user-name.9f7345d2": {
    "source": "{0} does not send a user name and a password when it fetches a URL alias.",
    "text": "{0} při stahování URL aliasu neposílá uživatelské jméno a heslo."
@@ -39762,6 +40354,14 @@
    "source": "downloaded {0}{1}",
    "text": "staženo {0}{1}"
   },
+  "p.dropped.9bc88db1": {
+   "source": "{0} dropped",
+   "text": "{0} zahozeno"
+  },
+  "p.dst-address.32370f6d": {
+   "source": "dst-address={0}",
+   "text": "dst-address={0}"
+  },
   "p.dstip-or-tranip.09339ada": {
    "source": "(dstip:{0} OR tranip:{1})",
    "text": "(dstip:{0} OR tranip:{1})"
@@ -39777,6 +40377,10 @@
   "p.earns.b4ea7744": {
    "source": "{0} earns {1}",
    "text": "{0} vede k {1}"
+  },
+  "p.edit.bff3f990": {
+   "source": "edit \"{0}\"",
+   "text": "edit \"{0}\""
   },
   "p.empty-the-engine-s-own.b8fe1164": {
    "source": "Empty: the engine’s own ({0}).",
@@ -40102,6 +40706,14 @@
    "source": "{0} forgotten",
    "text": "{0} zapomenuto"
   },
+  "p.forward.a0391509": {
+   "source": "Forward {0} {1}",
+   "text": "Přesměrovat {0} {1}"
+  },
+  "p.forwarded-to.addb7650": {
+   "source": "forwarded to {0}",
+   "text": "přesměrováno na {0}"
+  },
   "p.found-by-and-written-down-then.4b796988": {
    "source": "{0} — found by {1} and written down then; nothing is being checked while it stands. The page is asking the events themselves, so nothing it shows is wrong, only slower.",
    "text": "{0} — zjištěno {1} a tehdy zaznamenáno; dokud to platí, nic se nekontroluje. Stránka se ptá přímo událostí, takže nic z toho, co ukazuje, není špatně, jen je to pomalejší."
@@ -40113,6 +40725,14 @@
   "p.free-of-on.d544faa8": {
    "source": "free of {0} on",
    "text": "volno {0} na"
+  },
+  "p.from-address-es-it-talks-to.5650d3ba": {
+   "source": "from {0} address(es) it talks to",
+   "text": "z {0} adres, se kterými mluví"
+  },
+  "p.from-address-es.1c21a0bf": {
+   "source": "{0}× from {1} address(es)",
+   "text": "{0}× z {1} adres"
   },
   "p.from-press-for-everything-known-about.a11cd413": {
    "source": "from {0}{1}. Press for everything known about this session.",
@@ -40153,6 +40773,10 @@
   "p.gb-s.e8e03ccb": {
    "source": "{0} Gb/s",
    "text": "{0} Gb/s"
+  },
+  "p.getting-through.f63319c9": {
+   "source": "{0} getting through",
+   "text": "{0} prochází"
   },
   "p.ghz.9a3ef034": {
    "source": "{0} GHz",
@@ -40270,6 +40894,10 @@
    "source": "hload look-{0}{1}",
    "text": "hload look-{0}{1}"
   },
+  "p.host.b66c52d7": {
+   "source": "host {0}",
+   "text": "host {0}"
+  },
   "p.host.c9f29d9a": {
    "source": "{0}_host",
    "text": "{0}_host"
@@ -40353,6 +40981,10 @@
   "p.in-days.0e70e686": {
    "source": "in {0} days",
    "text": "za {0} dní"
+  },
+  "p.in-interface.1ce4cf72": {
+   "source": "in-interface={0}",
+   "text": "in-interface={0}"
   },
   "p.in-no-logrotate-file-takes-these.52724574": {
    "source": "{0} in {1}: no logrotate file takes these files, so they only ever grow. A site whose logrotate files list their folders one by one has this the day a new sender is added.",
@@ -40438,6 +41070,14 @@
    "source": "{0} into the future",
    "text": "{0} do budoucnosti"
   },
+  "p.iptables-a-forward-d-p-dport.0613a27a": {
+   "source": "iptables -A FORWARD -d {0} -p {1} --dport {2} -m conntrack --ctstate DNAT -j ACCEPT",
+   "text": "iptables -A FORWARD -d {0} -p {1} --dport {2} -m conntrack --ctstate DNAT -j ACCEPT"
+  },
+  "p.iptables-t-nat-a-prerouting-p.d2d79fa5": {
+   "source": "iptables -t nat -A PREROUTING{0}{1} -p {2} --dport {3} -j DNAT --to-destination {4}",
+   "text": "iptables -t nat -A PREROUTING{0}{1} -p {2} --dport {3} -j DNAT --to-destination {4}"
+  },
   "p.ipv.984ba9ff": {
    "source": "IPv{0}",
    "text": "IPv{0}"
@@ -40473,6 +41113,10 @@
   "p.is-far-bigger-than-any-certificate.992a3f19": {
    "source": "{0} is far bigger than any certificate file",
    "text": "{0} je mnohem větší než jakýkoli soubor s certifikátem"
+  },
+  "p.is-forwarded-to-it-but-the.9cf00085": {
+   "source": "{0} {1} is forwarded to it, but the filter drops what was forwarded: allow it in the forward chain (on a MikroTik, connection-nat-state=dstnat).",
+   "text": "{0} {1} se na něj přesměrovává, ale filtr přesměrované zahazuje: povolte to v řetězci forward (na MikroTiku connection-nat-state=dstnat)."
   },
   "p.is-gone.5be19cfd": {
    "source": "{0} is gone",
@@ -40618,6 +41262,10 @@
    "source": "isemon {0}",
    "text": "isemon {0}"
   },
+  "p.isemon.3ae02a91": {
+   "source": "isemon-{0}-{1}-{2}",
+   "text": "isemon-{0}-{1}-{2}"
+  },
   "p.isemon.46479b91": {
    "source": "isemon {0}{1}",
    "text": "isemon {0}{1}"
@@ -40662,6 +41310,18 @@
    "source": "{0}{1}. It is tried again at the next round rather than given up on.",
    "text": "{0}{1}. Zkusí se znovu v dalším kole, místo aby se to vzdalo."
   },
+  "p.it-leaves-as-which-is-not.d9a5f33a": {
+   "source": "It leaves as {0}, which is not a public address: there is another NAT beyond this router (the provider’s carrier-grade NAT, or a modem routing too). Forwarding here does not reach it from the internet until that one forwards as well, or the provider gives a public address.",
+   "text": "Odchází jako {0}, což není veřejná adresa: za tímto routerem je další NAT (carrier-grade NAT poskytovatele, nebo modem, který taky routuje). Přesměrování tady ho z internetu nezpřístupní, dokud nepřesměruje i ten druhý, nebo dokud poskytovatel nedá veřejnou adresu."
+  },
+  "p.it-leaves-by-public-addresses-forward.b5ab9748": {
+   "source": "It leaves by {0} public addresses. Forward on the one its peers see - the busiest is first.",
+   "text": "Odchází přes {0} veřejné adresy. Přesměrujte na té, kterou vidí jeho protistrany - nejvytíženější je první."
+  },
+  "p.it-looks-like.1eb5f969": {
+   "source": "It looks like {0}",
+   "text": "Vypadá jako {0}"
+  },
   "p.it-no-longer-confirms-it-is.2d7866e3": {
    "source": "It no longer confirms it is you. It stays on the device until you take it away there (Settings - Passwords).{0}",
    "text": "Už nepotvrdí, že jste to vy. V zařízení zůstane, dokud ji tam neodeberete (Nastavení – Hesla).{0}"
@@ -40669,6 +41329,10 @@
   "p.it-says.4245a678": {
    "source": "it says: {0}",
    "text": "uvádí: {0}"
+  },
+  "p.it-serves-this-port-inside-client.5ea15d5e": {
+   "source": "it serves this port inside ({0} client(s))",
+   "text": "uvnitř tento port obsluhuje ({0} klientů)"
   },
   "p.it-stays-out-until-somebody-takes.b1ade8e6": {
    "source": "{0}. It stays out until somebody takes it off.",
@@ -40762,6 +41426,10 @@
    "source": "&kind={0}",
    "text": "&kind={0}"
   },
+  "p.knocks-with-nothing-tying-them-to.04c54d8e": {
+   "source": "Knocks with nothing tying them to it ({0})",
+   "text": "Klepání, které s ním nic nespojuje ({0})"
+  },
   "p.ktpass-princ-http-mapuser-crypto-aes256.45635676": {
    "source": "ktpass -princ HTTP/{0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab",
    "text": "ktpass -princ HTTP/{0}@{1} -mapuser {2} -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass * -out isemon-http.keytab"
@@ -40769,6 +41437,14 @@
   "p.last-answered.ae970e33": {
    "source": ", last answered {0}",
    "text": ", naposledy odpověděl {0}"
+  },
+  "p.last-day-s.05aa97e6": {
+   "source": "last {0} day(s)",
+   "text": "posledních {0} dní"
+  },
+  "p.last-hour-s.bfbaa8ec": {
+   "source": "last {0} hour(s)",
+   "text": "posledních {0} hodin"
   },
   "p.last-in-the-hour-from.9eb5ac85": {
    "source": "· last in the hour from {0}",
@@ -40865,6 +41541,10 @@
   "p.line-s-and-every-one-of.5b655dc4": {
    "source": "{0} line(s), and every one of them reads as an access list.",
    "text": "{0} {0:řádek|řádky|řádků} a každý z nich se čte jako access list."
+  },
+  "p.line-s-from-it-to-it.08d02ccf": {
+   "source": "{0} line(s) from it, {1} to it, {2} of the dst-nat rules, in the {3}{4}.",
+   "text": "{0} řádků od něj, {1} k němu, {2} z pravidel dst-nat, za {3}{4}."
   },
   "p.line-s-kept-the-oldest-from.a19a3f02": {
    "source": "{0} line(s) kept, the oldest from {1}",
@@ -41078,6 +41758,10 @@
    "source": "{0} minute(s)",
    "text": "{0} {0:minuta|minuty|minut}"
   },
+  "p.missing-knocked.96cf50b8": {
+   "source": "✗ missing - knocked {0}×",
+   "text": "✗ chybí - klepalo {0}×"
+  },
   "p.mkdir-p-ssh-chmod-700-ssh.0c44f6b3": {
    "source": "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '{0}' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys",
    "text": "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '{0}' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
@@ -41145,6 +41829,10 @@
   "p.names.1b551256": {
    "source": "- Names: {0}",
    "text": "- Names: {0}"
+  },
+  "p.nat-inside-outside-static-interface-service.115bd665": {
+   "source": "nat (inside,outside) static interface service {0} {1} {2}",
+   "text": "nat (inside,outside) static interface service {0} {1} {2}"
   },
   "p.needed-after-the-update.2b173de5": {
    "source": "needed after the update - {0}",
@@ -41342,6 +42030,10 @@
    "source": "nothing in that file is a setting this version keeps{0}",
    "text": "nic v tom souboru není nastavení, které tato verze uchovává{0}"
   },
+  "p.nothing-in-the-firewall-s-log.512c731a": {
+   "source": "Nothing in the firewall’s log from or to {0} in this window. Is it the right address, is it on, and does the firewall log its connections?",
+   "text": "V logu firewallu za toto okno nic od ani k {0}. Je to správná adresa, je zapnuté a loguje firewall jeho spojení?"
+  },
   "p.nothing-in-the-last-h.b616cd35": {
    "source": "nothing in the last {0} h",
    "text": "nic za posledních {0} h"
@@ -41393,6 +42085,10 @@
   "p.nowhere-known-yet.9d992c33": {
    "source": "Nowhere known yet.{0}",
    "text": "Zatím nikde známo.{0}"
+  },
+  "p.object-network.79782c30": {
+   "source": "object network {0}",
+   "text": "object network {0}"
   },
   "p.ocsp-clear.b39c653c": {
    "source": "ocsp-clear:{0}",
@@ -41690,6 +42386,10 @@
    "source": "↑ {0} out · ↓ {1} in",
    "text": "↑ {0} ven · ↓ {1} dovnitř"
   },
+  "p.out-interface.360c1029": {
+   "source": "out-interface={0}",
+   "text": "out-interface={0}"
+  },
   "p.out-of-its-own-line-only.0131492a": {
    "source": "out of {0} - its own line only - and asks logrotate about all of its files before and after; if it says anything new is wrong, or something still takes the folder, it is all put back. Then it writes",
    "text": "z {0} – jen její vlastní řádek – a zeptá se logrotate na všechny jeho soubory před i po; když hlásí něco nového špatně, nebo složku pořád něco bere, vrátí se všechno zpět. Pak zapíše"
@@ -41713,6 +42413,10 @@
   "p.pace.2f1da744": {
    "source": "pace{0}",
    "text": "pace{0}"
+  },
+  "p.packet-s-counted.2f25d59a": {
+   "source": "{0} packet(s) counted",
+   "text": "{0} započítaných paketů"
   },
   "p.packing-copies-behind.6eb3ad9a": {
    "source": "packing {0} copies behind",
@@ -41805,6 +42509,10 @@
   "p.policyname.d3aff1fa": {
    "source": "policyname~{0}{1}{2}",
    "text": "policyname~{0}{1}{2}"
+  },
+  "p.port-kept-of.618f7385": {
+   "source": "port kept {0} of {1}",
+   "text": "port zachován {0} z {1}"
   },
   "p.port.bd22480e": {
    "source": "{0}port",
@@ -41957,6 +42665,10 @@
   "p.reading-through-its-api.d91cff4d": {
    "source": "Reading {0} through its API",
    "text": "Čtení přes API: {0}"
+  },
+  "p.reading-what-reaches-and-what-it.091a24e6": {
+   "source": "Reading what reaches {0} and what it talks to…",
+   "text": "Čtu, co se dostává k {0} a s čím mluví…"
   },
   "p.reading-what-the-firewall-is-carrying.b7b84c6b": {
    "source": "Reading what the firewall is carrying… {0} s{1}",
@@ -42194,6 +42906,38 @@
    "source": "Set a new password for {0}. Every sign-in of that account ends at once and they are asked to choose their own next time.",
    "text": "Nastavit nové heslo pro {0}. Všechna přihlášení tohoto účtu ihned skončí a příště bude vyzván, aby si zvolil vlastní."
   },
+  "p.set-dstaddr.96a5cd4c": {
+   "source": "set dstaddr {0}",
+   "text": "set dstaddr {0}"
+  },
+  "p.set-dstintf.edd3c417": {
+   "source": "set dstintf \"{0}\"",
+   "text": "set dstintf \"{0}\""
+  },
+  "p.set-extintf.18d703a4": {
+   "source": "set extintf \"{0}\"",
+   "text": "set extintf \"{0}\""
+  },
+  "p.set-extip.f16fb173": {
+   "source": "set extip {0}",
+   "text": "set extip {0}"
+  },
+  "p.set-extport.93d9ddbb": {
+   "source": "set extport {0}",
+   "text": "set extport {0}"
+  },
+  "p.set-mappedip.42db3727": {
+   "source": "set mappedip \"{0}\"",
+   "text": "set mappedip \"{0}\""
+  },
+  "p.set-mappedport.4b541790": {
+   "source": "set mappedport {0}",
+   "text": "set mappedport {0}"
+  },
+  "p.set-name-isemon-dnat.00beb5ee": {
+   "source": "set name \"isemon DNAT {0}\"",
+   "text": "set name \"isemon DNAT {0}\""
+  },
   "p.set-on-this-machine.1416264d": {
    "source": "Set on this machine{0}.",
    "text": "Nastaveno na tomto počítači{0}."
@@ -42202,6 +42946,10 @@
    "source": "set on {0}",
    "text": "nastaveno {0}"
   },
+  "p.set-protocol.38daf35f": {
+   "source": "set protocol {0}",
+   "text": "set protocol {0}"
+  },
   "p.set-refresh-rate.cd920ca9": {
    "source": "{0} set refresh-rate {1}",
    "text": "{0} set refresh-rate {1}"
@@ -42209,6 +42957,10 @@
   "p.set-resource.3e7b64cf": {
    "source": "set resource \"{0}\"",
    "text": "set resource \"{0}\""
+  },
+  "p.set-srcintf.61e63fbf": {
+   "source": "set srcintf \"{0}\"",
+   "text": "set srcintf \"{0}\""
   },
   "p.set-the-password-for.58aa2eef": {
    "source": "Set the password for {0}",
@@ -42362,6 +43114,10 @@
    "source": "srcip:{0} kind:event/vpn",
    "text": "srcip:{0} kind:event/vpn"
   },
+  "p.srcip-or-dstip.58e4ff10": {
+   "source": "srcip:{0} OR dstip:{1}",
+   "text": "srcip:{0} OR dstip:{1}"
+  },
   "p.ssh-authorized-keys.e0a8c729": {
    "source": "~{0}/.ssh/authorized_keys",
    "text": "~{0}/.ssh/authorized_keys"
@@ -42453,6 +43209,10 @@
   "p.sudo-may-become-root-with-their.0d6e2956": {
    "source": "sudo: may become root with their own password (a member of {0}).",
    "text": "sudo: smí se stát rootem s vlastním heslem (člen {0})."
+  },
+  "p.surely-for-it.7e2faff5": {
+   "source": "{0} surely for it",
+   "text": "{0} jistě pro něj"
   },
   "p.sw3word.520077fd": {
    "source": "sw3word {0}",
@@ -42786,6 +43546,10 @@
    "source": "The domain — {0}",
    "text": "Doména — {0}"
   },
+  "p.the-dst-nat-rule-for-is.e37120b9": {
+   "source": "The dst-nat rule for {0} {1} is switched off.",
+   "text": "Pravidlo dst-nat pro {0} {1} je vypnuté."
+  },
   "p.the-dump-could-not-be-put.169b44f1": {
    "source": "the dump could not be put back, so nothing changed - what was there has been put back from {0}. What went wrong: {1}",
    "text": "dump se nepodařilo vrátit, takže se nic nezměnilo - původní stav byl vrácen z {0}. Co se pokazilo: {1}"
@@ -43005,6 +43769,10 @@
   "p.the-proxy-said.97a6434d": {
    "source": "the proxy said {0} {1}",
    "text": "proxy odpověděla {0} {1}"
+  },
+  "p.the-router-changes-the-source-port.bc8aaaed": {
+   "source": "The router changes the source port of most of its connections ({0} changed, {1} kept): a peer cannot guess where to answer - strict or type 3 NAT, as consoles call it. Endpoint-independent NAT for this address (UDP), or UPnP, fixes it where fixed forwards cannot.",
+   "text": "Router mění zdrojový port většiny jeho spojení ({0} změněno, {1} zachováno): protistrana nemůže uhodnout, kam odpovědět - striktní NAT neboli typ 3, jak říkají konzole. Endpoint-independent NAT pro tuto adresu (UDP), nebo UPnP, to vyřeší tam, kde pevná přesměrování nemohou."
   },
   "p.the-search-history-in-that-file.d3772a79": {
    "source": "the search history in that file: {0}",
@@ -43338,6 +44106,10 @@
    "source": "Traffic → {0}",
    "text": "Provoz → {0}"
   },
+  "p.translated-connection-s-the-last.3085a521": {
+   "source": "{0} translated connection(s), the last {1}",
+   "text": "{0} přeložených spojení, poslední {1}"
+  },
   "p.trying.054d281f": {
    "source": "Trying {0}",
    "text": "Zkouší se {0}"
@@ -43482,6 +44254,10 @@
    "source": "{0} waiting",
    "text": "{0} čeká"
   },
+  "p.wants-it.05b1281e": {
+   "source": "{0} wants it",
+   "text": "{0} ho potřebuje"
+  },
   "p.was-already-switched.ace8db90": {
    "source": "{0} was already switched {1}",
    "text": "{0} už byl {1}"
@@ -43529,6 +44305,10 @@
   "p.what-active-directory-says-about-this.3f72e1e4": {
    "source": "What Active Directory says about this account right now: who they are, which groups they are in, whether the account is switched off, locked or expired, and when the password was last set. Asked of the directory that holds {0}; nothing here ever writes to a directory.",
    "text": "Co o tomto účtu právě teď říká Active Directory: kdo to je, ve kterých skupinách je, zda je účet vypnutý, uzamčený nebo vypršelý a kdy bylo naposledy nastaveno heslo. Dotaz jde na adresář, který obsahuje {0}; nic zde nikdy do adresáře nezapisuje."
+  },
+  "p.what-arrives-at-the-public-address.e2ff8670": {
+   "source": "What arrives at the public address and is sent on to {0} - and whether the filter lets it through.",
+   "text": "Co přichází na veřejnou adresu a posílá se dál na {0} - a jestli to filtr pustí."
   },
   "p.what-breaks.53c6e5c0": {
    "source": "- What breaks: {0}",
@@ -45506,6 +46286,10 @@
    "source": "{0} has {1} passkey(s). Set Face ID up again: every one of them is taken away, and the next sign-in of {2} makes a new one. For a lost or a new device. Sign-ins already open stay open.",
    "text": "{0} má passkeys: {1}. Nastavit Face ID znovu: všechny se odeberou a další přihlášení účtu {2} vytvoří novou. Pro ztracené nebo nové zařízení. Otevřená přihlášení zůstanou otevřená."
   },
+  "p.how-sure.1c75217d": {
+   "source": "how sure: {0}",
+   "text": "jistota: {0}"
+  },
   "p.how-to-reach.e17320da": {
    "source": "How to reach {0}",
    "text": "Jak se dostat k {0}"
@@ -46402,6 +47186,10 @@
    "source": "Failed logins to the VPN through a Windows NPS, judged as the VPN through ISE is (and only while \"Judge the VPN through NPS as well\" is on). Off and on as above.",
    "text": "Neúspěšná přihlášení do VPN přes Windows NPS, posuzovaná stejně jako VPN přes ISE (a jen dokud je zapnuté „Posuzovat VPN také přes NPS“). Vypínání a zapínání jako výše."
   },
+  "s.fair.187770cf": {
+   "source": "fair",
+   "text": "střední"
+  },
   "s.field-value-field-a-b-any.ca2c1c19": {
    "source": "field:value · field:a,b any of them · -field:value not · * anything · ↑ ↓ and Tab or Enter take one · Esc closes",
    "text": "pole:hodnota · pole:a,b kterákoli z nich · -pole:hodnota ne · * cokoli · ↑ ↓ a Tab nebo Enter vybere · Esc zavře"
@@ -46453,6 +47241,10 @@
   "s.half-goes-into-root-s-authorized.add26887": {
    "source": "half goes into root's authorized_keys of this server. A key there before stays until it is taken away in the list below.",
    "text": "polovina jde do authorized_keys roota na tomto serveru. Klíč, který tam byl předtím, zůstane, dokud se v seznamu níže neodebere."
+  },
+  "s.high.9235afd3": {
+   "source": "high",
+   "text": "vysoká"
   },
   "s.how-busy-the-server-is-the.655d4bb9": {
    "source": "How busy the server is - the processor, the memory, the disks and the network - beside the state at the top of the page, every 3 s, with the cores, the temperatures, the disks and the processes behind each number. For the full admins, each choosing for themselves how it looks under Your account. Off, nothing of it is read at all.",

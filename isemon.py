@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.359'
+__version__ = '1.10.360'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -13573,6 +13573,85 @@ def fw_nat_said(row, fields):
     return out
 
 
+# What a device inside may need opened from outside, and what it is known for
+# (1.10.360, the DNAT analyzer). `sig` is what its own connections out look
+# like - the ports it talks TO - and `ports` what a published device of that
+# kind wants forwarded: (protocol, first, last, how much it is wanted, why).
+# A guide, never a verdict: every port the analyzer suggests is also shown
+# with what was SEEN for it, and a profile alone never makes a port "seen".
+DNAT_PROFILES = (
+    {'key': 'playstation', 'name': 'PlayStation Network',
+     'says': 'It talks to PSN’s STUN ports (TCP and UDP 3478-3480).',
+     'sig': (('tcp', 3478, 3480, 3), ('udp', 3478, 3480, 1)),
+     'ports': (('udp', 3478, 3479, 'need', 'PSN, party chat, peer-to-peer games'),
+               ('tcp', 3478, 3480, 'recommended', 'PSN'),
+               ('udp', 3074, 3074, 'optional', 'Call of Duty and other peer-to-peer games')),
+     'note': 'Party chat and peer-to-peer games also use high UDP ports chosen as they go: '
+             'no fixed rule covers them. UPnP limited to this address, or endpoint-'
+             'independent NAT for it, does. Aim: NAT Type 2 in the console’s connection test.'},
+    {'key': 'xbox', 'name': 'Xbox network',
+     'says': 'It talks to Xbox Live (UDP 3074, 3544 Teredo, 88).',
+     'sig': (('udp', 3074, 3074, 3), ('udp', 3544, 3544, 2), ('udp', 88, 88, 1)),
+     'ports': (('udp', 3074, 3074, 'need', 'Xbox Live, peer-to-peer games'),
+               ('tcp', 3074, 3074, 'recommended', 'Xbox Live'),
+               ('udp', 88, 88, 'recommended', 'Xbox Live'),
+               ('udp', 500, 500, 'optional', 'Xbox Live (IPsec)'),
+               ('udp', 3544, 3544, 'optional', 'Teredo'),
+               ('udp', 4500, 4500, 'optional', 'Xbox Live (IPsec NAT-T)')),
+     'note': 'Aim: NAT type Open in the console’s network settings.'},
+    {'key': 'steam', 'name': 'Steam',
+     'says': 'It talks to Steam’s game servers (UDP 27000-27100).',
+     'sig': (('udp', 27000, 27100, 2), ('tcp', 27015, 27050, 1)),
+     'ports': (('udp', 27015, 27030, 'recommended', 'hosting a game, peer-to-peer'),
+               ('tcp', 27015, 27015, 'optional', 'a dedicated game server')),
+     'note': 'Only a PC that hosts games needs these; playing on others’ servers needs none.'},
+    {'key': 'eafc', 'name': 'EA SPORTS FC',
+     'says': 'It talks to EA’s game port (UDP 3659).',
+     'sig': (('udp', 3659, 3659, 3),),
+     'ports': (('udp', 3659, 3659, 'recommended', 'EA SPORTS FC matches'),),
+     'note': ''},
+)
+
+# What a port is, for the words beside it - the commonest only.
+DNAT_PORT_NAMES = {
+    ('tcp', 22): 'SSH', ('tcp', 25): 'SMTP', ('udp', 53): 'DNS', ('tcp', 53): 'DNS',
+    ('tcp', 80): 'HTTP', ('udp', 88): 'Xbox Live', ('udp', 123): 'NTP',
+    ('tcp', 443): 'HTTPS', ('udp', 443): 'QUIC', ('tcp', 465): 'SMTPS', ('udp', 500): 'IKE',
+    ('tcp', 587): 'SMTP submission', ('tcp', 993): 'IMAPS', ('udp', 1194): 'OpenVPN',
+    ('tcp', 1194): 'OpenVPN', ('tcp', 1935): 'RTMP', ('tcp', 3074): 'Xbox Live',
+    ('udp', 3074): 'Xbox Live / Call of Duty', ('tcp', 3389): 'RDP', ('udp', 3389): 'RDP',
+    ('udp', 3478): 'STUN / PSN', ('udp', 3479): 'STUN / PSN', ('udp', 3480): 'STUN / PSN',
+    ('tcp', 3478): 'PSN', ('tcp', 3479): 'PSN', ('tcp', 3480): 'PSN',
+    ('udp', 3544): 'Teredo', ('udp', 3659): 'EA SPORTS FC', ('udp', 4500): 'IPsec NAT-T',
+    ('tcp', 5223): 'push notifications', ('tcp', 5900): 'VNC', ('tcp', 8080): 'HTTP alt',
+    ('tcp', 8443): 'HTTPS alt', ('udp', 9296): 'Remote Play', ('tcp', 9295): 'Remote Play',
+    ('udp', 13231): 'WireGuard', ('tcp', 25565): 'Minecraft', ('udp', 25565): 'Minecraft',
+    ('tcp', 27015): 'Steam', ('udp', 27015): 'Steam', ('tcp', 32400): 'Plex',
+    ('udp', 51820): 'WireGuard',
+}
+
+# What the internet knocks on all day whoever is behind the address: a knock
+# on one of these, with nothing else to tie it to a device, is a scan.
+DNAT_SCANNED = {21, 22, 23, 25, 80, 81, 110, 135, 139, 143, 443, 445, 1433, 1521, 2323,
+                3306, 3389, 5060, 5432, 5555, 5900, 6379, 8000, 8080, 8081, 8443, 8888,
+                9200, 11211, 27017}
+
+DNAT_ROWS_MOST = 20000          # each of the looks reads at most this many lines
+
+
+def dnat_proto(n):
+    """6 / 17 / 1 as the words the rules use."""
+    return {6: 'tcp', 17: 'udp', 1: 'icmp', 58: 'icmpv6'}.get(int(n or 0), str(int(n or 0)))
+
+
+def dnat_port_name(proto, port):
+    return DNAT_PORT_NAMES.get((str(proto), int(port or 0)), '')
+
+
+def dnat_in(lo_hi, port):
+    return lo_hi[0] <= int(port or 0) <= lo_hi[1]
+
+
 def fw_nat_counted(f):
     """What one line counts under on the NAT page: the kind of translation, or
     '' for a line that is not one. A MikroTik's NAT rules' own lines, and
@@ -15310,7 +15389,8 @@ class RosReader(object):
                                             'dynamic,src-address,dst-address,protocol,'
                                             'dst-port,in-interface,out-interface,'
                                             'src-address-list,dst-address-list,'
-                                            'connection-state,to-addresses,to-ports,log')
+                                            'connection-state,to-addresses,to-ports,log,'
+                                            'connection-nat-state,in-interface-list')
             except RosApiError:
                 continue
             for i, one in enumerate(got):
@@ -31937,6 +32017,56 @@ class Storage(object):
             if not x:
                 r.pop('extra', None)
         return rows
+
+    # ---- the DNAT analyzer (1.10.360) ----
+    def fw_dnat_lines(self, where, args, since, until=0, fw='', most=DNAT_ROWS_MOST):
+        """Lines of the firewall log for the DNAT analyzer, newest first, each
+        with the translation it carries said one way (`natsrc`, `natdst`,
+        `natto`, `natkind`) whichever firewall wrote it. ([rows], capped)"""
+        sql = ('SELECT ts, fw, dev, type, sub, action, verdict, srcip, srcport, srcintf, '
+               'dstip, dstport, dstintf, proto, policyname, sent, rcvd, area, detail '
+               'FROM fw_events WHERE ' + where + ' AND ts >= ?')
+        args = list(args) + [float(since)]
+        if until:
+            sql += ' AND ts <= ?'
+            args.append(float(until))
+        if fw:
+            sql += ' AND fw = ?'
+            args.append(str(fw))
+        sql += ' ORDER BY ts DESC LIMIT ?'
+        args.append(int(most) + 1)
+        try:
+            got = self.db.execute(sql, args).fetchall()
+        except sqlite3.Error:
+            return [], False
+        out = []
+        for r in got[:most]:
+            one = dict(r)
+            try:
+                fields = json.loads(self.unpack_detail(one.pop('detail')) or '{}')
+            except (ValueError, TypeError):
+                fields = {}
+            if not isinstance(fields, dict):
+                fields = {}
+            said = {k: fields[k] for k in ('natsrc', 'natdst', 'natto', 'natkind', 'natguess',
+                                           'direction', 'via') if fields.get(k)}
+            said.update(fw_nat_said(one, fields))
+            one.update(said)
+            out.append(one)
+        return out, len(got) > most
+
+    def fw_dnat_hosts(self, since, most=40):
+        """The addresses inside whose connections out were translated most -
+        what the analyzer offers to look at."""
+        try:
+            rows = self.db.execute(
+                "SELECT srcip, COUNT(*) AS n, MAX(ts) AS last FROM fw_events "
+                "WHERE area = 'nat' AND action = 'srcnat' AND ts >= ? "
+                'GROUP BY srcip ORDER BY n DESC LIMIT ?', (float(since), int(most))).fetchall()
+        except sqlite3.Error:
+            return []
+        return [{'ip': str(r['srcip'] or ''), 'n': int(r['n'] or 0),
+                 'last': float(r['last'] or 0)} for r in rows if r['srcip']]
 
     def fw_unpaged_since(self, since):
         """Whether any line without a page (written before 1.10.126) is at
@@ -50938,6 +51068,474 @@ class Daemon(object):
         out['hosts'] = sorted(hosts.values(), key=lambda h: -h['n'])[:12]
         out['n'] = sum(h['n'] for h in hosts.values())
         out['bytes'] = sum(h['bytes'] for h in hosts.values())
+        return out
+
+    # ---- the DNAT analyzer (1.10.360) ----
+    def fw_dnat(self, ip, hours=24, fw='', until=0):
+        """What one device inside needs forwarded to it from outside, out of
+        what the firewall log - and a router read through its API - says.
+
+        Four looks, each an index seek: the device's own lines out (srcip),
+        the lines to it (dstip), the dst-nat rules' own lines, and the lines
+        to the public address(es) it leaves by. From them:
+
+        - `out`: the public address(es) it is made on the way out, whether
+          the port is kept, what it talks to, who it talks to;
+        - `forwards`: what is forwarded to it already, and whether it gets
+          through the filter (`working`, `blocked`, `translated`);
+        - `missing`: what knocks on its public address and is NOT forwarded,
+          each with why it is thought to be for this device - a port its own
+          connections leave from, an address it talks to, a port it serves
+          inside, a port its kind of device wants - or, with none of those,
+          left among the scans;
+        - `profiles`: what kind of device it looks like, and the ports such
+          a device wants, each marked forwarded, seen knocking or not seen;
+        - `router`: the dst-nat rules a MikroTik read through its API has for
+          it, with their counters, and its addresses on the way out;
+        - `warnings`: what makes forwarding pointless or not enough - a
+          private address outside (carrier NAT), ports not kept.
+
+        Nothing here changes anything: it says what to add, and the page
+        shows the rules for the firewall to copy.
+        """
+        ip = str(ip or '').strip()
+        try:
+            ip = str(ipaddress.ip_address(ip.split('%')[0]))
+        except ValueError:
+            raise ValueError('give the address of a device inside, e.g. 192.168.1.50')
+        hours = max(1, min(24 * 31, int(hours or 24)))
+        now = time.time()
+        until = float(until or 0)
+        since = (until or now) - hours * 3600
+        fw = str(fw or '')
+        store = self.store
+        outs, cap_o = store.fw_dnat_lines('srcip = ?', [ip], since, until, fw)
+        ins, cap_i = store.fw_dnat_lines('dstip = ?', [ip], since, until, fw)
+        rules, cap_r = store.fw_dnat_lines("area = 'nat' AND action = 'dstnat'", [], since,
+                                           until, fw)
+
+        def end_ip(text):
+            return str(ros_end(text)[0] or '') if text else ''
+
+        def end_port(text):
+            return int(ros_end(text)[1] or 0) if text else 0
+
+        # ---- the way out ------------------------------------------------
+        pubs = collections.Counter()
+        kept = changed = 0
+        mapped = set()          # (proto, public port) its connections were seen leaving by
+        guessed = set()         # ...or are assumed to, the port kept
+        services = {}
+        peers = set()
+        kinds = collections.Counter()
+        zones = collections.Counter()
+        wans = collections.Counter()
+        fws = collections.Counter()
+        counted = set()
+        first = last = 0.0
+        for r in outs:
+            ts = float(r['ts'] or 0)
+            first = ts if not first else min(first, ts)
+            last = max(last, ts)
+            fws[str(r.get('fw') or '')] += 1
+            proto = dnat_proto(r.get('proto'))
+            if r.get('srcintf'):
+                zones[str(r['srcintf'])] += 1
+            if r.get('natkind') and r.get('area') == 'nat':
+                kinds[str(r['natkind'])] += 1
+            src = r.get('natsrc')
+            if src and r.get('direction') != 'reply':
+                pub = end_ip(src)
+                if pub and pub != ip:
+                    pubs[pub] += 1
+                    if r.get('dstintf'):
+                        wans[str(r['dstintf'])] += 1
+                    port = end_port(src)
+                    if port and proto in ('tcp', 'udp'):
+                        if r.get('natguess'):
+                            guessed.add((proto, port))
+                        else:
+                            mapped.add((proto, port))
+                            if int(r.get('srcport') or 0):
+                                if port == int(r['srcport']):
+                                    kept += 1
+                                else:
+                                    changed += 1
+            dst = str(r.get('dstip') or '')
+            # One connection is often two lines - the NAT rule's and the
+            # filter's - and is counted once.
+            twin = (proto, int(r.get('srcport') or 0), dst, int(r.get('dstport') or 0), int(ts))
+            if twin in counted:
+                continue
+            counted.add(twin)
+            if dst and not fw_private(dst) and r.get('direction') != 'reply':
+                peers.add(dst)
+                if proto in ('tcp', 'udp') and int(r.get('dstport') or 0):
+                    key = (proto, int(r['dstport']))
+                    one = services.setdefault(key, {'proto': proto, 'port': key[1], 'n': 0,
+                                                    'peers': set(), 'last': 0.0,
+                                                    'denied': 0})
+                    one['n'] += 1
+                    one['peers'].add(dst)
+                    one['last'] = max(one['last'], ts)
+                    if r.get('verdict') in ('deny', 'block'):
+                        one['denied'] += 1
+
+        # ---- what it serves inside, and what reaches it -------------------
+        serves = {}
+        forwards = {}
+        for r in ins:
+            ts = float(r['ts'] or 0)
+            first = ts if not first else min(first, ts)
+            last = max(last, ts)
+            proto = dnat_proto(r.get('proto'))
+            port = int(r.get('dstport') or 0)
+            src = str(r.get('srcip') or '')
+            if proto not in ('tcp', 'udp') or not port:
+                continue
+            asked = r.get('natdst')
+            if asked and end_ip(asked) != ip:
+                # Arrived through a dst-nat: asked at a public address.
+                pub_port = end_port(asked) or port
+                key = (proto, pub_port, port)
+                one = forwards.setdefault(key, self._dnat_forward(proto, pub_port, port,
+                                                                 end_ip(asked)))
+                one['sources'].add(src)
+                one['last'] = max(one['last'], ts)
+                if r.get('verdict') in ('deny', 'block'):
+                    one['denied'] += 1
+                else:
+                    one['allowed'] += 1
+                    one['bytes'] += int(r.get('sent') or 0) + int(r.get('rcvd') or 0)
+                continue
+            if src and fw_private(src) and src != ip and r.get('verdict') not in ('deny', 'block'):
+                one = serves.setdefault((proto, port), {'proto': proto, 'port': port, 'n': 0,
+                                                        'clients': set(), 'last': 0.0})
+                one['n'] += 1
+                one['clients'].add(src)
+                one['last'] = max(one['last'], ts)
+
+        # The dst-nat rules' own lines: to this device, and to the others
+        # (a port forwarded elsewhere cannot be forwarded here too).
+        elsewhere = {}
+        rule_words = {}
+        for r in rules:
+            proto = dnat_proto(r.get('proto'))
+            pub_port = int(r.get('dstport') or 0)
+            to = r.get('natto') or ''
+            to_ip, to_port = end_ip(to), end_port(to)
+            if not pub_port or proto not in ('tcp', 'udp'):
+                continue
+            if to_ip == ip:
+                key = (proto, pub_port, to_port or pub_port)
+                one = forwards.setdefault(key, self._dnat_forward(proto, pub_port,
+                                                                 to_port or pub_port,
+                                                                 str(r.get('dstip') or '')))
+                one['rule_lines'] += 1
+                one['sources'].add(str(r.get('srcip') or ''))
+                one['last'] = max(one['last'], float(r['ts'] or 0))
+                if r.get('policyname'):
+                    rule_words[key] = str(r['policyname'])
+                if r.get('natguess'):
+                    one['guessed'] = True
+            elif to_ip:
+                elsewhere.setdefault((proto, pub_port), collections.Counter())[to_ip] += 1
+
+        # ---- the router itself, where it is read ------------------------
+        router = self._dnat_router(ip, fw or (fws.most_common(1)[0][0] if fws else ''))
+        for a in router.get('wan_addresses', []):
+            if a not in pubs:
+                pubs[a] += 0
+        for rule in router.get('rules', []):
+            for lo, hi in rule.get('ports') or [(0, 0)]:
+                for key, one in forwards.items():
+                    if one['proto'] == (rule.get('protocol') or one['proto']) \
+                            and lo <= one['public_port'] <= hi:
+                        one['rule'] = rule.get('comment') or rule.get('id')
+                        one['rule_packets'] = rule.get('packets', 0)
+                        one['rule_disabled'] = rule.get('disabled', False)
+
+        # ---- what knocks on its public address -----------------------------
+        public = sorted(a for a in pubs if a)
+        knocks = {}
+        cap_k = False
+        router_own = set()
+        if public:
+            looked, cap_k = store.fw_dnat_lines(
+                'dstip IN (%s)' % ','.join('?' * len(public)), public, since, until, fw)
+            for r in looked:
+                proto = dnat_proto(r.get('proto'))
+                port = int(r.get('dstport') or 0)
+                if proto not in ('tcp', 'udp') or not port or r.get('direction') == 'reply':
+                    continue
+                if r.get('natto') and end_ip(r['natto']) == ip and r.get('area') != 'nat':
+                    # A session translated to it, as a FortiGate or the
+                    # router's API says one: the public end is the dst.
+                    key = (proto, port, end_port(r['natto']) or port)
+                    one = forwards.setdefault(key, self._dnat_forward(
+                        proto, port, key[2], str(r.get('dstip') or '')))
+                    one['sources'].add(str(r.get('srcip') or ''))
+                    one['last'] = max(one['last'], float(r['ts'] or 0))
+                    if r.get('verdict') in ('deny', 'block'):
+                        one['denied'] += 1
+                    else:
+                        one['allowed'] += 1
+                        one['bytes'] += int(r.get('sent') or 0) + int(r.get('rcvd') or 0)
+                    continue
+                if r.get('natto') or (r.get('area') == 'nat' and r.get('action') == 'dstnat'):
+                    continue            # forwarded somewhere: counted above or elsewhere
+                if r.get('sub') == 'local' and r.get('verdict') not in ('deny', 'block', 'fail'):
+                    router_own.add((proto, port))   # the router answers it itself
+                    continue
+                key = (proto, port)
+                one = knocks.setdefault(key, {'proto': proto, 'port': port, 'n': 0,
+                                              'sources': set(), 'last': 0.0, 'first': 0.0,
+                                              'denied': 0, 'public': set()})
+                one['n'] += 1
+                one['sources'].add(str(r.get('srcip') or ''))
+                one['public'].add(str(r.get('dstip') or ''))
+                ts = float(r['ts'] or 0)
+                one['last'] = max(one['last'], ts)
+                one['first'] = ts if not one['first'] else min(one['first'], ts)
+                if r.get('verdict') in ('deny', 'block'):
+                    one['denied'] += 1
+
+        # ---- what kind of device ----------------------------------------
+        profiles = []
+        for p in DNAT_PROFILES:
+            score, seen = 0, []
+            for proto, lo, hi, weight in p['sig']:
+                hits = sum(s['n'] for (pr, port), s in services.items()
+                           if pr == proto and lo <= port <= hi)
+                if hits:
+                    score += weight
+                    seen.append({'proto': proto, 'ports': [lo, hi], 'n': hits})
+            if score >= 2:
+                profiles.append({'key': p['key'], 'name': p['name'], 'says': p['says'],
+                                 'note': p['note'], 'score': score, 'seen': seen,
+                                 'ports': [self._dnat_profile_port(pp, forwards, knocks,
+                                                                   elsewhere, router_own)
+                                           for pp in p['ports']]})
+        profiles.sort(key=lambda p: -p['score'])
+        wanted = {}
+        for p in profiles[:1]:
+            for pp in p['ports']:
+                for port in range(pp['ports'][0], pp['ports'][1] + 1):
+                    wanted[(pp['proto'], port)] = (p['name'], pp['need'])
+
+        # ---- why each knock is thought to be for this device ---------------
+        done = {(f['proto'], f['public_port']) for f in forwards.values()}
+        missing, scans = [], []
+        for key, k in knocks.items():
+            if key in done:
+                continue
+            why = []
+            if key in mapped:
+                why.append({'kind': 'mapped', 'score': 3})
+            elif key in guessed:
+                why.append({'kind': 'kept', 'score': 2})
+            talked = k['sources'] & peers
+            if talked:
+                why.append({'kind': 'peer', 'score': 3, 'n': len(talked)})
+            if key in serves:
+                why.append({'kind': 'serves', 'score': 2, 'n': len(serves[key]['clients'])})
+            if key in wanted:
+                why.append({'kind': 'profile', 'score': 2, 'name': wanted[key][0],
+                            'need': wanted[key][1]})
+            score = sum(w['score'] for w in why)
+            row = {'proto': k['proto'], 'port': k['port'], 'n': k['n'],
+                   'sources': len(k['sources'] - {''}), 'last': k['last'], 'first': k['first'],
+                   'denied': k['denied'], 'public': sorted(k['public']),
+                   'name': dnat_port_name(k['proto'], k['port']), 'why': why, 'score': score,
+                   'elsewhere': sorted((elsewhere.get(key) or {}).keys()),
+                   'scanned': k['port'] in DNAT_SCANNED,
+                   'likely': 'likely' if score >= 3 else 'possible' if score >= 2 else ''}
+            (missing if score >= 2 else scans).append(row)
+        missing.sort(key=lambda m: (-m['score'], -m['n'], m['port']))
+        scans.sort(key=lambda m: (-m['n'], m['port']))
+
+        # ---- warnings -------------------------------------------------------
+        warnings = []
+        if not outs and not ins:
+            warnings.append({'level': 'info', 'key': 'nothing', 'ip': ip})
+        for a in public:
+            if fw_private(a):
+                warnings.append({'level': 'bad', 'key': 'cgnat', 'ip': ip, 'public': a})
+        busy = [a for a in public if pubs[a]]
+        if len(busy) > 1:
+            warnings.append({'level': 'warn', 'key': 'many', 'n': len(busy)})
+        if changed and changed >= kept:
+            warnings.append({'level': 'warn', 'key': 'ports', 'changed': changed, 'kept': kept})
+        if outs and not any(r.get('area') == 'nat' for r in outs) \
+                and not any(r.get('natsrc') for r in outs):
+            warnings.append({'level': 'info', 'key': 'nolog'})
+        for f in forwards.values():
+            if f['denied'] and not f['allowed']:
+                warnings.append({'level': 'bad', 'key': 'blocked', 'proto': f['proto'],
+                                 'port': f['public_port']})
+            if f.get('rule_disabled'):
+                warnings.append({'level': 'warn', 'key': 'disabled', 'proto': f['proto'],
+                                 'port': f['public_port']})
+
+        # ---- the state of each forward ----------------------------------------
+        out_forwards = []
+        for key, f in sorted(forwards.items(), key=lambda x: (x[0][0], x[0][1])):
+            if f['allowed']:
+                state = 'working'
+            elif f['denied']:
+                state = 'blocked'
+            elif f['rule_lines']:
+                state = 'translated'
+            else:
+                state = 'seen'
+            if f.get('rule_disabled'):
+                state = 'disabled'
+            out_forwards.append({
+                'proto': f['proto'], 'public_port': f['public_port'],
+                'inside_port': f['inside_port'], 'public': f['public'],
+                'name': dnat_port_name(f['proto'], f['inside_port']),
+                'state': state, 'allowed': f['allowed'], 'denied': f['denied'],
+                'rule_lines': f['rule_lines'], 'sources': len(f['sources'] - {''}),
+                'last': f['last'], 'bytes': f['bytes'], 'guessed': bool(f.get('guessed')),
+                'prefix': rule_words.get(key, ''), 'rule': f.get('rule') or '',
+                'rule_packets': f.get('rule_packets')})
+        # Rules the router has for it that nothing in the log has used.
+        for rule in router.get('rules', []):
+            covered = any(f['proto'] == rule.get('protocol')
+                          and any(lo <= f['public_port'] <= hi
+                                  for lo, hi in rule.get('ports') or [(0, 0)])
+                          for f in out_forwards)
+            if not covered:
+                lo, hi = (rule.get('ports') or [(0, 0)])[0]
+                out_forwards.append({
+                    'proto': rule.get('protocol') or 'any', 'public_port': lo,
+                    'public_last': hi, 'inside_port': rule.get('to_port') or lo,
+                    'public': rule.get('dst_address') or '', 'name':
+                    dnat_port_name(rule.get('protocol'), lo),
+                    'state': 'disabled' if rule.get('disabled') else
+                    'unused' if not rule.get('packets') else 'counted',
+                    'allowed': 0, 'denied': 0, 'rule_lines': 0, 'sources': 0, 'last': 0,
+                    'bytes': int(rule.get('bytes') or 0), 'guessed': False, 'prefix': '',
+                    'rule': rule.get('comment') or rule.get('id') or '',
+                    'rule_packets': rule.get('packets', 0)})
+
+        svc = sorted(services.values(), key=lambda s: -s['n'])[:20]
+        types = sorted({str(one.get('type') or '') for one in fw_sources()
+                        if not fw or one.get('name') == fw} - {''})
+        return {
+            'ip': ip, 'hours': hours, 'since': since, 'until': until or now,
+            'fw': fw, 'fws': [n for n, _c in fws.most_common()], 'types': types,
+            'first': first, 'last': last,
+            'lines': {'out': len(outs), 'in': len(ins), 'rules': len(rules),
+                      'capped': bool(cap_o or cap_i or cap_r or cap_k)},
+            'zone': zones.most_common(1)[0][0] if zones else '',
+            'out': {'public': [{'ip': a, 'n': pubs[a], 'private': fw_private(a)}
+                               for a in sorted(public, key=lambda a: -pubs[a])],
+                    'wan': [w for w, _c in wans.most_common(3)],
+                    'kept': kept, 'changed': changed,
+                    'kinds': dict(kinds), 'peers': len(peers),
+                    'services': [{'proto': s['proto'], 'port': s['port'], 'n': s['n'],
+                                  'peers': len(s['peers']), 'last': s['last'],
+                                  'denied': s['denied'],
+                                  'name': dnat_port_name(s['proto'], s['port'])} for s in svc]},
+            'serves': [{'proto': s['proto'], 'port': s['port'], 'n': s['n'],
+                        'clients': len(s['clients']), 'last': s['last'],
+                        'name': dnat_port_name(s['proto'], s['port'])}
+                       for s in sorted(serves.values(), key=lambda s: -s['n'])[:12]],
+            'forwards': out_forwards,
+            'missing': missing[:40],
+            'scans': scans[:25], 'scans_total': len(scans),
+            'router_own': sorted('%s/%d' % k for k in router_own)[:30],
+            'profiles': profiles,
+            'router': router,
+            'warnings': warnings,
+        }
+
+    @staticmethod
+    def _dnat_forward(proto, public_port, inside_port, public):
+        return {'proto': proto, 'public_port': int(public_port), 'inside_port': int(inside_port),
+                'public': public, 'sources': set(), 'last': 0.0, 'allowed': 0, 'denied': 0,
+                'bytes': 0, 'rule_lines': 0}
+
+    @staticmethod
+    def _dnat_profile_port(pp, forwards, knocks, elsewhere, router_own):
+        proto, lo, hi, need, why = pp
+        done = [f for f in forwards.values() if f['proto'] == proto
+                and lo <= f['public_port'] <= hi]
+        seen = sum(k['n'] for (pr, port), k in knocks.items() if pr == proto and lo <= port <= hi)
+        taken = sorted({ip for (pr, port), who in elsewhere.items()
+                        if pr == proto and lo <= port <= hi for ip in who})
+        own = any(pr == proto and lo <= int(port) <= hi
+                  for pr, port in router_own)
+        whole = len({f['public_port'] for f in done}) >= (hi - lo + 1)
+        return {'proto': proto, 'ports': [lo, hi], 'need': need, 'why': why,
+                'state': 'forwarded' if whole else 'partly' if done else
+                'elsewhere' if taken else 'router' if own else 'missing',
+                'knocks': seen, 'elsewhere': taken,
+                'working': any(f['allowed'] for f in done)}
+
+    def _dnat_router(self, ip, fw):
+        """What a MikroTik read through its API says that matters here: its
+        addresses on the way out and its dst-nat rules to this address."""
+        readers = getattr(self, 'rosapi', None)
+        if not readers or not fw:
+            return {}
+        try:
+            snap = readers.snapshot(fw)
+        except Exception:
+            snap = None
+        if not snap:
+            return {}
+        wan = set(snap.get('wan') or [])
+        addrs = []
+        for a in snap.get('addresses') or []:
+            if str(a.get('interface') or '') in wan and str(a.get('disabled')) != 'true':
+                addrs.append(str(a.get('address') or '').split('/')[0])
+        out = {'name': fw, 'wan': sorted(wan), 'wan_addresses': sorted(set(addrs) - {''}),
+               'rules': [], 'masquerade': 0, 'eim': 0, 'dstnat_filter': None}
+
+        def ports_of(text):
+            got = []
+            for part in str(text or '').split(','):
+                part = part.strip()
+                if not part:
+                    continue
+                lo, _, hi = part.partition('-')
+                try:
+                    got.append((int(lo), int(hi or lo)))
+                except ValueError:
+                    continue
+            return got
+
+        for r in snap.get('rules') or []:
+            table = str(r.get('table') or '')
+            action = str(r.get('action') or '')
+            chain = str(r.get('chain') or '')
+            if table == 'nat' and chain == 'srcnat' and action in ('masquerade', 'src-nat'):
+                out['masquerade'] += 1
+            if table == 'nat' and action == 'endpoint-independent-nat':
+                out['eim'] += 1
+            if table == 'filter' and chain == 'forward' and 'dstnat' in str(
+                    r.get('connection-nat-state') or ''):
+                out['dstnat_filter'] = str(r.get('connection-nat-state'))
+            if table != 'nat' or chain != 'dstnat' or action not in ('dst-nat', 'netmap'):
+                continue
+            to = [t.strip() for t in str(r.get('to-addresses') or '').replace('-', ',').split(',')]
+            if ip not in to:
+                continue
+            try:
+                packets = int(r.get('packets') or 0)
+                count = int(r.get('bytes') or 0)
+            except ValueError:
+                packets = count = 0
+            tp = ports_of(r.get('to-ports'))
+            out['rules'].append({
+                'id': str(r.get('.id') or ''), 'comment': str(r.get('comment') or ''),
+                'protocol': str(r.get('protocol') or ''), 'ports': ports_of(r.get('dst-port')),
+                'dst_address': str(r.get('dst-address') or ''),
+                'in_interface': str(r.get('in-interface') or r.get('in-interface-list') or ''),
+                'to_port': tp[0][0] if tp else 0, 'packets': packets, 'bytes': count,
+                'disabled': str(r.get('disabled')) == 'true', 'log': str(r.get('log')) == 'true'})
         return out
 
     def fw_detail(self, ident, ts=0):
@@ -89101,6 +89699,25 @@ class ApiHandler(BaseHTTPRequestHandler):
                     number('climit', 200, 1, 1000), number('coffset', 0, 0, 10 ** 7),
                     number('tlimit', 200, 1, 1000), number('toffset', 0, 0, 10 ** 7))))
             return self.send_json({'ok': True, **daemon.fw_vpn_now(one('fw'))})
+        if path == '/api/fw/dnat':
+            # The DNAT analyzer (1.10.360): what one device inside needs
+            # forwarded to it, out of the log. Only reads; several looks of
+            # the table, so kept a minute against the same question.
+            if not self.need_login():
+                return None
+            if not one('ip'):
+                hours = number('hours', 24, 1, 744)
+                return self.send_json({'ok': True, 'hosts': daemon.held(
+                    'fw-dnat-hosts/%d' % hours, 60,
+                    lambda: store.fw_dnat_hosts(time.time() - hours * 3600)) or []})
+            try:
+                got = daemon.held('fw-dnat/%s/%d/%s' % (one('ip'), number('hours', 24, 1, 744),
+                                                         one('fw') or ''), 60,
+                                  lambda: daemon.fw_dnat(one('ip'), number('hours', 24, 1, 744),
+                                                         one('fw') or ''))
+            except ValueError as e:
+                return self.fail(str(e), 400)
+            return self.send_json(dict(got, ok=True))
         if path == '/api/fw/router':
             # What a MikroTik read through its API or over ssh says about
             # itself (1.10.211): its interfaces, addresses, routes, leases,

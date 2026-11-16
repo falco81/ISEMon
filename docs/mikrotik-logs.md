@@ -95,6 +95,80 @@ details and in the column *Translated* (right button on a heading).
 
 Each packet of a tunnel written out (`ovpn,debug,packet`) is left out.
 
+### The DNAT analyzer (1.10.360)
+
+On the **NAT** page, **DNAT analyzer** asks for the address of one device
+inside - a game console, a server, a camera - and reads what reaches it from
+outside out of the log. The window is chosen in the popup. The devices whose
+connections out were translated most are offered to press. Nothing is
+changed anywhere: the rules it writes are text to copy.
+
+What it reads, each an index seek:
+
+- **its lines out**: the public address it is made on the way out, whether
+  the source port is kept, what it talks to and whom;
+- **its lines in**: what reached it through a dst-nat, and whether the filter
+  let it through (the filter's `connection-state:...,dnat` lines);
+- **the dst-nat rules' own lines**: what is forwarded to it, and to every
+  other device (a port forwarded elsewhere is said, never offered twice);
+- **the lines to its public address**: what knocks there and is not
+  forwarded.
+
+What it shows:
+
+- **Forwarded to it**: each public port and where it goes inside, and its
+  state:
+  - *gets through* - the filter let it through;
+  - *blocked by the filter* - forwarded, then dropped in the forward chain;
+  - *translated* - only the NAT rule logged it;
+  - from the router's API also *never used* (a rule with no packets) and
+    *switched off*.
+- **Knocking on its public address - not forwarded**: each port with *why*
+  it is thought to be this device's:
+  - the port its own connections leave by;
+  - the knocks come from addresses it talks to;
+  - it serves that port to devices inside;
+  - its kind of device wants it.
+
+  One of the first two makes it *surely*, one of the others *maybe*.
+- **Knocks with nothing tying them to it**: the internet trying doors (SSH,
+  RDP...). They are listed, collapsed, and never ticked by themselves.
+- **It looks like...**: a profile, by the ports it talks to. Profiles are
+  PlayStation Network (STUN TCP/UDP 3478-3480), Xbox network (UDP 3074, 3544,
+  88), Steam and EA SPORTS FC. Each port such a device wants is marked
+  forwarded, missing (knocked N×), forwarded elsewhere or not seen. A profile
+  is a guide: any device works, a console is only the commonest case.
+- **What it does**: what it talks to, what it serves inside, the translation
+  and how often the source port was kept.
+- **Warnings**:
+  - its public address is not public (carrier-grade NAT or a second router:
+    forwarding here does not reach it);
+  - several public addresses;
+  - the source port changed on most connections (strict / type 3 NAT: fixed
+    forwards do not help, endpoint-independent NAT or UPnP does);
+  - a forward the filter drops;
+  - NAT rules that do not log.
+- **Rules to add**: the ticked ports (and any added by hand) merged into
+  ranges, as rules for:
+  - MikroTik RouterOS, with the filter's `connection-nat-state=dstnat` and
+    the endpoint-independent NAT / UPnP lines as comments;
+  - Linux iptables;
+  - FortiGate (VIPs and a policy);
+  - Cisco ASA / FTD.
+
+  Copy them with the button. The public address and the WAN interface are
+  filled in where they are known.
+
+With the router read through its API (section 4), its dst-nat rules for the
+device are matched to what the log shows, with their packet counters. Its
+addresses on the way out are taken as the public ones even before anything
+knocks.
+
+It needs the NAT rules to log (`log=yes`, the prefixes above) and the drops
+on the way in to log. Without the first, the public address is taken from the
+filter's own lines. Without the second, nothing that knocks can be seen.
+FortiGate and FTD sessions with their translation are read the same way.
+
 ## 4. More through its API or over ssh (read-only)
 
 The log says which packets a rule wrote down, never how much went where:

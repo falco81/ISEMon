@@ -752,6 +752,7 @@ if (isset($_GET['api'])) {
         'fw-vpn'    => '/api/fw/vpn',
         /* ...and a MikroTik read through its API or over ssh, as it is. */
         'fw-router' => '/api/fw/router',
+        'fw-dnat' => '/api/fw/dnat',
         'fw-suggest' => '/api/fw/suggest',
         /* ...and the same for every other list's search box (1.10.163). */
         'suggest'   => '/api/suggest',
@@ -3365,6 +3366,139 @@ function srcText(el) {
   .modal .box.narrow{width:min(560px,100%)}
   .modal .box.medium{width:min(860px,100%)}
   .modal .box.large{width:min(1120px,100%)}
+  /* ---- the DNAT analyzer (1.10.360) ---- */
+  .dn{display:flex;flex-direction:column;gap:14px}
+  .dn .note{margin:0}
+  .dn-intro{max-width:880px}
+  .dn-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .dn-form input{flex:1 1 220px;min-width:0;font-family:var(--mono,ui-monospace,monospace);
+    font-size:15px;padding:9px 12px}
+  .dn-form select{flex:0 0 auto}
+  .dn-hosts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .dn-hosts-said{color:var(--tx-dim);font-size:12px;margin-right:4px}
+  .dn-host{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;
+    border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--tx);
+    font-size:12px;cursor:pointer}
+  .dn-host:hover{border-color:var(--accent);background:var(--info-bg)}
+  .dn-host-n{background:var(--line);border-radius:999px;padding:1px 7px;color:var(--tx-dim);
+    font-size:11px}
+  .dn-out{display:flex;flex-direction:column;gap:14px}
+  .dn-wait{display:flex;align-items:center;gap:6px;color:var(--tx-dim);padding:18px 4px}
+  .dn-hero{border:1px solid var(--line);border-radius:14px;padding:16px 18px;
+    background:radial-gradient(120% 140% at 0% 0%,rgba(88,166,255,.14),transparent 55%),
+               radial-gradient(120% 140% at 100% 0%,rgba(163,113,247,.12),transparent 55%),
+               var(--panel2)}
+  .dn-hero-top{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .dn-who{display:flex;gap:14px;align-items:center;min-width:0}
+  .dn-who-icon{width:52px;height:52px;flex:0 0 52px;border-radius:14px;display:grid;
+    place-items:center;color:var(--accent);background:var(--info-bg);
+    border:1px solid rgba(88,166,255,.3)}
+  .dn-who-icon svg{width:30px;height:30px}
+  .dn-who-names{min-width:0}
+  .dn-who-name{font-size:18px;font-weight:600;color:var(--tx);word-break:break-all}
+  .dn-who-name:empty{display:none}
+  .dn-who-ip{font-size:15px;color:var(--tx-dim)}
+  .dn-who-name:empty + .dn-who-ip{font-size:20px;font-weight:600;color:var(--tx)}
+  .dn-who-under{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .dn-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .dn-node{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--panel);
+    text-align:center;min-width:96px}
+  .dn-node.pub{border-color:rgba(63,185,80,.45);background:var(--ok-bg)}
+  .dn-node.bad{border-color:rgba(248,81,73,.5);background:var(--crit-bg)}
+  .dn-node.router{border-color:rgba(163,113,247,.4)}
+  .dn-node-main{font-size:13px;color:var(--tx)}
+  .dn-node-under{font-size:10.5px;color:var(--tx-dim);text-transform:uppercase;letter-spacing:.04em}
+  .dn-flow-arrow{position:relative;color:var(--tx-dim);font-size:10.5px;padding:0 14px 12px;
+    min-width:44px;text-align:center}
+  .dn-flow-arrow::after{content:'';position:absolute;left:4px;right:4px;bottom:4px;height:2px;
+    background:linear-gradient(90deg,var(--line),var(--accent))}
+  .dn-flow-arrow::before{content:'';position:absolute;right:2px;bottom:1px;border:4px solid transparent;
+    border-left:6px solid var(--accent)}
+  .dn-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+  .dn-tile{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel);
+    border-top:3px solid var(--line)}
+  .dn-tile.ok{border-top-color:var(--ok)}
+  .dn-tile.warn{border-top-color:var(--warn)}
+  .dn-tile.crit{border-top-color:var(--crit)}
+  .dn-tile-big{font-size:26px;font-weight:700;line-height:1.1;color:var(--tx)}
+  .dn-tile.ok .dn-tile-big{color:var(--ok)}
+  .dn-tile.crit .dn-tile-big{color:var(--crit)}
+  .dn-tile.warn .dn-tile-big{color:var(--warn)}
+  .dn-tile-words{font-size:12.5px;color:var(--tx);margin-top:2px}
+  .dn-tile-under{font-size:11.5px;color:var(--tx-dim)}
+  .dn-hero-foot{font-size:11.5px;margin-top:10px}
+  .dn-warns{display:flex;flex-direction:column;gap:6px}
+  .dn-warn{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:10px;
+    border:1px solid var(--line);border-left:4px solid var(--info);background:var(--panel2);
+    font-size:13px;line-height:1.45}
+  .dn-warn.lvl-bad{border-left-color:var(--crit);background:linear-gradient(90deg,var(--crit-bg),var(--panel2) 60%)}
+  .dn-warn.lvl-warn{border-left-color:var(--warn);background:linear-gradient(90deg,var(--warn-bg),var(--panel2) 60%)}
+  .dn-warn-dot{width:8px;height:8px;border-radius:50%;background:var(--info);flex:0 0 8px;margin-top:6px}
+  .dn-warn.lvl-bad .dn-warn-dot{background:var(--crit)}
+  .dn-warn.lvl-warn .dn-warn-dot{background:var(--warn)}
+  .dn-sec{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+  .dn-sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .dn-sec h3{margin:0;font-size:15px}
+  .dn-sec > .note{margin-bottom:8px}
+  .dn-scroll{max-height:none}
+  .dn-table{width:100%}
+  .dn-table td{vertical-align:top}
+  .dn-table .dn-row-hot td{background:rgba(248,81,73,.05)}
+  .dn-port{white-space:nowrap}
+  .dn-proto{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 5px;
+    border-radius:4px;margin-right:6px;vertical-align:1px;background:var(--line);color:var(--tx-dim)}
+  .dn-proto.udp{background:rgba(163,113,247,.18);color:var(--violet)}
+  .dn-proto.tcp{background:var(--info-bg);color:var(--info)}
+  .dn-portn{font-size:13.5px;color:var(--tx)}
+  .dn-portname{font-size:11.5px}
+  .dn-arrow{color:var(--tx-dim);width:18px}
+  .dn-small{font-size:12px}
+  .dn-check{width:24px}
+  .dn-check input{width:16px;height:16px;cursor:pointer}
+  .dn-pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:999px;
+    border:1px solid var(--line);color:var(--tx-dim);background:var(--panel2);white-space:nowrap}
+  .dn-pill.ok{color:var(--ok);background:var(--ok-bg);border-color:rgba(63,185,80,.35)}
+  .dn-pill.warn{color:var(--warn);background:var(--warn-bg);border-color:rgba(210,153,34,.4)}
+  .dn-pill.crit{color:var(--crit);background:var(--crit-bg);border-color:rgba(248,81,73,.4)}
+  .dn-pill.info{color:var(--info);background:var(--info-bg);border-color:rgba(88,166,255,.35)}
+  .dn-pill.violet{color:var(--violet);background:rgba(163,113,247,.12);border-color:rgba(163,113,247,.35)}
+  .dn-whys{display:flex;flex-wrap:wrap;gap:4px}
+  .dn-why{font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--tx)}
+  .dn-why.mapped,.dn-why.kept{border-color:rgba(88,166,255,.4)}
+  .dn-why.peer{border-color:rgba(63,185,80,.4)}
+  .dn-why.profile{border-color:rgba(163,113,247,.45)}
+  .dn-why.serves{border-color:rgba(240,136,62,.45)}
+  .dn-why.taken{color:var(--warn);border-color:rgba(210,153,34,.45)}
+  .dn-empty{padding:10px 12px;border-radius:10px;background:var(--panel2);color:var(--tx-dim);font-size:13px}
+  .dn-empty.ok{color:var(--ok);background:var(--ok-bg)}
+  .dn-tip{margin-top:8px !important;padding:8px 10px;border-radius:8px;background:rgba(163,113,247,.08)}
+  .dn-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .dn-box h4{margin:0 0 6px;font-size:13px;color:var(--tx-dim);font-weight:600}
+  .dn-facts{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+  .dn-fact{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;
+    border-top:1px dashed var(--line);padding-top:4px}
+  .dn-kinds{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+  .dn-kind{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--tx-dim);cursor:pointer;font-size:12.5px}
+  .dn-kind.on{color:var(--tx);border-color:var(--accent);background:var(--info-bg)}
+  .dn-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .dn-add input{width:170px}
+  .dn-picked{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px}
+  .dn-chip{display:inline-flex;align-items:center;gap:2px;padding:3px 4px 3px 8px;border-radius:999px;
+    border:1px solid var(--line);background:var(--panel2)}
+  .dn-chip-x{border:0;background:transparent;color:var(--tx-dim);cursor:pointer;font-size:15px;
+    line-height:1;padding:0 4px}
+  .dn-chip-x:hover{color:var(--crit)}
+  .dn-code{margin:0;padding:12px 14px;border-radius:10px;background:#0a0d12;border:1px solid var(--line);
+    color:#c9d1d9;font-size:12.5px;line-height:1.55;white-space:pre;overflow-wrap:normal;
+    max-height:340px;overflow:auto}
+  .dn-copy{display:flex;justify-content:flex-end;margin-top:8px}
+  @media (max-width:760px){
+    .dn-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .dn-grid{grid-template-columns:1fr}
+    .dn-flow{width:100%}
+  }
   /* Move to another database: the AI app 1.0.57's wizard, as it draws it
      (1.10.278) - its popup, its steps, cards, fields, facts and buttons. */
   #modal-box.mig-box{width:min(900px,100%);font-size:14.5px;line-height:1.5;border-radius:16px;
@@ -6674,6 +6808,8 @@ function srcText(el) {
                  aria-label="Search the firewall's lines">
           <button type="button" class="btn small primary" id="t-qgo" data-icon="search">Search</button>
           <button type="button" class="btn small" id="t-help" data-icon="info">How to search</button>
+          <button type="button" class="btn small dn-open" id="t-dnat" data-icon="router" hidden
+                  title="What one device inside needs forwarded to it from outside, and the rules that would">DNAT analyzer</button>
           <div class="t-suggest" id="t-suggest" hidden></div>
         </div>
         <div class="t-said" id="t-said"></div>
@@ -27559,6 +27695,8 @@ function tListShape() {
   tDrawHead();
   tDrawPicks();
   tDrawQuick();
+  /* The DNAT analyzer, on the NAT page (1.10.360). */
+  if ($('t-dnat')) $('t-dnat').hidden = page !== 'nat';
 }
 
 /* The headings, each one a way to order the list: pressed once it orders
@@ -27970,6 +28108,859 @@ function tAddress(ip, port, intf, country, inline) {
   return box;
 }
 
+/* ==========================================================================
+   The DNAT analyzer (1.10.360)
+
+   One device inside - a console, a server, a camera - and what reaches it
+   from outside, read out of the firewall's log: what is forwarded to it and
+   gets through, what knocks on the public address it leaves by with no rule
+   to forward it (each with why it is thought to be for this device), what
+   kind of device it looks like and the ports such a device wants, and the
+   rules that would forward what is missing, for the firewall to copy.
+   Nothing is changed anywhere: the rules are text.
+   ========================================================================== */
+/* The words the daemon sends for the analyzer, said here so that they are
+   translated where they are shown (the profiles and the names of ports). */
+var DN_WORDS = [
+  'It talks to PSN’s STUN ports (TCP and UDP 3478-3480).',
+  'Party chat and peer-to-peer games also use high UDP ports chosen as they go: no fixed rule covers them. UPnP limited to this address, or endpoint-independent NAT for it, does. Aim: NAT Type 2 in the console’s connection test.',
+  'PSN, party chat, peer-to-peer games',
+  'PSN',
+  'Call of Duty and other peer-to-peer games',
+  'It talks to Xbox Live (UDP 3074, 3544 Teredo, 88).',
+  'Aim: NAT type Open in the console’s network settings.',
+  'Xbox Live, peer-to-peer games',
+  'Xbox Live',
+  'Xbox Live (IPsec)',
+  'Teredo',
+  'Xbox Live (IPsec NAT-T)',
+  'It talks to Steam’s game servers (UDP 27000-27100).',
+  'Only a PC that hosts games needs these; playing on others’ servers needs none.',
+  'hosting a game, peer-to-peer',
+  'a dedicated game server',
+  'It talks to EA’s game port (UDP 3659).',
+  'EA SPORTS FC matches',
+  'DNS',
+  'EA SPORTS FC',
+  'HTTP',
+  'HTTP alt',
+  'HTTPS',
+  'HTTPS alt',
+  'IKE',
+  'IMAPS',
+  'IPsec NAT-T',
+  'Minecraft',
+  'NTP',
+  'OpenVPN',
+  'Plex',
+  'QUIC',
+  'RDP',
+  'RTMP',
+  'Remote Play',
+  'SMTP',
+  'SMTP submission',
+  'SMTPS',
+  'SSH',
+  'STUN / PSN',
+  'Steam',
+  'VNC',
+  'WireGuard',
+  'Xbox Live / Call of Duty',
+  'push notifications'
+];
+var DN = {ip: '', hours: 24, got: null, pick: {}, fwkind: '', extra: [], hosts: null};
+
+var DN_STATES = {
+  working: ['ok', 'gets through', 'Forwarded, and the filter let what was forwarded through.'],
+  blocked: ['crit', 'blocked by the filter', 'Forwarded, but the filter dropped what was '
+    + 'forwarded: allow it in the forward chain.'],
+  translated: ['info', 'translated', 'The dst-nat rule logged it; the filter logs nothing '
+    + 'about what then went through.'],
+  seen: ['info', 'seen', 'Arrived through a translation, asked at a public address.'],
+  unused: ['warn', 'never used', 'The router has this rule, and nothing has matched it yet.'],
+  counted: ['ok', 'counted by the router', 'The router’s counter says it is used; '
+    + 'nothing in the log in this window.'],
+  disabled: ['warn', 'switched off', 'The rule is there and switched off.']
+};
+var DN_NEED = {need: ['crit', 'needed'], recommended: ['warn', 'recommended'],
+               optional: ['info', 'if wanted']};
+
+function dnPill(cls, words, tip) {
+  var p = el('span', 'dn-pill ' + cls, words);
+  if (tip) p.title = tip;
+  return p;
+}
+function dnPorts(lo, hi) { return hi && hi !== lo ? lo + '-' + hi : String(lo); }
+function dnWhen(ts) { return ts ? ago(ts) : '–'; }
+
+/** The popup: an address to give, the devices to choose from, the answer. */
+function dnatOpen(ip) {
+  DN.extra = [];
+  modal('DNAT analyzer', function (body) {
+    var wrap = el('div', 'dn');
+    var intro = el('p', 'note dn-intro', 'Give the address of a device inside - a game '
+      + 'console, a server, a camera. What reaches it from outside is read out of the '
+      + 'firewall’s log: what is forwarded to it and gets through, what knocks on its '
+      + 'public address with no rule to forward it, and the rules that would. Nothing is '
+      + 'changed: the rules are for you to copy.');
+    wrap.appendChild(intro);
+    var form = el('div', 'dn-form');
+    var input = el('input');
+    input.type = 'text';
+    input.id = 'dn-ip';
+    input.placeholder = '192.168.1.50';
+    input.setAttribute('aria-label', 'The address of the device inside');
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.value = ip || DN.ip || '';
+    var win = el('select');
+    win.id = 'dn-hours';
+    win.setAttribute('aria-label', 'How far back');
+    [[1, 'last hour'], [6, 'last 6 hours'], [24, 'last 24 hours'], [72, 'last 3 days'],
+     [168, 'last 7 days'], [744, 'last 31 days']].forEach(function (o) {
+      var opt = el('option', '', o[1]);
+      opt.value = String(o[0]);
+      win.appendChild(opt);
+    });
+    var hours = DN.hours || tHours() || 24;
+    win.value = String([1, 6, 24, 72, 168, 744].filter(function (h) { return h >= hours; })[0]
+                       || 744);
+    var go = el('button', 'btn primary', 'Analyze');
+    go.type = 'button';
+    setButtonIcon(go, 'search', 'Analyze');
+    var run = function () {
+      var want = input.value.trim();
+      if (!want) { input.focus(); return; }
+      DN.ip = want;
+      DN.hours = Number(win.value) || 24;
+      dnatRun(want, DN.hours);
+    };
+    go.onclick = run;
+    input.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } };
+    win.onchange = function () { if (input.value.trim()) run(); };
+    form.appendChild(input);
+    form.appendChild(win);
+    form.appendChild(go);
+    wrap.appendChild(form);
+    var hosts = el('div', 'dn-hosts');
+    hosts.id = 'dn-hosts';
+    wrap.appendChild(hosts);
+    var out = el('div', 'dn-out');
+    out.id = 'dn-out';
+    wrap.appendChild(out);
+    body.appendChild(wrap);
+    dnatHosts();
+    if (input.value.trim()) setTimeout(run, 0);
+  }, [{words: 'Show its lines', icon: 'list', left: true, go: function () {
+        var want = ($('dn-ip') && $('dn-ip').value.trim()) || DN.ip;
+        if (!want) return;
+        closeModal();
+        $('t-q').value = 'srcip:' + want + ' OR dstip:' + want;
+        tRun();
+      }},
+      {words: 'Close', close: true}], 'large');
+}
+
+/** The devices inside whose connections out were translated most. */
+function dnatHosts() {
+  var box = $('dn-hosts');
+  if (!box) return;
+  api('fw-dnat&hours=' + (DN.hours || 24), undefined, {quiet: true}).then(function (d) {
+    if (!$('dn-hosts')) return;
+    clear(box);
+    var list = (d.hosts || []).slice(0, 16);
+    if (!list.length) return;
+    box.appendChild(el('span', 'dn-hosts-said', 'Translated on the way out most:'));
+    list.forEach(function (h) {
+      var b = el('button', 'dn-host');
+      b.type = 'button';
+      b.appendChild(el('span', 'mono', h.ip));
+      b.appendChild(el('span', 'dn-host-n', num(h.n)));
+      b.title = num(h.n) + ' translated connection(s), the last ' + ago(h.last);
+      b.onclick = function () {
+        $('dn-ip').value = h.ip;
+        DN.ip = h.ip;
+        dnatRun(h.ip, Number($('dn-hours').value) || 24);
+      };
+      box.appendChild(b);
+    });
+  }).catch(function () { });
+}
+
+function dnatRun(ip, hours) {
+  var out = $('dn-out');
+  if (!out) return;
+  clear(out);
+  var wait = el('div', 'dn-wait');
+  wait.appendChild(el('span', 'spin'));
+  wait.appendChild(el('span', '', 'Reading what reaches ' + ip + ' and what it talks to…'));
+  out.appendChild(wait);
+  api('fw-dnat&ip=' + encodeURIComponent(ip) + '&hours=' + hours + tFwArg()).then(function (d) {
+    if (!$('dn-out') || DN.ip !== ip) return;
+    DN.got = d;
+    DN.pick = {};
+    (d.missing || []).forEach(function (m) {
+      if (m.likely === 'likely') DN.pick[m.proto + '/' + m.port] = true;
+    });
+    (d.profiles || []).slice(0, 1).forEach(function (p) {
+      p.ports.forEach(function (pp) {
+        if ((pp.need === 'need' || pp.need === 'recommended') && pp.state === 'missing') {
+          for (var port = pp.ports[0]; port <= pp.ports[1]; port++) {
+            DN.pick[pp.proto + '/' + port] = true;
+          }
+        }
+      });
+    });
+    var types = d.types || [];
+    DN.fwkind = types.indexOf('routeros') >= 0 ? 'routeros'
+      : types.indexOf('fortigate') >= 0 ? 'fortigate'
+      : types.indexOf('ftd') >= 0 ? 'cisco' : 'routeros';
+    dnatDraw(d);
+  }).catch(function (e) {
+    if (!$('dn-out')) return;
+    clear(out);
+    out.appendChild(el('div', 'dn-warn lvl-bad', (e && e.message) || 'It could not be read.'));
+  });
+}
+
+/* ---- the answer ---------------------------------------------------------- */
+function dnatDraw(d) {
+  var out = $('dn-out');
+  clear(out);
+  out.appendChild(dnatHero(d));
+  var warn = dnatWarnings(d);
+  if (warn) out.appendChild(warn);
+  (d.profiles || []).slice(0, 1).forEach(function (p) { out.appendChild(dnatProfile(p, d)); });
+  out.appendChild(dnatForwards(d));
+  out.appendChild(dnatMissing(d));
+  if ((d.scans || []).length) out.appendChild(dnatScans(d));
+  out.appendChild(dnatTalks(d));
+  out.appendChild(dnatRules(d));
+}
+
+function dnatHero(d) {
+  var hero = el('div', 'dn-hero');
+  var top = el('div', 'dn-hero-top');
+  var who = el('div', 'dn-who');
+  var icon = el('span', 'dn-who-icon');
+  icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+    + 'stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" '
+    + 'rx="3"/><path d="M8 12h3M9.5 10.5v3"/><circle cx="15.5" cy="11" r="1"/>'
+    + '<circle cx="17.5" cy="13" r="1"/></svg>';
+  who.appendChild(icon);
+  var names = el('div', 'dn-who-names');
+  var name = el('div', 'dn-who-name', '');
+  name.id = 'dn-name';
+  names.appendChild(name);
+  var ipl = el('div', 'dn-who-ip mono', d.ip);
+  names.appendChild(ipl);
+  var under = el('div', 'dn-who-under');
+  if (d.zone) under.appendChild(dnPill('info', d.zone, 'The interface it is on'));
+  (d.fws || []).forEach(function (f) { if (f) under.appendChild(dnPill('', f, 'The firewall')); });
+  if ((d.profiles || []).length) under.appendChild(dnPill('violet', d.profiles[0].name,
+                                                          'What it looks like'));
+  names.appendChild(under);
+  who.appendChild(names);
+  top.appendChild(who);
+  /* The way out, drawn: the device, the router, the public address. */
+  var flow = el('div', 'dn-flow');
+  var pub = (d.out.public || []).filter(function (p) { return p.n; });
+  if (!pub.length) pub = d.out.public || [];
+  flow.appendChild(dnFlowNode(d.ip, 'inside', ''));
+  flow.appendChild(el('span', 'dn-flow-arrow', (d.out.kinds && Object.keys(d.out.kinds)[0])
+                      || 'NAT'));
+  flow.appendChild(dnFlowNode((d.out.wan || [])[0] || 'router', 'way out', 'router'));
+  flow.appendChild(el('span', 'dn-flow-arrow', ''));
+  flow.appendChild(dnFlowNode(pub.length ? pub[0].ip : 'not seen', 'public address',
+                              pub.length && pub[0].private ? 'bad' : 'pub'));
+  top.appendChild(flow);
+  hero.appendChild(top);
+  /* The four numbers. */
+  var working = (d.forwards || []).filter(function (f) { return f.state === 'working'; }).length;
+  var likely = (d.missing || []).filter(function (m) { return m.likely === 'likely'; }).length;
+  var tiles = el('div', 'dn-tiles');
+  tiles.appendChild(dnTile(num((d.forwards || []).length), 'forwarded to it',
+                           working ? num(working) + ' getting through' : 'none seen getting '
+                           + 'through', working ? 'ok' : ''));
+  tiles.appendChild(dnTile(num((d.missing || []).length), 'knocking, not forwarded',
+                           likely ? num(likely) + ' surely for it' : 'nothing sure',
+                           likely ? 'crit' : (d.missing || []).length ? 'warn' : 'ok'));
+  tiles.appendChild(dnTile(num(d.scans_total || 0), 'scans of the public address',
+                           'left closed', ''));
+  tiles.appendChild(dnTile(num(d.out.peers || 0), 'addresses it talks to',
+                           d.out.kept + d.out.changed ? 'port kept ' + num(d.out.kept)
+                           + ' of ' + num(d.out.kept + d.out.changed) : 'port kept: not said',
+                           d.out.changed > d.out.kept ? 'warn' : ''));
+  hero.appendChild(tiles);
+  var foot = el('div', 'dn-hero-foot muted');
+  foot.textContent = num(d.lines.out) + ' line(s) from it, ' + num(d.lines['in'])
+    + ' to it, ' + num(d.lines.rules) + ' of the dst-nat rules, in the '
+    + (d.hours <= 48 ? 'last ' + d.hours + ' hour(s)' : 'last ' + Math.round(d.hours / 24)
+       + ' day(s)')
+    + (d.lines.capped ? ' - the newest of them only' : '') + '.';
+  hero.appendChild(foot);
+  api('ptr', {ips: [d.ip]}).then(function (r) {
+    var said = r && r.names && r.names[d.ip];
+    if (said && $('dn-name')) $('dn-name').textContent = said;
+  }).catch(function () { });
+  return hero;
+}
+function dnFlowNode(main, under, cls) {
+  var n = el('div', 'dn-node' + (cls ? ' ' + cls : ''));
+  n.appendChild(el('div', 'dn-node-main mono', main));
+  n.appendChild(el('div', 'dn-node-under', under));
+  return n;
+}
+function dnTile(big, words, under, cls) {
+  var t = el('div', 'dn-tile' + (cls ? ' ' + cls : ''));
+  t.appendChild(el('div', 'dn-tile-big', big));
+  t.appendChild(el('div', 'dn-tile-words', words));
+  t.appendChild(el('div', 'dn-tile-under', under));
+  return t;
+}
+
+function dnatWarnings(d) {
+  var list = d.warnings || [];
+  if (!list.length) return null;
+  var box = el('div', 'dn-warns');
+  list.forEach(function (w) {
+    var text = '';
+    if (w.key === 'nothing') {
+      text = 'Nothing in the firewall’s log from or to ' + w.ip + ' in this window. Is '
+        + 'it the right address, is it on, and does the firewall log its connections?';
+    } else if (w.key === 'cgnat') {
+      text = 'It leaves as ' + w['public'] + ', which is not a public address: there is '
+        + 'another NAT beyond this router (the provider’s carrier-grade NAT, or a modem '
+        + 'routing too). Forwarding here does not reach it from the internet until that one '
+        + 'forwards as well, or the provider gives a public address.';
+    } else if (w.key === 'many') {
+      text = 'It leaves by ' + num(w.n) + ' public addresses. Forward on the one its peers '
+        + 'see - the busiest is first.';
+    } else if (w.key === 'ports') {
+      text = 'The router changes the source port of most of its connections ('
+        + num(w.changed) + ' changed, ' + num(w.kept) + ' kept): a peer cannot guess where '
+        + 'to answer - strict or type 3 NAT, as consoles call it. Endpoint-independent NAT '
+        + 'for this address (UDP), or UPnP, fixes it where fixed forwards cannot.';
+    } else if (w.key === 'nolog') {
+      text = 'No line says how its connections out were translated. On a MikroTik, give the '
+        + 'srcnat and dstnat rules log=yes with a prefix (e.g. nat-masquerade, nat-dst-nat) '
+        + '- or read it through its API - and the public address and the forwards are '
+        + 'known exactly.';
+    } else if (w.key === 'blocked') {
+      text = String(w.proto).toUpperCase() + ' ' + w.port + ' is forwarded to it, but the '
+        + 'filter drops what was forwarded: allow it in the forward chain (on a MikroTik, '
+        + 'connection-nat-state=dstnat).';
+    } else if (w.key === 'disabled') {
+      text = 'The dst-nat rule for ' + String(w.proto).toUpperCase() + ' ' + w.port
+        + ' is switched off.';
+    } else {
+      return;
+    }
+    var one = el('div', 'dn-warn lvl-' + (w.level || 'info'));
+    one.appendChild(el('span', 'dn-warn-dot'));
+    one.appendChild(el('span', '', text));
+    box.appendChild(one);
+  });
+  return box.firstChild ? box : null;
+}
+
+function dnSection(title, says, right) {
+  var s = el('section', 'dn-sec');
+  var h = el('div', 'dn-sec-head');
+  h.appendChild(el('h3', '', title));
+  if (right) h.appendChild(right);
+  s.appendChild(h);
+  if (says) s.appendChild(el('p', 'note', says));
+  return s;
+}
+function dnTable(heads) {
+  var wrap = el('div', 'scroll dn-scroll');
+  var t = el('table', 'rows dn-table');
+  var tr = el('tr');
+  heads.forEach(function (h) { tr.appendChild(el('th', '', h)); });
+  var thead = el('thead');
+  thead.appendChild(tr);
+  t.appendChild(thead);
+  var tb = el('tbody');
+  t.appendChild(tb);
+  wrap.appendChild(t);
+  return {wrap: wrap, body: tb};
+}
+function dnPortCell(proto, lo, hi, name) {
+  var td = el('td', 'dn-port');
+  td.appendChild(el('span', 'dn-proto ' + proto, String(proto).toUpperCase()));
+  td.appendChild(el('span', 'mono dn-portn', dnPorts(lo, hi)));
+  if (name) td.appendChild(el('div', 'muted dn-portname', name));
+  return td;
+}
+
+function dnatProfile(p, d) {
+  var right = dnPill('violet', p.score >= 4 ? 'quite sure' : 'fairly sure',
+                     'From the ports it talks to');
+  var s = dnSection('It looks like ' + p.name, '', right);
+  var says = el('p', 'note');
+  says.appendChild(el('span', '', p.says));
+  says.appendChild(document.createTextNode(' '));
+  says.appendChild(el('span', '', 'What a device of this kind wants forwarded, against what '
+                      + 'was seen:'));
+  s.appendChild(says);
+  var t = dnTable(['Port', 'Wanted', 'What for', 'Here']);
+  p.ports.forEach(function (pp) {
+    var tr = el('tr');
+    tr.appendChild(dnPortCell(pp.proto, pp.ports[0], pp.ports[1], ''));
+    var need = DN_NEED[pp.need] || ['', pp.need];
+    var td = el('td');
+    td.appendChild(dnPill(need[0], need[1]));
+    tr.appendChild(td);
+    tr.appendChild(el('td', '', pp.why));
+    td = el('td');
+    if (pp.state === 'forwarded') {
+      td.appendChild(dnPill('ok', pp.working ? '✓ forwarded, gets through' : '✓ forwarded'));
+    } else if (pp.state === 'partly') {
+      td.appendChild(dnPill('warn', 'partly forwarded'));
+    } else if (pp.state === 'elsewhere') {
+      td.appendChild(dnPill('warn', 'forwarded to ' + pp.elsewhere.join(', ')));
+    } else if (pp.state === 'router') {
+      td.appendChild(dnPill('warn', 'the router answers it itself'));
+    } else {
+      td.appendChild(dnPill(pp.knocks ? 'crit' : '', pp.knocks ? '✗ missing - knocked '
+                            + num(pp.knocks) + '×' : 'not forwarded, nothing knocked'));
+    }
+    tr.appendChild(td);
+    t.body.appendChild(tr);
+  });
+  s.appendChild(t.wrap);
+  if (p.note) s.appendChild(el('p', 'note dn-tip', p.note));
+  return s;
+}
+
+function dnatForwards(d) {
+  var s = dnSection('Forwarded to it', 'What arrives at the public address and is sent on '
+                    + 'to ' + d.ip + ' - and whether the filter lets it through.');
+  var list = d.forwards || [];
+  if (!list.length) {
+    s.appendChild(el('div', 'dn-empty', 'Nothing is forwarded to it in this window.'));
+    return s;
+  }
+  var t = dnTable(['Public port', '', 'Inside', 'State', 'From', 'Last', 'Rule']);
+  list.forEach(function (f) {
+    var tr = el('tr');
+    tr.appendChild(dnPortCell(f.proto, f.public_port, f.public_last, f.name));
+    tr.appendChild(el('td', 'dn-arrow', '→'));
+    var inside = el('td', 'mono', d.ip + ':' + f.inside_port);
+    tr.appendChild(inside);
+    var st = DN_STATES[f.state] || ['', f.state, ''];
+    var td = el('td');
+    td.appendChild(dnPill(st[0], st[1], st[2]));
+    if (f.guessed && f.state !== 'working') {
+      td.appendChild(el('div', 'muted dn-small', 'where it went: from the router’s other '
+                       + 'lines'));
+    }
+    tr.appendChild(td);
+    tr.appendChild(el('td', '', f.sources ? num(f.sources) + ' address(es)' : '–'));
+    tr.appendChild(el('td', 'muted', dnWhen(f.last)));
+    td = el('td', 'dn-small');
+    if (f.rule) td.appendChild(el('div', '', f.rule));
+    if (f.prefix) td.appendChild(el('div', 'mono muted', f.prefix));
+    if (f.rule_packets !== null && f.rule_packets !== undefined) {
+      td.appendChild(el('div', 'muted', num(f.rule_packets) + ' packet(s) counted'));
+    }
+    if (!td.firstChild) td.textContent = '–';
+    tr.appendChild(td);
+    t.body.appendChild(tr);
+  });
+  s.appendChild(t.wrap);
+  return s;
+}
+
+var DN_WHY = {
+  mapped: 'its own connections leave by this port',
+  kept: 'its own connections leave from this port',
+  peer: '', serves: '', profile: ''
+};
+function dnWhyChip(w) {
+  var words = DN_WHY[w.kind] || '';
+  if (w.kind === 'peer') words = 'from ' + num(w.n) + ' address(es) it talks to';
+  if (w.kind === 'serves') words = 'it serves this port inside (' + num(w.n) + ' client(s))';
+  if (w.kind === 'profile') words = w.name + ' wants it';
+  var c = el('span', 'dn-why ' + w.kind, words);
+  return c;
+}
+
+function dnatMissing(d) {
+  var list = d.missing || [];
+  var s = dnSection('Knocking on its public address - not forwarded', 'Connections from '
+                    + 'outside to ' + ((d.out.public || []).map(function (p) { return p.ip; })
+                                       .join(', ') || 'its public address')
+                    + ' that no rule forwarded, with why each is thought to be for this device. '
+                    + 'Ticked ones go into the rules below.');
+  if (!list.length) {
+    s.appendChild(el('div', 'dn-empty ok', (d.out.public || []).length
+      ? '✓ Nothing knocks for it that is not forwarded.'
+      : 'Its public address is not known, so what knocks on it cannot be read.'));
+    return s;
+  }
+  var t = dnTable(['', 'Port', 'How sure', 'Why it is for this device', 'Knocks', 'Last']);
+  list.forEach(function (m) {
+    var tr = el('tr', m.likely === 'likely' ? 'dn-row-hot' : '');
+    var td = el('td', 'dn-check');
+    var box = el('input');
+    box.type = 'checkbox';
+    box.checked = !!DN.pick[m.proto + '/' + m.port];
+    box.setAttribute('aria-label', 'Forward ' + m.proto + ' ' + m.port);
+    box.dataset.dn = m.proto + '/' + m.port;
+    box.onchange = function () {
+      if (box.checked) DN.pick[m.proto + '/' + m.port] = true;
+      else delete DN.pick[m.proto + '/' + m.port];
+      dnatRulesRedraw();
+    };
+    td.appendChild(box);
+    tr.appendChild(td);
+    tr.appendChild(dnPortCell(m.proto, m.port, 0, m.name));
+    td = el('td');
+    td.appendChild(dnPill(m.likely === 'likely' ? 'crit' : 'warn',
+                          m.likely === 'likely' ? 'surely' : 'maybe'));
+    tr.appendChild(td);
+    td = el('td', 'dn-whys');
+    m.why.forEach(function (w) { td.appendChild(dnWhyChip(w)); });
+    if ((m.elsewhere || []).length) {
+      td.appendChild(el('span', 'dn-why taken', 'already forwarded to '
+                       + m.elsewhere.join(', ')));
+    }
+    tr.appendChild(td);
+    td = el('td');
+    td.appendChild(el('div', '', num(m.n) + '× from ' + num(m.sources) + ' address(es)'));
+    if (m.denied) td.appendChild(el('div', 'muted dn-small', num(m.denied) + ' dropped'));
+    tr.appendChild(td);
+    tr.appendChild(el('td', 'muted', dnWhen(m.last)));
+    t.body.appendChild(tr);
+  });
+  s.appendChild(t.wrap);
+  return s;
+}
+
+function dnatScans(d) {
+  var right = el('button', 'btn small', 'Show');
+  right.type = 'button';
+  var s = dnSection('Knocks with nothing tying them to it (' + num(d.scans_total) + ')',
+                    'From addresses it never talks to, at ports it does not use: the internet '
+                    + 'trying doors. Left closed - tick one only if you know it is its.', right);
+  var t = dnTable(['', 'Port', 'Knocks', 'Last', '']);
+  t.wrap.hidden = true;
+  right.onclick = function () {
+    t.wrap.hidden = !t.wrap.hidden;
+    right.textContent = t.wrap.hidden ? 'Show' : 'Hide';
+  };
+  d.scans.forEach(function (m) {
+    var tr = el('tr');
+    var td = el('td', 'dn-check');
+    var box = el('input');
+    box.type = 'checkbox';
+    box.checked = !!DN.pick[m.proto + '/' + m.port];
+    box.setAttribute('aria-label', 'Forward ' + m.proto + ' ' + m.port);
+    box.dataset.dn = m.proto + '/' + m.port;
+    box.onchange = function () {
+      if (box.checked) DN.pick[m.proto + '/' + m.port] = true;
+      else delete DN.pick[m.proto + '/' + m.port];
+      dnatRulesRedraw();
+    };
+    td.appendChild(box);
+    tr.appendChild(td);
+    tr.appendChild(dnPortCell(m.proto, m.port, 0, m.name));
+    tr.appendChild(el('td', '', num(m.n) + '× from ' + num(m.sources) + ' address(es)'));
+    tr.appendChild(el('td', 'muted', dnWhen(m.last)));
+    td = el('td', 'dn-small');
+    if (m.scanned) td.appendChild(dnPill('', 'scanned everywhere'));
+    if ((m.elsewhere || []).length) {
+      td.appendChild(dnPill('info', 'forwarded to ' + m.elsewhere.join(', ')));
+    }
+    tr.appendChild(td);
+    t.body.appendChild(tr);
+  });
+  s.appendChild(t.wrap);
+  return s;
+}
+
+function dnatTalks(d) {
+  var s = dnSection('What it does', '');
+  var grid = el('div', 'dn-grid');
+  var left = el('div', 'dn-box');
+  left.appendChild(el('h4', '', 'Talks to (out)'));
+  if ((d.out.services || []).length) {
+    var t = dnTable(['Port', 'Connections', 'Peers']);
+    d.out.services.slice(0, 10).forEach(function (sv) {
+      var tr = el('tr');
+      tr.appendChild(dnPortCell(sv.proto, sv.port, 0, sv.name));
+      tr.appendChild(el('td', '', num(sv.n)));
+      tr.appendChild(el('td', '', num(sv.peers)));
+      t.body.appendChild(tr);
+    });
+    left.appendChild(t.wrap);
+  } else {
+    left.appendChild(el('div', 'dn-empty', 'Nothing out seen.'));
+  }
+  grid.appendChild(left);
+  var right = el('div', 'dn-box');
+  right.appendChild(el('h4', '', 'Serves inside'));
+  if ((d.serves || []).length) {
+    var t2 = dnTable(['Port', 'Connections', 'Clients']);
+    d.serves.forEach(function (sv) {
+      var tr = el('tr');
+      tr.appendChild(dnPortCell(sv.proto, sv.port, 0, sv.name));
+      tr.appendChild(el('td', '', num(sv.n)));
+      tr.appendChild(el('td', '', num(sv.clients)));
+      t2.body.appendChild(tr);
+    });
+    right.appendChild(t2.wrap);
+  } else {
+    right.appendChild(el('div', 'dn-empty', 'No device inside was seen connecting to it.'));
+  }
+  var facts = el('div', 'dn-facts');
+  var kinds = Object.keys(d.out.kinds || {});
+  facts.appendChild(dnFact('Translation on the way out', kinds.length ? kinds.join(', ')
+                           : (d.out.public || []).length ? 'seen in the filter’s lines'
+                           : 'not said'));
+  facts.appendChild(dnFact('Source port kept', d.out.kept + d.out.changed
+                           ? num(d.out.kept) + ' / ' + num(d.out.kept + d.out.changed)
+                           : 'not said'));
+  if ((d.router_own || []).length) {
+    facts.appendChild(dnFact('The router answers itself', d.router_own.join(', ')));
+  }
+  right.appendChild(facts);
+  grid.appendChild(right);
+  s.appendChild(grid);
+  return s;
+}
+function dnFact(k, v) {
+  var f = el('div', 'dn-fact');
+  f.appendChild(el('span', 'muted', k));
+  f.appendChild(el('b', '', v));
+  return f;
+}
+
+/* ---- the rules ------------------------------------------------------------ */
+var DN_KINDS = [['routeros', 'MikroTik RouterOS'], ['iptables', 'Linux iptables'],
+                ['fortigate', 'FortiGate'], ['cisco', 'Cisco ASA / FTD']];
+
+function dnatRules(d) {
+  var s = dnSection('Rules to add', 'The ticked ports, merged into ranges, as rules for the '
+                    + 'firewall. Check them before pasting: they forward from the whole '
+                    + 'internet.');
+  s.id = 'dn-rules';
+  var bar = el('div', 'dn-kinds');
+  DN_KINDS.forEach(function (k) {
+    var b = el('button', 'dn-kind' + (DN.fwkind === k[0] ? ' on' : ''), k[1]);
+    b.type = 'button';
+    b.onclick = function () { DN.fwkind = k[0]; dnatRulesRedraw(); };
+    bar.appendChild(b);
+  });
+  s.appendChild(bar);
+  /* A port of one's own, for what nothing has knocked on yet. */
+  var add = el('div', 'dn-add');
+  var proto = el('select');
+  proto.setAttribute('aria-label', 'Protocol');
+  ['udp', 'tcp'].forEach(function (p) {
+    var o = el('option', '', p.toUpperCase());
+    o.value = p;
+    proto.appendChild(o);
+  });
+  var port = el('input');
+  port.type = 'text';
+  port.placeholder = 'a port or 3478-3480';
+  port.setAttribute('aria-label', 'Port or range');
+  var plus = el('button', 'btn small', 'Add a port');
+  plus.type = 'button';
+  setButtonIcon(plus, 'add', 'Add a port');
+  plus.onclick = function () {
+    var m = /^\s*(\d{1,5})(?:\s*-\s*(\d{1,5}))?\s*$/.exec(port.value);
+    if (!m) { toast('a port, or two joined by -', 'bad'); return; }
+    var lo = Number(m[1]), hi = Number(m[2] || m[1]);
+    if (lo < 1 || hi > 65535 || hi < lo || hi - lo > 1000) {
+      toast('a port 1-65535, a range of at most 1000', 'bad');
+      return;
+    }
+    for (var p = lo; p <= hi; p++) DN.pick[proto.value + '/' + p] = true;
+    port.value = '';
+    dnatRulesRedraw();
+  };
+  add.appendChild(proto);
+  add.appendChild(port);
+  add.appendChild(plus);
+  s.appendChild(add);
+  var chips = el('div', 'dn-picked');
+  chips.id = 'dn-picked';
+  s.appendChild(chips);
+  var pre = el('pre', 'dn-code mono');
+  pre.id = 'dn-code';
+  s.appendChild(pre);
+  var copy = el('button', 'btn small primary', 'Copy the rules');
+  copy.type = 'button';
+  setButtonIcon(copy, 'copy', 'Copy the rules');
+  copy.onclick = function () { copyText($('dn-code').textContent, 'the rules are copied'); };
+  var row = el('div', 'dn-copy');
+  row.appendChild(copy);
+  s.appendChild(row);
+  setTimeout(dnatRulesRedraw, 0);
+  return s;
+}
+
+/** The ticked ports, merged into ranges: [{proto, lo, hi}]. */
+function dnatPicked() {
+  var by = {udp: [], tcp: []};
+  Object.keys(DN.pick).forEach(function (k) {
+    var p = k.split('/');
+    if (by[p[0]]) by[p[0]].push(Number(p[1]));
+  });
+  var out = [];
+  ['udp', 'tcp'].forEach(function (proto) {
+    var list = by[proto].sort(function (a, b) { return a - b; });
+    var lo = null, hi = null;
+    list.forEach(function (n) {
+      if (lo === null) { lo = hi = n; return; }
+      if (n === hi + 1) { hi = n; return; }
+      out.push({proto: proto, lo: lo, hi: hi});
+      lo = hi = n;
+    });
+    if (lo !== null) out.push({proto: proto, lo: lo, hi: hi});
+  });
+  return out;
+}
+
+function dnatRulesRedraw() {
+  var d = DN.got;
+  if (!d || !$('dn-code')) return;
+  Array.prototype.forEach.call(document.querySelectorAll('#dn-rules .dn-kind'), function (b, i) {
+    b.classList.toggle('on', DN_KINDS[i][0] === DN.fwkind);
+  });
+  var picked = dnatPicked();
+  var chips = $('dn-picked');
+  clear(chips);
+  if (!picked.length) {
+    chips.appendChild(el('span', 'muted', 'Nothing ticked yet.'));
+  }
+  picked.forEach(function (r) {
+    var c = el('span', 'dn-chip');
+    c.appendChild(el('span', 'dn-proto ' + r.proto, r.proto.toUpperCase()));
+    c.appendChild(el('span', 'mono', dnPorts(r.lo, r.hi)));
+    var x = el('button', 'dn-chip-x', '×');
+    x.type = 'button';
+    x.setAttribute('aria-label', 'Leave out');
+    x.onclick = function () {
+      for (var p = r.lo; p <= r.hi; p++) delete DN.pick[r.proto + '/' + p];
+      var boxes = document.querySelectorAll('#dn-out input[type=checkbox]');
+      Array.prototype.forEach.call(boxes, function (b) {
+        var m = String(b.dataset.dn || '').split('/');
+        if (m[0] === r.proto && Number(m[1]) >= r.lo && Number(m[1]) <= r.hi) b.checked = false;
+      });
+      dnatRulesRedraw();
+    };
+    c.appendChild(x);
+    chips.appendChild(c);
+  });
+  $('dn-code').textContent = dnatRuleText(d, picked, DN.fwkind);
+}
+
+function dnatRuleText(d, picked, kind) {
+  var ip = d.ip;
+  var pubs = (d.out.public || []).filter(function (p) { return !p.private; });
+  var pub = pubs.length === 1 ? pubs[0].ip : '';
+  var wan = (d.out.wan || [])[0] || ((d.router && d.router.wan) || [])[0] || '';
+  var lines = [];
+  var name = ($('dn-name') && $('dn-name').textContent) || ip;
+  if (!picked.length) return '# Tick a port above, or add one, for its rule.';
+  if (kind === 'routeros') {
+    lines.push('# DNAT to ' + name + ' (' + ip + ') - written by isemon’s DNAT analyzer');
+    lines.push('/ip firewall nat');
+    picked.forEach(function (r) {
+      lines.push('add chain=dstnat action=dst-nat protocol=' + r.proto
+        + (pub ? ' dst-address=' + pub : '') + (wan ? ' in-interface=' + wan
+          : ' in-interface-list=WAN')
+        + ' dst-port=' + dnPorts(r.lo, r.hi) + ' to-addresses=' + ip
+        + ' comment="isemon DNAT ' + ip + ' ' + r.proto + ' ' + dnPorts(r.lo, r.hi) + '"');
+    });
+    if (!(d.router && d.router.dstnat_filter)) {
+      lines.push('');
+      lines.push('# The default configuration lets what was forwarded through the filter. If '
+                 + 'yours does not:');
+      lines.push('# /ip firewall filter add chain=forward action=accept connection-nat-state='
+                 + 'dstnat' + (wan ? ' in-interface=' + wan : '') + ' place-before=0');
+    }
+    if ((d.profiles || []).length || (d.out.changed > d.out.kept)) {
+      lines.push('');
+      lines.push('# Dynamic UDP ports (party chat, peer-to-peer): one of these, not both.');
+      lines.push('# RouterOS 7.17 or later - endpoint-independent NAT for this address only:');
+      lines.push('# /ip firewall nat add chain=srcnat action=endpoint-independent-nat '
+                 + 'protocol=udp src-address=' + ip + (wan ? ' out-interface=' + wan : '')
+                 + ' place-before=0');
+      lines.push('# /ip firewall nat add chain=dstnat action=endpoint-independent-nat '
+                 + 'protocol=udp' + (wan ? ' in-interface=' + wan : '') + ' place-before=0');
+      lines.push('# ...or UPnP:');
+      lines.push('# /ip upnp set enabled=yes');
+      lines.push('# /ip upnp interfaces add interface=' + (wan || 'ether1') + ' type=external');
+      lines.push('# /ip upnp interfaces add interface=' + (d.zone || 'bridge')
+                 + ' type=internal');
+    }
+  } else if (kind === 'iptables') {
+    lines.push('# DNAT to ' + name + ' (' + ip + ') - written by isemon’s DNAT analyzer');
+    picked.forEach(function (r) {
+      var ports = r.lo === r.hi ? String(r.lo) : r.lo + ':' + r.hi;
+      lines.push('iptables -t nat -A PREROUTING' + (wan ? ' -i ' + wan : '')
+        + (pub ? ' -d ' + pub : '') + ' -p ' + r.proto + ' --dport ' + ports
+        + ' -j DNAT --to-destination ' + ip);
+      lines.push('iptables -A FORWARD -d ' + ip + ' -p ' + r.proto + ' --dport ' + ports
+        + ' -m conntrack --ctstate DNAT -j ACCEPT');
+    });
+  } else if (kind === 'fortigate') {
+    var names = [];
+    lines.push('# DNAT to ' + name + ' (' + ip + ') - written by isemon’s DNAT analyzer');
+    lines.push('config firewall vip');
+    picked.forEach(function (r) {
+      var vip = 'isemon-' + ip + '-' + r.proto + '-' + dnPorts(r.lo, r.hi);
+      names.push('"' + vip + '"');
+      lines.push('    edit "' + vip + '"');
+      lines.push('        set extip ' + (pub || '0.0.0.0'));
+      lines.push('        set mappedip "' + ip + '"');
+      lines.push('        set extintf "' + (wan || 'any') + '"');
+      lines.push('        set portforward enable');
+      lines.push('        set protocol ' + r.proto);
+      lines.push('        set extport ' + dnPorts(r.lo, r.hi));
+      lines.push('        set mappedport ' + dnPorts(r.lo, r.hi));
+      lines.push('    next');
+    });
+    lines.push('end');
+    lines.push('config firewall policy');
+    lines.push('    edit 0');
+    lines.push('        set name "isemon DNAT ' + ip + '"');
+    lines.push('        set srcintf "' + (wan || 'wan1') + '"');
+    lines.push('        set dstintf "' + (d.zone || 'internal') + '"');
+    lines.push('        set srcaddr "all"');
+    lines.push('        set dstaddr ' + names.join(' '));
+    lines.push('        set action accept');
+    lines.push('        set schedule "always"');
+    lines.push('        set service "ALL"');
+    lines.push('    next');
+    lines.push('end');
+  } else {
+    lines.push('! DNAT to ' + name + ' (' + ip + ') - written by isemon’s DNAT analyzer');
+    lines.push('! ASA syntax; on an FTD the same as a manual NAT rule and an access rule in FMC.');
+    var many = 0;
+    picked.forEach(function (r) {
+      for (var p = r.lo; p <= r.hi; p++) {
+        if (++many > 40) return;
+        var obj = 'isemon-' + ip + '-' + r.proto + '-' + p;
+        lines.push('object network ' + obj);
+        lines.push(' host ' + ip);
+        lines.push(' nat (inside,outside) static interface service ' + r.proto + ' ' + p
+                   + ' ' + p);
+        lines.push('access-list outside_access_in extended permit ' + r.proto + ' any object '
+                   + obj + ' eq ' + p);
+      }
+    });
+    if (many > 40) lines.push('! ...more than 40 ports: a range is one rule a port here.');
+  }
+  return lines.join('\n');
+}
+
 /* What a MikroTik's NAT rule did, and what became of a DHCP lease. */
 var T_NAT_KINDS = {masquerade: 'masquerade', 'src-nat': 'src-nat', 'dst-nat': 'dst-nat',
                    'src-nat+dst-nat': 'src-nat + dst-nat',
@@ -28223,6 +29214,7 @@ $('t-clear').onclick = function () {
 };
 $('t-qgo').onclick = tRun;
 $('t-help').onclick = tHelp;
+$('t-dnat').onclick = function () { dnatOpen(); };
 
 /* ---- the search box: what it understands, and what it offers ---------- */
 /* The fields the database has columns for - searched at once. Every other

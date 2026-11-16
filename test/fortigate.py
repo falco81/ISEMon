@@ -533,7 +533,8 @@ ok('the cards of a row are as tall as each other',
 ok('...and the small cards are on the overview only, not on the pages',
    'drawPageCards' not in PAGE_SRC, True)
 ok('the API answers only somebody signed in',
-   DAEMON_SRC.count("if path == '/api/fw") == 6
+   DAEMON_SRC.count("if path == '/api/fw") == 7
+   and DAEMON_SRC.split("if path == '/api/fw/dnat':", 1)[1][:400].count('need_login') == 1
    and DAEMON_SRC.split("if path == '/api/fw/vpn':", 1)[1][:120].count('need_login') == 1
    and DAEMON_SRC.split("if path == '/api/fw/router':", 1)[1][:500].count('need_login') == 1
    and DAEMON_SRC.split("if path == '/api/fw/suggest':", 1)[1][:120].count('need_login') == 1

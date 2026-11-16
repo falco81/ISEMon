@@ -372,6 +372,29 @@ working.
 
 ## Version
 
+1.10.360
+
+- **DNAT analyzer** on Traffic - NAT
+  ([docs/mikrotik-logs.md](docs/mikrotik-logs.md#the-dnat-analyzer-11360)):
+  - Give the address of a device inside, e.g. a game console. It reads out of
+    the firewall's log:
+    - the public address the device leaves by;
+    - what is forwarded to it and whether the filter lets it through;
+    - what knocks on that public address with no rule to forward it, each
+      with why it is thought to be this device's (its own port, addresses it
+      talks to, a port it serves inside, its kind of device);
+    - what is only the internet scanning.
+  - It recognises PlayStation, Xbox, Steam and EA SPORTS FC by the ports they
+    talk to, and says which of the ports they want are forwarded, missing or
+    taken by another device.
+  - It warns of carrier-grade NAT (a public address that is not public), of
+    source ports not kept (strict NAT), and of forwards the filter drops.
+  - It writes the rules for the ticked ports, merged into ranges, for
+    MikroTik, iptables, FortiGate and Cisco ASA/FTD, with a copy button. With
+    a router read through its API, its dst-nat rules for the device are shown
+    with their counters.
+  - It only reads; nothing on the firewall is changed.
+
 1.10.359
 
 - **Questions that read far more than they needed** - looked for across the
