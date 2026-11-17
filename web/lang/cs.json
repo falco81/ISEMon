@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.362",
+  "version": "1.10.363",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -12172,10 +12172,6 @@
    "source": "How it is getting on",
    "text": "Jak to pokračuje"
   },
-  "s.how-it-is-here.236a9ead": {
-   "source": "How it is here",
-   "text": "Jak to tu je"
-  },
   "s.how-it-is-reached.9a972068": {
    "source": "How it is reached",
    "text": "Jak se k němu přistupuje"
@@ -19864,10 +19860,6 @@
    "source": "Nothing read twice is ever stored twice: every record is kept under the session id ISE gave it, so “Go back over every log” can read every file from the beginning and only what was missing is added.",
    "text": "Nic přečteného dvakrát se nikdy neukládá dvakrát: každý záznam se uchovává pod ID relace, které mu přidělilo ISE, takže „Projít znovu všechny logy“ může přečíst každý soubor od začátku a přidá se jen to, co chybělo."
   },
-  "s.nothing-refused-selinux-let-isemon-do.cd0ddf50": {
-   "source": "Nothing refused - SELinux let isemon do everything it did.",
-   "text": "Nic odmítnuto - SELinux nechal isemon udělat vše, co dělal."
-  },
   "s.nothing-refused-since-isemon-s-needs.37d99ae2": {
    "source": "Nothing refused since isemon's needs were put in",
    "text": "Od vložení toho, co isemon potřebuje, nic odmítnuto"
@@ -19899,6 +19891,10 @@
   "s.nothing-sent-here-yet.a16d441b": {
    "source": "nothing sent here yet",
    "text": "sem se zatím nic neposlalo"
+  },
+  "s.nothing-since-the-machine-started.5f094d1c": {
+   "source": "Nothing since the machine started.",
+   "text": "Nic od startu stroje."
   },
   "s.nothing-sure.2ca21669": {
    "source": "nothing sure",
@@ -25795,6 +25791,10 @@
   "s.selinux-on-this-server-what-it.863fff33": {
    "source": "SELinux on this server: what it refuses to the web server, rsyslog and the rest when it is enforcing, what isemon needs of it - and the steps on the way to enforcing, each only when asked.",
    "text": "SELinux na tomto serveru: co odmítá webovému serveru, rsyslogu a ostatním, když je enforcing, co od něj isemon potřebuje - a kroky na cestě k enforcing, každý jen na požádání."
+  },
+  "s.selinux-refused-nothing-on-this-server.09f275c4": {
+   "source": "SELinux refused nothing on this server",
+   "text": "SELinux na tomto serveru nic neodmítl"
   },
   "s.selinux.dd5c47ec": {
    "source": "selinux",
@@ -37128,6 +37128,10 @@
    "source": "What SELinux refused cannot be read: ausearch is not on this machine (dnf install audit)",
    "text": "Co SELinux odmítl, nelze přečíst: ausearch na tomto stroji není (dnf install audit)"
   },
+  "s.what-selinux-refuses-to-the-web.056e780d": {
+   "source": "What SELinux refuses to the web server, rsyslog, logrotate, the database and the rest when it is enforcing - and what isemon needs of it on this server. Nothing changes here unless asked: disabled stays disabled. On the server: isemon --selinux look.",
+   "text": "Co SELinux v režimu enforcing odmítá webovému serveru, rsyslogu, logrotate, databázi a ostatním - a co od něj isemon na tomto serveru potřebuje. Nic se tu nemění, dokud o to nepožádáte: vypnutý zůstává vypnutý. Na serveru: isemon --selinux look."
+  },
   "s.what-selinux-refuses-to-the-web.9cd18e0f": {
    "source": "What SELinux refuses to the web server, rsyslog, logrotate and the database when it is enforcing - and what isemon needs of it here. Nothing changes unless asked: disabled stays disabled. On the server: isemon --selinux.",
    "text": "Co SELinux odmítá webovému serveru, rsyslogu, logrotate a databázi, když je enforcing - a co od něj isemon tady potřebuje. Nic se nemění, dokud se nepožádá: vypnutý zůstává vypnutý. Na serveru: isemon --selinux."
@@ -47610,6 +47614,10 @@
    "source": "How busy this server is - the processor, memory, the disks and the network - in the header, every 3 s while the page is shown. How it looks is yours alone; not shown, nothing is asked of the server at all. For everybody it is switched on and off under Settings → About.",
    "text": "Jak je tento server vytížený – procesor, paměť, disky a síť – v záhlaví, každé 3 s, dokud je stránka vidět. Jak vypadá, je jen vaše volba; nezobrazený se serveru na nic neptá. Pro všechny se zapíná a vypíná v Nastavení → O aplikaci."
   },
+  "s.how-it-is-here.236a9ead": {
+   "source": "How it is here",
+   "text": "Jak to tu je"
+  },
   "s.how-long-a-block-lasts-said.57775b76": {
    "source": "How long a block lasts, said as the settings actually work.",
    "text": "Jak dlouho blokace trvá, vyjádřeno tak, jak nastavení skutečně fungují."
@@ -47985,6 +47993,10 @@
   "s.nothing-read-here-is-ever-judged.eb060615": {
    "source": "Nothing read here is ever judged",
    "text": "Nic zde přečteného se nikdy neposuzuje"
+  },
+  "s.nothing-refused-selinux-let-isemon-do.cd0ddf50": {
+   "source": "Nothing refused - SELinux let isemon do everything it did.",
+   "text": "Nic odmítnuto - SELinux nechal isemon udělat vše, co dělal."
   },
   "s.nothing-the-url-is-open-and.3c3d850d": {
    "source": "Nothing: the URL is open, and who may fetch it is the web server’s allow list and the addresses above. It is what a firewall fetching a list expects, and it is the default. A key in the URL: a long random key the URL carries, which New key changes. It is the one way for an FMC, which has nowhere to type a password for a feed, and it works for a FortiGate too. User name and password: HTTP basic authentication. A FortiGate sends them (the external threat feed’s own user name and password); an FMC cannot, so an FTD fed through an FMC needs one of the other two.",

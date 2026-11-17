@@ -372,6 +372,13 @@ working.
 
 ## Version
 
+1.10.363
+
+- **Settings - SELinux drawn as the selinux kit draws it**: this server's
+  block across the whole card (it took half of it), the card titled SELinux
+  with what it is about, a large green "SELinux refused nothing on this
+  server" when nothing was refused, and "Ready for enforcing" in green.
+
 1.10.362
 
 - **SELinux: what it refuses, sorted by what puts it right** (Settings -

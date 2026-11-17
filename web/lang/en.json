@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.362",
+  "version": "1.10.363",
   "made": "2026-11-17",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -12172,10 +12172,6 @@
    "source": "How it is getting on",
    "text": "How it is getting on"
   },
-  "s.how-it-is-here.236a9ead": {
-   "source": "How it is here",
-   "text": "How it is here"
-  },
   "s.how-it-is-reached.9a972068": {
    "source": "How it is reached",
    "text": "How it is reached"
@@ -19864,10 +19860,6 @@
    "source": "Nothing read twice is ever stored twice: every record is kept under the session id ISE gave it, so “Go back over every log” can read every file from the beginning and only what was missing is added.",
    "text": "Nothing read twice is ever stored twice: every record is kept under the session id ISE gave it, so “Go back over every log” can read every file from the beginning and only what was missing is added."
   },
-  "s.nothing-refused-selinux-let-isemon-do.cd0ddf50": {
-   "source": "Nothing refused - SELinux let isemon do everything it did.",
-   "text": "Nothing refused - SELinux let isemon do everything it did."
-  },
   "s.nothing-refused-since-isemon-s-needs.37d99ae2": {
    "source": "Nothing refused since isemon's needs were put in",
    "text": "Nothing refused since isemon's needs were put in"
@@ -19899,6 +19891,10 @@
   "s.nothing-sent-here-yet.a16d441b": {
    "source": "nothing sent here yet",
    "text": "nothing sent here yet"
+  },
+  "s.nothing-since-the-machine-started.5f094d1c": {
+   "source": "Nothing since the machine started.",
+   "text": "Nothing since the machine started."
   },
   "s.nothing-sure.2ca21669": {
    "source": "nothing sure",
@@ -25795,6 +25791,10 @@
   "s.selinux-on-this-server-what-it.863fff33": {
    "source": "SELinux on this server: what it refuses to the web server, rsyslog and the rest when it is enforcing, what isemon needs of it - and the steps on the way to enforcing, each only when asked.",
    "text": "SELinux on this server: what it refuses to the web server, rsyslog and the rest when it is enforcing, what isemon needs of it - and the steps on the way to enforcing, each only when asked."
+  },
+  "s.selinux-refused-nothing-on-this-server.09f275c4": {
+   "source": "SELinux refused nothing on this server",
+   "text": "SELinux refused nothing on this server"
   },
   "s.selinux.dd5c47ec": {
    "source": "selinux",
@@ -37127,6 +37127,10 @@
   "s.what-selinux-refused-cannot-be-read.c539617a": {
    "source": "What SELinux refused cannot be read: ausearch is not on this machine (dnf install audit)",
    "text": "What SELinux refused cannot be read: ausearch is not on this machine (dnf install audit)"
+  },
+  "s.what-selinux-refuses-to-the-web.056e780d": {
+   "source": "What SELinux refuses to the web server, rsyslog, logrotate, the database and the rest when it is enforcing - and what isemon needs of it on this server. Nothing changes here unless asked: disabled stays disabled. On the server: isemon --selinux look.",
+   "text": "What SELinux refuses to the web server, rsyslog, logrotate, the database and the rest when it is enforcing - and what isemon needs of it on this server. Nothing changes here unless asked: disabled stays disabled. On the server: isemon --selinux look."
   },
   "s.what-selinux-refuses-to-the-web.9cd18e0f": {
    "source": "What SELinux refuses to the web server, rsyslog, logrotate and the database when it is enforcing - and what isemon needs of it here. Nothing changes unless asked: disabled stays disabled. On the server: isemon --selinux.",

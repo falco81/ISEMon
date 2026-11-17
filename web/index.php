@@ -5127,7 +5127,12 @@ function srcText(el) {
   /* What SELinux refuses, sorted (1.10.362, the selinux kit). */
   .se-look{margin-top:14px;display:flex;flex-direction:column;gap:10px}
   .se-look-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-  .se-calm{padding:10px 12px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-size:13px}
+  .se-calm{display:flex;gap:14px;align-items:center;padding:16px 18px;border-radius:12px;
+    border:1px solid rgba(63,185,80,.45);background:var(--ok-bg)}
+  .se-calm-ic{width:36px;height:36px;flex:0 0 36px;border-radius:50%;display:grid;place-items:center;
+    background:rgba(63,185,80,.18);color:var(--ok);font-size:18px;font-weight:700}
+  .se-calm b{display:block;color:var(--tx);font-size:14.5px}
+  .se-calm span{color:var(--tx);font-size:13px}
   .se-grp{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:10px;background:var(--panel2);overflow:hidden}
   .se-grp.lvl-ok{border-left-color:var(--ok)}
   .se-grp.lvl-warn{border-left-color:var(--warn)}
@@ -5159,8 +5164,10 @@ function srcText(el) {
   .se-put{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .se-plan{margin:6px 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:8px}
   .se-plan code{font-size:12px;word-break:break-all}
-  .se-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;margin-top:12px}
-  .se-node{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0;max-width:980px}
+  /* This server across the whole card, as the selinux kit draws it (1.10.362). */
+  .se-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:12px}
+  .se-node{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .se-intro{margin:2px 0 0;max-width:1000px}
   .se-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .se-name{display:flex;align-items:center;gap:8px;font-size:15px;min-width:0}
   .se-mode{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--tx-dim)}
@@ -5181,7 +5188,7 @@ function srcText(el) {
   .se-avc-t td.num{white-space:nowrap;text-align:right;color:var(--crit)}
   .se-verdict{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-size:13px}
   .se-verdict.good{border-color:rgba(63,185,80,.5);background:var(--ok-bg)}
-  .se-verdict.ready{border-color:rgba(88,166,255,.5);background:var(--info-bg)}
+  .se-verdict.ready{border-color:rgba(63,185,80,.5);background:var(--ok-bg)}
   .se-verdict.bad{border-color:rgba(210,153,34,.5);background:var(--warn-bg)}
   .se-btns{margin-top:auto;padding-top:4px;display:flex;gap:8px;flex-wrap:wrap}
   .se-said{margin:0;list-style:none;padding:8px 12px;display:flex;flex-direction:column;gap:2px;border-radius:10px;background:var(--ok-bg);color:var(--ok)}
@@ -51715,7 +51722,7 @@ function drawSelinux() {
     return;
   }
   var c = el('div', 'card full se-card');
-  var h = el('h2', '', 'How it is here');
+  var h = el('h2', '', 'SELinux');
   var tl = el('span', 'right se-top');
   var look = cmdButton('Look again', 'refresh', 'small');
   look.onclick = function () {
@@ -51731,6 +51738,7 @@ function drawSelinux() {
   tl.appendChild(rep);
   h.appendChild(tl);
   c.appendChild(h);
+  c.appendChild(el('p', 'note se-intro', 'What SELinux refuses to the web server, rsyslog, logrotate, the database and the rest when it is enforcing - and what isemon needs of it on this server. Nothing changes here unless asked: disabled stays disabled. On the server: isemon --selinux look.'));
   if (SE.rep) c.appendChild(el('p', 'note small' + (SE.rep.bad ? ' bad' : ''), SE.rep.words));
   var grid = el('div', 'se-grid');
   (d.nodes || []).forEach(function (n) { grid.appendChild(seNode(n)); });
@@ -51919,7 +51927,13 @@ function seLook(n, s) {
     fs.forEach(function (f) { if (SE_FIXABLE[f.kind]) SE.pick[f.id] = true; });
   }
   if (!fs.length) {
-    wrap.appendChild(el('div', 'se-calm', 'Nothing refused - SELinux let isemon do everything it did.'));
+    var calm = el('div', 'se-calm');
+    calm.appendChild(el('span', 'se-calm-ic', '\u2713'));
+    var cw = el('div', '');
+    cw.appendChild(el('b', '', 'SELinux refused nothing on this server'));
+    cw.appendChild(el('span', '', 'Nothing since the machine started.'));
+    calm.appendChild(cw);
+    wrap.appendChild(calm);
   }
   var go = null;
   function count() {
