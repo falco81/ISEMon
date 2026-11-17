@@ -58,8 +58,8 @@ cil = (ROOT / 'deploy' / 'isemon_server.cil').read_text()
 ok('the daemon may start chronyc into chronyc_t (NoNewPrivileges), in a block of its own',
    '(optional isemon_server_nnp_chronyc\n    (allow unconfined_service_t chronyc_t '
    '(process2 (nnp_transition))))' in cil)
-ok('...nothing else let through for the unconfined domain',
-   cil.count('allow unconfined_service_t'), 1)
+ok('...nothing else let through for the unconfined domain than chronyc, ssh and ssh-keygen (1.10.362)',
+   cil.count('allow unconfined_service_t'), 3)
 ok('...the parentheses balanced',
    sum(1 if c == '(' else -1 if c == ')' else 0 for line in cil.splitlines()
        if not line.lstrip().startswith(';') for c in line), 0)

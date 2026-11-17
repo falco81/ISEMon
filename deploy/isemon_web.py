@@ -69,6 +69,7 @@ plain input, which is never touched (see otptls_part).
   isemon_web.py --status   what is in place here (JSON)
 """
 import errno
+import hashlib
 import ipaddress
 import json
 import math
@@ -5095,6 +5096,7 @@ def se_denials(since=0.0):
     if got is None:
         return {'tool': False, 'total': 0, 'groups': [], 'since': since}
     groups, lines, total = {}, {}, 0
+    fixed = se_state_read(SE_FIXED, {})
     # The program each refusal came from (1.10.320): the event's SYSCALL line
     # says it (exe=), the AVC line only the thread's name - which Python
     # gives as "Thread-351 (...)", hex-encoded for its space.
@@ -5127,6 +5129,14 @@ def se_denials(since=0.0):
                                     se_audit_word(name.group(1)) if name else '', exe or '') if x)
         if st not in SE_DOMAINS and 'isemon' not in line:
             continue
+        # Put right since by its id (1.10.362): a refusal of it from before no
+        # longer counts; one from after does.
+        if fixed:
+            a = se_parse_avc(line)
+            if a and a['ts'] and a['ts'] <= se_fixed_at(
+                    se_refusal_id(a['st'], a['tt'], a['cls'], a['perms'], a['comm'], se_where(a)),
+                    fixed):
+                continue
         total += 1
         key = (st, tt, cl.group(1), perms.group(1).strip())
         lines[key] = line
@@ -5355,6 +5365,11 @@ def se_do(r):
     said = list(left)
     if do == 'check':
         return se_check(r)
+    # Every refusal, sorted by what puts it right (1.10.362).
+    if do == 'look':
+        out = se_check(r)
+        out['look'] = se_look(r)
+        return out
     if do == 'report':
         data = se_report_bytes(r, 'isemon-selinux-report')
         write_here_bytes(SE_REPORT_FILE, data)
@@ -5403,6 +5418,10 @@ def se_do(r):
             raise Refused('setenforce 1: %s' % ((got.stderr or '') if got else '')[-200:])
         se_config_set('enforcing')
         said.append('SELinux is enforcing, and stays so after a restart')
+    elif do == 'fix':
+        se_fix(r, said)
+    elif do == 'rule_drop':
+        se_rule_drop(r, said)
     elif do == 'permissive':
         if mode == 'Disabled':
             raise Refused('SELinux is disabled - "prepare" makes it permissive')
@@ -5416,7 +5435,581 @@ def se_do(r):
         raise Refused('check, prepare, enforce, permissive or report')
     out = se_check(r)
     out['said'] = said
+    if do in ('fix', 'rule_drop'):
+        out['look'] = se_look(r)            # looked at again at once (1.10.362)
     return out
+
+
+# ---- what SELinux refuses, sorted by what puts it right (1.10.362, the selinux kit) ----
+# Every refusal since the machine started, read with the records of its event
+# (SYSCALL: the program; PATH: the whole path), grouped by what was refused -
+# (source, target, class, permissions, program, path or port) - each group put
+# to audit2why, and sorted into one kind:
+#   boolean   audit2why names a boolean, and it is not one that allows far more
+#   label     the file is not labelled as the policy says (matchpathcon)
+#   port      a program of isemon's binds a port that has no type of its own
+#   rule      nothing of the policy allows it, and exactly that is safe to allow:
+#             one rule in isemon's own local module (isemon_local)
+#   nofix     isemon's, but too much to allow from a page - said with why
+#   notours   another program of this machine - shown, never put right here
+# A finding's id is a hash of what was refused: the same refusal has the same id
+# at every look. The page asks to put right ids only; root finds them again in
+# the audit log and works out every fix itself - a request never carries a
+# rule, a path or a command.
+SE_LOCAL = 'isemon_local'
+SE_LOCAL_CIL = os.environ.get('ISEMON_SELINUX_LOCAL_CIL', '/usr/local/lib/isemon/isemon_local.cil')
+SE_LOCAL_LIST = 'selinux-local.json'        # root's list of the local rules
+SE_FIXED = 'selinux-fixed.json'             # {id: when it was put right}
+SE_LOCAL_MOST = 200
+SE_LOOK_MOST = 250
+SE_ID_RE = re.compile(r'^[0-9a-f]{12}\Z')
+SE_WORD_RE = re.compile(r'^[a-z0-9_]{1,80}\Z')
+# isemon's own paths: a confined service refused something there is isemon's business.
+SE_OUR_PATHS = ('/run/isemon', '/var/run/isemon', '/var/lib/isemon', '/var/www/isemon',
+                '/usr/local/lib/isemon', '/etc/isemon', '/var/log/isemon', '/var/log/remote',
+                '/etc/nginx/conf.d/isemon', '/etc/nginx/certs', '/etc/rsyslog.d/isemon',
+                '/etc/pki/rsyslog', '/etc/logrotate.d/isemon', '/var/lib/isemon-root')
+# The programs isemon's daemon starts that have a domain of their own.
+SE_TOOL_DOMAINS = ('chronyc_t', 'ssh_t', 'ssh_keygen_t', 'ping_t', 'ifconfig_t', 'hostname_t')
+# The confined services isemon works with: theirs only on isemon's paths or ports.
+SE_SERVICE_DOMAINS = ('httpd_t', 'init_t', 'syslogd_t', 'logrotate_t', 'postgresql_t', 'mysqld_t',
+                      'chronyd_t', 'system_cronjob_t', 'sshd_t')
+# The type a port is given for the program that binds it - never one another service has.
+SE_PORT_FOR = {'httpd_t': 'http_port_t', 'sshd_t': 'ssh_port_t', 'chronyd_t': 'ntp_port_t',
+               'syslogd_t': 'syslogd_port_t', 'postgresql_t': 'postgresql_port_t',
+               'mysqld_t': 'mysqld_port_t'}
+SE_FREE_PORT_TYPES = ('unreserved_port_t', 'reserved_port_t', 'hi_reserved_port_t', 'port_t',
+                      'ephemeral_port_t')
+# What is never allowed from a page.
+SE_BAD_BOOLEAN_RE = re.compile(r'(exec|unconfined|manage_all|read_all|_all_|ptrace|^deny_|'
+                               r'selinuxuser|secure_mode|mmap|polyinstantiation|xserver|'
+                               r'daemons_dump_core|daemons_use_tty|use_nfs_home|use_samba_home|'
+                               r'domain_can|global_ssp|login_console)')
+SE_SENSITIVE_RE = re.compile(r'(^shadow_t$|^security_t$|selinux|policy|semanage|^kernel_t$|kcore|'
+                             r'memory_device|audit|sudo|home|_key_t$|keytab|bootloader|^boot_t$|'
+                             r'modules_object|fixed_disk|^device_t$|passwd|krb5|^init_exec_t$|'
+                             r'systemd_unit_file|^proc_kmsg_t$|^efivarfs_t$)')
+SE_BAD_PERMS = {'execute', 'execute_no_trans', 'entrypoint', 'execmod', 'execmem', 'execstack',
+                'execheap', 'transition', 'dyntransition', 'ptrace', 'relabelfrom', 'relabelto',
+                'setcurrent', 'setexec', 'setfscreate', 'setkeycreate', 'setsockcreate',
+                'sys_admin', 'sys_module', 'sys_rawio', 'sys_ptrace', 'sys_boot', 'dac_override',
+                'dac_read_search', 'setuid', 'setgid', 'fowner', 'setfcap', 'mac_admin',
+                'mac_override', 'mounton', 'mount', 'module_load', 'load_policy', 'setenforce',
+                'setbool', 'setsecparam'}
+SE_BAD_CLASSES = {'security', 'kernel_service', 'key', 'bpf', 'system', 'capability',
+                  'capability2', 'cap_userns', 'cap2_userns', 'perf_event', 'lockdown',
+                  'service', 'filesystem', 'passwd', 'dbus'}
+SE_GENERIC_TYPES = {'etc_t', 'usr_t', 'bin_t', 'lib_t', 'var_t', 'var_lib_t', 'default_t', 'tmp_t',
+                    'root_t', 'file_t', 'unlabeled_t', 'sysfs_t', 'proc_t', 'var_run_t',
+                    'device_t', 'httpd_sys_content_t', 'boot_t', 'etc_runtime_t'}
+SE_WRITE_PERMS = {'write', 'append', 'create', 'unlink', 'rename', 'add_name', 'remove_name',
+                  'setattr', 'link', 'rmdir', 'reparent', 'truncate'}
+
+
+def se_state_read(name, default):
+    try:
+        fd = os.open(os.path.join(ROOT_STATE_DIR, name), os.O_RDONLY | os.O_NOFOLLOW |
+                     os.O_NONBLOCK)
+        with os.fdopen(fd) as f:
+            got = json.loads(f.read(1048576))
+        return got if isinstance(got, type(default)) else default
+    except (OSError, ValueError, TypeError):
+        return default
+
+
+def se_where(avc):
+    """What a refusal was about, said the same way at every look: the file's
+    name, or the port."""
+    if avc.get('port'):
+        return 'port %s' % avc['port']
+    return avc.get('name') or ''
+
+
+def se_refusal_id(st, tt, cls, perms, comm, where):
+    raw = '|'.join(str(x) for x in (st, tt, cls, ' '.join(sorted(perms.split())), comm, where))
+    return hashlib.sha256(raw.encode('utf-8', 'replace')).hexdigest()[:12]
+
+
+def se_parse_avc(line):
+    """One AVC line's facts, or None."""
+    if 'avc:' not in line or 'denied' not in line:
+        return None
+    perms = re.search(r'denied\s+\{([^}]*)\}', line)
+    sc = re.search(r'scontext=(\S+)', line)
+    tc = re.search(r'tcontext=(\S+)', line)
+    cl = re.search(r'tclass=(\S+)', line)
+    if not (perms and sc and tc and cl):
+        return None
+    when = re.search(r'msg=audit\((\d+)(?:\.\d+)?:', line)
+    mid = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+    comm = re.search(r'\bcomm=(\S+)', line)
+    name = re.search(r'\bname=(\S+)', line)
+    path = re.search(r'\bpath=(\S+)', line)
+    cls = cl.group(1)
+    port = ''
+    if cls.endswith('_socket'):
+        pm = re.search(r'\b(?:src|dest)=([0-9]{1,5})\b', line)
+        port = pm.group(1) if pm else ''
+    return {'st': (sc.group(1).split(':') + ['', '', ''])[2],
+            'tt': (tc.group(1).split(':') + ['', '', ''])[2],
+            'cls': cls, 'perms': ' '.join(perms.group(1).split()),
+            'comm': se_audit_word(comm.group(1)) if comm else '',
+            'name': se_audit_word(name.group(1)) if name else '',
+            'path': se_audit_word(path.group(1)) if path else '',
+            'port': port, 'ts': int(when.group(1)) if when else 0,
+            'mid': mid.group(1) if mid else '',
+            'permissive': bool(re.search(r'\bpermissive=1\b', line))}
+
+
+def se_fixed_at(fid, fixed=None):
+    fixed = se_state_read(SE_FIXED, {}) if fixed is None else fixed
+    try:
+        return float(fixed.get(fid) or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def se_why_all(lines):
+    """audit2why of one line of each group: {key: {'now', 'booleans', 'constraint'}}."""
+    out = {k: {'now': False, 'booleans': [], 'constraint': False} for k in lines}
+    by_id = {}
+    for key, line in lines.items():
+        m = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+        if m:
+            by_id[m.group(1)] = key
+    if not by_id:
+        return out
+    got = _se_run(['audit2why'], 300, light=True,
+                  data=''.join(lines[k] + '\n' for k in by_id.values()))
+    if got is None or got.returncode != 0:
+        return out
+    cur = None
+    for line in (got.stdout or '').splitlines():
+        m = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+        if m and 'avc:' in line:
+            cur = by_id.get(m.group(1))
+            continue
+        if cur is None:
+            continue
+        if 'would be allowed by active policy' in line:
+            out[cur]['now'] = True
+        b = re.search(r'setsebool\s+-P\s+([a-z0-9_]{1,80})\s+(?:1|on|true)\b', line)
+        if b and b.group(1) not in out[cur]['booleans']:
+            out[cur]['booleans'].append(b.group(1))
+        if 'Constraint' in line:
+            out[cur]['constraint'] = True
+    return out
+
+
+def se_policy_type(path):
+    """What the policy says a path should be labelled (matchpathcon), or None."""
+    got = _se_run(['matchpathcon', '-n', path], 20)
+    if got is None or got.returncode != 0:
+        return None
+    parts = (got.stdout or '').strip().split(':')
+    return parts[2] if len(parts) >= 3 else None
+
+
+def se_ours_path(path):
+    path = str(path or '')
+    return any(path == p or path.startswith(p + '/') or path.startswith(p + '.')
+               or path.startswith(p + '-') for p in SE_OUR_PATHS)
+
+
+def se_our_ports(r):
+    """The ports isemon listens on or asks, read by root where it can and from
+    the daemon's facts (only to say whose a refusal is - never to change a port
+    that has a type)."""
+    out = set()
+    facts = r.get('facts') if isinstance(r.get('facts'), dict) else {}
+    for k in ('api_port', 'db_port', 'certlogin_port'):
+        try:
+            n = int(facts.get(k) or 0)
+            if 1 <= n <= 65535:
+                out.add(n)
+        except (TypeError, ValueError):
+            pass
+    for p in (r.get('ports') or [])[:16]:
+        try:
+            out.add(int((p or {}).get('port')))
+        except (TypeError, ValueError, AttributeError):
+            pass
+    try:
+        out.update(int(p['port']) for p in rsyslog_ports())
+    except Exception:                                   # noqa: BLE001
+        pass
+    try:
+        out.update(int(p) for p in ssh_ports())
+    except Exception:                                   # noqa: BLE001
+        pass
+    out.update((80, 443))
+    return out
+
+
+def se_whose(g, r, ports):
+    """Whether a refusal is isemon's: its own domain when the program is
+    isemon's, the tools it starts, and the confined services it works with only
+    on isemon's paths or ports."""
+    st, tt = g['st'], g['tt']
+    text = ' '.join((g.get('comm') or '', g.get('exe') or '', g.get('path') or '')).lower()
+    path_ours = se_ours_path(g.get('path')) or se_ours_path(g.get('exe'))
+    try:
+        port_ours = int(g.get('port') or 0) in ports
+    except ValueError:
+        port_ours = False
+    if st == 'unconfined_service_t':
+        return 'isemon' in text or tt in SE_TOOL_DOMAINS or path_ours
+    if st in SE_TOOL_DOMAINS:
+        return tt == 'unconfined_service_t' or path_ours or 'isemon' in text
+    if st in SE_SERVICE_DOMAINS:
+        return path_ours or port_ours
+    return False
+
+
+def se_never(g):
+    """Why a refusal of isemon's is too much to allow from a page, or ''."""
+    perms = set(g['perms'].split())
+    tt, cls = g['tt'], g['cls']
+    # The one transition isemon's module allows of its kind: into a tool's
+    # domain under NoNewPrivileges.
+    if cls == 'process2' and perms <= {'nnp_transition', 'nosuid_transition'} and \
+            g['st'] == 'unconfined_service_t' and tt in SE_TOOL_DOMAINS:
+        return ''
+    if SE_SENSITIVE_RE.search(tt):
+        return '%s is security-sensitive (%s)' % (tt, cls)
+    if cls in SE_BAD_CLASSES:
+        return 'the class %s is too much to allow from here' % cls
+    bad = sorted(perms & SE_BAD_PERMS)
+    if bad:
+        return '%s { %s } would let it run, change or reach far more than this' % (
+            cls, ' '.join(bad))
+    if tt in SE_GENERIC_TYPES and perms & SE_WRITE_PERMS:
+        return 'writing to %s (a type of many files) would allow far more than this' % tt
+    if cls == 'process2' or cls == 'process':
+        return '%s { %s } is about running programs - too much to allow from here' % (
+            cls, g['perms'])
+    return ''
+
+
+def se_look(r):
+    """Every refusal since the machine started, sorted by what puts it right."""
+    kinds = 'AVC,USER_AVC,SELINUX_ERR'
+    got = _se_run(['ausearch', '-m', kinds + ',SYSCALL,PATH', '-ts', 'boot'], 300, light=True)
+    if got is None or (got.returncode != 0 and not (got.stdout or '').strip()):
+        # ausearch says "<no matches>" with a code of 1: nothing refused.
+        none = got is not None and 'no matches' in (got.stderr or '') + (got.stdout or '')
+        return {'tool': got is not None, 'at': time.time(), 'findings': [], 'settled': 0,
+                'total': 0, 'local': se_local_view(), 'none': none}
+    exes, paths = {}, {}
+    for line in (got.stdout or '').splitlines():
+        mid = re.search(r'msg=audit\(([0-9.]+:\d+)\)', line)
+        if not mid:
+            continue
+        if line.startswith('type=SYSCALL'):
+            exe = re.search(r'\bexe=(\S+)', line)
+            if exe:
+                exes[mid.group(1)] = se_audit_word(exe.group(1))
+        elif line.startswith('type=PATH'):
+            nm = re.search(r'\bname=(\S+)', line)
+            if nm:
+                v = se_audit_word(nm.group(1))
+                if v.startswith('/') and mid.group(1) not in paths:
+                    paths[mid.group(1)] = v
+    fixed = se_state_read(SE_FIXED, {})
+    groups, lines = {}, {}
+    for line in (got.stdout or '').splitlines():
+        a = se_parse_avc(line)
+        if not a:
+            continue
+        exe = exes.get(a['mid'], '')
+        full = a['path'] if a['path'].startswith('/') else paths.get(a['mid'], '')
+        fid = se_refusal_id(a['st'], a['tt'], a['cls'], a['perms'], a['comm'], se_where(a))
+        g = groups.get(fid)
+        if g is None:
+            g = groups[fid] = {'id': fid, 'st': a['st'], 'tt': a['tt'], 'cls': a['cls'],
+                               'perms': a['perms'], 'comm': a['comm'], 'exe': exe,
+                               'path': full or a['name'], 'port': a['port'],
+                               'proto': {'tcp_socket': 'tcp', 'udp_socket': 'udp'}.get(a['cls'],
+                                                                                        ''),
+                               'count': 0, 'first': a['ts'], 'last': a['ts'],
+                               'permissive': a['permissive'], 'before': 0}
+        g['count'] += 1
+        g['first'] = min(g['first'], a['ts']) if g['first'] else a['ts']
+        g['last'] = max(g['last'], a['ts'])
+        g['exe'] = g['exe'] or exe
+        if full and not str(g['path']).startswith('/'):
+            g['path'] = full
+        if a['ts'] <= se_fixed_at(fid, fixed):
+            g['before'] += 1
+        lines[fid] = line
+    why = se_why_all(lines)
+    ports = se_our_ports(r)
+    out, settled = [], 0
+    for fid, g in groups.items():
+        w = why.get(fid) or {}
+        if w.get('now'):
+            settled += g['count']
+            continue
+        done = se_fixed_at(fid, fixed)
+        f = dict(g, ours=se_whose(g, r, ports), kind='', why='', fix='', type='')
+        if done and g['last'] <= done:
+            f.update(kind='done', done_at=done, why='put right %s' % time.strftime(
+                '%Y-%m-%d %H:%M', time.localtime(done)))
+            out.append(f)
+            continue
+        if not f['ours']:
+            f.update(kind='notours', why='%s (%s) is another program of this machine - look at '
+                                         'it with whoever looks after it'
+                                         % (g['comm'] or g['st'], g['st']))
+            out.append(f)
+            continue
+        safe = [b for b in w.get('booleans') or [] if not SE_BAD_BOOLEAN_RE.search(b)]
+        if w.get('booleans') and not safe:
+            f.update(kind='nofix', why='the boolean %s would allow far more than this'
+                                       % w['booleans'][0])
+        elif safe:
+            f.update(kind='boolean', type=safe[0], fix='setsebool -P %s on' % safe[0],
+                     why='a boolean of the policy allows it: %s' % safe[0])
+        else:
+            want = se_policy_type(g['path']) if str(g['path']).startswith('/') and \
+                os.path.lexists(g['path']) else None
+            free = g['tt'] in SE_FREE_PORT_TYPES
+            if want and want != g['tt'] and not se_label_ok(g['tt'], want) and \
+                    se_ours_path(g['path']) and g['path'] not in ('/',):
+                target = g['path'] if os.path.isdir(g['path']) else g['path']
+                f.update(kind='label', type=want,
+                         fix='restorecon %s-v %s' % ('-R ' if os.path.isdir(target) else '',
+                                                     target),
+                         why='%s is labelled %s - the policy says %s' % (g['path'], g['tt'],
+                                                                         want))
+            elif g['cls'] in ('tcp_socket', 'udp_socket') and 'name_bind' in g['perms'].split() \
+                    and free and g['st'] in SE_PORT_FOR and g['port']:
+                t = SE_PORT_FOR[g['st']]
+                f.update(kind='port', type=t,
+                         fix='semanage port -a -t %s -p %s %s' % (t, g['proto'], g['port']),
+                         why='port %s/%s has no type of its own - %s may bind it once it is %s'
+                             % (g['port'], g['proto'], g['st'], t))
+            elif w.get('constraint'):
+                f.update(kind='nofix', why='a constraint of the policy refuses it, not a missing '
+                                           'rule - nothing here should change it')
+            else:
+                never = se_never(g)
+                if never:
+                    f.update(kind='nofix', why=never + ' - never allowed from here')
+                elif all(SE_WORD_RE.match(x) for x in [g['st'], g['tt'], g['cls']]
+                         + g['perms'].split()):
+                    f.update(kind='rule', fix='(allow %s %s (%s (%s)))' % (
+                        g['st'], g['tt'], g['cls'], g['perms']),
+                        why='nothing of the policy allows it: a rule of isemon\'s own local '
+                            'module allows exactly this')
+                else:
+                    f.update(kind='nofix', why='it does not read as a rule that can be written')
+        out.append(f)
+    order = {'boolean': 0, 'label': 1, 'port': 2, 'rule': 3, 'nofix': 4, 'done': 5, 'notours': 6}
+    out.sort(key=lambda f: (order.get(f['kind'], 9), -f['count'], f['id']))
+    mine = [f for f in out if f['kind'] != 'notours'][:SE_LOOK_MOST]
+    others = [f for f in out if f['kind'] == 'notours'][:40]
+    return {'tool': True, 'at': time.time(), 'findings': mine + others, 'settled': settled,
+            'total': sum(f['count'] for f in out if f['kind'] not in ('done', 'notours')),
+            'fixable': sum(1 for f in out if f['kind'] in ('boolean', 'label', 'port', 'rule')),
+            'nofix': sum(1 for f in out if f['kind'] == 'nofix'),
+            'notours': sum(1 for f in out if f['kind'] == 'notours'),
+            'local': se_local_view()}
+
+
+# ---- isemon's own local module ------------------------------------------------------
+def se_local_list():
+    got = se_state_read(SE_LOCAL_LIST, [])
+    return [x for x in got if isinstance(x, dict) and SE_ID_RE.match(str(x.get('id') or ''))
+            and isinstance(x.get('rule'), list) and len(x['rule']) == 4][:SE_LOCAL_MOST]
+
+
+def se_local_in():
+    got = _se_run(['semodule', '-l'], 120, light=True)
+    if got is None or got.returncode != 0:
+        return None
+    return any(line.split()[:1] == [SE_LOCAL] for line in got.stdout.splitlines())
+
+
+def se_local_view():
+    rules = se_local_list()
+    return {'module': SE_LOCAL, 'rules': [
+        {'id': x['id'], 'rule': '(allow %s %s (%s (%s)))' % tuple(x['rule']),
+         'at': x.get('at'), 'by': str(x.get('by') or '')[:60], 'words': str(x.get('words') or '')[:200]}
+        for x in rules]}
+
+
+def se_local_text(rules):
+    out = ['; isemon\'s local rules (%s) - put in from Settings -> SELinux (Put in what is selected)'
+           % SE_LOCAL,
+           '; or isemon --selinux-fix, each exactly what SELinux refused here and nothing more. Taken',
+           '; away one by one on the same card (or isemon --selinux-rules --take-away ID); the module',
+           '; goes with install.sh --uninstall. Written by root; never edited by hand: the next change',
+           '; writes it again from its list.', '']
+    for x in rules:
+        st, tt, cls, perms = x['rule']
+        words = [w for w in [st, tt, cls] + str(perms).split()]
+        if not all(SE_WORD_RE.match(w) for w in words) or not SE_ID_RE.match(x['id']):
+            continue
+        out.append('; %s - %s (%s)' % (x['id'], re.sub(r'[\r\n]+', ' ', str(x.get('words') or
+                                                                         ''))[:160],
+                                       time.strftime('%Y-%m-%d %H:%M',
+                                                     time.localtime(float(x.get('at') or 0)))))
+        out.append('(optional %s_%s' % (SE_LOCAL, x['id']))
+        out.append('    (allow %s %s (%s (%s))))' % (st, tt, cls, perms))
+    return '\n'.join(out) + '\n'
+
+
+def se_local_load(rules, said):
+    """The local module written from its list and put into the policy - or
+    taken out of it when the list is empty."""
+    if not rules:
+        if se_local_in():
+            got = _se_run(['semodule', '-r', SE_LOCAL], 300)
+            if got is None or got.returncode != 0:
+                raise Refused('semodule -r %s: %s' % (SE_LOCAL, ((got.stderr or '') if got
+                                                                 else '').strip()[-200:]))
+            said.append('isemon\'s local module (%s) taken out of the policy' % SE_LOCAL)
+        for p in (SE_LOCAL_CIL, SE_LOCAL_CIL + '.in-policy'):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+        return
+    text = se_local_text(rules)
+    write_root(SE_LOCAL_CIL, text, 0o644)
+    got = _se_run(['semodule', '-i', SE_LOCAL_CIL], 300)
+    if got is None or got.returncode != 0:
+        raise Refused('semodule -i %s: %s' % (SE_LOCAL_CIL, ((got.stderr or got.stdout)
+                                                             if got else '').strip()[-200:]))
+    try:
+        shutil.copyfile(SE_LOCAL_CIL, SE_LOCAL_CIL + '.in-policy')
+    except OSError:
+        pass
+    said.append('isemon\'s local module (%s) put into the policy - %d rule(s) in it'
+                % (SE_LOCAL, len(rules)))
+
+
+def se_fix(r, said):
+    """Put right the findings asked for by their ids: each found again in the
+    audit log, its fix worked out here."""
+    ids = [str(x) for x in (r.get('ids') or []) if SE_ID_RE.match(str(x))][:200]
+    if not ids:
+        raise Refused('which findings? (their ids)')
+    if se_mode() not in ('Enforcing', 'Permissive'):
+        raise Refused('SELinux is not on - nothing is refused to put right')
+    look = se_look(r)
+    by = {f['id']: f for f in look['findings']}
+    fixed = se_state_read(SE_FIXED, {})
+    rules = se_local_list()
+    have = {x['id'] for x in rules}
+    who = re.sub(r'[^A-Za-z0-9@._ -]', '', str(r.get('by') or 'the pages'))[:60]
+    new_rules, done = [], []
+    known = None
+    for fid in ids:
+        f = by.get(fid)
+        if not f:
+            said.append('%s: not there any more' % fid)
+            continue
+        kind = f['kind']
+        if kind == 'boolean':
+            name = f['type']
+            if name not in SE_BOOLEANS and SE_BAD_BOOLEAN_RE.search(name):
+                said.append('%s: %s is never set from here' % (fid, name))
+                continue
+            got = _se_run(['setsebool', '-P', name, 'on'], 300)
+            if got is None or got.returncode != 0:
+                said.append('%s: setsebool -P %s on: %s' % (fid, name, ((got.stderr or '') if got
+                                                                       else '').strip()[-160:]))
+                continue
+            said.append('boolean %s on' % name)
+        elif kind == 'label':
+            path = os.path.normpath(str(f['path']))
+            if not path.startswith('/') or path == '/' or not se_ours_path(path) or \
+                    not os.path.lexists(path):
+                said.append('%s: %s is not there any more' % (fid, path))
+                continue
+            cmd = ['restorecon'] + (['-R'] if os.path.isdir(path) and not os.path.islink(path)
+                                    else []) + ['-v', path]
+            got = _se_run(cmd, 600)
+            if got is None or got.returncode != 0:
+                said.append('%s: %s: %s' % (fid, ' '.join(cmd), ((got.stderr or '') if got
+                                                                  else '').strip()[-160:]))
+                continue
+            said.append('%s labelled as the policy says' % path)
+        elif kind == 'port':
+            try:
+                n = int(f['port'])
+            except (TypeError, ValueError):
+                continue
+            t, proto = f['type'], f['proto']
+            if t not in SE_PORT_FOR.values() or proto not in ('tcp', 'udp') or \
+                    not 1 <= n <= 65535:
+                continue
+            known = se_ports() if known is None else known
+            if known is None:
+                said.append('%s: semanage is not on this machine' % fid)
+                continue
+            if any(lo <= n <= hi for (ty, pr), spans in known.items() if pr == proto
+                   for lo, hi in spans if ty not in SE_FREE_PORT_TYPES):
+                if not se_port_has(known, t, proto, n):
+                    said.append('%s: port %d/%s is another service\'s in the SELinux policy - '
+                                'left as it is' % (fid, n, proto))
+                    continue
+            else:
+                got = _se_run(['semanage', 'port', '-a', '-t', t, '-p', proto, str(n)], 300)
+                if got is None or got.returncode != 0:
+                    said.append('%s: semanage port %d/%s: %s' % (
+                        fid, n, proto, ((got.stderr or '') if got else '').strip()[-160:]))
+                    continue
+            said.append('port %d/%s labelled %s' % (n, proto, t))
+        elif kind == 'rule':
+            if fid not in have:
+                new_rules.append({'id': fid, 'rule': [f['st'], f['tt'], f['cls'], f['perms']],
+                                  'at': time.time(), 'by': who,
+                                  'words': '%s: %s' % (f['comm'] or f['st'], f['why'])})
+        else:
+            said.append('%s: %s - not put right from here' % (fid, f['why'] or kind))
+            continue
+        done.append(fid)
+    if new_rules:
+        rules = (rules + new_rules)[-SE_LOCAL_MOST:]
+        try:
+            se_local_load(rules, said)
+        except Refused as e:
+            # The rest put right stays put right; these rules are not in.
+            said.append(str(e))
+            for x in new_rules:
+                done.remove(x['id'])
+        else:
+            root_state_write(SE_LOCAL_LIST, json.dumps(rules))
+            said.extend('rule %s: %s' % (x['id'], '(allow %s %s (%s (%s)))' % tuple(x['rule']))
+                        for x in new_rules)
+    now = time.time()
+    for fid in done:
+        fixed[fid] = now
+    if done:
+        # Only the newest thousand ids kept.
+        keep = dict(sorted(fixed.items(), key=lambda kv: -float(kv[1] or 0))[:1000])
+        root_state_write(SE_FIXED, json.dumps(keep))
+    return done
+
+
+def se_rule_drop(r, said):
+    fid = str(r.get('rule') or '')
+    if not SE_ID_RE.match(fid):
+        raise Refused('which rule? (its id)')
+    rules = se_local_list()
+    left = [x for x in rules if x['id'] != fid]
+    if len(left) == len(rules):
+        raise Refused('there is no local rule %s' % fid)
+    se_local_load(left, said)
+    root_state_write(SE_LOCAL_LIST, json.dumps(left))
+    fixed = se_state_read(SE_FIXED, {})
+    if fid in fixed:
+        fixed.pop(fid)
+        root_state_write(SE_FIXED, json.dumps(fixed))
+    said.append('rule %s taken away' % fid)
 
 
 # ---- what SELinux says here, gathered for whoever writes isemon's module -------
@@ -5519,6 +6112,20 @@ def se_report_parts(r):
         '\n\n==== %s\n%s\n==== in the policy\n%s\n' % (
             SE_CIL, _read_or(SE_CIL) or '(not there)',
             _read_or(SE_CIL + '.in-policy') or '(none put in yet)')
+    # The whole machine (1.10.362, the selinux kit): every process's domain
+    # (no arguments), every boolean, port type and module, what was changed
+    # here, every listening socket - for whoever looks after the policy.
+    parts['findings.json'] = json.dumps(se_look(r), indent=1, sort_keys=True)
+    parts['os/processes.txt'] = _se_out(['ps', '-eZo', 'label,user,pid,comm'], 60, light=False)
+    parts['os/booleans.txt'] = bools
+    parts['os/ports.txt'] = ports
+    parts['os/modules.txt'] = _se_out(['semodule', '-lfull'], 300)
+    parts['os/local-changes.txt'] = '\n'.join(
+        '==== semanage %s -l -C\n%s' % (what, _se_out(['semanage', what, '-l', '-C'], 300))
+        for what in ('boolean', 'port', 'fcontext', 'login', 'user', 'module', 'permissive'))
+    parts['os/semanage-export.txt'] = _se_out(['semanage', 'export'], 300)
+    parts['os/listening.txt'] = _se_out(['ss', '-lntupZ'], 60, light=False)
+    parts['modules.txt'] += '\n==== %s\n%s\n' % (SE_LOCAL_CIL, _read_or(SE_LOCAL_CIL) or '(none)')
     parts['README.txt'] = (
         'isemon - what SELinux says on this machine, for whoever writes isemon\'s module\n'
         '(isemon_server). Made %s. Nothing was changed to make it.\n\n'
@@ -5527,7 +6134,11 @@ def se_report_parts(r):
         'audit2why.txt   why; audit2allow.te: what would allow it - a hint, not to be loaded\n'
         'labels.txt      the labels of isemon\'s files and what the policy says they should be\n'
         'processes.txt   the domains the programs run in; ports.txt, booleans.txt, modules.txt\n'
-        'system.txt      the system, the policy and the packages; isemon.json: what isemon uses\n\n'
+        'system.txt      the system, the policy and the packages; isemon.json: what isemon uses\n'
+        'findings.json   every refusal, sorted by what puts it right (as Settings -> SELinux)\n'
+        'os/             the whole machine: every process\'s domain, boolean, port type and\n'
+        '                module, what was changed here (semanage -l -C, semanage export) and\n'
+        '                every listening socket\n\n'
         'No password, key or token of isemon is in it. The audit log holds the command lines of\n'
         'the programs refused something: isemon never puts a secret on one - other programs on\n'
         'this machine may. Look through avc*.txt before sending it on.\n'
@@ -5588,7 +6199,7 @@ def selinux_part():
         if not isinstance(r, dict):
             raise Refused('the request is not an object')
         out['id'] = re.sub(r'[^A-Za-z0-9]', '', str(r.get('id') or ''))[:40]
-        if r.get('do') not in ('check', 'report'):
+        if r.get('do') not in ('check', 'report', 'look'):
             # A step changes the machine: one asked long ago is not done.
             try:
                 at = float(r.get('at') or 0)

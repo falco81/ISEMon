@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.361",
+  "version": "1.10.362",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -411,6 +411,14 @@
   "s.a-blocklist-a-year-old-is.b213dbc5": {
    "source": "A blocklist a year old is a list of addresses that have since been cleaned up, and a country database a year old puts the wrong flag beside half the page. Both are fetched again by themselves; this is how often, and at what time of day.",
    "text": "Blacklist starý rok je seznamem adres, které už mezitím někdo vyčistil, a rok stará databáze zemí ukáže u poloviny stránky špatnou vlajku. Obojí se stahuje znovu automaticky; zde nastavíte, jak často a v kolik hodin."
+  },
+  "s.a-boolean-of-the-policy-allows.9bace476": {
+   "source": "A boolean of the policy allows it - setsebool switches it on.",
+   "text": "Povoluje to boolean politiky - setsebool ho zapne."
+  },
+  "s.a-boolean.08a380fc": {
+   "source": "A boolean",
+   "text": "Boolean"
   },
   "s.a-browser-on-a-computer-in.6df77bae": {
    "source": "A browser on a computer in the domain signs its person in without a password: it sends a Kerberos ticket for the name the page was opened by, checked here against the keytab put in below. Only people of the directory above get in, with the role their groups give, exactly as with their password - and Face ID, when it is on, is asked after it just the same. NTLM is never taken. Off: nothing of it is offered.",
@@ -964,6 +972,10 @@
    "source": "a knock on this door — which is why one failure is enough. Switched on and off with",
    "text": "zaklepání na tyto dveře — proto stačí jediný neúspěch. Zapíná a vypíná se pomocí"
   },
+  "s.a-label.f1a7d938": {
+   "source": "A label",
+   "text": "Štítek"
+  },
   "s.a-large-list-needs-room.f394f818": {
    "source": "A large list needs room:",
    "text": "Velký seznam potřebuje místo:"
@@ -1436,6 +1448,14 @@
    "source": "a port, or two joined by -",
    "text": "port, nebo dva spojené pomlčkou"
   },
+  "s.a-port-with-no-type-of.e6edfc0d": {
+   "source": "A port with no type of its own - given the type of the program that uses it.",
+   "text": "Port bez vlastního typu - dostane typ programu, který ho používá."
+  },
+  "s.a-port.a4548162": {
+   "source": "A port",
+   "text": "Port"
+  },
   "s.a-portable-copy.d81916a4": {
    "source": "a portable copy",
    "text": "přenositelná kopie"
@@ -1520,6 +1540,10 @@
    "source": "A refusal at the VPN through a Windows NPS - a FortiGate, an ASA or any gateway that asks NPS about a password - is counted and banned exactly as a refusal at the VPN through ISE is: the same bar, the same window, the same ladder.",
    "text": "Odmítnutí na VPN přes Windows NPS - FortiGate, ASA nebo jakoukoli bránu, která se NPS ptá na heslo - se počítá a blokuje úplně stejně jako odmítnutí na VPN přes ISE: stejný práh, stejné časové okno, stejné stupně blokace."
   },
+  "s.a-refusal-of-it-from-before.0f2aa96a": {
+   "source": "a refusal of it from before no longer counts - one from after comes back",
+   "text": "odmítnutí z doby předtím se už nepočítá - nové se vrátí"
+  },
   "s.a-registry-value-was-changed.42827634": {
    "source": "a registry value was changed",
    "text": "hodnota registru byla změněna"
@@ -1599,6 +1623,10 @@
   "s.a-rule-at-the-top-with.72b1ff9d": {
    "source": ": a rule at the top with",
    "text": ": pravidlo úplně nahoře s"
+  },
+  "s.a-rule-of-isemon-s.161960ab": {
+   "source": "A rule of isemon's",
+   "text": "Pravidlo isemonu"
   },
   "s.a-rule-of-your-own.12894ba1": {
    "source": "A rule of your own",
@@ -2847,6 +2875,10 @@
   "s.all-of-it.d5766f3f": {
    "source": "all of it",
    "text": "všechno"
+  },
+  "s.all-of-these.d8aa33f5": {
+   "source": "All of these",
+   "text": "Všechny tyto"
   },
   "s.all-well.e586bf52": {
    "source": "all well",
@@ -4388,6 +4420,10 @@
    "source": "audittime",
    "text": "audittime"
   },
+  "s.ausearch-is-not-on-this-machine.67f38f23": {
+   "source": "ausearch is not on this machine - what SELinux refused cannot be read (dnf install audit).",
+   "text": "ausearch na tomto stroji není - co SELinux odmítl, nejde přečíst (dnf install audit)."
+  },
   "s.ausearch-m-avc-ts-recent-audit2allow.98711bdf": {
    "source": "ausearch -m avc -ts recent | audit2allow -M isemon-local",
    "text": "ausearch -m avc -ts recent | audit2allow -M isemon-local"
@@ -5111,6 +5147,10 @@
   "s.bonaire.fd71a444": {
    "source": "Bonaire",
    "text": "Bonaire"
+  },
+  "s.boolean.48647474": {
+   "source": "boolean",
+   "text": "boolean"
   },
   "s.bosnia-and-herzegovina.62ac59b7": {
    "source": "Bosnia and Herzegovina",
@@ -10692,6 +10732,10 @@
    "source": "five minutes",
    "text": "pět minut"
   },
+  "s.fix.99f707ef": {
+   "source": "fix",
+   "text": "fix"
+  },
   "s.fix.c341e94c": {
    "source": "Fix:",
    "text": "Oprava:"
@@ -13988,6 +14032,10 @@
    "source": "isemon leaves the firewall alone",
    "text": "isemon nechává firewall být"
   },
+  "s.isemon-local-in-the-policy.ae83d1d9": {
+   "source": "isemon_local, in the policy",
+   "text": "isemon_local, v politice"
+  },
   "s.isemon-looks-after-its-rules.8d2337f2": {
    "source": "isemon looks after its rules",
    "text": "isemon se stará o svá pravidla"
@@ -14056,6 +14104,10 @@
    "source": "isemon's authority",
    "text": "Autorita isemonu"
   },
+  "s.isemon-s-but-what-it-would.1ed1c69e": {
+   "source": "isemon's, but what it would take is too much to allow from here - each says why; the report is for whoever looks after isemon's module.",
+   "text": "Patří isemonu, ale povolit to odsud by bylo příliš - u každého je proč; report je pro toho, kdo se stará o modul isemonu."
+  },
   "s.isemon-s-certificate-was-made-here.a797f990": {
    "source": "isemon's certificate was made here by an authority of this machine's own. otp checks isemon by it: paste it into otp - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\".",
    "text": "Certifikát isemonu byl vytvořen zde vlastní autoritou tohoto stroje. otp podle ní isemon ověřuje: vložte ji do otp - Settings → isemon → Encrypted sending → isemon's certificate → \"isemon has one from its own CA\"."
@@ -14091,6 +14143,14 @@
   "s.isemon-s-firewall-lets-it-in.81ccaa7f": {
    "source": "isemon's firewall lets it in from otp's nodes only (Settings → Firewall and access)",
    "text": "firewall isemonu ho pouští jen z uzlů otp (Nastavení → Firewall a přístup)"
+  },
+  "s.isemon-s-local-rules.9abb18b3": {
+   "source": "isemon's local rules",
+   "text": "Lokální pravidla isemonu"
+  },
+  "s.isemon-s-local-selinux-rules-isemon.42c644ed": {
+   "source": "isemon's local SELinux rules (isemon_local); --take-away ID takes one away",
+   "text": "lokální SELinux pravidla isemonu (isemon_local); --take-away ID jedno odebere"
   },
   "s.isemon-s-module-isemon-server-installed.46ae58df": {
    "source": "isemon's module (isemon_server) installed",
@@ -16388,6 +16448,10 @@
    "source": "Looking at the disks, the logs and the database…",
    "text": "Prohlížím disky, logy a databázi…"
   },
+  "s.looking-at-what-it-refuses.e07d4eca": {
+   "source": "looking at what it refuses…",
+   "text": "zjišťuji, co odmítá…"
+  },
   "s.looking-for-lines-where.1bdc0535": {
    "source": "Looking for lines where",
    "text": "Hledají se řádky, kde"
@@ -17479,6 +17543,10 @@
   "s.must-log-the-sign-ins.4c9877d9": {
    "source": "must log the sign-ins:",
    "text": "musí logovat přihlášení:"
+  },
+  "s.mute.c38ad78f": {
+   "source": "mute",
+   "text": "mute"
   },
   "s.muted-small.98921c40": {
    "source": "muted small",
@@ -18700,6 +18768,10 @@
    "source": "Nodes",
    "text": "Uzly"
   },
+  "s.nofix.1e443ffb": {
+   "source": "nofix",
+   "text": "nofix"
+  },
   "s.none-are-chosen.ae3b2bc2": {
    "source": "none are chosen",
    "text": "žádné nejsou vybrány"
@@ -19020,6 +19092,10 @@
    "source": "not fetched",
    "text": "nestaženo"
   },
+  "s.not-for-a-button.872162ff": {
+   "source": "Not for a button",
+   "text": "Ne pro tlačítko"
+  },
   "s.not-forwarded-nothing-knocked.83609e8a": {
    "source": "not forwarded, nothing knocked",
    "text": "nepřesměrováno, nic neklepalo"
@@ -19091,6 +19167,10 @@
   "s.not-in-what-was-kept.7596b459": {
    "source": "not in what was kept",
    "text": "není v uchovaném"
+  },
+  "s.not-isemon-s.6362d6c2": {
+   "source": "Not isemon's",
+   "text": "Nepatří isemonu"
   },
   "s.not-keeping-up.62f0d407": {
    "source": "Not keeping up",
@@ -19764,6 +19844,10 @@
    "source": "Nothing of the banning touches it and it touches nothing of the banning: what the firewall does with it — accept, drop, mangle, route — is a rule you write there, pointed at this list’s name.",
    "text": "Nic z blokování se ho nedotýká a ono se nedotýká ničeho z blokování: co s ním firewall udělá — accept, drop, mangle, route — je pravidlo, které tam napíšete a které odkazuje na název tohoto seznamu."
   },
+  "s.nothing-of-the-policy-allows-it.5488c634": {
+   "source": "Nothing of the policy allows it: exactly this, and nothing more, goes into isemon's own local module (isemon_local).",
+   "text": "Nic v politice to nepovoluje: přesně tohle a nic víc jde do vlastního lokálního modulu isemonu (isemon_local)."
+  },
   "s.nothing-or-not-known-yet.8bc5be12": {
    "source": "(nothing - or not known yet)",
    "text": "(nic – nebo zatím neznámé)"
@@ -19779,6 +19863,10 @@
   "s.nothing-read-twice-is-ever-stored.1b0c71e2": {
    "source": "Nothing read twice is ever stored twice: every record is kept under the session id ISE gave it, so “Go back over every log” can read every file from the beginning and only what was missing is added.",
    "text": "Nic přečteného dvakrát se nikdy neukládá dvakrát: každý záznam se uchovává pod ID relace, které mu přidělilo ISE, takže „Projít znovu všechny logy“ může přečíst každý soubor od začátku a přidá se jen to, co chybělo."
+  },
+  "s.nothing-refused-selinux-let-isemon-do.cd0ddf50": {
+   "source": "Nothing refused - SELinux let isemon do everything it did.",
+   "text": "Nic odmítnuto - SELinux nechal isemon udělat vše, co dělal."
   },
   "s.nothing-refused-since-isemon-s-needs.37d99ae2": {
    "source": "Nothing refused since isemon's needs were put in",
@@ -19947,6 +20035,10 @@
   "s.noticed-by.9d955edd": {
    "source": "Noticed by",
    "text": "Zaznamenal"
+  },
+  "s.notours.3b381763": {
+   "source": "notours",
+   "text": "notours"
   },
   "s.novak-adm.2680cf64": {
    "source": "novak, adm*",
@@ -21964,6 +22056,10 @@
    "source": "Other names",
    "text": "Další jména"
   },
+  "s.other-programs-of-this-machine-shown.63bdfccb": {
+   "source": "Other programs of this machine - shown, never put right here.",
+   "text": "Jiné programy tohoto stroje - jen ukázané, nikdy se tu neopravují."
+  },
   "s.other-sensors.049b08e1": {
    "source": "Other sensors",
    "text": "Další čidla"
@@ -22543,6 +22639,10 @@
   "s.permissions-on-an-object-were-changed.550d5c2a": {
    "source": "permissions on an object were changed",
    "text": "byla změněna oprávnění objektu"
+  },
+  "s.permissive-let-through-written-down.d926fce7": {
+   "source": "(permissive: let through, written down)",
+   "text": "(permissive: propuštěno, zapsáno)"
   },
   "s.permissive.348850bf": {
    "source": "permissive",
@@ -23360,6 +23460,10 @@
    "source": "put in: waits for the server’s next start",
    "text": "nastaveno: čeká na příští start serveru"
   },
+  "s.put-in-what-is-selected.9034338c": {
+   "source": "Put in what is selected",
+   "text": "Provést vybrané"
+  },
   "s.put-in-what-isemon-needs.1a8f3527": {
    "source": "Put in what isemon needs?",
    "text": "Vložit, co isemon potřebuje?"
@@ -23407,6 +23511,14 @@
   "s.put-one-back.e23bf37a": {
    "source": "Put one back…",
    "text": "Obnovit ze souboru…"
+  },
+  "s.put-right-just-now.800f3ba0": {
+   "source": "Put right just now",
+   "text": "Právě opraveno"
+  },
+  "s.put-right-what-selinux-refused-by.683c05bd": {
+   "source": "put right what SELinux refused, by the ids --selinux look shows (or --selinux-all for what can be): root works out each fix itself; asks first unless --yes",
+   "text": "opraví, co SELinux odmítl, podle ID, která ukáže --selinux look (nebo --selinux-all pro vše opravitelné): každou opravu si root odvodí sám; nejdřív se zeptá, pokud není --yes"
   },
   "s.put-sudo-in-front-of-pfctl.11369844": {
    "source": "Put sudo in front of pfctl, for an account that is not root but may run pfctl through sudo without a password.",
@@ -23515,6 +23627,10 @@
   "s.putting-it-in.e423e899": {
    "source": "putting it in…",
    "text": "vkládá se…"
+  },
+  "s.putting-it-right.6ba346d1": {
+   "source": "putting it right…",
+   "text": "opravuji…"
   },
   "s.putting-the-backup-back.0ccb3ef7": {
    "source": "Putting the backup back",
@@ -24800,6 +24916,10 @@
    "source": "root did not put it in",
    "text": "root to nenasadil"
   },
+  "s.root-does-exactly-this-nothing-else.e6f333fc": {
+   "source": "Root does exactly this - nothing else - and looks again at once:",
+   "text": "Root udělá přesně tohle - nic jiného - a hned se podívá znovu:"
+  },
   "s.root-is-never-locked-and-never.68e083e7": {
    "source": "root is never locked, and never given aging here.",
    "text": "root se nikdy nezamyká a platnost hesla mu tu nikdy nenastavíme."
@@ -25063,6 +25183,10 @@
   "s.ru.a3eceec4": {
    "source": "RU",
    "text": "RU"
+  },
+  "s.rule.0f400122": {
+   "source": "rule",
+   "text": "rule"
   },
   "s.rule.78e1790e": {
    "source": "Rule",
@@ -26048,6 +26172,10 @@
    "source": "Settings sections",
    "text": "Sekce nastavení"
   },
+  "s.settings-selinux-what-selinux-refused-sorted.3c3095af": {
+   "source": "Settings - SELinux: what SELinux refused, sorted by what puts it right; Put in what is selected does it, under enforcing too.",
+   "text": "Nastavení - SELinux: co SELinux odmítl, roztříděné podle opravy; Provést vybrané to udělá, i v režimu enforcing."
+  },
   "s.settings-the-database-how-much-each.247fcdf2": {
    "source": "Settings → The database: how much each table holds and what the database weighs, and erasing the firewall’s lines - all of them, or with everything else.",
    "text": "Nastavení → Databáze: kolik obsahuje každá tabulka a kolik databáze zabírá, a mazání řádků firewallu – všech, nebo spolu se vším ostatním."
@@ -26479,6 +26607,10 @@
   "s.since-its-records-were-read-is.7afe36b6": {
    "source": "since its records were read is left out, and the pass says so: read again it would file each line a second time at the new moment. Erase that module's records instead, which reads it again in the new zone. Logins at the firewall, to network devices, to the domain and the VPN through a FreeRADIUS are weighed over the same span as well, where they are switched on under Banning.",
    "text": "od přečtení jeho záznamů, se vynechá a průchod to oznámí: přečtený znovu by uložil každý řádek podruhé v novém čase. Smažte místo toho záznamy daného modulu, čímž se přečte znovu v nové zóně. Přihlášení na firewallu, k síťovým zařízením, do domény a do VPN přes FreeRADIUS se posoudí za stejné období také, pokud jsou zapnuté v Banningu."
+  },
+  "s.since-the-machine-started.8a6eabcb": {
+   "source": "since the machine started",
+   "text": "od startu stroje"
   },
   "s.since.22a4ed66": {
    "source": "Since",
@@ -28084,6 +28216,10 @@
    "source": "Take the ladder away; every block becomes the single length set above",
    "text": "Zrušit stupně blokace; každá blokace bude mít jedinou délku nastavenou výše"
   },
+  "s.take-the-rule-away.ece2106b": {
+   "source": "Take the rule away?",
+   "text": "Odebrat pravidlo?"
+  },
   "s.take-the-stored-authority-away-the.2a98bbcc": {
    "source": "Take the stored authority away. The server's certificate then has to be signed by one this machine already trusts.",
    "text": "Odebrat uloženou autoritu. Certifikát serveru pak musí být podepsán autoritou, které tento počítač již důvěřuje."
@@ -28219,6 +28355,10 @@
   "s.taking-our-entries-off-the-list.a0b2a3a1": {
    "source": "Taking our entries off the list of the old name",
    "text": "Odebírání našich záznamů ze seznamu se starým názvem"
+  },
+  "s.taking-the-rule-away.ef020548": {
+   "source": "taking the rule away…",
+   "text": "odebírám pravidlo…"
   },
   "s.talks-to-out.ff209391": {
    "source": "Talks to (out)",
@@ -30315,6 +30455,10 @@
   "s.the-file-for-the-router-click.905c5e89": {
    "source": "The file for the router. Click it to download.",
    "text": "Soubor pro router. Kliknutím ho stáhnete."
+  },
+  "s.the-file-is-not-labelled-as.00c3d501": {
+   "source": "The file is not labelled as the policy says it should be - restorecon puts it right.",
+   "text": "Soubor nemá štítek, jaký má mít podle politiky - restorecon to opraví."
   },
   "s.the-file-is-not-there.ea626736": {
    "source": "the file is not there",
@@ -32687,6 +32831,10 @@
   "s.the-rules-are-on-the-clipboard.50bcda63": {
    "source": "the rules are on the clipboard",
    "text": "pravidla jsou ve schránce"
+  },
+  "s.the-rules-go-into-isemon-s.4138f124": {
+   "source": "The rules go into isemon's own local module isemon_local - each can be taken away again on this card. Every step is written in Events. It works under enforcing too.",
+   "text": "Pravidla jdou do vlastního lokálního modulu isemonu isemon_local - každé jde na této kartě zase odebrat. Každý krok se zapíše do Událostí. Funguje to i v režimu enforcing."
   },
   "s.the-safest-of-the-public-lists.dfee8d1f": {
    "source": "The safest of the public lists: ranges nothing should ever hear from - unrouted space, known bulletproof hosting, addresses that exist to attack. Chosen to have no false positives, so it is the one to start with.",
@@ -35552,6 +35700,10 @@
    "source": "under Banning → Where the bans come from is on, as it is unless switched off. A socket or a radio never earns a ban. Switched off, not one file is opened and nothing anywhere behaves differently.",
    "text": "zapnutá v Banningu → Odkud bany pocházejí, jak je, dokud ji někdo nevypne. Zásuvka ani rádio nikdy k banu nevedou. Vypnuté neotevře jediný soubor a nic se nikde nechová jinak."
   },
+  "s.under-enforcing-too-nothing-has-to.f374d25f": {
+   "source": "Under enforcing too - nothing has to be switched off for it. What was put right is looked at again at once.",
+   "text": "I v režimu enforcing - nic se kvůli tomu nemusí vypínat. Co se opravilo, se hned zkontroluje znovu."
+  },
   "s.under-settings-banning.daf8baac": {
    "source": "under Settings → Banning.",
    "text": "v Nastavení → Blokování."
@@ -36979,6 +37131,10 @@
   "s.what-selinux-refuses-to-the-web.9cd18e0f": {
    "source": "What SELinux refuses to the web server, rsyslog, logrotate and the database when it is enforcing - and what isemon needs of it here. Nothing changes unless asked: disabled stays disabled. On the server: isemon --selinux.",
    "text": "Co SELinux odmítá webovému serveru, rsyslogu, logrotate a databázi, když je enforcing - a co od něj isemon tady potřebuje. Nic se nemění, dokud se nepožádá: vypnutý zůstává vypnutý. Na serveru: isemon --selinux."
+  },
+  "s.what-selinux-refuses.6ad88175": {
+   "source": "What SELinux refuses",
+   "text": "Co SELinux odmítá"
   },
   "s.what-selinux-says-here-gathered-into.6e00737f": {
    "source": "what SELinux says here, gathered into one file for whoever writes isemon's module - nothing is changed to make it",
@@ -39147,6 +39303,14 @@
   "s.with-root-key-make-the-file.b7e3ea9e": {
    "source": "with --root-key-make: the file for the private half - made 0600, never written over; with --otp-tls-make: the file for this machine's authority, to paste into otp",
    "text": "s --root-key-make: soubor pro soukromou polovinu - vytvořený s 0600, nikdy se nepřepisuje; s --otp-tls-make: soubor pro autoritu tohoto stroje, k vložení do otp"
+  },
+  "s.with-selinux-fix-everything-that-can.aa8776bf": {
+   "source": "with --selinux-fix: everything that can be put right",
+   "text": "s --selinux-fix: vše, co jde opravit"
+  },
+  "s.with-selinux-rules-the-rule-to.fef830d0": {
+   "source": "with --selinux-rules: the rule to take away",
+   "text": "s --selinux-rules: pravidlo k odebrání"
   },
   "s.with-ssh-keys-and-sudo.93f0d874": {
    "source": "With SSH keys and sudo",
@@ -41754,6 +41918,10 @@
    "source": "{0} looked at",
    "text": "prohlédnuto {0}"
   },
+  "p.looked-at.f5757c29": {
+   "source": "· looked at {0}",
+   "text": "· zkontrolováno {0}"
+  },
   "p.looked-back-to-in-the-time.378cbc82": {
    "source": "· looked back to {0} in the time a search is given — a shorter window, or a field (an address, a port, a kind), looks further",
    "text": "· prohledáno zpět do {0} v čase, který hledání má — kratší okno nebo pole (adresa, port, druh) hledá dál"
@@ -42422,6 +42590,10 @@
    "source": "once, in the zone above it: {0} at deSEC",
    "text": "jednou, v nadřazené zóně: {0} u deSEC"
   },
+  "p.once.071b2642": {
+   "source": "once, {0}",
+   "text": "jednou, {0}"
+  },
   "p.one-name-tried-from-different-addresses.fcbac5bf": {
    "source": "One name tried from {0} different addresses is the shape of a password spray: one password against many places rather than many passwords against one. A name that has never got in here may be a name that does not exist.",
    "text": "Jedno jméno zkoušené z {0} různých adres má podobu password spray: jedno heslo na mnoha místech místo mnoha hesel na jednom. Jméno, které se sem nikdy nedostalo, může být jméno, které neexistuje."
@@ -42646,6 +42818,10 @@
    "source": "port kept {0} of {1}",
    "text": "port zachován {0} z {1}"
   },
+  "p.port.b911fde5": {
+   "source": "port {0}/{1}",
+   "text": "port {0}/{1}"
+  },
   "p.port.bd22480e": {
    "source": "{0}port",
    "text": "{0}port"
@@ -42705,6 +42881,18 @@
   "p.put-by-stand-ins.20db7320": {
    "source": "put by stand-ins ({0})",
    "text": "put by stand-ins ({0})"
+  },
+  "p.put-in-what-is-selected-on.4c5bea86": {
+   "source": "Put in what is selected on {0}?",
+   "text": "Provést vybrané na {0}?"
+  },
+  "p.put-in-what-is-selected.48f8c921": {
+   "source": "Put in what is selected ({0})",
+   "text": "Provést vybrané ({0})"
+  },
+  "p.put-in.e8a30835": {
+   "source": "- put in {0}{1}",
+   "text": "- vloženo {0}{1}"
   },
   "p.put-on-in-s.84078b62": {
    "source": "{0} put on in {1} s{2}",
@@ -43021,6 +43209,10 @@
   "p.selinux-refused-thing-s-since-the.9da7425b": {
    "source": "SELinux refused {0} thing(s) since the machine started",
    "text": "SELinux od startu stroje odmítl {0}×"
+  },
+  "p.selinux-refuses-it-again-from-now.32b6150b": {
+   "source": "SELinux refuses it again from now on: {0}. The local module is written again without it - the last one taken away takes the module out of the policy.",
+   "text": "SELinux to od teď zase odmítá: {0}. Lokální modul se zapíše znovu bez něj - po odebrání posledního se modul z politiky vyjme."
   },
   "p.sending.f857e3e8": {
    "source": "sending {0}…",
@@ -44054,6 +44246,14 @@
    "source": "They are files on this machine, under {0}. Copy them off it if they are to survive the machine.",
    "text": "Jsou to soubory na tomto serveru, v {0}. Pokud mají přežít případnou ztrátu serveru, zkopírujte je jinam."
   },
+  "p.thing-s-are-not-for-a.550d8185": {
+   "source": "{0} thing(s) are not for a button - each says why; the report is for whoever looks after isemon's module.",
+   "text": "{0} věcí není pro tlačítko - u každé je proč; report je pro toho, kdo se stará o modul isemonu."
+  },
+  "p.thing-s-selinux-refused-can-be.2a39159b": {
+   "source": "{0} thing(s) SELinux refused can be put right here - \"Put in what is selected\" above.",
+   "text": "{0} věcí, které SELinux odmítl, jde opravit tady - \"Provést vybrané\" výše."
+  },
   "p.thing-s-to-put-right.e5aab9d0": {
    "source": "{0} thing(s) to put right",
    "text": "{0} věcí k nápravě"
@@ -44201,6 +44401,10 @@
   "p.times-in-a-row.a6061320": {
    "source": "({0} times in a row)",
    "text": "({0}krát po sobě)"
+  },
+  "p.times-last.ece89335": {
+   "source": "{0} times, last {1}",
+   "text": "{0}×, naposledy {1}"
   },
   "p.tls-by.0e5b3c73": {
    "source": ", TLS by {0}",

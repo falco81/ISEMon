@@ -46,11 +46,13 @@ FAKES = {
     'getenforce': 'cat "$M/mode"',
     'getsebool': 'v=off; [ -f "$M/bool_$1" ] && v=$(cat "$M/bool_$1"); echo "$1 --> $v"',
     'setsebool': 'echo "setsebool $*" >> "$M/log"; echo on > "$M/bool_$2"',
-    'semodule': 'if [ "$1" = -l ]; then cat "$M/modules" 2>/dev/null; exit 0; fi\n'
+    # -l and -lfull only read (as the real one), as `semanage export` (1.10.362).
+    'semodule': 'case "$1" in -l|-lfull) cat "$M/modules" 2>/dev/null; exit 0;; esac\n'
                 'echo "semodule $*" >> "$M/log"\n'
                 '[ -f "$M/semodule_fail" ] && { echo "semodule: no" >&2; exit 1; }\n'
                 'echo "isemon_server 1.0" >> "$M/modules"',
     'semanage': 'if [ "$2" = -l ]; then cat "$M/ports"; exit 0; fi\n'
+                'if [ "$1" = export ]; then exit 0; fi\n'
                 'echo "semanage $*" >> "$M/log"\n'
                 'n=$7; [ -f "$M/taken_$n" ] && { echo "ValueError: Port $6/$n already defined" >&2; exit 1; }\n'
                 'echo "$4 $6 $n" >> "$M/ports"',

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.361'
+__version__ = '1.10.362'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -79225,8 +79225,13 @@ def root_job(wr, ask_name, answer_name, data, wait=120):
 # after the start and every half hour after; and the steps on the way to
 # enforcing, each only when somebody asks - a machine with SELinux disabled
 # stays so, and isemon runs as it always did.
-SE_ACTIONS = ('check', 'prepare', 'enforce', 'permissive', 'report')
-SE_STEPS = ('prepare', 'enforce', 'permissive')
+SE_ACTIONS = ('check', 'prepare', 'enforce', 'permissive', 'report', 'look', 'fix', 'rule_drop')
+SE_STEPS = ('prepare', 'enforce', 'permissive', 'fix', 'rule_drop')
+# What SELinux refuses, sorted by what puts it right (1.10.362, the selinux kit):
+# `look` is a check with every refusal analysed; `fix` puts right the findings
+# named by their ids - root works out every fix itself; `rule_drop` takes one of
+# isemon's local rules away.
+SE_ID_RE = re.compile(r'^[0-9a-f]{12}\Z')
 SE_EVERY = 1800
 SE_REPORT_KEEP_S = 3600
 SE_REPORT_MOST = 8 * 1024 * 1024
@@ -79274,35 +79279,51 @@ def selinux_now(store):
     return got if isinstance(got, dict) else {}
 
 
-def selinux_ask(daemon, action, by):
+def selinux_ask(daemon, action, by, ids=None, rule=''):
     if action not in SE_ACTIONS:
-        raise ValueError('check, prepare, enforce, permissive or report')
+        raise ValueError('check, look, prepare, enforce, permissive, fix, rule_drop or report')
+    more = {}
+    if action == 'fix':
+        ids = [str(x) for x in (ids or []) if SE_ID_RE.match(str(x))][:200]
+        if not ids:
+            raise ValueError('which of what SELinux refuses? (their ids)')
+        more['ids'] = ids
+    if action == 'rule_drop':
+        if not SE_ID_RE.match(str(rule or '')):
+            raise ValueError('which local rule? (its id)')
+        more['rule'] = str(rule)
     with SE_LOCK:
         was = SE_WORK['asked'] or {}
         # A step asked and not done yet is not put aside by a look or a
         # report: "enforcing" would never happen, said nowhere.
-        if action in ('check', 'report') and was.get('do') in SE_STEPS and \
+        if action in ('check', 'report', 'look') and was.get('do') in SE_STEPS and \
                 not was.get('done') and time.time() - float(was.get('at') or 0) < 3600:
-            if action == 'check':
+            if action in ('check', 'look'):
                 return 'the step asked is still being done - it looks again when it is done'
             raise ValueError('the step asked (%s) is not done yet - ask for the report after it'
                              % was.get('do'))
         if action in SE_STEPS and SE_WORK['busy'] and was.get('do') in SE_STEPS and \
                 not was.get('done'):
             raise ValueError('a step is being done already (%s) - wait for it' % was.get('do'))
-        SE_WORK['asked'] = {'id': secrets.token_hex(6), 'do': action, 'by': by, 'at': time.time()}
+        SE_WORK['asked'] = dict(more, id=secrets.token_hex(6), do=action, by=by, at=time.time())
     if action == 'report':
         daemon.store.add_event('settings', '%s asked for the SELinux report' % by, 'info', who=by)
     elif action in SE_STEPS:
         daemon.store.add_event('settings', '%s asked SELinux: %s' % (by, {
             'prepare': 'made ready, permissive, or what isemon needs put in',
-            'enforce': 'enforcing', 'permissive': 'permissive again'}[action]), 'warn', who=by)
+            'enforce': 'enforcing', 'permissive': 'permissive again',
+            'fix': 'put right %d of what it refuses (%s)' % (len(ids or []),
+                                                             ', '.join((ids or [])[:8])),
+            'rule_drop': 'take away the local rule %s' % rule}[action]), 'warn', who=by)
     selinux_tick(daemon)
     return {'check': 'asked: SELinux is looked at within seconds',
             'prepare': 'asked: root does it within seconds',
             'enforce': 'asked: SELinux is switched to enforcing within seconds',
             'permissive': 'asked: SELinux is switched to permissive within seconds',
-            'report': 'asked: the report is made within a minute'}[action]
+            'report': 'asked: the report is made within a minute',
+            'look': 'asked: what SELinux refuses is looked at within a minute',
+            'fix': 'asked: root puts it right and looks again within a minute',
+            'rule_drop': 'asked: root takes the rule away within a minute'}[action]
 
 
 def selinux_tick(daemon):
@@ -79323,19 +79344,38 @@ def selinux_tick(daemon):
         SE_WORK.update(busy=True, since=time.time(), seen=time.time())
         if asked:
             SE_WORK['tried'] = want.get('id') or ''
-    do = want.get('do') if asked and want.get('do') in SE_ACTIONS else 'check'
+    # Looked at with every refusal analysed (1.10.362) - also every half hour.
+    do = want.get('do') if asked and want.get('do') in SE_ACTIONS else 'look'
 
     def go():
         try:
             now = selinux_now(store)
             err, said = '', []
-            data = now.get('data') if do != 'check' and isinstance(now.get('data'), dict) else {}
+            data = now.get('data') if do not in ('check', 'look') and \
+                isinstance(now.get('data'), dict) else {}
+            ask = dict(selinux_want(), do=do, by=str(want.get('by') or '')[:60] if asked else '')
+            if asked and do == 'fix':
+                ask['ids'] = list(want.get('ids') or [])
+            if asked and do == 'rule_drop':
+                ask['rule'] = str(want.get('rule') or '')
             try:
-                got = root_job(wr, 'selinux.ask', 'selinux.json', dict(selinux_want(), do=do),
-                               120 if do == 'check' else 900)
+                try:
+                    got = root_job(wr, 'selinux.ask', 'selinux.json', ask,
+                                   120 if do == 'check' else 900)
+                except WebRootError as e:
+                    # A helper of the version before knows no look: a check, then.
+                    if do != 'look' or 'check, prepare' not in str(e):
+                        raise
+                    got = root_job(wr, 'selinux.ask', 'selinux.json', dict(ask, do='check'), 120)
                 said = [str(x)[:300] for x in (got.pop('said', None) or [])][:40]
                 if do != 'report':
                     data = got
+                    # A check says nothing of the refusals sorted: the last
+                    # look's kept beside it.
+                    old = now.get('data') if isinstance(now.get('data'), dict) else {}
+                    if isinstance(data, dict) and 'look' not in data and \
+                            isinstance(old.get('look'), dict):
+                        data['look'] = old['look']
             except (WebRootError, OSError) as e:
                 err = str(e)[:400] or e.__class__.__name__
                 if do not in ('check', 'report'):
@@ -79413,7 +79453,25 @@ def selinux_api(daemon, b, by):
                     re.sub(r'[^A-Za-z0-9._-]', '', socket.gethostname().split('.')[0])[:40] or 'isemon',
                     time.strftime('%Y%m%d-%H%M', time.localtime(rep['at']))),
                 'file': base64.b64encode(rep['data']).decode('ascii'), 'mime': 'application/gzip'}
-    return {'message': selinux_ask(daemon, act, by)}
+    return {'message': selinux_ask(daemon, act, by, ids=b.get('ids') if isinstance(
+        b.get('ids'), list) else None, rule=str(b.get('rule') or '')[:20])}
+
+
+def selinux_alerts(store):
+    """SELinux refuses isemon something that can be put right on the card
+    (1.10.362) - said where the alerts are, with the way there."""
+    data = selinux_now(store).get('data') or {}
+    look = data.get('look') if isinstance(data, dict) else None
+    if not isinstance(look, dict) or data.get('mode') not in ('Enforcing', 'Permissive'):
+        return []
+    n = int(look.get('fixable') or 0)
+    if not n:
+        return []
+    return [{'key': 'selinux:fixable', 'level': 'warn',
+             'title': 'SELinux refuses isemon something - %d can be put right' % n,
+             'says': 'Settings - SELinux: what SELinux refused, sorted by what puts it right; '
+                     'Put in what is selected does it, under enforcing too.',
+             'pane': 'selinux', 'steps': []}]
 
 
 def selinux_print(pal, v):
@@ -79468,6 +79526,50 @@ def selinux_print(pal, v):
         pal.warn('not ready: ' + '; '.join(probs[:6]))
     if n.get('error'):
         pal.bad(n['error'])
+    selinux_print_look(pal, c.get('look'))
+
+
+SE_KIND_WORDS = (('boolean', 'A boolean', 'a boolean of the policy allows it - setsebool'),
+                 ('label', 'A label', 'the file is not labelled as the policy says - restorecon'),
+                 ('port', 'A port', 'a port with no type of its own - semanage port -a'),
+                 ('rule', 'A rule of isemon\'s', 'exactly this, into isemon\'s local module'),
+                 ('nofix', 'Not for a button', 'isemon\'s, but too much to allow from here'),
+                 ('done', 'Put right', 'a refusal of it from before no longer counts'),
+                 ('notours', 'Not isemon\'s', 'other programs of this machine - never put right here'))
+
+
+def selinux_print_look(pal, look):
+    """What SELinux refuses, sorted by what puts it right (1.10.362)."""
+    if not isinstance(look, dict):
+        return
+    fs = look.get('findings') or []
+    pal.say('')
+    pal.say('What SELinux refuses, sorted (looked at %s):' % time.strftime(
+        '%Y-%m-%d %H:%M', time.localtime(float(look.get('at') or 0))))
+    if not fs:
+        pal.good('  nothing refused')
+    for kind, title, words in SE_KIND_WORDS:
+        mine = [f for f in fs if f.get('kind') == kind]
+        if not mine:
+            continue
+        pal.say('  %s (%d) - %s' % (title, len(mine), words))
+        for f in mine[:40]:
+            pal.say('    %s  %4dx %s %s -> %s %s { %s }%s' % (
+                f.get('id'), f.get('count', 0), f.get('comm') or '-', f.get('st'), f.get('tt'),
+                f.get('cls'), f.get('perms'),
+                ('  ' + str(f.get('path') or ('port %s/%s' % (f.get('port'), f.get('proto')))))
+                if (f.get('path') or f.get('port')) else ''))
+            if f.get('fix'):
+                pal.say('        -> %s' % f['fix'])
+            elif f.get('why'):
+                pal.say('        %s' % f['why'])
+    rules = (look.get('local') or {}).get('rules') or []
+    if rules:
+        pal.say('  isemon\'s local rules (%d, isemon_local):' % len(rules))
+        for x in rules:
+            pal.say('    %s  %s' % (x.get('id'), x.get('rule')))
+    if look.get('fixable'):
+        pal.say('  isemon --selinux-fix ID... (or --selinux-all) puts right what can be')
 
 
 # ---------------------------------------------------------------------------
@@ -80727,7 +80829,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '245211febc8f86738f3adb74c9f08c5427ed9bd2a3a26e6e5c9714cd77e338f6'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '7927c196a133501943935907144f9dde53fa34814e404857a9d9825f8f11f54b'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', 'fb1cc945511e33998e1d546eedfae84058a7676f5a1ee328ac301fbc8d2e9595'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
@@ -80967,6 +81069,10 @@ def alerts_now(daemon):
         out += storage_alerts(daemon.store)
     except Exception as e:                          # noqa: BLE001
         log('the disks for the alerts: %s' % str(e)[:160], 'debug')
+    try:
+        out += selinux_alerts(daemon.store)
+    except Exception as e:                          # noqa: BLE001
+        log('SELinux for the alerts: %s' % str(e)[:160], 'debug')
     order = {'crit': 0, 'warn': 1, 'info': 2}
     out.sort(key=lambda a: order.get(a.get('level'), 3))
     return out
@@ -96775,7 +96881,7 @@ def cmd_selinux(args, pal, store):
     if not v.get('helper'):
         pal.bad('root\'s half is not installed on this machine yet: ./install.sh --upgrade once')
         return 1
-    if step != 'check' and not args.yes:
+    if step not in ('check', 'look') and not args.yes:
         if getattr(args, 'json', False):
             print(json.dumps({'ok': False, 'error': '--json does not ask: with --yes'}))
             return 1
@@ -96800,7 +96906,7 @@ def cmd_selinux(args, pal, store):
     if n.get('pending'):
         pal.warn('asked; root has not done it yet - isemon --selinux in a minute')
         return 1
-    if step != 'check' and not n.get('error'):
+    if step not in ('check', 'look') and not n.get('error'):
         for one in n.get('said') or []:
             pal.good('  ' + one)
     selinux_print(pal, v)
@@ -96808,6 +96914,89 @@ def cmd_selinux(args, pal, store):
     if n.get('error'):
         return 1
     return 1 if c.get('mode') in ('Permissive', 'Enforcing') and c.get('problems') else 0
+
+
+def cmd_selinux_fix(args, pal, store):
+    """--selinux-fix ID... | --selinux-all (1.10.362): put right what SELinux refused, by
+    the ids of `isemon --selinux look` - root works out every fix itself."""
+    session = cli_session(store)
+    status, v = api_call('/api/selinux', session=session)
+    if not need_daemon(pal, status, v):
+        return 1
+    look = ((v.get('nodes') or [{}])[0].get('state') or {}).get('look') or {}
+    fs = {f.get('id'): f for f in look.get('findings') or []}
+    can = [f['id'] for f in fs.values() if f.get('kind') in ('boolean', 'label', 'port', 'rule')]
+    want = can if args.selinux_all else [str(x) for x in args.selinux_fix or []]
+    bad = [x for x in want if x not in can]
+    if bad:
+        pal.bad('not among what can be put right (isemon --selinux look): %s' % ', '.join(bad[:8]))
+        return 1
+    if not want:
+        pal.good('nothing to put right - isemon --selinux look looks again')
+        return 0
+    pal.say('Root does exactly this - nothing else - and looks again at once:')
+    for x in want:
+        f = fs[x]
+        pal.say('  %s %s   (%s: %s -> %s %s { %s })' % (f.get('kind'), f.get('fix'),
+                                                     f.get('comm') or '-', f.get('st'),
+                                                     f.get('tt'), f.get('cls'), f.get('perms')))
+    if not _ot_yes(args, pal, 'go ahead?'):
+        return 1
+    status, r = api_call('/api/selinux', 'POST', {'action': 'fix', 'ids': want}, session=session)
+    if not need_daemon(pal, status, r):
+        return 1
+    v = _se_settle(pal, session, 'fix', 900)
+    if v is None:
+        return 1
+    n = (v.get('nodes') or [{}])[0]
+    for one in n.get('said') or []:
+        pal.good('  ' + one)
+    if n.get('error'):
+        pal.bad(n['error'])
+        return 1
+    return 0
+
+
+def cmd_selinux_rules(args, pal, store):
+    """--selinux-rules [--take-away ID] (1.10.362): isemon's local SELinux rules."""
+    session = cli_session(store)
+    status, v = api_call('/api/selinux', session=session)
+    if not need_daemon(pal, status, v):
+        return 1
+    look = ((v.get('nodes') or [{}])[0].get('state') or {}).get('look') or {}
+    rules = (look.get('local') or {}).get('rules') or []
+    drop = str(args.take_away or '')
+    if not drop:
+        if as_json(args, {'rules': rules}):
+            return 0
+        if not rules:
+            pal.say('isemon\'s local module (isemon_local) has no rules')
+        for x in rules:
+            pal.say('%s  %s' % (x.get('id'), x.get('rule')))
+            pal.say('              %s - put in %s by %s' % (
+                x.get('words') or '', time.strftime('%Y-%m-%d %H:%M',
+                                                    time.localtime(float(x.get('at') or 0))),
+                x.get('by') or '?'))
+        return 0
+    if drop not in {x.get('id') for x in rules}:
+        pal.bad('there is no local rule %s (isemon --selinux-rules)' % drop)
+        return 1
+    if not _ot_yes(args, pal, 'take the rule %s away?' % drop):
+        return 1
+    status, r = api_call('/api/selinux', 'POST', {'action': 'rule_drop', 'rule': drop},
+                         session=session)
+    if not need_daemon(pal, status, r):
+        return 1
+    v = _se_settle(pal, session, 'rule_drop', 900)
+    if v is None:
+        return 1
+    n = (v.get('nodes') or [{}])[0]
+    for one in n.get('said') or []:
+        pal.good('  ' + one)
+    if n.get('error'):
+        pal.bad(n['error'])
+        return 1
+    return 0
 
 
 def cmd_selinux_report(args, pal, store):
@@ -100397,6 +100586,9 @@ class Console(object):
     def selinux_menu(self):
         what = self.choose('SELinux', [
             ('check', 'How it is here: what isemon needs of it, what it refused'),
+            ('look', 'What it refuses, sorted by what puts it right'),
+            ('fix', 'Put right all that can be (asks first)'),
+            ('rules', 'isemon\'s local rules'),
             ('prepare', 'Make it ready (disabled) or put in what isemon needs (permissive)'),
             ('enforce', 'Switch to enforcing'),
             ('permissive', 'Back to permissive'),
@@ -100404,6 +100596,16 @@ class Console(object):
             'Nothing changes unless asked here: disabled stays disabled. Only a full administrator.')
         if what == 'check':
             self.act('--selinux')
+        elif what == 'look':
+            self.act('--selinux', 'look')
+        elif what == 'fix':
+            if self.confirm('SELinux: put right', 'Everything SELinux refused that can be put right '
+                            'here: booleans, labels, ports and exactly-this rules into isemon\'s '
+                            'local module. Nothing not for a button, nothing not isemon\'s.',
+                            'Put it right'):
+                self.act('--selinux-fix', '--selinux-all', '--yes')
+        elif what == 'rules':
+            self.act('--selinux-rules')
         elif what == 'report':
             self.act('--selinux-report')
         elif what in ('prepare', 'enforce', 'permissive'):
@@ -101262,12 +101464,23 @@ def main(argv=None):
                           'straight where none is set or the address is in its list) - '
                           'each step with its time')
     act.add_argument('--selinux', nargs='?', const='check', default=None,
-                     choices=('check', 'prepare', 'enforce', 'permissive'),
-                     metavar='check|prepare|enforce|permissive',
+                     choices=('check', 'look', 'prepare', 'enforce', 'permissive'),
+                     metavar='check|look|prepare|enforce|permissive',
                      help='SELinux on this machine: what isemon needs of it and what it refused '
                           '(check), or a step - prepare (disabled: permissive at the next start; '
                           'permissive: what isemon needs put in), enforce, permissive. Asks '
                           'first unless --yes; exit 1 when something is missing')
+    act.add_argument('--selinux-fix', nargs='*', default=None, metavar='ID', dest='selinux_fix',
+                     help='put right what SELinux refused, by the ids --selinux look shows (or '
+                          '--selinux-all for what can be): root works out each fix itself; asks first '
+                          'unless --yes')
+    act.add_argument('--selinux-all', action='store_true', dest='selinux_all',
+                     help='with --selinux-fix: everything that can be put right')
+    act.add_argument('--selinux-rules', action='store_true', dest='selinux_rules',
+                     help='isemon\'s local SELinux rules (isemon_local); --take-away ID takes '
+                          'one away')
+    act.add_argument('--take-away', metavar='ID', dest='take_away', default='',
+                     help='with --selinux-rules: the rule to take away')
     act.add_argument('--selinux-report', nargs='?', const='', default=None, metavar='FILE',
                      dest='selinux_report',
                      help='what SELinux says here, gathered into one file for whoever writes '
@@ -101490,6 +101703,8 @@ def main(argv=None):
         (args.otp_tls_remove, cmd_otp_tls_remove),
         (args.selinux is not None, cmd_selinux),
         (args.selinux_report is not None, cmd_selinux_report),
+        (args.selinux_fix is not None or args.selinux_all, cmd_selinux_fix),
+        (args.selinux_rules, cmd_selinux_rules),
         (args.os_roots or bool(args.os_roots_add) or bool(args.os_roots_remove), cmd_os_roots),
         (args.cert_login_crl or args.cert_login_crl_fetch is not None or
          args.cert_login_crl_clear is not None, cmd_cert_login_crl),

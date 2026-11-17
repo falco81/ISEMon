@@ -5124,6 +5124,41 @@ function srcText(el) {
      the list scrolls sideways rather than one digit a line (1.10.336). */
   @media (max-width:700px){.a25-strip{position:static}.a25-scroll table.a25-t{min-width:900px}.a25-scroll td{overflow-wrap:break-word}.a25-scroll td.num{white-space:nowrap}}
   /* SELinux (1.10.319) */
+  /* What SELinux refuses, sorted (1.10.362, the selinux kit). */
+  .se-look{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .se-look-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .se-calm{padding:10px 12px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-size:13px}
+  .se-grp{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:10px;background:var(--panel2);overflow:hidden}
+  .se-grp.lvl-ok{border-left-color:var(--ok)}
+  .se-grp.lvl-warn{border-left-color:var(--warn)}
+  .se-grp.lvl-bad{border-left-color:var(--crit)}
+  .se-grp.se-grp-done{background:linear-gradient(90deg,var(--ok-bg),var(--panel2) 70%)}
+  .se-grp-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--line)}
+  .se-grp-h input,.se-f input{width:16px;height:16px;cursor:pointer;margin:0}
+  .se-grp-dot{width:8px;height:8px;border-radius:50%;background:var(--tx-mut)}
+  .se-grp.lvl-bad .se-grp-dot{background:var(--crit)}
+  .se-grp.lvl-ok .se-grp-dot{background:var(--ok)}
+  .se-cnt{background:var(--line);border-radius:999px;padding:0 7px;font-size:11px;color:var(--tx-dim)}
+  .se-f{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-top:1px solid rgba(255,255,255,.03)}
+  .se-f:first-of-type{border-top:0}
+  .se-f input{margin-top:2px}
+  .se-f-ic{width:16px;text-align:center;flex:0 0 16px;color:var(--tx-dim)}
+  .se-f-ic.nofix{color:var(--crit)}
+  .se-f-ic.done{color:var(--ok)}
+  .se-f-b{flex:1;min-width:0}
+  .se-f-l1{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+  .se-f-avc{font-size:12.5px;word-break:break-all}
+  .se-f.done .se-f-avc{text-decoration:line-through;color:var(--ok)}
+  .se-f-l2{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+  .se-f-fix{display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap}
+  .se-f-fix code{background:var(--info-bg);border:1px solid rgba(88,166,255,.25);color:var(--info);border-radius:6px;padding:1px 7px;font-size:12px;word-break:break-all}
+  .se-f-why{margin-top:3px;color:var(--tx-dim)}
+  .se-f-why.bad{color:var(--crit)}
+  .se-f-why.good{color:var(--ok)}
+  .se-f-n{font-size:12px;white-space:nowrap}
+  .se-put{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .se-plan{margin:6px 0 10px;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+  .se-plan code{font-size:12px;word-break:break-all}
   .se-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;margin-top:12px}
   .se-node{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0;max-width:980px}
   .se-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -51617,8 +51652,8 @@ function sePoll(on) {
   }, 2000);
   if (!on && SE.poll) { clearInterval(SE.poll); SE.poll = null; }
 }
-function seAsk(action) {
-  return api('selinux', {action: action}).then(function (r) {
+function seAsk(action, more) {
+  return api('selinux', Object.assign({action: action}, more || {})).then(function (r) {
     toast(r.message, 'good');
     setTimeout(loadSelinux, 600);
   }).catch(oops);
@@ -51685,7 +51720,8 @@ function drawSelinux() {
   var look = cmdButton('Look again', 'refresh', 'small');
   look.onclick = function () {
     busy(look, true);
-    api('selinux', {action: 'check'}).then(function () { setTimeout(loadSelinux, 600); }).catch(oops)
+    /* Every refusal analysed, sorted by what puts it right (1.10.362). */
+    api('selinux', {action: 'look'}).then(function () { setTimeout(loadSelinux, 600); }).catch(oops)
       .then(function () { busy(look, false); });
   };
   tl.appendChild(look);
@@ -51719,7 +51755,7 @@ function seNode(n) {
   if (n.pending) {
     var w = el('div', 'se-wait');
     w.appendChild(el('span', 'spin'));
-    w.appendChild(el('span', '', {check: 'looking…', prepare: 'putting it in…', enforce: 'switching to enforcing…', permissive: 'switching to permissive…', report: 'making the report…'}[n.pending] || 'asked…'));
+    w.appendChild(el('span', '', {check: 'looking…', look: 'looking at what it refuses…', fix: 'putting it right…', rule_drop: 'taking the rule away…', prepare: 'putting it in…', enforce: 'switching to enforcing…', permissive: 'switching to permissive…', report: 'making the report…'}[n.pending] || 'asked…'));
     box.appendChild(w);
   }
   if (!m) {
@@ -51764,7 +51800,9 @@ function seNode(n) {
     if (s.auditd === false) seRow(list, false, 'auditd does not run - what SELinux refuses is not written down (systemctl enable --now auditd)');
     (s.left_out || []).forEach(function (x) { seRow(list, null, x); });
     box.appendChild(list);
-    if ((dn.groups || []).length) {
+    /* Sorted by what puts it right (1.10.362); the list as it was until the first look. */
+    if (s.look) box.appendChild(seLook(n, s));
+    if (!s.look && (dn.groups || []).length) {
       var det = el('details', 'se-avc');
       det.appendChild(el('summary', '', 'What was refused (' + num(dn.groups.length) + ')'));
       var t = el('table', 'se-avc-t');
@@ -51784,7 +51822,7 @@ function seNode(n) {
     var known = s.module !== false && !(s.labels || []).some(function (x) { return x.ok === false; }) &&
       !(s.booleans || []).some(function (x) { return x.on === false; }) &&
       !(s.ports || []).some(function (x) { return x.labelled === false; });
-    if (dn.total && known) {
+    if (dn.total && known && !s.look) {
       var hint = el('div', 'se-verdict bad');
       hint.appendChild(el('b', '', 'isemon does not know this one yet'));
       hint.appendChild(el('span', 'small', 'Everything isemon knows it needs is in place - what was refused is something its module does not cover yet. "Put in what isemon needs" changes nothing for it: download the report (top right) and send it, so that the module learns it.'));
@@ -51793,11 +51831,16 @@ function seNode(n) {
     var verdict = el('div', 'se-verdict ' + (m === 'Enforcing' && !probs.length ? 'good' : s.ready ? 'ready' : probs.length ? 'bad' : ''));
     verdict.appendChild(el('b', '', m === 'Enforcing' ? (probs.length ? 'Enforcing - but something is not as isemon needs it' : 'Enforcing - and everything isemon needs is there')
       : s.ready ? 'Ready for enforcing' : 'Not ready for enforcing yet'));
+    var lk = s.look || {};
+    if (m === 'Permissive' && !s.ready && (lk.fixable || lk.nofix)) {
+      verdict.appendChild(el('span', 'small', (lk.fixable ? num(lk.fixable) + ' thing(s) SELinux refused can be put right here - "Put in what is selected" above. ' : '')
+        + (lk.nofix ? num(lk.nofix) + ' thing(s) are not for a button - each says why; the report is for whoever looks after isemon\'s module. ' : '')));
+    }
     if (m === 'Permissive' && !s.ready) verdict.appendChild(el('span', 'small', 'Let it run a day or two as it is used - the pages, the logs arriving, a rotation of the logs, an upgrade - then look again.'));
     box.appendChild(verdict);
   }
   if (n.error) box.appendChild(el('p', 'note bad', n.error));
-  else if ((n.said || []).length && n.action !== 'check' && n.action !== 'report') {
+  else if ((n.said || []).length && n.action !== 'check' && n.action !== 'report' && n.action !== 'look') {
     var sd = el('ul', 'small se-said');
     n.said.forEach(function (x) { sd.appendChild(el('li', '', x)); });
     box.appendChild(sd);
@@ -51838,6 +51881,189 @@ function seNode(n) {
   }
   if (row.childNodes.length) box.appendChild(row);
   return box;
+}
+/* What SELinux refuses, sorted by what puts it right (1.10.362, the selinux kit).
+   Every fixable finding comes ticked; the page sends only their ids - root
+   finds each again in the audit log and works out the fix itself. */
+var SE_KINDS = [
+  ['done', 'Put right just now', 'a refusal of it from before no longer counts - one from after comes back', 'ok'],
+  ['boolean', 'A boolean', 'A boolean of the policy allows it - setsebool switches it on.', 'ok'],
+  ['label', 'A label', 'The file is not labelled as the policy says it should be - restorecon puts it right.', 'ok'],
+  ['port', 'A port', 'A port with no type of its own - given the type of the program that uses it.', 'ok'],
+  ['rule', 'A rule of isemon\'s', 'Nothing of the policy allows it: exactly this, and nothing more, goes into isemon\'s own local module (isemon_local).', 'warn'],
+  ['nofix', 'Not for a button', 'isemon\'s, but what it would take is too much to allow from here - each says why; the report is for whoever looks after isemon\'s module.', 'bad'],
+  ['notours', 'Not isemon\'s', 'Other programs of this machine - shown, never put right here.', 'mute']
+];
+var SE_FIXABLE = {boolean: 1, label: 1, port: 1, rule: 1};
+SE.pick = null;
+SE.lookAt = 0;
+
+function seLook(n, s) {
+  var look = s.look || {};
+  var fs = look.findings || [];
+  var admin = seAdmin();
+  var wrap = el('div', 'se-look');
+  var head = el('div', 'se-look-h');
+  head.appendChild(el('b', '', 'What SELinux refuses'));
+  head.appendChild(el('span', 'muted small', 'since the machine started'));
+  if (look.at) head.appendChild(el('span', 'muted small', '· looked at ' + ago(look.at)));
+  wrap.appendChild(head);
+  if (!look.tool) {
+    wrap.appendChild(el('p', 'note small', 'ausearch is not on this machine - what SELinux refused cannot be read (dnf install audit).'));
+    return wrap;
+  }
+  /* Ticked: every fixable one, afresh for each new look. */
+  if (!SE.pick || SE.lookAt !== look.at) {
+    SE.pick = {};
+    SE.lookAt = look.at;
+    fs.forEach(function (f) { if (SE_FIXABLE[f.kind]) SE.pick[f.id] = true; });
+  }
+  if (!fs.length) {
+    wrap.appendChild(el('div', 'se-calm', 'Nothing refused - SELinux let isemon do everything it did.'));
+  }
+  var go = null;
+  function count() {
+    var k = Object.keys(SE.pick).filter(function (id) { return SE.pick[id]; }).length;
+    if (go) {
+      go.querySelector('span:last-child').textContent = 'Put in what is selected (' + k + ')';
+      go.disabled = !k || !!n.pending;
+    }
+  }
+  SE_KINDS.forEach(function (kd) {
+    var mine = fs.filter(function (f) { return f.kind === kd[0]; });
+    if (!mine.length) return;
+    var sec = el('div', 'se-grp se-grp-' + kd[0] + ' lvl-' + kd[3]);
+    var gh = el('div', 'se-grp-h');
+    var fixable = !!SE_FIXABLE[kd[0]] && admin;
+    var all = null;
+    if (fixable) {
+      all = el('input');
+      all.type = 'checkbox';
+      all.setAttribute('aria-label', 'All of these');
+      all.checked = mine.every(function (f) { return SE.pick[f.id]; });
+      gh.appendChild(all);
+    } else {
+      gh.appendChild(el('span', 'se-grp-dot'));
+    }
+    gh.appendChild(el('b', '', kd[1]));
+    gh.appendChild(el('span', 'se-cnt', num(mine.length)));
+    gh.appendChild(el('span', 'muted small', kd[2]));
+    sec.appendChild(gh);
+    var boxes = [];
+    mine.forEach(function (f) {
+      var it = el('div', 'se-f' + (f.kind === 'done' ? ' done' : ''));
+      if (fixable) {
+        var cb = el('input');
+        cb.type = 'checkbox';
+        cb.checked = !!SE.pick[f.id];
+        cb.setAttribute('aria-label', 'Put it right');
+        cb.onchange = function () {
+          SE.pick[f.id] = cb.checked;
+          if (all) all.checked = boxes.every(function (b) { return b.checked; });
+          count();
+        };
+        boxes.push(cb);
+        it.appendChild(cb);
+      } else {
+        it.appendChild(el('span', 'se-f-ic ' + f.kind, f.kind === 'done' ? '✓' : f.kind === 'nofix' ? '✕' : f.kind === 'notours' ? '⃠' : '•'));
+      }
+      var body = el('div', 'se-f-b');
+      var l1 = el('div', 'se-f-l1');
+      if (f.comm) l1.appendChild(noI18n(el('b', '', f.comm)));
+      l1.appendChild(noI18n(el('span', 'mono se-f-avc', f.st + ' → ' + f.tt + ' ' + f.cls + ' { ' + f.perms + ' }')));
+      body.appendChild(l1);
+      var l2 = el('div', 'se-f-l2 muted small');
+      var where = f.port ? 'port ' + f.port + '/' + (f.proto || '?') : (f.path || '');
+      if (where) l2.appendChild(noI18n(el('span', 'mono', where)));
+      l2.appendChild(el('span', '', f.count > 1 ? num(f.count) + ' times, last ' + ago(f.last) : 'once, ' + ago(f.last)));
+      if (f.permissive) l2.appendChild(el('span', '', '(permissive: let through, written down)'));
+      body.appendChild(l2);
+      if (f.fix && f.kind !== 'done') {
+        var l3 = el('div', 'se-f-fix');
+        l3.appendChild(el('span', 'muted', '→'));
+        l3.appendChild(noI18n(el('code', 'mono', f.fix)));
+        body.appendChild(l3);
+      }
+      if (f.why) body.appendChild(el('div', 'se-f-why small' + (f.kind === 'nofix' ? ' bad' : f.kind === 'done' ? ' good' : ''), f.why));
+      it.appendChild(body);
+      it.appendChild(el('span', 'se-f-n muted', num(f.count) + '×'));
+      sec.appendChild(it);
+    });
+    if (all) {
+      all.onchange = function () {
+        boxes.forEach(function (b, i) { b.checked = all.checked; SE.pick[mine[i].id] = all.checked; });
+        count();
+      };
+    }
+    wrap.appendChild(sec);
+  });
+  if (admin && fs.some(function (f) { return SE_FIXABLE[f.kind]; })) {
+    var row = el('div', 'se-put');
+    go = cmdButton('Put in what is selected', 'shield', 'primary');
+    go.onclick = function () { seFixConfirm(n, fs); };
+    row.appendChild(go);
+    row.appendChild(el('span', 'muted small', 'Under enforcing too - nothing has to be switched off for it. What was put right is looked at again at once.'));
+    wrap.appendChild(row);
+    count();
+  }
+  /* isemon's local rules: each can be taken away again. */
+  var rules = ((look.local || {}).rules) || [];
+  if (rules.length) {
+    var lr = el('div', 'se-grp se-local');
+    var lh = el('div', 'se-grp-h');
+    lh.appendChild(el('b', '', 'isemon\'s local rules'));
+    lh.appendChild(el('span', 'se-cnt', num(rules.length)));
+    lh.appendChild(el('span', 'muted small', 'isemon_local, in the policy'));
+    lr.appendChild(lh);
+    rules.forEach(function (x) {
+      var it = el('div', 'se-f');
+      var body = el('div', 'se-f-b');
+      body.appendChild(noI18n(el('code', 'mono', x.rule)));
+      var l2 = el('div', 'muted small');
+      if (x.words) l2.appendChild(noI18n(el('span', '', x.words)));
+      l2.appendChild(el('span', '', ' - put in ' + (x.at ? shortStamp(x.at) : '?') + (x.by ? ' by ' + x.by : '')));
+      body.appendChild(l2);
+      it.appendChild(body);
+      if (admin) {
+        var drop = cmdButton('Take it away', 'cancel', 'small');
+        drop.disabled = !!n.pending;
+        drop.onclick = function () {
+          confirmThen('Take the rule away?', htmlText('SELinux refuses it again from now on: ' + x.rule + '. The local module is written again without it - the last one taken away takes the module out of the policy.'),
+            'Take it away', function () { seAsk('rule_drop', {rule: x.id}); });
+        };
+        it.appendChild(drop);
+      }
+      lr.appendChild(it);
+    });
+    wrap.appendChild(lr);
+  }
+  return wrap;
+}
+
+/** Exactly what root will do, asked once more. */
+function seFixConfirm(n, fs) {
+  var ids = Object.keys(SE.pick).filter(function (id) { return SE.pick[id]; });
+  var by = {};
+  fs.forEach(function (f) { by[f.id] = f; });
+  ids = ids.filter(function (id) { return by[id] && SE_FIXABLE[by[id].kind]; });
+  if (!ids.length) return;
+  modal('Put in what is selected on ' + n.name + '?', function (body) {
+    body.appendChild(el('p', '', 'Root does exactly this - nothing else - and looks again at once:'));
+    var ul = el('ul', 'se-plan');
+    ids.forEach(function (id) {
+      var f = by[id];
+      var li = el('li', '');
+      li.appendChild(el('b', '', {boolean: 'boolean', label: 'label', port: 'port', rule: 'rule'}[f.kind]));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(noI18n(el('code', 'mono', f.fix)));
+      li.appendChild(noI18n(el('div', 'muted small', (f.comm || f.st) + ': ' + f.st + ' → ' + f.tt + ' ' + f.cls + ' { ' + f.perms + ' }')));
+      ul.appendChild(li);
+    });
+    body.appendChild(ul);
+    body.appendChild(el('p', 'muted small', 'The rules go into isemon\'s own local module isemon_local - each can be taken away again on this card. Every step is written in Events. It works under enforcing too.'));
+  }, [{words: 'No, leave it', close: true},
+      {words: 'Put it in', cls: 'primary', icon: 'check', close: true, go: function () { seAsk('fix', {ids: ids}); }}],
+  'medium');
 }
 setTimeout(function () { if (paneLive('selinux')) loadSelinux(); }, 0);
 

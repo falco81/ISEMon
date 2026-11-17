@@ -372,6 +372,37 @@ working.
 
 ## Version
 
+1.10.362
+
+- **SELinux: what it refuses, sorted by what puts it right** (Settings -
+  SELinux, [docs/selinux-and-trusted-roots.md](docs/selinux-and-trusted-roots.md),
+  as the selinux kit):
+  - **Look again** reads every refusal since the start with the program and
+    the whole path, and sorts each into one kind:
+    - a boolean (`setsebool`);
+    - a label (`restorecon`);
+    - a port (`semanage port -a`);
+    - a rule of isemon's own local module `isemon_local`;
+    - not for a button (each says why);
+    - not isemon's.
+  - **Put in what is selected (N)**:
+    - the page sends only the ids, and root works out every fix itself;
+    - a confirm lists exactly what will be done;
+    - it works under enforcing too;
+    - what was put right no longer counts against enforcing.
+  - isemon's local rules are listed with **Take it away**.
+  - The alerts say when something can be put right.
+  - The report has the sorted refusals and the whole machine (`os/`: every
+    process's domain, boolean, port type, module, the local changes, the
+    listening sockets).
+  - On the command line: `isemon --selinux look`, `--selinux-fix ID... |
+    --selinux-all`, `--selinux-rules [--take-away ID]`.
+  - isemon's module also lets the daemon start ssh and ssh-keygen under
+    NoNewPrivileges.
+  - `install.sh --uninstall` takes the local module out too.
+  - Everything that was there works as before; the mode is still never
+    changed unless asked.
+
 1.10.361
 
 - **The pages follow an upgrade that restarts them**

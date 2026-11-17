@@ -1213,6 +1213,11 @@ if [[ -n "$DO_UNINSTALL" ]]; then
         run semodule -r isemon_server >/dev/null 2>&1 && good "isemon's SELinux module taken out" ||
             warn "isemon's SELinux module could not be taken out: semodule -r isemon_server"
     fi
+    # ...and its local rules, put in from Settings - SELinux (1.10.362).
+    if command -v semodule >/dev/null 2>&1 && semodule -l 2>/dev/null | awk '$1=="isemon_local"{f=1} END{exit !f}'; then
+        run semodule -r isemon_local >/dev/null 2>&1 && good "isemon's local SELinux rules taken out" ||
+            warn "isemon's local SELinux rules could not be taken out: semodule -r isemon_local"
+    fi
     [[ -d "$LIB_DIR" ]] && run rm -rf "$LIB_DIR"
     [[ -d "$WEB_DIR" ]] && run rm -rf "$WEB_DIR"
     run systemctl daemon-reload

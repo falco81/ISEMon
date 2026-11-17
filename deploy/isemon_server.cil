@@ -32,3 +32,11 @@
 ; policy without the type still takes the rest.
 (optional isemon_server_nnp_chronyc
     (allow unconfined_service_t chronyc_t (process2 (nnp_transition))))
+
+; ...and ssh, sftp and scp (ssh_t) for the backups to another machine and the router over ssh,
+; ssh-keygen (ssh_keygen_t) for the keys of those (1.10.362, as the selinux kit's module): the
+; same move into a confined domain under NoNewPrivileges, and nothing more.
+(optional isemon_server_nnp_ssh
+    (allow unconfined_service_t ssh_t (process2 (nnp_transition nosuid_transition))))
+(optional isemon_server_nnp_ssh_keygen
+    (allow unconfined_service_t ssh_keygen_t (process2 (nnp_transition nosuid_transition))))

@@ -46,6 +46,72 @@ is not installed.
     folder, where the service could write a time ahead and hide refusals.
 - Whether auditd runs. Without it nothing is written down, and enforcing is refused.
 
+### What SELinux refuses, sorted by what puts it right (1.10.362)
+
+**Look again** - and the look every half hour - reads every refusal since the
+machine started (`ausearch -m AVC,USER_AVC,SELINUX_ERR,SYSCALL,PATH -ts boot`):
+- each with the records of its event: the program (SYSCALL `exe=`) and the
+  whole path (PATH);
+- grouped by what was refused - source, target, class, permissions, program,
+  file or port.
+
+Each group is put to `audit2why` and sorted into one kind. A finding's id is a
+hash of what was refused (12 hex), the same at every look.
+
+| Kind | What it is | Put right by |
+|---|---|---|
+| allowed now | the policy loaded now allows it | - (not shown, counted as settled) |
+| **A boolean** | audit2why names a boolean | `setsebool -P NAME on` - never one that allows far more (`*exec*`, `unconfined`, `*_all_*`, `ptrace`, `deny_*`...) |
+| **A label** | an isemon file not labelled as `matchpathcon` says | `restorecon -v PATH` (`-R` for a folder) |
+| **A port** | nginx, sshd, chronyd, rsyslog, the database binding a port of no type of its own | `semanage port -a -t TYPE -p PROTO PORT` - never a port another service's type has |
+| **A rule of isemon's** | nothing of the policy allows it, and exactly that is safe | one rule in isemon's own **local module** `isemon_local`, each in an `(optional ...)` block |
+| **Not for a button** | isemon's, but too much to allow from a page | said with why - never put right |
+| **Not isemon's** | another program of this machine | shown, never put right here |
+
+"Too much" is any of these:
+- a security-sensitive target: `shadow_t`, `security_t`, the policy, keys,
+  audit, `sudo`, home folders...;
+- running or changing programs: `execute`, `entrypoint`, `transition`,
+  `ptrace`, `relabel*`, capabilities such as `sys_admin` or `dac_override`;
+- unsafe classes: `security`, `kernel_service`, `key`, `bpf`, `capability`,
+  `service`;
+- writing to types of many files: `etc_t`, `usr_t`, `bin_t`, `var_t`,
+  `default_t`, `tmp_t`.
+
+The one exception is the move of isemon's own daemon into a tool's domain
+under NoNewPrivileges (`process2 { nnp_transition }` into chronyc, ssh,
+ssh-keygen).
+
+Whose a refusal is:
+- isemon's own domain (`unconfined_service_t`) when the program is isemon's;
+- the tools it starts (chronyc, ssh, ssh-keygen);
+- the confined services it works with (httpd, rsyslog, logrotate, the
+  database, sshd...) **only** on isemon's paths (`/run/isemon`,
+  `/var/lib/isemon`, `/var/www/isemon`, `/etc/isemon`...) or its ports (the
+  API, the database, the SSH port, the syslog ports).
+
+**Put in what is selected (N)**:
+- every fixable finding comes ticked;
+- the page sends **only the ids**: root finds them again in the audit log
+  and works out every fix itself, so a request never carries a rule, a path
+  or a command;
+- a confirm lists exactly what root will do;
+- every step is written in Events and looked at again at once.
+
+It works under enforcing too. What was put right is noted with its time: a
+refusal of it from before no longer counts, also for "ready for enforcing",
+and one from after comes back.
+
+**isemon's local rules** (`isemon_local`, `/usr/local/lib/isemon/isemon_local.cil`):
+- written by root from its own list (`/var/lib/isemon-root/selinux-local.json`)
+  and loaded with `semodule -i`;
+- each rule can be taken away again (**Take it away**); the last one taken
+  away takes the module out of the policy;
+- `install.sh --uninstall` takes it away with isemon_server.
+
+The alerts say "SELinux refuses isemon something - N can be put right" while
+something can.
+
 ### The steps
 
 None of them is taken by itself. A machine with SELinux disabled stays
@@ -120,6 +186,16 @@ make it:
 The audit log holds other programs' command lines: look through `avc*.txt`
 before sending it on.
 
+
+From 1.10.362 it also holds:
+- `findings.json`: the refusals sorted, as the card shows them;
+- `os/`, the whole machine:
+  - every process's domain, without arguments;
+  - every boolean (`getsebool -a`), port type (`semanage port -l`) and module
+    (`semodule -lfull`);
+  - what was changed on this machine (`semanage boolean/port/fcontext/login/user/module/permissive -l -C`, `semanage export`);
+  - every listening socket (`ss -lntupZ`).
+
 ### Command line
 
 ```bash
@@ -129,6 +205,17 @@ isemon --selinux-report /root/selinux.tar.gz
 ```
 
 The console has the same items, under *Network, time and power → SELinux*.
+
+
+From 1.10.362:
+
+```bash
+sudo isemon --selinux look                    # every refusal, sorted, with ids and fixes
+sudo isemon --selinux-fix ID... | --selinux-all   # what root will do, asked first (--yes)
+sudo isemon --selinux-rules [--take-away ID]  # isemon's local rules
+```
+
+The console (Settings of this machine - SELinux) has the same.
 
 ## The system's trusted roots
 
