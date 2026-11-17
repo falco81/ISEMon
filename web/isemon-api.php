@@ -216,6 +216,75 @@ function isemon_get(string $path, float $timeout = 30.0): ?array
     return is_array($data) ? $data : null;
 }
 
+/**
+ * How far an upgrade is (1.10.361, the upgrade-ui kit): root writes it beside
+ * these pages as .upgrade.json - a dot name nginx never serves - while the
+ * daemon, nginx and php-fpm restart, and this reads it straight from disk,
+ * without the daemon. Null when there is none, or it is not to be believed:
+ * `running` for 30 minutes after it was written, `done` and `failed` for 10,
+ * nothing from the future, nothing but those three states.
+ *
+ * $full adds what only somebody signed in is shown - the versions, who asked,
+ * why it failed, its id: the version is never said to a page nobody has
+ * signed in to (healthz.php does not say it either).
+ */
+function isemon_upgrading(bool $full = false): ?array
+{
+    static $read = false, $got = null;
+    if (!$read) {
+        $read = true;
+        $path = __DIR__ . '/.upgrade.json';
+        if (is_file($path) && !is_link($path) && @filesize($path) < 8192) {
+            $raw = @file_get_contents($path, false, null, 0, 8192);
+            $data = is_string($raw) ? json_decode($raw, true) : null;
+            if (is_array($data)) {
+                $got = $data;
+            }
+        }
+    }
+    if (!is_array($got)) {
+        return null;
+    }
+    $state = (string) ($got['state'] ?? '');
+    $at = (float) ($got['at'] ?? 0);
+    $now = time();
+    if (!in_array($state, ['running', 'done', 'failed'], true) || $at <= 0 || $at > $now + 120
+        || $now - $at > ($state === 'running' ? 1800 : 600)) {
+        return null;
+    }
+    $text = static function ($v, int $most): string {
+        $v = preg_replace('/[\x00-\x1f\x7f]+/u', ' ', (string) $v);
+        $v = trim((string) $v);
+        return function_exists('mb_substr') ? mb_substr($v, 0, $most) : substr($v, 0, $most);
+    };
+    $num = static function ($v, int $most): int {
+        return max(0, min($most, (int) $v));
+    };
+    $out = [
+        'state'     => $state,
+        'part'      => $num($got['part'] ?? 0, 99),
+        'parts'     => $num($got['parts'] ?? 0, 99),
+        'pct'       => $num($got['pct'] ?? 0, 100),
+        'words'     => $text($got['words'] ?? '', 120),
+        'started'   => (float) ($got['started'] ?? $at),
+        'at'        => $at,
+        'now'       => (float) $now,
+        'downgrade' => !empty($got['downgrade']),
+    ];
+    if ($full) {
+        $ver = static function ($v): string {
+            $v = (string) $v;
+            return preg_match('/^[0-9]{1,4}(\.[0-9]{1,6}){1,3}$/', $v) ? $v : '';
+        };
+        $out['version'] = $ver($got['version'] ?? '');
+        $out['from'] = $ver($got['from'] ?? '');
+        $out['by'] = $text($got['by'] ?? '', 60);
+        $out['said'] = $text($got['said'] ?? '', 300);
+        $out['id'] = $text($got['id'] ?? '', 64);
+    }
+    return $out;
+}
+
 /** Pass a daemon reply straight through to the browser. */
 function isemon_relay(string $path, string $method = 'GET', ?array $payload = null,
                       float $timeout = 30.0): void
@@ -233,9 +302,31 @@ function isemon_relay(string $path, string $method = 'GET', ?array $payload = nu
     [$status, $body] = isemon_call($path, $method, $payload, $timeout);
     if ($status === 0) {
         http_response_code(503);
+        /* ...because it is being upgraded (1.10.361): the page waits for it
+           rather than saying something is wrong. */
+        $up = isemon_upgrading();
+        if ($up !== null && $up['state'] === 'running') {
+            echo json_encode(['ok' => false, 'upgrading' => $up, 'error' => 'being upgraded']);
+            return;
+        }
         echo json_encode(['ok' => false, 'error' =>
             'the daemon is not answering — is isemon.service running?']);
         return;
+    }
+    /* The status, with how far an upgrade is (1.10.361): the band shows at
+       once, before anything restarts. Whoever is answered the status is
+       signed in, so they are told all of it. */
+    if ($status === 200 && strncmp($path, '/api/status', 11) === 0) {
+        $up = isemon_upgrading(true);
+        if ($up !== null) {
+            /* As objects, so an empty {} of the daemon's stays {}. */
+            $data = json_decode($body, false);
+            if ($data instanceof stdClass) {
+                $data->upgrading = $up;
+                $body = (string) json_encode($data, JSON_UNESCAPED_UNICODE
+                                                    | JSON_INVALID_UTF8_SUBSTITUTE);
+            }
+        }
     }
     /* A session the daemon no longer knows means whoever is holding it has to
        sign in again; leaving the cookie in place makes every request fail

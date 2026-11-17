@@ -40,9 +40,19 @@ $db = $daemon && !empty($health['database']['ok']);
 // upgrade - the balancer and the monitoring leave it alone until it is back.
 // Only that it is, never why: anybody on the list may ask.
 $maint = $daemon && !empty($health['maintenance']);
+// ...and while it is being upgraded, the daemon restarting (1.10.361): the
+// same "maintenance", not "not answering" - the monitoring sees a planned
+// pause, not an outage. Only that, never the version.
+if (!$daemon) {
+    $up = isemon_upgrading();
+    if ($up !== null && $up['state'] === 'running') {
+        $maint = true;
+    }
+}
 $ok = $daemon && $db && !$maint;
-$why = !$daemon ? 'the daemon is not answering' : (!$db ? 'the database is not open'
-    : ($maint ? 'maintenance' : 'ok'));
+$why = (!$daemon && $maint) ? 'maintenance' : (!$daemon ? 'the daemon is not answering'
+    : (!$db ? 'the database is not open'
+    : ($maint ? 'maintenance' : 'ok')));
 
 http_response_code($ok ? 200 : 503);
 if (isset($_GET['json'])) {

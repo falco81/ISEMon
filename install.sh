@@ -153,7 +153,50 @@ write_file() {      # write_file DEST MODE < content
 UP_STEPS=8
 progress() {        # progress N "words"
     [[ -n "${ISEMON_UPGRADE_FROM_PAGES:-}" ]] && printf '@@progress %d/%d %s\n' "$1" "$UP_STEPS" "$2"
+    # Run by hand (or from the console), the pages are told themselves
+    # (1.10.361); from the pages, isemon_upgrade.py tells them.
+    [[ -z "${ISEMON_UPGRADE_FROM_PAGES:-}" ]] && upgrade_tell running "$1" "$2"
     return 0
+}
+
+# How far an upgrade run by hand is, where the pages read it while the daemon,
+# nginx and php-fpm restart (1.10.361): WEB_DIR/.upgrade.json - a dot name
+# nginx never serves, root's, 0644, written whole and renamed. Only once the
+# upgrade has begun (UPG_TELL), never on --dry-run, and never in the way: a
+# failure to write it is a page that knows less.
+UPG_TELL=""
+UPG_STARTED=""
+UPG_FROM=""
+UPG_DONE=""
+UPG_PART=0
+upgrade_tell() {    # upgrade_tell running|done|failed N "words" ["said"]
+    [[ -n "$UPG_TELL" && -n "$WITH_WEB" && -d "$WEB_DIR" && ! -L "$WEB_DIR" ]] || return 0
+    local state="$1" part="${2:-0}" words="${3:-}" said="${4:-}" tmp pct
+    pct=$(( 10 + 85 * part / UP_STEPS ))
+    [[ "$state" == done ]] && pct=100
+    [[ "$state" == running ]] && UPG_PART="$part"
+    words="$(printf '%s' "$words" | tr -d '"\\' | tr -cd '[:print:]' | cut -c1-120)"
+    said="$(printf '%s' "$said" | tr -d '"\\' | tr -cd '[:print:]' | cut -c1-300)"
+    tmp="$(mktemp "$WEB_DIR/.upgrade.json.XXXXXX" 2>/dev/null)" || return 0
+    printf '{"state": "%s", "id": "%s", "version": "%s", "from": "%s", "by": "%s", "part": %d, "parts": %d, "pct": %d, "words": "%s", "started": %s, "at": %s, "said": "%s", "downgrade": false}\n' \
+        "$state" "cli-$UPG_STARTED" "$(printf '%s' "$VERSION" | tr -cd '0-9.')" \
+        "$(printf '%s' "$UPG_FROM" | tr -cd '0-9.')" "root on the command line" \
+        "$part" "$UP_STEPS" "$pct" \
+        "$words" "${UPG_STARTED:-0}" "$(date +%s)" "$said" > "$tmp" 2>/dev/null \
+        && chmod 0644 "$tmp" 2>/dev/null && mv -f "$tmp" "$WEB_DIR/.upgrade.json" 2>/dev/null \
+        || rm -f "$tmp" 2>/dev/null
+    return 0
+}
+upgrade_ended() {   # the EXIT trap of an upgrade run by hand
+    local rc="$1"
+    [[ -n "$UPG_TELL" && -z "$UPG_DONE" ]] || return 0
+    if [[ "$rc" == 0 ]]; then
+        upgrade_tell done "$UP_STEPS" "isemon $VERSION runs"
+    else
+        upgrade_tell failed "$UPG_PART" "install.sh --upgrade stopped" \
+            "install.sh --upgrade stopped (exit $rc)${UPG_FROM:+ - see what it printed; $UPG_FROM may run again}"
+    fi
+    UPG_DONE=1
 }
 
 # Root's half of what the pages may ask (1.10.222): the two helpers, the
@@ -1775,6 +1818,18 @@ if [[ -n "$DO_UPGRADE" ]]; then
             MAINT_MINE=1
             say "in maintenance while it is upgraded: healthz.php says 503"
         fi
+    fi
+    # The pages are told how far it is, run by hand (1.10.361): a run that is
+    # stopped or fails says so, never "running" for ever.
+    if [[ -z "${ISEMON_UPGRADE_FROM_PAGES:-}" && -z "$DRY_RUN" ]]; then
+        UPG_FROM="$(python3 -I "$LIB_DIR/isemon.py" --version 2>/dev/null | tr -cd '0-9.' || true)"
+        UPG_STARTED="$(date +%s)"
+        UPG_TELL=1
+        trap 'upgrade_ended $?' EXIT
+        trap 'exit 130' INT
+        trap 'exit 129' HUP
+        trap 'exit 143' TERM
+        upgrade_tell running 0 "install.sh --upgrade is starting"
     fi
     # What isemon uses and this machine lacks, put in first (1.10.236).
     progress 1 "the packages isemon uses"

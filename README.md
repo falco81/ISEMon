@@ -372,6 +372,32 @@ working.
 
 ## Version
 
+1.10.361
+
+- **The pages follow an upgrade that restarts them**
+  ([docs/upgrades.md](docs/upgrades.md#while-it-restarts-the-pages-11361), as
+  the upgrade-ui kit):
+  - Root's helper, and `install.sh --upgrade` run by hand, write how far it
+    is into `/var/www/isemon/.upgrade.json`. PHP reads the file without the
+    daemon; nginx never serves it.
+  - While isemon.service, php-fpm and nginx restart, a band under the header
+    shows:
+    - the version, who asked it, the bar, the step;
+    - "not answering for N s, asked again every two seconds".
+
+    The pill says *in maintenance*. There are no red boxes and no "the
+    daemon is not answering" bar.
+  - Done: the page loads the new version by itself, once - never over
+    changes not saved.
+  - Failed: a red band with the reason and the way to what install.sh said.
+  - The sign-in page shows the band too, and loads again when the daemon is
+    back. It shows no version: nobody is signed in there.
+  - `healthz.php` says `maintenance` meanwhile, and `?api=upgrade-state`
+    answers without the daemon.
+  - A run of install.sh stopped with Ctrl-C or killed ends as failed, never
+    as running for ever.
+  - With no upgrade going on, nothing changes.
+
 1.10.360
 
 - **DNAT analyzer** on Traffic - NAT

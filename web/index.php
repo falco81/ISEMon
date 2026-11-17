@@ -379,6 +379,24 @@ if (isset($_GET['api'])) {
         exit;
     }
 
+    /* How far an upgrade is (1.10.361), read off disk while the daemon - or
+       nginx and PHP - restart: what the page and the sign-in page ask every
+       two seconds until it is over. `api`: whether the daemon answers now.
+       The versions and who asked only to somebody signed in. */
+    if ($what === 'upgrade-state' && !$post) {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        $health = isemon_get('/api/health', 3.0);
+        $full = false;
+        if ($health !== null && isemon_session() !== '') {
+            $who = isemon_whoami();
+            $full = is_array($who) && empty($who['second']);
+        }
+        echo json_encode(['ok' => true, 'upgrading' => isemon_upgrading($full),
+                          'api' => $health !== null], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     /* acme push (1.10.279): acme - the certificate manager of ours - gives
        this dashboard its certificate. Its four requests come here before any
        session or same-page check: nothing a browser can be made to send
@@ -4099,6 +4117,28 @@ function srcText(el) {
 
   .offline.warnish{background:var(--warn-bg, rgba(210,153,34,.12));
     border-color:rgba(210,153,34,.45);color:var(--warn)}
+  /* An upgrade going on (1.10.361, the upgrade-ui kit): the band under the
+     header, on the sign-in page as well. */
+  .upband{border:1px solid rgba(88,166,255,.45);background:linear-gradient(180deg,var(--info-bg),rgba(88,166,255,.05));
+    border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--tx)}
+  .upband.failed{border-color:rgba(248,81,73,.5);background:linear-gradient(180deg,var(--crit-bg),rgba(248,81,73,.04))}
+  .upband.done{border-color:rgba(63,185,80,.45);background:linear-gradient(180deg,var(--ok-bg),rgba(63,185,80,.04))}
+  .upband-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .upband-head b{color:var(--info);font-size:14px}
+  .upband.failed .upband-head b{color:var(--crit)}
+  .upband.done .upband-head b{color:var(--ok)}
+  .upband-who{color:var(--tx-dim);font-size:12.5px}
+  .upband-x{margin-left:auto;border:0;background:transparent;color:var(--tx-dim);font-size:18px;
+    line-height:1;cursor:pointer;padding:0 4px}
+  .upband-x:hover{color:var(--tx)}
+  .up-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;margin:10px 0 7px}
+  .up-bar i{display:block;height:100%;border-radius:999px;background:var(--info);transition:width .6s ease}
+  .upband.failed .up-bar i{background:var(--crit)}
+  .upband.done .up-bar i{background:var(--ok)}
+  .upband-sub{color:var(--tx-dim);font-size:12.5px}
+  .upband-says{margin-top:5px;font-size:12.5px;color:var(--tx)}
+  .upband-says a{color:var(--accent);text-decoration:underline;cursor:pointer}
+  .in-upband{margin:0 0 16px}
   .offline{background:var(--crit-bg);border:1px solid rgba(248,81,73,.4);color:var(--crit);
     border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13.5px;font-weight:600}
   /* The band that says the directory has moved under the site. The same red
@@ -5866,6 +5906,31 @@ function srcText(el) {
     <div class="card">
     <h1 data-no-i18n><?= h($title) ?></h1>
     <p class="lede">Cisco ISE VPN banning on <?= h($host) ?>. Sign in to go on.</p>
+    <?php
+    /* Being upgraded (1.10.361): said from root's own file, which is read
+       without the daemon - the daemon, nginx and PHP restart meanwhile - and
+       this page loads again by itself once it answers. No version: nobody is
+       signed in here. */
+    $signin_up = isemon_upgrading();
+    $signin_up_on = $signin_up !== null && ($signin_up['state'] === 'running'
+                                            || ($signin_up['state'] === 'failed' && !$alive));
+    ?>
+    <?php if ($signin_up_on): ?>
+      <div class="upband<?= $signin_up['state'] === 'failed' ? ' failed' : '' ?> in-upband" id="in-upband"
+           data-state="<?= h($signin_up['state']) ?>" data-alive="<?= $alive ? '1' : '0' ?>">
+        <div class="upband-head"><b id="in-up-title"><?= $signin_up['state'] === 'failed'
+          ? 'The upgrade of isemon did not finish'
+          : ($signin_up['downgrade'] ? 'isemon is being taken back to an older version'
+                                     : 'isemon is being upgraded') ?></b></div>
+        <div class="up-bar"><i id="in-up-bar" style="width:<?= (int) max(2, min(100,
+          $signin_up['state'] === 'failed' ? 100 : $signin_up['pct'])) ?>%"></i></div>
+        <div class="upband-sub"><span id="in-up-words"><?= h($signin_up['words']) ?></span><?php
+          if ($signin_up['parts'] > 0 && $signin_up['state'] === 'running'): ?><span id="in-up-of"> · step <?= (int) $signin_up['part'] ?> of <?= (int) $signin_up['parts'] ?></span><?php endif; ?></div>
+        <div class="upband-says" id="in-up-says"><?= $signin_up['state'] === 'failed'
+          ? 'Somebody signed in sees why under Settings → Upgrades.'
+          : 'The service and these pages restart once - this page loads again by itself when they are back.' ?></div>
+      </div>
+    <?php endif; ?>
     <?php if (!$token_ok && $token_there): ?>
       <div class="offline">
         The daemon is running, but this page may not read what it wrote.<br><br>
@@ -5877,6 +5942,8 @@ function srcText(el) {
         If that is already so, it is SELinux:
         <span class="mono">ausearch -m avc -ts recent | audit2allow -M isemon-local</span>
       </div>
+    <?php elseif (!$alive && $signin_up_on && $signin_up['state'] === 'running'): ?>
+      <?php /* Being upgraded: the band above says it all (1.10.361). */ ?>
     <?php elseif (!$alive): ?>
       <div class="offline">The daemon is not answering. Nobody can sign in until
         <span class="mono">isemon.service</span> is running:<br>
@@ -5961,6 +6028,57 @@ function srcText(el) {
   </div>
 </div>
 </div>
+<script nonce="<?= h($nonce) ?>">
+/* Being upgraded (1.10.361): how far, asked of root's file every two seconds
+   - straight off disk, the daemon need not answer - and the page loaded again
+   once the daemon answers after having been away. While nginx and PHP
+   restart nothing answers at all: asked again, nothing said. */
+/* What PHP writes into the band, said here as well so that it is translated. */
+var IN_UPG_WORDS = ['The upgrade of isemon did not finish',
+  'isemon is being taken back to an older version', 'isemon is being upgraded',
+  'Somebody signed in sees why under Settings → Upgrades.',
+  'The service and these pages restart once - this page loads again by itself when they are back.'];
+(function () {
+  var band = document.getElementById('in-upband');
+  if (!band || !window.fetch) return;
+  var away = band.dataset.alive !== '1';
+  var gone = 0;
+  function put(id, text) { var n = document.getElementById(id); if (n) n.textContent = text; }
+  function ask() {
+    fetch('?api=upgrade-state', {credentials: 'same-origin', cache: 'no-store'})
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var u = d && d.upgrading;
+        if (u && u.state === 'running') {
+          var bar = document.getElementById('in-up-bar');
+          if (bar) bar.style.width = Math.max(2, Math.min(100, Number(u.pct) || 0)) + '%';
+          put('in-up-words', String(u.words || ''));
+          put('in-up-of', u.parts ? ' · step ' + u.part + ' of ' + u.parts : '');
+        }
+        if (d && d.api) {
+          if (away) {
+            /* Back: the page as it is now - once, not round and round. */
+            var last = 0;
+            try { last = Number(sessionStorage.getItem('isemon.upg.signin') || 0); } catch (e) { }
+            if (Date.now() - last > 8000) {
+              try { sessionStorage.setItem('isemon.upg.signin', String(Date.now())); } catch (e) { }
+              location.reload();
+              return;
+            }
+          }
+          if (!u || u.state !== 'running') {
+            if (++gone >= 2) { band.hidden = true; return; }
+          }
+        } else {
+          away = true;
+        }
+        setTimeout(ask, 2000);
+      })
+      .catch(function () { away = true; setTimeout(ask, 2000); });
+  }
+  setTimeout(ask, 2000);
+})();
+</script>
 <script nonce="<?= h($nonce) ?>">
 (function () {
   var form = document.getElementById('signin-form');
@@ -6334,6 +6452,9 @@ function srcText(el) {
   <div class="pace" id="pace" hidden><span class="pace-dot"></span><span id="pace-words"></span></div>
 </header>
 
+<!-- An upgrade going on (1.10.361): how far, while the daemon, nginx and PHP
+     restart - drawn from root's own file when nothing else answers. -->
+<div id="upband" class="upband" hidden></div>
 <div id="offline" class="offline" hidden></div>
 <!-- The PHP running this page against php2shell (1.10.218): said to an
      administrator while it may be affected. -->
@@ -9481,7 +9602,27 @@ function api(what, body, how) {
     }).then(function (text) {
       var data;
       try { data = JSON.parse(text); }
-      catch (e) { throw new Error('the dashboard got something that is not an answer'); }
+      catch (e) {
+        /* nginx's own page while php-fpm restarts, during an upgrade
+           (1.10.361): expected, and followed by the band. */
+        if (upgradeExpected()) {
+          var gone = new Error('isemon is being upgraded');
+          gone.upgradeAway = true;
+          upgradeAway(true);
+          throw gone;
+        }
+        throw new Error('the dashboard got something that is not an answer');
+      }
+      /* Being upgraded - the daemon restarting (1.10.361): not a fault, and
+         nothing to say in a box; the band says how far it is. */
+      if (r.status === 503 && data && data.upgrading) {
+        var up = new Error('isemon is being upgraded');
+        up.upgrading = data.upgrading;
+        up.status = 503;
+        upgradeHeard(data.upgrading, false);
+        upgradeAway(false);
+        throw up;
+      }
       if (data.stopped) throw stoppedError();
       /* A busy daemon turning away a refresh nobody asked for is not news:
          the page keeps what it drew and asks again on the next tick. It was
@@ -9524,6 +9665,11 @@ function api(what, body, how) {
     waitDone(waiting);
     done();
     if (e && e.name === 'AbortError') throw stoppedError();
+    /* Nothing answers at all - nginx restarting - during an upgrade. */
+    if (upgradeExpected() && e) {
+      e.upgradeAway = true;
+      upgradeAway(true);
+    }
     throw e;
   });
   if (lane) {
@@ -9549,6 +9695,9 @@ function toast(words, kind) {
 }
 function oops(e) {
   if (e && e.stopped) return;           /* somebody stopped it: not a fault */
+  /* Being upgraded (1.10.361): the band says so; a box would say it is wrong. */
+  if (e && (e.upgrading || e.upgradeAway)) return;
+  if (upgradeExpected() && !(e && e.status && e.status < 500)) return;
   toast(String(e && e.message || e), 'bad');
 }
 
@@ -12278,6 +12427,254 @@ var TICK_BUSY = false;
 var TICK_HIDDEN = 0;
 var TICK_SEQ = 0;
 var WIN_TICK_AT = 0, SERIAL_FW, FW_MOVED_AT = 0;
+/* ---- an upgrade, followed while it restarts the pages (1.10.361) -------------
+   As the upgrade-ui kit: root writes how far it is into a file PHP reads off
+   disk, so the page goes on knowing while the daemon, nginx and php-fpm
+   restart. Meanwhile a 503 that says `upgrading` is expected - no red box,
+   no "the daemon is not answering" - a band under the header shows the bar,
+   the page asks every two seconds, and once it is done, having seen it run,
+   it loads itself again onto the new version: once, and not over changes
+   not saved. A failure is a red band, with the way to what root said. */
+/* The words root and install.sh say each step in, said here so that they are
+   translated where the band shows them. */
+var UPG_WORDS = ['the packages isemon uses', 'PHP', 'Python', 'copying the program',
+  'the dashboard\u2019s files', 'the dashboard\'s files', 'where the database settings are written',
+  'the web server\'s accounts', 'the database drivers',
+  'the units, and what the pages may ask of root', 'restarting isemon', 'checking it answers',
+  'checking the package', 'install.sh is starting', 'waiting for root',
+  'install.sh --upgrade is starting', 'install.sh --upgrade stopped'];
+var UPG = {u: null, heard: 0, away: 0, web: false, sawRunning: false, reloading: false,
+           timer: null, ended: false, asking: false};
+
+/** Is an upgrade going on, as far as this page knows? */
+function upgradeExpected() {
+  if (UPG.reloading) return true;
+  var u = UPG.u;
+  if (!u || u.state !== 'running') return false;
+  /* Never for ever: a run not heard of for half an hour is not one. */
+  return Date.now() / 1000 - Number(u.at || 0) < 1800 || Date.now() - UPG.heard < 120000;
+}
+
+/** What the daemon - or root's file through PHP - said of an upgrade. `full`
+    when it came with the status (signed in: the versions too), `api` when
+    the daemon itself answered. */
+function upgradeHeard(u, api) {
+  var was = UPG.u;
+  if (api) {
+    UPG.heard = Date.now();
+    UPG.away = 0;
+    UPG.web = false;
+  }
+  if (u && u.state) {
+    /* What only the status carries (the versions, who) kept from before. */
+    if (was && (!u.id || u.id === was.id) && u.started === was.started) {
+      ['version', 'from', 'by', 'said', 'id'].forEach(function (k) {
+        if (!(k in u) && (k in was)) u[k] = was[k];
+      });
+    }
+    if (u.state === 'running') UPG.sawRunning = true;
+    UPG.u = u;
+  } else if (api) {
+    /* The daemon answers, and no upgrade is said: over, or none. */
+    if (was && was.state === 'running' && UPG.sawRunning) {
+      UPG.u = {state: 'done', version: was.version, started: was.started, id: was.id};
+    } else if (!was || was.state !== 'running') {
+      UPG.u = null;
+    }
+  }
+  drawUpBand();
+  upgradeTimer();
+  if (api && UPG.u && UPG.u.state === 'done' && UPG.sawRunning) upgradeEnd();
+}
+
+/** The daemon away while an upgrade runs - `web` when not even PHP answers. */
+function upgradeAway(web) {
+  if (!UPG.away) UPG.away = Date.now();
+  UPG.web = !!web;
+  /* The pill says what it is: maintenance, not "not answering". */
+  var pill = $('state-pill');
+  if (pill && upgradeExpected()) {
+    pill.className = 'pill warn';
+    var words = pill.querySelector('span:last-child');
+    if (words) words.textContent = 'in maintenance';
+  }
+  drawUpBand();
+  upgradeTimer();
+}
+
+function upgradeTimer() {
+  var want = !UPG.ended && (upgradeExpected() || UPG.away);
+  if (want && !UPG.timer) UPG.timer = setInterval(upgradePoll, 2000);
+  if (!want && UPG.timer) { clearInterval(UPG.timer); UPG.timer = null; }
+}
+
+/** Asked every two seconds while it runs: the status (which says all of it),
+    and while that does not answer, root's file through PHP alone. */
+function upgradePoll() {
+  /* One at a time - but a question left hanging by a server that went
+     away under it is not waited on for ever. */
+  if (UPG.reloading || (UPG.asking && Date.now() - UPG.asking < 15000)) return;
+  UPG.asking = Date.now();
+  api('status&logs=0', undefined, {quiet: true}).then(function (s) {
+    UPG.asking = false;
+    if (s && s.maintenance !== undefined && typeof paintHeader === 'function') {
+      try { paintHeader(s, true); } catch (e) { }
+    }
+    $('offline').hidden = true;
+    LAST_OK = Date.now();
+    upgradeHeard(s && s.upgrading || null, true);
+  }).catch(function () {
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var cut = ctrl ? setTimeout(function () { ctrl.abort(); }, 8000) : null;
+    fetch('?api=upgrade-state', {credentials: 'same-origin', cache: 'no-store',
+                                 signal: ctrl ? ctrl.signal : undefined})
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        clearTimeout(cut);
+        UPG.asking = false;
+        if (d && d.api) {
+          /* The daemon is back - the status will say the rest. */
+          if (d.upgrading) upgradeHeard(d.upgrading, false);
+          return;
+        }
+        if (d && d.upgrading) upgradeHeard(d.upgrading, false);
+        upgradeAway(false);
+      })
+      .catch(function () {
+        clearTimeout(cut);
+        UPG.asking = false;
+        upgradeAway(true);
+      });
+  });
+}
+
+/** Done, having seen it run: the page of the new version, once. */
+function upgradeEnd() {
+  if (UPG.ended) return;
+  UPG.ended = true;
+  upgradeTimer();
+  var key = String((UPG.u && (UPG.u.id || UPG.u.started)) || '');
+  var again = false;
+  try { again = sessionStorage.getItem('isemon.upg.loaded') === key; } catch (e) { }
+  var unsaved = (typeof DIRTY === 'object' && DIRTY && Object.keys(DIRTY).length) ||
+                (typeof EXTRA_SAVES === 'object' && EXTRA_SAVES && Object.keys(EXTRA_SAVES).length);
+  if (again || unsaved) {
+    UPG.stay = true;
+    drawUpBand();
+    return;
+  }
+  try { sessionStorage.setItem('isemon.upg.loaded', key); } catch (e) { }
+  UPG.reloading = true;
+  drawUpBand();
+  setTimeout(function () { location.reload(); }, 900);
+}
+
+function upgradePercent(u) {
+  if (!u) return 0;
+  if (u.state === 'done' || u.state === 'failed') return 100;
+  var pct = Number(u.pct) || (u.parts ? Math.round(100 * Number(u.part || 0) / u.parts) : 0);
+  return Math.max(2, Math.min(99, pct));
+}
+
+/** The band under the header. */
+function drawUpBand() {
+  var band = $('upband');
+  if (!band) return;
+  var u = UPG.u;
+  var hideKey = u ? String(u.id || u.started || '') : '';
+  var hidden = false;
+  try { hidden = !!hideKey && localStorage.getItem('isemon.upg.hide') === hideKey; } catch (e) { }
+  var show = !!u && (u.state === 'running' || UPG.reloading || UPG.stay
+                     || (u.state === 'failed' && !hidden));
+  band.hidden = !show;
+  /* The band of maintenance says the same while this one shows. */
+  if ($('maint-band') && show && u.state === 'running') $('maint-band').hidden = true;
+  if (!show) return;
+  clear(band);
+  var failed = u.state === 'failed';
+  band.className = 'upband' + (failed ? ' failed' : (u.state === 'done' ? ' done' : ''));
+  var head = el('div', 'upband-head');
+  var title = failed
+    ? (u.version ? 'The upgrade to isemon ' + u.version + ' failed' : 'The upgrade of isemon failed')
+    : u.state === 'done'
+      ? (u.version ? 'isemon ' + u.version + ' runs now' : 'isemon has been upgraded')
+      : u.downgrade
+        ? (u.version ? 'isemon is being taken back to ' + u.version
+                     : 'isemon is being taken back to an older version')
+        : (u.version ? 'isemon is being upgraded to ' + u.version : 'isemon is being upgraded');
+  head.appendChild(el('b', '', title));
+  var bits = [];
+  if (u.from) bits.push('from ' + u.from);
+  if (u.by) bits.push('asked by ' + u.by);
+  if (u.state === 'running' && u.started) bits.push(span(Date.now() / 1000 - u.started) + ' so far');
+  if (bits.length) {
+    var who = el('span', 'upband-who');
+    bits.forEach(function (b, i) {
+      if (i) who.appendChild(document.createTextNode(' · '));
+      who.appendChild(el('span', '', b));
+    });
+    head.appendChild(who);
+  }
+  if (failed) {
+    var x = el('button', 'upband-x', '×');
+    x.type = 'button';
+    x.title = 'Hide it';
+    x.setAttribute('aria-label', 'Hide it');
+    x.onclick = function () {
+      try { localStorage.setItem('isemon.upg.hide', hideKey); } catch (e) { }
+      band.hidden = true;
+    };
+    head.appendChild(x);
+  }
+  band.appendChild(head);
+  var bar = el('div', 'up-bar');
+  var fill = el('i');
+  fill.style.width = upgradePercent(u) + '%';
+  bar.appendChild(fill);
+  band.appendChild(bar);
+  var sub = el('div', 'upband-sub');
+  if (failed) {
+    sub.appendChild(el('span', '', u.said || u.words || 'it stopped before it was done'));
+  } else if (u.state === 'running') {
+    sub.appendChild(el('span', '', upgradePercent(u) + ' %'));
+    if (u.words) {
+      sub.appendChild(document.createTextNode(' · '));
+      sub.appendChild(el('span', '', u.words));
+    }
+    if (u.parts) sub.appendChild(el('span', '', ' · step ' + u.part + ' of ' + u.parts));
+  }
+  band.appendChild(sub);
+  var says = el('div', 'upband-says');
+  if (UPG.reloading) {
+    says.appendChild(el('span', '', 'Loading the pages of the new version…'));
+  } else if (UPG.stay) {
+    says.appendChild(el('span', '', 'This page is still the one of the version before. '));
+    var load = el('a', '', 'Load it again');
+    load.href = '#';
+    load.onclick = function (e) { e.preventDefault(); location.reload(); };
+    says.appendChild(load);
+  } else if (failed) {
+    says.appendChild(el('span', '', 'What install.sh said is in Settings → Upgrades. '));
+    var open = el('a', '', 'Open Upgrades');
+    open.href = '#';
+    open.onclick = function (e) { e.preventDefault(); showTab('settings'); showPane('upgrade'); };
+    says.appendChild(open);
+  } else if (UPG.away && UPG.web) {
+    says.appendChild(el('span', '', 'nginx and PHP are restarting - this page cannot be reached '
+      + 'for a moment (' + span((Date.now() - UPG.away) / 1000) + '), asked again every two '
+      + 'seconds; it comes back by itself.'));
+  } else if (UPG.away) {
+    says.appendChild(el('span', '', 'The daemon is restarting with the new version - not '
+      + 'answering for ' + span((Date.now() - UPG.away) / 1000) + ', asked again every two '
+      + 'seconds; the page comes back by itself.'));
+  } else {
+    says.appendChild(el('span', '', 'isemon.service and these pages restart once - the logs are '
+      + 'read again from where they were left. This page follows it and loads the new version '
+      + 'by itself.'));
+  }
+  band.appendChild(says);
+}
+
 function tick() {
   /* The ban cells of tables drawn over since, let go (1.10.198): every
      redraw added its cells and only a change of a ban took the old ones
@@ -12324,6 +12721,8 @@ function tick() {
     TICK_BUSY = false;
     LAST_OK = Date.now();
     $('offline').hidden = true;
+    /* An upgrade going on, or just over (1.10.361). */
+    upgradeHeard(data && data.upgrading || null, true);
     /* The firewall's lines have a serial of their own (1.10.184): they move
        it every second, and only the Traffic page - and the front page, at
        most every half minute - is about them. */
@@ -12430,6 +12829,12 @@ function tick() {
   }).catch(function (e) {
     if (mine !== TICK_SEQ) return;
     TICK_BUSY = false;
+    /* Being upgraded: expected, said by the band, not here (1.10.361). */
+    if (upgradeExpected() || (e && (e.upgrading || e.upgradeAway))) {
+      $('offline').hidden = true;
+      if (!UPG.timer) upgradePoll();
+      return;
+    }
     if (Date.now() - LAST_OK > 12000) {
       $('offline').hidden = false;
       $('offline').textContent = 'The daemon is not answering: ' + (e.message || e)
@@ -48399,6 +48804,12 @@ function loadUpgrade(quiet) {
     if (UP.last && UP.last.running && UP.misses++ < 200) {
       UP.restarting = true;
       if ($('up-retry')) $('up-retry').textContent = 'isemon is restarting - asking again…';
+      /* ...and how far it is meanwhile, from root's own file (1.10.361). */
+      if (UPG.u && UPG.u.state === 'running' && UP.last.run) {
+        UP.last.run.progress = {pct: upgradePercent(UPG.u), words: UPG.u.words || '',
+                                step: UPG.u.part || 0, total: UPG.u.parts || 0,
+                                began: UPG.u.started || 0};
+      }
       drawUpNodes(UP.last);
       drawUpPlan(UP.last);
       upgradeAgain(2000);

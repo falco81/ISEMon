@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.360",
-  "made": "2026-11-16",
+  "version": "1.10.361",
+  "made": "2026-11-17",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -5988,9 +5988,17 @@
    "source": "checked",
    "text": "checked"
   },
+  "s.checking-it-answers.6c0822a3": {
+   "source": "checking it answers",
+   "text": "checking it answers"
+  },
   "s.checking-the-directory.9c27ee71": {
    "source": "Checking the directory",
    "text": "Checking the directory"
+  },
+  "s.checking-the-package.3ce20720": {
+   "source": "checking the package",
+   "text": "checking the package"
   },
   "s.checking.28cfb479": {
    "source": "checking",
@@ -6727,6 +6735,10 @@
   "s.copy.f84e2e2d": {
    "source": "copy",
    "text": "copy"
+  },
+  "s.copying-the-program.f27c55f7": {
+   "source": "copying the program",
+   "text": "copying the program"
   },
   "s.corp-example.0c0ee835": {
    "source": "CORP.EXAMPLE",
@@ -13324,6 +13336,18 @@
    "source": "install.sh by hand",
    "text": "install.sh by hand"
   },
+  "s.install-sh-is-starting.a56d9fcd": {
+   "source": "install.sh is starting",
+   "text": "install.sh is starting"
+  },
+  "s.install-sh-upgrade-is-starting.92de1084": {
+   "source": "install.sh --upgrade is starting",
+   "text": "install.sh --upgrade is starting"
+  },
+  "s.install-sh-upgrade-stopped.59a9b37c": {
+   "source": "install.sh --upgrade stopped",
+   "text": "install.sh --upgrade stopped"
+  },
   "s.install-the-rest-api-package.a6729543": {
    "source": "Install the REST API package",
    "text": "Install the REST API package"
@@ -13932,6 +13956,10 @@
    "source": "isemon has added none - this server trusts its system's own list alone.",
    "text": "isemon has added none - this server trusts its system's own list alone."
   },
+  "s.isemon-has-been-upgraded.525172bf": {
+   "source": "isemon has been upgraded",
+   "text": "isemon has been upgraded"
+  },
   "s.isemon-help.9307d6a4": {
    "source": "isemon --help",
    "text": "isemon --help"
@@ -13939,6 +13967,14 @@
   "s.isemon-in-your-rules.31e82113": {
    "source": "ISEMON-IN: your rules",
    "text": "ISEMON-IN: your rules"
+  },
+  "s.isemon-is-being-taken-back-to.c179b0bc": {
+   "source": "isemon is being taken back to an older version",
+   "text": "isemon is being taken back to an older version"
+  },
+  "s.isemon-is-being-upgraded.c5a41b8a": {
+   "source": "isemon is being upgraded",
+   "text": "isemon is being upgraded"
   },
   "s.isemon-is-restarting-asking-again.54c6b5c9": {
    "source": "isemon is restarting - asking again…",
@@ -14075,6 +14111,10 @@
   "s.isemon-s-own-rotation-no-longer.6c9f5e52": {
    "source": "isemon’s own rotation, no longer wanted",
    "text": "isemon’s own rotation, no longer wanted"
+  },
+  "s.isemon-service-and-these-pages-restart.c1df82c2": {
+   "source": "isemon.service and these pages restart once - the logs are read again from where they were left. This page follows it and loads the new version by itself.",
+   "text": "isemon.service and these pages restart once - the logs are read again from where they were left. This page follows it and loads the new version by itself."
   },
   "s.isemon-service.141f5596": {
    "source": "isemon.service",
@@ -14391,6 +14431,10 @@
   "s.it-sent-back.49928f16": {
    "source": "It sent back:",
    "text": "It sent back:"
+  },
+  "s.it-stopped-before-it-was-done.960e7010": {
+   "source": "it stopped before it was done",
+   "text": "it stopped before it was done"
   },
   "s.it-talks-to-ea-s-game.11c738c2": {
    "source": "It talks to EA’s game port (UDP 3659).",
@@ -16015,6 +16059,10 @@
   "s.load.5dbc716c": {
    "source": "load",
    "text": "load"
+  },
+  "s.loading-the-pages-of-the-new.b2e00c3f": {
+   "source": "Loading the pages of the new version…",
+   "text": "Loading the pages of the new version…"
   },
   "s.loading.33ce4174": {
    "source": "Loading…",
@@ -21632,6 +21680,10 @@
    "source": "Open this record where it is listed, and light the row.",
    "text": "Open this record where it is listed, and light the row."
   },
+  "s.open-upgrades.5dc56908": {
+   "source": "Open Upgrades",
+   "text": "Open Upgrades"
+  },
   "s.open.5fc7e38b": {
    "source": "open",
    "text": "open"
@@ -22595,6 +22647,10 @@
   "s.pick.4c2e8554": {
    "source": "pick",
    "text": "pick"
+  },
+  "s.pill-warn.93327d89": {
+   "source": "pill warn",
+   "text": "pill warn"
   },
   "s.pills-with-a-bar.f0cf5a11": {
    "source": "pills with a bar",
@@ -24555,6 +24611,10 @@
   "s.restarting-followed-on-restart-and-power.97c646ed": {
    "source": "Restarting - followed on Restart and power off.",
    "text": "Restarting - followed on Restart and power off."
+  },
+  "s.restarting-isemon.553f52e8": {
+   "source": "restarting isemon",
+   "text": "restarting isemon"
   },
   "s.restarting-takes-a-few-seconds-while.eb7a39d3": {
    "source": "Restarting takes a few seconds. While PostgreSQL is down this program cannot write; it waits, and carries on where it was.",
@@ -26683,6 +26743,10 @@
   "s.somebody-s-group-membership-was-listed.11cdd2e9": {
    "source": "somebody’s group membership was listed",
    "text": "somebody’s group membership was listed"
+  },
+  "s.somebody-signed-in-sees-why-under.82c4dc6e": {
+   "source": "Somebody signed in sees why under Settings → Upgrades.",
+   "text": "Somebody signed in sees why under Settings → Upgrades."
   },
   "s.somebody-signed-in-to-this-dashboard.ffd774b6": {
    "source": "Somebody signed in to this dashboard, or tried to.",
@@ -29684,6 +29748,14 @@
    "source": "The dashboard’s certificate ordered from the CA and renewed by itself. The CA checks the name: by HTTP-01 port 80 of the name must reach this server; by DNS-01 nothing has to be open. Off until switched on.",
    "text": "The dashboard’s certificate ordered from the CA and renewed by itself. The CA checks the name: by HTTP-01 port 80 of the name must reach this server; by DNS-01 nothing has to be open. Off until switched on."
   },
+  "s.the-dashboard-s-files.3b544d43": {
+   "source": "the dashboard’s files",
+   "text": "the dashboard’s files"
+  },
+  "s.the-dashboard-s-files.4f8937a5": {
+   "source": "the dashboard's files",
+   "text": "the dashboard's files"
+  },
   "s.the-dashboard-s-notice-that-php.5451b0e5": {
    "source": "the dashboard's notice that PHP may have php2shell: hide puts it away until the daemon starts again (nothing is saved), show brings it back; alone, says which it is",
    "text": "the dashboard's notice that PHP may have php2shell: hide puts it away until the daemon starts again (nothing is saved), show brings it back; alone, says which it is"
@@ -29711,6 +29783,10 @@
   "s.the-database-and-the-copies-kept.ef56814a": {
    "source": "the database and the copies kept beside it",
    "text": "the database and the copies kept beside it"
+  },
+  "s.the-database-drivers.57323da8": {
+   "source": "the database drivers",
+   "text": "the database drivers"
   },
   "s.the-database-in-use-will-not.c5d9318b": {
    "source": "the database in use will not open, so there is nothing to carry out of it",
@@ -31896,6 +31972,10 @@
    "source": "The package was not taken",
    "text": "The package was not taken"
   },
+  "s.the-packages-isemon-uses.7b9dacf8": {
+   "source": "the packages isemon uses",
+   "text": "the packages isemon uses"
+  },
   "s.the-packet-mark-mikrotik.cf11d8d5": {
    "source": "the packet mark (MikroTik)",
    "text": "the packet mark (MikroTik)"
@@ -32868,6 +32948,10 @@
    "source": "the service and its units",
    "text": "the service and its units"
   },
+  "s.the-service-and-these-pages-restart.371aa30c": {
+   "source": "The service and these pages restart once - this page loads again by itself when they are back.",
+   "text": "The service and these pages restart once - this page loads again by itself when they are back."
+  },
   "s.the-service-answers-wrongly.4c29152b": {
    "source": "The service answers wrongly",
    "text": "The service answers wrongly"
@@ -33328,6 +33412,10 @@
    "source": "the United States",
    "text": "the United States"
   },
+  "s.the-units-and-what-the-pages.d3057ba7": {
+   "source": "the units, and what the pages may ask of root",
+   "text": "the units, and what the pages may ask of root"
+  },
   "s.the-units-of-the-pair-by.5ae7aeea": {
    "source": "The units of the pair, by how much each wrote and what. The active one writes the sessions; the standby’s copies of them are already left out.",
    "text": "The units of the pair, by how much each wrote and what. The active one writes the sessions; the standby’s copies of them are already left out."
@@ -33351,6 +33439,14 @@
   "s.the-updates-put-in-by-themselves.35a616bf": {
    "source": "The updates put in by themselves in the window below, as by hand - started once in it, never tried over and over. Off until switched on.",
    "text": "The updates put in by themselves in the window below, as by hand - started once in it, never tried over and over. Off until switched on."
+  },
+  "s.the-upgrade-of-isemon-did-not.59f7d41f": {
+   "source": "The upgrade of isemon did not finish",
+   "text": "The upgrade of isemon did not finish"
+  },
+  "s.the-upgrade-of-isemon-failed.14b081d3": {
+   "source": "The upgrade of isemon failed",
+   "text": "The upgrade of isemon failed"
   },
   "s.the-upgrade.eb29e19a": {
    "source": "The upgrade",
@@ -33631,6 +33727,10 @@
   "s.the-web-server-asked-from-this.c6ff78b7": {
    "source": "The web server asked from this machine as a client that fetches no missing link asks it (Python, curl, acme)",
    "text": "The web server asked from this machine as a client that fetches no missing link asks it (Python, curl, acme)"
+  },
+  "s.the-web-server-s-accounts.58f371b5": {
+   "source": "the web server's accounts",
+   "text": "the web server's accounts"
   },
   "s.the-whitelist.58ea6cd3": {
    "source": "the whitelist",
@@ -34387,6 +34487,10 @@
   "s.this-page-fills-in-by-itself.69beb88c": {
    "source": "This page fills in by itself.",
    "text": "This page fills in by itself."
+  },
+  "s.this-page-is-still-the-one.2dc10825": {
+   "source": "This page is still the one of the version before.",
+   "text": "This page is still the one of the version before."
   },
   "s.this-page.66d30f0d": {
    "source": "this page",
@@ -36564,6 +36668,10 @@
    "source": "What inspection stopped although a policy let it through: a protocol the inspection engine refused, and - where the management centre sends them - the file and intrusion policies. Press for the list.",
    "text": "What inspection stopped although a policy let it through: a protocol the inspection engine refused, and - where the management centre sends them - the file and intrusion policies. Press for the list."
   },
+  "s.what-install-sh-said-is-in.73f1674d": {
+   "source": "What install.sh said is in Settings → Upgrades.",
+   "text": "What install.sh said is in Settings → Upgrades."
+  },
   "s.what-install-sh-said.4a29d242": {
    "source": "what install.sh said",
    "text": "what install.sh said"
@@ -37739,6 +37847,10 @@
   "s.where-the-country-database-puts-this.70538231": {
    "source": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything.",
    "text": "Where the country database puts this address. It is shown and never judged — a country is not something an address chooses. To act on one, use the country list under Settings → GeoIP, which drops a whole country before anybody has failed anything."
+  },
+  "s.where-the-database-settings-are-written.0ed46d13": {
+   "source": "where the database settings are written",
+   "text": "where the database settings are written"
   },
   "s.where-the-dns-of-your-domain.f60b54de": {
    "source": "Where the DNS of your domain is not at Cloudflare: a zone that is, as The TXT records go into, and the CNAME record below in your DNS.",
@@ -39846,6 +39958,10 @@
    "source": "· asked {0}{1} · again every {2} h",
    "text": "· asked {0}{1} · again every {2} h"
   },
+  "p.asked-by.a7c34340": {
+   "source": "asked by {0}",
+   "text": "asked by {0}"
+  },
   "p.asked-for.d596c5fa": {
    "source": "asked for {0}",
    "text": "asked for {0}"
@@ -41222,6 +41338,14 @@
    "source": "isemon-before-2025-{0}.md",
    "text": "isemon-before-2025-{0}.md"
   },
+  "p.isemon-is-being-taken-back-to.f85d3c63": {
+   "source": "isemon is being taken back to {0}",
+   "text": "isemon is being taken back to {0}"
+  },
+  "p.isemon-is-being-upgraded-to.6a670c28": {
+   "source": "isemon is being upgraded to {0}",
+   "text": "isemon is being upgraded to {0}"
+  },
   "p.isemon-is-running-but-the-parts.0c74eabc": {
    "source": "isemon {0} is running, but the parts root installs are from before it",
    "text": "isemon {0} is running, but the parts root installs are from before it"
@@ -41241,6 +41365,10 @@
   "p.isemon-passwd.7534cd86": {
    "source": "isemon --passwd {0}",
    "text": "isemon --passwd {0}"
+  },
+  "p.isemon-runs-now.2cce00c9": {
+   "source": "isemon {0} runs now",
+   "text": "isemon {0} runs now"
   },
   "p.isemon-s-own-connections-do-not.803deb40": {
    "source": "isemon's own connections do not use the system's list here ({0}) - what is added here does not reach them.",
@@ -41865,6 +41993,10 @@
   "p.next.df2457aa": {
    "source": "next {0}",
    "text": "next {0}"
+  },
+  "p.nginx-and-php-are-restarting-this.02a21e21": {
+   "source": "nginx and PHP are restarting - this page cannot be reached for a moment ({0}), asked again every two seconds; it comes back by itself.",
+   "text": "nginx and PHP are restarting - this page cannot be reached for a moment ({0}), asked again every two seconds; it comes back by itself."
   },
   "p.nginx-keeps-the-files-it-has.babab939": {
    "source": "nginx keeps the files it has now; isemon no longer changes them.{0}",
@@ -43158,6 +43290,10 @@
    "source": "step {0} of {1}",
    "text": "step {0} of {1}"
   },
+  "p.step-of.b6f1eee1": {
+   "source": "· step {0} of {1}",
+   "text": "· step {0} of {1}"
+  },
   "p.still-there-and-carried-by-no.46b256d3": {
    "source": "Still there, and carried by no firewall: {0}. This address can reach the VPN.",
    "text": "Still there, and carried by no firewall: {0}. This address can reach the VPN."
@@ -43489,6 +43625,10 @@
   "p.the-daemon-is-not-answering-what.8aff146f": {
    "source": "The daemon is not answering: {0} — what is on this page is as it was {1}.",
    "text": "The daemon is not answering: {0} — what is on this page is as it was {1}."
+  },
+  "p.the-daemon-is-restarting-with-the.ec5b72ab": {
+   "source": "The daemon is restarting with the new version - not answering for {0}, asked again every two seconds; the page comes back by itself.",
+   "text": "The daemon is restarting with the new version - not answering for {0}, asked again every two seconds; the page comes back by itself."
   },
   "p.the-database-the-last-minute-statement.1d5e6181": {
    "source": "The database, the last minute: {0} statement(s) a second, {1} ms each on average, {2}% of the time spent waiting on it.",
@@ -43834,6 +43974,10 @@
    "source": "{0} The two halves of a pair are two different machines and two different addresses.",
    "text": "{0} The two halves of a pair are two different machines and two different addresses."
   },
+  "p.the-upgrade-to-isemon-failed.e93352c7": {
+   "source": "The upgrade to isemon {0} failed",
+   "text": "The upgrade to isemon {0} failed"
+  },
   "p.the-vlan-this-machine-was-put.d5f0ab7d": {
    "source": "The VLAN this machine was put in, by the name this site gives it. This record carries the name only — {0} writes the number on some records and the name on others, for the same assignment.",
    "text": "The VLAN this machine was put in, by the name this site gives it. This record carries the name only — {0} writes the number on some records and the name on others, for the same assignment."
@@ -44169,6 +44313,10 @@
   "p.until.23edd78c": {
    "source": "until {0}",
    "text": "until {0}"
+  },
+  "p.upband.33536cb7": {
+   "source": "upband{0}",
+   "text": "upband{0}"
   },
   "p.upgrade-this-server-to.5e009a24": {
    "source": "Upgrade this server to {0}",

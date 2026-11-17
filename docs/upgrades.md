@@ -108,6 +108,51 @@ isemon --upgrade-status             # the last one, what waits, what the web has
 
 Ctrl+C in `--upgrade-follow` stops the following, not the upgrade.
 
+### While it restarts the pages (1.10.361)
+
+An upgrade restarts isemon.service and php-fpm, and may reload nginx. The
+pages follow it rather than saying something is wrong:
+
+- **How far it is is written where PHP reads it without the daemon**:
+  `/var/www/isemon/.upgrade.json`.
+  - It is root's, mode 0644, written whole and renamed.
+  - It is a dot name, which nginx never serves (`location ~ /\.`).
+  - Root's helper writes it for an upgrade from the pages, from the same
+    steps as the bar under Settings → Upgrades.
+  - `install.sh --upgrade` writes it itself when run by hand or from the
+    console: each step, `done` at the end, and `failed` when it stops. A
+    run stopped with Ctrl-C, a hang-up or a kill says so, never "running"
+    for ever.
+  - Nothing secret is in it.
+  - `running` is believed for 30 minutes after it was written; `done` and
+    `failed` for 10.
+- **A band under the header** says it while it runs:
+  - "isemon is being upgraded to X", from which version and who asked it;
+  - the bar, the step and its words;
+  - while the daemon is away, "not answering for N s, asked again every two
+    seconds";
+  - while nginx and PHP restart, that the page cannot be reached for a
+    moment.
+
+  The pill says *in maintenance*. No red box and no "the daemon is not
+  answering" bar is shown for what is expected.
+- **When it is done**, the page loads itself again, once, onto the new
+  version. With changes not saved it does not: the band offers *Load it
+  again*.
+- **When it fails**, the band is red: the reason, and *Open Upgrades* for
+  what install.sh said. It can be hidden for that upgrade.
+- **The sign-in page** shows the same band, drawn by PHP from the file, and
+  loads itself again once the daemon answers. Nobody is signed in there, so
+  it shows no version and no name.
+- **`healthz.php`** says `503 maintenance` while the file says it is running
+  and the daemon is away, not "the daemon is not answering".
+- **`?api=upgrade-state`** is what the pages ask while the daemon is away:
+  how far it is, and whether the daemon answers. The versions, who asked
+  and why it failed are given only to somebody signed in.
+
+With no upgrade going on, nothing of this shows and the pages behave as
+before: the daemon away is the red bar, as always.
+
 ### Going back to an older version (1.10.232)
 
 Off as it comes (1.10.233): *Offer going back to an older version*

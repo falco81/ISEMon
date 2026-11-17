@@ -444,6 +444,71 @@ def read_small(path, most=65536):
 def status(**fields):
     fields['at'] = time.time()
     write_safely(os.path.join(UPGRADE_DIR, 'status.json'), json.dumps(fields))
+    # ...and how far it is, for the pages while the daemon restarts (1.10.361).
+    pages_tell(fields)
+
+
+# How far an upgrade is, where PHP reads it straight from disk (1.10.361, the
+# upgrade-ui kit): the daemon, nginx and php-fpm restart during an upgrade,
+# and the pages go on showing the bar - not "the daemon is not answering" -
+# and load themselves again once it is done. Beside the pages, as a dot name
+# nginx never serves (`location ~ /\.`); root's, 0644, written whole and
+# renamed. Nothing secret in it. Never in the way of the upgrade: a failure
+# to write it is a page that knows less, nothing more.
+WEB_DIR = os.environ.get('ISEMON_WEB_DIR', '/var/www/isemon')
+PAGES_FILE = '.upgrade.json'
+FROM_VERSION = ['']
+
+
+def pages_tell(fields):
+    try:
+        state = str(fields.get('state') or '')
+        if state not in ('running', 'done', 'failed'):
+            return
+        if not FROM_VERSION[0]:
+            FROM_VERSION[0] = installed_version() or '-'
+        prog = fields.get('progress') or {}
+        said = ''
+        if state == 'failed':
+            said = str(fields.get('said') or prog.get('words') or 'the upgrade failed')
+            if 'said' not in fields and fields.get('rc') not in (None, 0):
+                said = 'install.sh --upgrade stopped (exit %s)' % fields.get('rc')
+        out = {'state': state, 'id': str(fields.get('id') or '')[:64],
+               'version': re.sub(r'[^0-9.]', '', str(fields.get('version') or ''))[:20],
+               'from': re.sub(r'[^0-9.]', '', FROM_VERSION[0])[:20],
+               'by': str(fields.get('by') or '')[:60],
+               'part': int(prog.get('step') or 0), 'parts': int(prog.get('total') or 0),
+               'pct': int(prog.get('pct') or 0), 'words': str(prog.get('words') or '')[:120],
+               'started': float(prog.get('began') or fields['at']), 'at': fields['at'],
+               'said': said[:300], 'downgrade': bool(fields.get('downgrade'))}
+        pages_write(out)
+    except Exception:                       # noqa: BLE001 - never stops the upgrade
+        pass
+
+
+def pages_write(out):
+    """`out` as WEB_DIR/.upgrade.json: a new file beside it, renamed over it."""
+    if not os.path.isdir(WEB_DIR) or os.path.islink(WEB_DIR):
+        return
+    tmp = os.path.join(WEB_DIR, '.upgrade.json.%d.%d' % (os.getpid(),
+                                                         int(time.time() * 1e6) % 10 ** 9))
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            f.write(json.dumps(out))
+            try:
+                os.fchmod(f.fileno(), 0o644)
+                if os.geteuid() == 0:
+                    os.fchown(f.fileno(), 0, 0)
+            except OSError:
+                pass
+        os.replace(tmp, os.path.join(WEB_DIR, PAGES_FILE))
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 SECURITY_FLOOR = '1.10.345'
@@ -612,7 +677,7 @@ def serve_request():
 
     def say_status(state='running', **more):
         status(id=run['id'], state=state, version=run['version'], pid=os.getpid(),
-               by=run.get('by') or '',
+               by=run.get('by') or '', downgrade=bool(run.get('downgrade')),
                progress={'pct': run['pct'], 'words': run['words'], 'step': run['step'],
                          'total': run['total'], 'began': run['began']}, **more)
 
@@ -651,6 +716,7 @@ def serve_request():
         if not re.match(r'^isemon-[0-9.]+\.tar\.gz$', name):
             raise Refused('the request names no package')
         run.update(id=ident, version=str(r.get('version') or '')[:20],
+                   downgrade=r.get('downgrade') is True,
                    # Who started it, for the page's "started by" (1.10.267).
                    by=re.sub(r'[^A-Za-z0-9@._ -]', '', str(r.get('by') or ''))[:60])
         say_status()
