@@ -1218,6 +1218,8 @@ if [[ -n "$DO_UNINSTALL" ]]; then
         run semodule -r isemon_local >/dev/null 2>&1 && good "isemon's local SELinux rules taken out" ||
             warn "isemon's local SELinux rules could not be taken out: semodule -r isemon_local"
     fi
+    # ...and root's list of them, so a later install does not say they are in (1.10.364).
+    run rm -f /var/lib/isemon-root/selinux-local.json /var/lib/isemon-root/selinux-fixed.json
     [[ -d "$LIB_DIR" ]] && run rm -rf "$LIB_DIR"
     [[ -d "$WEB_DIR" ]] && run rm -rf "$WEB_DIR"
     run systemctl daemon-reload

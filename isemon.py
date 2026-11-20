@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.363'
+__version__ = '1.10.364'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -13642,6 +13642,25 @@ DNAT_ROWS_MOST = 20000          # each of the looks reads at most this many line
 def dnat_proto(n):
     """6 / 17 / 1 as the words the rules use."""
     return {6: 'tcp', 17: 'udp', 1: 'icmp', 58: 'icmpv6'}.get(int(n or 0), str(int(n or 0)))
+
+
+def dnat_to_has(text, ip):
+    """Whether a RouterOS to-addresses (an address, a range a-b, or a list
+    of them) takes in `ip` (1.10.364: a range was read as its two ends)."""
+    try:
+        want = ipaddress.ip_address(str(ip))
+    except ValueError:
+        return False
+    for part in str(text or '').split(','):
+        lo, _, hi = part.strip().partition('-')
+        try:
+            a = ipaddress.ip_address(lo.strip())
+            b = ipaddress.ip_address(hi.strip()) if hi.strip() else a
+        except ValueError:
+            continue
+        if a.version == want.version and a <= want <= b:
+            return True
+    return False
 
 
 def dnat_port_name(proto, port):
@@ -51111,8 +51130,11 @@ class Daemon(object):
         store = self.store
         outs, cap_o = store.fw_dnat_lines('srcip = ?', [ip], since, until, fw)
         ins, cap_i = store.fw_dnat_lines('dstip = ?', [ip], since, until, fw)
-        rules, cap_r = store.fw_dnat_lines("area = 'nat' AND action = 'dstnat'", [], since,
-                                           until, fw)
+        # The rules' own lines are every device's: a week of them at most
+        # (1.10.364) - a month of a busy router's was a long read for a list
+        # of ports.
+        rules, cap_r = store.fw_dnat_lines("area = 'nat' AND action = 'dstnat'", [],
+                                           max(since, (until or now) - 7 * 86400), until, fw)
 
         def end_ip(text):
             return str(ros_end(text)[0] or '') if text else ''
@@ -51132,6 +51154,7 @@ class Daemon(object):
         wans = collections.Counter()
         fws = collections.Counter()
         counted = set()
+        ends = set()            # (address, port) it connected to: what answers from there is late
         first = last = 0.0
         for r in outs:
             ts = float(r['ts'] or 0)
@@ -51144,7 +51167,12 @@ class Daemon(object):
             if r.get('natkind') and r.get('area') == 'nat':
                 kinds[str(r['natkind'])] += 1
             src = r.get('natsrc')
-            if src and r.get('direction') != 'reply':
+            to_ip = str(r.get('dstip') or '')
+            if to_ip and int(r.get('dstport') or 0) and r.get('direction') != 'reply':
+                ends.add((to_ip, int(r['dstport'])))
+            # Masqueraded to an address inside - hairpin, a VPN - is no way
+            # out to the internet (1.10.364).
+            if src and r.get('direction') != 'reply' and not (to_ip and fw_private(to_ip)):
                 pub = end_ip(src)
                 if pub and pub != ip:
                     pubs[pub] += 1
@@ -51243,11 +51271,24 @@ class Daemon(object):
 
         # ---- the router itself, where it is read ------------------------
         router = self._dnat_router(ip, fw or (fws.most_common(1)[0][0] if fws else ''))
+        # The router's own rules to other devices take their ports too
+        # (1.10.364): ranges, not one port each.
+        taken = [(x['protocol'], lo, hi, x['to']) for x in router.pop('elsewhere', [])
+                 for lo, hi in x['ports']]
+
+        def elsewhere_of(proto, lo, hi=None):
+            hi = lo if hi is None else hi
+            got = {to for (pr, port), who in elsewhere.items()
+                   if pr == proto and lo <= port <= hi for to in who}
+            got |= {to for pr, a, b, to in taken if (not pr or pr == proto) and a <= hi and lo <= b}
+            return sorted(got - {'', ip})
         for a in router.get('wan_addresses', []):
             if a not in pubs:
                 pubs[a] += 0
-        for rule in router.get('rules', []):
-            for lo, hi in rule.get('ports') or [(0, 0)]:
+        # A rule with no protocol is for any, one with no dst-port for every
+        # port; a rule switched on is the one that counts (1.10.364).
+        for rule in sorted(router.get('rules', []), key=lambda x: not x.get('disabled')):
+            for lo, hi in rule.get('ports') or [(1, 65535)]:
                 for key, one in forwards.items():
                     if one['proto'] == (rule.get('protocol') or one['proto']) \
                             and lo <= one['public_port'] <= hi:
@@ -51287,6 +51328,11 @@ class Daemon(object):
                 if r.get('sub') == 'local' and r.get('verdict') not in ('deny', 'block', 'fail'):
                     router_own.add((proto, port))   # the router answers it itself
                     continue
+                # From an address and port it connected to itself: an answer
+                # come after the router forgot the connection, not a knock
+                # for a forward (1.10.364).
+                if (str(r.get('srcip') or ''), int(r.get('srcport') or 0)) in ends:
+                    continue
                 key = (proto, port)
                 one = knocks.setdefault(key, {'proto': proto, 'port': port, 'n': 0,
                                               'sources': set(), 'last': 0.0, 'first': 0.0,
@@ -51314,7 +51360,7 @@ class Daemon(object):
                 profiles.append({'key': p['key'], 'name': p['name'], 'says': p['says'],
                                  'note': p['note'], 'score': score, 'seen': seen,
                                  'ports': [self._dnat_profile_port(pp, forwards, knocks,
-                                                                   elsewhere, router_own)
+                                                                   elsewhere_of, router_own)
                                            for pp in p['ports']]})
         profiles.sort(key=lambda p: -p['score'])
         wanted = {}
@@ -51330,9 +51376,11 @@ class Daemon(object):
             if key in done:
                 continue
             why = []
-            if key in mapped:
+            # A TCP port its connections left by is one of thousands it picks
+            # and drops: only UDP keeps one to be reached on (1.10.364).
+            if key in mapped and key[0] == 'udp':
                 why.append({'kind': 'mapped', 'score': 3})
-            elif key in guessed:
+            elif key in guessed and key[0] == 'udp':
                 why.append({'kind': 'kept', 'score': 2})
             talked = k['sources'] & peers
             if talked:
@@ -51347,7 +51395,7 @@ class Daemon(object):
                    'sources': len(k['sources'] - {''}), 'last': k['last'], 'first': k['first'],
                    'denied': k['denied'], 'public': sorted(k['public']),
                    'name': dnat_port_name(k['proto'], k['port']), 'why': why, 'score': score,
-                   'elsewhere': sorted((elsewhere.get(key) or {}).keys()),
+                   'elsewhere': elsewhere_of(key[0], key[1]),
                    'scanned': k['port'] in DNAT_SCANNED,
                    'likely': 'likely' if score >= 3 else 'possible' if score >= 2 else ''}
             (missing if score >= 2 else scans).append(row)
@@ -51373,7 +51421,7 @@ class Daemon(object):
             if f['denied'] and not f['allowed']:
                 warnings.append({'level': 'bad', 'key': 'blocked', 'proto': f['proto'],
                                  'port': f['public_port']})
-            if f.get('rule_disabled'):
+            if f.get('rule_disabled') and not f['allowed']:
                 warnings.append({'level': 'warn', 'key': 'disabled', 'proto': f['proto'],
                                  'port': f['public_port']})
 
@@ -51388,7 +51436,7 @@ class Daemon(object):
                 state = 'translated'
             else:
                 state = 'seen'
-            if f.get('rule_disabled'):
+            if f.get('rule_disabled') and not f['allowed']:
                 state = 'disabled'
             out_forwards.append({
                 'proto': f['proto'], 'public_port': f['public_port'],
@@ -51401,9 +51449,9 @@ class Daemon(object):
                 'rule_packets': f.get('rule_packets')})
         # Rules the router has for it that nothing in the log has used.
         for rule in router.get('rules', []):
-            covered = any(f['proto'] == rule.get('protocol')
+            covered = any((not rule.get('protocol') or f['proto'] == rule.get('protocol'))
                           and any(lo <= f['public_port'] <= hi
-                                  for lo, hi in rule.get('ports') or [(0, 0)])
+                                  for lo, hi in rule.get('ports') or [(1, 65535)])
                           for f in out_forwards)
             if not covered:
                 lo, hi = (rule.get('ports') or [(0, 0)])[0]
@@ -51458,13 +51506,12 @@ class Daemon(object):
                 'bytes': 0, 'rule_lines': 0}
 
     @staticmethod
-    def _dnat_profile_port(pp, forwards, knocks, elsewhere, router_own):
+    def _dnat_profile_port(pp, forwards, knocks, elsewhere_of, router_own):
         proto, lo, hi, need, why = pp
         done = [f for f in forwards.values() if f['proto'] == proto
                 and lo <= f['public_port'] <= hi]
         seen = sum(k['n'] for (pr, port), k in knocks.items() if pr == proto and lo <= port <= hi)
-        taken = sorted({ip for (pr, port), who in elsewhere.items()
-                        if pr == proto and lo <= port <= hi for ip in who})
+        taken = elsewhere_of(proto, lo, hi)
         own = any(pr == proto and lo <= int(port) <= hi
                   for pr, port in router_own)
         whole = len({f['public_port'] for f in done}) >= (hi - lo + 1)
@@ -51492,7 +51539,7 @@ class Daemon(object):
             if str(a.get('interface') or '') in wan and str(a.get('disabled')) != 'true':
                 addrs.append(str(a.get('address') or '').split('/')[0])
         out = {'name': fw, 'wan': sorted(wan), 'wan_addresses': sorted(set(addrs) - {''}),
-               'rules': [], 'masquerade': 0, 'eim': 0, 'dstnat_filter': None}
+               'rules': [], 'masquerade': 0, 'eim': 0, 'dstnat_filter': None, 'elsewhere': []}
 
         def ports_of(text):
             got = []
@@ -51520,8 +51567,13 @@ class Daemon(object):
                 out['dstnat_filter'] = str(r.get('connection-nat-state'))
             if table != 'nat' or chain != 'dstnat' or action not in ('dst-nat', 'netmap'):
                 continue
-            to = [t.strip() for t in str(r.get('to-addresses') or '').replace('-', ',').split(',')]
-            if ip not in to:
+            if not dnat_to_has(r.get('to-addresses'), ip):
+                # Another device's: its ports are taken (1.10.364).
+                first_to = str(r.get('to-addresses') or '').split(',')[0].split('-')[0].strip()
+                if first_to and str(r.get('disabled')) != 'true':
+                    out['elsewhere'].append({'protocol': str(r.get('protocol') or ''),
+                                             'ports': ports_of(r.get('dst-port')) or [(1, 65535)],
+                                             'to': first_to})
                 continue
             try:
                 packets = int(r.get('packets') or 0)
@@ -63104,6 +63156,11 @@ class Daemon(object):
         # word about whether this browser can be checked.
         if why == 'waiting' and not self._cl_proven(row):
             return {'watched': False, 'gone': False}
+        # ...and never an end by itself (1.10.364): a check slow for a moment -
+        # the daemon busy, the network, a PIN asked for - is no card taken out.
+        # Signed out only by a check that failed; in grace, held and counted.
+        if why == 'waiting' and self.certlogin_watch_mode() != 'grace':
+            return {'watched': True, 'gone': False, 'grace_left': self.certlogin_watch_grace()}
         if why == 'waiting':
             st = self._cl_out(token, row, 'the card they signed in with was taken out')
             return {'watched': True, 'gone': st == 'gone',
@@ -79364,7 +79421,8 @@ def selinux_tick(daemon):
                                    120 if do == 'check' else 900)
                 except WebRootError as e:
                     # A helper of the version before knows no look: a check, then.
-                    if do != 'look' or 'check, prepare' not in str(e):
+                    # (or one that answers it otherwise: no SELinux here) (1.10.364).
+                    if do != 'look' or 'did not answer' in str(e):
                         raise
                     got = root_job(wr, 'selinux.ask', 'selinux.json', dict(ask, do='check'), 120)
                 said = [str(x)[:300] for x in (got.pop('said', None) or [])][:40]
@@ -80829,7 +80887,7 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '7927c196a133501943935907144f9dde53fa34814e404857a9d9825f8f11f54b'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'fb5bbef2bcdd89a4ca2d20a8015671709c6aeaa28219eb55743f349cd48cb6ee'),
     ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', 'fb1cc945511e33998e1d546eedfae84058a7676f5a1ee328ac301fbc8d2e9595'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
@@ -89815,7 +89873,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 hours = number('hours', 24, 1, 744)
                 return self.send_json({'ok': True, 'hosts': daemon.held(
                     'fw-dnat-hosts/%d' % hours, 60,
-                    lambda: store.fw_dnat_hosts(time.time() - hours * 3600)) or []})
+                    lambda: store.fw_dnat_hosts(time.time() - min(hours, 48) * 3600)) or []})
             try:
                 got = daemon.held('fw-dnat/%s/%d/%s' % (one('ip'), number('hours', 24, 1, 744),
                                                          one('fw') or ''), 60,

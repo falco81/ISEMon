@@ -252,7 +252,8 @@ print('\nThe page')
 page = (TREE / 'web' / 'index.php').read_text()
 ok('the band under the header', '<div id="upband" class="upband" hidden></div>' in page)
 ok('a 503 saying upgrading is not a fault', 'if (r.status === 503 && data && data.upgrading)' in page)
-ok('...no red box while it is expected', 'if (e && (e.upgrading || e.upgradeAway)) return;' in page)
+ok('...no red box while it is expected', 'if (e && (e.upgrading || e.upgradeAway)' in page
+   and "toast('isemon is being upgraded - try again in a moment.', 'warn')" in page)
 ok('...no "not answering" bar either', 'if (upgradeExpected() || (e && (e.upgrading || e.upgradeAway)))' in page)
 ok('asked every two seconds, falling back to upgrade-state',
    'setInterval(upgradePoll, 2000)' in page and "fetch('?api=upgrade-state'" in page)

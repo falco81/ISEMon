@@ -467,9 +467,16 @@ if (isset($_GET['api'])) {
         /* ...and so is anything at all from somebody not signed in (1.10.356):
            every other relay read 32 MB and decoded it before the daemon asked
            who was sending. */
+        /* ...and a cookie that only looks like one (1.10.364): checked with the
+           daemon before a large body is read, as the uploads are. */
+        $big_who = null;
+        if ($told > 65536 && isemon_session() !== '') {
+            $big_who = isemon_whoami();
+        }
         if ($told > 65536 && (isemon_session() === '' || in_array($what, ['login', 'password',
                                               'kerberos-login', 'kerberos-try', 'cert-nonce',
-                                              'logout'], true))) {
+                                              'logout'], true)
+                              || !is_array($big_who) || !empty($big_who['second']))) {
             http_response_code(413);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['ok' => false, 'error' => 'that is too much to send here']);
@@ -6086,6 +6093,19 @@ var IN_UPG_WORDS = ['The upgrade of isemon did not finish',
   var away = band.dataset.alive !== '1';
   var gone = 0;
   function put(id, text) { var n = document.getElementById(id); if (n) n.textContent = text; }
+  /* Something typed, or a box being typed in: never loaded away under it
+     (1.10.364). */
+  function typing() {
+    var boxes = document.querySelectorAll('input, textarea, select');
+    for (var i = 0; i < boxes.length; i++) {
+      var b = boxes[i];
+      if (b.type === 'hidden' || b.type === 'submit' || b.type === 'button') continue;
+      if (document.activeElement === b) return true;
+      if ((b.type === 'checkbox' || b.type === 'radio') ? b.checked !== b.defaultChecked
+          : b.value && b.value !== b.defaultValue) return true;
+    }
+    return false;
+  }
   function ask() {
     fetch('?api=upgrade-state', {credentials: 'same-origin', cache: 'no-store'})
       .then(function (r) { return r.json(); })
@@ -6098,7 +6118,7 @@ var IN_UPG_WORDS = ['The upgrade of isemon did not finish',
           put('in-up-of', u.parts ? ' · step ' + u.part + ' of ' + u.parts : '');
         }
         if (d && d.api) {
-          if (away) {
+          if (away && !typing()) {
             /* Back: the page as it is now - once, not round and round. */
             var last = 0;
             try { last = Number(sessionStorage.getItem('isemon.upg.signin') || 0); } catch (e) { }
@@ -9713,6 +9733,11 @@ function api(what, body, how) {
       upgradeAway(true);
     }
     throw e;
+  }).catch(function (e) {
+    /* Asked by nobody - the refresh: oops says nothing of it while an
+       upgrade runs (1.10.364). */
+    if (quietAsk && e && typeof e === 'object') e.quiet = true;
+    throw e;
   });
   if (lane) {
     lane.promise = asked;
@@ -9738,8 +9763,13 @@ function toast(words, kind) {
 function oops(e) {
   if (e && e.stopped) return;           /* somebody stopped it: not a fault */
   /* Being upgraded (1.10.361): the band says so; a box would say it is wrong. */
-  if (e && (e.upgrading || e.upgradeAway)) return;
-  if (upgradeExpected() && !(e && e.status && e.status < 500)) return;
+  /* Something asked for by a click is answered all the same - a word that
+     it waits, not a red box; a refresh nobody asked for is not (1.10.364). */
+  if (e && (e.upgrading || e.upgradeAway)
+      || upgradeExpected() && !(e && e.status && e.status < 500)) {
+    if (!(e && e.quiet)) toast('isemon is being upgraded - try again in a moment.', 'warn');
+    return;
+  }
   toast(String(e && e.message || e), 'bad');
 }
 
@@ -12500,8 +12530,11 @@ function upgradeExpected() {
 /** What the daemon - or root's file through PHP - said of an upgrade. `full`
     when it came with the status (signed in: the versions too), `api` when
     the daemon itself answered. */
-function upgradeHeard(u, api) {
+function upgradeHeard(u, api, ver) {
   var was = UPG.u;
+  /* The version the daemon said first - the one this page was drawn for:
+     only a status of another one is an upgrade that is over (1.10.364). */
+  if (api && ver && !UPG.pageVer) UPG.pageVer = String(ver);
   if (api) {
     UPG.heard = Date.now();
     UPG.away = 0;
@@ -12518,9 +12551,13 @@ function upgradeHeard(u, api) {
     UPG.u = u;
   } else if (api) {
     /* The daemon answers, and no upgrade is said: over, or none. */
-    if (was && was.state === 'running' && UPG.sawRunning) {
-      UPG.u = {state: 'done', version: was.version, started: was.started, id: was.id};
-    } else if (!was || was.state !== 'running') {
+    /* Over only when the daemon now is another version than the page's;
+       the same version and no word of the run is no proof it ended well -
+       the band goes, and nothing is loaded again (1.10.364). */
+    if (was && was.state === 'running' && UPG.sawRunning && ver && UPG.pageVer
+        && String(ver) !== UPG.pageVer) {
+      UPG.u = {state: 'done', version: was.version || String(ver), started: was.started, id: was.id};
+    } else if (!was || was.state !== 'done') {
       UPG.u = null;
     }
   }
@@ -12564,7 +12601,7 @@ function upgradePoll() {
     }
     $('offline').hidden = true;
     LAST_OK = Date.now();
-    upgradeHeard(s && s.upgrading || null, true);
+    upgradeHeard(s && s.upgrading || null, true, s && s.version);
   }).catch(function () {
     var ctrl = window.AbortController ? new AbortController() : null;
     var cut = ctrl ? setTimeout(function () { ctrl.abort(); }, 8000) : null;
@@ -12764,7 +12801,7 @@ function tick() {
     LAST_OK = Date.now();
     $('offline').hidden = true;
     /* An upgrade going on, or just over (1.10.361). */
-    upgradeHeard(data && data.upgrading || null, true);
+    upgradeHeard(data && data.upgrading || null, true, data && data.version);
     /* The firewall's lines have a serial of their own (1.10.184): they move
        it every second, and only the Traffic page - and the front page, at
        most every half minute - is about them. */
@@ -13108,7 +13145,8 @@ function drawMaintBand(m) {
   var band = $('maint-band');
   if (!band) return;
   var key = m ? [m.why, m.by, m.at].join('|') : '';
-  band.hidden = !m;
+  /* While an upgrade runs its own band says it (1.10.364). */
+  band.hidden = !m || !!(typeof UPG === 'object' && UPG.u && UPG.u.state === 'running');
   if (band._key === key) return;
   band._key = key;
   clear(band);
@@ -13497,7 +13535,12 @@ function certWatchCheck() {
     api('card-gone', {why: w === 3 ? 'nocookie' : 'nopicture'}, {quiet: true}).then(function (d) {
       if (g !== CW.gen) return;
       if (d && d.unable) { certWatchUnable(); return; }
-      if (!d || !d.watched) { certWatchNext(c.every * 1000); return; }
+      if (!d || !d.watched) {
+        /* Not watched: a countdown the 4 s wait put up goes (1.10.364). */
+        if (CW.out) { CW.out = 0; certWatchLayer(false); }
+        certWatchNext(c.every * 1000);
+        return;
+      }
       if (d.gone) { certWatchEnd(CW.out ? 'late' : 'out'); return; }
       certWatchOut(took);
     }, function () {
@@ -13513,14 +13556,27 @@ function certWatchCheck() {
      the smart card", the browser's chooser: the card is out. The countdown
      shows at once, behind that window, and the server is told; put the card
      back while the window is up and the check answers. */
+  /* Only in grace (1.10.364): in signout a check slow for a moment - the
+     daemon busy, the network, a PIN asked - ended the session though the card
+     was in; there the check's own answer (or its 20 s) decides. */
   setTimeout(function () {
-    if (done || g !== CW.gen || CW.out) return;
-    if (c.mode === 'grace') {
-      CW.out = began;
-      certWatchLayer(true);
-    }
+    if (done || g !== CW.gen || CW.out || c.mode !== 'grace') return;
+    CW.out = Date.now();
+    certWatchLayer(true);
     api('card-gone', {why: 'waiting'}, {quiet: true}).then(function (d) {
-      if (g === CW.gen && d && d.gone) certWatchEnd('out');
+      if (g !== CW.gen) return;
+      /* Not watched (a browser not proven yet, root still putting the port
+         in): no countdown that would end in a sign-out the server never
+         asked for. */
+      if (!d || !d.watched) {
+        if (!done) { CW.out = 0; certWatchLayer(false); }
+        return;
+      }
+      if (d.gone) { certWatchEnd('out'); return; }
+      /* Counted by the server's clock, not from when this page started. */
+      if (!done && CW.out && typeof d.grace_left === 'number') {
+        CW.out = Date.now() - Math.max(0, c.grace - d.grace_left) * 1000;
+      }
     }, function () {});
   }, 4000);
   img.onload = function () { var nw = img.naturalWidth; fin(nw >= 2 && nw <= 6 ? nw : 1); };
@@ -28747,7 +28803,8 @@ function dnatRun(ip, hours) {
     DN.got = d;
     DN.pick = {};
     (d.missing || []).forEach(function (m) {
-      if (m.likely === 'likely') DN.pick[m.proto + '/' + m.port] = true;
+      /* Not one forwarded to another device already (1.10.364). */
+      if (m.likely === 'likely' && !(m.elsewhere || []).length) DN.pick[m.proto + '/' + m.port] = true;
     });
     (d.profiles || []).slice(0, 1).forEach(function (p) {
       p.ports.forEach(function (pp) {
@@ -29307,13 +29364,27 @@ function dnatRulesRedraw() {
   $('dn-code').textContent = dnatRuleText(d, picked, DN.fwkind);
 }
 
+/* What goes into a rule to be pasted into a router: only letters a name,
+   an address or an interface is made of - a reverse name (PTR) is written
+   by whoever owns the address, and a line break in it would be a command
+   of its own (1.10.364). */
+function dnSafe(x, iface) {
+  return String(x === undefined || x === null ? '' : x)
+    .replace(iface ? /[^A-Za-z0-9._\/:-]/g : /[^A-Za-z0-9._:-]/g, '').slice(0, 64);
+}
 function dnatRuleText(d, picked, kind) {
-  var ip = d.ip;
+  var ip = dnSafe(d.ip);
   var pubs = (d.out.public || []).filter(function (p) { return !p.private; });
-  var pub = pubs.length === 1 ? pubs[0].ip : '';
-  var wan = (d.out.wan || [])[0] || ((d.router && d.router.wan) || [])[0] || '';
+  var pub = pubs.length === 1 ? dnSafe(pubs[0].ip) : '';
+  var wan = dnSafe((d.out.wan || [])[0] || ((d.router && d.router.wan) || [])[0] || '', true);
+  d = Object.assign({}, d, {zone: dnSafe(d.zone, true)});
+  picked = picked.map(function (r) {
+    return {proto: r.proto === 'udp' ? 'udp' : 'tcp',
+            lo: Math.max(1, Math.min(65535, parseInt(r.lo, 10) || 1)),
+            hi: Math.max(1, Math.min(65535, parseInt(r.hi, 10) || parseInt(r.lo, 10) || 1))};
+  });
   var lines = [];
-  var name = ($('dn-name') && $('dn-name').textContent) || ip;
+  var name = dnSafe(($('dn-name') && $('dn-name').textContent) || '') || ip;
   if (!picked.length) return '# Tick a port above, or add one, for its rule.';
   if (kind === 'routeros') {
     lines.push('# DNAT to ' + name + ' (' + ip + ') - written by isemon’s DNAT analyzer');
@@ -51925,6 +51996,11 @@ function seLook(n, s) {
     SE.pick = {};
     SE.lookAt = look.at;
     fs.forEach(function (f) { if (SE_FIXABLE[f.kind]) SE.pick[f.id] = true; });
+  }
+  /* ausearch that never answered is no "nothing refused" (1.10.364). */
+  if (look.error) {
+    wrap.appendChild(el('p', 'note small bad', 'ausearch did not answer in five minutes - the audit log is large; look again later.'));
+    return wrap;
   }
   if (!fs.length) {
     var calm = el('div', 'se-calm');

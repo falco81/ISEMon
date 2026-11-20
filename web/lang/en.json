@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.363",
-  "made": "2026-11-17",
+  "version": "1.10.364",
+  "made": "2026-11-20",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -4419,6 +4419,10 @@
   "s.audittime.025763bb": {
    "source": "audittime",
    "text": "audittime"
+  },
+  "s.ausearch-did-not-answer-in-five.7cc97ad9": {
+   "source": "ausearch did not answer in five minutes - the audit log is large; look again later.",
+   "text": "ausearch did not answer in five minutes - the audit log is large; look again later."
   },
   "s.ausearch-is-not-on-this-machine.67f38f23": {
    "source": "ausearch is not on this machine - what SELinux refused cannot be read (dnf install audit).",
@@ -14011,6 +14015,10 @@
   "s.isemon-is-being-taken-back-to.c179b0bc": {
    "source": "isemon is being taken back to an older version",
    "text": "isemon is being taken back to an older version"
+  },
+  "s.isemon-is-being-upgraded-try-again.6e363364": {
+   "source": "isemon is being upgraded - try again in a moment.",
+   "text": "isemon is being upgraded - try again in a moment."
   },
   "s.isemon-is-being-upgraded.c5a41b8a": {
    "source": "isemon is being upgraded",

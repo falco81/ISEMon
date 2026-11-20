@@ -372,6 +372,37 @@ working.
 
 ## Version
 
+1.10.364
+
+- **Bug hunt over the newest parts** (test/fixes364_hunt.py):
+  - *Card watch*: a check of the card slow for a moment (the daemon busy, a
+    PIN asked for) no longer signs anybody out under "sign out"; only a check
+    that failed does. The grace layer goes when the session is not watched
+    any more, and counts from what the daemon says is left. A POST over
+    64 KB needs a session that is signed in, not only a cookie.
+  - *SELinux*: a file name in quotes is never read as a context (it could
+    turn a narrow refusal into a wide rule); booleans only of a short list
+    (`httpd_can_network_connect`, `..._db`), the others "Not for a button";
+    `restorecon` of a link puts right the file it points to; several AVC
+    lines of one event each looked at; only AVC, USER_AVC and SELINUX_ERR
+    read, and ausearch that does not answer is said, not "nothing refused";
+    a rule listed but not loaded is loaded again; uninstall forgets the
+    local rules; "isemon" in a path is no proof a refusal is isemon's.
+  - *DNAT analyzer*: the rule text has only the letters a name, an address
+    or an interface is made of (a reverse name with a line break was a
+    command of its own); a hairpin or VPN masquerade is no public address;
+    late answers to its own connections are no knocks; a TCP port its
+    connections left by is no reason; to-addresses ranges are understood; the
+    router's rules to other devices take their ports (and those are not
+    ticked); a rule switched off never stands over one that works; a rule
+    with no protocol or port covers them all; the rules' lines are read for
+    a week at most, the list of devices for 48 hours.
+  - *Upgrade band*: no "done" is made up when the status just stops saying
+    an upgrade - the page loads itself again only on "done" or a daemon of
+    another version; something clicked during an upgrade is told to wait
+    instead of failing without a word; the maintenance band stays under the
+    upgrade's; the sign-in page is never loaded again over what is typed.
+
 1.10.363
 
 - **Settings - SELinux drawn as the selinux kit draws it**: this server's
