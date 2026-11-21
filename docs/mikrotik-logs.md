@@ -169,6 +169,17 @@ on the way in to log. Without the first, the public address is taken from the
 filter's own lines. Without the second, nothing that knocks can be seen.
 FortiGate and FTD sessions with their translation are read the same way.
 
+On a FortiGate or an FTD (1.10.366) the translation is in the session, not
+a line of its own. Two counts are kept as the sessions come in:
+
+- the devices inside that went out translated - the list of devices to press;
+- which device each public address forwards to (a VIP, an FTD static NAT).
+
+So a device published by a VIP alone, with nothing of its own going out,
+still has its forwards and what knocks on that address found. Both counts
+start with the sessions read after the upgrade - the list fills within the
+hour.
+
 ## 4. More through its API or over ssh (read-only)
 
 The log says which packets a rule wrote down, never how much went where:

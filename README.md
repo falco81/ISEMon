@@ -372,6 +372,17 @@ working.
 
 ## Version
 
+1.10.366
+
+- **The DNAT analyzer on a FortiGate and an FTD**
+  ([docs/mikrotik-logs.md](docs/mikrotik-logs.md#the-dnat-analyzer-110360)):
+  their translations are in the sessions, so the list of devices to press
+  was always empty, and a device published by a VIP alone (nothing of its
+  own going out) had no forwards found. Two counts are now kept as the
+  sessions come in - the devices that went out translated, and which device
+  each public address forwards to - so both work, of the firewall chosen.
+  They start with the sessions read after the upgrade (test/fixes366_dnat_sessions.py).
+
 1.10.365
 
 - **The second bug hunt over the newest parts** (test/fixes365_hunt.py):

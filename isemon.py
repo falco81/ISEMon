@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.365'
+__version__ = '1.10.366'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -31219,6 +31219,19 @@ class Storage(object):
         if natted:
             # ...and on the NAT page, by its kind of translation (1.10.210).
             out.append(('natted', natted))
+            # For the DNAT analyzer, where the translation is in the sessions
+            # (a FortiGate, an FTD) (1.10.366): which devices inside go out
+            # translated, and which are forwarded to from which public
+            # address - counted, as the table could only be read row by row.
+            if out[2][1] != 'nat':
+                said = fw_nat_said(f, f.get('fields') or {})
+                src = str(f.get('srcip') or '')
+                if said.get('natsrc') and src and fw_private(src):
+                    out.append(('natfrom', src))
+                inner = str(ros_end(said.get('natto') or '')[0] or '')
+                pub = str(ros_end(said.get('natdst') or '')[0] or '')
+                if inner and pub and inner != pub and fw_private(inner):
+                    out.append(('natvip', '%s %s' % (inner, pub)))
         if out[2][1] == 'nat':
             # A MikroTik's NAT rule's own line (1.10.207): counted on its own
             # page and in the hours, not under the addresses, ports, rules and
@@ -32093,9 +32106,52 @@ class Storage(object):
                 'GROUP BY srcip ORDER BY n DESC LIMIT ?',
                 (float(since),) + ((str(fw),) if fw else ()) + (int(most),)).fetchall()
         except sqlite3.Error:
-            return []
-        return [{'ip': str(r['srcip'] or ''), 'n': int(r['n'] or 0),
-                 'last': float(r['last'] or 0)} for r in rows if r['srcip']]
+            rows = []
+        out = {str(r['srcip']): {'ip': str(r['srcip']), 'n': int(r['n'] or 0),
+                                 'last': float(r['last'] or 0)} for r in rows if r['srcip']}
+        # A FortiGate's or an FTD's: their translations are in the sessions,
+        # counted as they came (1.10.366) - the devices that went out
+        # translated, and those forwarded to.
+        if fw_nat_in_sessions():
+            for dim in ('natfrom', 'natvip'):
+                try:
+                    got = self.db.execute(
+                        'SELECT val, SUM(n) AS n, MAX(at) AS last FROM fw_roll WHERE span = 3600 '
+                        'AND dim = ? AND at >= ? GROUP BY val', (fw_dim(dim, fw),
+                                                                 int(since // 3600) * 3600)
+                    ).fetchall()
+                except sqlite3.Error:
+                    continue
+                for r in got:
+                    ip = str(r['val'] or '').split(' ')[0]
+                    if not ip:
+                        continue
+                    one = out.setdefault(ip, {'ip': ip, 'n': 0, 'last': 0.0})
+                    one['n'] += int(r['n'] or 0)
+                    one['last'] = max(one['last'], float(r['last'] or 0) + 3599)
+        return sorted(out.values(), key=lambda x: (-x['n'], x['ip']))[:int(most)]
+
+    def fw_dnat_vips(self, ip, since, until=0, fw=''):
+        """The public addresses a FortiGate or an FTD forwarded to `ip` from,
+        as counted (1.10.366): {address: sessions}."""
+        span = 3600 if (until or time.time()) - since <= 48 * 3600 else 86400
+        sql = ('SELECT val, SUM(n) AS n FROM fw_roll WHERE span = ? AND dim = ? AND at >= ? '
+               'AND val LIKE ?')
+        args = [span, fw_dim('natvip', fw), int(since // span) * span,
+                str(ipaddress.ip_address(ip)) + ' %']     # an address: no % or _ in it
+        if until:
+            sql += ' AND at < ?'
+            args.append(float(until))
+        try:
+            rows = self.db.execute(sql + ' GROUP BY val', args).fetchall()
+        except sqlite3.Error:
+            return {}
+        out = {}
+        for r in rows:
+            bits = str(r['val'] or '').split(' ')
+            if len(bits) == 2 and bits[0] == str(ip) and bits[1]:
+                out[bits[1]] = out.get(bits[1], 0) + int(r['n'] or 0)
+        return out
 
     def fw_unpaged_since(self, since):
         """Whether any line without a page (written before 1.10.126) is at
@@ -51314,9 +51370,16 @@ class Daemon(object):
         knocks = {}
         cap_k = False
         router_own = set()
-        if public:
+        # Where it is forwarded to from an address of its own - a FortiGate's
+        # VIP - those lines are to that address, never to it (1.10.366).
+        try:
+            vips = sorted(set(store.fw_dnat_vips(ip, since, until, fw)) - set(public))[:8]
+        except Exception:                               # noqa: BLE001
+            vips = []
+        asked_at = public + vips
+        if asked_at:
             looked, cap_k = store.fw_dnat_lines(
-                'dstip IN (%s)' % ','.join('?' * len(public)), public, since, until, fw)
+                'dstip IN (%s)' % ','.join('?' * len(asked_at)), asked_at, since, until, fw)
             for r in looked:
                 proto = dnat_proto(r.get('proto'))
                 port = int(r.get('dstport') or 0)
