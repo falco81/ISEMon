@@ -184,7 +184,7 @@ def node(src):
 
 
 print('DNAT: the rule text')
-out, err = node(js_function('dnSafe') + js_function('dnPorts') + js_function('dnatRuleText') + r"""
+out, err = node(js_function('dnSafe') + js_function('dnQuote') + js_function('dnPorts') + js_function('dnatRuleText') + r"""
 var $ = function (id) { return id === 'dn-name' ? {textContent: 'evil\n/system reset-configuration'} : null; };
 var d = {ip: '192.168.60.20', out: {public: [{ip: '94.100.20.5'}], wan: ['ether1"; /x'],
          changed: 0, kept: 1}, router: {dstnat_filter: 'x'}, zone: 'br\nidge', profiles: []};

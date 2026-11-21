@@ -191,7 +191,9 @@ upgrade_ended() {   # the EXIT trap of an upgrade run by hand
     local rc="$1"
     [[ -n "$UPG_TELL" && -z "$UPG_DONE" ]] || return 0
     if [[ "$rc" == 0 ]]; then
-        upgrade_tell done "$UP_STEPS" "isemon $VERSION runs"
+        # Never the version in the words (1.10.365): they are read without
+        # signing in; the page says "isemon X runs now" from what it may see.
+        upgrade_tell done "$UP_STEPS" "done"
     else
         upgrade_tell failed "$UPG_PART" "install.sh --upgrade stopped" \
             "install.sh --upgrade stopped (exit $rc)${UPG_FROM:+ - see what it printed; $UPG_FROM may run again}"

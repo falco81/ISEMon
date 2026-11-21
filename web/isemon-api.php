@@ -265,7 +265,10 @@ function isemon_upgrading(bool $full = false): ?array
         'part'      => $num($got['part'] ?? 0, 99),
         'parts'     => $num($got['parts'] ?? 0, 99),
         'pct'       => $num($got['pct'] ?? 0, 100),
-        'words'     => $text($got['words'] ?? '', 120),
+        // Never a version to somebody not signed in (1.10.365): an older
+        // install.sh wrote "isemon 1.10.x runs" here.
+        'words'     => $full ? $text($got['words'] ?? '', 120)
+                             : trim(preg_replace('/\b[0-9]+(\.[0-9]+)+\b/', '', $text($got['words'] ?? '', 120))),
         'started'   => (float) ($got['started'] ?? $at),
         'at'        => $at,
         'now'       => (float) $now,

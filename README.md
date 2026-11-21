@@ -372,6 +372,32 @@ working.
 
 ## Version
 
+1.10.365
+
+- **The second bug hunt over the newest parts** (test/fixes365_hunt.py):
+  - *Upgrades*: after an upgrade run by hand, the version was readable
+    without signing in (in the words of "done", through `?api=upgrade-state`)
+    - never now, and PHP drops a version from the words for anybody not
+    signed in. An upgrade from the console tells the pages how far it is
+    (the band, "maintenance" in healthz, the page loaded again after), and
+    prints `[3/8] ...` instead of `@@progress`. Stopping the upgrade service
+    before install.sh ran is "failed", not "running" for half an hour.
+  - *Sign-in page during an upgrade*: loaded again unless a key was pressed
+    (the box focused by the page, or filled in by the browser, kept it from
+    ever loading again).
+  - *SELinux*: root does exactly what the confirmation showed - a finding
+    worked out otherwise since (a file gone: a label turned into a rule) is
+    left, "look again"; binding a port of another service's type is never a
+    rule; a program merely called "isemon" is not isemon's; a reload of the
+    local module that failed is not marked put right.
+  - *DNAT analyzer*: the router's own rules to the device count for its
+    kind of ports (no rule suggested again for one it has); a rule of
+    several ranges, or none, drawn whole; a UDP peer answering from the port
+    it was sent to is a knock again (only TCP answers are "late"); a
+    netmap's prefix is understood; an interface with a space is quoted for
+    RouterOS; only the newest answer is drawn; the list of devices is of the
+    firewall chosen.
+
 1.10.364
 
 - **Bug hunt over the newest parts** (test/fixes364_hunt.py):

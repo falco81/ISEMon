@@ -705,6 +705,14 @@ def serve_request():
                 write_safely(log_path, '\n'.join(log_lines[-4000:]) + '\n')
             except OSError:
                 pass
+    def stopped_early(_sig, _frame):
+        raise Refused('isemon-upgrade.service was stopped before install.sh ran')
+    # Stopped while the package is still looked at (1.10.365): said failed,
+    # never "running" for half an hour. put_in() puts its own in for install.sh.
+    try:
+        signal.signal(signal.SIGTERM, stopped_early)
+    except ValueError:                           # not the main thread (a test)
+        pass
     try:
         try:
             r = json.loads(read_small(taken).decode('utf-8'))
@@ -756,11 +764,40 @@ def main(argv):
             print(json.dumps({'ok': False, 'said': str(e)}))
         return 0
     if len(argv) >= 2 and argv[0] == '--run':
+        # From the console (1.10.365): the pages are told how far it is, as for
+        # a run from them - the daemon, nginx and php-fpm restart under them.
+        began = time.time()
+        ident = 'console-%d' % int(began)
+        prog = {'step': 0, 'total': 0, 'pct': 2, 'words': 'checking the package',
+                'began': began}
+
+        def tell(state, **more):
+            pages_tell(dict(more, state=state, id=ident, by='root on the console',
+                            progress=dict(prog), at=time.time()))
+
+        def say(text):
+            m = re.match(r'^@@progress ([0-9]{1,3})/([0-9]{1,3}) (.{0,120})$', str(text).strip())
+            if not m:
+                print(text)
+                return
+            step, total = int(m.group(1)), max(1, int(m.group(2)))
+            prog.update(step=step, total=total, words=m.group(3),
+                        pct=min(99, 10 + 85 * step // total))
+            print('[%d/%d] %s' % (step, total, m.group(3)))
+            tell('running')
+        tell('running')
         try:
-            rc, _info, _ = put_in(os.path.abspath(argv[1]), log_to=print)
+            rc, info, _ = put_in(os.path.abspath(argv[1]), log_to=say)
         except Refused as e:
             print('refused: %s' % e)
+            tell('failed', said=str(e))
             return 1
+        except Exception as e:                   # noqa: BLE001 - said, then raised
+            tell('failed', said='the upgrade broke: %s' % e)
+            raise
+        prog.update(pct=100 if rc == 0 else prog['pct'], words='done' if rc == 0 else
+                    'install.sh ended with %d' % rc)
+        tell('done' if rc == 0 else 'failed', rc=rc, version=info.get('version'))
         return rc
     if not argv:
         return serve_request()

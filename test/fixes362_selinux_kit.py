@@ -343,7 +343,7 @@ ok('the command line: look, fix by ids or all, the rules',
                           "choices=('check', 'look', 'prepare', 'enforce', 'permissive')")))
 page = (ROOT / 'web' / 'index.php').read_text()
 ok('the page: the findings sorted, ticked, and only their ids sent',
-   ('function seLook(n, s)' in page and "seAsk('fix', {ids: ids})" in page
+   ('function seLook(n, s)' in page and "seAsk('fix', {ids: ids, fixes: fixes})" in page
     and "seAsk('rule_drop', {rule: x.id})" in page))
 ok('...a confirm saying exactly what root will do', 'Root does exactly this - nothing else' in page)
 ok('...Look again looks at every refusal', "api('selinux', {action: 'look'})" in page)

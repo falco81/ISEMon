@@ -5679,7 +5679,9 @@ def se_whose(g, r, ports):
     if st == 'unconfined_service_t':
         return 'isemon' in text or tt in SE_TOOL_DOMAINS or path_ours
     if st in SE_TOOL_DOMAINS:
-        return tt == 'unconfined_service_t' or path_ours or port_ours or 'isemon' in text
+        # Never by its name (1.10.365): a program anybody runs as "isemon"
+        # gets its domain from what it is, not what it is called.
+        return tt == 'unconfined_service_t' or path_ours or port_ours
     if st in SE_SERVICE_DOMAINS:
         return path_ours or port_ours
     return False
@@ -5704,6 +5706,11 @@ def se_never(g):
             cls, ' '.join(bad))
     if tt in SE_GENERIC_TYPES and perms & SE_WRITE_PERMS:
         return 'writing to %s (a type of many files) would allow far more than this' % tt
+    # Binding a port another service's type owns (1.10.365): the port kind
+    # leaves that as it is, and a rule must not do it round it.
+    if cls.endswith('_socket') and 'name_bind' in perms and tt not in SE_FREE_PORT_TYPES \
+            and tt != SE_PORT_FOR.get(g['st']):
+        return 'binding %s, another service\'s port, is too much to allow from here' % tt
     if cls == 'process2' or cls == 'process':
         return '%s { %s } is about running programs - too much to allow from here' % (
             cls, g['perms'])
@@ -5931,15 +5938,21 @@ def se_fix(r, said):
     rules = se_local_list()
     have = {x['id'] for x in rules}
     who = re.sub(r'[^A-Za-z0-9@._ -]', '', str(r.get('by') or 'the pages'))[:60]
-    new_rules, done = [], []
+    new_rules, done, reloaded = [], [], []
     known = None
     reload_local = False
+    shown = r.get('fixes') if isinstance(r.get('fixes'), dict) else None
     for fid in ids:
         f = by.get(fid)
         if not f:
             said.append('%s: not there any more' % fid)
             continue
         kind = f['kind']
+        # Exactly what was confirmed, or nothing (1.10.365): a file gone since
+        # the look turned a label into a rule.
+        if shown is not None and fid in shown and str(shown[fid]) != str(f.get('fix') or ''):
+            said.append('%s: changed since it was looked at - look again' % fid)
+            continue
         if kind == 'boolean':
             name = f['type']
             if name not in SE_GOOD_BOOLEANS:
@@ -5996,6 +6009,7 @@ def se_fix(r, said):
                 # Listed and refused again - the module not in the policy any
                 # more (taken out by hand, an uninstall): put in again (1.10.364).
                 reload_local = True
+                reloaded.append(fid)
             else:
                 new_rules.append({'id': fid, 'rule': [f['st'], f['tt'], f['cls'], f['perms']],
                                   'at': time.time(), 'by': who,
@@ -6013,6 +6027,8 @@ def se_fix(r, said):
             said.append(str(e))
             for x in new_rules:
                 done.remove(x['id'])
+            for fid in reloaded:
+                done.remove(fid)
         else:
             root_state_write(SE_LOCAL_LIST, json.dumps(rules))
             said.extend('rule %s: %s' % (x['id'], '(allow %s %s (%s (%s)))' % tuple(x['rule']))

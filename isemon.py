@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.364'
+__version__ = '1.10.365'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -13652,6 +13652,14 @@ def dnat_to_has(text, ip):
     except ValueError:
         return False
     for part in str(text or '').split(','):
+        if '/' in part:
+            # A netmap's prefix (1.10.365).
+            try:
+                if want in ipaddress.ip_network(part.strip(), strict=False):
+                    return True
+            except (ValueError, TypeError):
+                pass
+            continue
         lo, _, hi = part.strip().partition('-')
         try:
             a = ipaddress.ip_address(lo.strip())
@@ -32074,14 +32082,16 @@ class Storage(object):
             out.append(one)
         return out, len(got) > most
 
-    def fw_dnat_hosts(self, since, most=40):
+    def fw_dnat_hosts(self, since, most=40, fw=''):
         """The addresses inside whose connections out were translated most -
-        what the analyzer offers to look at."""
+        what the analyzer offers to look at (of one firewall, 1.10.365)."""
         try:
             rows = self.db.execute(
                 "SELECT srcip, COUNT(*) AS n, MAX(ts) AS last FROM fw_events "
                 "WHERE area = 'nat' AND action = 'srcnat' AND ts >= ? "
-                'GROUP BY srcip ORDER BY n DESC LIMIT ?', (float(since), int(most))).fetchall()
+                + ('AND fw = ? ' if fw else '') +
+                'GROUP BY srcip ORDER BY n DESC LIMIT ?',
+                (float(since),) + ((str(fw),) if fw else ()) + (int(most),)).fetchall()
         except sqlite3.Error:
             return []
         return [{'ip': str(r['srcip'] or ''), 'n': int(r['n'] or 0),
@@ -51168,7 +51178,10 @@ class Daemon(object):
                 kinds[str(r['natkind'])] += 1
             src = r.get('natsrc')
             to_ip = str(r.get('dstip') or '')
-            if to_ip and int(r.get('dstport') or 0) and r.get('direction') != 'reply':
+            # TCP only (1.10.365): a UDP peer answering from the port it was
+            # sent to is the very knock a forward is for.
+            if proto == 'tcp' and to_ip and int(r.get('dstport') or 0) \
+                    and r.get('direction') != 'reply':
                 ends.add((to_ip, int(r['dstport'])))
             # Masqueraded to an address inside - hairpin, a VPN - is no way
             # out to the internet (1.10.364).
@@ -51331,7 +51344,8 @@ class Daemon(object):
                 # From an address and port it connected to itself: an answer
                 # come after the router forgot the connection, not a knock
                 # for a forward (1.10.364).
-                if (str(r.get('srcip') or ''), int(r.get('srcport') or 0)) in ends:
+                if proto == 'tcp' and (str(r.get('srcip') or ''), int(r.get('srcport') or 0)) \
+                        in ends:
                     continue
                 key = (proto, port)
                 one = knocks.setdefault(key, {'proto': proto, 'port': port, 'n': 0,
@@ -51360,7 +51374,8 @@ class Daemon(object):
                 profiles.append({'key': p['key'], 'name': p['name'], 'says': p['says'],
                                  'note': p['note'], 'score': score, 'seen': seen,
                                  'ports': [self._dnat_profile_port(pp, forwards, knocks,
-                                                                   elsewhere_of, router_own)
+                                                                   elsewhere_of, router_own,
+                                                                   router.get('rules'))
                                            for pp in p['ports']]})
         profiles.sort(key=lambda p: -p['score'])
         wanted = {}
@@ -51453,8 +51468,8 @@ class Daemon(object):
                           and any(lo <= f['public_port'] <= hi
                                   for lo, hi in rule.get('ports') or [(1, 65535)])
                           for f in out_forwards)
-            if not covered:
-                lo, hi = (rule.get('ports') or [(0, 0)])[0]
+            # One row for each range of it; none is every port (1.10.365).
+            for lo, hi in ([] if covered else rule.get('ports') or [(1, 65535)]):
                 out_forwards.append({
                     'proto': rule.get('protocol') or 'any', 'public_port': lo,
                     'public_last': hi, 'inside_port': rule.get('to_port') or lo,
@@ -51506,17 +51521,23 @@ class Daemon(object):
                 'bytes': 0, 'rule_lines': 0}
 
     @staticmethod
-    def _dnat_profile_port(pp, forwards, knocks, elsewhere_of, router_own):
+    def _dnat_profile_port(pp, forwards, knocks, elsewhere_of, router_own, rules=None):
         proto, lo, hi, need, why = pp
         done = [f for f in forwards.values() if f['proto'] == proto
                 and lo <= f['public_port'] <= hi]
+        # The router's own rules to it count too, used or not (1.10.365): a
+        # rule nothing came through in the window is no port to add again.
+        spans = [(a, b) for x in rules or [] if not x.get('disabled')
+                 and (not x.get('protocol') or x.get('protocol') == proto)
+                 for a, b in x.get('ports') or [(1, 65535)]]
+        ruled = {p for p in range(lo, hi + 1) if any(a <= p <= b for a, b in spans)}
         seen = sum(k['n'] for (pr, port), k in knocks.items() if pr == proto and lo <= port <= hi)
         taken = elsewhere_of(proto, lo, hi)
         own = any(pr == proto and lo <= int(port) <= hi
                   for pr, port in router_own)
-        whole = len({f['public_port'] for f in done}) >= (hi - lo + 1)
+        whole = len({f['public_port'] for f in done} | ruled) >= (hi - lo + 1)
         return {'proto': proto, 'ports': [lo, hi], 'need': need, 'why': why,
-                'state': 'forwarded' if whole else 'partly' if done else
+                'state': 'forwarded' if whole else 'partly' if done or ruled else
                 'elsewhere' if taken else 'router' if own else 'missing',
                 'knocks': seen, 'elsewhere': taken,
                 'working': any(f['allowed'] for f in done)}
@@ -79336,7 +79357,7 @@ def selinux_now(store):
     return got if isinstance(got, dict) else {}
 
 
-def selinux_ask(daemon, action, by, ids=None, rule=''):
+def selinux_ask(daemon, action, by, ids=None, rule='', fixes=None):
     if action not in SE_ACTIONS:
         raise ValueError('check, look, prepare, enforce, permissive, fix, rule_drop or report')
     more = {}
@@ -79345,6 +79366,11 @@ def selinux_ask(daemon, action, by, ids=None, rule=''):
         if not ids:
             raise ValueError('which of what SELinux refuses? (their ids)')
         more['ids'] = ids
+        # What the page showed for each (1.10.365): root does it only if it
+        # still works it out the same.
+        if isinstance(fixes, dict):
+            more['fixes'] = {k: str(v)[:400] for k, v in fixes.items()
+                             if k in ids and isinstance(v, str)}
     if action == 'rule_drop':
         if not SE_ID_RE.match(str(rule or '')):
             raise ValueError('which local rule? (its id)')
@@ -79413,6 +79439,8 @@ def selinux_tick(daemon):
             ask = dict(selinux_want(), do=do, by=str(want.get('by') or '')[:60] if asked else '')
             if asked and do == 'fix':
                 ask['ids'] = list(want.get('ids') or [])
+                if isinstance(want.get('fixes'), dict):
+                    ask['fixes'] = dict(want['fixes'])
             if asked and do == 'rule_drop':
                 ask['rule'] = str(want.get('rule') or '')
             try:
@@ -79512,7 +79540,8 @@ def selinux_api(daemon, b, by):
                     time.strftime('%Y%m%d-%H%M', time.localtime(rep['at']))),
                 'file': base64.b64encode(rep['data']).decode('ascii'), 'mime': 'application/gzip'}
     return {'message': selinux_ask(daemon, act, by, ids=b.get('ids') if isinstance(
-        b.get('ids'), list) else None, rule=str(b.get('rule') or '')[:20])}
+        b.get('ids'), list) else None, rule=str(b.get('rule') or '')[:20],
+        fixes=b.get('fixes') if isinstance(b.get('fixes'), dict) else None)}
 
 
 def selinux_alerts(store):
@@ -80887,8 +80916,8 @@ def api_load(detail=False, hist=False, store=None, since=0.0):
 # made here fails the tests rather than going unsaid on a server.
 # -- ROOT_PARTS from tools/root_parts.py --
 ROOT_PARTS = [
-    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', 'fb5bbef2bcdd89a4ca2d20a8015671709c6aeaa28219eb55743f349cd48cb6ee'),
-    ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', 'fb1cc945511e33998e1d546eedfae84058a7676f5a1ee328ac301fbc8d2e9595'),
+    ('deploy/isemon_web.py', '/usr/local/lib/isemon/isemon_web.py', '2bf37fd28dc868adcdb87d7559e9876fbf75136ed09db5412d929921dcbd2f4a'),
+    ('deploy/isemon_upgrade.py', '/usr/local/lib/isemon/isemon_upgrade.py', 'e4df5ef9585b8531f9ffb1519b678e610d24e16545406831eca9aeb2ede8545b'),
     ('deploy/isemon_main.py', '/usr/local/lib/isemon/isemon_main.py', 'f6df7133f8f22c20a0ed7c35382eca15334bd4193a74c82fa09598d68695429e'),
     ('deploy/isemon-web.service', '/etc/systemd/system/isemon-web.service', '2626aa45dda00e9d8f1f379942e644f826f2d517d2f6506feab504fd3c0c208b'),
     ('deploy/isemon-web.path', '/etc/systemd/system/isemon-web.path', '2031a8cfad5fe15c49064766c0bf12148d0dc6f5fd9a637441a6af859e3a6b21'),
@@ -89871,9 +89900,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return None
             if not one('ip'):
                 hours = number('hours', 24, 1, 744)
+                fw_one = str(one('fw') or '')[:80]
                 return self.send_json({'ok': True, 'hosts': daemon.held(
-                    'fw-dnat-hosts/%d' % hours, 60,
-                    lambda: store.fw_dnat_hosts(time.time() - min(hours, 48) * 3600)) or []})
+                    'fw-dnat-hosts/%d/%s' % (hours, fw_one), 60,
+                    lambda: store.fw_dnat_hosts(time.time() - min(hours, 48) * 3600,
+                                                fw=fw_one)) or []})
             try:
                 got = daemon.held('fw-dnat/%s/%d/%s' % (one('ip'), number('hours', 24, 1, 744),
                                                          one('fw') or ''), 60,

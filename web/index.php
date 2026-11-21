@@ -6095,17 +6095,11 @@ var IN_UPG_WORDS = ['The upgrade of isemon did not finish',
   function put(id, text) { var n = document.getElementById(id); if (n) n.textContent = text; }
   /* Something typed, or a box being typed in: never loaded away under it
      (1.10.364). */
-  function typing() {
-    var boxes = document.querySelectorAll('input, textarea, select');
-    for (var i = 0; i < boxes.length; i++) {
-      var b = boxes[i];
-      if (b.type === 'hidden' || b.type === 'submit' || b.type === 'button') continue;
-      if (document.activeElement === b) return true;
-      if ((b.type === 'checkbox' || b.type === 'radio') ? b.checked !== b.defaultChecked
-          : b.value && b.value !== b.defaultValue) return true;
-    }
-    return false;
-  }
+  /* Typed by a person: a key pressed - not the box focused by the page,
+     nor what the browser filled in by itself (1.10.365). */
+  var keyed = false;
+  document.addEventListener('keydown', function () { keyed = true; }, true);
+  function typing() { return keyed; }
   function ask() {
     fetch('?api=upgrade-state', {credentials: 'same-origin', cache: 'no-store'})
       .then(function (r) { return r.json(); })
@@ -28768,7 +28762,7 @@ function dnatOpen(ip) {
 function dnatHosts() {
   var box = $('dn-hosts');
   if (!box) return;
-  api('fw-dnat&hours=' + (DN.hours || 24), undefined, {quiet: true}).then(function (d) {
+  api('fw-dnat&hours=' + (DN.hours || 24) + tFwArg(), undefined, {quiet: true}).then(function (d) {
     if (!$('dn-hosts')) return;
     clear(box);
     var list = (d.hosts || []).slice(0, 16);
@@ -28798,8 +28792,11 @@ function dnatRun(ip, hours) {
   wait.appendChild(el('span', 'spin'));
   wait.appendChild(el('span', '', 'Reading what reaches ' + ip + ' and what it talks to…'));
   out.appendChild(wait);
+  /* Only the newest question's answer is drawn (1.10.365): a month asked
+     before a day came after it, and drew over it. */
+  var tok = DN.tok = (DN.tok || 0) + 1;
   api('fw-dnat&ip=' + encodeURIComponent(ip) + '&hours=' + hours + tFwArg()).then(function (d) {
-    if (!$('dn-out') || DN.ip !== ip) return;
+    if (!$('dn-out') || DN.ip !== ip || DN.tok !== tok) return;
     DN.got = d;
     DN.pick = {};
     (d.missing || []).forEach(function (m) {
@@ -28821,7 +28818,7 @@ function dnatRun(ip, hours) {
       : types.indexOf('ftd') >= 0 ? 'cisco' : 'routeros';
     dnatDraw(d);
   }).catch(function (e) {
-    if (!$('dn-out')) return;
+    if (!$('dn-out') || DN.tok !== tok) return;
     clear(out);
     out.appendChild(el('div', 'dn-warn lvl-bad', (e && e.message) || 'It could not be read.'));
   });
@@ -29370,8 +29367,11 @@ function dnatRulesRedraw() {
    of its own (1.10.364). */
 function dnSafe(x, iface) {
   return String(x === undefined || x === null ? '' : x)
-    .replace(iface ? /[^A-Za-z0-9._\/:-]/g : /[^A-Za-z0-9._:-]/g, '').slice(0, 64);
+    .replace(iface ? /[^A-Za-z0-9._\/: -]/g : /[^A-Za-z0-9._:-]/g, '').trim().slice(0, 64);
 }
+/* An interface named with a space ("ether1 - WAN") in quotes, for RouterOS
+   (1.10.365): with the space taken out it was another, missing interface. */
+function dnQuote(x) { return /\s/.test(x) ? '"' + x + '"' : x; }
 function dnatRuleText(d, picked, kind) {
   var ip = dnSafe(d.ip);
   var pubs = (d.out.public || []).filter(function (p) { return !p.private; });
@@ -29387,11 +29387,12 @@ function dnatRuleText(d, picked, kind) {
   var name = dnSafe(($('dn-name') && $('dn-name').textContent) || '') || ip;
   if (!picked.length) return '# Tick a port above, or add one, for its rule.';
   if (kind === 'routeros') {
+    var wanQ = dnQuote(wan), zoneQ = dnQuote(d.zone || '');
     lines.push('# DNAT to ' + name + ' (' + ip + ') - written by isemon’s DNAT analyzer');
     lines.push('/ip firewall nat');
     picked.forEach(function (r) {
       lines.push('add chain=dstnat action=dst-nat protocol=' + r.proto
-        + (pub ? ' dst-address=' + pub : '') + (wan ? ' in-interface=' + wan
+        + (pub ? ' dst-address=' + pub : '') + (wan ? ' in-interface=' + wanQ
           : ' in-interface-list=WAN')
         + ' dst-port=' + dnPorts(r.lo, r.hi) + ' to-addresses=' + ip
         + ' comment="isemon DNAT ' + ip + ' ' + r.proto + ' ' + dnPorts(r.lo, r.hi) + '"');
@@ -29401,21 +29402,21 @@ function dnatRuleText(d, picked, kind) {
       lines.push('# The default configuration lets what was forwarded through the filter. If '
                  + 'yours does not:');
       lines.push('# /ip firewall filter add chain=forward action=accept connection-nat-state='
-                 + 'dstnat' + (wan ? ' in-interface=' + wan : '') + ' place-before=0');
+                 + 'dstnat' + (wan ? ' in-interface=' + wanQ : '') + ' place-before=0');
     }
     if ((d.profiles || []).length || (d.out.changed > d.out.kept)) {
       lines.push('');
       lines.push('# Dynamic UDP ports (party chat, peer-to-peer): one of these, not both.');
       lines.push('# RouterOS 7.17 or later - endpoint-independent NAT for this address only:');
       lines.push('# /ip firewall nat add chain=srcnat action=endpoint-independent-nat '
-                 + 'protocol=udp src-address=' + ip + (wan ? ' out-interface=' + wan : '')
+                 + 'protocol=udp src-address=' + ip + (wan ? ' out-interface=' + wanQ : '')
                  + ' place-before=0');
       lines.push('# /ip firewall nat add chain=dstnat action=endpoint-independent-nat '
-                 + 'protocol=udp' + (wan ? ' in-interface=' + wan : '') + ' place-before=0');
+                 + 'protocol=udp' + (wan ? ' in-interface=' + wanQ : '') + ' place-before=0');
       lines.push('# ...or UPnP:');
       lines.push('# /ip upnp set enabled=yes');
-      lines.push('# /ip upnp interfaces add interface=' + (wan || 'ether1') + ' type=external');
-      lines.push('# /ip upnp interfaces add interface=' + (d.zone || 'bridge')
+      lines.push('# /ip upnp interfaces add interface=' + (wanQ || 'ether1') + ' type=external');
+      lines.push('# /ip upnp interfaces add interface=' + (zoneQ || 'bridge')
                  + ' type=internal');
     }
   } else if (kind === 'iptables') {
@@ -52152,7 +52153,12 @@ function seFixConfirm(n, fs) {
     body.appendChild(ul);
     body.appendChild(el('p', 'muted small', 'The rules go into isemon\'s own local module isemon_local - each can be taken away again on this card. Every step is written in Events. It works under enforcing too.'));
   }, [{words: 'No, leave it', close: true},
-      {words: 'Put it in', cls: 'primary', icon: 'check', close: true, go: function () { seAsk('fix', {ids: ids}); }}],
+      {words: 'Put it in', cls: 'primary', icon: 'check', close: true, go: function () {
+        /* What was shown, so that root does exactly that (1.10.365). */
+        var fixes = {};
+        ids.forEach(function (id) { fixes[id] = by[id].fix || ''; });
+        seAsk('fix', {ids: ids, fixes: fixes});
+      }}],
   'medium');
 }
 setTimeout(function () { if (paneLive('selinux')) loadSelinux(); }, 0);

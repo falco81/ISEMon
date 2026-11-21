@@ -171,6 +171,11 @@ ok('running: believed', got and got['state'], 'running')
 ok('...nobody signed in: no version, nobody, no why',
    [k for k in ('version', 'from', 'by', 'said', 'id') if k in (got or {})], [])
 ok('...signed in: all of it', (php_read(True) or {}).get('version'), '1.10.361')
+tell('done', words='isemon 1.10.361 runs')
+ok('...a version in the words never to somebody not signed in (1.10.365)',
+   '1.10' in json.dumps(php_read()), False)
+ok('...signed in, the words as they are', (php_read(True) or {}).get('words'),
+   'isemon 1.10.361 runs')
 tell('running', at=time.time() - 31 * 60)
 ok('running, not heard of for half an hour: not believed', php_read(), None)
 tell('done', at=time.time() - 9 * 60)
