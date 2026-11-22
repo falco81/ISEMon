@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.366",
-  "made": "2026-11-21",
+  "version": "1.10.367",
+  "made": "2026-11-22",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {

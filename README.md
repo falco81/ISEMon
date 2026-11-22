@@ -372,6 +372,38 @@ working.
 
 ## Version
 
+1.10.367
+
+- **Speed on a very large database, round 1 of 5** (measured on PostgreSQL and
+  SQLite with millions of made-up rows; test/fixes367_speed.py):
+  - new indexes, built behind the running daemon on a big table:
+    `failed_asked_as`/`passed_asked_as` (an address clicked with OTP's detail
+    on read the whole table), `events_level_ts` (one level of Events),
+    `passed_acl_kind_ts` (the ACL summary), `blocked_log_country`,
+    `fw_kept_type_ts` (the firewall's own lines, 0.47 s → 0.01 s),
+    `fw_nat_action_ts` (the DNAT analyzer, 0.37 s → 0.04 s) and `win_bad_ts`
+    (the Domain page's failure cards, 2-4× quicker). Indexes only: going back
+    to an older version stays as safe as it was;
+  - SQLite's row count read a whole index for each table on every status
+    (now two seeks: `/api/status` 2-3 s → about 1 s on a big file); the
+    oldest and newest moment of each table the same;
+  - the database page's size by table (every page of the file read) kept an
+    hour;
+  - the countries of a refusal list come from the catalogue of values (1.8 s
+    → 0.6 s); an existing catalogue takes them in from the rows in the
+    background, the rest of it answering meanwhile;
+  - the watch list's alarm reads the VPN's refusals by the index, not every
+    door's;
+  - the counted firewall questions are bounded on both sides of the time,
+    so the right index is taken;
+  - a person's card no longer waits up to 12 s for the VPN list to be put
+    together.
+- **UI**: the Domain page's own refresh waited for nothing - on a big domain an
+  answer slower than 30 s was never drawn and the questions piled up; a
+  second router's history threw out the first's and was asked again at every
+  key; an hour on the Traffic chart labelled right where the time zone is
+  +5:30 or +5:45.
+
 1.10.366
 
 - **The DNAT analyzer on a FortiGate and an FTD**

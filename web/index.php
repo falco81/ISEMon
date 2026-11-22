@@ -12893,7 +12893,9 @@ function tick() {
            ahead and kept that long anyway. (1.10.178) */
         if (TAB === 'windows' && Date.now() - WIN_TICK_AT > 30000) {
           WIN_TICK_AT = Date.now();
-          if (WPAGE_SHOWN === 'events') loadWinEvents(); else loadWindows();
+          /* The page's own asking: an answer still out is waited for, not
+             dropped and asked again on top of it (1.10.367). */
+          if (WPAGE_SHOWN === 'events') loadWinEvents(); else loadWindows(true);
         }
       } finally {
         QUIET_TICK = false;
@@ -12928,7 +12930,7 @@ document.addEventListener('visibilitychange', function () {
      after one glance at another tab (1.10.176). */
   if (!document.hidden && TAB === 'windows' && typeof loadWindows === 'function'
       && (WIN_GOING || Date.now() < WIN_WATCH_UNTIL || (WIN && WIN.working))) {
-    loadWindows();
+    loadWindows(true);
   }
 });
 
@@ -26716,7 +26718,11 @@ function trHistory(host, r) {
   }
   api('fw-router&fw=' + encodeURIComponent(r.name) + '&hist=' + encodeURIComponent(want))
     .then(function (d) {
-      TR_HIST_DATA = {};
+      /* One kept for each router, not one for all of them (1.10.367): two
+         routers took the place of each other and asked again at every key. */
+      Object.keys(TR_HIST_DATA).forEach(function (k) {
+        if (k.indexOf(r.name + '|') === 0) delete TR_HIST_DATA[k];
+      });
       TR_HIST_DATA[hkey] = {hist: d.hist || [], step: d.step || 300};
       trChart(chart, d.hist || [], d.step || 300);
     })
@@ -27226,7 +27232,7 @@ function drawTrafficChart(d) {
       /* Named after the UTC day it counts, not the local date its first
          moment falls on: west of Greenwich that was the day before. */
       t.textContent = span >= 86400 ? pad2(dd.getUTCDate()) + '-' + pad2(dd.getUTCMonth() + 1)
-        : pad2(dd.getHours()) + ':00';
+        : pad2(dd.getHours()) + ':' + pad2(dd.getMinutes());   /* +5:30 and the like (1.10.367) */
       svg.appendChild(t);
     }
   });

@@ -63,9 +63,12 @@ PORT = 19400 + random.randint(0, 90)
 # of a sign-in with a certificate watched), as 1.10.303 did: an older version
 # writes its sessions without them and never reads them - a session it made
 # is simply not watched. 1.10.355 one more the same way (card_ok: whether
-# the browser's checks ever found the card).
+# the browser's checks ever found the card). 1.10.367 added indexes only
+# (failed/passed asked_as, events level, passed acl+kind, blocked_log country
+# and partial ones over fw_events and win_events): an older version neither
+# needs nor minds them.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': 'fb2c4eaf5c927695a47ff9858cc4bb7636088f01adfbc1f6374a99a5b16e3d1f'}
+               'sha256': '8921adb9b64465a64e813f39bd28103df7ce26f4e00e0010c26bda73010a1ea8'}
 
 
 def ok(what, got, want=True):

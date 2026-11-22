@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.366'
+__version__ = '1.10.367'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -23946,8 +23946,11 @@ class SqliteDialect(Dialect):
         exact, and cheap.
         """
         try:
-            row = db.execute('SELECT MAX(rowid) AS hi, MIN(rowid) AS lo FROM %s'
-                             % self.ident(table)).fetchone()
+            # Each its own seek (1.10.367): asked together, SQLite read the
+            # whole of an index for the two - a third of a second a table.
+            row = db.execute('SELECT (SELECT MAX(rowid) FROM {0}) AS hi, '
+                             '(SELECT MIN(rowid) FROM {0}) AS lo'
+                             .format(self.ident(table))).fetchone()
         except Exception:
             return 0
         if not row or row['hi'] is None:
@@ -29419,6 +29422,20 @@ class Storage(object):
         # kept as long as everything, a small part of a busy day.
         ('fw_kept_verdict_ts', {False: '', True: 'CREATE INDEX IF NOT EXISTS fw_kept_verdict_ts '
                                                  'ON fw_events (verdict, ts) WHERE brief = 0'}),
+        # The firewall's own lines, newest first (1.10.367): on (type, sub,
+        # ts) with no sub asked, every event line ever kept was read and sorted.
+        ('fw_kept_type_ts', {False: '', True: 'CREATE INDEX IF NOT EXISTS fw_kept_type_ts '
+                                              'ON fw_events (type, ts) WHERE brief = 0'}),
+        # The dst-nat rules' own lines, for the DNAT analyzer (1.10.367): on
+        # (area, ts) PostgreSQL read the whole table for them.
+        ('fw_nat_action_ts', {False: '', True: "CREATE INDEX IF NOT EXISTS fw_nat_action_ts "
+                                               "ON fw_events (action, ts) WHERE area = 'nat'"}),
+        # The domain's failures, for its cards (1.10.367): off the index alone,
+        # never a row of the table looked up for each.
+        ('win_bad_ts', {False: '', True: "CREATE INDEX IF NOT EXISTS win_bad_ts ON win_events "
+                                         "(ts, kind, event, is_machine, marks, account, machine, "
+                                         "ip, process, said) WHERE kind IN ('logon-failed', "
+                                         "'kerberos-failed', 'ntlm-failed', 'lockout')"}),
         # The sessions that carried a megabyte or more, by how much: the
         # Traffic list ordered by Bytes, which ordered every session of the
         # window to show the first hundred - 14 s over a week of four
@@ -29520,6 +29537,15 @@ class Storage(object):
                    '(by_logon, ts)'}),
 
         ('passed_acl', 'CREATE INDEX IF NOT EXISTS passed_acl ON passed (acl, ts)'),
+        # The ACL card's summary (1.10.367): every login with an ACL and its
+        # kind, off the index alone rather than a row looked up for each.
+        ('passed_acl_kind_ts',
+         'CREATE INDEX IF NOT EXISTS passed_acl_kind_ts ON passed (acl, kind, ts)'),
+        # An address clicked where OTP's detail is on (1.10.367): `ip = ? OR
+        # asked_as IN (...)` - with nothing over asked_as, the OR read the
+        # whole table.
+        ('failed_asked_as', 'CREATE INDEX IF NOT EXISTS failed_asked_as ON failed (asked_as, ts)'),
+        ('passed_asked_as', 'CREATE INDEX IF NOT EXISTS passed_asked_as ON passed (asked_as, ts)'),
         ('passed_tkey', 'CREATE INDEX IF NOT EXISTS passed_tkey ON passed (tkey, ts)'),
         # "Who has been trying hardest in the last day" is a count per
         # address over a slice of time. With an index on the time alone,
@@ -29602,6 +29628,12 @@ class Storage(object):
         # kind chosen. On (kind) alone every event of that kind was read and
         # sorted to show the newest fifty.
         ('events_kind_ts', 'CREATE INDEX IF NOT EXISTS events_kind_ts ON events (kind, ts)'),
+        # One level, newest first (1.10.367): a rare level read every event
+        # down the index on time.
+        ('events_level_ts', 'CREATE INDEX IF NOT EXISTS events_level_ts ON events (level, ts)'),
+        # The countries of the history page, without a sort of all of it.
+        ('blocked_log_country',
+         'CREATE INDEX IF NOT EXISTS blocked_log_country ON blocked_log (country)'),
         # One person's domain events, asked the way every page asks them:
         # `LOWER(account) = ?`, because an account is written as the
         # controller wrote it and a person is one person however it was
@@ -32117,8 +32149,8 @@ class Storage(object):
                 try:
                     got = self.db.execute(
                         'SELECT val, SUM(n) AS n, MAX(at) AS last FROM fw_roll WHERE span = 3600 '
-                        'AND dim = ? AND at >= ? GROUP BY val', (fw_dim(dim, fw),
-                                                                 int(since // 3600) * 3600)
+                        'AND dim = ? AND at >= ? AND at < ? GROUP BY val',
+                        (fw_dim(dim, fw), int(since // 3600) * 3600, int(time.time()) + 3600)
                     ).fetchall()
                 except sqlite3.Error:
                     continue
@@ -32139,9 +32171,10 @@ class Storage(object):
                'AND val LIKE ?')
         args = [span, fw_dim('natvip', fw), int(since // span) * span,
                 str(ipaddress.ip_address(ip)) + ' %']     # an address: no % or _ in it
-        if until:
-            sql += ' AND at < ?'
-            args.append(float(until))
+        # Bounded on both sides (1.10.367): open-ended, the planner took the
+        # index over (span, dim, val) and read every hour kept.
+        sql += ' AND at < ?'
+        args.append(float(until) if until else time.time() + span)
         try:
             rows = self.db.execute(sql + ' GROUP BY val', args).fetchall()
         except sqlite3.Error:
@@ -32800,8 +32833,8 @@ class Storage(object):
             low = int(since // span) * span
             for dim in self.FW_SUGGEST_DIMS[name]:
                 sql = ('SELECT val, SUM(n) AS n FROM fw_roll WHERE span = ? AND dim = ? '
-                       'AND at >= ?')
-                args = [span, fw_dim(dim, fw), low]
+                       'AND at >= ? AND at < ?')
+                args = [span, fw_dim(dim, fw), low, int(time.time()) + span]
                 if typed:
                     sql += ' AND ' + like_same('val')
                     args.append(like_for(typed))
@@ -42988,20 +43021,20 @@ class Storage(object):
         try:
             row = self.db.execute(
                 'SELECT COUNT(*) AS n FROM failed WHERE ts>=? '
-                "AND COALESCE(kind,'vpn')='vpn' "
+                "AND (kind = 'vpn' OR kind IS NULL) "
                 'AND LOWER(TRIM(COALESCE(device,""))) IN (%s)' % holes,
                 [float(since)] + sorted(watched)).fetchone()
             seen = int((row or {'n': 0})['n'] or 0)
             row = self.db.execute(
                 'SELECT COUNT(*) AS n FROM failed WHERE ts>=? '
-                "AND COALESCE(kind,'vpn')='vpn'", (float(since),)).fetchone()
+                "AND (kind = 'vpn' OR kind IS NULL)", (float(since),)).fetchone()
             any_at_all = int((row or {'n': 0})['n'] or 0)
         except sqlite3.Error:
             return None
         return {'watched': seen, 'all': any_at_all,
                 'names': sorted({str(r['device'] or '').strip() for r in self.db.execute(
                     'SELECT DISTINCT device FROM failed WHERE ts>=? '
-                    "AND COALESCE(kind,'vpn')='vpn' AND COALESCE(device,'')<>'' "
+                    "AND (kind = 'vpn' OR kind IS NULL) AND COALESCE(device,'')<>'' "
                     'LIMIT 40', (float(since),))} - {''})[:12] if not seen else []}
 
     # Which doors there are, and which records are behind each.
@@ -43946,7 +43979,7 @@ class Storage(object):
     # simply not kept for it.
     SEEN_WANTED = ('username', 'device', 'server', 'mac', 'client', 'port', 'ssid',
                    'reason', 'tunnel', 'realm', 'profile', 'policy', 'subtype',
-                   'service', 'tkey', 'groups', 'cmd')
+                   'service', 'tkey', 'groups', 'cmd', 'country')
     # A value longer than this is not kept: an indexed text column is
     # VARCHAR(191) on MariaDB, and a value cut short is a value that matches
     # nothing. A column that ever had one is asked of its table, as before.
@@ -44090,7 +44123,7 @@ class Storage(object):
         try:
             self.set_meta('seen_state', 'reset')
             for key in ('seen_built_failed', 'seen_built_passed', 'seen_build_until',
-                        'seen_long'):
+                        'seen_long', 'seen_more_until', 'seen_more_failed', 'seen_more_passed'):
                 self.drop_meta(key)
             self.empty_table('seen_values')
         except sqlite3.Error as e:
@@ -44110,7 +44143,10 @@ class Storage(object):
         it is complete, and says so."""
         state = str(self.get_meta('seen_state') or '')
         if state == 'ready':
-            return True
+            # A column it was not filled with (1.10.367: the countries): that
+            # one alone filled from the rows, the rest answering meanwhile.
+            new = [c for c in self.SEEN_WANTED if c not in self.seen_filled()]
+            return self.seen_more(new, stopping) if new else True
         until = float(self.get_meta('seen_build_until') or 0)
         if state != 'building' or not until:
             until = time.time()
@@ -44161,7 +44197,11 @@ class Storage(object):
                 self.set_meta(mark_key, repr(low))
                 time.sleep(0.005)
         self.set_meta('seen_state', 'ready')
+        self.set_meta('seen_wanted', ','.join(self.SEEN_WANTED))
+        for key in ('seen_more_until', 'seen_more_failed', 'seen_more_passed'):
+            self.drop_meta(key)
         self._seen_said = (0.0, '')
+        self._seen_filled = (0.0, None)
         log('database: filling the catalogue of values from the rows already there - done '
             'in %s' % human_took(time.time() - began), 'info')
         return True
@@ -44233,7 +44273,78 @@ class Storage(object):
 
     def seen_usable(self, table, col):
         """The catalogue may answer for this column of this table."""
-        return self.seen_ready() and not self.seen_is_long(table, col)
+        return self.seen_ready() and not self.seen_is_long(table, col) \
+            and col in self.seen_filled()
+
+    # What a catalogue filled before the list said which columns it holds
+    # was filled with: everything wanted then (1.10.367).
+    SEEN_BEFORE_367 = ('username', 'device', 'server', 'mac', 'client', 'port', 'ssid',
+                       'reason', 'tunnel', 'realm', 'profile', 'policy', 'subtype',
+                       'service', 'tkey', 'groups', 'cmd')
+
+    def seen_filled(self):
+        """The columns the catalogue was filled with from the rows."""
+        now = time.time()
+        at, got = getattr(self, '_seen_filled', (0.0, None))
+        if got is None or now - at > 5:
+            try:
+                said = str(self.get_meta('seen_wanted') or '')
+            except sqlite3.Error:
+                said = ''
+            got = frozenset(said.split(',')) - {''} if said else frozenset(self.SEEN_BEFORE_367)
+            self._seen_filled = (now, got)
+        return got
+
+    def seen_more(self, cols, stopping=None):
+        """Columns new to the catalogue filled from the rows already there,
+        an hour at a time, where it got to written down (1.10.367). The rows
+        written meanwhile go in as they are written."""
+        until = float(self.get_meta('seen_more_until') or 0)
+        if not until:
+            until = time.time()
+            self.set_meta('seen_more_until', repr(until))
+            log('database: the catalogue of values takes in %s - filling them from the rows '
+                'already there' % ', '.join(cols), 'info')
+        for table in ('failed', 'passed'):
+            have = self.columns_of(table)
+            mine = [c for c in cols if c in have]
+            mark_key = 'seen_more_%s' % table
+            low = float(self.get_meta(mark_key) or 0)
+            if not mine:
+                continue
+            if not low:
+                try:
+                    row = self.db.execute('SELECT MIN(ts) AS lo FROM %s' % table).fetchone()
+                except sqlite3.Error:
+                    row = None
+                low = float(row['lo']) if row is not None and row['lo'] is not None else until
+            picked = ', '.join(self.dialect.ident(c) for c in mine)
+            while low < until:
+                if stopping is not None and stopping.is_set():
+                    return False
+                high = min(until, low + self.SEEN_STRIDE)
+                batch = {}
+                try:
+                    for row in self.db.execute(
+                            'SELECT ts, kind, %s FROM %s WHERE ts >= ? AND ts < ?'
+                            % (picked, table), (low, high)):
+                        one = dict(row)
+                        if table == 'passed':
+                            one['kind'] = one.get('kind') or 'vpn'
+                        self.seen_note(table, one, into=batch)
+                    self.seen_flush(batch)
+                except sqlite3.Error as e:
+                    log('filling the catalogue of values: %s' % str(e)[:120], 'warn')
+                    return False
+                low = high
+                self.set_meta(mark_key, repr(low))
+                time.sleep(0.005)
+        self.set_meta('seen_wanted', ','.join(self.SEEN_WANTED))
+        for key in ('seen_more_until', 'seen_more_failed', 'seen_more_passed'):
+            self.drop_meta(key)
+        self._seen_filled = (0.0, None)
+        log('database: the catalogue of values takes in %s - done' % ', '.join(cols), 'info')
+        return True
 
     def distinct(self, table, column, limit=60, kind=''):
         """What one column actually holds, for a filter to be drawn from.
@@ -51138,8 +51249,9 @@ class Daemon(object):
         try:
             for r in self.store.db.execute(
                     "SELECT dim, val, SUM(n) AS n, SUM(sent + rcvd) AS b FROM fw_roll "
-                    "WHERE span = 3600 AND dim IN ('src', 'dst') AND at >= ? "
-                    'GROUP BY dim, val', (int(time.time() // 3600) * 3600 - 86400,)):
+                    "WHERE span = 3600 AND dim IN ('src', 'dst') AND at >= ? AND at < ? "
+                    'GROUP BY dim, val', (int(time.time() // 3600) * 3600 - 86400,
+                                          int(time.time()) + 3600)):
                 try:
                     v = int(ipaddress.ip_address(str(r['val'])))
                 except ValueError:
@@ -51790,7 +51902,10 @@ class Daemon(object):
             out['vpn_now'] = [
                 {k: c.get(k) for k in ('id', 'fw', 'srcip', 'inner', 'started', 'since_known',
                                        'group')}
-                for c in self.fw_vpn_now()['clients'] if c['user'].lower() == name.lower()]
+                # Never waited for (1.10.367): a person's card stood twelve
+                # seconds behind a week of VPN lines being put together.
+                for c in (self.fw_vpn_now(wait=False).get('clients') or [])
+                if str(c.get('user') or '').lower() == name.lower()]
         except Exception:
             out['vpn_now'] = []
         if not out['by'] and not out['sessions'] and not out['vpn_now']:
@@ -70132,7 +70247,9 @@ class Daemon(object):
             self.store.release()
 
     def seen_due(self):
-        if str(self.store.get_meta('seen_state') or '') != 'ready':
+        # ...and while a column new to it is filled in (1.10.367).
+        if str(self.store.get_meta('seen_state') or '') != 'ready' or \
+                any(c not in self.store.seen_filled() for c in self.store.SEEN_WANTED):
             going = getattr(self, '_seen_building', None)
             if going is None or not going.is_alive():
                 self._seen_building = threading.Thread(
@@ -81240,6 +81357,7 @@ def alerts_now(daemon):
 STORE_LOG_ROOTS = ['/var/log/remote']
 STORE_LOGROTATE = ['/etc/logrotate.conf', '/etc/logrotate.d']
 STORE_CACHE_S = 60
+STORE_DBSTAT = {}                   # the file's pages by table, an hour (1.10.367)
 STORE_WALK_MOST = 20000         # files looked at, at the most, in one scan
 STORE_LAST = {'at': 0.0, 'out': None}
 STORE_LOCK = threading.Lock()
@@ -81783,10 +81901,24 @@ def store_db(store):
             kinds = {str(r['name']): str(r['type']) for r in db.execute(
                 "SELECT name, type FROM sqlite_master WHERE type IN ('table', 'index')")}
             groups = {}
-            try:
-                rows = list(db.execute('SELECT name, SUM(pgsize) AS n FROM dbstat GROUP BY name'))
-            except sqlite3.Error:
-                rows = []
+            # Every page of the file read (1.10.367): seconds on a big one, so
+            # kept an hour, and asked the quicker way where SQLite has it.
+            key = str(getattr(store, 'path', '') or id(store))
+            kept = STORE_DBSTAT.get(key)
+            if kept and time.time() - kept[0] < 3600:
+                rows = kept[1]
+            else:
+                try:
+                    rows = [dict(r) for r in db.execute(
+                        'SELECT name, pgsize AS n FROM dbstat WHERE aggregate = 1')]
+                except sqlite3.Error:
+                    try:
+                        rows = [dict(r) for r in db.execute(
+                            'SELECT name, SUM(pgsize) AS n FROM dbstat GROUP BY name')]
+                    except sqlite3.Error:
+                        rows = []
+                if rows:
+                    STORE_DBSTAT[key] = (time.time(), rows)
             for r in rows:
                 name = str(r['name'])
                 tab = owner.get(name, name)
@@ -81814,8 +81946,8 @@ def store_db(store):
         try:
             if 'ts' not in (store.columns_of(t) or ()):
                 continue
-            r = db.execute('SELECT MIN(ts) AS a, MAX(ts) AS b FROM %s'
-                           % store.dialect.ident(t)).fetchone()
+            r = db.execute('SELECT (SELECT MIN(ts) FROM {0}) AS a, (SELECT MAX(ts) FROM {0}) AS b'
+                           .format(store.dialect.ident(t))).fetchone()
             if r and r['a'] is not None:
                 out['spans'].append({'table': t, 'from': float(r['a']), 'to': float(r['b'])})
         except Exception:                                # noqa: BLE001
