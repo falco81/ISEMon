@@ -372,6 +372,37 @@ working.
 
 ## Version
 
+1.10.371
+
+- **Speed on a very large database, round 5 of 5: the four rounds before
+  reviewed, and every answer compared** (test/fixes371_speed.py). On one
+  large SQLite file (2.6 million rows) 1.10.366 and this version answered 375
+  questions each: no answer is wrong; those that differ are the fixes (a
+  token search in a window of the past), a tie now in one order, or the
+  clock. All of them together: 107 s → 31 s cold, 96 s → 23 s warm.
+  What the review found:
+  - a catalogue of values whose filling 1.10.366 had begun and this version
+    carried on would have been believed for the countries without them -
+    now they are filled in by themselves afterwards;
+  - an index built behind the daemon on the file no longer holds every
+    writer for its whole length (1.10.368 made it so: sign-ins to these pages
+    waited minutes); it is built beside them as before;
+  - the daily statistics gathered only where SQLite can limit them (3.32 and
+    later); before that, the old cheap way;
+  - Refresh on Disk and logs reads the sizes by table again (they were kept
+    an hour even after an optimize);
+  - counting the domain events ahead of time goes straight past empty hours
+    (one event dated years back was every hour between, walked);
+  - the Traffic search box's suggestions of equal weight in one order.
+- **UI**: a popup closed gave its parent the child's title, and the next popup
+  of that title replaced the parent; the find box drew a list still being
+  asked for over the person card; acme's certificate list stayed narrowed by
+  a search after the box was cleared; the name card's "Everything about it"
+  showed counts of all time (and at most eight addresses) above the rows of
+  the window.
+- **CLI**: `isemon --os-update --reboot-after auto` said the restart even when
+  it came and went between two looks.
+
 1.10.370
 
 - **Speed on a very large database, round 4 of 5** (test/fixes370_speed.py):

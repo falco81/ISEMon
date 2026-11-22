@@ -75,8 +75,10 @@ ok('buckets of a day are still counted a day at a time',
    'stride = max(int(self.ROLL_BUILD_STRIDE), int(span))' in src)
 
 print('The upkeep')
-ok('an index built behind the daemon takes the file\'s write lock as every writer does',
-   'with self._write:\n                        apart.execute(text)' in src)
+# (1.10.371 took it back: under the lock every writer, sign-ins too, waited
+# for the whole of a build - see fixes371_speed.)
+ok('an index built behind the daemon beside the writers, as before 1.10.368',
+   'Not under the store\'s write lock (1.10.371' in src)
 ok('the tidying rests as long as a stride held the lock',
    'time.sleep(max(0.01, min(1.0, time.time() - stride_at)))' in src)
 ok('the statistics are gathered (ANALYZE, a thousand rows an index)',

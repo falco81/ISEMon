@@ -9900,7 +9900,10 @@ function modalStill(ticket) {
 var MODAL_STACK = [];
 function modalPark() {
   var body = $('modal-body'), foot = $('modal-foot');
+  /* ...and its English title (1.10.371): left the child's, the next popup of
+     that title was taken for the parent drawing itself again, and replaced it. */
   var frame = {gen: MODAL_GEN, title: $('modal-title').textContent, cls: $('modal-box').className,
+               src: $('modal-title').dataset.src,
                body: document.createDocumentFragment(), foot: document.createDocumentFragment(),
                close: MODAL_CLOSE, from: MODAL_FROM, top: body.scrollTop,
                focus: document.activeElement};
@@ -9919,6 +9922,8 @@ function modalUnpark() {
   clear(body);
   clear(foot);
   $('modal-title').textContent = frame.title;
+  if (frame.src === undefined) delete $('modal-title').dataset.src;
+  else $('modal-title').dataset.src = frame.src;
   $('modal-box').className = frame.cls;
   body.appendChild(frame.body);
   foot.appendChild(frame.foot);
@@ -15120,7 +15125,8 @@ function peekName(r) {
         ? ((bad.rows || [])[0] || {}).ts || ((good.rows || [])[0] || {}).ts || 0
         : r.last;
       body.appendChild(peekFacts([
-        ['Refused in this window', num(tries)],
+        ['Refused in this window', (r.tries === undefined && bad.capped ? 'more than ' : '')
+                                   + num(tries)],
         ['Different addresses', num(places)],
         ['Last tried', last ? shortStamp(last) : 'not in this window'],
         ['Has ever got in', good.total ? num(good.total) + ' time(s)' : 'never']
@@ -43974,6 +43980,9 @@ function lookUpPerson(name) {
   var host = $('findlist');
   if (!host) return;
   FIND.q = '\u0000person:' + name;     // so a redraw does not undo this
+  /* A list still being asked for never drawn over the card (1.10.371). */
+  ++FIND.seq;
+  stopLane('find');
   FIND.rows = [];
   clear(host);
   host.appendChild(el('div', 'center', 'Asking about \u201c' + name + '\u201d\u2026'));
@@ -44169,8 +44178,9 @@ function findNameCard(d) {
     + 'login and every address it has come from.');
   open.onclick = function () {
     closeFind();
-    peekName({username: d.name, tries: d.tries, addresses: (d.addresses || []).length,
-              last: (d.last || {}).ts});
+    /* The window's own counts (1.10.371): these were of all time, and the
+       addresses at most eight, above the rows of the window. */
+    peekName({username: d.name});
   };
   doing.appendChild(open);
   card.appendChild(doing);
@@ -53973,7 +53983,7 @@ function amCertsCard(d) {
   tools.appendChild(pick);
   var clr = el('button', 'btn small', 'Clear');
   clr.type = 'button';
-  clr.onclick = function () { find.value = ''; AM.text = ''; AM.match = null; AM.state = ''; pick.value = ''; amFillCerts(); };
+  clr.onclick = function () { stopLane('acmecerts'); find.value = ''; AM.text = ''; AM.match = null; AM.state = ''; pick.value = ''; amFillCerts(); };
   tools.appendChild(clr);
   var count = el('span', 'muted small am-count');
   count.id = 'am-c-count';
@@ -53996,9 +54006,11 @@ function amCertsCard(d) {
    lines that match them, and what those lines are about. */
 function amCertsAsk() {
   var q = String(AM.text || '').trim();
-  if (!q) { AM.match = null; amFillCerts(); return; }
+  /* An answer to a search the box no longer holds narrows nothing (1.10.371). */
+  if (!q) { stopLane('acmecerts'); AM.match = null; amFillCerts(); return; }
   api('acmelog&days=' + AM.days + '&q=' + encodeURIComponent(q), undefined, {lane: 'acmecerts'})
     .then(function (d) {
+      if (String(AM.text || '').trim() !== q) return;
       AM.match = d.q_error ? [] : (d.match || []);
       amFillCerts();
     }).catch(function () { /* the box says what is wrong with it */ });

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.370'
+__version__ = '1.10.371'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -23702,6 +23702,7 @@ class Dialect(object):
         db.raw.isolation_level = None
         try:
             db.raw.execute('VACUUM')
+            STORE_DBSTAT.clear()             # its sizes by table are others now (1.10.371)
             try:
                 db.raw.execute('PRAGMA analysis_limit=1000')     # 1.10.368: not the whole file
             except Exception:
@@ -28656,12 +28657,13 @@ class Storage(object):
                     apart.execute(text.rstrip(';') + ' ALGORITHM=INPLACE LOCK=NONE')
                     apart.commit()
                 else:
-                    # The file's one write lock, taken the way every writer
-                    # takes it (1.10.368): built beside them, the writers gave
-                    # up waiting after 20 s and held their records back.
-                    with self._write:
-                        apart.execute(text)
-                        apart.commit()
+                    # Not under the store's write lock (1.10.371, as before
+                    # 1.10.368): there every writer - sign-ins to these pages
+                    # among them - waited with no end for minutes of a build;
+                    # beside it they wait 20 s, keep their records and try
+                    # again.
+                    apart.execute(text)
+                    apart.commit()
                 going.done_now('built in %s' % human_took(time.time() - began))
                 log('database: building the index %s over %s behind the daemon - done in %s'
                     % (name, table, human_took(time.time() - began)), 'info')
@@ -32994,7 +32996,7 @@ class Storage(object):
                     sql += ' AND ' + like_same('val')
                     args.append(like_for(typed))
                 try:
-                    for r in self.db.execute(sql + ' GROUP BY val ORDER BY n DESC LIMIT 400',
+                    for r in self.db.execute(sql + ' GROUP BY val ORDER BY n DESC, val LIMIT 400',
                                              args):
                         val = str(r['val'])
                         label = ''
@@ -35058,7 +35060,24 @@ class Storage(object):
                         total += int((row or {'n': 0})['n'] or 0)
                     going.step(1)
                     at += stride
-                    # A breath between days, so a writer that has been
+                    # Straight to the next stride with an event in it
+                    # (1.10.371): one event dated years back was every empty
+                    # hour in between walked, a breath each.
+                    try:
+                        nxt = self.db.execute('SELECT MIN(ts) AS t FROM win_events '
+                                              'WHERE ts >= ?', (float(at),)).fetchone()
+                        nxt = (nxt or {'t': None})['t']
+                    except sqlite3.Error:
+                        nxt = None
+                    if nxt is not None and float(nxt) >= at + stride:
+                        skip = int((self.roll_floor(float(nxt), stride) - at) // stride)
+                        if skip > 0:
+                            with self.db_write() as db:
+                                db.execute('DELETE FROM win_rollup WHERE span = ? AND at >= ? '
+                                           'AND at < ?', (span, at, at + skip * stride))
+                            going.step(skip)
+                            at += skip * stride
+                    # A breath between strides, so a writer that has been
                     # waiting gets the lock before the next one.
                     time.sleep(0.02)
             # Every hour there is was just counted with every dimension.
@@ -44619,7 +44638,8 @@ class Storage(object):
         try:
             self.set_meta('seen_state', 'reset')
             for key in ('seen_built_failed', 'seen_built_passed', 'seen_build_until',
-                        'seen_long', 'seen_more_until', 'seen_more_failed', 'seen_more_passed'):
+                        'seen_long', 'seen_more_until', 'seen_more_failed', 'seen_more_passed',
+                        'seen_build_cols', 'seen_wanted'):
                 self.drop_meta(key)
             self.empty_table('seen_values')
         except sqlite3.Error as e:
@@ -44647,6 +44667,9 @@ class Storage(object):
         if state != 'building' or not until:
             until = time.time()
             self.set_meta('seen_build_until', repr(until))
+            # The columns it is filled with (1.10.371): a filling begun by an
+            # older version and carried on here holds only that version's.
+            self.set_meta('seen_build_cols', ','.join(self.SEEN_WANTED))
             self.set_meta('seen_state', 'building')
             self._seen_said = (0.0, '')
             log('database: filling the catalogue of values from the rows already there '
@@ -44693,8 +44716,10 @@ class Storage(object):
                 self.set_meta(mark_key, repr(low))
                 time.sleep(0.005)
         self.set_meta('seen_state', 'ready')
-        self.set_meta('seen_wanted', ','.join(self.SEEN_WANTED))
-        for key in ('seen_more_until', 'seen_more_failed', 'seen_more_passed'):
+        self.set_meta('seen_wanted', str(self.get_meta('seen_build_cols') or '')
+                      or ','.join(self.SEEN_BEFORE_367))
+        for key in ('seen_more_until', 'seen_more_failed', 'seen_more_passed',
+                    'seen_build_cols'):
             self.drop_meta(key)
         self._seen_said = (0.0, '')
         self._seen_filled = (0.0, None)
@@ -70470,7 +70495,12 @@ class Daemon(object):
                         # ANALYZE itself (1.10.368): `optimize` weighs only the
                         # tables this connection asked about - on this fresh
                         # one, none, so it never gathered anything.
-                        self.store.db.raw.execute('ANALYZE')
+                        if sqlite3.sqlite_version_info >= (3, 32):
+                            self.store.db.raw.execute('ANALYZE')
+                        else:
+                            # No analysis_limit before 3.32: a whole ANALYZE
+                            # under the lock - the old, cheap way there.
+                            self.store.db.raw.execute('PRAGMA optimize')
                 except Exception as e:
                     log('PRAGMA optimize: %s' % str(e)[:100], 'debug')
         if self.store.dialect.name == 'postgres':
@@ -82309,7 +82339,7 @@ def store_disks(store, logs, parts_extra):
 STORE_PART_SPLIT = re.compile(r'_p\d{8}(_c(\d+|x))?$')
 
 
-def store_db(store):
+def store_db(store, fresh=False):
     """Inside the database: each table (a table split by day as one, by its
     kind of day), its data, indexes and the rest, live and dead rows; the
     biggest indexes and whether anything ever used them; how far back the
@@ -82432,7 +82462,7 @@ def store_db(store):
             # kept an hour, and asked the quicker way where SQLite has it.
             key = str(getattr(store, 'path', '') or id(store))
             kept = STORE_DBSTAT.get(key)
-            if kept and time.time() - kept[0] < 3600:
+            if kept and not fresh and time.time() - kept[0] < 3600:
                 rows = kept[1]
             else:
                 try:
@@ -82985,7 +83015,7 @@ def storage_health(store, fresh=False):
                     {f['path']: [round(now), f['live_bytes']] for f in logs}))
             except Exception:                            # noqa: BLE001
                 pass
-        dbi = store_db(store)
+        dbi = store_db(store, fresh=fresh)
         dumps_b, dumps_n = store_dir_bytes(DUMP_DIR)
         backs_b, backs_n = store_dir_bytes(BACKUP_DIR)
         extra = [('dumps of the database', 'dumps', DUMP_DIR, dumps_b or 0),
@@ -96687,6 +96717,12 @@ def cmd_os_update(args, pal, store):
             # Over: done or failed.
             if as_json(args, v):
                 return 0 if plan.get('state') == 'done' else 1
+            # The restart said though it came and went between two looks
+            # (1.10.371): on a busy machine the second and a half passed it.
+            if (st == 'rebooting' or row.get('rebooted')) and last != 'rebooting' and not quiet:
+                pal.note('  %s' % (row.get('said') if st == 'rebooting' and row.get('said')
+                                   else 'updated - restarting, as it needs'))
+                last = 'rebooting'
             if plan.get('state') == 'done':
                 print('  ' + upgrade_bar(100) + '  done')
                 pal.good(row.get('said') or 'updated')
