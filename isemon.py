@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.368'
+__version__ = '1.10.369'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -9149,7 +9149,22 @@ def win_worth_keeping(facts):
 # what the event calls it, which is not always the same word: an event's
 # `by` is the page's `by_who`.
 ROLL_DIMS = (('kind', 'kind'), ('account', 'account'), ('machine', 'machine'),
-             ('ip', 'ip'), ('said', 'said'), ('by_who', 'by'), ('object', 'object'))
+             ('ip', 'ip'), ('said', 'said'), ('by_who', 'by'), ('object', 'object'),
+             ('event', 'event'), ('server', 'server'))
+
+# What a counting made before 1.10.369 holds: everything above but the event
+# number and the controller, which the filters over the list of events are
+# drawn from (`win_shape`). A counting says which it holds (`roll_held`), and
+# the two new ones are filled in for the hours counted before them behind
+# everything else (`roll_more`). Until they are, nothing reads them and no
+# check compares them - a counting that is right about what it holds is never
+# put aside for what it was never asked to hold.
+ROLL_DIMS_BEFORE_369 = ('kind', 'account', 'machine', 'ip', 'said', 'by_who', 'object')
+ROLL_DIMS_NEW_369 = ('event', 'server')
+
+# The dimensions every event has a value in: `kind` falls back to 'other',
+# `event` is a NOT NULL number (nought where none was said).
+ROLL_NEVER_EMPTY = ('kind', 'event')
 
 # How long a value may be in a bucket. Wider than any name, machine, address
 # or reason there is; an object path longer than this is cut, and a cut path
@@ -9165,7 +9180,7 @@ ROLL_WIDE = 190
 # two ways of counting would have parted company and the page would have
 # gone back to the slow way for ever with nothing to explain it.
 ROLL_WIDTHS = {'kind': 24, 'account': 180, 'machine': 120, 'ip': 60,
-               'said': 160, 'by': 180, 'object': 300}
+               'said': 160, 'by': 180, 'object': 300, 'server': 120}
 
 # How long a bucket is, in seconds. The hours are what the events are counted
 # into as they arrive; the days are made out of the hours afterwards, so that
@@ -9219,7 +9234,10 @@ def roll_deltas(events, span=3600):
             # stored column is not, the engine's own counting is not, and a
             # bucket that quietly differed from either of those would put the
             # whole of this aside as untrustworthy.
+            # The event number as its digits, nought included: the column
+            # is NOT NULL and the table's own tally counts the noughts too.
             val = (kind if dim == 'kind'
+                   else str(int(facts.get(field) or 0)) if dim == 'event'
                    else str(facts.get(field) or '')[:ROLL_WIDTHS.get(field, ROLL_WIDE)]
                    [:ROLL_WIDE])
             if not val:
@@ -34552,7 +34570,15 @@ class Storage(object):
         are small - twenty kinds, forty event numbers, a handful of
         controllers - so what comes back is a few hundred rows however many
         million went into it.
+
+        Out of the buckets where they are proved AND hold the event numbers
+        and controllers for every hour (1.10.369, `roll_held`), and the window
+        is whole hours; out of the events themselves otherwise.
         """
+        if (self.roll_ready() and self.roll_holds(*ROLL_DIMS_NEW_369)
+                and float(since) == self.roll_floor(since)
+                and (not until or float(until) == self.roll_floor(until))):
+            return self.roll_shape(since, machines, kinds, until)
         sql = ("SELECT COALESCE(kind,'other') AS kind, event, "
                "COALESCE(server,'') AS server, COUNT(*) AS n "
                'FROM win_events WHERE ts >= ?')
@@ -34580,6 +34606,37 @@ class Storage(object):
             out['events'][event] = out['events'].get(event, 0) + n
             if r['server']:
                 out['servers'].add(str(r['server']))
+        return out
+
+    def roll_shape(self, since, machines=None, kinds=(), until=0):
+        """`win_shape`, out of the buckets: kind, event number and controller
+        are each a dimension, and the three tallies are their sums."""
+        sql = ('SELECT dim, val, kind, SUM(n) AS n FROM win_rollup WHERE span = ? '
+               "AND dim IN ('kind', 'event', 'server') AND at >= ?")
+        args = [ROLL_HOUR, self.roll_floor(since)]
+        if until:
+            sql += ' AND at < ?'
+            args.append(self.roll_floor(until))
+        if machines is False:
+            sql += ' AND mach = 0'
+        out = {'counts': {}, 'events': {}, 'servers': set()}
+        try:
+            rows = self.db.execute(sql + ' GROUP BY dim, val, kind', args).fetchall()
+        except sqlite3.Error:
+            return out
+        want = set(kinds or ())
+        for r in rows:
+            dim, val, n = str(r['dim']), str(r['val']), int(r['n'] or 0)
+            if n <= 0:
+                continue
+            if dim == 'kind':
+                out['counts'][val] = out['counts'].get(val, 0) + n
+            elif want and str(r['kind']) not in want:
+                continue
+            elif dim == 'event':
+                out['events'][int(val)] = out['events'].get(int(val), 0) + n
+            else:
+                out['servers'].add(val)
         return out
 
     def win_counts(self, since, machines=None):
@@ -34615,7 +34672,176 @@ class Storage(object):
         return one
 
     ROLL_READ = ('SELECT ident, ts, kind, account, is_machine, machine, ip, said, '
-                 'by_who, object, mark FROM win_events')
+                 'by_who, object, mark, event, server FROM win_events')
+
+    # ---- which dimensions the counting holds (1.10.369) ----------------------
+    ROLL_HELD = 'win_roll_dims'
+
+    def roll_held(self):
+        """The dimensions the counting holds for EVERY hour it has counted.
+
+        Written down when a counting is made from nothing (`roll_build_now`),
+        when it is thrown away (`roll_forget`) - an empty counting holds
+        everything, since every event written after that writes them all -
+        and when the dimensions a version added are filled in for the hours
+        before it (`roll_more`). Not written down at all: a counting made
+        before 1.10.369, which holds the seven it had then.
+
+        Only ever grows, so an answer a few seconds old can only be too
+        modest: the page asks the events, and the check leaves out what it
+        could have read back. Never the other way round.
+        """
+        now = time.time()
+        at, got = getattr(self, '_roll_held', (0.0, None))
+        if got is None or now - at > 5:
+            try:
+                said = str(self.get_meta(self.ROLL_HELD) or '')
+            except sqlite3.Error:
+                said = ''
+            names = [d for d in said.split(',') if d] if said else list(ROLL_DIMS_BEFORE_369)
+            known = [dim for dim, _f in ROLL_DIMS]
+            got = tuple(d for d in known if d in names)
+            self._roll_held = (now, got)
+        return got
+
+    def roll_holds(self, *dims):
+        return all(d in self.roll_held() for d in dims)
+
+    def roll_held_now(self, db=None):
+        """Write down that the counting holds every dimension there is -
+        through `db` where given, inside the transaction that made it so."""
+        value = ','.join(dim for dim, _f in ROLL_DIMS)
+        sql = ('INSERT INTO meta (key, value) VALUES (?,?) '
+               'ON CONFLICT(key) DO UPDATE SET value=excluded.value')
+        if db is not None:
+            db.execute(sql, (self.ROLL_HELD, value))
+            memo = getattr(self._local, 'memo', None)
+            if memo:
+                memo.pop(('meta', self.ROLL_HELD), None)
+        else:
+            self.set_meta(self.ROLL_HELD, value)
+        for key in ('win_roll_more_at', 'win_roll_more_until'):
+            if db is not None:
+                db.execute('DELETE FROM meta WHERE key=?', (key,))
+            else:
+                self.drop_meta(key)
+        self._roll_held = (0.0, None)
+
+    def roll_dims_held(self):
+        """`ROLL_DIMS`, only those the counting holds: what is read back."""
+        held = self.roll_held()
+        return [(dim, field) for dim, field in ROLL_DIMS if dim in held]
+
+    # How long `roll_more` rests between two hours, so a writer waiting for
+    # the lock gets it first.
+    ROLL_MORE_REST_S = 0.02
+
+    def roll_more(self, stopping=None):
+        """The dimensions this version added, filled in for every hour
+        counted before it, an hour at a time (1.10.369).
+
+        Each hour is counted again from its rows - those dimensions only -
+        inside one write, with the hour's rows read under the same lock every
+        writer takes. So it is exact whenever it runs: an event written before
+        that hour's turn is in the rows it reads, one written after is added
+        to the bucket by its writer (`roll_add`, which writes every dimension
+        from the moment this version runs). Once, either way. Where it got to
+        is written down in the same transaction, so a restart goes on from
+        there; and nothing reads or checks the new dimensions until the last
+        hour is done and `roll_held` says so.
+        """
+        new = [d for d in ROLL_DIMS_NEW_369 if d not in self.roll_held()]
+        if not new:
+            return True
+        until = float(self.get_meta('win_roll_more_until') or 0)
+        # Past the hour this process began writing in: every hour from there
+        # on was written by a version that writes these dimensions.
+        upto = self.roll_floor(time.time()) + ROLL_HOUR
+        if until < upto:
+            if not until:
+                log('the counted answers for the Domain page take in %s - filling '
+                    'them from the events already counted' % ', '.join(new), 'info')
+            until = upto
+            self.set_meta('win_roll_more_until', repr(until))
+        low = float(self.get_meta('win_roll_more_at') or 0)
+        marks = ','.join('?' * len(new))
+        hours = 0
+        going = Going('counting the event numbers and controllers ahead of time', 0,
+                      name='db-roll-more')
+        try:
+            while True:
+                if (stopping is not None and stopping.is_set()) or not going.wanted():
+                    going.done_now('put down')
+                    return False
+                done = False
+                with self.db_write() as db:
+                    # Asked again inside the write: a counting thrown away or
+                    # made again from nothing meanwhile holds them already.
+                    row = db.execute('SELECT value FROM meta WHERE key = ?',
+                                     (self.ROLL_HELD,)).fetchone()
+                    if row is not None and all(d in str(row['value']).split(',')
+                                               for d in new):
+                        self._roll_held = (0.0, None)
+                        return True
+                    row = db.execute('SELECT MIN(ts) AS t FROM win_events WHERE ts >= ? '
+                                     'AND ts < ?', (float(low), float(until))).fetchone()
+                    first = row['t'] if row is not None else None
+                    if first is None:
+                        # No more rows: any bucket of these between here and
+                        # the end counts nothing there is.
+                        db.execute('DELETE FROM win_rollup WHERE span = ? AND at >= ? '
+                                   'AND at < ? AND dim IN (%s)' % marks,
+                                   [ROLL_HOUR, int(low), int(until)] + new)
+                        done = True
+                    else:
+                        at = self.roll_floor(first)
+                        db.execute('DELETE FROM win_rollup WHERE span = ? AND at >= ? '
+                                   'AND at < ? AND dim IN (%s)' % marks,
+                                   [ROLL_HOUR, int(low), at + ROLL_HOUR] + new)
+                        for dim in new:
+                            db.execute(*self.roll_build_sql(dim, ROLL_HOUR, at, at + ROLL_HOUR))
+                        low = at + ROLL_HOUR
+                        db.execute('INSERT INTO meta (key, value) VALUES (?,?) '
+                                   'ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+                                   ('win_roll_more_at', repr(float(low))))
+                        hours += 1
+                if done:
+                    break
+                going.step(1)
+                time.sleep(self.ROLL_MORE_REST_S)
+            # ...and the days already made out of those hours, made again for
+            # these dimensions out of the hours that now hold them.
+            try:
+                days = [int(r['at']) for r in self.db.execute(
+                    'SELECT DISTINCT at FROM win_rollup WHERE span = ?', (ROLL_DAY,))]
+            except sqlite3.Error:
+                days = []
+            for day in sorted(days):
+                if stopping is not None and stopping.is_set():
+                    return False
+                with self.db_write() as db:
+                    db.execute('DELETE FROM win_rollup WHERE span = ? AND at = ? AND dim IN '
+                               '(%s)' % marks, [ROLL_DAY, day] + new)
+                    db.execute(
+                        'INSERT INTO win_rollup (span, at, dim, val, kind, mach, quiet, '
+                        'told, n, newest) SELECT ?, ?, dim, val, kind, mach, quiet, '
+                        'told, SUM(n), MAX(newest) FROM win_rollup WHERE span = ? '
+                        'AND at >= ? AND at < ? AND dim IN (%s) '
+                        'GROUP BY dim, val, kind, mach, quiet, told' % marks,
+                        [ROLL_DAY, day, ROLL_HOUR, day, day + ROLL_DAY] + new)
+                time.sleep(self.ROLL_MORE_REST_S)
+            with self.db_write() as db:
+                self.roll_held_now(db)
+            going.done_now('%s hour(s)' % num_words(hours))
+            log('the counted answers for the Domain page take in %s - done'
+                % ', '.join(new), 'info')
+            return True
+        except Exception as e:
+            going.done_now('stopped')
+            log('filling the counted answers: %s' % str(e)[:200], 'warn')
+            return False
+        finally:
+            going._off()
 
     def roll_build(self, said='', span=ROLL_HOUR):
         """Count every event there is, from nothing - IN THE ENGINE.
@@ -34691,6 +34917,7 @@ class Storage(object):
         if not first:
             with self.db_write() as db:
                 db.execute('DELETE FROM win_rollup WHERE span = ?', (span,))
+                self.roll_held_now(db)
             return 0
         # Never less than a bucket: a day's buckets counted a day at a time.
         stride = max(int(self.ROLL_BUILD_STRIDE), int(span))
@@ -34717,6 +34944,8 @@ class Storage(object):
                     # A breath between days, so a writer that has been
                     # waiting gets the lock before the next one.
                     time.sleep(0.02)
+            # Every hour there is was just counted with every dimension.
+            self.roll_held_now()
             going.done_now('%s event(s) into %s bucket(s)'
                            % (num_words(total), num_words(self.rows_in('win_rollup'))))
             return total
@@ -34737,7 +34966,10 @@ class Storage(object):
         col = self.dialect.ident(dim)
         # The value, cut where the row was cut. The column is already no
         # wider than `ROLL_WIDTHS` says, so this only ever shortens `object`.
+        # The event number is a number: as its digits, the way `roll_deltas`
+        # writes it - `||` on SQLite and PostgreSQL, CONCAT on MariaDB.
         val = ("COALESCE(kind,'other')" if dim == 'kind'
+               else self.dialect.concat("''", 'COALESCE(%s,0)' % col) if dim == 'event'
                else 'SUBSTR(%s, 1, %d)' % (col, ROLL_WIDE))
         kind = "COALESCE(kind,'other')"
         mach = 'CASE WHEN COALESCE(is_machine,0) <> 0 THEN 1 ELSE 0 END'
@@ -34747,7 +34979,7 @@ class Storage(object):
                 % win_telling_bits())
         # An empty value is not a bucket: `roll_deltas` skips it, so this
         # skips it too. `kind` is never empty - it falls back to 'other'.
-        where = '' if dim == 'kind' else "COALESCE(%s,'') <> ''" % col
+        where = '' if dim in ROLL_NEVER_EMPTY else "COALESCE(%s,'') <> ''" % col
         return [val, kind, mach, quiet, told], where
 
     def roll_build_sql(self, dim, span=ROLL_HOUR, since=None, until=None):
@@ -34791,7 +35023,10 @@ class Storage(object):
         are meant to be none.
         """
         halves, args = [], []
-        for dim, _field in ROLL_DIMS:
+        # Only what the counting holds, on both sides (1.10.369): the
+        # dimensions still being filled in are in some hours and not others.
+        held = self.roll_dims_held()
+        for dim, _field in held:
             cols, where = self.roll_columns(dim)
             # The dimension's name is written INTO the statement rather than
             # passed: a parameter with no column beside it leaves PostgreSQL
@@ -34805,7 +35040,8 @@ class Storage(object):
                                            ', '.join(cols))))
             args += [float(at), float(at + span)]
         halves.append('SELECT dim, val, kind, mach, quiet, told, 0, n FROM win_rollup '
-                      'WHERE span = ? AND at = ?')
+                      'WHERE span = ? AND at = ? AND dim IN (%s)'
+                      % ', '.join("'%s'" % dim for dim, _f in held))
         args += [span, int(at)]
         sql = ('SELECT dim, val, kind, mach, quiet, told, SUM(saw) AS saw, '
                # Not "both": that is a word of PostgreSQL's own (TRIM(BOTH ...)),
@@ -34904,6 +35140,10 @@ class Storage(object):
             with self.db_write() as db:
                 if everything:
                     db.execute('DELETE FROM win_rollup')
+                    # Empty, it holds every dimension: every event from here
+                    # on is written with all of them, and the counting from
+                    # nothing that follows counts all of them.
+                    self.roll_held_now(db)
                     return
                 if kinds:
                     # Only the ones a switch could have taken: a row this
@@ -35003,9 +35243,9 @@ class Storage(object):
         # name the event calls it by. An event's `by` is this table's
         # `by_who`, and asking `win_events` about a column called `by` is a
         # question no engine can answer.
-        dims = [dim for dim, _field in ROLL_DIMS]
+        dims = [dim for dim, _field in self.roll_dims_held()]
         counted = ', '.join(
-            ('COUNT(*) AS c%d' % i) if dim == 'kind' else
+            ('COUNT(*) AS c%d' % i) if dim in ROLL_NEVER_EMPTY else
             ("COALESCE(SUM(CASE WHEN COALESCE(%s,'') <> '' THEN 1 ELSE 0 END), 0) AS c%d"
              % (self.dialect.ident(dim), i))
             for i, dim in enumerate(dims))
@@ -35162,10 +35402,13 @@ class Storage(object):
                 'WHERE span = ? AND at = ?', (span, at)).fetchall()
         except sqlite3.Error as e:
             return [{'why': 'the database would not answer: %s' % str(e)[:120]}]
-        truth = roll_deltas([self.roll_as_event(r) for r in rows], step)
+        held = self.roll_held()
+        truth = {key: got for key, got in
+                 roll_deltas([self.roll_as_event(r) for r in rows], step).items()
+                 if key[1] in held}
         mine = {(int(r['at']) if 'at' in dict(r) else at, str(r['dim']), str(r['val']),
                  str(r['kind']), int(r['mach']), int(r['quiet']), int(r['told'])):
-                int(r['n'] or 0) for r in kept}
+                int(r['n'] or 0) for r in kept if str(r['dim']) in held}
         said = []
         for key, (n, _newest) in truth.items():
             # No bucket at all counts as a bucket saying none, which is what
@@ -35250,6 +35493,19 @@ class Storage(object):
         is shown a wrong number and nobody has to notice anything: the
         program noticed.
         """
+        # Only the dimensions 1.10.369 added disagree - an older version ran
+        # in between (a downgrade and back) and wrote events without them:
+        # those two are filled in again from the rows, the rest stays
+        # believed, and the page asks the events for them meanwhile.
+        if said and all(str(one.get('dim') or '') in ROLL_DIMS_NEW_369 for one in said) \
+                and self.roll_holds(*ROLL_DIMS_NEW_369):
+            self.set_meta(self.ROLL_HELD, ','.join(ROLL_DIMS_BEFORE_369))
+            for key in ('win_roll_more_at', 'win_roll_more_until'):
+                self.drop_meta(key)
+            self._roll_held = (0.0, None)
+            log('the counted event numbers and controllers of the domain page disagree '
+                'with the events - they are counted again from the rows', 'warn')
+            return self.roll_state()
         first = said[0] if said else {}
         why = ('%s: the rows say %s and the counting says %s'
                % (str(first.get('dim') or first.get('why') or where),
@@ -40880,7 +41136,8 @@ class Storage(object):
             for piece, piece_args in ListQuery(
                     table, '', ident=self.dialect.ident, columns=self.columns_of(table),
                     door=kind, concat=self.dialect.concat,
-                    asked_sessions=self.otp_asked_sessions).word_beside(text):
+                    asked_sessions=lambda t, i, a: self.otp_asked_sessions(
+                        t, i, a, since=since, until=until)).word_beside(text):
                 where.append(piece)
                 more += piece_args
             # ...and what the addresses themselves are called. Nothing in any
@@ -42251,7 +42508,7 @@ class Storage(object):
 
     ASKED_SEARCH_MOST = 3000
 
-    def otp_asked_sessions(self, table, inner, args):
+    def otp_asked_sessions(self, table, inner, args, since=0, until=0):
         """The token attempts whose RADIUS packet - the one the page shows
         beside each of them - matches `inner` (a test of `otp_asked oa`), as
         their sessions.
@@ -42266,10 +42523,18 @@ class Storage(object):
         if table not in ('failed', 'passed'):
             return []
         try:
+            span, more = '', []
+            if since:
+                span += ' AND oa.ts >= ?'
+                more.append(float(since) - self.ASKED_ID_WITHIN_S)
+            if until:
+                span += ' AND oa.ts <= ?'
+                more.append(float(until) + self.ASKED_ID_WITHIN_S)
             packets = self.db.execute(
-                "SELECT oa.ident AS ident, oa.ts AS ts FROM otp_asked oa "
-                "WHERE oa.kind = 'ask' AND %s ORDER BY oa.ts DESC LIMIT %d"
-                % (inner, self.ASKED_SEARCH_MOST), list(args)).fetchall()
+                "SELECT oa.ident AS ident, oa.ts AS ts, oa.username AS username, "
+                "oa.rid AS rid FROM otp_asked oa "
+                "WHERE oa.kind = 'ask' AND %s%s ORDER BY oa.ts DESC LIMIT %d"
+                % (inner, span, self.ASKED_SEARCH_MOST), list(args) + more).fetchall()
         except sqlite3.Error as e:
             log('the token packets: %s' % str(e)[:160], 'debug')
             return []
@@ -42284,10 +42549,19 @@ class Storage(object):
         try:
             rows = [dict(r) for r in self.db.execute(
                 'SELECT %s FROM %s WHERE kind = ? AND ts >= ? AND ts <= ? ORDER BY ts DESC'
-                % (', '.join(cols), table), ('otp', low, high))]
+                % (', '.join(cols), table),
+                ('otp', max(low, float(since or 0)), min(high, float(until or high))))]
         except sqlite3.Error as e:
             log('the token attempts: %s' % str(e)[:160], 'debug')
             return []
+        names = {otp_account(p['username']).lower() for p in packets if p['username']}
+        rids = {str(p['rid']) for p in packets if p['rid']}
+        nameless = any(not p['username'] for p in packets)
+        rows = [r for r in rows
+                if otp_account(r.get('username')).lower() in names
+                or (r.get('tkey') and otp_account(r.get('tkey')).lower() in names)
+                or (r.get('asked_as') and str(r['asked_as']) in rids)
+                or (nameless and r.get('asked_as'))]
         out = []
         # A page at a time, newest first, as the list asks for them - which
         # is also what keeps the matching from weighing every packet of a
@@ -70623,6 +70897,14 @@ class Daemon(object):
                         self.store.release()
                 threading.Thread(target=build, name='db-roll', daemon=True).start()
             return
+        # A counting made before this version: the dimensions it added are
+        # filled in for the hours before it, behind everything (1.10.369).
+        if not store.roll_holds(*ROLL_DIMS_NEW_369):
+            going = getattr(self, '_roll_more', None)
+            if going is None or not going.is_alive():
+                self._roll_more = threading.Thread(
+                    target=self._roll_more_quietly, name='db-roll-more', daemon=True)
+                self._roll_more.start()
         now = time.time()
         if now - float(store.get_meta('win_roll_seen') or 0) < self.ROLL_WATCH_S:
             return
@@ -70666,6 +70948,13 @@ class Daemon(object):
         # One hour, so it may find a fault and may not clear one: see
         # `roll_proved`.
         store.roll_proved(wrong, 'the hour just gone')
+
+    def _roll_more_quietly(self):
+        try:
+            if self.store.roll_more(self.stopping):
+                self.bump()
+        except Exception as e:
+            log('filling the counted answers: %s' % str(e)[:160], 'warn')
 
     def _roll_build_now(self, said=''):
         """Count everything there is, then prove it before believing it."""
@@ -88670,7 +88959,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         """Whoever the web server says was asking, for the log."""
         return re.sub(r'[^0-9a-fA-F:.]', '', str(self.headers.get('X-Isemon-Client') or ''))[:60]
 
-    def list_query(self, listname, text, door=''):
+    def list_query(self, listname, text, door='', since=0, until=0):
         """What was typed into one list's search box, read for fields: the
         words to search as before, the piece of statement the fields make,
         and what is wrong with it if anything - said back to the page rather
@@ -88687,7 +88976,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                             vlan_names=(store.vlan_names() if table in ('failed', 'passed')
                                         and 'vlan' in str(text or '').lower() else None),
                             door_kinds=store.kinds_of, acl_names=store.acl_names,
-                            asked_sessions=store.otp_asked_sessions)
+                            asked_sessions=lambda t, i, a: store.otp_asked_sessions(
+                                t, i, a, since=since, until=until))
         except (ListQueryError, FwQueryError) as e:
             return '', None, str(e)
         except (TypeError, IndexError, AttributeError):
@@ -90993,13 +91283,14 @@ class ApiHandler(BaseHTTPRequestHandler):
             if not self.need_login():
                 return None
             table = 'failed' if path.endswith('failed') else 'passed'
-            words, where, q_error = self.list_query(table, one('q'), one('kind') or '')
             # `hours=0` is how the page says "all of it", and it used to be
             # read as "the last nought hours" - a window from now to now,
             # which matches nothing at all.
             since = number('from', 0, 0) or (
                 (time.time() - number('hours', 0, 0, 8760) * 3600)
                 if number('hours', 0, 0, 8760) else 0)
+            words, where, q_error = self.list_query(table, one('q'), one('kind') or '',
+                                                    since=since, until=number('to', 0, 0))
             asked = dict(limit=number('limit', 100, 1, 1000), offset=number('offset', 0, 0, Storage.COUNT_CAP),
                          since=since,
                          until=number('to', 0, 0),

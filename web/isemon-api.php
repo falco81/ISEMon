@@ -184,6 +184,7 @@ function isemon_call(string $path, string $method = 'GET', ?array $payload = nul
             $info = stream_get_meta_data($sock);
             if (!empty($info['timed_out'])) {
                 @fclose($sock);
+                $GLOBALS['isemon_timed_out'] = true;    // answering, only not yet (1.10.369)
                 return [0, ''];
             }
             break;
@@ -310,6 +311,12 @@ function isemon_relay(string $path, string $method = 'GET', ?array $payload = nu
         $up = isemon_upgrading();
         if ($up !== null && $up['state'] === 'running') {
             echo json_encode(['ok' => false, 'upgrading' => $up, 'error' => 'being upgraded']);
+            return;
+        }
+        if (!empty($GLOBALS['isemon_timed_out'])) {
+            echo json_encode(['ok' => false, 'error' =>
+                'it is taking longer than the page waits - the daemon goes on with it; '
+                . 'look again in a while (Events says when it is done)']);
             return;
         }
         echo json_encode(['ok' => false, 'error' =>
@@ -577,6 +584,7 @@ function isemon_send_file(string $path, string $file, float $timeout = 900.0): a
             $info = stream_get_meta_data($sock);
             if (!empty($info['timed_out'])) {
                 @fclose($sock);
+                $GLOBALS['isemon_timed_out'] = true;    // answering, only not yet (1.10.369)
                 return [0, ''];
             }
             break;

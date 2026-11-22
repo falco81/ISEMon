@@ -372,6 +372,28 @@ working.
 
 ## Version
 
+1.10.369
+
+- **Speed on a very large database, round 3 of 5** (test/fixes369_speed.py):
+  - *the Domain page's choices* (which event numbers and controllers there
+    were in the window) are counted ahead of time with the rest - 1-1.4 s →
+    under 10 ms at 7 days on PostgreSQL. An existing counting takes the two
+    new dimensions in from the events by itself, an hour at a time, the rest
+    of it answering meanwhile; until they are complete the page asks the
+    events as before, and the hourly check never holds the partial ones
+    against it. Should an older version run in between (a downgrade and
+    back), the two are counted again by themselves instead of the whole
+    counting being put aside;
+  - *a token (OTP) search* read every packet ever kept and matched them in
+    Python - 13-20 s for a search by machine, 4-5 s for a word - and in a
+    window of the past found nothing at all (the newest packets crowded it
+    out). Now bounded by the window: 0.2-1.2 s, and the right rows;
+  - *the long database buttons* (Check, Optimize, a copy, a restore of a kept
+    copy, a prune, a database server tried) are waited for as long as nginx
+    waits; cut at 90 s they were said to have failed ("is isemon.service
+    running?") while the work went on. One that takes longer still says so,
+    and that the daemon goes on with it.
+
 1.10.368
 
 - **Speed on a very large database, round 2 of 5** (test/fixes368_speed.py):

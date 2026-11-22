@@ -1132,7 +1132,15 @@ if (isset($_GET['api'])) {
         /* A sync to the router or a fetch of the country database is a job:
            it answers at once with an id and the page watches it. Nothing here
            waits minutes for anything. */
-        isemon_relay($writes[$what], 'POST', sent_body(), 90.0);
+        /* ...but a few are done while the page waits (1.10.369): a check, an
+           optimize, a copy or a restore of a database of many gigabytes, a
+           prune of millions of rows, a server that answers slowly. Cut at
+           90 s, they were said to have failed - "is isemon.service running?" -
+           while the work went on. As long as nginx waits for them. */
+        $long = ['db-check', 'db-optimize', 'db-backup', 'db-restore-kept', 'db-prune',
+                 'db-engine'];
+        isemon_relay($writes[$what], 'POST', sent_body(),
+                     in_array($what, $long, true) ? 880.0 : 90.0);
         exit;
     }
 
