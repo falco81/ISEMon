@@ -68,8 +68,9 @@ PORT = 19400 + random.randint(0, 90)
 # and partial ones over fw_events and win_events): an older version neither
 # needs nor minds them. 1.10.368 one more (win_change_ts) and one fewer
 # (win_mark_ts, which nothing used; an older version builds it again).
+# 1.10.370: on MariaDB two of them whole, as it has no partial indexes.
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': 'c122a56a9588c48f3883f615d03fe9a72eaaf847aafdce322decf6efd536f813'}
+               'sha256': 'e22a825dbda1e5d327e0dfc932333e9c455af66a89bf3989c060cfbd02ce6961'}
 
 
 def ok(what, got, want=True):

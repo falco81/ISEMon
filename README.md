@@ -372,6 +372,24 @@ working.
 
 ## Version
 
+1.10.370
+
+- **Speed on a very large database, round 4 of 5** (test/fixes370_speed.py):
+  - *the daemon's own work*: a Windows event's fields found in one pass of
+    one regex (the Windows log is read 45% faster); the RouterOS lines'
+    patterns compiled once (+15%); the year of a syslog moment worked out
+    once per moment; the Traffic overview's lists read straight from the
+    driver (35% quicker to put together); a row read by its name no longer
+    passes through Python;
+  - *PostgreSQL*: the Domain page's three distinct counts of a card in one
+    walk (GROUPING SETS) - `/api/windows` 7 days 4.5 → 3 s; a name looked up
+    by equality is never answered by the word index (pg_trgm answers `=`
+    too, and took it: 60 ms instead of 3 ms a lookup); a common word in the
+    find box read the newest day first where the word index is there
+    (2.5 → 1 s);
+  - *MariaDB*, which has no partial indexes: `(verdict, ts)` and `(type, ts)`
+    whole - every ban pass and every verdict search read the whole window.
+
 1.10.369
 
 - **Speed on a very large database, round 3 of 5** (test/fixes369_speed.py):

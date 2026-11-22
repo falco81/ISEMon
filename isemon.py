@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.369'
+__version__ = '1.10.370'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -5897,16 +5897,25 @@ def otp_when(mon, day, clock, now=None, zone=None):
     now = float(now if now is not None else time.time())
     zone = reading_zone() if zone is None else (zone or None)
     here = datetime.fromtimestamp(now, zone)
-    # Next year first: a line from the first seconds of January read in the
-    # last seconds of December, a clock a little ahead of this one, was filed
-    # a whole year back. (1.10.159)
-    for year in (here.year + 1, here.year, here.year - 1):
-        try:
-            when = datetime(year, month, int(day),
-                            *[int(p) for p in clock.split(':')], tzinfo=zone)
-        except ValueError:
-            continue
-        got = when.timestamp()
+    key = (mon, day, clock, zone, here.year)
+    tried = _OTP_WHEN_MEMO.get(key)
+    if tried is None:
+        tried = []
+        # Next year first: a line from the first seconds of January read in
+        # the last seconds of December, a clock a little ahead of this one,
+        # was filed a whole year back. (1.10.159)
+        for year in (here.year + 1, here.year, here.year - 1):
+            try:
+                when = datetime(year, month, int(day),
+                                *[int(p) for p in clock.split(':')], tzinfo=zone)
+            except ValueError:
+                continue
+            tried.append((year, when.timestamp(), when.replace(fold=0).timestamp(),
+                          when.replace(fold=1).timestamp()))
+        if len(_OTP_WHEN_MEMO) > 50000:
+            _OTP_WHEN_MEMO.clear()
+        _OTP_WHEN_MEMO[key] = tried
+    for year, got, first, second in tried:
         # Next year only for a line a little ahead of this clock: an old file
         # read from its start in late December has January lines in it that
         # are this January's, and they must not move a year on.
@@ -5914,8 +5923,13 @@ def otp_when(mon, day, clock, now=None, zone=None):
             continue
         if got <= now + YEAR_ROLLS_AT:
             # ...the second time round, the night the clocks go back.
-            return wall_clock_ts(when, _OTP_LAST)
+            return _wall_clock_pick(first, second, _OTP_LAST)
     return None
+
+
+# (month, day, clock, zone, this year) -> the moments it can be: the same
+# second of a log is on hundreds of its lines.
+_OTP_WHEN_MEMO = {}
 
 
 class _LastBySource(object):
@@ -7802,10 +7816,42 @@ del _one
 _WIN_WORD_MOST = max(len(one) for one in _WIN_BY_LAST) + 8
 
 
+def _win_trie_pattern(words):
+    """One regex of these words as a tree of their letters, each word ending
+    where nothing but whitespace or the end follows; the longest that fits is
+    what it finds, as the longest label first was."""
+    tree = {}
+    for word in words:
+        node = tree
+        for ch in word:
+            node = node.setdefault(ch, {})
+        node[''] = {}
+
+    def made(node):
+        alts = [re.escape(ch) + made(node[ch]) for ch in sorted(node) if ch]
+        if '' in node:
+            alts.append(r'(?!\S)')
+        return alts[0] if len(alts) == 1 else '(?:' + '|'.join(alts) + ')'
+    return made(tree)
+
+
+_WIN_MARKS_REV = re.compile(r':(?<!\S:)(' + _win_trie_pattern(
+    one[::-1] for one in set(WIN_SECTIONS) | set(WIN_LABELS)) + ')')
+
+
 def win_field_marks(text):
     """[(label, where it starts, where its value starts)], in order - what
     `WIN_FIELD.finditer` answers, found without trying every label
-    everywhere."""
+    everywhere: one pass of the text written backwards, where each label
+    starts at its colon."""
+    n = len(text)
+    out = [(m.group(1)[::-1], n - m.end(), n - m.start())
+           for m in _WIN_MARKS_REV.finditer(text[::-1])]
+    out.reverse()
+    return out
+
+
+def win_field_marks_old(text):
     out = []
     for m in _WIN_COLON.finditer(text):
         colon = m.start()
@@ -7854,14 +7900,42 @@ class WinFields(collections.OrderedDict):
     the first time they are asked for, and forgotten if anything is added.
     """
     _labels = None
+    _last = None
 
     def __setitem__(self, key, value):
-        self._labels = None
+        self._labels = self._last = None
         collections.OrderedDict.__setitem__(self, key, value)
 
     def __delitem__(self, key):
-        self._labels = None
+        self._labels = self._last = None
         collections.OrderedDict.__delitem__(self, key)
+
+    def clear(self):
+        self._last = None
+        collections.OrderedDict.clear(self)
+
+    def pop(self, *a):
+        self._last = None
+        return collections.OrderedDict.pop(self, *a)
+
+    def popitem(self, *a):
+        self._last = None
+        return collections.OrderedDict.popitem(self, *a)
+
+    def setdefault(self, *a):
+        self._last = None
+        return collections.OrderedDict.setdefault(self, *a)
+
+    def last_by_label(self):
+        """{label: the LAST thing said under it}, for `win_said_last`."""
+        got = self._last
+        if got is None:
+            got = {}
+            for key, said in self.items():
+                if said and said not in ('-', '--'):
+                    got[key.rsplit(' / ', 1)[-1].split(' (')[0]] = said
+            self._last = got
+        return got
 
     def by_label(self):
         """{label: the first thing said under it}, in the order written."""
@@ -8176,6 +8250,12 @@ def win_said_last(fields, *names):
     """The LAST of these fields that says something (1.10.198), for the
     outcome codes: written after the name somebody typed, which may hold a
     label of its own."""
+    if isinstance(fields, WinFields):
+        last = fields.last_by_label()
+        for name in names:
+            if name in last:
+                return last[name]
+        return win_said(fields, *names)
     for name in names:
         code = ''
         for key, said in fields.items():
@@ -11056,8 +11136,12 @@ def wall_clock_ts(when, last):
     just after it, is the second time round. `last` remembers the line
     before; a time that is not ambiguous is what it always was.
     """
-    first = when.replace(fold=0).timestamp()
-    second = when.replace(fold=1).timestamp()
+    return _wall_clock_pick(when.replace(fold=0).timestamp(),
+                            when.replace(fold=1).timestamp(), last)
+
+
+def _wall_clock_pick(first, second, last):
+    """`wall_clock_ts` of the two moments a local time can be."""
     prev = float(last.get('ts') or 0.0)
     ts = first
     if second != first and prev <= second + 600:
@@ -13763,6 +13847,22 @@ def ros_verdict(prefix, state='', chain=''):
     return 'allow' if str(CONFIG.get('fwlog_ros_plain') or 'allow') == 'allow' else 'info'
 
 
+_ROS_PRI = re.compile(r'^<\d{1,3}>')
+_ROS_PROTO_NUM = {}
+for _n, _w in IP_PROTOCOLS.items():
+    _ROS_PROTO_NUM.setdefault(_w.upper(), _n)
+_ROS_STATE = re.compile(r'connection-state:(\S+?)(?:,?\s|,\s*proto|$)')
+_ROS_SRCMAC = re.compile(r'src-mac ([0-9A-Fa-f:]{17})')
+_ROS_ICMP = re.compile(r'type (\d+),\s*code (\d+)')
+_ROS_MARKS = tuple((k, re.compile(r'%s:(\S+?)(?:,|\s|$)' % k))
+                   for k in ('connection-mark', 'packet-mark', 'routing-mark'))
+_ROS_NAT_KINDS = tuple((k, re.compile(r'(?:^|[^a-z])%s(?=$|[^a-z])' % re.escape(k)))
+                       for k in ('masquerade', 'src-nat', 'dst-nat', 'netmap', 'same',
+                                 'redirect', 'endpoint-independent-nat'))
+_ROS_NAT_ACCEPT = re.compile(r'(?:^|[^a-z])accept(?=$|[^a-z])')
+_ROS_LEN = re.compile(r'(?:^|,\s*)len (\d+)')
+
+
 def ros_record_from(line, now=None, seen=None, hold=None):
     """One RouterOS line as an `FwEvent`, or None for a line that is not one."""
     m = ROS_LINE.match(str(line or ''))
@@ -13776,7 +13876,7 @@ def ros_record_from(line, now=None, seen=None, hold=None):
         return None
     head, msg = m.group('head'), m.group('msg')
     # A priority a relay left on the front (`<30>Oct 18 ...`) is not the time.
-    head = re.sub(r'^<\d{1,3}>', '', head)
+    head = _ROS_PRI.sub('', head)
     ts, dev = ftd_head(head, now)
     level = next((t for t in topics if t in ROS_SEVERITIES), '')
     first = topics[0]
@@ -13793,7 +13893,7 @@ def ros_record_from(line, now=None, seen=None, hold=None):
         body = fwm.group('rest')
         pm = ROS_PROTO.search(body)
         proto_word = (pm.group('proto') if pm else '').upper()
-        proto = next((n for n, w in IP_PROTOCOLS.items() if w.upper() == proto_word), 0)
+        proto = _ROS_PROTO_NUM.get(proto_word, 0)
         if not proto and proto_word in ('ICMPV6', 'IPV6-ICMP'):
             proto = 58
         em = ROS_ENDS.search(body[pm.end():] if pm else body)
@@ -13805,24 +13905,24 @@ def ros_record_from(line, now=None, seen=None, hold=None):
         sub = ('local' if low in ('input', 'output') else
                'nat' if low in ('srcnat', 'dstnat') else
                'routing' if low in ('prerouting', 'postrouting') else 'forward')
-        sm = re.search(r'connection-state:(\S+?)(?:,?\s|,\s*proto|$)', body)
+        sm = _ROS_STATE.search(body)
         state = sm.group(1) if sm else ''
         f.update({'type': 'traffic', 'sub': sub, 'action': chain[:40],
                   'verdict': ros_verdict(prefix, state, low), 'srcip': src[:64], 'srcport': sport,
                   'srcintf': inif[:40], 'dstip': dst[:64], 'dstport': dport,
                   'dstintf': outif[:40], 'proto': proto, 'policyname': prefix[:120]})
-        mac = re.search(r'src-mac ([0-9A-Fa-f:]{17})', body)
+        mac = _ROS_SRCMAC.search(body)
         if mac:
             rest['srcmac'] = mac.group(1).upper()
         if proto in (1, 58) and pm and pm.group('flags'):
             # `proto ICMP (type 8, code 0)`: what the message was (1.10.216).
-            im = re.search(r'type (\d+),\s*code (\d+)', pm.group('flags'))
+            im = _ROS_ICMP.search(pm.group('flags'))
             if im:
                 rest['icmp_type'], rest['icmp_code'] = im.group(1), im.group(2)
         if state:
             rest['connectionstate'] = state
-        for key in ('connection-mark', 'packet-mark', 'routing-mark'):
-            km = re.search(r'%s:(\S+?)(?:,|\s|$)' % key, body)
+        for key, kre in _ROS_MARKS:
+            km = kre.search(body)
             if km:
                 rest[key.replace('-', '')] = km.group(1)
         nm = ROS_NAT.search(body)
@@ -13903,11 +14003,8 @@ def ros_record_from(line, now=None, seen=None, hold=None):
             # router's other lines have shown it - the address the way out
             # is made, the port kept as RouterOS keeps it when it can.
             words = (prefix or '').lower()
-            kind = next((k for k in ('masquerade', 'src-nat', 'dst-nat', 'netmap', 'same',
-                                     'redirect', 'endpoint-independent-nat')
-                         if re.search(r'(?:^|[^a-z])%s(?=$|[^a-z])' % re.escape(k), words)),
-                        '')
-            if not kind and re.search(r'(?:^|[^a-z])accept(?=$|[^a-z])', words):
+            kind = next((k for k, kre in _ROS_NAT_KINDS if kre.search(words)), '')
+            if not kind and _ROS_NAT_ACCEPT.search(words):
                 kind = 'none'
             if kind:
                 rest['natkind'] = kind
@@ -13930,7 +14027,7 @@ def ros_record_from(line, now=None, seen=None, hold=None):
                     rest['natguess'] = '1'
         if pm and pm.group('flags'):
             rest['flags'] = pm.group('flags')
-        lm = re.search(r'(?:^|,\s*)len (\d+)', body)
+        lm = _ROS_LEN.search(body)
         if lm:
             rest['len'] = lm.group(1)
         f['msg'] = ''
@@ -22571,10 +22668,12 @@ class Row(dict):
         dict.__init__(self, zip(order, values))
         self._order = order
 
-    def __getitem__(self, key):
+    def __missing__(self, key):
+        # Read by a column's number: asked only when no column has that
+        # name, so that a name - nearly every read - is the dict's own.
         if isinstance(key, int):
             return dict.__getitem__(self, self._order[key])
-        return dict.__getitem__(self, key)
+        raise KeyError(key)
 
     def keys(self):
         return list(self._order)
@@ -29448,12 +29547,19 @@ class Storage(object):
         # through are most of a day and none of these. Not the whole-table
         # one taken away in 1.10.141 (`OBSOLETE_INDEXES`): only the lines
         # kept as long as everything, a small part of a busy day.
-        ('fw_kept_verdict_ts', {False: '', True: 'CREATE INDEX IF NOT EXISTS fw_kept_verdict_ts '
-                                                 'ON fw_events (verdict, ts) WHERE brief = 0'}),
+        # MariaDB has no partial index: there the whole of (verdict, ts)
+        # (1.10.370) - without it every ban pass and every verdict search read
+        # every line of the window down the index on time.
+        ('fw_kept_verdict_ts', {False: 'CREATE INDEX IF NOT EXISTS fw_kept_verdict_ts '
+                                       'ON fw_events (verdict, ts)',
+                                True: 'CREATE INDEX IF NOT EXISTS fw_kept_verdict_ts '
+                                      'ON fw_events (verdict, ts) WHERE brief = 0'}),
         # The firewall's own lines, newest first (1.10.367): on (type, sub,
         # ts) with no sub asked, every event line ever kept was read and sorted.
-        ('fw_kept_type_ts', {False: '', True: 'CREATE INDEX IF NOT EXISTS fw_kept_type_ts '
-                                              'ON fw_events (type, ts) WHERE brief = 0'}),
+        ('fw_kept_type_ts', {False: 'CREATE INDEX IF NOT EXISTS fw_kept_type_ts '
+                                    'ON fw_events (type, ts)',
+                             True: 'CREATE INDEX IF NOT EXISTS fw_kept_type_ts '
+                                   'ON fw_events (type, ts) WHERE brief = 0'}),
         # The dst-nat rules' own lines, for the DNAT analyzer (1.10.367): on
         # (area, ts) PostgreSQL read the whole table for them.
         ('fw_nat_action_ts', {False: '', True: "CREATE INDEX IF NOT EXISTS fw_nat_action_ts "
@@ -31975,10 +32081,16 @@ class Storage(object):
                     {'b': busiest, 'r': refused, 'h': heaviest}[part].append(pick(r))
         else:
             try:
-                rows = [pick(r) for r in self.db.execute(
+                got_rows = self.db.execute(
                     'SELECT val, SUM(n) AS n, SUM(sent) AS sent, SUM(rcvd) AS rcvd, '
                     '%s AS bad FROM fw_roll WHERE span = ? AND dim = ? AND at >= ? AND at < ? '
-                    'GROUP BY val' % bad, (span, key, low, high)).fetchall()]
+                    'GROUP BY val' % bad, (span, key, low, high))
+                # Hundreds of thousands of values on a big firewall: read as
+                # the driver's own tuples, not each made a row by name first.
+                raw = got_rows.cur.fetchall() if isinstance(got_rows, Result) \
+                    else [tuple(r) for r in got_rows.fetchall()]
+                rows = [(str(v), int(n or 0), int(se or 0), int(rc or 0), int(b or 0))
+                        for v, n, se, rc, b in raw]
             except sqlite3.Error as e:
                 return {'busiest': [], 'refused': [], 'heaviest': [], 'values': 0,
                         'trouble': str(e)[:160]}
@@ -34433,6 +34545,11 @@ class Storage(object):
                 # column hid it from its index: the address popup walked
                 # the whole window for one address. (1.10.178)
                 sql += ' AND ip = ?'
+            elif column == 'machine':
+                bit, more = self.lower_in(self.dialect.ident(column), [value])
+                sql += ' AND ' + bit
+                args += more
+                continue
             else:
                 sql += ' AND LOWER(%s) = ?' % self.dialect.ident(column)
             args.append(value)
@@ -35631,8 +35748,12 @@ class Storage(object):
         skip, holes = self.routine_clause()
         sql += skip
         args += holes
+        if self.dialect.name == 'postgres' and by not in ('machine', 'account', 'ip'):
+            sql = self.distinct_sets(sql, col)
+        else:
+            sql += ' GROUP BY %s' % col
         try:
-            rows = self.db.execute(sql + ' GROUP BY %s' % col, args).fetchall()
+            rows = self.db.execute(sql, args).fetchall()
         except sqlite3.Error:
             return {}
         return {str(r['said']): {'machines': int(r['machines'] or 0),
@@ -35644,6 +35765,41 @@ class Storage(object):
     # looking at, and left IN the events themselves, which are still read,
     # still kept and still searchable. One place, so that a new one is left
     # out of everything at once rather than of whatever was remembered.
+    @staticmethod
+    def distinct_sets(sql, col, more='', tail=''):
+        """`SELECT .. COUNT(DISTINCT machine|account|ip) .. FROM win_events WHERE ..`
+        asked as one walk of the window grouped three ways at once
+        (PostgreSQL's GROUPING SETS, hashed): three COUNT(DISTINCT)s sort
+        every row of the window three times, on disk once it is big.
+        Exact: each set holds one row per distinct value, the NULL one
+        left out by COUNT() as COUNT(DISTINCT) leaves it out. `col` must
+        not be one of the three."""
+        where = sql.split(' FROM win_events ', 1)[1]
+        return ('SELECT said%s, COUNT(machine) FILTER (WHERE g = 3) AS machines, '
+                'COUNT(account) FILTER (WHERE g = 5) AS names, '
+                'COUNT(ip) FILTER (WHERE g = 6) AS places FROM (SELECT %s AS said, '
+                'machine, account, ip, COUNT(*) AS n, MAX(ts) AS last, '
+                'GROUPING(machine, account, ip) AS g FROM win_events %s '
+                'GROUP BY GROUPING SETS (%s(%s, machine), (%s, account), (%s, ip))) AS x '
+                'GROUP BY said%s'
+                % (', SUM(n) FILTER (WHERE g = 7) AS n, MAX(last) FILTER (WHERE g = 7) '
+                   'AS last' if more else '', col, where,
+                   '(%s), ' % col if more else '', col, col, col, tail))
+
+    def lower_in(self, col, values):
+        """`LOWER(col) IN (values)` and its arguments. On PostgreSQL each one
+        as `>= ? AND <= ?` - the same rows, but a question only a b-tree can
+        answer: pg_trgm (1.6) answers `=` too, and with the word index there
+        (`win_words`) the planner took it for an equality - 60-90 ms a
+        lookup of one name, 1.9 s for a common program - where the b-tree
+        over LOWER(col) takes 1-3 ms."""
+        values = list(values)
+        if self.dialect.name != 'postgres':
+            return ('LOWER(%s) IN (%s)' % (col, ','.join('?' * len(values))), values)
+        return ('(%s)' % ' OR '.join(['(LOWER(%s) >= ? AND LOWER(%s) <= ?)' % (col, col)]
+                                      * len(values)),
+                [v for v in values for _two in (0, 1)])
+
     ROUTINE_MARKS = WIN_ROUTINE_MARKS
 
     def routine_clause(self, column='mark'):
@@ -35757,10 +35913,12 @@ class Storage(object):
         sql += skip
         args += holes
         want = max(1, min(40, int(limit)))
+        if self.dialect.name == 'postgres' and by not in ('machine', 'account', 'ip'):
+            sql = self.distinct_sets(sql, by, more=True, tail=' ORDER BY n DESC, said LIMIT ?')
+        else:
+            sql += ' GROUP BY %s ORDER BY n DESC, said LIMIT ?' % by
         try:
-            rows = self.db.execute(
-                sql + ' GROUP BY %s ORDER BY n DESC, said LIMIT ?' % by,
-                args + [want]).fetchall()
+            rows = self.db.execute(sql, args + [want]).fetchall()
         except sqlite3.Error:
             return []
         out = [{'said': r['said'], 'n': int(r['n'] or 0), 'last': float(r['last'] or 0),
@@ -36056,6 +36214,32 @@ class Storage(object):
                         ('ip', 'address'), ('by_who', 'done by'),
                         ('process', 'program'), ('object', 'object'))
 
+    FIND_SLICE_S = 86400
+
+    def newest_first(self, sql, args, since, most):
+        """`sql ORDER BY ts DESC LIMIT most`, asked a day at a time from the
+        newest, stopping once `most` rows are in hand. The same rows: the
+        days do not overlap and each is in the statement's own order. A
+        common word (`svchost`) matches a third of the window, and asked
+        whole every match was fetched and sorted to keep the newest 40,000;
+        the newest day alone holds them."""
+        top = self.newest_in('win_events')
+        got, high = [], None
+        while len(got) < most:
+            low = max(float(since or 0), top - self.FIND_SLICE_S)
+            bit, more = ' AND ts >= ?', [low]
+            if high is not None:
+                bit, more = bit + ' AND ts < ?', more + [high]
+            got.extend(self.db.execute(sql + bit + ' ORDER BY ts DESC LIMIT ?',
+                                       list(args) + more + [most - len(got)]).fetchall())
+            if low <= float(since or 0):
+                break
+            # ...and the rest of the window at once: a rare word is in few
+            # rows of any day, and asked a day at a time it was the window
+            # walked seven times over.
+            high, top = low, float(since or 0) + self.FIND_SLICE_S
+        return got
+
     def win_find(self, text, limit=8, since=0):
         """What the domain controllers have on a word somebody typed.
 
@@ -36097,10 +36281,14 @@ class Storage(object):
         # matches everything - so the reading stops at a number that is
         # plenty to count the busiest of anything from and is never a page
         # of memory.
-        sql += ' ORDER BY ts DESC LIMIT ?'
-        args.append(self.FIND_ROWS_MOST)
         try:
-            rows = self.db.execute(sql, args).fetchall()
+            # The newest day first only where the word index is there
+            # (1.10.370): without it a rare word cost a walk more.
+            if self.dialect.name == 'postgres' and self.get_meta('win_words_done'):
+                rows = self.newest_first(sql, args, cut, self.FIND_ROWS_MOST)
+            else:
+                rows = self.db.execute(sql + ' ORDER BY ts DESC LIMIT ?',
+                                       list(args) + [self.FIND_ROWS_MOST]).fetchall()
         except Exception:
             return []
         low = want.lower()
@@ -36423,10 +36611,10 @@ class Storage(object):
             if str(a or '').strip()})[:20]
         if not forms:
             return {}
-        sql = ('SELECT ts FROM win_events WHERE LOWER(account) IN (%s) AND ts >= ? '
-               'AND kind IN (%s)' % (','.join('?' * len(forms)),
-                                     ','.join('?' * len(self.BAD_KINDS))))
-        args = forms + [float(since)] + list(self.BAD_KINDS)
+        who, args = self.lower_in('account', forms)
+        sql = ('SELECT ts FROM win_events WHERE %s AND ts >= ? '
+               'AND kind IN (%s)' % (who, ','.join('?' * len(self.BAD_KINDS))))
+        args = args + [float(since)] + list(self.BAD_KINDS)
         skip, more = self.win_not_chained()
         sql += skip
         args += more
@@ -36938,10 +37126,10 @@ class Storage(object):
         forms = sorted({str(a).strip().lower() for a in accounts or () if a})[:20]
         if not forms:
             return []
-        sql = ('SELECT account, ts FROM win_events WHERE LOWER(account) IN (%s) AND ts >= ? '
-               "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed')"
-               % ','.join('?' * len(forms)))
-        args = forms + [float(since)]
+        who, args = self.lower_in('account', forms)
+        sql = ('SELECT account, ts FROM win_events WHERE %s AND ts >= ? '
+               "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed')" % who)
+        args = args + [float(since)]
         if until:
             sql += ' AND ts <= ?'
             args.append(float(until))
