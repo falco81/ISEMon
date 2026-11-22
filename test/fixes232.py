@@ -66,9 +66,10 @@ PORT = 19400 + random.randint(0, 90)
 # the browser's checks ever found the card). 1.10.367 added indexes only
 # (failed/passed asked_as, events level, passed acl+kind, blocked_log country
 # and partial ones over fw_events and win_events): an older version neither
-# needs nor minds them.
+# needs nor minds them. 1.10.368 one more (win_change_ts) and one fewer
+# (win_mark_ts, which nothing used; an older version builds it again).
 FLOOR_SHAPE = {'floor': '1.10.226',
-               'sha256': '8921adb9b64465a64e813f39bd28103df7ce26f4e00e0010c26bda73010a1ea8'}
+               'sha256': 'c122a56a9588c48f3883f615d03fe9a72eaaf847aafdce322decf6efd536f813'}
 
 
 def ok(what, got, want=True):

@@ -130,7 +130,8 @@ try:
     ok('the find box over a popup keeps its own Tab',
        "if ($('findback') && !$('findback').hidden) return;" in page)
     ok('a refresh draws the answer to its own question only',
-       'if (lane.last && lane.lastWhat === plain) return Promise.resolve(lane.last);' in page)
+       'if (lane.last && lane.lastWhat === plain) {' in page
+       and 'return Promise.resolve(old);' in page)
     ok('the polls of root\'s work ask one at a time',
        ('if (SK.asking) return;' in page, 'if (OT.asking) return;' in page,
         'if (AT.asking) return;' in page), (True, True, True))

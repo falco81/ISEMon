@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.367'
+__version__ = '1.10.368'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -21912,7 +21912,6 @@ CREATE INDEX IF NOT EXISTS win_event_ts ON win_events (event, ts);
 CREATE INDEX IF NOT EXISTS win_account_ts ON win_events (account, ts);
 CREATE INDEX IF NOT EXISTS win_ip_ts ON win_events (ip, ts);
 CREATE INDEX IF NOT EXISTS win_machine_ts ON win_events (machine, ts);
-CREATE INDEX IF NOT EXISTS win_mark_ts ON win_events (mark, ts);
 
 -- The same events, counted ahead of time.
 --
@@ -23586,6 +23585,10 @@ class Dialect(object):
         db.raw.isolation_level = None
         try:
             db.raw.execute('VACUUM')
+            try:
+                db.raw.execute('PRAGMA analysis_limit=1000')     # 1.10.368: not the whole file
+            except Exception:
+                pass
             db.raw.execute('ANALYZE')
         finally:
             db.raw.isolation_level = ''
@@ -28382,7 +28385,10 @@ class Storage(object):
                         # Nothing is looked up by a packet's session, and a
                         # name is only ever searched as LIKE '%x%', which no
                         # index can seek (1.10.297).
-                        ('otp_asked_session', 'otp_asked'), ('ptr_name', 'ptr'))
+                        ('otp_asked_session', 'otp_asked'), ('ptr_name', 'ptr'),
+                        # A mark is only ever asked as LOWER(mark) or LIKE
+                        # '%x%'; `marks` took its place (1.10.368).
+                        ('win_mark_ts', 'win_events'))
 
     # An index that is the leading column of a wider one, and the wider one.
     REDUNDANT_INDEXES = (('failed_ts', 'failed_ts_ip'), ('passed_ts', 'passed_ts_ip'),
@@ -28533,8 +28539,12 @@ class Storage(object):
                     apart.execute(text.rstrip(';') + ' ALGORITHM=INPLACE LOCK=NONE')
                     apart.commit()
                 else:
-                    apart.execute(text)
-                    apart.commit()
+                    # The file's one write lock, taken the way every writer
+                    # takes it (1.10.368): built beside them, the writers gave
+                    # up waiting after 20 s and held their records back.
+                    with self._write:
+                        apart.execute(text)
+                        apart.commit()
                 going.done_now('built in %s' % human_took(time.time() - began))
                 log('database: building the index %s over %s behind the daemon - done in %s'
                     % (name, table, human_took(time.time() - began)), 'info')
@@ -29432,6 +29442,11 @@ class Storage(object):
                                                "ON fw_events (action, ts) WHERE area = 'nat'"}),
         # The domain's failures, for its cards (1.10.367): off the index alone,
         # never a row of the table looked up for each.
+        # The account and group changes' cards (1.10.368): off the index.
+        ('win_change_ts', {False: '', True: "CREATE INDEX IF NOT EXISTS win_change_ts ON "
+                                            "win_events (ts, kind, is_machine, marks, by_who, "
+                                            "object, account, machine, ip) WHERE kind IN "
+                                            "('account', 'group', 'unlock', 'directory')"}),
         ('win_bad_ts', {False: '', True: "CREATE INDEX IF NOT EXISTS win_bad_ts ON win_events "
                                          "(ts, kind, event, is_machine, marks, account, machine, "
                                          "ip, process, said) WHERE kind IN ('logon-failed', "
@@ -32346,7 +32361,8 @@ class Storage(object):
                                         want, skip, said=said if narrowed else None)
         else:
             rows = None
-            if order == '(sent + rcvd)' and desc and self.fw_big_index():
+            # ...and by either side alone (1.10.368).
+            if order in ('(sent + rcvd)', 'sent', 'rcvd') and desc and self.fw_big_index():
                 # The heaviest first: out of the sessions that carried a
                 # megabyte or more, where there are enough of them for the
                 # page - then the page is exactly the one ordering them all
@@ -32354,9 +32370,13 @@ class Storage(object):
                 # all of them, as before.
                 big = [dict(r) for r in self.db.execute(
                     'SELECT ' + self.FW_LIST_COLS + sql + ' AND ' + FW_BIG_SQL
-                    + ' ORDER BY (sent + rcvd) DESC, ts DESC' + self.tie_break('ident')
+                    + ' ORDER BY %s DESC, ts DESC' % order + self.tie_break('ident')
                     + ' LIMIT ? OFFSET ?', args + [want, skip])]
-                if len(big) >= want:
+                # For one side alone the page is exact only where its last row
+                # carried a megabyte that way: a row outside the big ones
+                # carried less than that in all, so on either side.
+                if len(big) >= want and (order == '(sent + rcvd)' or
+                                         float(big[-1].get(order) or 0) >= FW_BIG_BYTES):
                     rows = big
             if rows is None:
                 rows = [dict(r) for r in self.db.execute(
@@ -32416,6 +32436,11 @@ class Storage(object):
                     said['stopped'] = True
                     break
                 high = low
+                # Longer strides while it is quick (1.10.368): an hour a
+                # statement was 26 statements for a day, none of them able to
+                # be read in parallel.
+                if slow and time.monotonic() - began < self.FW_COUNT_SECONDS / 6:
+                    step = min(step * 2, 86400)
                 if high > float(since) and time.monotonic() - began > self.FW_COUNT_SECONDS:
                     said['stopped'] = True
                     break
@@ -34636,9 +34661,10 @@ class Storage(object):
             finally:
                 self.roll_busy_now('')
 
-    # How much of the table one stride of the counting takes: a day of
-    # events, counted and written in one transaction of its own.
-    ROLL_BUILD_STRIDE = ROLL_DAY
+    # How much of the table one stride of the counting takes: an hour of
+    # events, counted and written in one transaction of its own (1.10.368: a
+    # day of millions was a minute with the write lock held, every day kept).
+    ROLL_BUILD_STRIDE = ROLL_HOUR
 
     def roll_build_now(self, said='', span=ROLL_HOUR):
         """The counting itself. `roll_build` says how to read its log lines.
@@ -34666,7 +34692,8 @@ class Storage(object):
             with self.db_write() as db:
                 db.execute('DELETE FROM win_rollup WHERE span = ?', (span,))
             return 0
-        stride = int(self.ROLL_BUILD_STRIDE)
+        # Never less than a bucket: a day's buckets counted a day at a time.
+        stride = max(int(self.ROLL_BUILD_STRIDE), int(span))
         at = self.roll_floor(first, stride)
         end = self.roll_floor(last, stride) + stride
         days = max(1, int((end - at) // stride))
@@ -36646,6 +36673,7 @@ class Storage(object):
     RADIUS_WITHIN_S = 10
     RADIUS_PAIRS_MOST = 400
     RADIUS_SPANS_MOST = 120      # stretches of time asked one by one, at most
+    RADIUS_SPANS_ASKED = 40      # ...and how many of them one statement asks (1.10.368)
 
     def win_refusal_times(self, accounts, since, until=0, ip='', machine=''):
         """(name, moment) of the refusals of these forms of one account, from
@@ -36747,7 +36775,13 @@ class Storage(object):
                      % ','.join('?' * len(names[at:at + 200])),
                      names[at:at + 200] + [low, high]) for at in range(0, len(names), 200)]
         else:
-            asks = [('ts >= ? AND ts <= ?', [lo, hi]) for lo, hi in spans]
+            # Forty stretches a statement, not one (1.10.368): they never
+            # overlap, so no row comes twice - 720 statements were 24.
+            asks = []
+            for at in range(0, len(spans), self.RADIUS_SPANS_ASKED):
+                some = spans[at:at + self.RADIUS_SPANS_ASKED]
+                asks.append(('(%s)' % ' OR '.join(['(ts >= ? AND ts <= ?)'] * len(some)),
+                             [edge for lo_hi in some for edge in lo_hi]))
         for where, args in asks:
             try:
                 rows = self.db.execute(
@@ -44216,6 +44250,11 @@ class Storage(object):
                     'SELECT DISTINCT kind FROM seen_values WHERE tbl = ?', (table,))]
             except sqlite3.Error:
                 return gone
+            try:
+                cols = [r['col'] for r in self.db.execute(
+                    'SELECT DISTINCT col FROM seen_values WHERE tbl = ?', (table,))]
+            except sqlite3.Error:
+                return gone
             for kind in kinds:
                 try:
                     if kind == 'vpn' and table == 'passed':
@@ -44234,14 +44273,18 @@ class Storage(object):
                         row = self.db.execute('SELECT MIN(ts) AS lo FROM %s WHERE kind IS NULL'
                                               % table).fetchone()
                     lo = row['lo'] if row is not None else None
-                    with self.db_write() as db:
-                        if lo is None:
-                            cur = db.execute('DELETE FROM seen_values WHERE tbl = ? AND kind = ?',
-                                             (table, kind))
-                        else:
-                            cur = db.execute('DELETE FROM seen_values WHERE tbl = ? AND kind = ? '
-                                             'AND last < ?', (table, kind, float(lo)))
-                        gone += max(0, cur.rowcount or 0)
+                    # A column at a time (1.10.368): down the key (tbl, col,
+                    # kind, val), not a walk of the table's whole part of it.
+                    for col in cols:
+                        with self.db_write() as db:
+                            if lo is None:
+                                cur = db.execute('DELETE FROM seen_values WHERE tbl = ? '
+                                                 'AND col = ? AND kind = ?', (table, col, kind))
+                            else:
+                                cur = db.execute('DELETE FROM seen_values WHERE tbl = ? '
+                                                 'AND col = ? AND kind = ? AND last < ?',
+                                                 (table, col, kind, float(lo)))
+                            gone += max(0, cur.rowcount or 0)
                 except sqlite3.Error as e:
                     log('letting go of values no row has any more: %s' % str(e)[:120], 'debug')
         return gone
@@ -44625,6 +44668,7 @@ class Storage(object):
                 low = was
         reached = 0.0
         while True:
+            stride_at = time.time()
             try:
                 if low is None:
                     edge = self.db.execute(
@@ -44687,8 +44731,11 @@ class Storage(object):
                 break                       # asked to stop; what went, went
             low = upto
             reached = upto
-            # A breath, so a tidying of a year does not hold a busy machine.
-            time.sleep(0.01)
+            # A breath, so a tidying of a year does not hold a busy machine -
+            # as long as the stride held the lock, up to a second (1.10.368):
+            # a stride of the refusals is seconds, and ten milliseconds between
+            # them left the logs no time to be written.
+            time.sleep(max(0.01, min(1.0, time.time() - stride_at)))
         # The mark goes as far as the rows really went - the cut only when the
         # walk got there. Set to the cut whatever happened, a pass that was
         # stopped, or failed half way, left everything between the old mark
@@ -69197,7 +69244,7 @@ class Daemon(object):
         kinds = tuple(k.strip() for k in str(kind or '').split(',') if k.strip())
         shape = self.store.win_shape(since, machines, kinds, until)
         counts = shape['counts']
-        events = sorted(shape['events'].items(), key=lambda one: -one[1])[:40]
+        events = sorted(shape['events'].items(), key=lambda one: (-one[1], one[0]))[:40]
         return {
             'counts': counts,
             'tabs': [{'key': key, 'name': name, 'kinds': list(kinds2), 'says': says,
@@ -69958,7 +70005,10 @@ class Daemon(object):
                             self.store.db.raw.execute('PRAGMA analysis_limit=1000')
                         except Exception:
                             pass                     # an older SQLite: the whole tables
-                        self.store.db.raw.execute('PRAGMA optimize')
+                        # ANALYZE itself (1.10.368): `optimize` weighs only the
+                        # tables this connection asked about - on this fresh
+                        # one, none, so it never gathered anything.
+                        self.store.db.raw.execute('ANALYZE')
                 except Exception as e:
                     log('PRAGMA optimize: %s' % str(e)[:100], 'debug')
         if self.store.dialect.name == 'postgres':

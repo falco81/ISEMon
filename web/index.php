@@ -9518,7 +9518,9 @@ function stopLane(name) {
   /* What was on the page before belongs to another search now: the refresh
      must not draw it again, nor start the stopped one over for a while. */
   lane.last = null;
-  lane.took = 60000;
+  /* About a minute held off (1.10.368): 60000 here was twenty minutes of a
+     list that never refreshed. */
+  lane.took = 3000;
   lane.at = Date.now();
   paintAsking();
   if (job) {
@@ -9607,7 +9609,14 @@ function api(what, body, how) {
       /* Slow, and asked not long ago: the refresh draws what it has - the
          answer to this very question only (1.10.304), never the last search's
          under a new one that failed. */
-      if (lane.last && lane.lastWhat === plain) return Promise.resolve(lane.last);
+      if (lane.last && lane.lastWhat === plain) {
+        /* ...but never what it said of bans then, nor its clock (1.10.368):
+           a ban made since was taken off the page again. */
+        var old = Object.assign({}, lane.last);
+        delete old.banned;
+        delete old.now;
+        return Promise.resolve(old);
+      }
       return new Promise(function () {});    // nothing in this list to wait for
     }
     stopLane(how.lane);
@@ -14436,7 +14445,8 @@ function ovPeekDoor(d, side) {
     function (body, answer) {
       body.appendChild(peekFacts([
         ['Door', d.name],
-        [side === 'passed' ? 'Let through' : 'Refused', num(answer.total)],
+        [side === 'passed' ? 'Let through' : 'Refused',
+         (answer.capped ? 'more than ' : '') + num(answer.total)],
         ['Window', overWindowWords()]
       ]));
       body.appendChild(side === 'passed'
@@ -14945,7 +14955,7 @@ function peekFailedCard() {
     function (body, d) {
       var s = STATUS || {};
       body.appendChild(peekFacts([
-        ['Refused in this window', num(d.total)],
+        ['Refused in this window', (d.capped ? 'more than ' : '') + num(d.total)],
         ['Refused ever', num(((s.totals || {}).failed || {}).rows)],
         ['Addresses ever', num(((s.totals || {}).failed || {}).addresses)],
         ['Kept out now', num((s.blocked || {}).now)]
@@ -14966,7 +14976,7 @@ function peekPassedCard() {
     function (body, d) {
       var c = d.counts || {};
       body.appendChild(peekFacts([
-        ['Let through in this window', num(d.total)],
+        ['Let through in this window', (d.capped ? 'more than ' : '') + num(d.total)],
         ['AnyConnect logins ever', num(c.vpn)],
         ['TACACS sign-ins ever', num(c.tacacs)],
         ['Commands ever', num(c['tacacs-cmd'])],
@@ -19494,17 +19504,22 @@ function fillOnce(select, values, keep) {
      device nobody has ever seen is never offered. Redrawn only when the set
      changes, or the choice somebody made would be taken away from under
      them mid-click. */
+  var was = select.value;
+  values = (values || []).slice();
+  /* The choice made stays, shown, though the list does not hold it - not
+     read yet (an empty answer), or another door's (1.10.368): taken away,
+     the rows were still narrowed by it with no filter to be seen. */
+  if (was && values.indexOf(was) < 0) values.push(was);
   var have = Array.prototype.slice.call(select.options, 1).map(function (o) { return o.value; });
   if (String(have) === String(values)) return;
-  var was = select.value;
   while (select.options.length > 1) select.remove(1);
-  (values || []).forEach(function (v) {
+  values.forEach(function (v) {
     var o = document.createElement('option');
     o.value = v;
     o.textContent = v;
     select.appendChild(o);
   });
-  if (was && values.indexOf(was) >= 0) select.value = was;
+  if (was) select.value = was;
 }
 
 /** How many rows match, and whether that is the whole truth.

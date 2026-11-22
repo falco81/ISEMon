@@ -3026,8 +3026,8 @@ ok('work that is MEANT to take a while is written down as work, not as a fault',
 ok('...the counting says so for every other writer as well',
    "Db.patiently('counting the domain events ahead of time', everyone=True)"
    in DAEMON, True)
-ok('...and does a day at a time, so nobody waits for the whole of it',
-   'ROLL_BUILD_STRIDE = ROLL_DAY' in DAEMON and 'while at < end:' in DAEMON, True)
+ok('...and does an hour at a time (1.10.368; a day before), so nobody waits for the whole of it',
+   'ROLL_BUILD_STRIDE = ROLL_HOUR' in DAEMON and 'while at < end:' in DAEMON, True)
 ok('...and so does an upgrade building an index over millions of rows',
    "with Db.patiently('bringing the schema up to date'):" in DAEMON, True)
 # A reading counts wherever it was asked from. It used to count only when

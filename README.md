@@ -372,6 +372,33 @@ working.
 
 ## Version
 
+1.10.368
+
+- **Speed on a very large database, round 2 of 5** (test/fixes368_speed.py):
+  - *the write lock*: the domain events counted ahead of time an hour per
+    transaction, not a day (at millions a day that was a minute with every
+    writer waiting, for each day kept); an index built behind the daemon on
+    the file takes the write lock as every writer does (writers gave up after
+    20 s and held their records back); the tidying rests as long as a stride
+    held the lock; the catalogue's old values are let go a column at a time
+    down its key; the daily statistics are really gathered (`PRAGMA optimize`
+    on a fresh connection never gathered any); a manual optimize analyses a
+    thousand rows an index, not the whole file;
+  - *indexes*: `win_change_ts` (the account/group change cards on PostgreSQL,
+    1.5 s → 0.7 s at 7 days); `win_mark_ts`, which nothing could use, goes
+    (a write less for every domain event);
+  - *questions*: a domain's RADIUS refusals asked forty stretches a
+    statement (`/api/windows` 24 h: 1118 → 248 statements); a Traffic list
+    sorted by sent or received takes the big sessions first where that is
+    exact; a Traffic text search counts in longer strides while it is quick
+    (1.1 → 0.6 s); the event numbers of the same count in one order.
+- **UI**: the refresh of a list that was slow redrew its old answer's bans -
+  an address just banned lost its mark again for up to a minute; after Stop
+  a list did not refresh for twenty minutes (now about one); a device,
+  controller or country chosen stays in its filter when the list of choices
+  does not hold it (it was cleared while the rows were still narrowed by
+  it); the Overview's popups say "more than 20,000" where the count was cut.
+
 1.10.367
 
 - **Speed on a very large database, round 1 of 5** (measured on PostgreSQL and
