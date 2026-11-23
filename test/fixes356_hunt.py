@@ -212,7 +212,8 @@ try:
     ok('the command line prints no escape out of the data', '\x1b]' in pal.out.getvalue(), False)
     ok('sign-in: a directory account gone from the directory - its password here not taken',
        'if right and dir_answered and user.get(\'from_dir\'):' in src)
-    ok('sign-in: DOMAIN\\ in front counted as the name', "count_name = name.split('\\\\', 1)[1]" in src)
+    # (1.10.378: and stripped of the spaces the directory throws away too)
+    ok('sign-in: DOMAIN\\ in front counted as the name', "count_name = (name.split('\\\\', 1)[1]" in src)
     page = (ROOT / 'web' / 'index.php').read_text()
     ok('page: a popup drawn again compared by its English title', "$('modal-title').dataset.src === title" in page)
     ok('page: acme tab kept after F5', "'windows', 'acmelog', 'router',\n       'events'" in page)

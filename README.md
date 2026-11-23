@@ -372,6 +372,30 @@ working.
 
 ## Version
 
+1.10.378
+
+- **Bug hunt, round 7 of 10** (test/fixes378_hunt.py, test/fixes378_rotation.py):
+  - *log readers*: a log rotated two or more times while it was not being
+    read (`.1` and `.2`, `-YYYYMMDD` names, `compress`, `delaycompress`,
+    `copytruncate`) - the copies in between are now read whole, once, oldest
+    first, and the list survives a restart; with `compress`, ours as `.2.gz`
+    is told from the newer `.1.gz` by its bytes; a log path that is a link
+    moved on to a new file finds the old one by its inode, whatever it is
+    called.
+  - *domain cards*: a spray is counted in people, not spellings
+    (`jnovak`, `EXAMPLE\jnovak` and `jnovak@example.cz` are one); a
+    lockout's machine, address and program come only from refusals up to the
+    lock and never from a controller's copy; the spread leaves out the PDC's
+    copies, and the copies taken off are only the counted ones.
+  - *accounts*: `CORP\ jnovak` (spaces after the domain) counts against
+    `jnovak` for the per-name lock; a passkey counter is never written down
+    lower (a 0 switched the copy check off for good); a directory account
+    the directory gives no role any more, or that is gone or switched off,
+    is made read-only here, not left a full administrator its emergency
+    password signed in as; somebody from another domain of the forest whose
+    UPN suffix is not their domain is asked about by DN and is no longer
+    signed out every quarter of an hour.
+
 1.10.377
 
 - **Bug hunt, round 6 of 10** (test/fixes377_hunt.py):

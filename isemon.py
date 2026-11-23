@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.377'
+__version__ = '1.10.378'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -18861,8 +18861,107 @@ class LogTail(object):
         if not found and real != self.path:
             # A log path that is a link: the rotated copy is next to the file
             # the link points at, not next to the link. (1.10.159)
-            found = self._rotated_in(real)
+            # A link moved on to a new file (`current` from `ise-1.log` to
+            # `ise-2.log`) leaves the old one under a name of its own, that
+            # starts with neither: found by its inode, which is the exact
+            # answer, whatever it is called. (1.10.378)
+            found = (self.inode_anywhere(os.path.dirname(real) or '.', self.inode, real)
+                     or self._rotated_in(real))
         return found
+
+    @staticmethod
+    def inode_anywhere(folder, inode, besides=None):
+        """The plain file in a folder, whatever its name, that is this inode."""
+        if not inode:
+            return None
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            return None
+        for name in names:
+            full = os.path.join(folder, name)
+            if besides and full == besides:
+                continue
+            try:
+                st = os.lstat(full)
+            except OSError:
+                continue
+            if stat.S_ISREG(st.st_mode) and st.st_ino == inode:
+                return full
+        return None
+
+    # What a rotated copy's name says of its age, after the log's own name:
+    # `.3` is older than `.1`, `-20261122` older than `-20261123`. Anything
+    # else in the folder is not a rotation of this log and is not taken.
+    ROTATION_NUMBER = re.compile(r'\.(\d{1,6})')
+    ROTATION_DATED = re.compile(r'-\d[\d_-]{5,}')
+
+    def rotation_age(self, suffix):
+        stem, ext = os.path.splitext(suffix)
+        if ext in self.OPENERS:
+            suffix = stem
+        m = self.ROTATION_NUMBER.fullmatch(suffix)
+        if m:
+            return ('n', -int(m.group(1)))      # larger is newer
+        if self.ROTATION_DATED.fullmatch(suffix):
+            return ('d', suffix)
+        return None
+
+    def newer_rotations(self, where):
+        """The rotated copies newer than `where`, oldest first.
+
+        Rotated twice with the daemon stopped (1.10.378): what was ours is
+        `.2` now and is read on from our offset, the new file is read from
+        its beginning - and `.1`, the whole of the day between, was read by
+        nobody. Only names that are this log's rotations, only ones the
+        rotation number or date says are newer than ours, and never the
+        file being read now or ours again."""
+        folder = os.path.dirname(where) or '.'
+        name = os.path.basename(where)
+        base = None
+        for b in (os.path.basename(self.path), os.path.basename(os.path.realpath(self.path))):
+            if name.startswith(b + '.') or name.startswith(b + '-'):
+                base = b
+                break
+        if base is None:
+            return []
+        ours = self.rotation_age(name[len(base):])
+        if ours is None:
+            return []
+        skip = set()
+        for p in (where, self.path):
+            try:
+                skip.add(os.stat(p).st_ino)
+            except OSError:
+                pass
+        since = float(getattr(self, 'last_read', 0) or 0) - 300
+        found = {}
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            return []
+        for n in names:
+            if n == name or n == base or not (n.startswith(base + '.') or n.startswith(base + '-')):
+                continue
+            age = self.rotation_age(n[len(base):])
+            if age is None or age[0] != ours[0] or not age[1] > ours[1]:
+                continue
+            full = os.path.join(folder, n)
+            try:
+                st = os.stat(full)
+            except OSError:
+                continue
+            if not os.path.isfile(full) or st.st_ino in skip:
+                continue
+            if since > 0 and st.st_mtime < since:
+                continue                        # older than our last read: not newer
+            packed = os.path.splitext(n)[1] in self.OPENERS
+            # `.1` and `.1.gz` both there, half way through compressing it:
+            # one generation, read once, from the plain one.
+            if age in found and not found[age][0]:
+                continue
+            found[age] = (packed, full)
+        return [found[a][1] for a in sorted(found)]
 
     @staticmethod
     def inode_in(folder, base, inode):
@@ -18931,6 +19030,18 @@ class LogTail(object):
                     continue
             if packed and stat.st_mtime < float(getattr(self, 'last_read', 0) or 0) - 300:
                 continue
+            # A compressed one whose bytes before our offset are shown to be
+            # the ones we read is ours as surely as a plain one (1.10.378):
+            # rotated twice with `compress`, ours is `.2.gz` and the newest
+            # is `.1.gz`, which was read from our offset as if it were ours.
+            # One not shown to be is still taken on its age, as before.
+            sure = not packed
+            if packed and self.mark:
+                try:
+                    with self.open_maybe_packed(full) as f:
+                        sure = self.mark_at(f, self.offset) == self.mark
+                except (OSError, EOFError, ValueError, ImportError):
+                    sure = False
             # A plain file whose bytes before our offset ARE the ones we
             # read is the copy we want, however new a compressed one is
             # (1.10.188): with copytruncate and delaycompress, logrotate
@@ -18939,7 +19050,7 @@ class LogTail(object):
             # the middle of a line, and the lines we had not read yet were
             # never read. A compressed file is only taken on its age when no
             # plain one is shown to be ours.
-            rank = (0 if packed or not self.mark else 1, stat.st_mtime)
+            rank = (1 if sure and self.mark else 0, stat.st_mtime)
             if best is None or rank > best[0]:
                 best = (rank, full)
         return best[1] if best else None
@@ -18967,8 +19078,44 @@ class LogTail(object):
             return
         self.prev = {'path': where, 'inode': ino, 'offset': self.offset,
                      'grew': time.time()}
+        then = self.newer_rotations(where)
+        if then:
+            self.prev['then'] = then
+
+    def queued_prev(self, then):
+        """The next rotated copy waiting to be read whole, as `prev`."""
+        then = list(then or [])
+        while then:
+            where = then.pop(0)
+            try:
+                ino = os.stat(where).st_ino
+            except OSError:
+                continue
+            nxt = {'path': where, 'inode': ino, 'offset': 0, 'grew': time.time()}
+            if then:
+                nxt['then'] = then
+            return nxt
+        return None
 
     def read_prev(self, limit_bytes):
+        """One window of the rotated file being followed, and then of each
+        newer rotated copy waiting behind it, read whole (1.10.378)."""
+        got = []
+        for _ in range(16):
+            prev = getattr(self, 'prev', None)
+            if not prev:
+                break
+            then = prev.get('then')
+            some = self._read_prev_one(limit_bytes)
+            got.extend(some)
+            if getattr(self, 'prev', None) is not None or not then:
+                break
+            self.prev = self.queued_prev(then)
+            if some:
+                break
+        return got
+
+    def _read_prev_one(self, limit_bytes):
         """One window of the rotated file, where it is still being followed.
 
         A window a pass and not the whole of it at once: a rotated file of
@@ -18999,7 +19146,7 @@ class LogTail(object):
                         prev['path'], prev['inode'] = packed_copy, os.stat(packed_copy).st_ino
                     except OSError:
                         break
-                    return self.read_prev(limit_bytes)
+                    return self._read_prev_one(limit_bytes)
             self.prev = None
             return []
         packed = os.path.splitext(where)[1] in self.OPENERS
@@ -19020,7 +19167,7 @@ class LogTail(object):
         if cut < 0:
             if len(chunk) >= limit_bytes:
                 prev['offset'] += len(chunk)        # no line in a whole window
-            elif packed or time.time() - prev['grew'] > self.PREV_QUIET_S:
+            elif packed or prev.get('then') or time.time() - prev['grew'] > self.PREV_QUIET_S:
                 self.prev = None                    # read to its end, and quiet
             return []
         prev['offset'] += cut + 1
@@ -19038,22 +19185,25 @@ class LogTail(object):
 
     def drain_prev(self, limit_bytes):
         """The rest of the rotated file being followed, now."""
-        got = []
+        got, on, passes = [], None, 0
         for _ in range(self.DRAIN_WINDOWS):
             prev = getattr(self, 'prev', None)
             if not prev:
                 break
-            if os.path.splitext(prev["path"])[1] in self.OPENERS and _ >= 2:
+            if prev['path'] != on:
+                on, passes = prev['path'], 0
+            if os.path.splitext(prev["path"])[1] in self.OPENERS and passes >= 2:
                 break                 # a compressed copy: two passes of it at most
+            passes += 1
             at = prev.get('offset')
             some = self.read_prev(limit_bytes)
             got.extend(some)
-            prev = getattr(self, 'prev', None)
-            if prev and not some and prev.get('offset') == at:
+            now = getattr(self, 'prev', None)
+            if now is prev and not some and prev.get('offset') == at:
                 # Nothing more to come out of it: read to its end, or a
-                # last line with no end that nobody will finish now.
-                self.prev = None
-                break
+                # last line with no end that nobody will finish now - and on
+                # to the next newer copy waiting, if there is one.
+                self.prev = self.queued_prev(prev.get('then'))
         prev = getattr(self, 'prev', None)
         if prev:
             log('%s was rotated again before the copy rotated before was read to its end; '
@@ -35972,6 +36122,10 @@ class Storage(object):
         skip, holes = self.routine_clause()
         sql += skip
         args += holes
+        # ...and without the PDC's copies, as the events' own path (1.10.378).
+        skip, holes = self.win_not_chained()
+        sql += skip
+        args += holes
         if self.dialect.name == 'postgres' and by not in ('machine', 'account', 'ip'):
             sql = self.distinct_sets(sql, col)
         else:
@@ -36280,8 +36434,16 @@ class Storage(object):
             # The machine a lockout names is the one Windows was told about,
             # and it is not always filled in. Where it is not, the refusals
             # before it usually know.
+            # ...only from refusals up to the lockout, and none a controller
+            # wrote as a copy (1.10.378): a refusal after the lock ("the
+            # account is locked") named another machine, and the PDC's copy
+            # put a controller's address beside it.
+            ctl = set(WIN_CONTROLLER_IPS)
+            fill = [said for said in one['before']
+                    if float(said.get('ts') or 0) <= float(one['ts'] or 0)
+                    and str(said.get('ip') or '') not in ctl]
             if not one.get('machine'):
-                for said in one['before']:
+                for said in fill:
                     if said.get('machine'):
                         one['machine'] = said['machine']
                         break
@@ -36290,12 +36452,12 @@ class Storage(object):
             # name beside another's address (1.10.337).
             if not one.get('ip'):
                 mine = win_short_name(one.get('machine'))
-                for said in one['before']:
+                for said in fill:
                     if said.get('ip') and (not mine or win_short_name(said.get('machine')) == mine):
                         one['ip'] = said['ip']
                         break
             one['process'] = one.get('process') or next(
-                (said.get('process') for said in one['before'] if said.get('process')), '')
+                (said.get('process') for said in fill if said.get('process')), '')
             # ...and the whole answer rather than the newest one: which
             # machines and which programs were trying this account in the
             # half hour before it locked, counted. A lockout is almost never
@@ -36991,6 +37153,11 @@ class Storage(object):
         sql = ('SELECT %s AS said, COUNT(*) AS n FROM win_events WHERE ts >= ?%s'
                % (by, copy))
         more = [float(since)] + args
+        # Only the copies the buckets counted: routine ones they never did
+        # (1.10.378), and taking them off took real refusals with them.
+        rskip, rholes = self.routine_clause()
+        sql += rskip
+        more += rholes
         if machines is False:
             sql += ' AND COALESCE(is_machine,0) = 0'
         try:
@@ -37822,9 +37989,29 @@ class Storage(object):
             # for people, not one machine trying names (1.10.336).
             rows = [r for r in rows if not (
                 (by == 'machine' and win_short_name(r['said']) in WIN_CONTROLLERS)
-                or (by == 'ip' and str(r['said']) in WIN_CONTROLLER_IPS))][:5]
+                or (by == 'ip' and str(r['said']) in WIN_CONTROLLER_IPS))]
+            # The names are PEOPLE, not spellings (1.10.378): `jnovak`,
+            # `EXAMPLE\\jnovak` and `jnovak@example.cz` are one account, so
+            # the bar is applied to the names folded together.
+            kept = []
             for row in rows:
-                out.append({'said': row['said'], 'names': int(row['names'] or 0),
+                if len(kept) >= 5:
+                    break
+                try:
+                    said = self.db.execute(
+                        'SELECT DISTINCT account FROM win_events '
+                        + sql.split(' FROM win_events ', 1)[1]
+                        + ' AND %s = ?' % by,
+                        args + [row['said']]).fetchall()
+                    folded = {win_fold_account(r['account']) for r in said}
+                    folded.discard('')
+                except sqlite3.Error:
+                    folded = None
+                if folded is not None and len(folded) < self.SPRAY_NAMES:
+                    continue
+                kept.append((row, len(folded) if folded is not None else row['names']))
+            for row, names in kept:
+                out.append({'said': row['said'], 'names': int(names or 0),
                             'n': int(row['n'] or 0), 'last': float(row['last'] or 0),
                             'by': by})
             if out:
@@ -62006,6 +62193,18 @@ class Daemon(object):
     WANTED_ATTRS = ('distinguishedName', 'sAMAccountName', 'userPrincipalName',
                     'displayName', 'mail', 'memberOf', 'userAccountControl')
 
+    def directory_drop_rights(self, name):
+        """A directory account the directory gives no role any more keeps
+        none here either: read-only, the least there is (1.10.378)."""
+        try:
+            user = self.store.user(name)
+            if user and user.get('from_dir') and user.get('role') != 'readonly':
+                self.store.put_user_role(user['name'], 'readonly')
+                log('%s keeps no rights here: the directory gives them none' % user['name'],
+                    'info')
+        except Exception as e:                   # never in the way of the answer
+            log('the rights of %s could not be taken back: %s' % (name, str(e)[:100]), 'warn')
+
     def directory_find(self, link, name):
         """One person, by the name they type. None when there is no such
         person, which is what sends the sign-in to the local accounts."""
@@ -62267,6 +62466,16 @@ class Daemon(object):
             for name in who:
                 try:
                     entry = self.directory_find(link, name)
+                    # Somebody of another domain of the forest is kept as
+                    # `sam@domain`, and their UPN need not end in it
+                    # (1.10.378): not found by that name, they were "no
+                    # longer in the directory" every quarter of an hour. The
+                    # entry they signed in as is asked about by its DN.
+                    dn = str((self.store.user(name) or {}).get('dn') or '').strip()
+                    if entry is None and dn:
+                        found = link.search(dn, ldap_present('objectClass'),
+                                            self.WANTED_ATTRS, scope=0, limit=1)
+                        entry = found[0] if found else None
                 except LdapError as e:
                     log('the directory could not be asked about %s: %s' % (name, str(e)[:100]),
                         'debug')
@@ -62286,6 +62495,13 @@ class Daemon(object):
                             'is no longer in any of the groups that may use this'))
                     ended = self.store.drop_session(name=name)
                     out['ended'] += ended
+                    # ...and the rights they had are not kept for them
+                    # (1.10.378): left a full administrator here, their own
+                    # password signed them in as one while the directory
+                    # could not be asked, and they counted as an
+                    # administrator nobody else could be the last of. The
+                    # next sign-in through the directory sets it again.
+                    self.directory_drop_rights(name)
                     self.store.add_event(
                         'users', '%s %s; %d sign-in(s) ended' % (name, why, ended),
                         'warn', who=name)
@@ -62971,7 +63187,9 @@ class Daemon(object):
         # Counted as the directory reads the name (1.10.356): DOMAIN\\ in front
         # is thrown away there, and a new one each time was a new allowance
         # of tries at the same account.
-        count_name = name.split('\\', 1)[1] if '\\' in name else name
+        # ...and with the spaces the directory throws away as well (1.10.378):
+        # `CORP\\ jnovak` asked it about jnovak, and was a counter of its own.
+        count_name = (name.split('\\', 1)[1] if '\\' in name else name).strip()
         where = str(ip or '')[:64]
         if self.password_off():
             # Only Windows (1.10.340): no password signs in, a local
@@ -63089,6 +63307,8 @@ class Daemon(object):
                     # not on the list. Not a wrong password, either.
                     self._login_forget_one(where, now)
                     self._login_forget_one('user:' + count_name, now)
+                    for n in {name, count_name}:
+                        self.directory_drop_rights(n)          # 1.10.378, as the recheck
                     raise Refused('this account is in none of the groups that may use this',
                                   str(e)[:300])
                 else:
@@ -90528,7 +90748,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                         keys = store.passkeys()
                         for k in keys:
                             if k['id'] == cid:
-                                k['count'] = facts['count']
+                                # Never lower (1.10.378): a counter of 0 written
+                                # down switched the check above off for good,
+                                # and a copied key's next lower count passed.
+                                k['count'] = max(int(k.get('count') or 0),
+                                                 int(facts['count'] or 0))
                                 k['last_used'] = time.time()
                         store.put_passkeys(keys)
                     label = key['name']
