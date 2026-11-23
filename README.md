@@ -372,6 +372,29 @@ working.
 
 ## Version
 
+1.10.376
+
+- **Bug hunt, round 5 of 10** (test/fixes376_hunt.py):
+  - *pages*: more than 4 MB of JSON is taken only from a full admin (a
+    read-only account's 32 MB ran a PHP worker out of memory); the sign-in form
+    posts, so without its script it never puts the password in the address
+    (and so in nginx's log); a daemon busy with an optimize says it is busy
+    instead of telling a full admin to sign in.
+  - *command line*: two commands on one line are said, not the first done and
+    the rest dropped with a success; `--help` on a terminal that is not UTF-8;
+    `--export --secrets` is the owner's from its first byte; the CRL and OCSP
+    clears print only JSON under `--json`.
+  - *console*: adding or taking away a trusted root asks on the console and
+    then does it (it did nothing); a letter of more than one byte typed into a
+    field (a password with ž) is read whole; a search or a reason beginning
+    with "-" is no longer taken for an option.
+  - *SQLite*: no search box found text with an accented capital letter
+    (Šárka, Číny) - a search with any letter beyond A to Z now asks with the
+    LOWER() that folds it; a file made before 1.10.200 has its indexes over
+    LOWER() built again once, at the first start - a row with Š in its name
+    made deleting old rows fail as "database disk image is malformed", so they
+    were never let go, and the check called the file damaged.
+
 1.10.375
 
 - **Bug hunt, round 4 of 10** (test/fixes375_hunt.py):

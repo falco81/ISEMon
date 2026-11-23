@@ -44,6 +44,14 @@ function isemon_https(): bool
 function isemon_full_admin_or_refuse(): void
 {
     $who = isemon_session() !== '' ? isemon_whoami() : null;
+    /* Busy is not signed out (1.10.376): a daemon taking its time over an
+       optimize told a full admin to sign in. */
+    if ($who === null && isemon_session() !== '' && !empty($GLOBALS['isemon_timed_out'])) {
+        http_response_code(503);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'the daemon is busy - try again in a moment']);
+        exit;
+    }
     if (!is_array($who) || !empty($who['second']) || ($who['role'] ?? '') !== 'fulladmin') {
         http_response_code(403);
         header('Content-Type: application/json; charset=utf-8');

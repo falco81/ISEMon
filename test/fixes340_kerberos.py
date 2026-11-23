@@ -354,7 +354,7 @@ if shutil.which('php') and shutil.which('curl'):
         text = urllib.request.urlopen('http://127.0.0.1:%d/index.php' % WEB, timeout=30).read() \
             .decode()
         ok('only Windows: the form hidden, the button the main one',
-           ('id="signin-form" autocomplete="on" hidden' in text, 'data-only="1"' in text),
+           ('id="signin-form" method="post" action="?api=login" autocomplete="on" hidden' in text, 'data-only="1"' in text),
            (True, True))
         isemon.CONFIG['password_off'] = 0
     finally:

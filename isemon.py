@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.375'
+__version__ = '1.10.376'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -23103,6 +23103,12 @@ class Db(object):
     def _execute_now(self, sql, args=()):
         self.limit_to(getattr(_STATEMENT_LIMIT, 's', 0))
         said = self.dialect.say(sql)
+        # SQLite's own LIKE folds A to Z only: a search with any other letter
+        # in it asks with the LOWER() the rewrite took away (1.10.377) -
+        # without it Šárka was never found, whoever typed what.
+        if said != sql and self.dialect.name == 'sqlite' and any(
+                isinstance(a, str) and not a.isascii() for a in (args or ())):
+            said = sql
         cur = self.raw.cursor()
         began = time.time()
         args = self._no_nul(args or ())
@@ -24262,7 +24268,8 @@ class SqliteDialect(Dialect):
         # LOWER() that folds every letter, as the other two engines' does and
         # as Python folds the other side of each comparison (1.10.200):
         # SQLite's own folds A to Z only, and a name like Šťastný could
-        # never be found. No index here is built on LOWER().
+        # never be found. The indexes over LOWER() made before this are built
+        # again once (`mend_lower_indexes`, 1.10.377).
         try:
             raw.create_function('lower', 1, sqlite_lower, deterministic=True)
         except (TypeError, sqlite3.Error):
@@ -28259,6 +28266,7 @@ class Storage(object):
             log('database: laying the schema down all at once was refused (%s); '
                 'doing it a statement at a time' % str(e)[:160], 'warn')
         self.mend()
+        self.mend_lower_indexes()
         self.mend_tacplus_refusals()
         self.mend_fw_areas()
         self.mend_fw_other()
@@ -30093,6 +30101,31 @@ class Storage(object):
             pass
         log('database: a one-time repair, %s - starting' % what.replace('_', ' '), 'info')
         return False
+
+    def mend_lower_indexes(self):
+        """The indexes over LOWER() built again, once (1.10.377).
+
+        A file made before 1.10.200 holds them as SQLite's own LOWER() made
+        them, which folds A to Z only; since then LOWER() is Python's, which
+        folds every letter. A row whose name has Š or Č in it then had an
+        entry SQLite could not find again: deleting it failed as "database
+        disk image is malformed", the old rows were never let go, and the
+        check said the file was damaged."""
+        if self.dialect.name != 'sqlite' or self.mended_once('lower_reindex', '1'):
+            return
+        try:
+            names = [str(r['name']) for r in self.db.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'index' "
+                "AND sql LIKE '%LOWER(%'")]
+            for name in names:
+                with self.db_write() as db:
+                    db.execute('REINDEX %s' % self.dialect.ident(name))
+            self.mended_done('lower_reindex', '1')
+            log('database: a one-time repair, lower reindex - %d index(es) built again'
+                % len(names), 'info')
+        except sqlite3.Error as e:
+            log('database: the indexes over LOWER() could not be built again: %s'
+                % str(e)[:160], 'warn')
 
     def mended_done(self, what, version=''):
         """...and the mark that it has, written only once it HAS: until
@@ -48915,6 +48948,7 @@ class Storage(object):
         # rules as well, which is what a start does and what the restored
         # rows have never had done to them.
         self.mend()
+        self.mend_lower_indexes()
         self.mend_tacplus_refusals()
         self.mend_fw_areas()
         self.mend_fw_other()
@@ -96364,11 +96398,14 @@ def cmd_export(args, pal, store):
         return 0
     where = Path(str(args.export)).expanduser()
     where.parent.mkdir(parents=True, exist_ok=True)
-    where.write_text(text + '\n', encoding='utf-8')
-    try:
-        os.chmod(where, 0o600 if args.secrets else 0o644)
-    except OSError:
-        pass
+    # Its own mode from the first byte (1.10.376): written first and then
+    # made the owner's, the passwords were readable by anybody meanwhile -
+    # and a mode that could not be set was said set all the same.
+    fd = os.open(str(where), os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW,
+                 0o600 if args.secrets else 0o644)
+    with os.fdopen(fd, 'w', encoding='utf-8') as out:
+        os.fchmod(out.fileno(), 0o600 if args.secrets else 0o644)
+        out.write(text + '\n')
     if args.secrets:
         store.add_event('settings', 'the configuration was exported with the passwords and '
                         'keys in it', 'warn', who='the command line')
@@ -98150,7 +98187,8 @@ def cmd_cert_login_ocsp(args, pal, store):
         'ocsp_clear' if args.cert_login_ocsp_clear else '')
     if act:
         if act == 'ocsp_clear':
-            pal.say('  every OCSP answer kept is forgotten - the next sign-in asks again')
+            if not getattr(args, 'json', False):          # JSON alone under --json (1.10.376)
+                pal.say('  every OCSP answer kept is forgotten - the next sign-in asks again')
             if not _ot_yes(args, pal, 'clear them?'):
                 return 1
         status, asked = api_call('/api/certlogin', 'POST', {'action': act, 'url': ''},
@@ -98226,8 +98264,9 @@ def cmd_cert_login_crl(args, pal, store):
     if act:
         url = (args.cert_login_crl_fetch if act == 'fetch' else args.cert_login_crl_clear) or ''
         if act == 'clear' and not url:
-            pal.say('  every CRL kept is forgotten - while an address does not answer then, '
-                    'nobody signs in with a certificate of its authority')
+            if not getattr(args, 'json', False):          # JSON alone under --json (1.10.376)
+                pal.say('  every CRL kept is forgotten - while an address does not answer then, '
+                        'nobody signs in with a certificate of its authority')
             if not _ot_yes(args, pal, 'clear them?'):
                 return 1
         status, asked = api_call('/api/certlogin', 'POST', {'action': 'crl_' + act, 'url': url},
@@ -100171,7 +100210,7 @@ class Console(object):
                  'Empty: every event. Or a name, an address or a word.'}])
             if got:
                 self.act('--events', '--limit', got['n'],
-                         *(['--search', got['q']] if got['q'] else []))
+                         *(['--search=%s' % got['q']] if got['q'] else []))
 
         def stop_job():
             got = self.out('--jobs') or {}
@@ -100219,7 +100258,7 @@ class Console(object):
 
     def _list_args(self, got):
         return (['--limit', got['n']] + (['--hours', got['hours']] if got.get('hours') else [])
-                + (['--search', got['q']] if got.get('q') else []))
+                + (['--search=%s' % got['q']] if got.get('q') else []))
 
     @staticmethod
     def ip_bad(v):
@@ -100299,7 +100338,7 @@ class Console(object):
             return
         extra = (['--minutes', got['minutes']] if got['how'] == 'minutes' else
                  (['--forever'] if got['how'] == 'forever' else []))
-        self.act('--ban', got['addr'], *extra, *(['--why', got['why']] if got['why'] else []))
+        self.act('--ban', got['addr'], *extra, *(['--why=%s' % got['why']] if got['why'] else []))
 
     def unban_one(self):
         ip = self.ask_one('Let an address back in', 'the address', help_=(
@@ -100916,6 +100955,23 @@ class Console(object):
                 except Exception:                       # noqa: BLE001
                     pass
             return named[k]
+        # A letter of more than one byte, read whole (1.10.376): byte by
+        # byte, `ž` in a password was saved as two other letters.
+        if 0xc2 <= k <= 0xf4:
+            raw = bytes([k])
+            want = 2 if k < 0xe0 else 3 if k < 0xf0 else 4
+            src.timeout(50)
+            while len(raw) < want:
+                more = src.getch()
+                if not 0x80 <= more <= 0xbf:
+                    if more != -1:
+                        c.ungetch(more)
+                    break
+                raw += bytes([more])
+            try:
+                return raw.decode('utf-8')
+            except UnicodeDecodeError:
+                return None
         if 32 <= k < 0x110000:
             try:
                 return chr(k)
@@ -101737,13 +101793,17 @@ class Console(object):
         elif what == 'add':
             f = self.ask_one('Add an authority', 'the file', help_='A root or intermediate '
                              'certificate authority: PEM (a chain adds each one) or one in DER.')
-            if f:
-                self.act('--os-roots-add', f)
+            # Asked here, then said yes to (1.10.376): the command asked on
+            # a terminal it did not have and did nothing.
+            if f and self.confirm('Add an authority', 'Add the authorities in %s to '
+                                  'this machine\'s trusted roots?' % f):
+                self.act('--os-roots-add', f, '--yes')
         elif what == 'remove':
             fp = self.ask_one('Take one away', 'its SHA-256', help_='12 characters of it at least '
                               '(isemon --os-roots shows them).')
-            if fp:
-                self.act('--os-roots-remove', fp)
+            if fp and self.confirm('Take one away', 'Take the authority %s away from '
+                                    'the trusted roots?' % fp, danger=True):
+                self.act('--os-roots-remove', fp, '--yes')
 
     # ---- 10 > the way out through the proxy (1.10.268) ------------------------------
     def proxy_try_menu(self):
@@ -102256,6 +102316,20 @@ class HelpfulParser(argparse.ArgumentParser):
     """
 
     palette = None
+
+    def _print_message(self, message, file=None):
+        """Printed whatever the terminal can show (1.10.376): an arrow in the
+        help on a terminal that is not UTF-8 was a traceback instead."""
+        if not message:
+            return
+        file = file or sys.stderr
+        try:
+            file.write(message)
+        except UnicodeEncodeError:
+            enc = getattr(file, 'encoding', None) or 'ascii'
+            file.write(message.encode(enc, 'replace').decode(enc, 'replace'))
+        except (AttributeError, OSError):
+            pass
 
     def format_help(self):
         try:
@@ -102850,6 +102924,17 @@ def main(argv=None):
     # An option that only qualifies a command, given without one (1.10.197):
     # `isemon --sync` meant with --mikrotik started a whole second daemon in
     # the terminal - reading the logs and banning beside the service.
+    # Two commands on one line: said, not the first done and the rest dropped
+    # with a success (1.10.376) - a script adding --users to --add-user
+    # believed the account was made.
+    asked = []
+    for wanted, work in table:
+        name = '--' + work.__name__[4:].replace('_', '-')
+        if wanted and name not in asked:
+            asked.append(name)
+    if len(asked) > 1:
+        parser.error('%s are %d commands - give one at a time'
+                     % (', '.join(asked), len(asked)))
     if not any(wanted for wanted, _work in table):
         given = sorted(dest for dest, value in vars(args).items()
                        if dest not in ('config', 'debug', 'no_color')

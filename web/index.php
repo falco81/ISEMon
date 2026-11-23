@@ -482,6 +482,17 @@ if (isset($_GET['api'])) {
             echo json_encode(['ok' => false, 'error' => 'that is too much to send here']);
             exit;
         }
+        /* ...and more than a few megabytes of JSON only from a full admin
+           (1.10.376): a read-only account's 32 MB array ran a worker out of
+           memory decoding it before the daemon asked who sent it. */
+        if ($told > 4 * 1024 * 1024 && !in_array($what, ['db-restore', 'upgrade-package',
+                                                          'rbackup-upload'], true)
+            && (($big_who['role'] ?? '') !== 'fulladmin')) {
+            http_response_code(413);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'error' => 'that is too much to send here']);
+            exit;
+        }
         if ($told > 32 * 1024 * 1024 && $what !== 'db-restore'
             && !($what === 'upgrade-package' && $told <= 64 * 1024 * 1024)
             && !($what === 'rbackup-upload' && $told <= 4 * 1024 * 1024 * 1024)) {
@@ -6023,7 +6034,7 @@ function srcText(el) {
       <div class="offline">There is no account on this machine yet. Make one on the server:<br>
         <span class="mono">isemon --add-user yourname --role fulladmin</span></div>
     <?php endif; ?>
-    <form id="signin-form" autocomplete="on"<?= (is_array($health) && !empty($health['kerberos']['only'])) ? ' hidden' : '' ?>>
+    <form id="signin-form" method="post" action="?api=login" autocomplete="on"<?= (is_array($health) && !empty($health['kerberos']['only'])) ? ' hidden' : '' ?>>
       <input type="text" id="in-name" name="username" placeholder="name" autocomplete="username"
              autocapitalize="none" spellcheck="false" required>
       <input type="password" id="in-pass" name="password" placeholder="password"
