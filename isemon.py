@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.373'
+__version__ = '1.10.374'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2772,13 +2772,28 @@ _LOG_LOCK = threading.Lock()
 _LOG_BIG = {'n': 0, 'said': False, 'big': False}   # see _log_too_big
 
 
+def log_file_open(want):
+    """The log, for adding to - never through a link (1.10.374): the folder
+    is the service account's, and root running isemon wrote wherever a link
+    put there pointed."""
+    got = open(str(want), 'a', encoding='utf-8',
+               opener=lambda p, flags: os.open(p, flags | os.O_NOFOLLOW, 0o640))
+    try:
+        if not stat.S_ISREG(os.fstat(got.fileno()).st_mode):
+            raise OSError('%s is not a file' % want)
+    except OSError:
+        got.close()
+        raise
+    return got
+
+
 def open_log(path=None):
     global _LOG_FILE, _LOG_PATH
     want = Path(path) if path else (LOG_DIR / 'isemon.log')
     _LOG_BIG.update(n=0, said=False, big=False)
     try:
         want.parent.mkdir(parents=True, exist_ok=True)
-        _LOG_FILE = open(want, 'a', encoding='utf-8')
+        _LOG_FILE = log_file_open(want)
         _LOG_PATH = want
     except OSError:
         _LOG_FILE = None
@@ -2855,7 +2870,7 @@ def reopen_log():
                 pass
         try:
             want.parent.mkdir(parents=True, exist_ok=True)
-            _LOG_FILE = open(want, 'a', encoding='utf-8')
+            _LOG_FILE = log_file_open(want)
             _LOG_PATH = want
         except OSError:
             _LOG_FILE = None
@@ -5445,9 +5460,14 @@ SECRET_KIND_WORDS = (r'(?:ascii|hex|md5|sha\d*|aes(?:\s+\d+)?|des|3des|encrypted
                      r'unencrypted|cleartext|plaintext|plain|cipher|type\s+\d{1,2})')
 COMMAND_SECRET = re.compile(
     r'(?i)\b(secret|password|passwd|community|key|key-string|shared-secret|psk|'
-    r'pre-shared-key|wpa-psk|passphrase|api-key|token)\b((?:\s+\d|\s+\d\d(?=\s+\$))?'
+    r'pre-shared-key|wpa-psk|passphrase|api-key|token)\b((?:\s+level\s+\d+)?(?:\s+\d|\s+\d\d(?=\s+\$))?'
     r'(?:\s+(?:\d+\s+)?' + SECRET_KIND_WORDS + r')*(?:\s+\d|\s+\d\d(?=\s+\$))?\s+)(\S+)'
     r'|\b(auth|priv)(\s+(?:md5|sha\d*|aes(?:\s+\d+)?|des|3des)\s+)(\S+)')
+
+
+COMMAND_SNMP_HOST = re.compile(
+    r'(?i)\b(snmp-server\s+host\s+\S+(?:\s+(?:informs|traps))?'
+    r'(?:\s+version\s+(?:1|2c|3\s+(?:auth|noauth|priv)))?\s+)(?!\(hidden\))(\S+)')
 
 
 def command_kept(cmd):
@@ -5468,6 +5488,8 @@ def command_kept(cmd):
                             'generate', 'zeroize'):
             return m.group(0)
         return '%s%s(hidden)' % (m.group(1), m.group(2))
+    # ...and an SNMP community, the last word of `snmp-server host` (1.10.374).
+    text = COMMAND_SNMP_HOST.sub(lambda m: m.group(1) + '(hidden)', text)
     return COMMAND_SECRET.sub(hide, text)
 
 
@@ -10140,6 +10162,11 @@ def tacplus_pairs(parts):
         if name == 'How they signed in':
             value = TACPLUS_METHOD.get(value.strip(), value.strip())
         fields.setdefault(name, []).append(value.strip())
+    # `cmd=enable  cmd-arg=secret  cmd-arg=X`: one command, said whole
+    # (1.10.374) - word by word, a password never stood beside the word that
+    # says it is one, and was kept in clear.
+    if len(fields.get('Command') or []) > 1:
+        fields['Command'] = [' '.join(v for v in fields['Command'] if v)]
     return fields
 
 
@@ -18469,6 +18496,16 @@ def acme_when(m, now=None):
         except ValueError:
             return now
     text = re.sub(r'\s+', ' ', m.group('bsd'))
+    # The way every other reader reads such a time (1.10.374): the hour the
+    # clocks go back said twice is told apart, as `otp_when` tells it.
+    bits = text.split(' ')
+    if len(bits) == 3:
+        try:
+            got = otp_when(bits[0], bits[1], bits[2], now=now, zone='')
+            if got is not None:
+                return float(got)
+        except (ValueError, TypeError, OverflowError):
+            pass
     year = time.localtime(now).tm_year
     # The year that puts it nearest now and no later than tomorrow - next
     # year's too, for a node a few seconds ahead at New Year, and a 29
@@ -36839,11 +36876,13 @@ class Storage(object):
         map of which controller is at which address (addresses typed in
         rather than learned), the later of the two is taken for the copy.
         """
-        ips = sorted(WIN_CONTROLLER_IPS)[:40]
+        # Copies first (1.10.374): the daemon's thread changes both while a
+        # page's thread reads them.
+        ips = sorted(set(WIN_CONTROLLER_IPS))[:40]
         if not ips:
             return '', []
-        at = sorted((name, ip) for name, found in WIN_CONTROLLER_AT.items()
-                    for ip in found)[:40]
+        at = sorted((name, ip) for name, found in list(WIN_CONTROLLER_AT.items())
+                    for ip in list(found))[:40]
         if at:
             # The server as written - `dc04` or `dc04.corp.int` (1.10.200):
             # compared with the short name only, the copies of a domain
@@ -45366,7 +45405,8 @@ class Storage(object):
             last = float(self.get_meta(key) or 0)
         except (TypeError, ValueError):
             last = 0.0
-        if time.time() - last < 86400:
+        # ...a moment ahead of now is the clock having been wrong (1.10.374).
+        if 0 <= time.time() - last < 86400:
             return False
         try:
             self.set_meta(key, repr(time.time()))
@@ -58576,7 +58616,7 @@ class Daemon(object):
             return
         every = max(1, int(CONFIG.get('mac_vendors_every_d') or 30)) * 86400
         at = float(self.store.get_meta('mac_vendors_at') or 0)
-        overdue = time.time() - at - every
+        overdue = self.fetch_overdue(at, every)
         if overdue < 0:
             return
         if not self.update_window_open(overdue, every):
@@ -58679,6 +58719,26 @@ class Daemon(object):
 
     # ---- fetching things again, by themselves --------------------------------
     @staticmethod
+    def fetch_overdue(at, every_s):
+        """How long past due something fetched at `at` is (1.10.374).
+
+        A moment in the future - written while the clock was ahead, before
+        NTP set it back - is no fetch at all: it held the next one off for as
+        long as the clock had been wrong. And with a time of day set, an hour
+        of slack: on the day the clocks go forward a day's interval ends an
+        hour after the chosen hour, and the fetch was skipped for the day."""
+        now = time.time()
+        at = float(at or 0)
+        if at > now + 3600:
+            at = 0.0
+        slack = 0
+        if str(CONFIG.get('update_when') or 'interval') == 'at_time' and \
+                Daemon.update_at_applies(every_s) and parse_hhmm(CONFIG.get('update_at')) \
+                is not None:
+            slack = 3600
+        return now - at - every_s + slack
+
+    @staticmethod
     def update_window_open(overdue_s, every_s=None):
         """Whether an automatic fetch may run at this moment.
 
@@ -58715,7 +58775,16 @@ class Daemon(object):
         minutes = now.tm_hour * 60 + now.tm_min
         # ...an hour that goes on past midnight (1.10.304): at 23:50 it was ten
         # minutes long, and the pass every quarter of an hour mostly missed it.
-        return (minutes - want) % 1440 < 60
+        if (minutes - want) % 1440 < 60:
+            return True
+        # ...and a chosen time the clocks jumped over (02:00 on the day they
+        # go forward) is the hour after the jump (1.10.374).
+        try:
+            at = time.mktime((now.tm_year, now.tm_mon, now.tm_mday, want // 60, want % 60,
+                              0, 0, 0, -1))
+            return 0 <= time.time() - at < 3600
+        except (OverflowError, ValueError):
+            return False
 
     @staticmethod
     def update_at_applies(every_s):
@@ -58831,7 +58900,7 @@ class Daemon(object):
             return
         every = max(1, int(CONFIG.get('geo_every_d') or 30)) * 86400
         at = float(self.store.get_meta('geo_at') or 0)
-        overdue = time.time() - at - every
+        overdue = self.fetch_overdue(at, every)
         if overdue < 0:
             return
         if not self.update_window_open(overdue, every):
@@ -59044,7 +59113,7 @@ class Daemon(object):
         self.store.set_meta('updates_looked_at', str(int(time.time())))
         for which in self.feed_wanted():
             at = float(self.store.get_meta('feed_at_%s' % which) or 0)
-            overdue = time.time() - at - every
+            overdue = self.fetch_overdue(at, every)
             if overdue < 0:
                 continue
             if not self.update_window_open(overdue, every):

@@ -372,6 +372,26 @@ working.
 
 ## Version
 
+1.10.374
+
+- **Bug hunt, round 3 of 10** (test/fixes374_hunt.py):
+  - *time*: a daily fetch set for a time of day (blocklists, the country
+    database, MAC vendors) was skipped on the day the clocks go forward - and
+    a chosen time the clocks jump over (02:00) is the hour after the jump; a
+    fetch written down while the clock was ahead (before NTP set it back) no
+    longer holds the next one off for as long as it was wrong; acme's lines in
+    the hour said twice when the clocks go back are told apart, as every other
+    reader tells them.
+  - *TACACS+*: a command sent as `cmd=` and `cmd-arg=` pairs is one command -
+    word by word, a password never stood beside the word that says it is one
+    and was kept in clear; `enable password level 15 X` and an SNMP community
+    after `snmp-server host` are hidden too.
+  - the domain controllers' addresses read on a page's thread while the
+    daemon's changes them.
+  - *the log*: isemon run as root (`--check`, also from install.sh) opened its
+    log through a link the service account could put in its place, and wrote
+    wherever it pointed - opened without following links now.
+
 1.10.373
 
 - **Bug hunt, round 2 of 10** (test/fixes373_hunt.py):
