@@ -372,6 +372,26 @@ working.
 
 ## Version
 
+1.10.380
+
+- **Bug hunt, round 9 of 10** (test/fixes380_hunt.py):
+  - *banning*: with NPS only watched, a ban the watched door made no longer
+    throws away the earlier refusals at ISE - the third ISE refusal bans, as
+    with NPS off, not the fifth; a ban by hand over one whose time had run
+    out (and was not swept yet) starts clean, so one attempt does not make
+    it for good.
+  - *API*: a MikroTik API key made, a certificate made or forgotten, is a
+    POST only; a GET reads the commands to type and nothing else.
+  - *timers*: a stamp ahead of a clock put back no longer holds off the
+    directory recheck (an administrator taken out of the group kept the
+    rights for as long as the clock had been ahead), the disk alerts or the
+    root parts' check; a TLS self-check that could not ask the web server is
+    asked again after ten minutes; a daily clean-up that fails is said in
+    the log and tried again in an hour, not tomorrow.
+  - *upgrades*: a look for a new version that fails keeps what the last one
+    found (the newer version stayed offered) and is tried again in an hour;
+    "isemon X is out" is no longer said again after every failed look.
+
 1.10.379
 
 - **Bug hunt, round 8 of 10** (test/fixes379_hunt.py):

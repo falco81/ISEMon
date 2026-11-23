@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.379'
+__version__ = '1.10.380'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -56898,7 +56898,7 @@ class Daemon(object):
                 self._blocked_noted(ip)
             self.store.set_meta('blocked_how_%s' % ip,
                                 'for good: it is on the %s list and it came here' % listed)
-            if self.store.blocked_one(ip) is None:
+            if not self.ban_in_force(ip):
                 self.forget_ban_marks(ip, ('charged', 'earned'))
             self.store.set_meta('blocked_feed_%s' % ip, listed)
             self.keep_proof(ip, at=getattr(record, 'ts', None))
@@ -56966,7 +56966,12 @@ class Daemon(object):
                 charged = float(self.store.get_meta('blocked_charged_%s' % ip) or 0)
             except (TypeError, ValueError):
                 charged = 0.0
-        if charged:
+        # Not when only a carried ban is asked about (1.10.380): no carried
+        # ban covers the address then, so nothing at a door that bans was
+        # ever charged - and the mark of a ban only watched threw away the
+        # attempts at those doors before it, so watching NPS made the ISE
+        # ban wait for two more refusals than with NPS off.
+        if charged and not only_carried:
             recent = [r for r in recent if float(r['ts'] or 0) > charged]
         # Only the attempts at a door whose source is on count (1.10.193):
         # the VPN through NPS switched off as a source, its refusals earn
@@ -57193,6 +57198,15 @@ class Daemon(object):
             self.mikrotik_after_change()
             self.bump()
         return done
+
+    def ban_in_force(self, ip):
+        """Whether a ban of this very address is being served now - not one
+        whose time has run out and that is waiting to be swept."""
+        row = self.store.blocked_one(ip)
+        if row is None:
+            return False
+        until = row.get('until') if hasattr(row, 'get') else row['until']
+        return until is None or float(until) > time.time()
 
     def maybe_escalate(self, ip, record=None):
         """An address that goes on trying while it is banned.
@@ -57424,7 +57438,10 @@ class Daemon(object):
         # hand counted every attempt since yesterday's - for good.
         # A ban already being served keeps them: what it was charged with
         # is still charged.
-        if self.store.blocked_one(text) is None:
+        # ...a ban whose time has run out and not yet been swept is none
+        # (1.10.380): its marks kept, a ban made by hand over it counted the
+        # attempts since it ended, and one more made it for good.
+        if not self.ban_in_force(text):
             self.forget_ban_marks(text, ('charged', 'earned', 'proof', 'feed'))
         self.store.set_meta('blocked_how_%s' % text,
                             'by hand, for good' if until is None
@@ -62515,7 +62532,10 @@ class Daemon(object):
         if not every or not self.directory_on():
             return {'looked': 0, 'changed': 0, 'ended': 0}
         now = time.time()
-        if now - self._directory_looked < every * 60:
+        # A stamp ahead of a clock put back is no recheck (1.10.380): held
+        # off for as long as the clock had been ahead, an administrator taken
+        # out of the group kept the rights all that time.
+        if 0 <= now - self._directory_looked < every * 60:
             return {'looked': 0, 'changed': 0, 'ended': 0}
         self._directory_looked = now
         who = sorted({str(s['name']).strip().lower() for s in self.store.sessions()
@@ -71470,9 +71490,29 @@ class Daemon(object):
         today = time.strftime('%Y-%m-%d')
         if minutes < want or self.store.get_meta('tidy_day') == today:
             return
+        going = getattr(self, '_tidy_day', None)
+        if going is not None and going.is_alive():
+            return
+        # One that failed is tried again in an hour, and said in the log
+        # (1.10.380): it died as a thread's uncaught error, on stderr alone,
+        # with the day written down as done.
+        if 0 <= time.time() - float(getattr(self, '_tidy_day_failed', 0) or 0) < 3600:
+            return
         self.store.set_meta('tidy_day', today)
-        threading.Thread(target=self.tidy_old_rows, name='tidy-day',
-                         kwargs={'said': 'the daily clean-up'}, daemon=True).start()
+
+        def work():
+            try:
+                self.tidy_old_rows(said='the daily clean-up')
+            except Exception as e:                      # noqa: BLE001
+                self._tidy_day_failed = time.time()
+                try:
+                    self.store.set_meta('tidy_day', '')
+                except Exception:                       # noqa: BLE001
+                    pass
+                log('the daily clean-up failed, tried again in an hour: %s'
+                    % str(e).split('\n')[0][:200], 'warn')
+        self._tidy_day = threading.Thread(target=work, name='tidy-day', daemon=True)
+        self._tidy_day.start()
 
     def split_maybe(self):
         """Split the tables that should be and are not, on a thread of its
@@ -74447,7 +74487,12 @@ class WebRoot(object):
         mark = hashlib.sha256((''.join(pems) + '|' + str(st.get('hash') or '') + '|' +
                                str(st.get('at') or '')).encode()).hexdigest()[:32]
         had = self._meta('tls_selfcheck', {})
-        if not force and had.get('mark') == mark:
+        # "Could not be asked" (nginx reloading as the certificate changed)
+        # is asked again after ten minutes (1.10.380); kept, the chain was
+        # never looked at again until the certificate changed.
+        if not force and had.get('mark') == mark and (
+                had.get('ok') is not None
+                or 0 <= time.time() - float(had.get('at') or 0) < 600):
             return had
         tls = self.tls_conf()
         try:
@@ -82267,7 +82312,7 @@ def root_parts_stale(fresh=False):
     version ships them - none on a machine isemon was not installed on as a
     service (a copy run by hand, the tests)."""
     now = time.time()
-    if not fresh and now - ROOT_PARTS_SEEN['at'] < ROOT_PARTS_EVERY_S:
+    if not fresh and 0 <= now - ROOT_PARTS_SEEN['at'] < ROOT_PARTS_EVERY_S:
         return ROOT_PARTS_SEEN['out']
     out = []
     if os.path.exists(ROOT_INSTALLED):
@@ -82321,7 +82366,8 @@ def storage_alerts(store):
     """What Disk and logs counts as trouble, looked at behind every half
     hour, never in the way of the status that carries it."""
     now = time.time()
-    if now - STORE_ALERT['at'] > STORE_ALERT_EVERY_S and not STORE_ALERT['busy']:
+    # ...or a stamp ahead of a clock put back (1.10.380).
+    if not (0 <= now - STORE_ALERT['at'] <= STORE_ALERT_EVERY_S) and not STORE_ALERT['busy']:
         STORE_ALERT['busy'] = True
 
         def look():
@@ -87407,6 +87453,14 @@ class Upgrades(object):
                         % (newest['version'], url), 'info')
         except Exception as e:                          # noqa: BLE001
             row['error'] = str(getattr(e, 'reason', None) or e).split('\n')[0][:300]
+            # ...and what the last look found is kept (1.10.380): dropped, the
+            # page stopped offering the newer version, and the next look that
+            # worked said "isemon X is out" a second time.
+            was = self._online_last()
+            if was.get('url') == url and was.get('here') == __version__:
+                for k in ('packages', 'newest', 'newer'):
+                    if k in was:
+                        row[k] = was[k]
         self.daemon.store.set_meta(self.ONLINE_META, json.dumps(row, default=str))
         return row
 
@@ -87419,8 +87473,11 @@ class Upgrades(object):
             return
         self._online_tried = time.time()
         last = self._online_last()
+        # A look that failed is tried again in an hour, not a day (1.10.380);
+        # one stamped ahead of a clock put back is no look at all.
+        every = 3600 if last.get('error') else self.ONLINE_EVERY_S
         if last.get('url') == self.online_url() and \
-                time.time() - float(last.get('at') or 0) < self.ONLINE_EVERY_S:
+                0 <= time.time() - float(last.get('at') or 0) < every:
             return
         with self.lock:
             if getattr(self, '_online_busy', False):
@@ -92631,6 +92688,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             data = self.body() if method == 'POST' else {}
             what = str(data.get('do') or one('do') or '')
             name = str(data.get('name') or one('name') or '').strip()
+            # Only what the router is to be told is read with a GET (1.10.380):
+            # a new key, a certificate made or forgotten is a POST, never a
+            # link anybody could put on a page.
+            if method != 'POST' and what != 'commands':
+                return self.fail('that is done with a POST', 405)
             if not FW_NAME_SHAPE.match(name or '-'):
                 return self.fail('which firewall? its name as in the list', 400)
             saved = next((r for r in fw_sources() if r['name'].lower() == name.lower()), {})

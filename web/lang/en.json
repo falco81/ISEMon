@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.379",
+  "version": "1.10.380",
   "made": "2026-11-23",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -28603,6 +28603,10 @@
   "s.that-file-is-too-big.3e63d759": {
    "source": "that file is too big",
    "text": "that file is too big"
+  },
+  "s.that-is-done-with-a-post.4baad9f5": {
+   "source": "that is done with a POST",
+   "text": "that is done with a POST"
   },
   "s.that-is-exactly-what-makes-it.6a902388": {
    "source": "That is exactly what makes it enough to stand another machine up with nothing typed in by hand — and exactly what makes it a file that gets somebody into your firewall. Keep it where you keep passwords, and not in a ticket.",

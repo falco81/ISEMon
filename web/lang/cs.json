@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.379",
+  "version": "1.10.380",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -28603,6 +28603,10 @@
   "s.that-file-is-too-big.3e63d759": {
    "source": "that file is too big",
    "text": "ten soubor je příliš velký"
+  },
+  "s.that-is-done-with-a-post.4baad9f5": {
+   "source": "that is done with a POST",
+   "text": "to se dělá požadavkem POST"
   },
   "s.that-is-exactly-what-makes-it.6a902388": {
    "source": "That is exactly what makes it enough to stand another machine up with nothing typed in by hand — and exactly what makes it a file that gets somebody into your firewall. Keep it where you keep passwords, and not in a ticket.",
