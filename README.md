@@ -372,6 +372,28 @@ working.
 
 ## Version
 
+1.10.377
+
+- **Bug hunt, round 6 of 10** (test/fixes377_hunt.py):
+  - *Traffic search*: `-( ... )` turns a group round as `NOT` and `!` do; a
+    range typed alone (`10.0.0.0/24`) is either end of a line in it, not that
+    text; a MAC in a field is found however it is written; `port~44` is said
+    to be wrong instead of meaning `port = 44`; an IPv6 address however it is
+    written (`2001:0db8::5`); `proto:pim` and `proto:ipv6`.
+  - *network*: a prefix of /0 to /7, a gateway that is the network's or the
+    broadcast address, and an address set by hand with no DNS server are
+    refused (each cut the machine off or left it finding no name); a way back
+    root would refuse is no trial - said at once, not found out when the time
+    ran out and nothing went back.
+  - *time and power*: chrony is put in again ten minutes after it failed
+    (root away once, and the servers saved were never put in); a power-off on
+    its way is busy for its two minutes, so a restart asked meanwhile is not
+    a second timer.
+  - *certificates*: a name of more than 64 letters (the CN's most) made
+    openssl refuse the request; an address with its %zone is refused for the
+    SAN.
+  - *upkeep*: the VPN's addresses handed out are kept newest last and capped.
+
 1.10.376
 
 - **Bug hunt, round 5 of 10** (test/fixes376_hunt.py):

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.376'
+__version__ = '1.10.377'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -16868,7 +16868,8 @@ FW_VERDICT_WORDS = {'allow': 'allow', 'allowed': 'allow', 'accept': 'allow',
                     # ...and as the page says them (1.10.166).
                     'let through': 'allow', 'only said': 'info'}
 FW_PROTO_WORDS = {'icmp': 1, 'igmp': 2, 'tcp': 6, 'udp': 17, 'gre': 47, 'esp': 50,
-                  'ah': 51, 'icmpv6': 58, 'ospf': 89, 'vrrp': 112, 'sctp': 132}
+                  'ah': 51, 'icmpv6': 58, 'ospf': 89, 'vrrp': 112, 'sctp': 132,
+                  'ipv6': 41, 'pim': 103}
 FW_TOKEN = re.compile(
     r'\s*(?:(?P<open>\()|(?P<close>\))|(?P<term>[-!]?(?:[A-Za-z_][\w.]*'
     r'(?:!=|>=|<=|[:~=<>])(?:"[^"]*"?|[^\s()]*)|"[^"]*"?|[^\s()"]+)))')
@@ -17075,6 +17076,11 @@ class FwLeaf(object):
                         lambda row, a=a, b=b: row.get('type') == a and row.get('sub') == b, item)
             return ('(type = ?%s)' % also, [a], lambda row, a=a: row.get('type') == a, item)
         if kind in ('num', 'bytes', 'secs'):
+            # "contains" is for words (1.10.377): `port~44` was `port = 44`,
+            # said as "contains 44".
+            if contains:
+                raise FwQueryError('~ is for words - %s:%s or a range %s:%s-%s'
+                                   % (self.field, item, self.field, item, item))
             if self.field == 'proto' and item.lower() in FW_PROTO_WORDS:
                 item = str(FW_PROTO_WORDS[item.lower()])
             m = re.match(r'^([^-]+)-([^-]+)$', item)
@@ -17089,6 +17095,13 @@ class FwLeaf(object):
             return ('(%s)' % ' OR '.join('(%s) = ?' % c for c in columns), [n] * len(columns),
                     lambda row, n=n: any(fw_value_of(row, c) == n for c in columns), item)
         low = item.lower()
+        # An address however it was written, as the line holds it (1.10.377):
+        # `2001:0db8::5` never found `2001:db8::5`.
+        if kind == 'ip' and '/' not in item and not contains and is_address(item):
+            try:
+                low = str(ipaddress.ip_address(item.split('%')[0])).lower()
+            except ValueError:
+                pass
         if kind == 'ip' and '/' in item and not contains:
             try:
                 net = ipaddress.ip_network(item, strict=False)
@@ -17414,7 +17427,9 @@ class FwQuery(object):
 
     def _not(self):
         token = self._peek()
-        if token in ('NOT', '!'):
+        # ...and a lone "-" before a bracket (1.10.377): `-(a OR b)` was "a
+        # dash anywhere, and a or b".
+        if token in ('NOT', '!', '-'):
             self.at += 1
             if self._peek() in (None, ')'):
                 raise FwQueryError('NOT with nothing after it')
@@ -17448,6 +17463,10 @@ class FwQuery(object):
         bare = token.strip('"')
         if bare and not token.startswith('"') and (mac_key(bare) or is_address(bare)):
             leaf = ('leaf', FwLeaf(None, ':', bare))
+            # A range typed alone is either end of a line in it (1.10.377):
+            # as a word, `10.0.0.0/24` was looked for as that text.
+            if '/' in bare and is_address(bare) and not mac_key(bare):
+                leaf = ('leaf', FwLeaf('ip', ':', bare))
             if mac_key(bare):
                 leaf = ('or', [leaf] + [('leaf', FwLeaf(name, ':', bare))
                                         for name in FW_MAC_FIELDS])
@@ -17563,6 +17582,10 @@ class FwQuery(object):
                 continue
             leaf = one[1]
             if leaf.op not in (':', '~') or (',' in leaf.value and not leaf.quoted):
+                continue
+            # A MAC is matched however it is written, the record holds one
+            # spelling (1.10.377): its text is no word the record must hold.
+            if leaf.inside in FW_MAC_FIELDS:
                 continue
             value = leaf.value.lower()
             if '*' in value or not re.match(r'^[a-z0-9 ._:@-]+$', value):
@@ -50954,7 +50977,15 @@ class Daemon(object):
             if f.get('action') == 'address-freed':
                 self._fw_inner.pop(assigned, None)
             elif user:
+                # The newest kept, as the traffic's are (1.10.377): it was
+                # the first thrown out, and never capped.
                 self._fw_inner[assigned] = (user, ts)
+                try:
+                    self._fw_inner.move_to_end(assigned)
+                except (AttributeError, KeyError):
+                    pass
+                while len(self._fw_inner) > self.FW_INNER_MOST:
+                    self._fw_inner.popitem(last=False)
             return
         if user and f.get('type') == 'traffic' and rest.get('msgid') in (
                 '106100', '106102', '106103') or (user and f.get('type') == 'traffic'
@@ -73482,7 +73513,10 @@ def tls_subject(asked):
     cn = str(asked.get('cn') or '').strip().lower()
     if not SAN_NAME_RE.match(cn):
         raise WebRootError('the name (CN) is a host name: isemon.example.cz')
-    parts = ['CN=' + cn]
+    # A CN is 64 letters at most (1.10.377): a longer name made openssl refuse
+    # the whole request. The names that count are in the SAN all the same;
+    # the CN is then the name's first label.
+    parts = ['CN=' + (cn if len(cn) <= 64 else cn.split('.', 1)[0][:64])]
     for key, field, most in (('o', 'O', 64), ('ou', 'OU', 64), ('l', 'L', 128),
                              ('st', 'ST', 128), ('c', 'C', 2)):
         v = re.sub(r'[^A-Za-z0-9 .,&()\'@_-]', '', str(asked.get(key) or '')).strip()[:most]
@@ -73496,6 +73530,10 @@ def tls_subject(asked):
         one = one.strip()
         if not one:
             continue
+        # No scope (`fe80::1%eth0`, 1.10.377): openssl refuses it, and what
+        # follows % is anybody's text.
+        if '%' in one:
+            raise WebRootError('%r: an address without its %%zone' % one[:60])
         try:
             names.append(str(ipaddress.ip_address(one)))
             continue
@@ -78595,8 +78633,12 @@ def ntp_tick(wr):
     if wr._meta('ntp_conf', {}):
         h = ntp_hash(ntp_desired(wr))
         done = wr._meta('ntp_applied', {})
+        # ...and again, ten minutes after one that failed (1.10.377): root
+        # away once, and the servers saved were never put in.
         if NTP_WORK['apply_now'] or (done.get('hash') != h and
-                                     time.time() - float(done.get('at') or 0) > 30):
+                                     time.time() - float(done.get('at') or 0) > 30) or (
+                done.get('hash') == h and done.get('ok') is False
+                and time.time() - float(done.get('at') or 0) > 600):
             was = NTP_WORK['apply_now']
             NTP_WORK['apply_now'] = False
             # Another tick took it in the meantime (1.10.238): asked again
@@ -87665,7 +87707,22 @@ class NetPower(object):
                 raise WebRootError('the gateway is one IPv4 address')
             if g.version != 4 or g not in a4.network or g == a4.ip:
                 raise WebRootError('the gateway %s is not another address in %s' % (g, a4.network))
+            # ...nor the network's own first or last address (1.10.377).
+            if not rollback and a4.network.prefixlen < 31 and \
+                    g in (a4.network.network_address, a4.network.broadcast_address):
+                raise WebRootError('the gateway %s is %s\'s own %s address' % (
+                    g, a4.network, 'network' if g == a4.network.network_address else
+                    'broadcast'))
+        # A prefix of half the internet makes every address one on the wire,
+        # and the machine is reached by nothing (1.10.377).
+        if not rollback and a4.network.prefixlen < 8:
+            raise WebRootError('a /%d is too wide a network for one machine - /8 at the widest'
+                               % a4.network.prefixlen)
         dns = _net_list(v4.get('dns'))
+        # The addresses set by hand: their DNS too, or no name is found at all.
+        if not rollback and not dns:
+            raise WebRootError('a DNS server or two, with the address set by hand: without one '
+                               'no name is found at all')
         for x in dns:
             try:
                 ipaddress.ip_address(x)
@@ -87822,6 +87879,15 @@ class NetPower(object):
         if self.trial_min() and not job.get('rollback'):
             job['back'], job['back_why'] = net_back_want(self.now())
             job['trial_min'] = self.trial_min() if job['back'] else 0
+            # A way back that root would refuse is no trial (1.10.377): said
+            # now, not found out when the time ran out and nothing went back.
+            if job['trial_min']:
+                try:
+                    self.check(job['back'], rollback=True)
+                except WebRootError as e:
+                    job['trial_min'] = 0
+                    job['back_why'] = ('no trial: the network it has now could not be put back '
+                                       '(%s)' % e)
         undo = {}
         try:
             self._job_put(job, ('going back: %s' % '; '.join(w['plan'][:-1]) if job.get('rollback')
@@ -88147,9 +88213,12 @@ class NetPower(object):
 
     def power_busy(self):
         p = self.power_plan()
+        # A power-off on its way is busy too for the two minutes it takes
+        # (1.10.377): a restart asked meanwhile made a second timer of root's.
         return bool(p) and p.get('state') in ('asked', 'going') and \
             time.time() - float(p.get('at') or 0) < POWER_LIVE_S and \
-            not (p.get('how') == 'poweroff' and p.get('state') == 'going')
+            not (p.get('how') == 'poweroff' and p.get('state') == 'going'
+                 and time.time() - float(p.get('moved') or p.get('at') or 0) > 120)
 
     def power_ask(self, how, by):
         if how not in ('reboot', 'poweroff'):
