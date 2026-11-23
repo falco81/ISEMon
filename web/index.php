@@ -14577,10 +14577,15 @@ function drawSeries(series, hours) {
   }
   /* A round ceiling rather than the exact maximum: gridlines at 0, 25, 50
      read; gridlines at 0, 23, 46 do not. */
+  /* Four whole steps of a round size (1.10.379): a ceiling of 1, 2 or 5
+     put "1" on the line at a half and "4" at 3.5. */
   function ceilingOf(n) {
-    var mag = Math.pow(10, Math.floor(Math.log(n) / Math.LN10));
-    var out = Math.ceil(n / (mag / 2)) * (mag / 2);
-    return (!isFinite(out) || out <= 0) ? 1 : out;
+    var raw = Math.max(1, +n || 0) / 4;
+    var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+    var f = raw / mag;
+    var step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * mag;
+    var out = Math.max(1, Math.ceil(step)) * 4;
+    return isFinite(out) && out > 0 ? out : 4;
   }
   var ceil = ceilingOf(top);
   var ceilDom = ceilingOf(topDom);
@@ -18402,6 +18407,9 @@ function cellSortValue(td) {
       }
     }
   }
+  /* "850 ms" is less than "12 s" (1.10.379), not 850 of them. */
+  var msv = t.match(/^(\d+(?:\.\d+)?)\s*ms\b/);
+  if (msv) return +msv[1] / 1000;
   var span = t.match(/^(\d+)\s*(s|min|h|d|day|days)\b/);
   if (span) {
     var secs = 0, re = /(\d+)\s*(d|days?|h|min|s)\b/g, one;
@@ -18452,7 +18460,7 @@ function serverSortHeads(row, state, keys, go) {
     sortMark(th, state.key === key ? (state.desc ? 'desc' : 'asc') : 'none');
     var press = function () {
       if (state.key === key) state.desc = !state.desc;
-      else { state.key = key; state.desc = key === 'ts' || /hits|n$|bytes/.test(key); }
+      else { state.key = key; state.desc = key === 'ts' || key === 'ended' || /^(hits|n)$|bytes/.test(key); }
       go();
     };
     th.onclick = press;
@@ -52535,7 +52543,39 @@ function otDone() {
 }
 var OT_HOW = {otp: 'from the file otp made', made: 'made here, by isemon\'s own authority',
               given: 'a certificate pasted here'};
-var OT_DID = {apply: 'set up', make: 'set up', set: 'changed', off: 'switched off'};
+var OT_DID = {apply: 'set up', make: 'set up', set: 'changed', off: 'switched off', remove: 'removed'};
+/* The last change as parts the translation finds one by one (1.10.379):
+   one string of them was left in English, or the time took the rest. */
+var TLS_DID_BY = {apply: 'set up by', make: 'set up by', set: 'changed by', off: 'switched off by',
+                  remove: 'removed by'};
+function tlsLastChange(kept, HOW) {
+  var sp = el('span', '');
+  sp.appendChild(el('span', '', TLS_DID_BY[kept.do] || 'changed by'));
+  sp.appendChild(document.createTextNode(' '));
+  sp.appendChild(noI18n(el('span', '', kept.by || '?')));
+  sp.appendChild(document.createTextNode(', '));
+  sp.appendChild(el('span', '', ago(kept.at)));
+  if (kept.how && HOW[kept.how] && kept.do !== 'off' && kept.do !== 'remove') {
+    sp.appendChild(document.createTextNode(' - '));
+    sp.appendChild(el('span', '', HOW[kept.how]));
+  }
+  return sp;
+}
+function tlsPortMode(d, mode) {
+  var sp = el('span', '');
+  sp.appendChild(noI18n(el('span', '', d.port + '/tcp')));
+  sp.appendChild(document.createTextNode(', '));
+  sp.appendChild(el('span', '', mode));
+  return sp;
+}
+function tlsRsyslog(d) {
+  var sp = el('span', '');
+  sp.appendChild(noI18n(el('span', '', 'rsyslog ' + d.version)));
+  sp.appendChild(document.createTextNode(', '));
+  sp.appendChild(d.driver_there ? el('span', '', 'TLS by ' + d.driver_there)
+    : el('span', '', 'no TLS driver yet - rsyslog-gnutls is installed with the first setup'));
+  return sp;
+}
 function otMode(d) {
   if (d.auth === 'x509/name') return 'mutual TLS - only the nodes named';
   if (d.auth === 'x509/certvalid') return 'mutual TLS - any node with a certificate from otp\'s authority';
@@ -52572,7 +52612,7 @@ function drawOtpTls() {
     host.appendChild(bad);
   } else if (last.ok && last.at && Date.now() / 1000 - last.at < 900) {
     var good = el('div', 'note good');
-    good.appendChild(el('b', '', last.do === 'off' ? 'Switched off.' : 'Done.'));
+    good.appendChild(el('b', '', last.do === 'off' ? 'Switched off.' : (last.do === 'remove' ? 'Removed.' : 'Done.')));
     if ((d.said || []).length) {
       var ul = el('ul');
       d.said.forEach(function (x) { ul.appendChild(noI18n(el('li', '', x))); });
@@ -52613,14 +52653,10 @@ function drawOtpTls() {
     else fw = 'unknown';
   }
   var plain = (d.plain || []).map(function (p) { return p.proto + '/' + p.port + (p.file ? ' (' + p.file + ')' : ''); });
-  var lastWords = '';
-  if (kept.at) {
-    lastWords = (OT_DID[kept.do] || 'changed') + ' by ' + (kept.by || '?') + ', ' + ago(kept.at)
-      + (kept.how && OT_HOW[kept.how] && kept.do !== 'off' ? ' - ' + OT_HOW[kept.how] : '');
-  }
+  var lastWords = kept.at ? tlsLastChange(kept, OT_HOW) : '';
   host.appendChild(netFacts([
     ['State', state],
-    ['Port and mode', d.on && d.port ? d.port + '/tcp, ' + otMode(d) : ''],
+    ['Port and mode', d.on && d.port ? tlsPortMode(d, otMode(d)) : ''],
     ['Nodes allowed', peers],
     ['isemon\'s certificate', c.subject ? noI18n(el('span', 'mono', names.length ? names.join(', ') : c.subject)) : (d.read ? 'none here' : '')],
     ['Issued by', c.issuer ? noI18n(el('span', '', String(c.issuer).replace(/^CN=/, ''))) : ''],
@@ -52631,8 +52667,7 @@ function drawOtpTls() {
     ['Listening', !d.on ? '' : (d.listening === true ? el('span', 'ot-good', 'yes')
       : (d.listening === false ? el('span', 'ot-bad', 'no') : 'unknown'))],
     ['Firewall', fw],
-    ['rsyslog', d.version ? 'rsyslog ' + d.version + (d.driver_there ? ', TLS by ' + d.driver_there
-      : ', no TLS driver yet - rsyslog-gnutls is installed with the first setup') : ''],
+    ['rsyslog', d.version ? tlsRsyslog(d) : ''],
     ['Plain receiving', plain.length ? noI18n(el('span', 'mono', plain.join(', ') + ' - kept as it is')) : (d.read ? 'none found' : '')],
     ['Last change', lastWords],
     ['Read', d.at ? ago(d.at) : 'not yet']
@@ -53198,7 +53233,7 @@ function atDone() {
 }
 var AT_HOW = {acme: 'from the file acme made', made: 'made here, by isemon\'s own authority',
               given: 'a certificate pasted here'};
-var AT_DID = {apply: 'set up', make: 'set up', set: 'changed', off: 'switched off'};
+var AT_DID = {apply: 'set up', make: 'set up', set: 'changed', off: 'switched off', remove: 'removed'};
 function atMode(d) {
   if (d.auth === 'x509/name') return 'mutual TLS - only the nodes named';
   if (d.auth === 'x509/certvalid') return 'mutual TLS - any node with a certificate from acme\'s authority';
@@ -53235,7 +53270,7 @@ function drawAcmeTls() {
     host.appendChild(bad);
   } else if (last.ok && last.at && Date.now() / 1000 - last.at < 900) {
     var good = el('div', 'note good');
-    good.appendChild(el('b', '', last.do === 'off' ? 'Switched off.' : 'Done.'));
+    good.appendChild(el('b', '', last.do === 'off' ? 'Switched off.' : (last.do === 'remove' ? 'Removed.' : 'Done.')));
     if ((d.said || []).length) {
       var ul = el('ul');
       d.said.forEach(function (x) { ul.appendChild(noI18n(el('li', '', x))); });
@@ -53276,14 +53311,10 @@ function drawAcmeTls() {
     else fw = 'unknown';
   }
   var plain = (d.plain || []).map(function (p) { return p.proto + '/' + p.port + (p.file ? ' (' + p.file + ')' : ''); });
-  var lastWords = '';
-  if (kept.at) {
-    lastWords = (AT_DID[kept.do] || 'changed') + ' by ' + (kept.by || '?') + ', ' + ago(kept.at)
-      + (kept.how && AT_HOW[kept.how] && kept.do !== 'off' ? ' - ' + AT_HOW[kept.how] : '');
-  }
+  var lastWords = kept.at ? tlsLastChange(kept, AT_HOW) : '';
   host.appendChild(netFacts([
     ['State', state],
-    ['Port and mode', d.on && d.port ? d.port + '/tcp, ' + atMode(d) : ''],
+    ['Port and mode', d.on && d.port ? tlsPortMode(d, atMode(d)) : ''],
     ['Nodes allowed', peers],
     ['isemon\'s certificate', c.subject ? noI18n(el('span', 'mono', names.length ? names.join(', ') : c.subject)) : (d.read ? 'none here' : '')],
     ['Issued by', c.issuer ? noI18n(el('span', '', String(c.issuer).replace(/^CN=/, ''))) : ''],
@@ -53294,8 +53325,7 @@ function drawAcmeTls() {
     ['Listening', !d.on ? '' : (d.listening === true ? el('span', 'ot-good', 'yes')
       : (d.listening === false ? el('span', 'ot-bad', 'no') : 'unknown'))],
     ['Firewall', fw],
-    ['rsyslog', d.version ? 'rsyslog ' + d.version + (d.driver_there ? ', TLS by ' + d.driver_there
-      : ', no TLS driver yet - rsyslog-gnutls is installed with the first setup') : ''],
+    ['rsyslog', d.version ? tlsRsyslog(d) : ''],
     ['Plain receiving', plain.length ? noI18n(el('span', 'mono', plain.join(', ') + ' - kept as it is')) : (d.read ? 'none found' : '')],
     ['Last change', lastWords],
     ['Read', d.at ? ago(d.at) : 'not yet']
@@ -53850,8 +53880,12 @@ function amHead(d) {
      it came whole - only a whole one lets go of what acme no longer has. */
   if (d.sync) {
     sub.appendChild(document.createTextNode(' · '));
-    var sy = el('span', d.sync.whole ? '' : 'am-bad',
-      (d.sync.whole ? 'last full sync ' : 'last full sync, not whole, ') + ago(d.sync.ts));
+    /* The time a text of its own (1.10.379): one with the words was
+       translated as "{0} h ago" with all of them in the {0}. */
+    var sy = el('span', d.sync.whole ? '' : 'am-bad');
+    sy.appendChild(el('span', '', d.sync.whole ? 'last full sync' : 'last full sync, not whole,'));
+    sy.appendChild(document.createTextNode(' '));
+    sy.appendChild(el('span', '', ago(d.sync.ts)));
     sy.appendChild(noI18n(el('span', 'muted', ' (' + (d.sync.sync || '') + ')')));
     sy.title = stamp(d.sync.ts) + (d.sync.node ? ' · ' + d.sync.node : '') + (d.sync.who ? ' · ' + d.sync.who : '')
       + (d.sync.whole ? '' : ' - fewer arrived than it began with, or its end did not; nothing was let go');
@@ -54083,6 +54117,7 @@ function amFillCerts() {
     tr.appendChild(nm);
     var days = amDays(c);
     var td = el('td', 'am-left');
+    if (c.not_after) td.dataset.sort = String(c.not_after);   /* by the date, not the words (1.10.379) */
     var gauge = el('div', 'am-gauge');
     var fill = el('span', 'am-gauge-fill ' + amTone(days));
     fill.style.width = (days === null ? 0 : Math.max(3, Math.min(100, days / Math.max(90, soon * 3) * 100))) + '%';
@@ -54111,6 +54146,7 @@ function amFillCerts() {
     tg.appendChild(tw);
     tr.appendChild(tg);
     var last = el('td', 'small');
+    if (c.last_ts) last.dataset.sort = String(c.last_ts);
     last.appendChild(el('div', '', AM_ACTION[c.last_action] || c.last_action || 'a line'));
     var when = noI18n(el('div', 'muted', ago(c.last_ts)));
     when.title = stamp(c.last_ts);
@@ -54685,8 +54721,11 @@ var AMC_STATE = {ok: ['Serves it', 'ok'], warn: ['Serves it, with a remark', 'wa
 function amMs(ms) {
   if (ms === null || ms === undefined) return '–';
   if (ms < 1000) return Math.round(ms) + ' ms';
-  if (ms < 60000) return (ms / 1000).toFixed(ms < 10000 ? 1 : 0) + ' s';
-  return Math.floor(ms / 60000) + ' min ' + Math.round((ms % 60000) / 1000) + ' s';
+  /* Whole seconds first (1.10.379): 59.7 s was "60 s", 119.7 s "1 min 60 s". */
+  var whole = Math.round(ms / 1000);
+  if (ms < 10000) return (ms / 1000).toFixed(1) + ' s';
+  if (whole < 60) return whole + ' s';
+  return Math.floor(whole / 60) + ' min ' + (whole % 60) + ' s';
 }
 function amPctWords(a, b) { return b ? Math.round(a / b * 100) + ' %' : '–'; }
 function amJobTag(state) {

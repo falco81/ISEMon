@@ -372,6 +372,34 @@ working.
 
 ## Version
 
+1.10.379
+
+- **Bug hunt, round 8 of 10** (test/fixes379_hunt.py):
+  - *door cards*: "what it last said" is the newest attempt of each subject,
+    not the oldest in the window.
+  - *tac_plus*: an accepted authorization or accounting query in the
+    daemon's own log is a command let through, not a sitting of its own -
+    one sign-in with three commands was five sittings.
+  - *RADIUS detail*: read again from a shipper that sends no `id=`, a reply
+    paired with its request a second earlier is found again, not written as
+    an answer to nobody that became a refusal with no name.
+  - *backups*: a copy is a plain file, not one in WAL - each look at one left
+    a `-wal` and a `-shm` that outlived it, and pruning now takes those of
+    the old ones as well; a copy of another page size (an old SQLite's 1024,
+    a VACUUM to another) is restored table by table instead of failing as
+    "a readonly database"; install.sh keeps the three newest
+    `isemon.py.<version>` and `web.<version>` copies, not every one.
+  - *tidying*: a second "wall" of more than a stride of rows with one time
+    (an "unblock everybody") is taken whole as the first one is; the walk
+    stopped there, and with a mark every pass after did.
+  - *page*: the acme certificates sort by date and by the last line's time,
+    not by their words; "850 ms" sorts below "12 s"; acme durations never
+    say "60 s" or "1 min 60 s"; the overview chart's scale is four whole
+    steps (a quiet day said 0, 0, 1, 1, 1); "Why" and "What" columns open
+    A to Z; the OTP and acme TLS cards say a removal as one, and their "Last
+    change", "Port and mode" and "rsyslog" lines and the acme sync line are
+    translated whole.
+
 1.10.378
 
 - **Bug hunt, round 7 of 10** (test/fixes378_hunt.py, test/fixes378_rotation.py):

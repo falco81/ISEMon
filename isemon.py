@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.378'
+__version__ = '1.10.379'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -38748,7 +38748,7 @@ class Storage(object):
             return ''
         rid = str(facts.get('rid') or '')
         said = str(facts.get('id') or '')
-        best = None
+        best = again = None
         for row in rows:
             name = str(row['ident'] or '')
             if name.rsplit('/', 1)[-1] != port:
@@ -38764,14 +38764,24 @@ class Storage(object):
                 continue
             # Only a row that is missing exactly this half: a request nobody
             # has answered yet, or an answer whose request has not come.
+            # A row that already holds this very half - the same answer, the
+            # same name asking - is this record read again when the shipper
+            # sends no `id=` (1.10.379): taken only when no row is missing
+            # it, or the answer to nobody came back on every re-read.
             if answer and (row['verdict'] or ''):
+                if not said and again is None and \
+                        str(row['verdict']) == str(facts.get('verdict') or ''):
+                    again = name
                 continue
             if not answer and ((row['username'] or '') or not (row['verdict'] or '')):
+                if not said and again is None and (row['username'] or '') and \
+                        str(row['username']) == str(facts.get('username') or ''):
+                    again = name
                 continue
             gap = abs(float(row['ts'] or 0) - ts)
             if best is None or gap < best[0]:
                 best = (gap, name)
-        return best[1] if best else ''
+        return best[1] if best else (again or '')
 
     def _asked_made_of(self, detail):
         """The shipper's names of the records a stored packet was made of."""
@@ -44348,9 +44358,15 @@ class Storage(object):
                     [float(since)] + list(kinds) + sorted(left) + [want * 40]).fetchall()
             except sqlite3.Error:
                 rows = []
+            first = set()
             for row in rows:
-                # The failures are asked second and overwrite, because what a
+                # The newest of each table, not the oldest (1.10.379): the rows
+                # come newest first, and each older one wrote over it. The
+                # failures are asked second and overwrite, because what a
                 # card of refusals is about is the refusal.
+                if row['said'] in first:
+                    continue
+                first.add(row['said'])
                 newest[row['said']] = dict(row)
         for one in out:
             one['newest'] = {k: v for k, v in (newest.get(one['said']) or {}).items()
@@ -45618,6 +45634,15 @@ class Storage(object):
                     else:
                         cur = db.execute('DELETE FROM %s WHERE %s%s >= ? AND %s < ?'
                                          % (name, holds, when, when), more + [low, upto])
+                        if edge is not None and not max(0, int(getattr(cur, 'rowcount', 0)
+                                                               or 0)):
+                            # A wall of its own further on (1.10.379): the
+                            # stride before took every row at `low`, and the
+                            # next stride is all one later moment. Taken whole
+                            # as the first one is; the walk stopped there, and
+                            # with a mark stopped there every pass after.
+                            cur = db.execute('DELETE FROM %s WHERE %s%s >= ? AND %s <= ?'
+                                             % (name, holds, when, when), more + [low, upto])
                     went = max(0, int(getattr(cur, 'rowcount', 0) or 0))
             except Exception:
                 break
@@ -48924,6 +48949,13 @@ class Storage(object):
                 going.step(0)
 
             self.dialect.copy_out(source, other, say=say)
+            # A copy is a plain file (1.10.379): SQLite's own copy took the
+            # live file's WAL with it, and every look at a copy afterwards
+            # left a -wal and a -shm beside it that outlived the copy.
+            try:
+                other.execute('PRAGMA journal_mode=DELETE')
+            except sqlite3.Error:
+                pass
             # ...and then the indexes, which on a million and a half domain
             # events is a minute of its own. Counted as its own phase rather
             # than left at a hundred per cent: a bar that says it has
@@ -49132,8 +49164,27 @@ class Storage(object):
                                        timeout=30.0), spare)
             try:
                 with self.db_write() as db:
+                    # SQLite's own way only between files of one page size
+                    # (1.10.379): into a live file in WAL it cannot change
+                    # it, and a copy made where 1024 was the size, or one
+                    # VACUUMed to another, failed as "a readonly database".
+                    # Otherwise table by table, as into a server.
+                    same = False
                     if self.dialect.name == 'sqlite':
+                        try:
+                            same = (int(other.execute('PRAGMA page_size').fetchone()[0])
+                                    == int(db.execute('PRAGMA page_size').fetchone()[0]))
+                        except (sqlite3.Error, TypeError, ValueError, IndexError):
+                            same = True
+                    if self.dialect.name == 'sqlite' and same:
                         other.raw.backup(db.raw)
+                    elif self.dialect.name == 'sqlite':
+                        for table in Dialect.schema_tables(SCHEMA):
+                            try:
+                                db.execute('DELETE FROM %s' % self.dialect.ident(table))
+                            except sqlite3.Error:
+                                pass
+                        Dialect.copy_out(spare, other, db, say=say, commit=False)
                     else:
                         for table in Dialect.schema_tables(SCHEMA):
                             try:
@@ -49250,6 +49301,12 @@ class Storage(object):
                 gone += 1
             except OSError:
                 pass
+            # ...with what SQLite left beside a copy in WAL (1.10.379).
+            for side in ('-wal', '-shm'):
+                try:
+                    (Path(folder or BACKUP_DIR) / (one['name'] + side)).unlink()
+                except OSError:
+                    pass
         return gone
 
     # ---- the dump the engine makes of itself ----------------------------------
@@ -49388,6 +49445,12 @@ class Storage(object):
                 gone += 1
             except OSError:
                 pass
+            # ...with what SQLite left beside a copy in WAL (1.10.379).
+            for side in ('-wal', '-shm'):
+                try:
+                    (Path(folder or DUMP_DIR) / (one['name'] + side)).unlink()
+                except OSError:
+                    pass
         return gone
 
     def dump_peek(self, path):
@@ -55125,6 +55188,12 @@ class Daemon(object):
         tkey = tacplus_key(fields)
         cmd = ise_first(fields, 'Command')
         priv = ise_first(fields, 'Privilege')
+        asked = ise_first(fields, 'Asked for')
+        if not cmd and not ise_first(fields, 'Record') and asked and asked != 'to sign in':
+            # An authorization or accounting query let through, in the
+            # daemon's own log: a command allowed, not somebody sitting down
+            # (1.10.379). Each was a sitting of its own, one per command.
+            return False
         common.update({
             'device': ise_first(fields, 'Device'),
             'nad': ise_first(fields, 'Device'),

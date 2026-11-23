@@ -1887,6 +1887,15 @@ if [[ -n "$DO_UPGRADE" ]]; then
         cp -p "$LIB_DIR/isemon.py" "$BAK" 2>/dev/null || true
         [[ -d "$WEB_DIR" ]] && cp -a "$WEB_DIR" "$LIB_DIR/web.${was_word:-previous}" 2>/dev/null || true
     fi
+    # ...the three newest of them (1.10.379): one more of each at every
+    # upgrade, some 15 MB, and nothing ever took one away. Only the ones
+    # named as this makes them, a version of numbers; nothing else there.
+    if [[ -z "$DRY_RUN" ]]; then
+        { ls -1d "$LIB_DIR"/isemon.py.[0-9]*.[0-9]*.[0-9]* 2>/dev/null | sort -V | head -n -3 \
+            | xargs -r rm -f -- ; } 2>/dev/null || true
+        { ls -1d "$LIB_DIR"/web.[0-9]*.[0-9]*.[0-9]* 2>/dev/null | sort -V | head -n -3 \
+            | xargs -r rm -rf -- ; } 2>/dev/null || true
+    fi
     [[ -n "$DRY_RUN" ]] || cp -f "$LIB_DIR/isemon.py" "$LIB_DIR/isemon.py.bak" 2>/dev/null || true
     run install -D -m 0755 "$SOURCE_DIR/isemon.py" "$LIB_DIR/isemon.py"
     for extra in INSTALL.md README.md; do

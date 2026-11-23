@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.378",
+  "version": "1.10.379",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -5856,6 +5856,10 @@
    "source": "change",
    "text": "změna"
   },
+  "s.changed-by.60a8fabd": {
+   "source": "changed by",
+   "text": "změnil(a)"
+  },
   "s.changed-by.ed8e9c11": {
    "source": "Changed by",
    "text": "Změnil"
@@ -6555,6 +6559,10 @@
   "s.confirm-it-is-you-to-add.882c1354": {
    "source": "Confirm it is you, to add or take one away",
    "text": "Potvrďte, že jste to vy, a přidejte nebo odeberte"
+  },
+  "s.confirm-it-is-you-with-face.2bb84ce9": {
+   "source": "confirm it is you with Face ID first, then set it up again",
+   "text": "nejprve potvrďte svou totožnost pomocí Face ID, pak ho nastavte znovu"
   },
   "s.confirm-it-is-you-with-face.657828d9": {
    "source": "confirm it is you with Face ID first",
@@ -18596,9 +18604,9 @@
    "source": "No temperature: this machine has no sensors the kernel reads (a virtual machine has none).",
    "text": "Bez teploty: tento stroj nemá čidla, která jádro čte (virtuální stroj je nemá)."
   },
-  "s.no-tls-driver-yet-rsyslog-gnutls.790d06ca": {
-   "source": ", no TLS driver yet - rsyslog-gnutls is installed with the first setup",
-   "text": ", zatím bez ovladače TLS - rsyslog-gnutls se nainstaluje při prvním nastavení"
+  "s.no-tls-driver-yet-rsyslog-gnutls.4291d599": {
+   "source": "no TLS driver yet - rsyslog-gnutls is installed with the first setup",
+   "text": "zatím bez ovladače TLS – rsyslog-gnutls se nainstaluje při prvním nastavení"
   },
   "s.no-token-line-exists-for-this.03aa6ca8": {
    "source": "No token line exists for this attempt anywhere, because nothing got as far as the thing that writes them.",
@@ -24476,6 +24484,18 @@
    "source": "Remove",
    "text": "Odebrat"
   },
+  "s.removed-by.a39479df": {
+   "source": "removed by",
+   "text": "odebral(a)"
+  },
+  "s.removed.69992f17": {
+   "source": "removed",
+   "text": "odebráno"
+  },
+  "s.removed.aca57ff9": {
+   "source": "Removed.",
+   "text": "Odebráno."
+  },
   "s.remport.9f020e0f": {
    "source": "remport",
    "text": "remport"
@@ -26103,6 +26123,10 @@
   "s.set-type-address.117ffb0c": {
    "source": "set type address",
    "text": "set type address"
+  },
+  "s.set-up-by.295b22bf": {
+   "source": "set up by",
+   "text": "nastavil(a)"
   },
   "s.set-up-encrypted-receiving.2daec2e7": {
    "source": "Set up encrypted receiving",
@@ -27807,6 +27831,10 @@
   "s.switched-off-above.32a9b1df": {
    "source": "· switched off above",
    "text": "· vypnuto výše"
+  },
+  "s.switched-off-by.92f0f97b": {
+   "source": "switched off by",
+   "text": "vypnul(a)"
   },
   "s.switched-off-in-ad.52c1d39e": {
    "source": "switched off in AD",
@@ -39704,6 +39732,10 @@
    "source": "Your groups in the directory, worked out again every time you sign in — not set here.",
    "text": "Vaše skupiny v adresáři, zjišťované znovu při každém přihlášení — nenastavují se zde."
   },
+  "s.your-own-password-is-changed-under.0253d08b": {
+   "source": "your own password is changed under My account, with the one you have now",
+   "text": "vlastní heslo se mění v části Můj účet, zadáním toho současného"
+  },
   "s.your-password-is-the-domain-s.4e135809": {
    "source": "Your password is the domain’s and is never kept here. Change it the way you change it for everything else on the domain.",
    "text": "Vaše heslo je doménové a nikdy se zde neukládá. Změňte ho stejně, jako ho měníte pro vše ostatní v doméně."
@@ -43126,9 +43158,9 @@
    "source": "rows {0} · indexes {1} · the rest {2}",
    "text": "řádky {0} · indexy {1} · ostatní {2}"
   },
-  "p.rsyslog.81d686b1": {
-   "source": "rsyslog {0}{1}",
-   "text": "rsyslog {0}{1}"
+  "p.rsyslog.76872881": {
+   "source": "rsyslog {0}",
+   "text": "rsyslog {0}"
   },
   "p.rule-s-permit-deny.d24b4458": {
    "source": "{0} rule(s) · {1} permit · {2} deny",
@@ -43642,9 +43674,9 @@
    "source": "tcp {0}, {1} - rsyslog's encrypted input for otp's nodes (Settings → The OTP logs → Encrypted receiving)",
    "text": "tcp {0}, {1} - šifrovaný vstup rsyslogu pro uzly otp (Nastavení → Logy OTP → Šifrovaný příjem)"
   },
-  "p.tcp.d3c8732d": {
-   "source": "{0}/tcp, {1}",
-   "text": "{0}/tcp, {1}"
+  "p.tcp.cb38e9a9": {
+   "source": "{0}/tcp",
+   "text": "{0}/tcp"
   },
   "p.that-account-s-group-may-change.1f3c0bd0": {
    "source": "That account’s group may change things ({0}): give it one that may only read and use the API.",
@@ -44418,9 +44450,9 @@
    "source": "{0} times, last {1}",
    "text": "{0}×, naposledy {1}"
   },
-  "p.tls-by.0e5b3c73": {
-   "source": ", TLS by {0}",
-   "text": ", TLS přes {0}"
+  "p.tls-by.df0c773f": {
+   "source": "TLS by {0}",
+   "text": "TLS přes {0}"
   },
   "p.tls-failed.29ca07b0": {
    "source": "TLS failed: {0}",
@@ -46818,6 +46850,10 @@
    "source": "{0} rows",
    "text": "{0} řádků"
   },
+  "p.rsyslog.81d686b1": {
+   "source": "rsyslog {0}{1}",
+   "text": "rsyslog {0}{1}"
+  },
   "p.setspn-s.05f01c0b": {
    "source": "setspn -S {0} {1}",
    "text": "setspn -S {0} {1}"
@@ -46857,6 +46893,10 @@
   "p.tag.9a706b8d": {
    "source": "tag {0}",
    "text": "tag {0}"
+  },
+  "p.tcp.d3c8732d": {
+   "source": "{0}/tcp, {1}",
+   "text": "{0}/tcp, {1}"
   },
   "p.that-file-is-far-bigger-than.ec707f1d": {
    "source": "That file is far bigger than any settings file ({0})",
@@ -46925,6 +46965,10 @@
   "p.times.72f0ed16": {
    "source": "{0} times",
    "text": "{0}×"
+  },
+  "p.tls-by.0e5b3c73": {
+   "source": ", TLS by {0}",
+   "text": ", TLS přes {0}"
   },
   "p.was-restarted-and-has-not-answered.da13ad98": {
    "source": "{0} was restarted and has not answered since - see journalctl -u {1}",
@@ -47913,6 +47957,10 @@
   "s.no-the-one-certificate.1975debf": {
    "source": "No - the one certificate",
    "text": "Ne - jen jeden certifikát"
+  },
+  "s.no-tls-driver-yet-rsyslog-gnutls.790d06ca": {
+   "source": ", no TLS driver yet - rsyslog-gnutls is installed with the first setup",
+   "text": ", zatím bez ovladače TLS - rsyslog-gnutls se nainstaluje při prvním nastavení"
   },
   "s.none-face-id-is-off.d04be11d": {
    "source": "none (Face ID is off)",

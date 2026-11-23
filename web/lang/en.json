@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.378",
-  "made": "2026-11-22",
+  "version": "1.10.379",
+  "made": "2026-11-23",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -5856,6 +5856,10 @@
    "source": "change",
    "text": "change"
   },
+  "s.changed-by.60a8fabd": {
+   "source": "changed by",
+   "text": "changed by"
+  },
   "s.changed-by.ed8e9c11": {
    "source": "Changed by",
    "text": "Changed by"
@@ -6555,6 +6559,10 @@
   "s.confirm-it-is-you-to-add.882c1354": {
    "source": "Confirm it is you, to add or take one away",
    "text": "Confirm it is you, to add or take one away"
+  },
+  "s.confirm-it-is-you-with-face.2bb84ce9": {
+   "source": "confirm it is you with Face ID first, then set it up again",
+   "text": "confirm it is you with Face ID first, then set it up again"
   },
   "s.confirm-it-is-you-with-face.657828d9": {
    "source": "confirm it is you with Face ID first",
@@ -18596,9 +18604,9 @@
    "source": "No temperature: this machine has no sensors the kernel reads (a virtual machine has none).",
    "text": "No temperature: this machine has no sensors the kernel reads (a virtual machine has none)."
   },
-  "s.no-tls-driver-yet-rsyslog-gnutls.790d06ca": {
-   "source": ", no TLS driver yet - rsyslog-gnutls is installed with the first setup",
-   "text": ", no TLS driver yet - rsyslog-gnutls is installed with the first setup"
+  "s.no-tls-driver-yet-rsyslog-gnutls.4291d599": {
+   "source": "no TLS driver yet - rsyslog-gnutls is installed with the first setup",
+   "text": "no TLS driver yet - rsyslog-gnutls is installed with the first setup"
   },
   "s.no-token-line-exists-for-this.03aa6ca8": {
    "source": "No token line exists for this attempt anywhere, because nothing got as far as the thing that writes them.",
@@ -24476,6 +24484,18 @@
    "source": "Remove",
    "text": "Remove"
   },
+  "s.removed-by.a39479df": {
+   "source": "removed by",
+   "text": "removed by"
+  },
+  "s.removed.69992f17": {
+   "source": "removed",
+   "text": "removed"
+  },
+  "s.removed.aca57ff9": {
+   "source": "Removed.",
+   "text": "Removed."
+  },
   "s.remport.9f020e0f": {
    "source": "remport",
    "text": "remport"
@@ -26103,6 +26123,10 @@
   "s.set-type-address.117ffb0c": {
    "source": "set type address",
    "text": "set type address"
+  },
+  "s.set-up-by.295b22bf": {
+   "source": "set up by",
+   "text": "set up by"
   },
   "s.set-up-encrypted-receiving.2daec2e7": {
    "source": "Set up encrypted receiving",
@@ -27807,6 +27831,10 @@
   "s.switched-off-above.32a9b1df": {
    "source": "· switched off above",
    "text": "· switched off above"
+  },
+  "s.switched-off-by.92f0f97b": {
+   "source": "switched off by",
+   "text": "switched off by"
   },
   "s.switched-off-in-ad.52c1d39e": {
    "source": "switched off in AD",
@@ -39704,6 +39732,10 @@
    "source": "Your groups in the directory, worked out again every time you sign in — not set here.",
    "text": "Your groups in the directory, worked out again every time you sign in — not set here."
   },
+  "s.your-own-password-is-changed-under.0253d08b": {
+   "source": "your own password is changed under My account, with the one you have now",
+   "text": "your own password is changed under My account, with the one you have now"
+  },
   "s.your-password-is-the-domain-s.4e135809": {
    "source": "Your password is the domain’s and is never kept here. Change it the way you change it for everything else on the domain.",
    "text": "Your password is the domain’s and is never kept here. Change it the way you change it for everything else on the domain."
@@ -43126,9 +43158,9 @@
    "source": "rows {0} · indexes {1} · the rest {2}",
    "text": "rows {0} · indexes {1} · the rest {2}"
   },
-  "p.rsyslog.81d686b1": {
-   "source": "rsyslog {0}{1}",
-   "text": "rsyslog {0}{1}"
+  "p.rsyslog.76872881": {
+   "source": "rsyslog {0}",
+   "text": "rsyslog {0}"
   },
   "p.rule-s-permit-deny.d24b4458": {
    "source": "{0} rule(s) · {1} permit · {2} deny",
@@ -43642,9 +43674,9 @@
    "source": "tcp {0}, {1} - rsyslog's encrypted input for otp's nodes (Settings → The OTP logs → Encrypted receiving)",
    "text": "tcp {0}, {1} - rsyslog's encrypted input for otp's nodes (Settings → The OTP logs → Encrypted receiving)"
   },
-  "p.tcp.d3c8732d": {
-   "source": "{0}/tcp, {1}",
-   "text": "{0}/tcp, {1}"
+  "p.tcp.cb38e9a9": {
+   "source": "{0}/tcp",
+   "text": "{0}/tcp"
   },
   "p.that-account-s-group-may-change.1f3c0bd0": {
    "source": "That account’s group may change things ({0}): give it one that may only read and use the API.",
@@ -44418,9 +44450,9 @@
    "source": "{0} times, last {1}",
    "text": "{0} times, last {1}"
   },
-  "p.tls-by.0e5b3c73": {
-   "source": ", TLS by {0}",
-   "text": ", TLS by {0}"
+  "p.tls-by.df0c773f": {
+   "source": "TLS by {0}",
+   "text": "TLS by {0}"
   },
   "p.tls-failed.29ca07b0": {
    "source": "TLS failed: {0}",
