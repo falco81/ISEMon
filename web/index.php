@@ -9467,6 +9467,8 @@ function bytes(n) {
   n = Number(n || 0);
   var units = ['B', 'kB', 'MB', 'GB', 'TB'], i = 0;
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  /* Rounded to 1024.0 is the next unit's 1.0 (1.10.375). */
+  if (i > 0 && i < units.length - 1 && Number(n.toFixed(1)) >= 1024) { n /= 1024; i++; }
   var said = i === 0 ? n.toFixed(0) : n.toFixed(1);
   if (numDecimal() === ',') said = said.replace('.', ',');
   return said + ' ' + units[i];
@@ -18395,7 +18397,9 @@ function cellSortValue(td) {
     while ((one = re.exec(t)) !== null) {
       secs += +one[1] * ({d: 86400, day: 86400, days: 86400, h: 3600, min: 60, s: 1}[one[2]]);
     }
-    return secs;
+    /* "3 days ago" is longer ago than "30 s ago": newest first, as every
+       column of moments sorts (1.10.375). */
+    return /\bago\b/.test(t) ? -secs : secs;
   }
   var plain = numDecimal() === ',' ? t.replace(/[\s\u00a0\u202f]/g, '').replace(',', '.')
     : t.replace(/[\s,]/g, '');
@@ -43350,33 +43354,40 @@ function drawAbout() {
 
 /* The console when root signs in (1.10.230): the switch `isemon
    --console-at-login on|off` is, put in by root. */
+/* What the switch was changed to and not saved yet (1.10.375): drawn again
+   (the pane shown again, another setting saved), the change was thrown away
+   without a word. */
+var CONSOLE_WANT = null;
 function drawConsoleLogin() {
   var host = $('about-console');
   if (!host) return;
   api('console-login', undefined, {quiet: true}).then(function (d) {
     clear(host);
-    if (typeof extraDone === 'function') extraDone('console');
+    if (CONSOLE_WANT === !!d.on) CONSOLE_WANT = null;
+    if (CONSOLE_WANT === null && typeof extraDone === 'function') extraDone('console');
     /* Changed here, put in by the save bar as every setting is (1.10.234) -
        not the moment the switch is pressed. */
     var row = null;
-    var sw = wrSwitch(d.on, function (on) {
+    var sw = wrSwitch(CONSOLE_WANT === null ? d.on : CONSOLE_WANT, function (on) {
       if (row) row.classList.toggle('changed', on !== !!d.on);
-      if (on === !!d.on) { extraDone('console'); return; }
+      if (on === !!d.on) { CONSOLE_WANT = null; extraDone('console'); return; }
+      CONSOLE_WANT = on;
       extraPending('console', {
         save: function () {
           return api('console-login', {on: on}).then(function (x) {
             toast(x.message, 'good');
             (x.said || []).slice(1).forEach(function (w) { toast(w, 'warn'); });
+            CONSOLE_WANT = null;
             extraDone('console');
             drawConsoleLogin();
             return true;
           }).catch(function (e) { oops(e); return false; });
         },
-        reset: function () { drawConsoleLogin(); }
+        reset: function () { CONSOLE_WANT = null; drawConsoleLogin(); }
       });
     }, !d.may || !d.helper);
     /* The switch at the left of its words, as otp's (1.10.234). */
-    row = el('div', 'con-row');
+    row = el('div', 'con-row' + (CONSOLE_WANT !== null ? ' changed' : ''));
     row.appendChild(sw);
     row.appendChild(el('b', '', 'Open the console when root signs in'));
     row.appendChild(el('span', 'muted small', d.on ? 'on' : 'off'));
@@ -43826,7 +43837,9 @@ var FIND_FROM = null;
 function openFind(seed) {
   var back = $('findback'), input = $('findinput');
   /* Where focus was, to give it back when this closes. (1.10.168) */
-  if (back.hidden) FIND_FROM = document.activeElement;
+  /* ...never the header's box itself (1.10.375): focus given back to it
+     opened this again the moment it was closed. */
+  if (back.hidden) FIND_FROM = document.activeElement === $('findbox') ? null : document.activeElement;
   back.hidden = false;
   input.value = seed || $('findbox').value || '';
   FIND.at = 0;

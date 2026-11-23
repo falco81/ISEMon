@@ -372,6 +372,27 @@ working.
 
 ## Version
 
+1.10.375
+
+- **Bug hunt, round 4 of 10** (test/fixes375_hunt.py):
+  - *settings*: the whitelist setting took `::ffff:128.0.0.0/97` as a narrow
+    IPv6 range and spared half the IPv4 internet from bans - read as the
+    reader reads it now, and refused; a TACACS or token-server place typed
+    wrong is said instead of dropped; the certificate sign-in's port is never
+    another service's on any road; a ban source is switched off by JSON
+    `false`; importing a configuration never carries the daemon's own port.
+  - *installer*: a time service missing or chronyd switched off, PostgreSQL
+    that cannot sign in, or an unreadable config.json stopped install.sh with
+    no word; a failed upgrade left the server in maintenance for good;
+    `--uninstall --yes` removed nothing and said it was fine; the defaults the
+    log receivers need are set back after them
+    (`/etc/rsyslog.d/99-isemon-permissions-end.conf`), so the system's own logs
+    (secure, messages) are no longer made the service account's.
+  - *pages*: the find box opened by clicking it opened again the moment it
+    was closed; "... ago" columns sorted oldest first; 1 MB less a byte read
+    "1024.0 kB"; the console-at-login switch changed and not saved was thrown
+    away when the pane was drawn again.
+
 1.10.374
 
 - **Bug hunt, round 3 of 10** (test/fixes374_hunt.py):

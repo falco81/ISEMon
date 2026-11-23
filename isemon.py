@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.374'
+__version__ = '1.10.375'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -2047,7 +2047,9 @@ def check_setting(key, value):
         # A 0 or 1 - the command line, a configuration of before - is off or
         # on (1.10.196).
         raw = str(want if want is not None else '').strip().lower()
-        if raw in ('0', '1', '2', 'true', 'false', 'yes', 'no'):
+        if value is False or raw == '':
+            want = 'off'                    # JSON false is off (1.10.375)
+        elif raw in ('0', '1', '2', 'true', 'false', 'yes', 'no'):
             want = ban_mode_of(raw)
         else:
             want = raw
@@ -2115,6 +2117,19 @@ def check_setting(key, value):
             # whitelist's own box closed in 1.10.159.
             if key == 'never_block':
                 too_wide(one, 'put on the whitelist')
+                # ...read as the reader reads it (1.10.375): `::ffff:128.0.0.0/97`
+                # passed as an IPv6 /97 and was half of the IPv4 internet.
+                too_wide(same_address(one) or one, 'put on the whitelist')
+    if key in ('tacacs_from', 'otp_from'):
+        # A place typed wrong is said, not dropped (1.10.375): dropped, every
+        # sign-in from it read as one from somewhere unusual.
+        for piece in comma_list(want):
+            where = piece.split('=', 1)[0].strip()
+            if where and not (is_address(same_address(where) or where) or range_of(where)):
+                raise ValueError('"%s" under %s is not an address or a range'
+                                 % (where[:40], key))
+    if key == 'certlogin_port' and int(want or 0) in CL_PORT_REFUSED:
+        raise ValueError('certlogin_port %s is a port of another service' % want)
     if key in ('geolist_countries', 'never_block_countries'):
         for one in comma_list(want):
             if not (len(one) == 2 and one.isalpha()):
@@ -67521,6 +67536,13 @@ class Daemon(object):
             # or written by a version that carried it - would otherwise point
             # this machine at another machine's database.
             carried = {k: v for k, v in given['settings'].items() if k not in FILE_ONLY}
+            # The daemon's own port is this machine's (1.10.375): carried, the
+            # pages asked the old one after the next start and could not
+            # reach it to put it back.
+            if 'api_port' in carried and int(carried.get('api_port') or 0) != \
+                    int(CONFIG.get('api_port') or 0):
+                carried.pop('api_port')
+                missing.append('the daemon\'s own port, which only isemon --set changes')
             if len(carried) != len(given['settings']):
                 missing.append('which database to use, which is never carried: this '
                                'machine keeps its own')

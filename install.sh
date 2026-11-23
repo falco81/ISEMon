@@ -41,6 +41,7 @@ LOGROTATE_FILE="/etc/logrotate.d/isemon"
 # what logrotate must not touch. See docs/log-rotation-and-permissions.md.
 REMOTE_LOGROTATE_FILE="/etc/logrotate.d/remote-logs"
 RSYSLOG_PERMS_FILE="/etc/rsyslog.d/00-isemon-permissions.conf"
+RSYSLOG_PERMS_END_FILE="/etc/rsyslog.d/99-isemon-permissions-end.conf"
 TIDY_CRON_FILE="/etc/cron.daily/isemon-logs-tidy"
 RSYSLOG_FILE="/etc/rsyslog.d/10-ise.conf"
 # What the pages may ask of root (1.10.222): the web server and the firewall
@@ -197,6 +198,11 @@ upgrade_ended() {   # the EXIT trap of an upgrade run by hand
     else
         upgrade_tell failed "$UPG_PART" "install.sh --upgrade stopped" \
             "install.sh --upgrade stopped (exit $rc)${UPG_FROM:+ - see what it printed; $UPG_FROM may run again}"
+        # ...and out of the maintenance it put the server in (1.10.375): a
+        # failed upgrade left healthz saying 503 for good.
+        if [[ -n "${MAINT_MINE:-}" && -x "${BIN_LINK:-}" ]]; then
+            "$BIN_LINK" --maintenance off >/dev/null 2>&1 && MAINT_MINE=""
+        fi
     fi
     UPG_DONE=1
 }
@@ -385,7 +391,7 @@ ensure_packages() {     # ensure_packages fresh|upgrade
     # dump program, when they went missing.
     if [[ "$1" == "upgrade" && -z "${WITH_DB:-}" && -f "$CONFIG_FILE" ]]; then
         local engine
-        engine="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("db_engine") or "")' "$CONFIG_FILE" 2>/dev/null)"
+        engine="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("db_engine") or "")' "$CONFIG_FILE" 2>/dev/null || true)"
         case "$engine" in
             mariadb|mysql)
                 python3 -c 'import pymysql' 2>/dev/null || db_driver "MariaDB" pymysql python3-PyMySQL PyMySQL
@@ -420,8 +426,10 @@ chrony_check() {    # chrony_check fresh|upgrade
     # disabled or masked is left so (1.10.238), and said.
     if ! systemctl is-active --quiet chronyd 2>/dev/null; then
         local other="" state
-        other="$(time_kept_by)"
-        state="$(systemctl is-enabled chronyd 2>/dev/null)"
+        # Neither a non-zero answer stops the install (1.10.375): none other
+        # keeps time, or chronyd switched off, is what this is here for.
+        other="$(time_kept_by || true)"
+        state="$(systemctl is-enabled chronyd 2>/dev/null || true)"
         if [[ -z "$CHRONY_NEW" && "$1" == "upgrade" && "$state" != "enabled" ]]; then
             note "chronyd is $state here - left so; Settings -> Time can start it"
         elif [[ -z "$other" ]]; then
@@ -1200,7 +1208,9 @@ if [[ -n "$DO_UNINSTALL" ]]; then
     step "Removing isemon $VERSION"
     say "The database, the configuration and the accounts are kept:"
     say "  $STATE_DIR  and  $CONFIG_DIR"
-    confirm "Go ahead?" n || { say "Nothing was changed."; exit 0; }
+    # --yes is the answer (1.10.375): asked with --yes, nothing was removed
+    # and it said so with a success.
+    [[ -n "$ASSUME_YES" ]] || confirm "Go ahead?" n || { say "Nothing was changed."; exit 0; }
     run systemctl disable --now isemon.service 2>/dev/null || true
     run systemctl disable --now isemon-web.path isemon-upgrade.path 2>/dev/null || true
     for one in "$UNIT_FILE" "$LOGROTATE_FILE" "$NGINX_CONF" "$BIN_LINK" \
@@ -1228,7 +1238,8 @@ if [[ -n "$DO_UNINSTALL" ]]; then
     command -v nginx >/dev/null && run systemctl reload nginx 2>/dev/null || true
     good "Gone. $STATE_DIR and $CONFIG_DIR were left alone."
     left=""
-    for one in "$RSYSLOG_PERMS_FILE" "$RSYSLOG_FILE" "$REMOTE_LOGROTATE_FILE" "$TIDY_CRON_FILE" \
+    for one in "$RSYSLOG_PERMS_FILE" "$RSYSLOG_PERMS_END_FILE" "$RSYSLOG_FILE" \
+               "$REMOTE_LOGROTATE_FILE" "$TIDY_CRON_FILE" \
                "/etc/systemd/system/rsyslog.service.d/isemon-umask.conf"; do
         [[ -e "$one" ]] && left="$left $one"
     done
@@ -1540,6 +1551,17 @@ setup_receiving() {       # setup_receiving fresh|upgrade
         good "new logs and folders will be readable by $SERVICE_USER ($RSYSLOG_PERMS_FILE)"
         RECV_RESTART="yes"
     fi
+    # ...and set back after the receivers, so that the system's own logs are
+    # not made the service account's too (1.10.375). Only beside isemon's own
+    # file: one an admin wrote is theirs.
+    if [[ -f "$RSYSLOG_PERMS_FILE" && ! -f "$RSYSLOG_PERMS_END_FILE" ]] \
+            && grep -q 'isemon-permissions.conf' "$RSYSLOG_PERMS_FILE" 2>/dev/null; then
+        install_substituted "$SOURCE_DIR/deploy/rsyslog-permissions-end.conf" \
+            "$RSYSLOG_PERMS_END_FILE" 0644
+        added_files+=("$RSYSLOG_PERMS_END_FILE")
+        good "the system's own logs keep their own permissions ($RSYSLOG_PERMS_END_FILE)"
+        RECV_RESTART="yes"
+    fi
 
     # The receiver: only where rsyslog does not listen already. Two inputs
     # on one port and rsyslog refuses its configuration.
@@ -1736,7 +1758,7 @@ PY
         say "would give $user the right to change: $names"
         return 0
     fi
-    version="$(pg_as -c 'SHOW server_version_num' 2>/dev/null | tr -dc 0-9)"
+    version="$(pg_as -c 'SHOW server_version_num' 2>/dev/null | tr -dc 0-9 || true)"
     if [[ -z "$version" ]]; then
         warn "postgres could not sign in over this machine's socket, so nothing was given."
         note "  Settings -> The database still asks for an administrator, as before."
