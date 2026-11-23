@@ -372,6 +372,44 @@ working.
 
 ## Version
 
+1.10.381
+
+- **Bug hunt, round 10 of 10** - every change of rounds 1 to 9 read again
+  against the version before it, and what any of them broke put back
+  (test/fixes381_hunt.py):
+  - *log reader*: a broken `.gz` or `.xz` beside a log, newer than the last
+    read, stopped that log being read at all (1.10.378); it is now simply
+    not ours.
+  - *tac_plus*: an accepted `authen` query is a sign-in again (1.10.379 let
+    only `login` through).
+  - *RADIUS detail*: the pairing change of 1.10.379 is taken back - with a
+    NAS reusing its port, a reply read before its request was put on the
+    packet before it.
+  - *FreeRADIUS*: the tunnel's inner reason is taken by number only for the
+    tunnel's own refusal; a plain refusal of somebody else numbered next took
+    it (1.10.372).
+  - *RouterOS*: a logout is matched to the sign-in its own length says it
+    began with; after one "logged out" the router never wrote, every later
+    logout closed the session before it (1.10.373).
+  - *commands kept*: `snmp-server host ... traps` keeps its word, and
+    `... vrf X version 2c public` hides the community, not `vrf` (1.10.374).
+  - *acme*: a January line from a node up to a day ahead at New Year is next
+    year's again (1.10.374).
+  - *Traffic search*: a `-` is NOT only before a bracket, a word everywhere
+    else, as it was; `port~44` means `port = 44` again, so saved searches
+    work (1.10.377).
+  - *command line*: `isemon --export` writes through a link or to
+    `/dev/stdout` again without `--secrets`; an import with another
+    `api_port` no longer says it left out a database it never named
+    (1.10.375-376).
+  - *network*: an address set by hand with IPv6 DNS servers only is taken
+    again (1.10.377).
+  - *start*: the one-time rebuild of the indexes over LOWER() is done at the
+    start only on a small file; on a big one it is done behind the daemon,
+    so the API answers in time after an upgrade (1.10.377).
+  - *page*: an alert band is drawn again when what it says changes - "12 GB
+    free" stayed after the daemon said 3 (1.10.372).
+
 1.10.380
 
 - **Bug hunt, round 9 of 10** (test/fixes380_hunt.py):
@@ -400,9 +438,8 @@ working.
   - *tac_plus*: an accepted authorization or accounting query in the
     daemon's own log is a command let through, not a sitting of its own -
     one sign-in with three commands was five sittings.
-  - *RADIUS detail*: read again from a shipper that sends no `id=`, a reply
-    paired with its request a second earlier is found again, not written as
-    an answer to nobody that became a refusal with no name.
+  - *RADIUS detail*: (taken back in 1.10.381 - it paired a NAS's next
+    packet on the same port with the one before.)
   - *backups*: a copy is a plain file, not one in WAL - each look at one left
     a `-wal` and a `-shm` that outlived it, and pruning now takes those of
     the old ones as well; a copy of another page size (an old SQLite's 1024,

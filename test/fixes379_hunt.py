@@ -72,27 +72,6 @@ kinds = [r['kind'] for r in store.db.execute("SELECT kind FROM passed WHERE kind
 ok('a command let through is no sitting of its own',
    (kinds.count('tacplus'), kinds.count('tacplus-cmd')), (2, 3))
 
-print('RADIUS detail read again, with no id=')
-at = int(time.time()) - 1200
-st = time.strftime('%b %d %H:%M:%S', time.localtime(at))
-ct = time.strftime('%a %b %d %H:%M:%S %Y', time.localtime(at))
-ct1 = time.strftime('%a %b %d %H:%M:%S %Y', time.localtime(at + 1))
-det = [
-    '%s otp1 radius-detail[5]: nas=192.0.2.1 file=auth-detail-x ts=[%s] Packet-Type = '
-    'Access-Request, User-Name = "bdvorak@a.test", Calling-Station-Id = "198.51.100.10", '
-    'Packet-Src-IP-Address = 192.0.2.1, Packet-Src-IP-Port = 40001' % (st, ct),
-    '%s otp1 radius-detail[5]: nas=192.0.2.1 file=reply-detail-x ts=[%s] Packet-Type = '
-    'Access-Reject, Reply-Message = "Denied access by rlm_perl: account does not pass LDAP '
-    'group filter(s)", Packet-Dst-IP-Address = 192.0.2.1, Packet-Dst-IP-Port = 40001'
-    % (st, ct1)]
-daemon.read_records(det, kind='otp-detail')
-daemon.read_records(det, kind='otp-detail')
-ok('one packet, however often read',
-   store.db.execute('SELECT COUNT(*) AS n FROM otp_asked').fetchone()['n'], 1)
-daemon.apply_radius_refusals()
-ok('...and no refusal of nobody', store.db.execute(
-    "SELECT COUNT(*) AS n FROM failed WHERE COALESCE(username,'') = ''").fetchone()['n'], 0)
-
 print('The tidying')
 with store.db_write() as db:
     db.execute('DELETE FROM events')

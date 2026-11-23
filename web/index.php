@@ -40255,7 +40255,10 @@ function alertBand(a, canHide) {
 }
 function alertsInto(host, list, canHide, key) {
   if (!host) return;
-  var drawn = JSON.stringify(list.map(alertSig));
+  /* Drawn again whenever what it says changes (1.10.381): the signature
+     without numbers is for "Not now", and kept "12 GB free" on the screen
+     after the daemon said 3. */
+  var drawn = JSON.stringify(list.map(function (a) { return [a.key, a.level, a.title, a.says]; }));
   if (ALERTS_DRAWN[key] === drawn) return;
   ALERTS_DRAWN[key] = drawn;
   clear(host);

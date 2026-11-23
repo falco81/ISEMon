@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.380'
+__version__ = '1.10.381'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -5481,8 +5481,9 @@ COMMAND_SECRET = re.compile(
 
 
 COMMAND_SNMP_HOST = re.compile(
-    r'(?i)\b(snmp-server\s+host\s+\S+(?:\s+(?:informs|traps))?'
-    r'(?:\s+version\s+(?:1|2c|3\s+(?:auth|noauth|priv)))?\s+)(?!\(hidden\))(\S+)')
+    r'(?i)\b(snmp-server\s+host\s+\S+(?:\s+vrf\s+\S+)?(?:\s+(?:informs|traps))?'
+    r'(?:\s+version\s+(?:1|2c|3\s+(?:auth|noauth|priv)))?\s+)'
+    r'(?!\(hidden\)|(?:informs|traps|version|vrf)\b)(\S+)')
 
 
 def command_kept(cmd):
@@ -7599,7 +7600,12 @@ def frad_parse_lines(lines, hold=None, now=None):
         if num is not None:
             by_num = inner.pop((got.server, '#', num - 1), None) or \
                 inner.pop((got.server, '#', num), None)
-            said = said or by_num
+            # By the number only for the tunnel's own refusal (1.10.381): a
+            # plain refusal of somebody else numbered next took the inner
+            # reason of the one before it.
+            if said is None and str(ise_first(fields, 'Refused by')).lower().startswith(
+                    ('eap_peap', 'eap_ttls', 'eap_fast', 'eap_teap')):
+                said = by_num
         if said and got.failed and said[0] and abs(got.ts - said[1]) <= 60:
             fields['Inner said'] = [said[0]]
         for name in ('Refused by', 'Also said', 'And', 'Inner said'):
@@ -14165,16 +14171,29 @@ def ros_record_from(line, now=None, seen=None, hold=None):
                 had = memo.get(key)
                 if had and not isinstance(had[0], list):
                     had = [had]
-                memo[key] = ((had or []) + [[tin.group('ip') or '', tin.group('inner')]])[-16:]
+                memo[key] = ((had or []) + [[tin.group('ip') or '', tin.group('inner'), ts]])[-16:]
             elif tout:
                 user = tout.group('user')
                 key = '%s|%s' % (dev, user.lower())
                 had = memo.get(key) or []
                 if had and not isinstance(had[0], list):
                     had = [had]
-                first = had[0] if had else ['', '']
+                # The one the logout's own length says it began with
+                # (1.10.381): taken oldest first, one "logged out" the router
+                # never wrote put every later logout on the session before.
+                pick = 0
                 if len(had) > 1:
-                    memo[key] = had[1:]
+                    began = ts - fg_number(tout.group('secs'))
+
+                    def gap(i):
+                        try:
+                            return abs(began - float(had[i][2]))
+                        except (IndexError, TypeError, ValueError):
+                            return float('inf')
+                    pick = min(range(len(had)), key=lambda i: (gap(i), i))
+                first = had[pick] if had else ['', '']
+                if len(had) > 1:
+                    memo[key] = had[:pick] + had[pick + 1:]
                 else:
                     memo.pop(key, None)
                 ip, inner = (list(first) + ['', ''])[:2]
@@ -17076,11 +17095,8 @@ class FwLeaf(object):
                         lambda row, a=a, b=b: row.get('type') == a and row.get('sub') == b, item)
             return ('(type = ?%s)' % also, [a], lambda row, a=a: row.get('type') == a, item)
         if kind in ('num', 'bytes', 'secs'):
-            # "contains" is for words (1.10.377): `port~44` was `port = 44`,
-            # said as "contains 44".
-            if contains:
-                raise FwQueryError('~ is for words - %s:%s or a range %s:%s-%s'
-                                   % (self.field, item, self.field, item, item))
+            # `port~44` is `port = 44`, as it always was (1.10.381: refused
+            # for a while, and a search saved with it stopped working).
             if self.field == 'proto' and item.lower() in FW_PROTO_WORDS:
                 item = str(FW_PROTO_WORDS[item.lower()])
             m = re.match(r'^([^-]+)-([^-]+)$', item)
@@ -17428,8 +17444,10 @@ class FwQuery(object):
     def _not(self):
         token = self._peek()
         # ...and a lone "-" before a bracket (1.10.377): `-(a OR b)` was "a
-        # dash anywhere, and a or b".
-        if token in ('NOT', '!', '-'):
+        # dash anywhere, and a or b". "-" only before a bracket (1.10.381): anywhere else it is a word,
+        # as it always was - `a - b` found the line saying so.
+        if token in ('NOT', '!') or (token == '-' and self.at + 1 < len(self.tokens)
+                                     and self.tokens[self.at + 1] == '('):
             self.at += 1
             if self._peek() in (None, ')'):
                 raise FwQueryError('NOT with nothing after it')
@@ -18540,7 +18558,9 @@ def acme_when(m, now=None):
     if len(bits) == 3:
         try:
             got = otp_when(bits[0], bits[1], bits[2], now=now, zone='')
-            if got is not None:
+            # ...but a January line in the last days of December is next
+            # year's as far as a day ahead, as before (1.10.381).
+            if got is not None and (got >= now - 86400 * 300 or bits[0] != 'Jan'):
                 return float(got)
         except (ValueError, TypeError, OverflowError):
             pass
@@ -19040,7 +19060,9 @@ class LogTail(object):
                 try:
                     with self.open_maybe_packed(full) as f:
                         sure = self.mark_at(f, self.offset) == self.mark
-                except (OSError, EOFError, ValueError, ImportError):
+                except Exception:                       # noqa: BLE001 - zlib.error, LZMAError
+                    # A broken one is not ours, and never in the way of the
+                    # live file: raised, the log was never read again.
                     sure = False
             # A plain file whose bytes before our offset ARE the ones we
             # read is the copy we want, however new a compressed one is
@@ -28439,7 +28461,7 @@ class Storage(object):
             log('database: laying the schema down all at once was refused (%s); '
                 'doing it a statement at a time' % str(e)[:160], 'warn')
         self.mend()
-        self.mend_lower_indexes()
+        self.mend_lower_indexes(at_start=True)
         self.mend_tacplus_refusals()
         self.mend_fw_areas()
         self.mend_fw_other()
@@ -30275,7 +30297,13 @@ class Storage(object):
         log('database: a one-time repair, %s - starting' % what.replace('_', ' '), 'info')
         return False
 
-    def mend_lower_indexes(self):
+    # Past this many rows in the tables those indexes are on, the rebuild is
+    # left to the catching up behind the daemon (1.10.381): at the start it
+    # was a minute or more of a hundred million firewall lines before the
+    # API answered, and an upgrade waits three minutes for that.
+    LOWER_REINDEX_AT_START_MOST = 2000000
+
+    def mend_lower_indexes(self, at_start=False):
         """The indexes over LOWER() built again, once (1.10.377).
 
         A file made before 1.10.200 holds them as SQLite's own LOWER() made
@@ -30284,12 +30312,33 @@ class Storage(object):
         entry SQLite could not find again: deleting it failed as "database
         disk image is malformed", the old rows were never let go, and the
         check said the file was damaged."""
-        if self.dialect.name != 'sqlite' or self.mended_once('lower_reindex', '1'):
+        if self.dialect.name != 'sqlite':
             return
         try:
-            names = [str(r['name']) for r in self.db.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'index' "
+            if str(self.get_meta('mended_lower_reindex') or '') == '1':
+                return
+        except Exception:
+            pass
+        try:
+            found = [(str(r['name']), str(r['tbl_name'])) for r in self.db.execute(
+                "SELECT name, tbl_name FROM sqlite_master WHERE type = 'index' "
                 "AND sql LIKE '%LOWER(%'")]
+        except sqlite3.Error:
+            return
+        if at_start:
+            rows = 0
+            for table in sorted({t for _n, t in found}):
+                try:
+                    rows += int(self.db.execute('SELECT MAX(rowid) AS n FROM %s'
+                                                % self.dialect.ident(table)).fetchone()['n'] or 0)
+                except (sqlite3.Error, TypeError, ValueError):
+                    pass
+            if rows > self.LOWER_REINDEX_AT_START_MOST:
+                return                          # behind the daemon, in catch_up
+        if self.mended_once('lower_reindex', '1'):
+            return
+        try:
+            names = [n for n, _t in found]
             for name in names:
                 with self.db_write() as db:
                     db.execute('REINDEX %s' % self.dialect.ident(name))
@@ -31012,6 +31061,7 @@ class Storage(object):
         each row already holds rather than anything in a log.
         """
         with self._catch_up:
+            self.mend_lower_indexes()          # a big one's, left from the start
             self.fill_in_kinds()
             self.fill_in_failed_kinds()
             self.mend_command_secrets()
@@ -38748,7 +38798,7 @@ class Storage(object):
             return ''
         rid = str(facts.get('rid') or '')
         said = str(facts.get('id') or '')
-        best = again = None
+        best = None
         for row in rows:
             name = str(row['ident'] or '')
             if name.rsplit('/', 1)[-1] != port:
@@ -38764,24 +38814,14 @@ class Storage(object):
                 continue
             # Only a row that is missing exactly this half: a request nobody
             # has answered yet, or an answer whose request has not come.
-            # A row that already holds this very half - the same answer, the
-            # same name asking - is this record read again when the shipper
-            # sends no `id=` (1.10.379): taken only when no row is missing
-            # it, or the answer to nobody came back on every re-read.
             if answer and (row['verdict'] or ''):
-                if not said and again is None and \
-                        str(row['verdict']) == str(facts.get('verdict') or ''):
-                    again = name
                 continue
             if not answer and ((row['username'] or '') or not (row['verdict'] or '')):
-                if not said and again is None and (row['username'] or '') and \
-                        str(row['username']) == str(facts.get('username') or ''):
-                    again = name
                 continue
             gap = abs(float(row['ts'] or 0) - ts)
             if best is None or gap < best[0]:
                 best = (gap, name)
-        return best[1] if best else (again or '')
+        return best[1] if best else ''
 
     def _asked_made_of(self, detail):
         """The shipper's names of the records a stored packet was made of."""
@@ -55189,7 +55229,8 @@ class Daemon(object):
         cmd = ise_first(fields, 'Command')
         priv = ise_first(fields, 'Privilege')
         asked = ise_first(fields, 'Asked for')
-        if not cmd and not ise_first(fields, 'Record') and asked and asked != 'to sign in':
+        if not cmd and not ise_first(fields, 'Record') and asked and asked != 'to sign in' \
+                and not asked.lower().startswith('authen'):
             # An authorization or accounting query let through, in the
             # daemon's own log: a command allowed, not somebody sitting down
             # (1.10.379). Each was a sitting of its own, one per command.
@@ -67917,7 +67958,7 @@ class Daemon(object):
                     int(CONFIG.get('api_port') or 0):
                 carried.pop('api_port')
                 missing.append('the daemon\'s own port, which only isemon --set changes')
-            if len(carried) != len(given['settings']):
+            if any(k in FILE_ONLY for k in given['settings']):
                 missing.append('which database to use, which is never carried: this '
                                'machine keeps its own')
             # What only the page itself may switch on, where it can show it
@@ -88066,7 +88107,9 @@ class NetPower(object):
                                % a4.network.prefixlen)
         dns = _net_list(v4.get('dns'))
         # The addresses set by hand: their DNS too, or no name is found at all.
-        if not rollback and not dns:
+        # ...the IPv6 ones counted too (1.10.381): names are found through them.
+        if not rollback and not dns and not ((want.get('ipv6') if isinstance(want.get('ipv6'), dict) else {}).get('on')
+                                              and _net_list((want.get('ipv6') or {}).get('dns'))):
             raise WebRootError('a DNS server or two, with the address set by hand: without one '
                                'no name is found at all')
         for x in dns:
@@ -96825,10 +96868,16 @@ def cmd_export(args, pal, store):
     # Its own mode from the first byte (1.10.376): written first and then
     # made the owner's, the passwords were readable by anybody meanwhile -
     # and a mode that could not be set was said set all the same.
-    fd = os.open(str(where), os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW,
-                 0o600 if args.secrets else 0o644)
+    # Through a link only without the secrets (1.10.381): `--export
+    # /dev/stdout` and a file behind a link worked before, and still do.
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | (os.O_NOFOLLOW if args.secrets else 0)
+    fd = os.open(str(where), flags, 0o600 if args.secrets else 0o644)
     with os.fdopen(fd, 'w', encoding='utf-8') as out:
-        os.fchmod(out.fileno(), 0o600 if args.secrets else 0o644)
+        try:
+            os.fchmod(out.fileno(), 0o600 if args.secrets else 0o644)
+        except OSError:
+            if args.secrets:
+                raise
         out.write(text + '\n')
     if args.secrets:
         store.add_event('settings', 'the configuration was exported with the passwords and '

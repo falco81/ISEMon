@@ -44,7 +44,7 @@ ok('a range typed alone is either end of a line in it',
     q.match({'srcip': '10.0.1.7'})), (True, True, False))
 ok('a MAC however written is no word the record must hold',
    isemon.FwQuery('srcmac:AA-BB-CC-DD-EE-01').needles(), [])
-ok('~ on a number is said, not taken for =', refused('port~44'), True)
+ok('~ on a number is = as it always was (1.10.381)', isemon.FwQuery('port~44').match({'dstport': 44}), True)
 q = isemon.FwQuery('src:2001:0db8::5')
 ok('an IPv6 address however written', q.match({'srcip': '2001:db8::5'}), True)
 ok('proto:pim and proto:ipv6', (refused('proto:pim'), refused('proto:ipv6')), (False, False))
