@@ -372,6 +372,27 @@ working.
 
 ## Version
 
+1.10.372
+
+- **Bug hunt, round 1 of 10** (test/fixes372_hunt.py):
+  - *FreeRADIUS/eduroam*: the inner refusal of a tunnel (PEAP/TTLS with an
+    anonymous outer name) is said on the outer one again, matched by the
+    request's number; in a log without request numbers another person's line
+    between the two lines of one refusal made it two (and a ban came at half
+    the tries); a person called `host` whose password has a slash keeps none
+    of it in the name.
+  - *ISE*: the domain is read out of `AD-User-Resolved-DNs` again (its commas
+    are written escaped).
+  - *who may do what*: one's own Face ID is set up again only just after Face
+    ID, as one passkey is taken away; one's own password is changed under My
+    account with the old one, never as somebody else's; a viewer no longer
+    sees the ban list's account and the firewalls that fetch it in Settings.
+  - *alerts*: a SELinux look that got no answer keeps what was known (the
+    alert went for half an hour and came back); an event that failed is an
+    error on the Events page and in the terminal (it read as ordinary and no
+    filter found it); "not now" lasts a day though the numbers in an alert
+    (free space, growth) change.
+
 1.10.371
 
 - **Speed on a very large database, round 5 of 5: the four rounds before

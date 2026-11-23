@@ -21849,10 +21849,10 @@ function loadEvents() {
          A kind the box does not list keeps the daemon's own name. (1.10.160) */
       var called = eventKindWords(r.kind);
       var mark = el('span', 'tag ' + (r.level === 'warn' ? 'warn'
-        : (r.level === 'error' ? 'crit' : 'dim')), called || r.kind);
+        : (r.level === 'error' || r.level === 'bad' ? 'crit' : 'dim')), called || r.kind);
       mark.dataset.kind = r.kind || '';
       explain(mark, EVENT_SAYS[r.kind] || 'One kind of thing this daemon does.',
-        '<div class="same">' + (r.level === 'error' ? 'Something went wrong.'
+        '<div class="same">' + (r.level === 'error' || r.level === 'bad' ? 'Something went wrong.'
           : (r.level === 'warn' ? 'Worth reading: something changed, or somebody was kept '
              + 'out.' : 'Ordinary \u2014 it happened and nothing was wrong with it.'))
         + '</div>');
@@ -40166,7 +40166,10 @@ function drawStorageDb(host, d) {
 var ALERTS_DRAWN = {};
 var ALERT_HIDE_KEY = 'isemon-alerts-hidden';
 function alertSig(a) {
-  var t = String(a.key) + '|' + String(a.title) + '|' + String(a.says), h = 0;
+  /* Its words without their numbers (1.10.372): the free space and the
+     growth in them change every half hour, and "not now" lasted that long. */
+  var t = (String(a.key) + '|' + String(a.level || '') + '|' + String(a.title))
+    .replace(/[0-9][0-9.,\s]*/g, '#'), h = 0;
   for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
   return String(h);
 }

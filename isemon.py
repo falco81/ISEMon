@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.371'
+__version__ = '1.10.372'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -4955,7 +4955,8 @@ def ise_realm(fields):
         if '@' in said:
             return said.rsplit('@', 1)[1].strip().lower()[:80]
     for value in fields.get('AD-User-Resolved-DNs', ()):
-        said = dn_domain(value)
+        # ISE writes every comma of a value as `\,` (1.10.372).
+        said = dn_domain(ise_unescape(value))
         if said:
             return said
     # `Account` is the token log's own field: it writes the whole principal,
@@ -6930,8 +6931,13 @@ def edu_account(said):
         # who typed `host` as their name, whose line is `host/hunter2`: one
         # slash and no machine name after `host/`, and the rest is the
         # password, which is cut off like everybody else's.
+        # ...a machine's only where what follows `host/` is one (1.10.372):
+        # `host/hunter/2` is somebody called host whose password has a slash.
         if said.count('/') > 1:
-            return said.rsplit('/', 1)[0].strip()[:160]
+            machine = said[5:].rsplit('/', 1)[0]
+            if '.' in machine or '@' in machine or machine.endswith('$'):
+                return said.rsplit('/', 1)[0].strip()[:160]
+            return said.split('/', 1)[0].strip()[:160]
         name = said[5:]
         if '.' in name or '@' in name or name.endswith('$'):
             return said[:160]
@@ -7182,7 +7188,10 @@ def edu_parse_lines(lines, hold=None, now=None, ignored=None):
             # reads as a reason rather than as a verdict. Without that, six
             # tries at one account over six minutes would fold into one and
             # a brute force would show as a single attempt.
-            if then == at + 1 and it['at'] == one['at'] \
+            # ...the next line of the same client and name, other people's
+            # lines between them skipped (1.10.372): one between was this
+            # refusal counted twice, and a ban reached at half the tries.
+            if it['at'] == one['at'] \
                     and (one['verdict'] == 'Invalid user' or one['note']):
                 mine = then
             break
@@ -7191,6 +7200,7 @@ def edu_parse_lines(lines, hold=None, now=None, ignored=None):
         # ...and what the lines before it said about the same request, which
         # is where `Invalid user` and `(Home Server says so)` come from.
         why = ''
+        nearest = None
         for before in range(max(0, at - NEAR), at):
             it = said[before]
             if it['host'] != one['host'] or it['who'] != one['who']:
@@ -7198,9 +7208,11 @@ def edu_parse_lines(lines, hold=None, now=None, ignored=None):
             if one['ident']:
                 if it['ident'] == one['ident']:
                     why = it['note'] or it['verdict']
-            elif before == at - 1 and it['at'] == one['at'] \
-                    and (it['verdict'] == 'Invalid user' or it['note']):
-                why = it['note'] or it['verdict']
+            else:
+                nearest = it                # the last of the same name before it
+        if nearest is not None and nearest['at'] == one['at'] \
+                and (nearest['verdict'] == 'Invalid user' or nearest['note']):
+            why = nearest['note'] or nearest['verdict']
         got = edu_record_from(one['line'], now, why, hold)
         if got is not None and not (ignored or edu_ignored)(got.user):
             out.append(got)
@@ -7533,12 +7545,24 @@ def frad_parse_lines(lines, hold=None, now=None):
             continue
         fields = got.fields
         key = (got.server, str(got.user or '').lower())
+        # ...and by the request's number: FreeRADIUS numbers the tunnel's
+        # inner request on its own, just before the outer one, whose name may
+        # be another (anonymous@...) - by name alone its reason never reached
+        # the outer refusal (1.10.372).
+        bits = str(got.ident or '').split('/')
+        num = int(bits[2]) if len(bits) >= 4 and bits[2].isdigit() else None
         tail = ise_first(fields, 'And')
         if got.failed and 'via TLS tunnel' in tail and not ise_first(fields, 'Calling-Station-ID'):
             inner[key] = (ise_first(fields, 'Refused by') or ise_first(fields, 'Also said'),
                           got.ts)
+            if num is not None:
+                inner[(got.server, '#', num)] = inner[key]
             continue
         said = inner.pop(key, None)
+        if num is not None:
+            by_num = inner.pop((got.server, '#', num - 1), None) or \
+                inner.pop((got.server, '#', num), None)
+            said = said or by_num
         if said and got.failed and said[0] and abs(got.ts - said[1]) <= 60:
             fields['Inner said'] = [said[0]]
         for name in ('Refused by', 'Also said', 'And', 'Inner said'):
@@ -40705,7 +40729,10 @@ class Storage(object):
             with self.db_write() as db:
                 db.execute('INSERT INTO events (ts, kind, level, detail, who) '
                            'VALUES (?,?,?,?,?)',
-                           (time.time(), kind, level,
+                           # 'bad' is an error in the page's and the terminal's
+                           # words (1.10.372): shown as ordinary, and never found
+                           # by the filter for errors.
+                           (time.time(), kind, {'bad': 'error'}.get(level, level),
                             # No control character of anybody's (1.10.356): a
                             # name typed at the sign-in with escapes in it was
                             # printed as it was to root's terminal.
@@ -57778,6 +57805,9 @@ class Daemon(object):
         out['user'] = str(CONFIG.get('banfeed_user') or '') if admin else ''
         if not admin:
             out['fetched'] = [{'at': one.get('at'), 'n': one.get('n')} for one in out['fetched']]
+            if isinstance(out.get('refused_last'), dict):
+                out['refused_last'] = {k: v for k, v in out['refused_last'].items()
+                                       if k != 'from'}
         out['password_set'] = bool(CONFIG.get('banfeed_password'))
         if admin and out['auth'] == 'key':
             # The key only to somebody who may change the settings: it is the
@@ -66683,6 +66713,12 @@ class Daemon(object):
             if key in saved:
                 one['saved_at'] = written.get(key, {}).get('at')
                 one['saved_by'] = written.get(key, {}).get('by')
+            # The ban list's account and who fetches it are its privacy too
+            # (1.10.372): masked for viewers in the list's own view, shown
+            # here in clear.
+            if key in ('banfeed_user', 'banfeed_from') and not may_change:
+                one['value'] = ''
+                one['file'] = None
             if key in SECRET_KEYS:
                 one['value'] = secret_shown(value) if may_change else ''
                 one['file'] = bool(one['file']) if one['file'] is not None else None
@@ -80225,6 +80261,10 @@ def selinux_tick(daemon):
                                 'bad' if err else 'warn')
                 if not err:
                     log('SELinux: %s' % ('; '.join(said) or 'done'), 'warn')
+            # A look or a check that got no answer keeps what was known (1.10.372):
+            # written as nothing, the alert went for half an hour and came back.
+            if err and not data and isinstance(now.get('data'), dict):
+                data = now['data']
             store.set_meta('selinux:now', json.dumps({
                 'data': data if isinstance(data, dict) else {}, 'at': time.time(),
                 'error': err, 'said': said, 'action': do}))
@@ -90251,6 +90291,15 @@ class ApiHandler(BaseHTTPRequestHandler):
                 if not who or not store.user(who):
                     return self.fail('there is no such account')
                 people = set(store.same_person(who))
+                # One's own only just after Face ID, as one taken away by one
+                # (1.10.372): a sign-in left open took them all, and the next
+                # sign-in made a new one with the password alone.
+                if people & set(store.same_person(me['name'])) and daemon.passkeys_on() and \
+                        any(k['user'] in people for k in store.passkeys()) and \
+                        time.time() - PK_FRESH.get(store.session_key(
+                            self.headers.get('X-Isemon-Session') or ''), 0) > PK_FRESH_S:
+                    return self.fail('confirm it is you with Face ID first, then set it up '
+                                     'again', 428)
                 with PK_LOCK:
                     keys = store.passkeys()
                     gone = [k for k in keys if k['user'] in people]
@@ -92984,6 +93033,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.send_json({'ok': True,
                                        'user': {k: v for k, v in dict(made).items()
                                                 if k != 'hash'}})
+            # One's own password with the old one, as anybody's own
+            # (1.10.372): here it took none, and a sign-in left open was a
+            # password changed.
+            if data.get('password_for') and set(store.same_person(
+                    str(data['password_for']).strip().lower())) & set(store.same_person(me['name'])):
+                return self.fail('your own password is changed under My account, with the '
+                                 'one you have now', 409)
             if data.get('password_for'):
                 # An account the directory owns has its password in the
                 # directory. Setting one here would make a second way in
@@ -96248,7 +96304,7 @@ def cmd_events(args, pal, store):
                 paint=lambda n, i, cell: (
                     pal.dim if i in (0, 3) else
                     (pal.c_info if i == 1 else
-                     ({'warn': pal.c_warn, 'error': pal.c_bad}.get(cell)
+                     ({'warn': pal.c_warn, 'error': pal.c_bad, 'bad': pal.c_bad}.get(cell)
                       if i == 2 else None))))
     return 0
 
