@@ -372,6 +372,28 @@ working.
 
 ## Version
 
+1.10.373
+
+- **Bug hunt, round 2 of 10** (test/fixes373_hunt.py):
+  - *RouterOS*: a person signed in twice had the wrong session closed and the
+    other shown connected for good; the router's own site-to-site tunnels
+    (`ovpn-out1: connected`) are in the view of what is up; a sign-in through
+    MAC-Winbox kept a MAC as the address; a connection id the API gave back to
+    another connection made one of the two.
+  - *FortiGate*: the last line of a UDP/ICMP session (logid 13, action accept)
+    counted as no session. *FTD/ASA*: state-bypass teardowns (302304) are read.
+  - *the domain*: an account written `Novak` and `novak` is one account for a
+    lockout's refusals, its rows and its sign-ins; 0x00000000 is a success
+    (it read as a refusal); resource-based delegation, shadow credentials, SPNs
+    and the like written by a machine account are never hidden as routine; a
+    computer of a one-word realm (`PC01$@CORP`) is a computer; a certificate's
+    SID as a URL in the SAN (as the page tells to put it) is read.
+  - *copies*: putting back the copy made before a dump that failed no longer
+    makes a copy of the broken database first (on a short disk that stopped
+    it); half a copy is never left on a remote folder or FTP; the complete
+    export carries the firewalls' API passwords opened, so another machine
+    can seal them with its own key.
+
 1.10.372
 
 - **Bug hunt, round 1 of 10** (test/fixes372_hunt.py):

@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.372'
+__version__ = '1.10.373'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -8307,7 +8307,11 @@ def win_worked(event, fields):
     code = str(win_said_last(fields, *names) or '').strip().lower()
     if not code:
         return None
-    return code in WIN_WORKED_CODES
+    # 0x00000000 is nought too (1.10.373): it read as a refusal.
+    try:
+        return int(code, 16) == 0 if code.startswith('0x') else int(code) == 0
+    except ValueError:
+        return code in WIN_WORKED_CODES
 
 
 def win_kind_of(event, fields):
@@ -8680,6 +8684,11 @@ WIN_MACHINERY_OBJECTS = ('a computer', 'a computer account',
                          'serviceconnectionpoint', 'computer')
 
 
+WIN_NEVER_MACHINERY_ATTRS = ('msds-allowedtoactonbehalfofotheridentity', 'msds-keycredentiallink',
+                             'msds-allowedtodelegateto', 'serviceprincipalname',
+                             'msds-groupmsamembership', 'useraccountcontrol')
+
+
 def win_is_machinery(event, fields, account):
     """Is this a desktop being rebuilt rather than something happening?
 
@@ -8693,7 +8702,17 @@ def win_is_machinery(event, fields, account):
     """
     if event not in WIN_MACHINERY_EVENTS:
         return False
-    if not str(account or '').strip().endswith('$'):
+    if not str(account or '').strip().split('@', 1)[0].endswith('$'):
+        return False
+    # Who may act as whom, and who may sign in as it, are never machinery,
+    # whoever writes them (1.10.373): resource-based delegation and shadow
+    # credentials written by a machine account were hidden as routine.
+    attr = (str(win_said(fields, 'LDAP Display Name', 'Attribute / LDAP Display Name') or '')
+            + ' ' + str(win_said(fields, 'Allowed To Delegate To') or '')).lower()
+    if any(a in attr for a in WIN_NEVER_MACHINERY_ATTRS):
+        return False
+    if event == 4742 and str(win_said(fields, 'Allowed To Delegate To') or '-').strip() \
+            not in ('', '-'):
         return False
     if event in (4741, 4742, 4743):
         return True                     # a computer account, by a machine
@@ -9030,7 +9049,9 @@ def win_record_from(line, now=None, zone=None):
         'account': account[:180],
         # `BROKER$@EXAMPLE.CZ` is how a service ticket names a computer, and it is
         # a computer: it was counted among the people until 1.10.100.
-        'is_machine': 1 if win_fold_account(account).endswith('$') else 0,
+        # ...whatever its realm is called: `PC01$@CORP` too (1.10.373).
+        'is_machine': 1 if (win_fold_account(account).endswith('$') or str(account or '')
+                            .split('@', 1)[0].rsplit('\\', 1)[-1].strip().endswith('$')) else 0,
         'domain': win_said(fields, 'Account Domain', 'Target Domain',
                            'Supplied Realm Name')[:120],
         'by': win_by(fields, event)[:180],
@@ -12092,7 +12113,8 @@ FTD_PATTERNS = {
         + _ftd_end('s') + _FTD_MAP.format(p='s') + ' to ' + _ftd_end('d')
         + _FTD_MAP.format(p='d') + r'\s*$'),
     'teardown': re.compile(
-        r'^Teardown (?P<proto>\S+) connection (?P<conn>\d+) (?:for|from) ' + _ftd_end('s')
+        r'^Teardown (?P<proto>\S+)(?: state-bypass)? connection (?P<conn>\d+) (?:for|from) '
+        + _ftd_end('s')
         + r'(?: \([^()]*\))? to ' + _ftd_end('d') + r'(?: \([^()]*\))? duration '
         r'(?P<dur>[\d:dhms]+) (?:bytes|data) (?P<bytes>\d+),?\s*(?P<rest>.*?)\s*$'),
     'icmp': re.compile(
@@ -14076,6 +14098,10 @@ def ros_record_from(line, now=None, seen=None, hold=None):
             f.update({'action': 'login', 'verdict': 'fail', 'user': lf.group('user')[:120],
                       'srcip': lf.group('ip')[:64]})
             rest['ui'] = lf.group('via')
+            # Through MAC-Winbox the "address" is a MAC (1.10.373): no address
+            # to count or ban.
+            if not is_address(f['srcip']):
+                rest['srcmac'], f['srcip'] = f['srcip'], ''
         elif lm:
             f.update({'action': 'login' if lm.group('inout') == 'in' else 'logout',
                       'user': lm.group('user')[:120], 'srcip': lm.group('ip')[:64]})
@@ -14090,11 +14116,26 @@ def ros_record_from(line, now=None, seen=None, hold=None):
                 f.update({'action': 'tunnel-up', 'user': user[:120],
                           'srcip': (tin.group('ip') or '')[:64]})
                 rest['assigned'] = tin.group('inner')
-                memo['%s|%s' % (dev, user.lower())] = [tin.group('ip') or '', tin.group('inner')]
+                # One a sign-in, the oldest closed first (1.10.373): the
+                # second sign-in of one person took the first's place, and
+                # one of the two stayed connected for good.
+                key = '%s|%s' % (dev, user.lower())
+                had = memo.get(key)
+                if had and not isinstance(had[0], list):
+                    had = [had]
+                memo[key] = ((had or []) + [[tin.group('ip') or '', tin.group('inner')]])[-16:]
             elif tout:
                 user = tout.group('user')
-                ip, inner = (list(memo.pop('%s|%s' % (dev, user.lower()), None) or ['', ''])
-                             + ['', ''])[:2]
+                key = '%s|%s' % (dev, user.lower())
+                had = memo.get(key) or []
+                if had and not isinstance(had[0], list):
+                    had = [had]
+                first = had[0] if had else ['', '']
+                if len(had) > 1:
+                    memo[key] = had[1:]
+                else:
+                    memo.pop(key, None)
+                ip, inner = (list(first) + ['', ''])[:2]
                 f.update({'action': 'tunnel-down', 'user': user[:120], 'srcip': ip[:64],
                           'duration': fg_number(tout.group('secs')),
                           'rcvd': fg_number(tout.group('rx')),
@@ -14738,6 +14779,23 @@ def rosapi_ssh_key(store, name):
     return unseal_secret(store.get_meta('rosapi_sshkey_%s' % name, None) or '') or ''
 
 
+def rosapi_opened(rows):
+    """The firewalls with each API password opened, for a complete export:
+    the importing machine seals them again with its own key (1.10.373)."""
+    if not isinstance(rows, (list, tuple)):
+        return rows
+    out = []
+    for row in rows:
+        if isinstance(row, dict) and isinstance(row.get('api'), dict) and \
+                str(row['api'].get('password') or '').startswith('sealed:'):
+            row = dict(row)
+            api = dict(row['api'])
+            api['password'] = unseal_secret(api['password']) or ''
+            row['api'] = api
+        out.append(row)
+    return out
+
+
 def rosapi_masked(rows, shown=True):
     """The firewalls with each API password taken out, and whether there is
     one said instead - what the page is given. Its last two letters only to
@@ -15156,7 +15214,11 @@ class RosReader(object):
             else:
                 # The same id for another connection, once the table has
                 # given it back: bytes going down is a new one.
-                if fg_number(one.get('orig-bytes')) < fg_number(had[2].get('orig-bytes')):
+                # ...and so are other ends (1.10.373): the id given back to a
+                # connection of more bytes was one connection of both.
+                if fg_number(one.get('orig-bytes')) < fg_number(had[2].get('orig-bytes')) or \
+                        any(str(one.get(k) or '') != str(had[2].get(k) or '')
+                            for k in ('src-address', 'dst-address', 'protocol')):
                     ended.append(rosapi_session_of(self.name, self.identity, had[2], had[0],
                                                    had[1], self.mine))
                     self.conns[cid] = [now, now, one]
@@ -16511,7 +16573,9 @@ def fw_vpn_folder():
                             one['started'], one['since_known'] = ts - one['duration'], True
                     close(one, ts, str(f.get('reason') or f.get('logdesc') or 'ended'))
             elif area == 's2s-vpn':
-                peer = r.get('srcip') or ''
+                # ...or the tunnel's own name, as RouterOS writes its own
+                # (`ovpn-out1: connected`) with no address (1.10.373).
+                peer = r.get('srcip') or str(f.get('vpntunnel') or '')
                 if not peer:
                     continue
                 key = (r.get('fw') or '', peer)
@@ -17220,8 +17284,11 @@ def fw_carried(f):
         return 0, 0, 1
     if 'sentdelta' in rest or 'rcvddelta' in rest:
         sent, rcvd = fg_number(rest.get('sentdelta')), fg_number(rest.get('rcvddelta'))
-        interim = (str(rest.get('logid') or '') == '0000000020'
-                   or str(f.get('action') or '') == 'accept')
+        # Only the interim line is interim: a UDP or ICMP session ENDS with
+        # logid 13 and action "accept", and was counted as no session (1.10.373).
+        logid = str(rest.get('logid') or '')
+        interim = (logid == '0000000020'
+                   or (not logid and str(f.get('action') or '') == 'accept'))
         return sent, rcvd, 0 if interim else 1
     return int(f.get('sent') or 0), int(f.get('rcvd') or 0), 1
 
@@ -19632,6 +19699,12 @@ def cl_cert_facts(pem):
                             sid = sid or inner[0][1].decode('ascii', 'replace')
                 elif gt == 0x81:                    # rfc822Name
                     mails.append(gv.decode('ascii', 'replace'))
+                elif gt == 0x86:                    # URI: the SID as a URL (1.10.373)
+                    # What the page tells admins to put in a request made
+                    # offline - and what strong mapping then never found.
+                    uri = gv.decode('ascii', 'replace').strip()
+                    if uri.lower().startswith('tag:microsoft.com,2022-09-14:sid:'):
+                        sid = sid or uri.split(':sid:', 1)[1].strip()
         except (ValueError, IndexError):
             raise CertLoginError('the Subject Alternative Name of the certificate cannot be read')
     if CL_OID_SID_EXT in exts:
@@ -37003,7 +37076,23 @@ class Storage(object):
             for realm in realms:
                 for r in (realm, realm.upper(), realm.lower()):
                     out |= {one + '@' + r, one.upper() + '@' + r}
-        return sorted(out)[:120]
+        out = sorted(out)[:120]
+        # ...and the spellings the controllers really wrote (1.10.373):
+        # `Novak` as typed beside `novak` as the domain has it - a lockout's
+        # refusals were not found, nor an account's rows in the list.
+        try:
+            lows = sorted({one.lower() for one in out})
+            sql = ('SELECT DISTINCT account FROM win_events WHERE LOWER(account) IN (%s)'
+                   % ','.join('?' * len(lows)))
+            args = list(lows)
+            if since:
+                sql += ' AND ts >= ?'
+                args.append(float(since))
+            seen = [str(r['account']) for r in self.db.execute(sql + ' LIMIT 200', args)]
+            out = sorted(set(out) | {one for one in seen if one})
+        except sqlite3.Error:
+            pass
+        return out
 
     def win_machine_refused(self, since, least=5):
         """Computer accounts refused because their password was wrong.
@@ -48708,7 +48797,7 @@ class Storage(object):
             if other is not None:
                 other.close()
 
-    def restore(self, path, say=None):
+    def restore(self, path, say=None, safety=True):
         """Replace everything in this database with what is in that file.
 
         Through SQLite's own copy rather than by moving files about: the
@@ -48725,7 +48814,10 @@ class Storage(object):
         if said is None:
             raise StorageError(why)
         job = DbJob('putting a copy back: %s' % Path(path).name)
-        safety = self.safety_copy('before-restore')
+        # Not when it is the copy made just before being put back (1.10.373):
+        # a copy of the broken database first, on a disk already short, was
+        # what stopped the putting back.
+        safety = self.safety_copy('before-restore') if safety else None
         # Not while the mending that rewrites rows is going on behind the
         # page: that pass is walking rows that are about to be replaced, and
         # would write down that the database it finished is sorted - which
@@ -48775,9 +48867,10 @@ class Storage(object):
         # this one replaced. `Daemon.after_restore` names them once the
         # restored settings are read, as a start does.
         self.catch_up()
-        job.came_of('the one it replaced was kept as %s' % safety.name)
+        job.came_of('the one it replaced was kept as %s' % safety.name if safety
+                    else 'put back as it was before')
         job.__exit__(None, None, None)
-        return {'from': said, 'safety': safety.name}
+        return {'from': said, 'safety': safety.name if safety else ''}
 
     def wipe(self):
         """Throw away every table this program made, and nothing else.
@@ -49150,7 +49243,7 @@ class Storage(object):
                 # again empty, for the copy to be poured into.
                 self.mend()
                 self.forget_the_old_contents()
-                self.restore(safety)
+                self.restore(safety, safety=False)
             except Exception as again:
                 raise StorageError('the dump could not be put back (%s), and neither could '
                                    'what was there before it (%s). It is kept as %s.'
@@ -67277,7 +67370,11 @@ class Daemon(object):
                # two installations writing to one - the very thing every
                # other road here refuses. The new machine is told where its
                # database is once, on the page, like this one was.
-               'settings': {k: (v if secrets_too or k != 'fwlog_sources'
+               # ...and in the complete one opened (1.10.373): sealed with
+               # this machine's key, another machine could never open them -
+               # the firewalls' APIs asked with no password, and nothing said.
+               'settings': {k: (rosapi_opened(v) if secrets_too and k == 'fwlog_sources'
+                                else v if secrets_too or k != 'fwlog_sources'
                                 else rosapi_masked(v, False))
                             for k, v in CONFIG.items()
                             if v != DEFAULTS[k] and k not in FILE_ONLY
@@ -83868,6 +83965,12 @@ class RbFolder(object):
                 os.fchmod(out.fileno(), 0o640)
             os.replace(part, os.path.join(self.dir, name))
         except OSError as e:
+            # Half a copy never left behind (1.10.373): a full disk was a new
+            # hidden one every night, the space never given back.
+            try:
+                os.unlink(part)
+            except OSError:
+                pass
             if e.errno == errno.EROFS:
                 raise RbError(self.walled())
             raise
@@ -84022,8 +84125,15 @@ class RbFtp(object):
 
     def put(self, local, name):
         name = rb_safe_name(name)
-        with open(local, 'rb') as f:
-            self.ftp.storbinary('STOR .%s.part' % name, f, blocksize=262144)
+        try:
+            with open(local, 'rb') as f:
+                self.ftp.storbinary('STOR .%s.part' % name, f, blocksize=262144)
+        except Exception:
+            try:                                # half a copy never left behind (1.10.373)
+                self.ftp.delete('.%s.part' % name)
+            except Exception:                   # noqa: BLE001
+                pass
+            raise
         try:
             self.ftp.delete(name)
         except ftplib.error_perm:
