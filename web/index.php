@@ -14403,6 +14403,9 @@ function ovPeekRow(d, view, row) {
      are opened: pressing a switch on it listed every MAB half of every PC
      that joined through it a second later as well. */
   if (view.settled && side === 'failed') where += '&settled=' + encodeURIComponent(view.settled);
+  /* A machine counted by its account is one with no MAC (1.10.383): the card
+     groups the rows with a MAC under the MAC. */
+  if (view.by === 'mac' && !macKey(said)) where += '&nomac=1';
   peek(ovRowTitle(view) + ' \u201c' + said + '\u201d',
     function () {
       return api(side + '&hours=' + h + '&limit=250&kind=' + encodeURIComponent(d.door)
@@ -14438,7 +14441,9 @@ function ovPeekRow(d, view, row) {
     {tab: side === 'passed' ? 'logins' : 'failed',
      words: side === 'passed' ? 'Open the logins' : 'Open the failed attempts',
      icon: side === 'passed' ? 'person' : 'cancel',
-     q: ovPageTerm(filter, said), door: d.door});
+     q: ovPageTerm(filter, said), door: d.door,
+     win: {from: Math.floor(Date.now() / 1000) - h * 3600},
+     settled: side === 'failed' ? view.settled : ''});
 }
 
 function ovRowTitle(view) {
@@ -14506,6 +14511,7 @@ function ovPeekDoor(d, side) {
         : peekFailedRows(answer.rows, 'peek-door-all'));
     },
     {tab: side === 'passed' ? 'logins' : 'failed', q: '', door: d.door,
+     win: {from: Math.floor(Date.now() / 1000) - h * 3600},
      words: side === 'passed' ? 'Open the logins' : 'Open the failed attempts',
      icon: side === 'passed' ? 'person' : 'cancel'});
 }
@@ -14712,7 +14718,11 @@ function drawSeries(series, hours) {
     if (any) {
       /* The bar is a window on to its own span of time, like every other
          count on this page. */
-      hit.addEventListener('click', function () { peekSpan(p, bucket); });
+      /* ...to the next bar, not a fixed step (1.10.383): a day of 23 or 25
+         hours is folded on midnights, and a fixed step missed an hour. */
+      hit.addEventListener('click', function () {
+        peekSpan(p, series[i + 1] ? series[i + 1].ts - p.ts : bucket);
+      });
     }
     hit.addEventListener('mousemove', function (e) {
       var box = host.getBoundingClientRect();
@@ -14813,7 +14823,7 @@ function drawFailingNames(rows) {
     /* The card counts the VPN's refusals of exactly this name, so that is
        what it opens: not every door, and not every name with it inside. */
     opensWith(tr, 'Everything this name has tried, and whether it has ever got in.',
-              function () { peekName(Object.assign({kind: 'vpn'}, r)); });
+              function () { peekName(Object.assign({kind: 'judged'}, r)); });
     body.appendChild(tr);
   });
 }
@@ -14907,7 +14917,8 @@ function peek(title, ask, draw, jump) {
                      go: function () {
                        if (jump.go) jump.go();
                        else if (jump.q !== undefined && (jump.tab === 'failed' || jump.tab === 'logins')) {
-                         goToRecords(jump.tab === 'logins' ? 'passed' : 'failed', jump.door, jump.q);
+                         goToRecords(jump.tab === 'logins' ? 'passed' : 'failed', jump.door, jump.q,
+                                     '', {win: jump.win, settled: jump.settled});
                        } else showTab(jump.tab);
                      }});
   }
@@ -15031,7 +15042,7 @@ function peekFailedCard() {
         + 'for everything known about that address.'));
       body.appendChild(peekFailedRows(d.rows, 'peek-failed'));
     },
-    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel', q: ''});
+    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel'});
 }
 
 function peekPassedCard() {
@@ -15053,7 +15064,7 @@ function peekPassedCard() {
         + 'the Logins page.'));
       body.appendChild(peekPassedRows(d.rows, 'peek-passed'));
     },
-    {tab: 'logins', words: 'Open the logins', icon: 'person', q: ''});
+    {tab: 'logins', words: 'Open the logins', icon: 'person'});
 }
 
 function peekBlockedCard() {
@@ -15204,7 +15215,8 @@ function peekName(r) {
       winBeside(body, name);
     },
     {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel',
-     q: qTerm('user', name), door: r.kind});
+     q: qTerm('user', name), door: r.kind === 'judged' ? 'vpn' : r.kind,
+     win: {from: Math.floor(Date.now() / 1000) - h * 3600}});
 }
 
 /** One name, asked for by name rather than clicked in a list. */
@@ -15235,7 +15247,8 @@ function peekCountry(r) {
       body.appendChild(peekFailedRows(d.rows, 'peek-country'));
     },
     {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel',
-     q: qTerm('country', cc)});
+     q: qTerm('country', cc), door: 'vpn',
+     win: {from: Math.floor(Date.now() / 1000) - h * 3600}});
 }
 
 /* What one followed file holds, in one place: the tag on the Overview, the
@@ -15738,7 +15751,9 @@ function drawStory(body, d) {
     body.appendChild(el('p', 'note', 'Every successful login from this address. On an address '
       + 'that is otherwise failing, this is the list to read first.'));
     body.appendChild(serverList({
-      key: 'story-passed:' + d.ip, api: 'passed', params: {kind: 'all'},
+      /* The sign-ins, as counted above it: no ACL handed down, no command
+         typed (1.10.383) - those were rows of "what got in" as well. */
+      key: 'story-passed:' + d.ip, api: 'passed', params: {},
       scope: {term: qTerm('ip', d.ip), params: {ip: d.ip}},
       placeholder: 'a name, a profile, a device\u2026',
       empty: 'Nobody has ever got in from this address',
@@ -20187,7 +20202,7 @@ function loadFailed() {
   var per = Number($('f-limit').value || 100);
   var q = [
     'limit=' + per, 'offset=' + (PAGE.failed * per), 'kind=' + FKIND, sortArgs(SORTS.failed),
-    windowArgs('f-hours'),
+    windowArgs('f-hours'), fSettledArg(),
     $('f-q').value.trim() ? 'q=' + encodeURIComponent(qRewrite($('f-q').value.trim(),
                                                                qMaps('failed', FKIND))) : '',
     $('f-device').value ? 'device=' + encodeURIComponent($('f-device').value) : '',
@@ -20623,7 +20638,15 @@ var DOORS = [
 ];
 var DOOR_SAYS = {};
 DOORS.forEach(function (d) { DOOR_SAYS[d.kind] = d; });
-var NETWORK_KINDS = ['dot1x-lan', 'dot1x-wifi', 'mab-lan', 'mab-wifi',
+/* The front page's network doors are each several kinds; opened from it,
+   the list is all of them (1.10.383) - it opened the VPN instead. They are
+   no tab of their own. */
+['network', 'nps-network', 'radius-network'].forEach(function (k) {
+  DOOR_SAYS[k] = {kind: k, words: {network: '802.1X and MAB', 'nps-network': 'NPS network',
+                                   'radius-network': 'FreeRADIUS network'}[k], icon: 'ethernet'};
+});
+var NETWORK_KINDS = ['network', 'nps-network', 'radius-network',
+                     'dot1x-lan', 'dot1x-wifi', 'mab-lan', 'mab-wifi',
                      'nps-dot1x-lan', 'nps-dot1x-wifi', 'nps-mab-lan', 'nps-mab-wifi',
                      'radius-dot1x-lan', 'radius-dot1x-wifi', 'radius-mab-lan',
                      'radius-mab-wifi'];
@@ -20709,6 +20732,14 @@ function doorSwitchedOff(kind) {
 /** The door a list should be on: the one asked for, unless its module is
     switched off - then the first door that is on. Where nothing at all is,
     the one asked for, so that the page still says something. */
+/* The card's "never got on" carried to the page (1.10.383); see goToRecords. */
+var F_SETTLED = null;
+function fSettledArg() {
+  var s = F_SETTLED;
+  if (!s || s.door !== FKIND || $('f-q').value.trim() !== s.q) return '';
+  return 'settled=' + encodeURIComponent(s.value);
+}
+
 function doorToShow(kind) {
   if (!doorSwitchedOff(kind)) return kind;
   for (var i = 0; i < DOORS.length; i += 1) {
@@ -24596,7 +24627,10 @@ function winPeekLock(r) {
   peek('The lockout of “' + (r.account || '') + '”',
     function () {
       return api('win-around&account=' + encodeURIComponent(r.account || '')
-                 + '&at=' + Math.round(r.ts) + '&before=3600&after=900&bad=1');
+                 /* The span "what was holding the password" is counted over
+                    (1.10.383): an hour before and a quarter after listed
+                    refusals the table above did not count. */
+                 + '&at=' + Math.round(r.ts) + '&before=1800&after=60&bad=1');
     },
     function (body, d) {
       body.appendChild(peekFacts([
@@ -24986,6 +25020,8 @@ function winPeekSubject(view, r) {
   /* ...and the machinery this card left out is left out of the list too, or
      the two numbers cannot agree. */
   ask.routine = '0';
+  /* ...and the row exactly as the card counted it (1.10.383). */
+  ask.exact = '1';
   /* An account gets the answer before the evidence: which machines and which
      programs have been trying it, counted, above the events they are counted
      from. It is the one question anybody has about an account being refused,
@@ -27898,7 +27934,10 @@ var T_TOPS = [
   {dim: 'host', part: 'busiest', title: 'The names asked for',
    note: 'What the web filter, the SSL inspection and the DNS filter saw being asked for, '
      + 'by name.',
-   term: function (v) { return 'host:' + tQuote(v); }, page: 'web'},
+   /* Every line with the name, as the card counts them (1.10.383): only the
+      web filter's page opened, and a firewall's own traffic lines with a
+      hostname were counted and not listed. */
+   term: function (v) { return 'host:' + tQuote(v); }},
   {dim: 'src', part: 'refused', title: 'Refused, from',
    note: 'The addresses the firewall turned away most - on its own address this is the '
      + 'internet trying the doors. Marked where this program keeps them out already, or a '
@@ -43974,8 +44013,9 @@ function personTerm(door, name) {
   return qTerm(door === 'domain' ? 'account' : 'user', name);
 }
 
-function goToRecords(where, door, q, session) {
+function goToRecords(where, door, q, session, also) {
   var passed = where === 'passed';
+  also = also || {};
   closeFind();
   closeAllModals();
   showTab(passed ? 'logins' : 'failed');
@@ -43985,6 +44025,18 @@ function goToRecords(where, door, q, session) {
   var hours = $(passed ? 'p-hours' : 'f-hours');
   if (hours && typeof windowSet === 'function') windowSet(hours.id, null);
   if (hours) hours.value = '0';
+  /* ...or the very window a popup counted in (1.10.383): opened on all of
+     time, its list held rows from before it, and said a larger number. */
+  if (hours && also.win && also.win.from) {
+    var span = Math.round(((also.win.to || Date.now() / 1000) - also.win.from) / 3600);
+    var fits = !also.win.to && hours.querySelector('option[value="' + span + '"]');
+    if (fits) hours.value = String(span);
+    else if (typeof windowSet === 'function') windowSet(hours.id, also.win);
+  }
+  /* ...and only the machines that never got on, where that is what the card
+     counted - for as long as the page is left as it was opened. */
+  F_SETTLED = (!passed && also.settled) ? {value: also.settled, door: door || '', q: q || ''}
+                                        : null;
   var box = $(passed ? 'p-q' : 'f-q');
   if (box) box.value = q || '';
   var country = $(passed ? 'p-country' : 'f-country');

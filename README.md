@@ -372,6 +372,40 @@ working.
 
 ## Version
 
+1.10.383
+
+- **Every number and the rows it opens** - a check of every overview and table
+  against what pressing it lists (test/fixes383_lists.py):
+  - *an address*: its two lists held other people's token attempts from all
+    of time (paired by the RADIUS box's port, which every session through it
+    takes in turn) - 488 and 6,707 rows under "3 failed, 2 successful". They
+    are now paired as the page draws them. Its chips count the same: a token
+    challenge is no refusal, an ACL handed down or a command typed is no
+    sign-in, a refusal with no door is under *Everything else*, and each chip
+    opens `ip:<address>` exactly (as a word it found every longer address,
+    and the token chip opened the account from everywhere). *Names it tried*
+    and *Names that got in* count the same rows as the lists.
+  - *Overview*: a name, a realm, an answer in any case is one row of a card,
+    as its popup asks for it; the busiest names count and open the same doors
+    (a judged refusal through NPS, or with no door yet, was counted and not
+    listed); a machine counted by its account opens the rows with no MAC;
+    *Open the ...* keeps the window the popup counted in, a card's "never got
+    on", and the network doors (it opened the VPN); a bar of the chart is the
+    span to the next bar (a 23 or 25 hour day lost an hour); the counter
+    cards open their page as before.
+  - *Failed attempts / Logins*: the door strip and the list over one window
+    (to the minute); the country picker counts the door and the window shown.
+  - *Domain*: a row of a card opens exactly what it counted (`jnovak` 5 opened
+    11 events of every spelling); a part with nothing in it is asked as
+    nothing; the brute card leaves the routine refusals out, as its list, and
+    the list leaves out what weighed no password, as the card; refusals of
+    accounts that cannot sign in leave the PDC's copies out; accounts locked
+    count one account however written; the lockout's popup lists the span and
+    the refusals its table counted; the computer account card counts and
+    lists the same refusals.
+  - *Traffic*: *The names asked for* opens every line with the name, not only
+    the web filter's.
+
 1.10.382
 
 - **Search boxes and what was pressed** (test/fixes382_filters.py):

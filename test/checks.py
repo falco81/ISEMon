@@ -2409,15 +2409,16 @@ ok('a name that has both is still found, and says so',
 # What to type into each door's own box to land on these records again.
 ok('every door but one is searched by the address, because the address is on the row',
    sorted({d['by'] for d in seen['doors'] if d['kind'] != 'otp'}), ['address'])
+# (1.10.383: as `ip:` and the address exactly - as a word it found every
+# longer address too - and the token door the same: there `ip:` is the
+# packet's address, which is this address's and nobody else's.)
 ok('...and the address is what it hands over',
-   sorted({d['q'] for d in seen['doors'] if d['kind'] != 'otp'}), [SEEN])
+   sorted({d['q'] for d in seen['doors'] if d['kind'] != 'otp'}), ['ip:' + SEEN])
 otp = [d for d in seen['doors'] if d['kind'] == 'otp'][0]
-ok('the token log is searched by the account instead, having no address on its rows',
-   otp['by'], 'account')
-ok('...by the name without its realm, which is how that log writes it down',
-   otp['q'], 'quiet')
-ok('...and searching the token log that way finds the attempt',
-   [r['session'] for r in store.passed_rows(kind='otp', text=otp['q'])[0]], ['seen/otp'])
+ok('the token log is searched by the address as well, through its packets',
+   (otp['by'], otp['q']), ('address', 'ip:' + SEEN))
+ok('...and asking it so finds the attempt',
+   [r['session'] for r in store.passed_rows(kind='otp', ip=SEEN)[0]], ['seen/otp'])
 # The whole account is searchable too, where the row kept it.
 store.add_passed({'session': 'seen/otp2', 'ts': now - 100, 'ip': '', 'kind': 'otp',
                   'username': 'quiet', 'tkey': 'quiet@example.cz',

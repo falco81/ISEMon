@@ -894,10 +894,11 @@ held = store5.win_holders(since5, 12, False)
 ok('there is such a row', bool(held), True)
 if held:
     ok('...and it carries the filter it was counted with',
-       sorted(held[0].get('ask') or {}), ['account', 'ip'])
+       # (1.10.383: every part, `-` where there is none, asked exactly)
+       sorted(held[0].get('ask') or {}), ['account', 'ip', 'machine', 'process'])
     _rows, many = store5.win_rows(limit=1, since=since5,
                                   kind=','.join(isemon.Storage.BAD_KINDS),
-                                  routine=False, **held[0]['ask'])
+                                  routine=False, exact=True, **held[0]['ask'])
     ok('...which opens exactly what it counted', many, held[0]['n'])
 
 title('...and the machinery a card leaves out is left out of the list too')

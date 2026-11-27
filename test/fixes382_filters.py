@@ -52,10 +52,10 @@ ok('an address\'s own lists start with ip: and the address',
 ok('...asked as the list\'s own parameter while it is in the box, and not once it is gone',
    "if (asked.on) params[k] = scope.params[k]; else delete params[k];" in page)
 ok('a name\'s lists start with name:', page.count("qTerm('name', name)") == 2)
-ok('...and its page opens on user:', "q: qTerm('user', name), door: r.kind});" in page)
+ok('...and its page opens on user:', "q: qTerm('user', name), door: r.kind === 'judged'" in page)
 ok('a pressed row of a card: the popup and the page both on it',
    "peekFailedRows(answer.rows, 'peek-door', ovListTerm(filter, said))" in page
-   and "q: ovPageTerm(filter, said), door: d.door});" in page)
+   and "q: ovPageTerm(filter, said), door: d.door," in page)
 ok('the domain popups open the events on that account', page.count(
     "a25Events(qTerm('account', ") == 2)
 ok('a person found in Find is asked for exactly', page.count('personTerm(') >= 5)

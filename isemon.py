@@ -45,7 +45,7 @@ dashboard reads. Every part of it is also a command:
 """
 
 # Bumped by hand with every change to this file.
-__version__ = '1.10.382'
+__version__ = '1.10.383'
 # How far back it is safe to go from this version (1.10.232): the oldest one
 # that can still run on a database this version has used - the same tables,
 # the same columns, nothing written that it would misread. Going back to it
@@ -34859,7 +34859,8 @@ class Storage(object):
     def win_rows(self, limit=100, offset=0, since=0, until=0, text='', kind='',
                  account='', ip='', machine='', event=0, server='', machines=None,
                  mark='', unmark='', by_who='', process='', object='', said='',
-                 routine=None, dead=False, accounts='', sort='', desc=True, where=None):
+                 routine=None, dead=False, accounts='', sort='', desc=True, where=None,
+                 exact=False, weighed=False):
         """The events themselves, newest first, with how many there are.
 
         `mark` and `unmark` are how a thing worth looking at opens exactly
@@ -34936,6 +34937,17 @@ class Storage(object):
                 continue
             raw = str(value).strip()
             value = raw.lower()
+            # A row of a card pressed: the value exactly as the card counted
+            # it, `-` for "none" (1.10.383). Widened to every spelling and
+            # case, `jnovak` 5 on the card opened 11 events.
+            if exact:
+                col = self.dialect.ident(column)
+                if raw == '-':
+                    sql += " AND COALESCE(%s,'') = ''" % col
+                else:
+                    sql += ' AND %s = ?' % col
+                    args.append(raw)
+                continue
             if column == 'account':
                 # Every way the controllers write the one account - `jnovak`,
                 # `KRAJ\\jnovak`, `jnovak@KRAJ.INT` (1.10.337: the UPN of a
@@ -34962,6 +34974,11 @@ class Storage(object):
             args.append(value)
         if machines is False:
             sql += ' AND COALESCE(is_machine,0) = 0'
+        # Only the refusals where a password was weighed, as the card of an
+        # account refused over and over counts them (1.10.383).
+        if weighed:
+            sql += " AND COALESCE(said,'') NOT IN (?, ?) AND event <> 4769"
+            args += ['the sign-in was broken off before it finished', 'refused (0xc00002ee)']
         # Refusals against accounts that cannot sign in anyway - the same
         # rows the card counts, said the same way. It had no filter of its
         # own, so pressing that card opened every refusal in the window and
@@ -36572,16 +36589,17 @@ class Storage(object):
         `one_per_lockout`. Counted as events, a domain that locked two
         accounts looked like four.
         """
-        sql = ("SELECT COUNT(DISTINCT LOWER(account)) AS n FROM win_events "
+        sql = ("SELECT DISTINCT account FROM win_events "
                "WHERE kind = 'lockout' AND ts >= ? AND COALESCE(account,'') <> ''")
         args = [float(since)]
         if machines is False:
             sql += ' AND COALESCE(is_machine,0) = 0'
         try:
-            row = self.db.execute(sql, args).fetchone()
+            rows = self.db.execute(sql, args).fetchall()
         except sqlite3.Error:
             return 0
-        return int((row or {'n': 0})['n'] or 0)
+        # `bob` and `EXAMPLE\bob` are one account locked (1.10.383).
+        return len({win_fold_account(r['account']) for r in rows} - {''})
 
     def win_unlock_after(self, account, at, within=86400 * 7):
         """How one lockout ended: unlocked, or the account deleted.
@@ -36970,8 +36988,10 @@ class Storage(object):
             out.append({'said': str(one['account'] or ''), 'n': int(one['n'] or 0),
                         'last': float(one['last'] or 0), 'first': float(one['first'] or 0),
                         'machines': 1, 'names': 1, 'places': 1,
-                        'ask': {k: str(one[k] or '') for k in
-                                ('account', 'machine', 'ip', 'process') if one[k]},
+                        # Every part, `-` where there is none (1.10.383):
+                        # left out, a row with no address opened every one.
+                        'ask': {k: (str(one[k] or '') or '-') for k in
+                                ('account', 'machine', 'ip', 'process')},
                         'newest': {'account': one['account'], 'machine': one['machine'],
                                    'ip': one['ip'], 'process': one['process'],
                                    'service': '', 'kind': 'logon-failed'}})
@@ -37422,6 +37442,7 @@ class Storage(object):
         return out
 
     def win_machine_refused(self, since, least=5):
+        # (1.10.383: without the routine ones too, as the list it opens)
         """Computer accounts refused because their password was wrong.
 
         A computer signs in to the domain as itself with a password it
@@ -37433,14 +37454,15 @@ class Storage(object):
         a machine that cannot prove who it is.
         """
         skip, more = self.win_not_chained()
+        rskip, rmore = self.routine_clause()
         try:
             rows = self.db.execute(
                 'SELECT account, COUNT(*) AS n, MIN(ts) AS first, MAX(ts) AS last '
                 'FROM win_events WHERE ts >= ? AND COALESCE(is_machine,0) = 1 '
                 "AND kind IN ('logon-failed','kerberos-failed','ntlm-failed') "
-                "AND said = 'the password was wrong'" + skip
+                "AND said = 'the password was wrong'" + skip + rskip
                 + ' GROUP BY account HAVING COUNT(*) >= ? ORDER BY n DESC LIMIT 5',
-                [float(since)] + more + [int(least)]).fetchall()
+                [float(since)] + more + rmore + [int(least)]).fetchall()
         except sqlite3.Error:
             return []
         out = []
@@ -38084,6 +38106,10 @@ class Storage(object):
         skip, more = self.win_not_chained()
         sql += skip
         args += more
+        # ...and the machinery the list it opens leaves out (1.10.383).
+        skip, more = self.routine_clause()
+        sql += skip
+        args += more
         # The bar is the PERSON's, not each spelling's: `jnovak` eight times
         # and `jnovak@example.cz` eight times is sixteen refusals of one
         # account. So the spellings are asked for from half the bar and the
@@ -38133,6 +38159,10 @@ class Storage(object):
                'AND (%s)' % holes)
         args = [float(since)] + [like_for(one) for one in self.DEAD_WORDS]
         skip, more = self.routine_clause()
+        sql += skip
+        args += more
+        # ...and the PDC's copies, which the list it opens leaves out (1.10.383).
+        skip, more = self.win_not_chained()
         sql += skip
         args += more
         if machines is False:
@@ -38318,7 +38348,7 @@ class Storage(object):
                                    'at': float(row['ts'] or 0)}
         return out
 
-    def win_around(self, account, at, before=1800, after=120, limit=25, kinds=()):
+    def win_around(self, account, at, before=1800, after=120, limit=25, kinds=(), quiet=False):
         """What else happened to one account either side of one moment.
 
         This is the whole of what a lockout is worth: the lock itself says
@@ -38344,6 +38374,12 @@ class Storage(object):
         if kinds:
             sql += ' AND kind IN (%s)' % ','.join('?' * len(kinds))
             args += list(kinds)
+        # ...without the machinery and the PDC's copies, where the rows are
+        # shown under what was counted from them (1.10.383).
+        if quiet:
+            for skip, holes in (self.routine_clause(), self.win_not_chained()):
+                sql += skip
+                args += holes
         args.append(max(1, min(200, int(limit))))
         try:
             rows = self.db.execute(sql + ' ORDER BY ts DESC LIMIT ?', args).fetchall()
@@ -41622,7 +41658,7 @@ class Storage(object):
     def _auth_query(self, table, limit=200, offset=0, since=0, text='', ip='', user='',
                     device='', server='', country='', order='DESC', kind='', until=0,
                     mac='', realm='', reason='', username='', picks=None, settled='',
-                    sort='', desc=True, where=None, with_detail=True):
+                    sort='', desc=True, where=None, with_detail=True, nomac=False):
         # Without the packed record where it is not wanted (1.10.175): the
         # page throws it away, and a heading pressed sorted fifty thousand
         # whole records - a record is kilobytes - to do it.
@@ -41650,6 +41686,8 @@ class Storage(object):
             more, also = self.pick_where(table, picks, kind)
             sql += more
             args += also
+        if nomac and 'mac' in self.columns_of(table):
+            sql += " AND COALESCE(mac,'') = ''"
         # A box with nothing but spaces in it is an empty box. Left as it
         # was typed it became a search for those spaces, which matches
         # nothing at all - an empty page with no reason given.
@@ -41665,7 +41703,13 @@ class Storage(object):
             # VPN attempt somebody can read. The judging reads the same row
             # as a VPN attempt, which is the careful way round and is a
             # different question from what a list shows.
-            if kind in self.DOOR_KINDS and len(self.DOOR_KINDS[kind]) > 1:
+            if kind == 'judged':
+                # The doors a ban is weighed from, as the names card counts
+                # them (1.10.383): asked for as `vpn`, the popup of a name
+                # left out its NPS refusals and the rows with no door yet,
+                # and listed fewer than the card it was opened from.
+                sql += ' AND ' + judged_sql()
+            elif kind in self.DOOR_KINDS and len(self.DOOR_KINDS[kind]) > 1:
                 # A door that is several kinds at once. `network` is the one
                 # of them: a socket and a radio, with a supplicant and
                 # without, are four kinds and one question. Asked for by the
@@ -41749,9 +41793,17 @@ class Storage(object):
             # whole table in time order instead - on every press of an
             # address, and twice more for the popup behind it. A handful of
             # packet names, found by an index, put back as a plain list.
-            asked_from = self.rids_from(ip) if self.otp_detail_rows() else []
+            # Given their packet exactly as the page draws it (1.10.383):
+            # `asked_as` is the box that asked and ITS port, which every
+            # session through that box takes its turn with - matched on that
+            # alone, one address's list held hundreds of other people's token
+            # attempts from all of time, and its two numbers said 3 and 2.
+            plain = str(ip).strip().split('/')[0]
+            asked_from = (self.otp_asked_sessions(table, 'oa.ip = ?', [plain],
+                                                  since=since, until=until)
+                          if self.otp_detail_rows() else [])
             if asked_from:
-                sql += (' AND (ip = ? OR asked_as IN (%s))'
+                sql += (' AND (ip = ? OR session IN (%s))'
                         % ','.join('?' * len(asked_from)))
                 args.append(str(ip))
                 args += asked_from
@@ -42784,10 +42836,20 @@ class Storage(object):
         """
         if table not in ('failed', 'passed'):
             return []
+        plain = str(ip).split('/')[0]
+        # The same rows as the lists under it (1.10.383): the token attempts
+        # paired with this address's packets, and never an ACL or a command.
+        where, args = 'ip = ?', [plain]
+        got = self.otp_asked_sessions(table, 'oa.ip = ?', [plain]) if self.otp_detail_rows() else []
+        if got:
+            where = '(ip = ? OR session IN (%s))' % ','.join('?' * len(got))
+            args += list(got)
+        if table == 'passed':
+            where += " AND COALESCE(kind, 'vpn') NOT IN ('dacl', 'tacacs-cmd', 'tacplus-cmd')"
         rows = self.db.execute(
             'SELECT username AS name, COUNT(*) AS tries, MAX(ts) AS last, MIN(ts) AS first '
-            'FROM %s WHERE ip=? GROUP BY username ORDER BY tries DESC, last DESC LIMIT ?'
-            % table, (str(ip).split('/')[0], max(1, min(200, int(limit)))))
+            'FROM %s WHERE %s GROUP BY username ORDER BY tries DESC, last DESC LIMIT ?'
+            % (table, where), args + [max(1, min(200, int(limit)))])
         return [{'name': r['name'] or '', 'tries': int(r['tries'] or 0),
                  'first': r['first'], 'last': r['last']} for r in rows]
 
@@ -42855,27 +42917,37 @@ class Storage(object):
             one[side] += int(n or 0)
             one['last'] = max(one['last'], float(last or 0))
 
+        # Counted as the lists count them (1.10.383): a refusal with no door
+        # is under "Everything else" there, not the VPN; a door the page has
+        # no tab for is too; and an ACL handed down or a command typed is no
+        # sign-in. The token attempts are the ones the packets are paired
+        # with exactly, not every packet - a challenge was a refusal.
+        doors_known = set(LOGIN_KINDS)
         for table, side in (('failed', 'failed'), ('passed', 'passed')):
+            blank = 'other' if table == 'failed' else 'vpn'
             try:
                 rows = self.db.execute(
-                    "SELECT COALESCE(kind, 'vpn') AS kind, COUNT(*) AS n, MAX(ts) AS last "
-                    "FROM %s WHERE ip = ? GROUP BY COALESCE(kind, 'vpn')" % table,
-                    (plain,)).fetchall()
+                    "SELECT COALESCE(kind, '%s') AS kind, COUNT(*) AS n, MAX(ts) AS last "
+                    "FROM %s WHERE ip = ? GROUP BY COALESCE(kind, '%s')"
+                    % (blank, table, blank), (plain,)).fetchall()
             except sqlite3.Error:
                 rows = []
             for row in rows:
-                note(row['kind'], side, row['n'], row['last'])
-        # The token attempts, through the packet that carried them. A packet
-        # the server accepted is somebody who got in; one it refused is not.
-        try:
-            rows = self.db.execute(
-                "SELECT verdict, COUNT(*) AS n, MAX(ts) AS last FROM otp_asked "
-                "WHERE ip = ? GROUP BY verdict", (plain,)).fetchall()
-        except sqlite3.Error:
-            rows = []
-        for row in rows:
-            note('otp', 'passed' if str(row['verdict'] or '') == 'accept' else 'failed',
-                 row['n'], row['last'])
+                kind = str(row['kind'] or blank)
+                if kind == 'otp' or kind in ('dacl', 'tacacs-cmd', 'tacplus-cmd'):
+                    continue
+                note(kind if kind in doors_known else 'other', side, row['n'], row['last'])
+            got = (self.otp_asked_sessions(table, 'oa.ip = ?', [plain])
+                   if self.otp_detail_rows() else [])
+            if got:
+                try:
+                    row = self.db.execute(
+                        'SELECT COUNT(*) AS n, MAX(ts) AS last FROM %s WHERE session IN (%s)'
+                        % (table, ','.join('?' * len(got))), list(got)).fetchone()
+                except sqlite3.Error:
+                    row = None
+                if row and row['n']:
+                    note('otp', side, row['n'], row['last'])
 
         found = sorted(doors.values(), key=lambda d: -d['last'])
         # What to type into that door's own search box to land on these
@@ -42888,14 +42960,13 @@ class Storage(object):
         # account is what that log does have, so that is what goes in, and
         # the page says which it used rather than quietly searching for
         # something other than what was clicked.
+        # The address exactly, as a field (1.10.383): as a word it found
+        # every longer address that began with it; and the token door asks
+        # `ip:` of the packet, which is the address, not the account - the
+        # account found its sign-ins from everywhere else too.
         for door in found:
-            door['q'] = plain
+            door['q'] = 'ip:' + plain
             door['by'] = 'address'
-            if door['kind'] == 'otp':
-                who = self._otp_account_at(plain)
-                if who:
-                    door['q'] = who
-                    door['by'] = 'account'
         last = None
         if found:
             newest = found[0]
@@ -44314,6 +44385,16 @@ class Storage(object):
         # attempt is a hardware address and nothing else, and a supplicant
         # gives a name. One column would lose half of them.
         column = ('COALESCE(NULLIF(%s, \'\'), %s)' % (by, fallback)) if fallback else by
+        # A name, a realm, an answer in any case is one (1.10.383): pressed,
+        # a row opens them all - `admin` and `Admin` are one person to the
+        # list - so the card counts them as one row too, shown as one of the
+        # spellings it was written in.
+        folded = by in ('username', 'realm', 'reason') and not fallback
+        key = ('LOWER(%s)' % column) if folded else column
+        shown = ('MIN(%s)' % column) if folded else column
+
+        def fold(v):
+            return str(v).lower() if folded and v is not None else v
         # ...and, where a door asks for it, only the ones that never got on.
         #
         # This is how MAB actually works. Every PC on a Cisco network tries
@@ -44356,12 +44437,12 @@ class Storage(object):
                     'COUNT(DISTINCT username) AS names FROM %s '
                     "WHERE ts >= ? AND kind IN (%s) AND COALESCE(%s,'') <> ''%s "
                     'GROUP BY %s ORDER BY n DESC, said LIMIT ?'
-                    % (column, table, holes, column, cut, column),
+                    % (shown, table, holes, column, cut, key),
                     [float(since)] + list(kinds) + (more if cut else []) + [want]).fetchall()
             except sqlite3.Error:
                 rows = []
             for row in rows:
-                one = said.setdefault(row['said'], {
+                one = said.setdefault(fold(row['said']), {
                     'said': row['said'], 'failed': 0, 'passed': 0, 'last': 0.0,
                     'places': 0, 'devices': 0, 'names': 0, 'newest': {}})
                 one[table] = int(row['n'] or 0)
@@ -44383,7 +44464,7 @@ class Storage(object):
         # first of each: that is one walk of the window rather than a seek a
         # row, and it is the difference between a card that says "1,152" and
         # a card that says which machine, on which socket, and why.
-        left = {one['said'] for one in out}
+        left = {fold(one['said']) for one in out}
         newest = {}
         marks = ','.join('?' * len(left))
         for table in ('passed', 'failed'):
@@ -44394,7 +44475,7 @@ class Storage(object):
                 rows = self.db.execute(
                     'SELECT %s, %s AS said FROM %s WHERE ts >= ? AND kind IN (%s) '
                     'AND %s IN (%s) ORDER BY ts DESC LIMIT ?'
-                    % (', '.join(keep), column, table, holes, column, marks),
+                    % (', '.join(keep), key, table, holes, key, marks),
                     [float(since)] + list(kinds) + sorted(left) + [want * 40]).fetchall()
             except sqlite3.Error:
                 rows = []
@@ -44409,7 +44490,7 @@ class Storage(object):
                 first.add(row['said'])
                 newest[row['said']] = dict(row)
         for one in out:
-            one['newest'] = {k: v for k, v in (newest.get(one['said']) or {}).items()
+            one['newest'] = {k: v for k, v in (newest.get(fold(one['said'])) or {}).items()
                              if v not in (None, '')}
         return out
 
@@ -44579,21 +44660,25 @@ class Storage(object):
         # distinct addresses counted for the handful ranked, not for every
         # name in the window: on a year that sort of the whole window wrote
         # more than a gigabyte of temporary files on MariaDB. (1.10.159)
+        # A name in any case is one (1.10.383): the popup it opens asks for
+        # it whatever the case, and listed `jnovak` and `JNovak` both under
+        # either of the two rows the card counted them in.
         top = [dict(r) for r in self.db.execute(
-            'SELECT username, COUNT(*) AS tries, MAX(ts) AS last FROM %s WHERE ts>=? '
-            'AND username<>"" AND %s '
-            'GROUP BY username ORDER BY tries DESC, last DESC, username LIMIT ?'
+            'SELECT MIN(username) AS username, COUNT(*) AS tries, MAX(ts) AS last FROM %s '
+            'WHERE ts>=? AND username<>"" AND %s '
+            'GROUP BY LOWER(username) ORDER BY tries DESC, last DESC, username LIMIT ?'
             % (table, which), (cut, max(1, min(200, int(limit)))))]
         spread = {}
         if top:
-            names = [r['username'] for r in top]
+            names = [str(r['username']).lower() for r in top]
             for r in self.db.execute(
-                    'SELECT username, COUNT(DISTINCT ip) AS addresses FROM %s WHERE ts>=? '
-                    'AND username IN (%s) AND %s GROUP BY username'
+                    'SELECT LOWER(username) AS said, COUNT(DISTINCT ip) AS addresses FROM %s '
+                    'WHERE ts>=? AND LOWER(username) IN (%s) AND %s GROUP BY LOWER(username)'
                     % (table, ','.join('?' * len(names)), which), [cut] + names):
-                spread[r['username']] = r['addresses']
+                spread[r['said']] = r['addresses']
         return [{'username': r['username'], 'tries': r['tries'],
-                 'addresses': spread.get(r['username'], 0), 'last': r['last']} for r in top]
+                 'addresses': spread.get(str(r['username']).lower(), 0), 'last': r['last']}
+                for r in top]
 
     def auth_counts(self, hours=24, step=3600, domain=False):
         """Failed and passed per bucket, for the chart on the front page.
@@ -45446,30 +45531,45 @@ class Storage(object):
                 return got[1]
         return empty if empty is not None else []
 
-    def country_counts(self, table):
+    def country_counts(self, table, kinds='', since=0):
         """How many rows each country has, for the country pickers.
 
         Read off the index over (country, ts), so it is a walk of one index
         rather than of two million rows - and kept, like the filter lists it
         is drawn beside.
+
+        Of the door and the window the list beside it shows (1.10.383): over
+        every door and all of time, "NL 3" opened a list of one.
         """
         if table not in ('failed', 'passed'):
             return {}
-        return self.kept((table, '#countries', 0), lambda: self._countries_now(table),
-                         empty={})
+        kinds = tuple(k for k in str(kinds or '').split(',') if k.strip())
+        since = int(float(since or 0) // 600 * 600)
+        return self.kept((table, '#countries', since, kinds),
+                         lambda: self._countries_now(table, kinds, since), empty={})
 
-    def _countries_now(self, table, *rest):
+    def _countries_now(self, table, kinds=(), since=0, *rest):
+        if not isinstance(kinds, (tuple, list)):
+            kinds = ()
+        more, args = '', []
+        if kinds:
+            more += ' AND kind IN (%s)' % ','.join('?' * len(kinds))
+            args += list(kinds)
+        if since:
+            more += ' AND ts >= ?'
+            args.append(float(since))
         sql = ('SELECT country, COUNT(*) AS n FROM %s%%s WHERE country IS NOT NULL '
-               'AND country<>"" GROUP BY country' % table)
+               'AND country<>""%s GROUP BY country' % (table, more))
         try:
-            rows = self.db.execute(sql % (' INDEXED BY %s_country_ts' % table))
+            rows = self.db.execute(sql % (' INDEXED BY %s_country_ts' % table), args)
         except sqlite3.Error:
-            rows = self.db.execute(sql % '')
+            rows = self.db.execute(sql % '', args)
         return {r['country']: int(r['n']) for r in rows}
 
     def _distinct_now(self, table, column, limit, kinds=()):
         if column == '#countries':
-            return self._countries_now(table)
+            # (table, '#countries', since, kinds), as `country_counts` keeps it.
+            return self._countries_now(table, kinds, limit)
         if column == '#kinds':
             return self._failed_kinds_now()
         # Out of the catalogue where it may be believed: the values themselves,
@@ -70524,7 +70624,9 @@ class Daemon(object):
                    (', and %s more of the same program as "%s"' % (num_words(companion),
                                                                    m['name']))
                    if companion else ''),
-                {'accounts': ','.join([m['account'], m['name']]), 'kind': refused,
+                # The refusals counted, of the computer account itself
+                # (1.10.383); the program's own name is said, not listed.
+                {'accounts': m['account'], 'kind': refused, 'said': 'the password was wrong',
                  'machines': 1, 'routine': '0'})
             if out and out[-1]['kind'] == 'machine-password':
                 out[-1]['reads'] = read['reads']
@@ -70588,7 +70690,7 @@ class Daemon(object):
                     % (one['said'], str(e)[:100]), 'debug')
             add('brute', one['n'], one['said'], one['last'], says,
                 dict(({'accounts': ','.join(forms)} if len(forms) > 1
-                      else {'account': one['said']}), kind=refused, routine='0'),
+                      else {'account': one['said']}), kind=refused, routine='0', weighed='1'),
                 domain=str(((one.get('newest') or {}).get('domain')) or ''))
             if out and out[-1]['kind'] == 'brute':
                 out[-1]['reads'] = read['reads']
@@ -91539,6 +91641,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                 # ...and the one filter that is a shape rather than a value:
                 # a refusal against an account that cannot sign in anyway.
                 dead=one('dead') == '1',
+                # ...and a row of a card exactly as it was counted, and only
+                # the refusals that weighed a password (1.10.383).
+                exact=one('exact') == '1', weighed=one('weighed') == '1',
                 # ...and the marks, so that a thing worth looking at opens
                 # exactly the events it was counted from.
                 mark=one('mark'), unmark=one('not'),
@@ -91602,7 +91707,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             return self.send_json({'ok': True, 'rows': store.win_around(
                 one('account'), number('at', 0, 0) or time.time(),
                 number('before', 1800, 0, 86400), number('after', 300, 0, 86400), 40,
-                kinds=tuple(store.BLAME_KINDS) if one('bad') == '1' else ())})
+                kinds=tuple(store.BLAME_KINDS) if one('bad') == '1' else (),
+                quiet=one('bad') == '1')})
 
         if path == '/api/windows/rollup':
             # What the counting is, and the two things somebody may ask of
@@ -92253,6 +92359,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             since = number('from', 0, 0) or (
                 (time.time() - number('hours', 0, 0, 8760) * 3600)
                 if number('hours', 0, 0, 8760) else 0)
+            # To the minute, as the door strip counts it (1.10.383): a row in
+            # the seconds between was on the tab and not in the list.
+            if since:
+                since = round_window(since)
             words, where, q_error = self.list_query(table, one('q'), one('kind') or '',
                                                     since=since, until=number('to', 0, 0))
             asked = dict(limit=number('limit', 100, 1, 1000), offset=number('offset', 0, 0, Storage.COUNT_CAP),
@@ -92265,6 +92375,9 @@ class ApiHandler(BaseHTTPRequestHandler):
                          # exactly rather than as a search.
                          mac=one('mac'), realm=one('realm'), reason=one('reason'),
                          username=one('username'),
+                         # ...a machine counted by its account, with no MAC
+                         # (1.10.383), as the machines card counts it.
+                         nomac=one('nomac') == '1',
                          # ...and, for a card that counts only what never got
                          # on, that same test. Only this one column.
                          settled='mac' if one('settled') == 'mac' else '',
@@ -92396,7 +92509,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                    # How many rows each country has, so the picker can say it
                    # rather than offering a list of two-letter codes with
                    # nothing to tell them apart.
-                   'country_counts': store.country_counts(table),
+                   'country_counts': store.country_counts(table, door_kinds, since),
                    # Which of the addresses on this page are already being
                    # kept out, so the row can say so and offer the right
                    # button rather than a second ban.

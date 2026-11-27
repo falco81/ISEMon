@@ -3,7 +3,7 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.382",
+  "version": "1.10.383",
   "made": "2026-11-27",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
@@ -275,6 +275,10 @@
   "s.802-1x-and-mab-a-windows.53a4d50f": {
    "source": "802.1X and MAB a Windows NPS server refused: machines on sockets and radios. Never judged and never banned.",
    "text": "802.1X and MAB a Windows NPS server refused: machines on sockets and radios. Never judged and never banned."
+  },
+  "s.802-1x-and-mab.fac65c59": {
+   "source": "802.1X and MAB",
+   "text": "802.1X and MAB"
   },
   "s.802-1x-lan.e74b8cae": {
    "source": "802.1X LAN",
@@ -11184,6 +11188,10 @@
    "source": "FreeRADIUS MAB",
    "text": "FreeRADIUS MAB"
   },
+  "s.freeradius-network.d06a38cc": {
+   "source": "FreeRADIUS network",
+   "text": "FreeRADIUS network"
+  },
   "s.freeradius-or-nps.87ea06c5": {
    "source": "FreeRADIUS or NPS.",
    "text": "FreeRADIUS or NPS."
@@ -14955,6 +14963,10 @@
   "s.judge-the-vpn-through-nps-as.c06dbf0f": {
    "source": "Judge the VPN through NPS as well",
    "text": "Judge the VPN through NPS as well"
+  },
+  "s.judged.4c6ec2d7": {
+   "source": "judged",
+   "text": "judged"
   },
   "s.k-key.cb69f87a": {
    "source": "&k=KEY",
@@ -18788,6 +18800,10 @@
    "source": "nofix",
    "text": "nofix"
   },
+  "s.nomac-1.89ca5d24": {
+   "source": "&nomac=1",
+   "text": "&nomac=1"
+  },
   "s.none-are-chosen.ae3b2bc2": {
    "source": "none are chosen",
    "text": "none are chosen"
@@ -20131,6 +20147,10 @@
   "s.nps-mab.f91f5e35": {
    "source": "NPS MAB",
    "text": "NPS MAB"
+  },
+  "s.nps-network.342b98c7": {
+   "source": "NPS network",
+   "text": "NPS network"
   },
   "s.nps-other.ec6a5428": {
    "source": "NPS other",

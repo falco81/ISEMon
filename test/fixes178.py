@@ -263,7 +263,8 @@ ok('the filters are counted over the dates picked', 'win_shape(since, machines, 
 ok('...and kept under them', "int(at_from) // 60" in source, True)
 ok('...and not at all for a popup', "extra = {} if one('choices') == '0'" in source, True)
 ok('the popups ask without them', page.count('choices=0') >= 5, True)
-ok('the lockout popup asks for the refusals', '&before=3600&after=900&bad=1' in page, True)
+# (1.10.383: over the span its table of what held the password is counted in)
+ok('the lockout popup asks for the refusals', '&before=1800&after=60&bad=1' in page, True)
 ok('the Domain page is drawn again when something moved',
    "if (TAB === 'windows' && Date.now() - WIN_TICK_AT > 30000)" in page, True)
 ok('an emptied search box drops the answer on its way',

@@ -812,7 +812,8 @@ ok('the page opens those, and the tiles their own 24 hours',
    in PAGE_NOW)
 ok('...and a name on the front page by the name exactly, at the card\u2019s own door',
    "'&limit=250&username=' + encodeURIComponent(name)" in PAGE_NOW
-   and "peekName(Object.assign({kind: 'vpn'}, r))" in PAGE_NOW)
+   # (1.10.383: the doors the names card counts, `judged`)
+   and "peekName(Object.assign({kind: 'judged'}, r))" in PAGE_NOW)
 ok('...and the domain\u2019s cards on the front page in the front page\u2019s window',
    "var front = TAB === 'overview';" in PAGE_NOW)
 ok('nothing in it is judged, as on ISE', storeM.db.execute(

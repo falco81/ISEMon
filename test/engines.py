@@ -668,8 +668,10 @@ try:
         }
 
     PAGES_WANT = {
-        'doors at that address': ['otp', 'vpn'],
-        'and who was there last': 'otp',
+        # (1.10.383: a packet with no token attempt paired to it is no
+        # sign-in at the token door - the list it opens holds none)
+        'doors at that address': ['vpn'],
+        'and who was there last': 'vpn',
         'doors that name has been at': ['vpn'],
         'addresses that name came from': ['203.0.113.77'],
         'token packets from there': 1,
