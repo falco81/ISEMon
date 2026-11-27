@@ -4298,6 +4298,16 @@ function srcText(el) {
   .t-sug-foot .qs-syn{font-size:11.5px;color:var(--tx-dim);margin-right:4px}
   .t-sug-foot .qs-syn-says{margin-right:12px}
   .qs-wrap.qs-open > .qs-said{display:none}
+  /* A clear and a filter button inside every search box (1.10.382): the
+     fields are offered only when asked for - Ctrl+Space, or the funnel. */
+  .qs-wrap.has-tools > input{padding-right:54px}
+  .qs-tools{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;
+            gap:2px;align-items:center;z-index:3}
+  .qs-tools button{background:none;border:0;margin:0;padding:3px;border-radius:4px;
+                   color:var(--info);cursor:pointer;display:flex;align-items:center;opacity:.8}
+  .qs-tools button:hover, .qs-tools button:focus-visible{opacity:1;background:rgba(127,127,127,.15)}
+  .qs-wrap input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+  .t-qbox > .qs-wrap{flex:1 1 auto;min-width:0}
   .t-said{margin-top:6px;font-size:13px;line-height:1.5}
   .t-said:empty{display:none}
   .t-said.bad{color:var(--crit)}
@@ -4553,6 +4563,7 @@ function srcText(el) {
     .t-tops{grid-template-columns:1fr}
     .t-qbox{flex-wrap:wrap}
     .t-qbox input{flex:1 1 100%}
+    .t-qbox > .qs-wrap{flex:1 1 100%}
     .t-flow{grid-template-columns:1fr}
     .t-fw::before,.t-fw::after{display:none}
     .subtabs .t-window{margin-left:0}
@@ -11229,6 +11240,7 @@ var ICONS = {
   in: '<path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/>'
     + '<path d="M14 12h7"/><path d="M18 9l3 3-3 3"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  funnel: '<path d="M4 5h16l-6.2 7.6V19l-3.6 1.8v-8.2z"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/>',
   save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
     + '<path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>',
@@ -14360,6 +14372,19 @@ var OV_ROW_FILTER = {'username': 'username', 'ip': 'ip', 'device': 'device',
                      'server': 'server', 'country': 'country', 'mac': 'mac',
                      'realm': 'realm', 'reason': 'reason'};
 
+/* What a pressed row was, as the popup's own list and as the page's search
+   box ask for it (1.10.382). */
+var OV_LIST_FIELD = {username: 'name', ip: 'address', device: 'device', server: 'node',
+                     country: 'country', reason: 'why'};
+var OV_PAGE_FIELD = {username: 'user', ip: 'ip', device: 'device', server: 'server',
+                     country: 'country', mac: 'mac', realm: 'realm', reason: 'reason'};
+function ovListTerm(filter, said) {
+  return OV_LIST_FIELD[filter] ? qTerm(OV_LIST_FIELD[filter], said) : '';
+}
+function ovPageTerm(filter, said) {
+  return OV_PAGE_FIELD[filter] ? qTerm(OV_PAGE_FIELD[filter], said) : String(said || '');
+}
+
 function ovPeekRow(d, view, row) {
   var h = overHours();
   var said = String(row.said);
@@ -14407,12 +14432,13 @@ function ovPeekRow(d, view, row) {
       }
       if (view.says) body.appendChild(el('p', 'note', view.says));
       body.appendChild(side === 'passed'
-        ? peekPassedRows(answer.rows, 'peek-door')
-        : peekFailedRows(answer.rows, 'peek-door'));
+        ? peekPassedRows(answer.rows, 'peek-door', ovListTerm(filter, said))
+        : peekFailedRows(answer.rows, 'peek-door', ovListTerm(filter, said)));
     },
     {tab: side === 'passed' ? 'logins' : 'failed',
      words: side === 'passed' ? 'Open the logins' : 'Open the failed attempts',
-     icon: side === 'passed' ? 'person' : 'cancel'});
+     icon: side === 'passed' ? 'person' : 'cancel',
+     q: ovPageTerm(filter, said), door: d.door});
 }
 
 function ovRowTitle(view) {
@@ -14479,7 +14505,7 @@ function ovPeekDoor(d, side) {
         ? peekPassedRows(answer.rows, 'peek-door-all')
         : peekFailedRows(answer.rows, 'peek-door-all'));
     },
-    {tab: side === 'passed' ? 'logins' : 'failed',
+    {tab: side === 'passed' ? 'logins' : 'failed', q: '', door: d.door,
      words: side === 'passed' ? 'Open the logins' : 'Open the failed attempts',
      icon: side === 'passed' ? 'person' : 'cancel'});
 }
@@ -14873,9 +14899,17 @@ function peek(title, ask, draw, jump) {
   /* ...but not when it is the page they are already on. Pressing it there
      closed the popup and did nothing whatever, which reads as a button that
      is broken rather than as one that had nowhere to go. */
-  if (jump && jump.tab !== TAB) {
+  /* ...and with what the popup was opened on already in that page's search
+     (1.10.382): it opened the page as it was left. */
+  var filtered = jump && (jump.q !== undefined || jump.go);
+  if (jump && (jump.tab !== TAB || filtered)) {
     buttons.unshift({words: jump.words, cls: 'primary', icon: jump.icon, close: true,
-                     go: function () { showTab(jump.tab); }});
+                     go: function () {
+                       if (jump.go) jump.go();
+                       else if (jump.q !== undefined && (jump.tab === 'failed' || jump.tab === 'logins')) {
+                         goToRecords(jump.tab === 'logins' ? 'passed' : 'failed', jump.door, jump.q);
+                       } else showTab(jump.tab);
+                     }});
   }
   modal(title, function (body) {
     body.appendChild(el('p', 'center muted', 'Asking…'));
@@ -14911,9 +14945,9 @@ function peekFacts(pairs) {
 }
 
 /** Failed attempts, listed the way the Failed page lists them. */
-function peekFailedRows(rows, key) {
+function peekFailedRows(rows, key, prefill) {
   return listView({
-    key: key, rows: rows || [], per: 25, barFrom: 6,
+    key: key, rows: rows || [], per: 25, barFrom: 6, prefill: prefill || '',
     placeholder: 'an address, a name, a reason…',
     empty: 'Nothing was refused in this window',
     hay: function (r) {
@@ -14939,9 +14973,9 @@ function peekFailedRows(rows, key) {
 }
 
 /** Successful logins, the same way. */
-function peekPassedRows(rows, key) {
+function peekPassedRows(rows, key, prefill) {
   return listView({
-    key: key, rows: rows || [], per: 25, barFrom: 6,
+    key: key, rows: rows || [], per: 25, barFrom: 6, prefill: prefill || '',
     placeholder: 'a name, an address, a profile…',
     empty: 'Nobody got in during this window',
     hay: function (r) { return [r.username, r.ip, r.profile, r.device, r.tunnel].join(' '); },
@@ -14997,7 +15031,7 @@ function peekFailedCard() {
         + 'for everything known about that address.'));
       body.appendChild(peekFailedRows(d.rows, 'peek-failed'));
     },
-    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel'});
+    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel', q: ''});
 }
 
 function peekPassedCard() {
@@ -15019,7 +15053,7 @@ function peekPassedCard() {
         + 'the Logins page.'));
       body.appendChild(peekPassedRows(d.rows, 'peek-passed'));
     },
-    {tab: 'logins', words: 'Open the logins', icon: 'person'});
+    {tab: 'logins', words: 'Open the logins', icon: 'person', q: ''});
 }
 
 function peekBlockedCard() {
@@ -15159,17 +15193,18 @@ function peekName(r) {
       if (good.total) {
         var got = el('h3', 'peek-h', 'It has got in');
         body.appendChild(got);
-        body.appendChild(peekPassedRows(good.rows, 'peek-name-in'));
+        body.appendChild(peekPassedRows(good.rows, 'peek-name-in', qTerm('name', name)));
         body.appendChild(el('h3', 'peek-h', 'It has been refused'));
       }
-      body.appendChild(peekFailedRows(bad.rows, 'peek-name'));
+      body.appendChild(peekFailedRows(bad.rows, 'peek-name', qTerm('name', name)));
       /* ...and what the domain itself saw, which is the other half of every
          one of these. A VPN refusal says the password was wrong; the domain
          says whether the account was locked, from which machine the wrong one
          came, and which program had it saved. */
       winBeside(body, name);
     },
-    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel'});
+    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel',
+     q: qTerm('user', name), door: r.kind});
 }
 
 /** One name, asked for by name rather than clicked in a list. */
@@ -15199,7 +15234,8 @@ function peekCountry(r) {
         + 'and it drops a whole country before anybody has failed anything.'));
       body.appendChild(peekFailedRows(d.rows, 'peek-country'));
     },
-    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel'});
+    {tab: 'failed', words: 'Open the failed attempts', icon: 'cancel',
+     q: qTerm('country', cc)});
 }
 
 /* What one followed file holds, in one place: the tag on the Overview, the
@@ -15674,7 +15710,8 @@ function drawStory(body, d) {
       + 'not the last few. Search it, filter it, and page through it; it is read from the '
       + 'server a page at a time, so the length of it costs nothing.'));
     body.appendChild(serverList({
-      key: 'story-failed:' + d.ip, api: 'failed', params: {ip: d.ip},
+      key: 'story-failed:' + d.ip, api: 'failed',
+      scope: {term: qTerm('ip', d.ip), params: {ip: d.ip}},
       placeholder: 'a name, a reason, a tunnel group\u2026',
       empty: 'Nothing has failed from this address',
       filters: [{name: 'device', from: 'devices', words: 'every device'},
@@ -15701,7 +15738,8 @@ function drawStory(body, d) {
     body.appendChild(el('p', 'note', 'Every successful login from this address. On an address '
       + 'that is otherwise failing, this is the list to read first.'));
     body.appendChild(serverList({
-      key: 'story-passed:' + d.ip, api: 'passed', params: {ip: d.ip, kind: 'all'},
+      key: 'story-passed:' + d.ip, api: 'passed', params: {kind: 'all'},
+      scope: {term: qTerm('ip', d.ip), params: {ip: d.ip}},
       placeholder: 'a name, a profile, a device\u2026',
       empty: 'Nobody has ever got in from this address',
       filters: [{name: 'device', from: 'devices', words: 'every device'}],
@@ -16961,6 +16999,29 @@ var VIEWS = {};
 function serverList(opts) {
   var view = VIEWS[opts.key]
     || (VIEWS[opts.key] = {q: '', per: opts.per || 25, page: 0, pick: {}});
+  /* What it was opened on, written in its box (1.10.382): `ip:81.19.11.50`
+     where an address was pressed - there to be seen, and taken away to see
+     everything. The term itself is asked as the list's own parameter, which
+     is what finds the token attempts too (their rows carry the token
+     server's address, so the search box's ip: would not). */
+  var scope = opts.scope || null;
+  if (scope) {
+    view.q = scope.term;
+    view.page = 0;
+    view.pick = {};
+  }
+  function scoped(text) {
+    if (!scope) return {q: text, on: false};
+    var want = scope.term.toLowerCase(), on = false;
+    var left = qTokens(text).filter(function (t) {
+      if (!on && t.replace(/"/g, '').toLowerCase() === want.replace(/"/g, '')) {
+        on = true;
+        return false;
+      }
+      return true;
+    });
+    return {q: left.join(' '), on: on};
+  }
   var box = el('div', 'list-view');
   var bar = el('div', 'fold-bar');
   var find = el('input');
@@ -17031,12 +17092,21 @@ function serverList(opts) {
     busy_ = true;
     found.textContent = 'reading\u2026';
     var bits = ['limit=' + view.per, 'offset=' + (view.page * view.per)];
-    Object.keys(opts.params || {}).forEach(function (k) {
-      if (opts.params[k]) bits.push(k + '=' + encodeURIComponent(opts.params[k]));
+    var asked = scoped(view.q.trim());
+    var params = {};
+    Object.keys(opts.params || {}).forEach(function (k) { params[k] = opts.params[k]; });
+    if (scope) {
+      Object.keys(scope.params).forEach(function (k) {
+        if (asked.on) params[k] = scope.params[k]; else delete params[k];
+      });
+    }
+    Object.keys(params).forEach(function (k) {
+      if (params[k]) bits.push(k + '=' + encodeURIComponent(params[k]));
     });
-    if (view.q.trim()) {
-      bits.push('q=' + encodeURIComponent(qList ? qRewrite(view.q.trim(), qMaps(qList,
-        (opts.params || {}).kind || '')) : view.q.trim()));
+    var qText = asked.q.trim();
+    if (qText) {
+      bits.push('q=' + encodeURIComponent(qList ? qRewrite(qText, qMaps(qList,
+        (opts.params || {}).kind || '')) : qText));
     }
     Object.keys(view.pick).forEach(function (k) {
       if (view.pick[k]) bits.push(k + '=' + encodeURIComponent(view.pick[k]));
@@ -17738,6 +17808,58 @@ var Q_LANES = {};
     cfg: {fields: [[name, says, example]] or a function giving them,
           values: function (name, typed) -> Promise of [{val, n, note}],
           lane: the api lane whose answers carry `q_error`, if any} */
+/** A clear button, and where the box offers its fields a filter button,
+    inside a search box (1.10.382). `arm` opens what it offers. */
+function searchTools(input, arm) {
+  if (!input || input._tools) return;
+  input._tools = true;
+  var wrap = input.parentNode;
+  if (!wrap || !wrap.classList || !wrap.classList.contains('qs-wrap')) {
+    wrap = el('div', 'qs-wrap');
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+  }
+  wrap.classList.add('has-tools');
+  var tools = el('span', 'qs-tools');
+  var x = el('button', 'qs-clear');
+  x.type = 'button';
+  x.tabIndex = -1;
+  x.innerHTML = iconMarkup('close', 14);
+  explain(x, 'Clear this filter: the whole list again.');
+  x.onmousedown = function (e) { e.preventDefault(); };
+  x.onclick = function () {
+    input.value = '';
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    input.dispatchEvent(new Event('search', {bubbles: true}));
+    input.focus();
+  };
+  tools.appendChild(x);
+  if (arm) {
+    var f = el('button', 'qs-filter');
+    f.type = 'button';
+    f.tabIndex = -1;
+    f.innerHTML = iconMarkup('funnel', 15);
+    explain(f, 'The fields this box can filter by, and what each holds. '
+      + 'Ctrl+Space in the box opens the same.');
+    f.onmousedown = function (e) { e.preventDefault(); };
+    f.onclick = function () { input.focus(); arm(); };
+    tools.appendChild(f);
+  }
+  wrap.appendChild(tools);
+}
+
+/** Whether a key press is Ctrl+Space, which opens what a box offers. */
+function qsAsked(e) {
+  return e.ctrlKey && !e.altKey && !e.metaKey && (e.code === 'Space' || e.key === ' ');
+}
+
+/** `field:value` as the search boxes read it, the value quoted where it must be. */
+function qTerm(field, value) {
+  var v = String(value === undefined || value === null ? '' : value).trim();
+  if (!v) return '';
+  return field + ':' + (/[\s(),"]/.test(v) ? '"' + v.replace(/"/g, '') + '"' : v);
+}
+
 function qSuggest(input, cfg) {
   if (!input || input._qs) return input && input._qs;
   var wrap = el('div', 'qs-wrap');
@@ -17751,7 +17873,9 @@ function qSuggest(input, cfg) {
   wrap.appendChild(said);
   input.setAttribute('autocomplete', 'off');
   input.setAttribute('spellcheck', 'false');
-  var st = {items: [], at: -1, moved: false, asked: 0, hold: false};
+  /* Nothing is offered until it is asked for (1.10.382): it opened on every
+     focus - a popup's own search box covered the popup. */
+  var st = {items: [], at: -1, moved: false, asked: 0, hold: false, armed: false};
   var me = {input: input, said: function (words) {
     said.textContent = words || '';
     said.hidden = !words;
@@ -17853,7 +17977,7 @@ function qSuggest(input, cfg) {
       foot.appendChild(noI18n(el('code', 'qs-syn', p[0])));
       foot.appendChild(el('span', 'qs-syn-says', p[1]));
     });
-    foot.appendChild(el('span', '', '↑ ↓ and Tab or Enter take one · Esc closes'));
+    foot.appendChild(el('span', '', '↑ ↓ and Tab or Enter take one · Esc closes · Ctrl+Space opens it'));
     drop.appendChild(foot);
     drop.hidden = false;
     wrap.classList.add('qs-open');
@@ -17861,6 +17985,7 @@ function qSuggest(input, cfg) {
   function take(n) {
     var it = st.items[n];
     if (!it) return;
+    if (it.done) st.armed = false;
     var text = input.value;
     var before = text.slice(0, it.from), after = text.slice(it.to);
     var put = it.put;
@@ -17876,6 +18001,7 @@ function qSuggest(input, cfg) {
   }
   function offer() {
     if (st.hold || document.activeElement !== input) return;
+    if (!st.armed) { close(); return; }
     var where = caret();
     var mine = ++st.asked;
     if (where.field) {
@@ -17921,15 +18047,24 @@ function qSuggest(input, cfg) {
          items);
   }
   var soon = debounce(offer, 120);
-  input.addEventListener('input', function () { st.hold = false; soon(); });
+  me.arm = function () { st.armed = true; st.hold = false; offer(); };
+  searchTools(input, me.arm);
+  input.addEventListener('input', function () { st.hold = false; if (st.armed) soon(); });
   input.addEventListener('focus', function () {
     st.hold = false;
-    soon();
     if (!said.hidden && typeof hideHelp === 'function') setTimeout(hideHelp, 0);
   });
-  input.addEventListener('click', function () { st.hold = false; soon(); });
-  input.addEventListener('blur', function () { setTimeout(close, 150); });
+  input.addEventListener('blur', function () {
+    setTimeout(function () {
+      if (document.activeElement !== input) { st.armed = false; close(); }
+    }, 150);
+  });
   input.addEventListener('keydown', function (e) {
+    if (qsAsked(e)) {
+      e.preventDefault();
+      me.arm();
+      return;
+    }
     var open = !drop.hidden && st.items.length;
     if (!open) return;
     if (e.key === 'ArrowDown') {
@@ -17948,9 +18083,11 @@ function qSuggest(input, cfg) {
       take(st.at);
     } else if (e.key === 'Enter') {
       st.hold = true;
+      st.armed = false;
       close();
     } else if (e.key === 'Escape') {
       e.preventDefault(); e.stopPropagation();
+      st.armed = false;
       close();
     }
   }, true);
@@ -18015,6 +18152,10 @@ function listView(opts) {
      one row into the text its search box looks through, and `draw` turns one
      row into whatever it is drawn as. */
   var view = VIEWS[opts.key] || (VIEWS[opts.key] = {q: '', per: opts.per || 25, page: 0});
+  /* A list opened on something - a name, an address - starts with it in its
+     box (1.10.382), and not with what was typed in the last one opened. */
+  var prefill = opts.prefill;
+  if (prefill !== undefined) { view.q = ''; view.page = 0; view.cc = ''; }
   var box = el('div', 'list-view');
   var bar = el('div', 'fold-bar');
   var find = el('input');
@@ -18082,6 +18223,14 @@ function listView(opts) {
       return qLocalValues(rowsAll, qValueOf, field, typed);
     }
   });
+  /* ...only by a field the list has, or it would hide every row. */
+  if (prefill) {
+    var pf = String(prefill).match(/^-?([A-Za-z_][\w.-]*)[:=]/);
+    if (!pf || qHeadsNow().some(function (h) { return h.name === pf[1].toLowerCase(); })) {
+      view.q = String(prefill);
+      find.value = view.q;
+    }
+  }
   /* Every list that knows what country its rows are in can be narrowed to
      one, by name rather than by two letters. It is the same picker the
      server-side pages use, so there is one way of asking the question
@@ -24432,7 +24581,8 @@ function winPeekLife(account, domain) {
       body.appendChild(winLifeWaysOn(said, d, domain));
       explainWhatWasDrawn(body);
     },
-    {tab: 'windows', words: 'Open the domain page', icon: 'shield'});
+    {tab: 'windows', words: 'Open the domain page', icon: 'shield',
+     go: function () { showTab('windows'); a25Events(qTerm('account', said)); }});
 }
 
 /** A program by its own name rather than by where it lives on a disk. */
@@ -24485,7 +24635,8 @@ function winPeekLock(r) {
       body.appendChild(doing);
       explainWhatWasDrawn(body);
     },
-    {tab: 'windows', words: 'Open the domain page', icon: 'shield'});
+    {tab: 'windows', words: 'Open the domain page', icon: 'shield',
+     go: function () { showTab('windows'); a25Events(qTerm('account', r.account)); }});
 }
 
 /** The two ways on from a life: what it has been doing, and who it is.
@@ -29948,7 +30099,7 @@ function tCaret() {
   return out;
 }
 
-var TSUG = {items: [], at: -1, moved: false, asked: 0, hold: false};
+var TSUG = {items: [], at: -1, moved: false, asked: 0, hold: false, armed: false};
 function tSuggestClose() {
   $('t-suggest').hidden = true;
   TSUG.items = [];
@@ -30008,12 +30159,14 @@ function tSuggestTake(n) {
   box.focus();
   box.setSelectionRange(caret, caret);
   tSuggestClose();
-  if (it.done) tRun(); else tSuggest();
+  if (it.done) { TSUG.armed = false; tRun(); } else tSuggest();
 }
 
 var tSuggestSoon = debounce(function () { tSuggest(); }, 120);
 function tSuggest() {
   if (TSUG.hold || document.activeElement !== $('t-q')) return;
+  /* Only when asked for (1.10.382): Ctrl+Space, or the funnel. */
+  if (!TSUG.armed) { tSuggestClose(); return; }
   var where = tCaret();
   var mine = ++TSUG.asked;
   if (where.field) {
@@ -30079,13 +30232,19 @@ function tSuggest() {
 
 $('t-q').addEventListener('input', function () {
   TSUG.hold = false;
-  tSuggestSoon();
+  if (TSUG.armed) tSuggestSoon();
   tRunSoon();
 });
-$('t-q').addEventListener('focus', function () { TSUG.hold = false; tSuggestSoon(); });
-$('t-q').addEventListener('click', function () { TSUG.hold = false; tSuggestSoon(); });
-$('t-q').addEventListener('blur', function () { setTimeout(tSuggestClose, 150); });
+function tSuggestArm() { TSUG.armed = true; TSUG.hold = false; tSuggest(); }
+searchTools($('t-q'), tSuggestArm);
+$('t-q').addEventListener('focus', function () { TSUG.hold = false; });
+$('t-q').addEventListener('blur', function () {
+  setTimeout(function () {
+    if (document.activeElement !== $('t-q')) { TSUG.armed = false; tSuggestClose(); }
+  }, 150);
+});
 $('t-q').addEventListener('keydown', function (e) {
+  if (qsAsked(e)) { e.preventDefault(); tSuggestArm(); return; }
   var open = !$('t-suggest').hidden && TSUG.items.length;
   if (e.key === 'ArrowDown' && open) {
     e.preventDefault(); TSUG.moved = true;
@@ -30098,8 +30257,10 @@ $('t-q').addEventListener('keydown', function (e) {
     tSuggestTake(TSUG.at < 0 ? 0 : TSUG.at);
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (open && TSUG.moved) tSuggestTake(TSUG.at); else tRun();
+    if (open && TSUG.moved) tSuggestTake(TSUG.at);
+    else { TSUG.armed = false; tSuggestClose(); tRun(); }
   } else if (e.key === 'Escape') {
+    TSUG.armed = false;
     if (open) { e.preventDefault(); e.stopPropagation(); tSuggestClose(); }
   }
 });
@@ -35113,6 +35274,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#ctl-nav button[data-pan
   });
 
 /* Finding one setting among sixty, by name or by what it says. */
+searchTools($('ctl-find'));
 $('ctl-find').addEventListener('input', function () {
   var want = $('ctl-find').value.trim().toLowerCase();
   var box = $('ctl-found');
@@ -43805,6 +43967,13 @@ function flashAt(node) {
     token log is the account, because a token row carries the token
     server's own address and not the person's, so the address would find
     nothing there. */
+/** A person as the page's search box asks for exactly them (1.10.382): the
+    name alone found everybody whose name held it. */
+function personTerm(door, name) {
+  if (!name) return '';
+  return qTerm(door === 'domain' ? 'account' : 'user', name);
+}
+
 function goToRecords(where, door, q, session) {
   var passed = where === 'passed';
   closeFind();
@@ -43828,7 +43997,7 @@ function goToRecords(where, door, q, session) {
     if (box && box.value) box.value = '';
   });
   clearPicks(passed ? 'p' : 'f');
-  var drawn = passed ? passedTab(door) : showFailedKind(door);
+  var drawn = passed ? passedTab(door || PKIND) : showFailedKind(door || FKIND);
   Promise.resolve(drawn).then(function () {
     var table = $(passed ? 'p-table' : 'f-table');
     var rows = table ? Array.prototype.slice.call(table.querySelectorAll('tbody tr')) : [];
@@ -43938,7 +44107,8 @@ function doorChips(ip, doors) {
   doors.forEach(function (d) {
     var tag = el('span', 'fdoor');
     tag.appendChild(el('b', '', doorWords(d.kind)));
-    var q = d.q || ip;
+    /* The address exactly (1.10.382): as a word, 10.1.1.1 found 10.1.1.10 too. */
+    var q = d.q || qTerm('ip', ip);
     var by = d.by === 'account'
       ? 'The token log has no address on its rows \u2014 it carries the token '
         + 'server\u2019s own, because that is who asks it. So this opens that log on '
@@ -44172,7 +44342,7 @@ function findNameCard(d) {
     explain(when, 'Open this record where it is listed, and light the row.');
     when.onclick = function (e) {
       e.preventDefault();
-      goToRecords(n.ok ? 'passed' : 'failed', n.kind, d.name, n.session);
+      goToRecords(n.ok ? 'passed' : 'failed', n.kind, personTerm(n.kind, d.name), n.session);
     };
     row.appendChild(when);
     card.appendChild(row);
@@ -44825,7 +44995,7 @@ function paintFind(force) {
                                    || []).map(doorWords).join(', '),
                 what: 'user name',
                 go: function () {
-                  goToRecords(mostly === 'logins' ? 'passed' : 'failed', at, n.name);
+                  goToRecords(mostly === 'logins' ? 'passed' : 'failed', at, personTerm(at, n.name));
                 }};
       }
       return {icon: '\u25cb', text: n.name, mono: true, name: n.name,
@@ -44836,7 +45006,7 @@ function paintFind(force) {
                 showTab(mostly === 'logins' ? 'logins' : 'failed');
                 setTimeout(function () {
                   var box = $(mostly === 'logins' ? 'p-q' : 'f-q');
-                  if (box) box.value = n.name;
+                  if (box) box.value = personTerm(mostly === 'logins' ? PKIND : FKIND, n.name);
                   if (mostly === 'logins') { PAGE.passed = 0; loadPassed(); }
                   else { PAGE.failed = 0; loadFailed(); }
                 }, 80);
@@ -44887,7 +45057,7 @@ function paintFind(force) {
       return {icon: '\u203a', text: o.said, mono: true,
               tail: (o.name ? o.name + ' \u00b7 ' : '') + hits(o),
               what: 'a command', go: function () {
-                goToRecords('passed', doorOf((o.kinds || [])[0]), o.name || '');
+                goToRecords('passed', doorOf((o.kinds || [])[0]), personTerm(doorOf((o.kinds || [])[0]), o.name));
               }};
     }));
     /* ...and what the domain controllers have on it.
@@ -44985,6 +45155,7 @@ $('findback').addEventListener('click', function (e) {
   if (e.target === $('findback')) closeFind();
 });
 $('findinput').addEventListener('input', debounce(function () { FIND.at = 0; paintFind(); }, 180));
+searchTools($('findinput'));
 $('findinput').addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     e.preventDefault();

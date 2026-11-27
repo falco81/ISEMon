@@ -3,8 +3,8 @@
   "code": "en",
   "name": "English",
   "english": "English",
-  "version": "1.10.381",
-  "made": "2026-11-23",
+  "version": "1.10.382",
+  "made": "2026-11-27",
   "about": "The words of the dashboard in English. Every other language file has the same IDs. Change \"text\", never \"source\": the source is what the page is looked through for."
  },
  "strings": {
@@ -3536,9 +3536,9 @@
    "source": ", and rotates them once at once - a rename, quick however big",
    "text": ", and rotates them once at once - a rename, quick however big"
   },
-  "s.and-tab-or-enter-take-one.9da7799c": {
-   "source": "↑ ↓ and Tab or Enter take one · Esc closes",
-   "text": "↑ ↓ and Tab or Enter take one · Esc closes"
+  "s.and-tab-or-enter-take-one.5d73fa96": {
+   "source": "↑ ↓ and Tab or Enter take one · Esc closes · Ctrl+Space opens it",
+   "text": "↑ ↓ and Tab or Enter take one · Esc closes · Ctrl+Space opens it"
   },
   "s.and-the-chosen-countries-on-to.f152317f": {
    "source": ", and the chosen countries on to",
@@ -6251,6 +6251,10 @@
   "s.clear-this-crl-fetched-again-at.bde3c50b": {
    "source": "Clear this CRL - fetched again at the next sign-in",
    "text": "Clear this CRL - fetched again at the next sign-in"
+  },
+  "s.clear-this-filter-the-whole-list.4a7fefbc": {
+   "source": "Clear this filter: the whole list again.",
+   "text": "Clear this filter: the whole list again."
   },
   "s.clear-who-fetched-it.2f969605": {
    "source": "Clear who fetched it…",
@@ -30475,6 +30479,10 @@
   "s.the-fields-that-usually-matter.d11aa6aa": {
    "source": "The fields that usually matter",
    "text": "The fields that usually matter"
+  },
+  "s.the-fields-this-box-can-filter.549b7c14": {
+   "source": "The fields this box can filter by, and what each holds. Ctrl+Space in the box opens the same.",
+   "text": "The fields this box can filter by, and what each holds. Ctrl+Space in the box opens the same."
   },
   "s.the-fields-with-a-column-fast.40051c66": {
    "source": "The fields with a column — fast",

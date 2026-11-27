@@ -1264,7 +1264,9 @@ ok('a machine’s card says where on the network it was',
 ok('...off both lists, each with the column that is its own',
    "for table, extra in (('passed', 'subtype AS said, tkey AS vlan')," in DAEMON, True)
 ok('...and each of those rows opens the record it came from',
-   "goToRecords(n.ok ? 'passed' : 'failed', n.kind, d.name, n.session);" in PAGE, True)
+   # (1.10.382: the name exactly, as user: / account:)
+   "goToRecords(n.ok ? 'passed' : 'failed', n.kind, personTerm(n.kind, d.name), n.session);"
+   in PAGE, True)
 # Two directories, which is the shape this site has: example.cz and example.loc
 # are one domain under two names. "There is no such account" and "the one
 # directory we asked has not got it" are different sentences.
@@ -3303,7 +3305,8 @@ ok('...and the empty one is not six boxes of dashes',
 # A jump to the page somebody is already on closed the popup and did nothing
 # whatever, which reads as a button that is broken.
 ok('a popup does not offer to go where it already is',
-   'if (jump && jump.tab !== TAB) {' in PAGE, True)
+   # (1.10.382: ...unless it takes what was pressed there with it)
+   'if (jump && (jump.tab !== TAB || filtered)) {' in PAGE, True)
 ok('everybody who touched it is named',
    'Everybody who did something to it' in DAEMON, True)
 ok('...in English rather than as a field', 'def and_list(words)' in DAEMON, True)

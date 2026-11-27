@@ -3,7 +3,7 @@
   "code": "cs",
   "name": "Čeština",
   "english": "Czech",
-  "version": "1.10.381",
+  "version": "1.10.382",
   "made": "2026-10-02",
   "about": "Texty dashboardu v češtině. Stejná ID jako en.json; měňte jen \"text\", nikdy \"source\". Prázdný text znamená: zobrazit anglicky."
  },
@@ -3536,9 +3536,9 @@
    "source": ", and rotates them once at once - a rename, quick however big",
    "text": ", a hned je jednou otočí – je to jen přejmenování, rychlé, ať jsou jakkoli velké"
   },
-  "s.and-tab-or-enter-take-one.9da7799c": {
-   "source": "↑ ↓ and Tab or Enter take one · Esc closes",
-   "text": "↑ ↓ a Tab nebo Enter vybere · Esc zavře"
+  "s.and-tab-or-enter-take-one.5d73fa96": {
+   "source": "↑ ↓ and Tab or Enter take one · Esc closes · Ctrl+Space opens it",
+   "text": "↑ ↓ a Tab nebo Enter vybere · Esc zavře · Ctrl+Space otevře"
   },
   "s.and-the-chosen-countries-on-to.f152317f": {
    "source": ", and the chosen countries on to",
@@ -6251,6 +6251,10 @@
   "s.clear-this-crl-fetched-again-at.bde3c50b": {
    "source": "Clear this CRL - fetched again at the next sign-in",
    "text": "Vymazat tento CRL - při dalším přihlášení se stáhne znovu"
+  },
+  "s.clear-this-filter-the-whole-list.4a7fefbc": {
+   "source": "Clear this filter: the whole list again.",
+   "text": "Smazat tento filtr: znovu celý seznam."
   },
   "s.clear-who-fetched-it.2f969605": {
    "source": "Clear who fetched it…",
@@ -30476,6 +30480,10 @@
    "source": "The fields that usually matter",
    "text": "Pole, na kterých obvykle záleží"
   },
+  "s.the-fields-this-box-can-filter.549b7c14": {
+   "source": "The fields this box can filter by, and what each holds. Ctrl+Space in the box opens the same.",
+   "text": "Pole, podle kterých toto okno umí filtrovat, a co v každém je. Totéž otevře Ctrl+Space v okně."
+  },
   "s.the-fields-with-a-column-fast.40051c66": {
    "source": "The fields with a column — fast",
    "text": "Pole se sloupcem — rychlé"
@@ -47333,6 +47341,10 @@
   "s.and-only-then.15ce705f": {
    "source": ", and only then",
    "text": ", a teprve pak"
+  },
+  "s.and-tab-or-enter-take-one.9da7799c": {
+   "source": "↑ ↓ and Tab or Enter take one · Esc closes",
+   "text": "↑ ↓ a Tab nebo Enter vybere · Esc zavře"
   },
   "s.another-card.89ed25aa": {
    "source": "another card",

@@ -202,12 +202,16 @@ db.execute("DELETE FROM meta WHERE key IN ('mended_otp_words', 'mended_otp_pairs
 db.execute("UPDATE failed SET reason = 'No token is enrolled for this account' "
            "WHERE reason = 'this account has nothing enrolled here'")
 # A request and its reply as 1.10.225 left them: two rows.
-db.execute("INSERT INTO otp_asked (ident, ts, at, server, kind, username, ip, nas, tunnel, "
-           "verdict, said, session, device, rid, detail) VALUES "
-           "('otp/otpx/1792800000/4000', 1792800000, 0, 'otpx', 'ask', 'pk@example.int', '', "
-           "'10.0.0.1', '', '', '', '', '', '10.0.0.1:4000', '{\"made_of\": [\"a\"]}'),"
-           "('otp/otpx/1792800001/4000', 1792800001, 0, 'otpx', 'ask', '', '', '', '', "
-           "'reject', '', '', '', '10.0.0.1:4000', '{\"made_of\": [\"b\"]}')")
+# Inside the month the mend looks over, whatever day this is run on (it was
+# a fixed day in October, and from late November the mend saw nothing).
+T0 = int(time.time()) - 3600
+db.execute(("INSERT INTO otp_asked (ident, ts, at, server, kind, username, ip, nas, tunnel, "
+            "verdict, said, session, device, rid, detail) VALUES "
+            "('otp/otpx/1792800000/4000', 1792800000, 0, 'otpx', 'ask', 'pk@example.int', '', "
+            "'10.0.0.1', '', '', '', '', '', '10.0.0.1:4000', '{\"made_of\": [\"a\"]}'),"
+            "('otp/otpx/1792800001/4000', 1792800001, 0, 'otpx', 'ask', '', '', '', '', "
+            "'reject', '', '', '', '10.0.0.1:4000', '{\"made_of\": [\"b\"]}')")
+           .replace('1792800000', str(T0)).replace('1792800001', str(T0 + 1)))
 db.commit()
 ok('the words', store.mend_otp_words(), 1)
 ok('...then nothing in otp\'s own words is left',
@@ -216,7 +220,7 @@ ok('...then nothing in otp\'s own words is left',
 ok('the halves', store.mend_otp_pairs(), 1)
 ok('...one row, with both', [tuple(r) for r in db.execute(
     "SELECT ident, username, verdict FROM otp_asked WHERE server = 'otpx'")],
-   [('otp/otpx/1792800000/4000', 'pk@example.int', 'reject')])
+   [('otp/otpx/%d/4000' % T0, 'pk@example.int', 'reject')])
 ok('...and once only', (store.mend_otp_words(), store.mend_otp_pairs()), (0, 0))
 
 title('totpcgi, exactly as before')

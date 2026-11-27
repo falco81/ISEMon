@@ -372,6 +372,34 @@ working.
 
 ## Version
 
+1.10.382
+
+- **Search boxes and what was pressed** (test/fixes382_filters.py):
+  - The fields a search box can filter by are offered only when asked for:
+    **Ctrl+Space** in the box, or the new **funnel** button inside it. They
+    opened on every focus, so a popup's own search box covered the popup.
+  - Every search box has a **clear** button (×) inside it, beside the funnel;
+    the boxes with nothing to offer (Find a setting, Find) have the clear one.
+  - Whatever was pressed is already in the box of what it opens, there to be
+    seen and taken away:
+    - an address (Overview, Banned, Ban history, anywhere): both of its lists
+      open on `ip:<address>` - asked as the list's own parameter, so the
+      token attempts are still found; cleared, the list is everything;
+    - a name: the popup's lists on `name:<name>`, and *Open the failed
+      attempts* on `user:<name>` and its door;
+    - a row of a door card (an account, an address, a device...): the popup
+      and the page it opens on that row's field;
+    - a country: *Open the failed attempts* on `country:<CC>`;
+    - the domain's account and lockout popups: *Open the domain page* on the
+      events of `account:<name>`;
+    - a person picked in Find: `user:` (or `account:` on the domain door), and
+      an address chip `ip:` - the name or address exactly, not as a word that
+      found every longer one too.
+  - A popup's list opened again starts with what it was opened on, not with
+    what was typed into the last one.
+  - test/fixes226.py: its 1.10.225 database is dated inside the month the
+    mend looks over, whatever day it is run (it was a fixed day in October).
+
 1.10.381
 
 - **Bug hunt, round 10 of 10** - every change of rounds 1 to 9 read again
